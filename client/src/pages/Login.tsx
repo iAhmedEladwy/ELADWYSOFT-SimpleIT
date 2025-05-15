@@ -76,16 +76,33 @@ export default function Login() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      await login(values.username, values.password);
+      console.log('Starting login process with username:', values.username);
+      
+      // Attempt login
+      const result = await login(values.username, values.password);
+      console.log('Login API result:', result);
+      
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      // Use direct navigation after a short delay to ensure state is updated
+      // Force another fetch of user data to ensure we have the latest
+      try {
+        const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
+        console.log('User data after login:', userData);
+      } catch (fetchError) {
+        console.error('Error fetching user data:', fetchError);
+      }
+      
+      console.log('Login successful, preparing to redirect to dashboard');
+      
+      // Use direct navigation after a longer delay to ensure state is updated
       setTimeout(() => {
+        console.log('Executing redirect to dashboard...');
         window.location.href = '/';
-      }, 300);
+      }, 1000);
+      
     } catch (error) {
       console.error('Login error:', error);
       toast({

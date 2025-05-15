@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,21 +20,42 @@ import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
+    // If we're not loading and there's no user, redirect to login
     if (!isLoading && !user) {
-      window.location.href = "/login";
+      console.log('PrivateRoute: Not authenticated, redirecting to login page');
+      setIsRedirecting(true);
+      
+      // Use a short delay to ensure state updates
+      setTimeout(() => {
+        console.log('PrivateRoute: Executing redirect to login');
+        window.location.href = "/login";
+      }, 100);
     }
   }, [user, isLoading]);
 
-  if (isLoading) {
-    return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
+  // Show loading state when auth is being checked or during redirect
+  if (isLoading || isRedirecting) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p>{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
+      </div>
+    );
   }
 
+  // If user is not authenticated and we haven't started redirecting yet
   if (!user) {
-    return null;
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+        <p>Authentication required. Redirecting...</p>
+      </div>
+    );
   }
 
+  // User is authenticated, render the protected component
   return <Component {...rest} />;
 }
 
