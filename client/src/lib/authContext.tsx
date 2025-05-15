@@ -36,9 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await apiRequest('POST', '/api/login', { username, password });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Force a refetch of the user data immediately instead of just invalidating
-      return queryClient.fetchQuery({ queryKey: ['/api/me'] });
+      await queryClient.fetchQuery({ queryKey: ['/api/me'] });
+      setIsLoading(false);
     },
   });
 
@@ -61,7 +62,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isUserLoading]);
 
   const login = async (username: string, password: string) => {
-    await loginMutation.mutateAsync({ username, password });
+    try {
+      const result = await loginMutation.mutateAsync({ username, password });
+      // Wait for user data to be properly loaded
+      await queryClient.fetchQuery({ queryKey: ['/api/me'] });
+      return result;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
   };
 
   const logout = async () => {

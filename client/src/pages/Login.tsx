@@ -60,14 +60,16 @@ export default function Login() {
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
-      navigate('/');
+      // Use a slight delay to ensure authentication state is fully updated
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
     } catch (error) {
       toast({
         title: translations.loginFailed,
         description: translations.invalidCredentials,
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
     }
   };

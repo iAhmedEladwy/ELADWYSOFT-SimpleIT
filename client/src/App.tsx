@@ -20,13 +20,12 @@ import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
-  const [location, setLocation] = useLocation();
   
   useEffect(() => {
     if (!isLoading && !user) {
-      setLocation("/login");
+      window.location.href = "/login";
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, isLoading]);
 
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
