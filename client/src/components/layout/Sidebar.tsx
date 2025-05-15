@@ -60,70 +60,56 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
       
       <nav className="py-4 flex flex-col gap-2 px-3">
         <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/">
-            <a className={getLinkClass('/')}>
-              <Home className="h-5 w-5" />
-              <span>{translations.Dashboard}</span>
-            </a>
+          <Link href="/" className={getLinkClass('/')}>
+            <Home className="h-5 w-5" />
+            <span>{translations.Dashboard}</span>
           </Link>
         </div>
         
         {hasAccess(3) && (
           <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/users">
-              <a className={getLinkClass('/users')}>
-                <Users className="h-5 w-5" />
-                <span>{translations.Users}</span>
-              </a>
+            <Link href="/users" className={getLinkClass('/users')}>
+              <Users className="h-5 w-5" />
+              <span>{translations.Users}</span>
             </Link>
           </div>
         )}
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/employees">
-            <a className={getLinkClass('/employees')}>
-              <UserPlus className="h-5 w-5" />
-              <span>{translations.Employees}</span>
-            </a>
+          <Link href="/employees" className={getLinkClass('/employees')}>
+            <UserPlus className="h-5 w-5" />
+            <span>{translations.Employees}</span>
           </Link>
         </div>
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/assets">
-            <a className={getLinkClass('/assets')}>
-              <Laptop className="h-5 w-5" />
-              <span>{translations.Assets}</span>
-            </a>
+          <Link href="/assets" className={getLinkClass('/assets')}>
+            <Laptop className="h-5 w-5" />
+            <span>{translations.Assets}</span>
           </Link>
         </div>
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/tickets">
-            <a className={getLinkClass('/tickets')}>
-              <Ticket className="h-5 w-5" />
-              <span>{translations.Tickets}</span>
-            </a>
+          <Link href="/tickets" className={getLinkClass('/tickets')}>
+            <Ticket className="h-5 w-5" />
+            <span>{translations.Tickets}</span>
           </Link>
         </div>
         
         {hasAccess(2) && (
           <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/reports">
-              <a className={getLinkClass('/reports')}>
-                <BarChart2 className="h-5 w-5" />
-                <span>{translations.Reports}</span>
-              </a>
+            <Link href="/reports" className={getLinkClass('/reports')}>
+              <BarChart2 className="h-5 w-5" />
+              <span>{translations.Reports}</span>
             </Link>
           </div>
         )}
         
         {hasAccess(3) && (
           <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/system-config">
-              <a className={getLinkClass('/system-config')}>
-                <Settings className="h-5 w-5" />
-                <span>{translations.SystemConfig}</span>
-              </a>
+            <Link href="/system-config" className={getLinkClass('/system-config')}>
+              <Settings className="h-5 w-5" />
+              <span>{translations.SystemConfig}</span>
             </Link>
           </div>
         )}
