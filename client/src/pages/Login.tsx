@@ -32,7 +32,7 @@ export default function Login() {
 
   // Get translations based on language
   const translations = {
-    title: language === 'English' ? 'Login to SimpleIT Bolt.dev' : 'تسجيل الدخول إلى SimpleIT Bolt.dev',
+    title: language === 'English' ? 'Login to ELADWYSOFT SimpleIT' : 'تسجيل الدخول إلى ELADWYSOFT SimpleIT',
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
     password: language === 'English' ? 'Password' : 'كلمة المرور',
     loginButton: language === 'English' ? 'Login' : 'تسجيل الدخول',
@@ -77,8 +77,8 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <span className="text-primary font-bold text-3xl">SimpleIT</span>
-            <span className="text-secondary text-2xl font-semibold">Bolt.dev</span>
+            <span className="text-primary font-bold text-3xl">ELADWYSOFT</span>
+            <span className="text-secondary text-2xl font-semibold ml-2">SimpleIT</span>
           </div>
           <CardTitle className="text-2xl font-bold text-center">{translations.title}</CardTitle>
         </CardHeader>

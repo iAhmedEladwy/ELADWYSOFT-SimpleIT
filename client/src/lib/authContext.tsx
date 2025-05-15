@@ -37,7 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      // Force a refetch of the user data immediately instead of just invalidating
+      return queryClient.fetchQuery({ queryKey: ['/api/me'] });
     },
   });
 
