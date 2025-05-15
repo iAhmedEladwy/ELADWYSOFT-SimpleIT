@@ -119,6 +119,56 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
+  
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    // Convert string ID to number if the user ID is numeric
+    const userId = userData.id;
+    
+    // Create default user data
+    const userValues = {
+      id: userId,
+      username: userData.email || `user_${userId}`,
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      password: "hashed_password_placeholder", // We don't use this with external auth
+      profileImageUrl: userData.profileImageUrl || null,
+      accessLevel: userData.accessLevel || "1",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    try {
+      // Check if user exists
+      const existingUser = await this.getUser(userId);
+      
+      if (existingUser) {
+        // Update existing user
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            email: userData.email || undefined,
+            firstName: userData.firstName || undefined,
+            lastName: userData.lastName || undefined,
+            profileImageUrl: userData.profileImageUrl || undefined,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, userId))
+          .returning();
+        return updatedUser;
+      } else {
+        // Create new user
+        const [newUser] = await db
+          .insert(users)
+          .values(userValues)
+          .returning();
+        return newUser;
+      }
+    } catch (error) {
+      console.error("Error upserting user:", error);
+      throw error;
+    }
+  }
 
   // Employee operations
   async getEmployee(id: number): Promise<Employee | undefined> {

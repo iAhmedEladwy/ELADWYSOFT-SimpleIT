@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
+import { queryClient } from '@/lib/queryClient';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -30,11 +31,24 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
   
-  // Redirect if already logged in
+  // Always check authentication status on component mount and redirect if logged in
   useEffect(() => {
-    if (user && !authLoading) {
-      window.location.href = '/';
-    }
+    const checkAuthAndRedirect = async () => {
+      try {
+        // Force a fresh fetch of user data
+        await queryClient.fetchQuery({ queryKey: ['/api/me'] });
+        
+        // If we have a user and we're not loading, redirect to the dashboard
+        if (user && !authLoading) {
+          console.log("User authenticated, redirecting to homepage");
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.log("Not authenticated or error checking auth");
+      }
+    };
+    
+    checkAuthAndRedirect();
   }, [user, authLoading]);
 
   // Get translations based on language
