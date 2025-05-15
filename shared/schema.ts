@@ -6,10 +6,12 @@ import {
   boolean, 
   timestamp, 
   json,
+  jsonb,
   date,
   pgEnum,
   varchar,
-  decimal
+  decimal,
+  index
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -25,6 +27,17 @@ export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Hardware', 'Soft
 export const ticketCategoryEnum = pgEnum('ticket_category', ['Hardware', 'Software', 'Network', 'Other']);
 export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
+
+// Session storage table for authentication
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
 
 // Users table
 export const users = pgTable("users", {

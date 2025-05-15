@@ -13,14 +13,25 @@ import { db } from "./db";
 import { eq, and, like, desc, or, asc } from "drizzle-orm";
 
 // Storage interface for all CRUD operations
+// Define UpsertUser type for Replit Auth
+export interface UpsertUser {
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+  accessLevel?: string;
+}
+
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
-  deleteUser(id: number): Promise<boolean>;
+  getUser(id: string | number): Promise<User | undefined>;
+  getUserByUsername?(username: string): Promise<User | undefined>;
+  createUser?(user: InsertUser): Promise<User>;
+  updateUser?(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser?(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
+  upsertUser(user: UpsertUser): Promise<User>; // Add this for Replit Auth
   
   // Employee operations
   getEmployee(id: number): Promise<Employee | undefined>;
