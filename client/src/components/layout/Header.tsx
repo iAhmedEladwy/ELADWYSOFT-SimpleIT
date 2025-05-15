@@ -56,8 +56,8 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-primary font-bold text-xl">SimpleIT</span>
-            <span className="text-secondary text-lg font-semibold">Bolt.dev</span>
+            <span className="text-primary font-bold text-xl">ELADWYSOFT</span>
+            <span className="text-secondary text-lg font-semibold">SimpleIT</span>
           </div>
         </div>
         
