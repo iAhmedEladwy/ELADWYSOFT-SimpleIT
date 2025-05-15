@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import * as schema from "@shared/schema";
@@ -8,14 +8,11 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { compare, hash } from "bcryptjs";
-import MemoryStore from "memorystore";
+import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
 import { createHash } from "crypto";
-
-// Set up session store
-const MemoryStoreSession = MemoryStore(session);
 
 // Helper function to generate IDs
 const generateId = (prefix: string, num: number) => {
@@ -67,18 +64,24 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session
+  // Setup session with PostgreSQL for persistence
+  const pgStore = ConnectPgSimple(session);
   app.use(
     session({
-      store: new MemoryStoreSession({
-        checkPeriod: 86400000, // Clear expired sessions every 24h
+      store: new pgStore({
+        conString: process.env.DATABASE_URL,
+        tableName: 'sessions',
+        createTableIfMissing: true,
+        pruneSessionInterval: 24 * 60 * 60, // 24 hours
       }),
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
-      resave: false,
+      resave: false, 
       saveUninitialized: false,
-      cookie: {
+      cookie: { 
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer persistence
+        sameSite: 'lax'
       },
     })
   );
