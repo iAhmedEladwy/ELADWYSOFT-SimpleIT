@@ -247,6 +247,7 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
   }),
   assignedAssets: many(assets),
   submittedTickets: many(tickets, { relationName: "submittedTickets" }),
+  assetTransactions: many(assetTransactions),
 }));
 
 export const assetsRelations = relations(assets, ({ one, many }) => ({
@@ -257,6 +258,7 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   maintenanceRecords: many(assetMaintenance),
   tickets: many(tickets),
   saleItems: many(assetSaleItems),
+  transactions: many(assetTransactions),
 }));
 
 export const assetMaintenanceRelations = relations(assetMaintenance, ({ one }) => ({
@@ -278,6 +280,41 @@ export const assetSaleItemsRelations = relations(assetSaleItems, ({ one }) => ({
   asset: one(assets, {
     fields: [assetSaleItems.assetId],
     references: [assets.id],
+  }),
+}));
+
+// Asset Transaction types enum
+export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
+
+// Asset Transactions table
+export const assetTransactions = pgTable("asset_transactions", {
+  id: serial("id").primaryKey(),
+  assetId: integer("asset_id").notNull().references(() => assets.id, { onDelete: 'cascade' }),
+  type: assetTransactionTypeEnum("type").notNull(),
+  employeeId: integer("employee_id").references(() => employees.id),
+  transactionDate: timestamp("transaction_date").notNull().defaultNow(),
+  expectedReturnDate: timestamp("expected_return_date"),
+  actualReturnDate: timestamp("actual_return_date"),
+  conditionNotes: text("condition_notes"),
+  handledById: integer("handled_by_id").references(() => users.id),
+  attachments: text("attachments").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relationships for asset transactions
+export const assetTransactionsRelations = relations(assetTransactions, ({ one }) => ({
+  asset: one(assets, {
+    fields: [assetTransactions.assetId],
+    references: [assets.id],
+  }),
+  employee: one(employees, {
+    fields: [assetTransactions.employeeId],
+    references: [employees.id],
+  }),
+  handledBy: one(users, {
+    fields: [assetTransactions.handledById],
+    references: [users.id],
   }),
 }));
 
