@@ -47,7 +47,7 @@ export default function TransactionHistoryTable() {
   
   // Translations
   const translations = {
-    title: language === 'English' ? 'Asset Transaction History' : 'سجل معاملات الأصول',
+    title: language === 'English' ? 'Asset History' : 'سجل الأصول',
     description: language === 'English' 
       ? 'Track all asset check-in and check-out activities' 
       : 'تتبع جميع أنشطة تسجيل الوصول والمغادرة للأصول',

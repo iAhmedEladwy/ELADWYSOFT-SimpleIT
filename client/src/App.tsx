@@ -90,7 +90,7 @@ function Router() {
             <PrivateRoute component={Assets} />
           </Layout>
         </Route>
-        <Route path="/asset-transactions">
+        <Route path="/asset-history">
           <Layout>
             <PrivateRoute component={AssetTransactions} />
           </Layout>
