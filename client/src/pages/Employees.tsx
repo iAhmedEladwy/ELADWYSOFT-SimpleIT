@@ -68,7 +68,7 @@ export default function Employees() {
   // Add employee mutation
   const addEmployeeMutation = useMutation({
     mutationFn: (employeeData: any) => 
-      apiRequest('/api/employees', { method: 'POST', data: employeeData }),
+      apiRequest('POST', '/api/employees', employeeData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
@@ -87,10 +87,8 @@ export default function Employees() {
 
   // Update employee mutation
   const updateEmployeeMutation = useMutation({
-    mutationFn: async ({ id, employeeData }: { id: number; employeeData: any }) => {
-      const res = await apiRequest('PUT', `/api/employees/${id}`, employeeData);
-      return res.json();
-    },
+    mutationFn: ({ id, employeeData }: { id: number; employeeData: any }) => 
+      apiRequest('PUT', `/api/employees/${id}`, employeeData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
@@ -110,10 +108,8 @@ export default function Employees() {
 
   // Delete employee mutation
   const deleteEmployeeMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/employees/${id}`, {});
-      return res.json();
-    },
+    mutationFn: (id: number) => 
+      apiRequest('DELETE', `/api/employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
