@@ -105,6 +105,9 @@ export interface IStorage {
   getServiceProviders(): Promise<any[]>;
   createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
   deleteServiceProvider(id: number): Promise<boolean>;
+  
+  // Remove Demo Data
+  removeDemoData(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

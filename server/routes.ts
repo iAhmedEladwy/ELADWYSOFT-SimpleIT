@@ -1521,6 +1521,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
+  
+  // Remove Demo Data
+  app.post("/api/remove-demo-data", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      // Implement a database transaction to ensure atomicity
+      await storage.removeDemoData();
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "CONFIG_CHANGE",
+          entityType: "SYSTEM_CONFIG",
+          details: { action: "Remove Demo Data" }
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "All demo data has been successfully removed." 
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  });
 
   // Activity Log
   app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
