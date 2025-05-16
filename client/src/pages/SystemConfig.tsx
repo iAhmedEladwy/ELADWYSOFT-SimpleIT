@@ -257,6 +257,27 @@ export default function SystemConfig() {
     },
   });
   
+  // Remove demo data mutation
+  const removeDemoDataMutation = useMutation({
+    mutationFn: () => 
+      apiRequest('/api/remove-demo-data', { method: 'POST' }),
+    onSuccess: () => {
+      // Invalidate all cached data to refresh the UI
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'All demo data has been removed successfully' : 'تمت إزالة جميع بيانات العرض بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to remove demo data' : 'فشل في إزالة بيانات العرض',
+        variant: 'destructive',
+      });
+    },
+  });
+  
   // Handler functions
   const handleAddAssetType = () => {
     if (!newTypeName.trim()) return;
@@ -302,6 +323,15 @@ export default function SystemConfig() {
       assetIdPrefix,
       currency
     });
+  };
+  
+  const handleRemoveDemoData = () => {
+    if (window.confirm(language === 'English' 
+      ? 'Are you sure you want to remove all demo data? This action cannot be undone.' 
+      : 'هل أنت متأكد أنك تريد إزالة جميع بيانات العرض التوضيحي؟ لا يمكن التراجع عن هذا الإجراء.'
+    )) {
+      removeDemoDataMutation.mutate();
+    }
   };
 
   // Translations
