@@ -460,3 +460,13 @@ export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+// Asset Transaction types
+export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AssetTransaction = typeof assetTransactions.$inferSelect;
+export type InsertAssetTransaction = z.infer<typeof insertAssetTransactionSchema>;

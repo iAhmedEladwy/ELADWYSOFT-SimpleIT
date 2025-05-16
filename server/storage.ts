@@ -8,6 +8,7 @@ import {
   tickets, type Ticket, type InsertTicket,
   systemConfig, type SystemConfig, type InsertSystemConfig,
   activityLog, type ActivityLog, type InsertActivityLog,
+  assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders
 } from "@shared/schema";
 import { db } from "./db";
@@ -56,6 +57,13 @@ export interface IStorage {
   // Asset Maintenance operations
   createAssetMaintenance(maintenance: InsertAssetMaintenance): Promise<AssetMaintenance>;
   getMaintenanceForAsset(assetId: number): Promise<AssetMaintenance[]>;
+
+  // Asset Transaction operations
+  createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction>;
+  getAssetTransactions(assetId: number): Promise<AssetTransaction[]>;
+  getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]>;
+  checkOutAsset(assetId: number, employeeId: number, notes?: string): Promise<AssetTransaction>;
+  checkInAsset(assetId: number, notes?: string): Promise<AssetTransaction>;
 
   // Asset Sales operations
   createAssetSale(sale: InsertAssetSale): Promise<AssetSale>;
