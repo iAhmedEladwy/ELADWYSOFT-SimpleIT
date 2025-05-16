@@ -29,13 +29,20 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, FileDown } from 'lucide-react';
+import { AssetTransaction, Asset, Employee } from '@shared/schema';
+
+// Define the transaction response structure with joined entities
+interface TransactionWithRelations extends AssetTransaction {
+  asset?: Asset;
+  employee?: Employee;
+}
 
 export default function TransactionHistoryTable() {
   const { language } = useLanguage();
   const [filter, setFilter] = useState({
-    type: '',
-    assetId: '',
-    employeeId: '',
+    type: 'all',
+    assetId: 'all',
+    employeeId: 'all',
   });
   
   // Translations
@@ -63,34 +70,34 @@ export default function TransactionHistoryTable() {
   };
   
   // Fetch asset transactions
-  const { data: transactions, isLoading } = useQuery({
+  const { data: transactions, isLoading } = useQuery<TransactionWithRelations[]>({
     queryKey: ['/api/asset-transactions'],
   });
   
   // Assets data for the filter
-  const { data: assets } = useQuery({
+  const { data: assets } = useQuery<Asset[]>({
     queryKey: ['/api/assets'],
   });
   
   // Employees data for the filter
-  const { data: employees } = useQuery({
+  const { data: employees } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
   });
   
   // Filter transactions
-  const filteredTransactions = transactions?.filter(transaction => {
-    if (filter.type && transaction.type !== filter.type) return false;
-    if (filter.assetId && transaction.asset?.id !== parseInt(filter.assetId)) return false;
-    if (filter.employeeId && transaction.employee?.id !== parseInt(filter.employeeId)) return false;
+  const filteredTransactions = transactions?.filter((transaction: TransactionWithRelations) => {
+    if (filter.type !== 'all' && transaction.type !== filter.type) return false;
+    if (filter.assetId !== 'all' && transaction.asset?.id !== parseInt(filter.assetId)) return false;
+    if (filter.employeeId !== 'all' && transaction.employee?.id !== parseInt(filter.employeeId)) return false;
     return true;
   });
   
   // Clear all filters
   const clearFilters = () => {
     setFilter({
-      type: '',
-      assetId: '',
-      employeeId: '',
+      type: 'all',
+      assetId: 'all',
+      employeeId: 'all',
     });
   };
   
@@ -163,7 +170,7 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {assets?.map((asset) => (
+                {assets?.map((asset: Asset) => (
                   <SelectItem key={asset.id} value={String(asset.id)}>
                     {asset.assetId} - {asset.name || 'Unknown'}
                   </SelectItem>
@@ -183,7 +190,7 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {employees?.map((employee) => (
+                {employees?.map((employee: Employee) => (
                   <SelectItem key={employee.id} value={String(employee.id)}>
                     {employee.englishName || employee.empId || 'Unknown Employee'}
                   </SelectItem>
