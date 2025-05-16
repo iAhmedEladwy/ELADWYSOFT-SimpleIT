@@ -63,8 +63,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
           </button>
           <div className="flex flex-col">
             <div className="flex items-center">
-              <span className="text-primary font-bold text-xl mr-1">ELADWYSOFT</span>
-              <span className="text-secondary text-lg font-semibold">SimpleIT</span>
+              <span className="text-blue-600 font-bold text-xl mr-1">ELADWYSOFT</span>
             </div>
             <span className="text-gray-500 text-xs -mt-1">IT Asset Management System</span>
           </div>

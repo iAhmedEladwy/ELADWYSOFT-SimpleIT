@@ -218,6 +218,8 @@ export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
   language: varchar("language", { length: 10 }).notNull().default('English'),
   assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('BOLT-'),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  currencySymbol: varchar("currency_symbol", { length: 5 }).notNull().default('$'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
