@@ -145,7 +145,7 @@ export default function TransactionHistoryTable() {
                 <SelectValue placeholder={translations.all} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.all}</SelectItem>
+                <SelectItem value="all">{translations.all}</SelectItem>
                 <SelectItem value="Check-In">{translations.checkIn}</SelectItem>
                 <SelectItem value="Check-Out">{translations.checkOut}</SelectItem>
               </SelectContent>
@@ -162,7 +162,7 @@ export default function TransactionHistoryTable() {
                 <SelectValue placeholder={translations.all} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.all}</SelectItem>
+                <SelectItem value="all">{translations.all}</SelectItem>
                 {assets?.map((asset) => (
                   <SelectItem key={asset.id} value={String(asset.id)}>
                     {asset.assetId} - {asset.name || 'Unknown'}
@@ -182,7 +182,7 @@ export default function TransactionHistoryTable() {
                 <SelectValue placeholder={translations.all} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.all}</SelectItem>
+                <SelectItem value="all">{translations.all}</SelectItem>
                 {employees?.map((employee) => (
                   <SelectItem key={employee.id} value={String(employee.id)}>
                     {employee.englishName || employee.empId || 'Unknown Employee'}
