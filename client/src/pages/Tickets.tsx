@@ -212,7 +212,7 @@ export default function Tickets() {
                 {translations.createTicket}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{translations.createTicket}</DialogTitle>
               </DialogHeader>

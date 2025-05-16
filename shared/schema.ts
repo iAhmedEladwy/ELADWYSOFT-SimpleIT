@@ -29,6 +29,74 @@ export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'H
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
 
 // Session storage table for authentication
+// Custom lookup tables for asset management
+export const customAssetTypes = pgTable(
+  "custom_asset_types",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    description: varchar("description", { length: 255 }),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
+export const customAssetBrands = pgTable(
+  "custom_asset_brands",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    description: varchar("description", { length: 255 }),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
+export const customAssetStatuses = pgTable(
+  "custom_asset_statuses",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    description: varchar("description", { length: 255 }),
+    color: varchar("color", { length: 50 }),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
+export const serviceProviders = pgTable(
+  "service_providers",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    contactPerson: varchar("contact_person", { length: 100 }),
+    phone: varchar("phone", { length: 50 }),
+    email: varchar("email", { length: 100 }),
+    address: varchar("address", { length: 255 }),
+    serviceType: varchar("service_type", { length: 100 }),
+    contractStartDate: timestamp("contract_start_date"),
+    contractEndDate: timestamp("contract_end_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
+export const assetServiceProviders = pgTable(
+  "asset_service_providers",
+  {
+    id: serial("id").primaryKey(),
+    assetId: integer("asset_id").notNull().references(() => assets.id, { onDelete: 'cascade' }),
+    serviceProviderId: integer("service_provider_id").notNull().references(() => serviceProviders.id, { onDelete: 'cascade' }),
+    startDate: timestamp("start_date"),
+    endDate: timestamp("end_date"),
+    contractNumber: varchar("contract_number", { length: 100 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
 export const sessions = pgTable(
   "sessions",
   {
@@ -235,6 +303,22 @@ export const activityLogRelations = relations(activityLog, ({ one }) => ({
   }),
 }));
 
+// Relations for service providers
+export const serviceProvidersRelations = relations(serviceProviders, ({ many }) => ({
+  assetServiceProviders: many(assetServiceProviders),
+}));
+
+export const assetServiceProvidersRelations = relations(assetServiceProviders, ({ one }) => ({
+  asset: one(assets, {
+    fields: [assetServiceProviders.assetId],
+    references: [assets.id],
+  }),
+  serviceProvider: one(serviceProviders, {
+    fields: [assetServiceProviders.serviceProviderId],
+    references: [serviceProviders.id],
+  }),
+}));
+
 // Schemas for inserts
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
@@ -279,6 +363,36 @@ export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
 export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ 
   id: true, 
   createdAt: true
+});
+
+export const insertCustomAssetTypeSchema = createInsertSchema(customAssetTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertCustomAssetBrandSchema = createInsertSchema(customAssetBrands).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertCustomAssetStatusSchema = createInsertSchema(customAssetStatuses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertAssetServiceProviderSchema = createInsertSchema(assetServiceProviders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 
 // Export types

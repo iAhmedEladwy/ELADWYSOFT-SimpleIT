@@ -384,7 +384,7 @@ export default function AssetsTable({
 
       {/* Assign Asset Dialog */}
       <Dialog open={!!assetToAssign} onOpenChange={(open) => !open && setAssetToAssign(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{translations.assignAsset}</DialogTitle>
           </DialogHeader>
