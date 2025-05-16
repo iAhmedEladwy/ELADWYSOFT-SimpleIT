@@ -29,7 +29,7 @@ export default function SystemConfig() {
   // Translations
   const translations = {
     title: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
-    description: language === 'English' 
+    pageDescription: language === 'English' 
       ? 'Configure system-wide settings and preferences' 
       : 'تكوين إعدادات النظام وتفضيلاته',
     generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
@@ -46,6 +46,31 @@ export default function SystemConfig() {
     unauthorized: language === 'English' 
       ? 'You do not have permission to access this page' 
       : 'ليس لديك إذن للوصول إلى هذه الصفحة',
+    assetCustomization: language === 'English' ? 'Asset Customization' : 'تخصيص الأصول',
+    customAssetTypes: language === 'English' ? 'Custom Asset Types' : 'أنواع الأصول المخصصة',
+    customAssetTypesDesc: language === 'English' 
+      ? 'Create custom asset types in addition to default types' 
+      : 'إنشاء أنواع أصول مخصصة بالإضافة إلى الأنواع الافتراضية',
+    customAssetBrands: language === 'English' ? 'Custom Asset Brands' : 'علامات تجارية مخصصة للأصول',
+    customAssetBrandsDesc: language === 'English' 
+      ? 'Create custom brands for your organization' 
+      : 'إنشاء علامات تجارية مخصصة لمؤسستك',
+    customAssetStatuses: language === 'English' ? 'Custom Asset Statuses' : 'حالات مخصصة للأصول',
+    customAssetStatusesDesc: language === 'English' 
+      ? 'Create custom asset statuses with color coding' 
+      : 'إنشاء حالات مخصصة للأصول مع ترميز الألوان',
+    name: language === 'English' ? 'Name' : 'الاسم',
+    description: language === 'English' ? 'Description' : 'الوصف',
+    color: language === 'English' ? 'Color' : 'اللون',
+    add: language === 'English' ? 'Add' : 'إضافة',
+    delete: language === 'English' ? 'Delete' : 'حذف',
+    edit: language === 'English' ? 'Edit' : 'تعديل',
+    confirm: language === 'English' ? 'Confirm' : 'تأكيد',
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    serviceProviders: language === 'English' ? 'Service Providers' : 'مزودي الخدمة',
+    serviceProvidersDesc: language === 'English' 
+      ? 'Manage external service providers for maintenance and support' 
+      : 'إدارة مزودي الخدمة الخارجيين للصيانة والدعم',
   };
 
   // Check if user has admin access

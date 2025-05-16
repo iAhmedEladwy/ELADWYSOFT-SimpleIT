@@ -110,7 +110,7 @@ export default function AssetsTable({
     delete: language === 'English' ? 'Delete' : 'حذف',
     assign: language === 'English' ? 'Assign' : 'تعيين',
     unassign: language === 'English' ? 'Unassign' : 'إلغاء التعيين',
-    maintenance: language === 'English' ? 'Add Maintenance' : 'إضافة صيانة',
+    addMaintenanceShort: language === 'English' ? 'Add Maintenance' : 'إضافة صيانة',
     details: language === 'English' ? 'View Details' : 'عرض التفاصيل',
     qrCode: language === 'English' ? 'Generate QR Code' : 'إنشاء رمز QR',
     selectEmployee: language === 'English' ? 'Select Employee' : 'اختر الموظف',
@@ -308,7 +308,7 @@ export default function AssetsTable({
                       
                       <DropdownMenuItem onClick={() => setAssetToMaintenance(asset)}>
                         <Drill className="h-4 w-4 mr-2" />
-                        {translations.maintenance}
+                        {translations.addMaintenanceShort}
                       </DropdownMenuItem>
                       
                       <DropdownMenuItem>
