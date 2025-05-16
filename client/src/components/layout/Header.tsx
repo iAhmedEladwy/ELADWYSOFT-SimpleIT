@@ -63,33 +63,13 @@ export default function Header({ toggleSidebar }: HeaderProps) {
           </button>
           <div className="flex flex-col">
             <div className="flex items-center">
-              <span className="text-blue-600 font-bold text-xl mr-1">ELADWYSOFT</span>
+              <span className="text-blue-600 font-bold text-xl mr-1">SimpleIT</span>
             </div>
             <span className="text-gray-500 text-xs -mt-1">IT Asset Management System</span>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Select
-              value={language}
-              onValueChange={(value) => {
-                if (value !== language) {
-                  toggleLanguage(value);
-                }
-              }}
-            >
-              <SelectTrigger className="w-[130px]">
-                <Globe className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="Arabic">العربية</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-sm">
