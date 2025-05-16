@@ -32,10 +32,10 @@ const employeeFormSchema = z.object({
   idNumber: z.string().min(3, 'ID number is required'),
   title: z.string().min(1, 'Job title is required'),
   directManager: z.string().optional().or(z.literal('')),
-  employmentType: z.string(),
+  employmentType: z.enum(['Full-time', 'Part-time', 'Contract', 'Intern']),
   joiningDate: z.string(),
   exitDate: z.string().optional().or(z.literal('')),
-  status: z.string(),
+  status: z.enum(['Active', 'Resigned', 'Terminated', 'On Leave']),
   personalMobile: z.string().optional().or(z.literal('')),
   workMobile: z.string().optional().or(z.literal('')),
   personalEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
@@ -144,15 +144,17 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
-    // Convert string IDs back to numbers for submission
-    // Also convert date strings to proper date format
+    // Format the data for the server according to the database schema
     const formattedData = {
       ...values,
+      // Convert string IDs to numbers where needed
       directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
       userId: values.userId && values.userId !== '' ? parseInt(values.userId) : null,
-      // Make sure dates are properly formatted for the server
-      joiningDate: values.joiningDate ? new Date(values.joiningDate) : new Date(),
-      exitDate: values.exitDate && values.exitDate !== '' ? new Date(values.exitDate) : null,
+      
+      // Format dates properly for the server - use ISO strings
+      joiningDate: values.joiningDate,
+      exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,
+      
       // Set empty strings to null for optional fields
       arabicName: values.arabicName === '' ? null : values.arabicName,
       personalMobile: values.personalMobile === '' ? null : values.personalMobile,

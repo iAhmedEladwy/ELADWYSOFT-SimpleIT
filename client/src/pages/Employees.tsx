@@ -67,8 +67,10 @@ export default function Employees() {
 
   // Add employee mutation
   const addEmployeeMutation = useMutation({
-    mutationFn: (employeeData: any) => 
-      apiRequest('POST', '/api/employees', employeeData),
+    mutationFn: (employeeData: any) => {
+      console.log('Submitting employee data:', employeeData);
+      return apiRequest('POST', '/api/employees', employeeData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
@@ -77,6 +79,7 @@ export default function Employees() {
       setOpenDialog(false);
     },
     onError: (error: any) => {
+      console.error('Employee creation error:', error);
       toast({
         title: translations.error,
         description: error.message,
