@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import FloatingActionButton from '../common/FloatingActionButton';
 import { useMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/lib/authContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +12,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const isMobile = useMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+  const { user } = useAuth();
 
   // Update sidebar state when mobile state changes
   useEffect(() => {
@@ -31,6 +34,9 @@ export default function Layout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+      
+      {/* Only show FAB if user is authenticated */}
+      {user && <FloatingActionButton />}
     </div>
   );
 }

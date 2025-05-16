@@ -29,6 +29,31 @@ export default function Employees() {
   const [searchQuery, setSearchQuery] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Listen for the FAB add employee event
+  useEffect(() => {
+    const handleFabAddEmployee = () => {
+      // Clear editing state and open dialog for new employee
+      setEditingEmployee(null);
+      setOpenDialog(true);
+    };
+    
+    // Register event listener
+    window.addEventListener('fab:add-employee', handleFabAddEmployee);
+    
+    // Check if URL has action=new parameter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new') {
+      handleFabAddEmployee();
+      // Clean up the URL to prevent dialog from reopening on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('fab:add-employee', handleFabAddEmployee);
+    };
+  }, []);
 
   // Translations
   const translations = {
