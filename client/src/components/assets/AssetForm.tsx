@@ -416,7 +416,7 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">{translations.none}</SelectItem>
+                        <SelectItem value="none">{translations.none}</SelectItem>
                         {employees.map((employee: any) => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
                             {employee.englishName} ({employee.empId})
