@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Define schema for form validation
+// Define schema for form validation with proper transformations
 const employeeFormSchema = z.object({
   empId: z.string().optional(),
   englishName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -144,23 +144,28 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
+    console.log('Raw form values:', values);
+    
     // Format the data for the server according to the database schema
     const formattedData = {
-      ...values,
-      // Convert string IDs to numbers where needed
-      directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
-      userId: values.userId && values.userId !== '' ? parseInt(values.userId) : null,
-      
-      // Format dates properly for the server - use ISO strings
+      englishName: values.englishName,
+      department: values.department,
+      idNumber: values.idNumber,
+      title: values.title,
+      employmentType: values.employmentType,
       joiningDate: values.joiningDate,
-      exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,
+      status: values.status,
       
-      // Set empty strings to null for optional fields
-      arabicName: values.arabicName === '' ? null : values.arabicName,
-      personalMobile: values.personalMobile === '' ? null : values.personalMobile,
-      workMobile: values.workMobile === '' ? null : values.workMobile,
-      personalEmail: values.personalEmail === '' ? null : values.personalEmail,
-      corporateEmail: values.corporateEmail === '' ? null : values.corporateEmail,
+      // Optional values - either pass them as null or the actual value
+      empId: values.empId || undefined,
+      arabicName: values.arabicName || null,
+      directManager: values.directManager ? parseInt(values.directManager) : null,
+      exitDate: values.exitDate || null,
+      personalMobile: values.personalMobile || null,
+      workMobile: values.workMobile || null,
+      personalEmail: values.personalEmail || null,
+      corporateEmail: values.corporateEmail || null,
+      userId: values.userId ? parseInt(values.userId) : null,
     };
     
     onSubmit(formattedData);
