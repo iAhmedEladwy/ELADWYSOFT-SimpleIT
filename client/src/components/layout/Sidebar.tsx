@@ -27,7 +27,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     Users: language === 'English' ? 'Users' : 'المستخدمين',
     Employees: language === 'English' ? 'Employees' : 'الموظفين',
     Assets: language === 'English' ? 'Assets' : 'الأصول',
-    AssetTransactions: language === 'English' ? 'Asset Transactions' : 'معاملات الأصول',
+    AssetHistory: language === 'English' ? 'Asset History' : 'سجل الأصول',
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
@@ -92,9 +92,9 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </div>
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/asset-transactions" className={getLinkClass('/asset-transactions')}>
+          <Link href="/asset-history" className={getLinkClass('/asset-history')}>
             <History className="h-5 w-5" />
-            <span>{translations.AssetTransactions}</span>
+            <span>{translations.AssetHistory}</span>
           </Link>
         </div>
         

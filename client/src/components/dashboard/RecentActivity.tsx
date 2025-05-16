@@ -41,7 +41,7 @@ export default function RecentActivity({ activities = [], isLoading }: RecentAct
       id: 1,
       action: 'Create',
       entityType: 'Asset',
-      details: { assetId: 'BOLT-LT-2592', description: 'Dell XPS 15 has been added to inventory by Admin User' },
+      details: { assetId: 'SIT-LT-2592', description: 'Dell XPS 15 has been added to inventory by Admin User' },
       createdAt: new Date(Date.now() - 10 * 60 * 1000),
     },
     {
@@ -55,14 +55,14 @@ export default function RecentActivity({ activities = [], isLoading }: RecentAct
       id: 3,
       action: 'Transfer',
       entityType: 'Asset',
-      details: { assetId: 'BOLT-LT-2350', description: 'MacBook Pro transferred from John Smith to Sarah Johnson' },
+      details: { assetId: 'SIT-LT-2350', description: 'MacBook Pro transferred from John Smith to Sarah Johnson' },
       createdAt: new Date(Date.now() - 60 * 60 * 1000),
     },
     {
       id: 4,
       action: 'Delete',
       entityType: 'Asset',
-      details: { assetId: 'BOLT-DT-1023', description: 'Dell Inspiron has been marked as retired by System Admin' },
+      details: { assetId: 'SIT-DT-1023', description: 'Dell Inspiron has been marked as retired by System Admin' },
       createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     },
     {

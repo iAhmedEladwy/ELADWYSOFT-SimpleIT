@@ -23,7 +23,7 @@ export default function SystemConfig() {
   const { toast } = useToast();
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
-  const [assetIdPrefix, setAssetIdPrefix] = useState('BOLT-');
+  const [assetIdPrefix, setAssetIdPrefix] = useState('SIT-');
   const [currency, setCurrency] = useState('USD');
   const [isLoading, setIsLoading] = useState(true);
   
@@ -316,8 +316,8 @@ export default function SystemConfig() {
     arabic: language === 'English' ? 'Arabic' : 'العربية',
     assetIdPrefix: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصول',
     assetIdPrefixDesc: language === 'English' 
-      ? 'Prefix added to all asset IDs (e.g., BOLT-LT-0001)' 
-      : 'البادئة المضافة إلى جميع معرفات الأصول (مثال: BOLT-LT-0001)',
+      ? 'Prefix added to all asset IDs (e.g., SIT-LT-0001)' 
+      : 'البادئة المضافة إلى جميع معرفات الأصول (مثال: SIT-LT-0001)',
     currency: language === 'English' ? 'Currency' : 'العملة',
     currencyDesc: language === 'English'
       ? 'Default currency and symbol used throughout the system'
@@ -445,7 +445,7 @@ export default function SystemConfig() {
                 id="assetIdPrefix" 
                 value={assetIdPrefix} 
                 onChange={(e) => setAssetIdPrefix(e.target.value)}
-                placeholder="BOLT-"
+                placeholder="SIT-"
               />
               <p className="text-sm text-muted-foreground">{translations.assetIdPrefixDesc}</p>
             </div>
