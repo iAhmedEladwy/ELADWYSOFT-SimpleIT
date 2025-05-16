@@ -27,20 +27,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const employeeFormSchema = z.object({
   empId: z.string().optional(),
   englishName: z.string().min(2, 'Name must be at least 2 characters'),
-  arabicName: z.string().optional(),
+  arabicName: z.string().optional().or(z.literal('')),
   department: z.string().min(1, 'Department is required'),
   idNumber: z.string().min(3, 'ID number is required'),
   title: z.string().min(1, 'Job title is required'),
-  directManager: z.string().optional(),
+  directManager: z.string().optional().or(z.literal('')),
   employmentType: z.string(),
   joiningDate: z.string(),
-  exitDate: z.string().optional(),
+  exitDate: z.string().optional().or(z.literal('')),
   status: z.string(),
-  personalMobile: z.string().optional(),
-  workMobile: z.string().optional(),
+  personalMobile: z.string().optional().or(z.literal('')),
+  workMobile: z.string().optional().or(z.literal('')),
   personalEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
   corporateEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
-  userId: z.string().optional(),
+  userId: z.string().optional().or(z.literal('')),
 });
 
 interface EmployeeFormProps {
@@ -145,10 +145,20 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
     // Convert string IDs back to numbers for submission
+    // Also convert date strings to proper date format
     const formattedData = {
       ...values,
-      directManager: values.directManager ? parseInt(values.directManager) : null,
-      userId: values.userId ? parseInt(values.userId) : null,
+      directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
+      userId: values.userId && values.userId !== '' ? parseInt(values.userId) : null,
+      // Make sure dates are properly formatted for the server
+      joiningDate: values.joiningDate ? new Date(values.joiningDate) : new Date(),
+      exitDate: values.exitDate && values.exitDate !== '' ? new Date(values.exitDate) : null,
+      // Set empty strings to null for optional fields
+      arabicName: values.arabicName === '' ? null : values.arabicName,
+      personalMobile: values.personalMobile === '' ? null : values.personalMobile,
+      workMobile: values.workMobile === '' ? null : values.workMobile,
+      personalEmail: values.personalEmail === '' ? null : values.personalEmail,
+      corporateEmail: values.corporateEmail === '' ? null : values.corporateEmail,
     };
     
     onSubmit(formattedData);

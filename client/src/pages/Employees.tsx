@@ -67,10 +67,8 @@ export default function Employees() {
 
   // Add employee mutation
   const addEmployeeMutation = useMutation({
-    mutationFn: async (employeeData: any) => {
-      const res = await apiRequest('POST', '/api/employees', employeeData);
-      return res.json();
-    },
+    mutationFn: (employeeData: any) => 
+      apiRequest('/api/employees', { method: 'POST', data: employeeData }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
