@@ -320,12 +320,8 @@ export default function SystemConfig() {
       : 'البادئة المضافة إلى جميع معرفات الأصول (مثال: BOLT-LT-0001)',
     currency: language === 'English' ? 'Currency' : 'العملة',
     currencyDesc: language === 'English'
-      ? 'Default currency used throughout the system'
-      : 'العملة الافتراضية المستخدمة في جميع أنحاء النظام',
-    currencySymbol: language === 'English' ? 'Currency Symbol' : 'رمز العملة',
-    currencySymbolDesc: language === 'English'
-      ? 'Symbol displayed for monetary values'
-      : 'الرمز المعروض للقيم النقدية',
+      ? 'Default currency and symbol used throughout the system'
+      : 'العملة الافتراضية والرمز المستخدمة في جميع أنحاء النظام',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     saveSuccess: language === 'English' ? 'Configuration saved successfully' : 'تم حفظ الإعدادات بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
@@ -465,42 +461,19 @@ export default function SystemConfig() {
                   <SelectValue placeholder={translations.currency} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USD">USD (United States Dollar)</SelectItem>
-                  <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                  <SelectItem value="GBP">GBP (British Pound)</SelectItem>
-                  <SelectItem value="JPY">JPY (Japanese Yen)</SelectItem>
-                  <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
-                  <SelectItem value="AUD">AUD (Australian Dollar)</SelectItem>
-                  <SelectItem value="CNY">CNY (Chinese Yuan)</SelectItem>
-                  <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
-                  <SelectItem value="AED">AED (UAE Dirham)</SelectItem>
+                  <SelectItem value="USD">USD (United States Dollar - $)</SelectItem>
+                  <SelectItem value="EUR">EUR (Euro - €)</SelectItem>
+                  <SelectItem value="GBP">GBP (British Pound - £)</SelectItem>
+                  <SelectItem value="JPY">JPY (Japanese Yen - ¥)</SelectItem>
+                  <SelectItem value="CAD">CAD (Canadian Dollar - C$)</SelectItem>
+                  <SelectItem value="AUD">AUD (Australian Dollar - A$)</SelectItem>
+                  <SelectItem value="CNY">CNY (Chinese Yuan - ¥)</SelectItem>
+                  <SelectItem value="SAR">SAR (Saudi Riyal - ﷼)</SelectItem>
+                  <SelectItem value="AED">AED (UAE Dirham - د.إ)</SelectItem>
+                  <SelectItem value="EGP">EGP (Egyptian Pound - £E)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">{translations.currencyDesc}</p>
-            </div>
-
-            {/* Currency Symbol */}
-            <div className="space-y-2">
-              <Label htmlFor="currencySymbol">{translations.currencySymbol}</Label>
-              <Select 
-                value={currencySymbol} 
-                onValueChange={(value) => setCurrencySymbol(value)}
-              >
-                <SelectTrigger id="currencySymbol" className="w-full">
-                  <SelectValue placeholder={translations.currencySymbol} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="$">$ (Dollar)</SelectItem>
-                  <SelectItem value="€">€ (Euro)</SelectItem>
-                  <SelectItem value="£">£ (Pound)</SelectItem>
-                  <SelectItem value="¥">¥ (Yen/Yuan)</SelectItem>
-                  <SelectItem value="₹">₹ (Rupee)</SelectItem>
-                  <SelectItem value="₽">₽ (Ruble)</SelectItem>
-                  <SelectItem value="﷼">﷼ (Riyal)</SelectItem>
-                  <SelectItem value="د.إ">د.إ (Dirham)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">{translations.currencySymbolDesc}</p>
             </div>
 
             <Button className="mt-4" onClick={handleSaveConfig} disabled={updateConfigMutation.isPending}>
