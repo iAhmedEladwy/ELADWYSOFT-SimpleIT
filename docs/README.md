@@ -30,6 +30,27 @@ This docs directory contains comprehensive documentation for the SimpleIT system
 
 ## Getting Started
 
+### Quick Start with Docker (Recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
+
+# One-click deployment with our script
+chmod +x docs/deploy-script.sh && ./docs/deploy-script.sh
+
+# Access the application at http://your-server-ip
+# Default login: admin / admin123
+```
+
+The one-click deployment script handles everything automatically:
+- Creates all necessary Docker configuration files
+- Starts the Docker containers
+- Initializes the database
+- Provides access instructions
+
+### Standard Setup
+
 1. Review the [System Documentation](./SimpleIT_System_Documentation.md) to understand the system's capabilities
 2. Follow the [Deployment Guide](./SimpleIT_Deployment_Guide.md) to set up SimpleIT on your server
 3. After installation, log in with the default admin credentials (username: admin, password: admin123)

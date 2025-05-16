@@ -1,15 +1,220 @@
 # SimpleIT Deployment Guide
 
-This document outlines the steps to deploy the SimpleIT Asset Management System on Ubuntu and Windows servers.
+This document outlines the steps to deploy the SimpleIT Asset Management System using Docker (recommended for simplicity) or on Ubuntu and Windows servers.
+
+## Quick Start (Docker)
+
+### Option 1: One-Click Deployment Script (Easiest)
+
+We provide a simple one-click deployment script that handles everything automatically:
+
+```bash
+# Clone repository
+git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
+
+# Make the deployment script executable
+chmod +x docs/deploy-script.sh
+
+# Run the deployment script
+./docs/deploy-script.sh
+```
+
+The script will:
+1. Create all necessary Docker configuration files
+2. Start the Docker containers
+3. Initialize the database
+4. Provide instructions for accessing the application
+
+### Option 2: Manual Docker Setup
+
+If you prefer to set up manually:
+
+```bash
+# Clone repository
+git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
+
+# Create docker-compose.yml and Dockerfile (see Docker Deployment section below)
+
+# Deploy with Docker
+docker-compose up -d
+
+# Initialize database (first time only)
+docker-compose exec app npm run db:push
+
+# Access the application at http://your-server-ip
+# Default login: admin / admin123
+```
 
 ## Prerequisites
 
-Before deploying SimpleIT, ensure you have the following:
+### For Docker Deployment (Recommended)
+- Docker 20.10.x or higher
+- Docker Compose 2.x or higher
+- At least 2GB of RAM and 1GB of free disk space
 
+### For Traditional Deployment
 - Node.js 18.x or higher
 - PostgreSQL 14.x or higher
 - Git (for cloning the repository)
 - At least 2GB of RAM and 1GB of free disk space
+
+## Docker Deployment (Recommended)
+
+Docker deployment is the recommended method for deploying SimpleIT as it greatly simplifies the process and ensures a consistent environment across different platforms.
+
+### 1. Clone the Repository
+
+```bash
+# Clone the repository
+git clone https://github.com/eladwysoft/simpleit.git
+cd simpleit
+```
+
+### 2. Create Docker Configuration Files
+
+Create a `docker-compose.yml` file in the project root directory:
+
+```yaml
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:14
+    container_name: simpleit-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: simpleituser
+      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_DB: simpleit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simpleituser -d simpleit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # SimpleIT application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: simpleit-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://simpleituser:your_secure_password@postgres:5432/simpleit
+      SESSION_SECRET: your_long_random_session_secret
+    ports:
+      - "80:3000"
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:
+```
+
+Create a `Dockerfile` in the project root directory:
+
+```Dockerfile
+# Use Node.js LTS
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy application code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Expose the application port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"]
+```
+
+### 3. Deploy the Application
+
+```bash
+# Build and start the containers
+docker-compose up -d
+
+# Initialize the database (first time only)
+docker-compose exec app npm run db:push
+
+# View logs
+docker-compose logs -f
+```
+
+### 4. Access the Application
+
+Once the containers are running, you can access the SimpleIT application by navigating to:
+
+```
+http://your-server-ip
+```
+
+The default admin credentials are:
+- Username: admin
+- Password: admin123
+
+### 5. Update the Application
+
+To update the application when new code is available:
+
+```bash
+# Pull the latest code
+git pull
+
+# Rebuild and restart the containers
+docker-compose down
+docker-compose up --build -d
+```
+
+### 6. Backup and Restore
+
+To backup the database:
+
+```bash
+# Create a backup
+docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
+```
+
+To restore from a backup:
+
+```bash
+# Stop the containers
+docker-compose down
+
+# Start only the database
+docker-compose up -d postgres
+
+# Wait for the database to be ready
+sleep 10
+
+# Restore from backup
+cat your_backup_file.sql | docker exec -i simpleit-postgres psql -U simpleituser -d simpleit
+
+# Start the application
+docker-compose up -d
+```
 
 ## Deployment on Ubuntu
 
