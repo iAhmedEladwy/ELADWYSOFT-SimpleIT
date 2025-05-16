@@ -168,6 +168,35 @@ export default function SystemConfig() {
     });
   };
 
+  // Fetch custom fields data
+  const { data: customAssetTypesData } = useQuery({
+    queryKey: ['/api/custom-asset-types'],
+    onSuccess: (data) => {
+      setCustomAssetTypes(data || []);
+    }
+  });
+  
+  const { data: customAssetBrandsData } = useQuery({
+    queryKey: ['/api/custom-asset-brands'],
+    onSuccess: (data) => {
+      setCustomAssetBrands(data || []);
+    }
+  });
+  
+  const { data: customAssetStatusesData } = useQuery({
+    queryKey: ['/api/custom-asset-statuses'],
+    onSuccess: (data) => {
+      setCustomAssetStatuses(data || []);
+    }
+  });
+  
+  const { data: serviceProvidersData } = useQuery({
+    queryKey: ['/api/service-providers'],
+    onSuccess: (data) => {
+      setServiceProviders(data || []);
+    }
+  });
+  
   // State for custom fields
   const [customAssetTypes, setCustomAssetTypes] = useState<any[]>([]);
   const [customAssetBrands, setCustomAssetBrands] = useState<any[]>([]);
@@ -189,6 +218,241 @@ export default function SystemConfig() {
   const [newProviderContact, setNewProviderContact] = useState('');
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
+  
+  // Create mutation for custom asset types
+  const createAssetTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description: string }) => {
+      return apiRequest('/api/custom-asset-types', {
+        method: 'POST',
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      setNewTypeName('');
+      setNewTypeDescription('');
+      toast({
+        title: translations.success,
+        description: translations.assetTypeAddedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetTypeAddError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Delete mutation for custom asset types
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest(`/api/custom-asset-types/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: translations.success,
+        description: translations.assetTypeDeletedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetTypeDeleteError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Create mutation for custom asset brands
+  const createAssetBrandMutation = useMutation({
+    mutationFn: (data: { name: string; description: string }) => {
+      return apiRequest('/api/custom-asset-brands', {
+        method: 'POST',
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      setNewBrandName('');
+      setNewBrandDescription('');
+      toast({
+        title: translations.success,
+        description: translations.assetBrandAddedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetBrandAddError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Delete mutation for custom asset brands
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest(`/api/custom-asset-brands/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: translations.success,
+        description: translations.assetBrandDeletedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetBrandDeleteError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Create mutation for custom asset statuses
+  const createAssetStatusMutation = useMutation({
+    mutationFn: (data: { name: string; description: string; color: string }) => {
+      return apiRequest('/api/custom-asset-statuses', {
+        method: 'POST',
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      setNewStatusName('');
+      setNewStatusDescription('');
+      setNewStatusColor('#3B82F6');
+      toast({
+        title: translations.success,
+        description: translations.assetStatusAddedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetStatusAddError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Delete mutation for custom asset statuses
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest(`/api/custom-asset-statuses/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: translations.success,
+        description: translations.assetStatusDeletedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.assetStatusDeleteError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Create mutation for service providers
+  const createServiceProviderMutation = useMutation({
+    mutationFn: (data: { name: string; contactPerson: string; phone: string; email: string }) => {
+      return apiRequest('/api/service-providers', {
+        method: 'POST',
+        data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      setNewProviderName('');
+      setNewProviderContact('');
+      setNewProviderPhone('');
+      setNewProviderEmail('');
+      toast({
+        title: translations.success,
+        description: translations.serviceProviderAddedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.serviceProviderAddError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Delete mutation for service providers
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest(`/api/service-providers/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: translations.success,
+        description: translations.serviceProviderDeletedSuccess,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || translations.serviceProviderDeleteError,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Handler functions for adding new items
+  const handleAddAssetType = () => {
+    if (!newTypeName) return;
+    createAssetTypeMutation.mutate({
+      name: newTypeName,
+      description: newTypeDescription
+    });
+  };
+  
+  const handleAddAssetBrand = () => {
+    if (!newBrandName) return;
+    createAssetBrandMutation.mutate({
+      name: newBrandName,
+      description: newBrandDescription
+    });
+  };
+  
+  const handleAddAssetStatus = () => {
+    if (!newStatusName) return;
+    createAssetStatusMutation.mutate({
+      name: newStatusName,
+      description: newStatusDescription,
+      color: newStatusColor
+    });
+  };
+  
+  const handleAddServiceProvider = () => {
+    if (!newProviderName) return;
+    createServiceProviderMutation.mutate({
+      name: newProviderName,
+      contactPerson: newProviderContact,
+      phone: newProviderPhone,
+      email: newProviderEmail
+    });
+  };
 
   return (
     <div className="p-6">

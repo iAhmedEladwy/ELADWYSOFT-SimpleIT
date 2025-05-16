@@ -552,7 +552,7 @@ export class DatabaseStorage implements IStorage {
   // Custom Asset Types
   async getCustomAssetTypes(): Promise<any[]> {
     try {
-      const types = await db.select().from(schema.customAssetTypes);
+      const types = await db.select().from(customAssetTypes);
       return types;
     } catch (error) {
       console.error('Error fetching custom asset types:', error);
@@ -562,7 +562,7 @@ export class DatabaseStorage implements IStorage {
   
   async createCustomAssetType(data: { name: string; description?: string }): Promise<any> {
     try {
-      const [newType] = await db.insert(schema.customAssetTypes)
+      const [newType] = await db.insert(customAssetTypes)
         .values({
           name: data.name,
           description: data.description || null
@@ -577,8 +577,8 @@ export class DatabaseStorage implements IStorage {
   
   async deleteCustomAssetType(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(schema.customAssetTypes)
-        .where(eq(schema.customAssetTypes.id, id));
+      const result = await db.delete(customAssetTypes)
+        .where(eq(customAssetTypes.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset type:', error);
@@ -589,7 +589,7 @@ export class DatabaseStorage implements IStorage {
   // Custom Asset Brands
   async getCustomAssetBrands(): Promise<any[]> {
     try {
-      const brands = await db.select().from(schema.customAssetBrands);
+      const brands = await db.select().from(customAssetBrands);
       return brands;
     } catch (error) {
       console.error('Error fetching custom asset brands:', error);
@@ -599,7 +599,7 @@ export class DatabaseStorage implements IStorage {
   
   async createCustomAssetBrand(data: { name: string; description?: string }): Promise<any> {
     try {
-      const [newBrand] = await db.insert(schema.customAssetBrands)
+      const [newBrand] = await db.insert(customAssetBrands)
         .values({
           name: data.name,
           description: data.description || null
@@ -614,8 +614,8 @@ export class DatabaseStorage implements IStorage {
   
   async deleteCustomAssetBrand(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(schema.customAssetBrands)
-        .where(eq(schema.customAssetBrands.id, id));
+      const result = await db.delete(customAssetBrands)
+        .where(eq(customAssetBrands.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset brand:', error);
@@ -626,7 +626,7 @@ export class DatabaseStorage implements IStorage {
   // Custom Asset Statuses
   async getCustomAssetStatuses(): Promise<any[]> {
     try {
-      const statuses = await db.select().from(schema.customAssetStatuses);
+      const statuses = await db.select().from(customAssetStatuses);
       return statuses;
     } catch (error) {
       console.error('Error fetching custom asset statuses:', error);
@@ -636,7 +636,7 @@ export class DatabaseStorage implements IStorage {
   
   async createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any> {
     try {
-      const [newStatus] = await db.insert(schema.customAssetStatuses)
+      const [newStatus] = await db.insert(customAssetStatuses)
         .values({
           name: data.name,
           description: data.description || null,
@@ -652,8 +652,8 @@ export class DatabaseStorage implements IStorage {
   
   async deleteCustomAssetStatus(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(schema.customAssetStatuses)
-        .where(eq(schema.customAssetStatuses.id, id));
+      const result = await db.delete(customAssetStatuses)
+        .where(eq(customAssetStatuses.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset status:', error);
@@ -664,7 +664,7 @@ export class DatabaseStorage implements IStorage {
   // Service Providers
   async getServiceProviders(): Promise<any[]> {
     try {
-      const providers = await db.select().from(schema.serviceProviders);
+      const providers = await db.select().from(serviceProviders);
       return providers;
     } catch (error) {
       console.error('Error fetching service providers:', error);
@@ -674,7 +674,7 @@ export class DatabaseStorage implements IStorage {
   
   async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
     try {
-      const [newProvider] = await db.insert(schema.serviceProviders)
+      const [newProvider] = await db.insert(serviceProviders)
         .values({
           name: data.name,
           contactPerson: data.contactPerson || null,
@@ -691,8 +691,8 @@ export class DatabaseStorage implements IStorage {
   
   async deleteServiceProvider(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(schema.serviceProviders)
-        .where(eq(schema.serviceProviders.id, id));
+      const result = await db.delete(serviceProviders)
+        .where(eq(serviceProviders.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting service provider:', error);
