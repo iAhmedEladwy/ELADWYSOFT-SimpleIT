@@ -68,7 +68,6 @@ export default function SystemConfig() {
       if (data) {
         setAssetIdPrefix(data.assetIdPrefix || 'BOLT-');
         setCurrency(data.currency || 'USD');
-        setCurrencySymbol(data.currencySymbol || '$');
         setIsLoading(false);
       }
     }
@@ -301,8 +300,7 @@ export default function SystemConfig() {
   const handleSaveConfig = () => {
     updateConfigMutation.mutate({
       assetIdPrefix,
-      currency,
-      currencySymbol
+      currency
     });
   };
 
