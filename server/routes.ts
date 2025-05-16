@@ -1282,6 +1282,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Export audit logs to CSV
+  app.get("/api/audit-logs/export", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      // Get all logs without pagination for export
+      const filter = req.query.filter as string;
+      const entityType = req.query.entityType as string;
+      const action = req.query.action as string;
+      const userId = req.query.userId as string;
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      const logs = await storage.getActivityLogs({
+        page: 1,
+        limit: 10000, // High limit to get all logs
+        filter,
+        entityType,
+        action,
+        userId: userId ? parseInt(userId) : undefined,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined
+      });
+      
+      // Get users for populating user information
+      const users = await storage.getAllUsers();
+      const userMap = users.reduce((map, user) => {
+        map[user.id] = user;
+        return map;
+      }, {} as Record<number, schema.User>);
+      
+      // CSV headers
+      const headers = ['ID', 'Timestamp', 'User', 'Action', 'Entity Type', 'Entity ID', 'Details'];
+      
+      // Generate CSV content
+      const csvContent = [
+        headers.join(','),
+        ...logs.data.map(log => [
+          log.id,
+          new Date(log.createdAt).toISOString(),
+          log.userId ? userMap[log.userId]?.username || 'Unknown' : 'System',
+          log.action,
+          log.entityType,
+          log.entityId || '',
+          log.details ? JSON.stringify(log.details).replace(/,/g, ';').replace(/"/g, '""') : ''
+        ].join(','))
+      ].join('\n');
+      
+      // Log the export activity
+      if (req.user) {
+        await logActivity({
+          userId: (req.user as schema.User).id,
+          action: AuditAction.EXPORT,
+          entityType: EntityType.REPORT,
+          details: { 
+            type: 'Audit Logs', 
+            count: logs.data.length,
+            filters: { filter, entityType, action, userId, startDate, endDate }
+          }
+        });
+      }
+      
+      // Set response headers for CSV download
+      res.setHeader('Content-Disposition', `attachment; filename=audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      res.setHeader('Content-Type', 'text/csv');
+      res.send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const configData = req.body;
