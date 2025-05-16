@@ -10,7 +10,7 @@ import {
   activityLog, type ActivityLog, type InsertActivityLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, like, desc, or, asc } from "drizzle-orm";
+import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
 
 // Storage interface for all CRUD operations
 // Define UpsertUser type for Replit Auth
@@ -425,6 +425,111 @@ export class DatabaseStorage implements IStorage {
       .from(activityLog)
       .orderBy(desc(activityLog.createdAt))
       .limit(limit);
+  }
+  
+  async getActivityLogs(options: {
+    page?: number;
+    limit?: number;
+    filter?: string;
+    entityType?: string;
+    action?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{ 
+    data: ActivityLog[]; 
+    pagination: { 
+      totalItems: number; 
+      totalPages: number; 
+      currentPage: number; 
+      pageSize: number; 
+    } 
+  }> {
+    const {
+      page = 1,
+      limit = 50,
+      filter,
+      entityType,
+      action,
+      userId,
+      startDate,
+      endDate
+    } = options;
+    
+    // Calculate offset
+    const offset = (page - 1) * limit;
+    
+    // Create conditions array
+    const conditions = [];
+    
+    if (filter) {
+      conditions.push(sql`(${activityLog.action} LIKE ${`%${filter}%`} OR ${activityLog.entityType} LIKE ${`%${filter}%`} OR ${activityLog.details}::text LIKE ${`%${filter}%`})`);
+    }
+    
+    if (entityType) {
+      conditions.push(sql`${activityLog.entityType} = ${entityType}`);
+    }
+    
+    if (action) {
+      conditions.push(sql`${activityLog.action} = ${action}`);
+    }
+    
+    if (userId) {
+      conditions.push(sql`${activityLog.userId} = ${userId}`);
+    }
+    
+    if (startDate) {
+      conditions.push(sql`${activityLog.createdAt} >= ${startDate}`);
+    }
+    
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+      conditions.push(sql`${activityLog.createdAt} < ${endOfDay}`);
+    }
+    
+    // Combine conditions
+    let query;
+    if (conditions.length > 0) {
+      const whereClause = conditions.reduce((acc, condition, index) => {
+        return index === 0 ? condition : sql`${acc} AND ${condition}`;
+      }, sql``);
+      
+      query = db
+        .select()
+        .from(activityLog)
+        .where(whereClause);
+    } else {
+      query = db.select().from(activityLog);
+    }
+    
+    // Execute count query
+    const countResult = await db.execute(
+      sql`SELECT COUNT(*) FROM ${activityLog} ${conditions.length > 0 ? sql`WHERE ${conditions.reduce((acc, condition, index) => {
+        return index === 0 ? condition : sql`${acc} AND ${condition}`;
+      }, sql``)}` : sql``}`
+    );
+    
+    const totalItems = parseInt(countResult.rows[0]?.count || '0');
+    
+    // Get data with pagination
+    const data = await query
+      .orderBy(desc(activityLog.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    return {
+      data,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize: limit
+      }
+    };
   }
 }
 
