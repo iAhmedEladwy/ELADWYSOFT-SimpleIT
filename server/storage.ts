@@ -775,8 +775,8 @@ export class DatabaseStorage implements IStorage {
           .values({
             assetId,
             employeeId,
-            transactionType: 'Check-Out',
-            notes: notes || `Asset checked out to employee ID ${employeeId}`,
+            type: 'Check-Out',
+            conditionNotes: notes || `Asset checked out to employee ID ${employeeId}`,
           })
           .returning();
         

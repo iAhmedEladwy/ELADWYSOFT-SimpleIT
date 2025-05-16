@@ -829,7 +829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
-      const { employeeId, notes } = req.body;
+      const { employeeId, notes, type } = req.body;
       
       if (!employeeId) {
         return res.status(400).json({ message: "Employee ID is required" });
@@ -847,7 +847,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      const transaction = await storage.checkOutAsset(assetId, employeeId, notes);
+      console.log("Checking out asset with data:", { assetId, employeeId, notes, type });
+      
+      // Pass the transaction type to the storage method
+      const transaction = await storage.checkOutAsset(assetId, employeeId, notes, type);
       
       // Log activity
       if (req.user) {
@@ -867,6 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(transaction);
     } catch (error: any) {
+      console.error("Error checking out asset:", error);
       res.status(400).json({ message: error.message });
     }
   });
@@ -874,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assets/:id/check-in", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
-      const { notes } = req.body;
+      const { notes, type } = req.body;
       
       // Check if asset exists
       const asset = await storage.getAsset(assetId);
@@ -882,7 +886,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
       
-      const transaction = await storage.checkInAsset(assetId, notes);
+      console.log("Checking in asset with data:", { assetId, notes, type });
+      
+      // Pass the transaction type to the storage method
+      const transaction = await storage.checkInAsset(assetId, notes, type);
       
       // Log activity
       if (req.user) {
@@ -901,6 +908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(transaction);
     } catch (error: any) {
+      console.error("Error checking in asset:", error);
       res.status(400).json({ message: error.message });
     }
   });
