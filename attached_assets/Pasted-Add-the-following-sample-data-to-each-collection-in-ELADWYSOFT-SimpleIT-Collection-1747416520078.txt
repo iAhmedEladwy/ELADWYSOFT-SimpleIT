@@ -1,0 +1,162 @@
+Add the following **sample data** to each collection in ELADWYSOFT SimpleIT:
+
+---
+
+📁 Collection: Users  
+Sample Entries:  
+1. Username: admin  
+   Password: admin123  
+   Email: admin@eladwysoft.com  
+   Access Level: 3 (Admin)
+
+2. Username: manager  
+   Password: manager1  
+   Email: mgr@eladwysoft.com  
+   Access Level: 2 (Manager)
+
+3. Username: viewer  
+   Password: viewonly  
+   Email: viewer@eladwysoft.com  
+   Access Level: 1 (Viewer)
+
+---
+
+📁 Collection: Employees  
+Sample Entries:  
+1. English Name: Ahmed Youssef  
+   Arabic Name: أحمد يوسف  
+   Department: IT  
+   ID Number: 1001  
+   Title: IT Specialist  
+   Direct Manager: (leave blank or link to “Khaled Said”)  
+   Employment Type: Full-Time  
+   Joining Date: 2022-01-15  
+   Status: Active  
+   Work Mobile: 01012345678  
+   Corporate Email: ahmed.y@eladwysoft.com
+
+2. English Name: Khaled Said  
+   Arabic Name: خالد سعيد  
+   Department: IT  
+   ID Number: 1002  
+   Title: IT Manager  
+   Direct Manager: —  
+   Employment Type: Full-Time  
+   Joining Date: 2020-06-01  
+   Status: Active  
+   Work Mobile: 01023456789  
+   Corporate Email: khaled.s@eladwysoft.com
+
+3. English Name: Salma Rami  
+   Arabic Name: سلمى رامي  
+   Department: HR  
+   ID Number: 1003  
+   Title: HR Officer  
+   Employment Type: Part-Time  
+   Joining Date: 2023-03-10  
+   Exit Date: 2024-04-01  
+   Status: Resigned  
+   Work Mobile: 01034567890  
+   Corporate Email: salma.r@eladwysoft.com
+
+---
+
+📁 Collection: Assets  
+Sample Entries:  
+1. Type: Laptop  
+   Brand: Dell  
+   Model Number: XPS13-9300  
+   Model Name: XPS 13  
+   Serial Number: DELL12345  
+   Specs: i7, 16GB RAM, 512GB SSD  
+   Status: In Use  
+   Purchase Date: 2022-02-20  
+   Buy Price: 18000  
+   Warranty Expiry Date: 2024-02-20  
+   Life Span: 36  
+   Out of the Box OS: Windows 10  
+   Assigned Employee: Ahmed Youssef
+
+2. Type: Monitor  
+   Brand: HP  
+   Model Number: HP24F  
+   Model Name: 24f  
+   Serial Number: HP987654  
+   Specs: 24", Full HD  
+   Status: Available  
+   Purchase Date: 2023-01-10  
+   Buy Price: 3000  
+   Warranty Expiry Date: 2025-01-10  
+   Life Span: 60  
+   Out of the Box OS: N/A  
+
+3. Type: Phone  
+   Brand: Samsung  
+   Model Number: A52  
+   Model Name: Galaxy A52  
+   Serial Number: SAM456321  
+   Specs: 6GB RAM, 128GB  
+   Status: Damaged  
+   Purchase Date: 2021-05-15  
+   Buy Price: 7000  
+   Warranty Expiry Date: 2023-05-15  
+   Life Span: 36  
+   Out of the Box OS: Android
+
+---
+
+📁 Collection: Asset Transactions  
+Sample Entries:  
+1. Type: Check-Out  
+   Asset: Dell XPS 13  
+   Employee: Ahmed Youssef  
+   Reason: Assigned for work use  
+   Expected Return Date: 2024-12-31  
+   Date & Time: 2024-01-10  
+   Handled By: admin  
+
+2. Type: Check-In  
+   Asset: Samsung A52  
+   Employee: Salma Rami  
+   Reason: Employee exit  
+   Condition Notes: Screen cracked  
+   Actual Return Date: 2024-04-01  
+   Date & Time: 2024-04-01  
+   Handled By: manager  
+
+---
+
+📁 Collection: Tickets  
+Sample Entries:  
+1. Submitted By: Ahmed Youssef  
+   Category: Software  
+   Priority: High  
+   Description: Outlook not syncing emails  
+   Related Asset: Dell XPS 13  
+   Status: Open  
+   Assigned User: manager  
+
+2. Submitted By: Salma Rami  
+   Category: Hardware  
+   Priority: Medium  
+   Description: Phone screen broken  
+   Related Asset: Samsung A52  
+   Status: Closed  
+   Assigned User: admin  
+   Resolution Notes: Returned, marked as Damaged  
+
+---
+
+📁 Collection: System Configuration  
+Sample Values:  
+- Language: English  
+- Asset ID Prefix: AST  
+- Employee ID Prefix: EMP  
+- Date Format: DD/MM/YYYY  
+- Currency Symbol: EGP  
+- Departments List: [IT, HR, Finance, Marketing]  
+- Employment Types: [Full-Time, Part-Time, Intern, Contractor]  
+- Asset Types: [Laptop, Monitor, Phone, Printer]  
+- Asset Status Options: [Available, In Use, Maintenance, Damaged, Sold, Lost]  
+- Maintenance Types: [Hardware, Software, Both]  
+- Warranty Reminder Days: 30  
