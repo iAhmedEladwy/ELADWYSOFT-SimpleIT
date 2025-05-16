@@ -32,6 +32,13 @@ import { Loader2, Download, FileDown } from 'lucide-react';
 import { AssetTransaction, Asset, Employee } from '@shared/schema';
 
 // Define the transaction response structure with joined entities
+interface TransactionResponse {
+  asset_transactions: AssetTransaction;
+  asset?: Asset;
+  employee?: Employee;
+}
+
+// Combine them for easier usage in component
 interface TransactionWithRelations extends AssetTransaction {
   asset?: Asset;
   employee?: Employee;
@@ -70,8 +77,17 @@ export default function TransactionHistoryTable() {
   };
   
   // Fetch asset transactions
-  const { data: transactions, isLoading } = useQuery<TransactionWithRelations[]>({
+  const { data: transactionResponse, isLoading } = useQuery<TransactionResponse[]>({
     queryKey: ['/api/asset-transactions'],
+  });
+  
+  // Transform the response to more usable format
+  const transactions = transactionResponse?.map(item => {
+    return {
+      ...item.asset_transactions,
+      asset: item.asset,
+      employee: item.employee
+    } as TransactionWithRelations;
   });
   
   // Assets data for the filter
