@@ -78,6 +78,23 @@ export interface IStorage {
   // Activity Log operations
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivity(limit: number): Promise<ActivityLog[]>;
+  
+  // Custom Fields operations
+  getCustomAssetTypes(): Promise<any[]>;
+  createCustomAssetType(data: { name: string; description?: string }): Promise<any>;
+  deleteCustomAssetType(id: number): Promise<boolean>;
+  
+  getCustomAssetBrands(): Promise<any[]>;
+  createCustomAssetBrand(data: { name: string; description?: string }): Promise<any>;
+  deleteCustomAssetBrand(id: number): Promise<boolean>;
+  
+  getCustomAssetStatuses(): Promise<any[]>;
+  createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
+  deleteCustomAssetStatus(id: number): Promise<boolean>;
+  
+  getServiceProviders(): Promise<any[]>;
+  createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
+  deleteServiceProvider(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
