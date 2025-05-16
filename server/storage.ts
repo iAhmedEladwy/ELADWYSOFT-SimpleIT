@@ -62,8 +62,8 @@ export interface IStorage {
   createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction>;
   getAssetTransactions(assetId: number): Promise<AssetTransaction[]>;
   getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]>;
-  checkOutAsset(assetId: number, employeeId: number, notes?: string): Promise<AssetTransaction>;
-  checkInAsset(assetId: number, notes?: string): Promise<AssetTransaction>;
+  checkOutAsset(assetId: number, employeeId: number, notes?: string, type?: string): Promise<AssetTransaction>;
+  checkInAsset(assetId: number, notes?: string, type?: string): Promise<AssetTransaction>;
 
   // Asset Sales operations
   createAssetSale(sale: InsertAssetSale): Promise<AssetSale>;
@@ -803,7 +803,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async checkInAsset(assetId: number, notes?: string): Promise<AssetTransaction> {
+  async checkInAsset(assetId: number, notes?: string, type: string = 'Check-In'): Promise<AssetTransaction> {
     const asset = await this.getAsset(assetId);
     if (!asset) {
       throw new Error('Asset not found');
@@ -834,8 +834,8 @@ export class DatabaseStorage implements IStorage {
           .values({
             assetId,
             employeeId: previousEmployeeId,
-            transactionType: 'Check-In',
-            notes: notes || `Asset checked in from employee ID ${previousEmployeeId}`,
+            type: 'Check-In',
+            conditionNotes: notes || `Asset checked in from employee ID ${previousEmployeeId}`,
           })
           .returning();
         
