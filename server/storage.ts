@@ -893,6 +893,78 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  
+  /**
+   * Removes all demo data from the database, keeping only the admin user
+   * and essential system configuration
+   */
+  async removeDemoData(): Promise<void> {
+    try {
+      console.log('Starting demo data removal process...');
+      
+      // Use a transaction to ensure all operations are atomic
+      await db.transaction(async (tx) => {
+        // Delete asset transactions first (because of foreign key constraints)
+        await tx.delete(assetTransactions);
+        console.log('Asset transactions removed');
+        
+        // Delete asset maintenance records
+        await tx.delete(assetMaintenance);
+        console.log('Asset maintenance records removed');
+        
+        // Delete asset sale items (detail records first)
+        await tx.delete(assetSaleItems);
+        console.log('Asset sale items removed');
+        
+        // Delete asset sales
+        await tx.delete(assetSales);
+        console.log('Asset sales removed');
+        
+        // Delete assets
+        await tx.delete(assets);
+        console.log('Assets removed');
+        
+        // Delete tickets
+        await tx.delete(tickets);
+        console.log('Tickets removed');
+        
+        // Delete employees (keep any that are linked to users)
+        await tx.delete(employees).where(
+          sql`${employees.userId} IS NULL`
+        );
+        console.log('Employees removed');
+        
+        // Delete custom fields
+        await tx.delete(customAssetTypes);
+        await tx.delete(customAssetBrands);
+        await tx.delete(customAssetStatuses);
+        await tx.delete(serviceProviders);
+        await tx.delete(assetServiceProviders);
+        console.log('Custom fields removed');
+        
+        // Keep activity logs for audit purposes but could delete if needed
+        // await tx.delete(activityLog);
+        
+        // Delete all users except the admin user (ID 1)
+        await tx.delete(users).where(
+          sql`${users.id} > 1`
+        );
+        console.log('Non-admin users removed');
+        
+        // Reset system config to defaults but keep custom settings
+        await tx.update(systemConfig).set({
+          assetIdPrefix: 'SIT-',
+          currency: 'USD'
+        });
+        console.log('System config reset to defaults');
+      });
+      
+      console.log('Demo data removal completed successfully');
+    } catch (error) {
+      console.error('Error removing demo data:', error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
