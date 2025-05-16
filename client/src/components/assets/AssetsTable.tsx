@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import AssetActionButtons from '@/components/assets/AssetActionButtons';
 import { 
   Table, 
   TableBody, 
@@ -293,61 +294,50 @@ export default function AssetsTable({
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(asset)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        {translations.edit}
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => setAssetToMaintenance(asset)}>
-                        <Drill className="h-4 w-4 mr-2" />
-                        {translations.addMaintenanceShort}
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem>
-                        <Info className="h-4 w-4 mr-2" />
-                        {translations.details}
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator />
-                      
-                      {asset.status !== 'In Use' && (
-                        <DropdownMenuItem onClick={() => setAssetToAssign(asset)}>
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          {translations.assign}
+                  <div className="flex items-center justify-end">
+                    <AssetActionButtons asset={asset} employees={employees} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(asset)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          {translations.edit}
                         </DropdownMenuItem>
-                      )}
-                      
-                      {asset.status === 'In Use' && (
-                        <DropdownMenuItem onClick={() => onUnassign(asset.id)}>
-                          <UserMinus className="h-4 w-4 mr-2" />
-                          {translations.unassign}
+                        
+                        <DropdownMenuItem onClick={() => setAssetToMaintenance(asset)}>
+                          <Drill className="h-4 w-4 mr-2" />
+                          {translations.addMaintenanceShort}
                         </DropdownMenuItem>
-                      )}
-                      
-                      <DropdownMenuItem>
-                        <QrCode className="h-4 w-4 mr-2" />
-                        {translations.qrCode}
-                      </DropdownMenuItem>
-                      
-                      {hasAccess(3) && (
-                        <DropdownMenuItem 
-                          onClick={() => setAssetToDelete(asset)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {translations.delete}
+                        
+                        <DropdownMenuItem>
+                          <Info className="h-4 w-4 mr-2" />
+                          {translations.details}
                         </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <DropdownMenuItem>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          {translations.qrCode}
+                        </DropdownMenuItem>
+                        
+                        {hasAccess(3) && (
+                          <DropdownMenuItem 
+                            onClick={() => setAssetToDelete(asset)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {translations.delete}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -434,78 +424,95 @@ export default function AssetsTable({
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="maintenance-date">{translations.date}</Label>
-                <Input
-                  id="maintenance-date"
-                  type="date"
-                  value={maintenanceData.date}
-                  onChange={(e) => setMaintenanceData({ ...maintenanceData, date: e.target.value })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="maintenance-date">{translations.date}</Label>
+                  <Input
+                    id="maintenance-date"
+                    type="date"
+                    value={maintenanceData.date}
+                    onChange={(e) => setMaintenanceData({
+                      ...maintenanceData,
+                      date: e.target.value,
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="maintenance-type">{translations.maintenanceType}</Label>
+                  <Select
+                    value={maintenanceData.type}
+                    onValueChange={(value) => setMaintenanceData({
+                      ...maintenanceData,
+                      type: value,
+                    })}
+                  >
+                    <SelectTrigger id="maintenance-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Hardware">{translations.hardware}</SelectItem>
+                      <SelectItem value="Software">{translations.software}</SelectItem>
+                      <SelectItem value="Both">{translations.both}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              
-              <div>
-                <Label htmlFor="maintenance-type">{translations.maintenanceType}</Label>
-                <Select
-                  value={maintenanceData.type}
-                  onValueChange={(value) => setMaintenanceData({ ...maintenanceData, type: value })}
-                >
-                  <SelectTrigger id="maintenance-type">
-                    <SelectValue placeholder={translations.maintenanceType} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Hardware">{translations.hardware}</SelectItem>
-                    <SelectItem value="Software">{translations.software}</SelectItem>
-                    <SelectItem value="Both">{translations.both}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
               <div>
                 <Label htmlFor="maintenance-description">{translations.description}</Label>
                 <Textarea
                   id="maintenance-description"
                   value={maintenanceData.description}
-                  onChange={(e) => setMaintenanceData({ ...maintenanceData, description: e.target.value })}
+                  onChange={(e) => setMaintenanceData({
+                    ...maintenanceData,
+                    description: e.target.value,
+                  })}
                   rows={3}
                 />
               </div>
-              
               <div>
                 <Label htmlFor="maintenance-cost">{translations.cost}</Label>
                 <Input
                   id="maintenance-cost"
                   type="number"
-                  step="0.01"
                   value={maintenanceData.cost}
-                  onChange={(e) => setMaintenanceData({ ...maintenanceData, cost: e.target.value })}
-                  placeholder="0.00"
+                  onChange={(e) => setMaintenanceData({
+                    ...maintenanceData,
+                    cost: e.target.value,
+                  })}
                 />
               </div>
-              
-              <div>
-                <Label htmlFor="provider-type">{translations.providerType}</Label>
-                <Select
-                  value={maintenanceData.providerType}
-                  onValueChange={(value) => setMaintenanceData({ ...maintenanceData, providerType: value })}
-                >
-                  <SelectTrigger id="provider-type">
-                    <SelectValue placeholder={translations.providerType} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Internal">{translations.internal}</SelectItem>
-                    <SelectItem value="External">{translations.external}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="provider-name">{translations.providerName}</Label>
-                <Input
-                  id="provider-name"
-                  value={maintenanceData.providerName}
-                  onChange={(e) => setMaintenanceData({ ...maintenanceData, providerName: e.target.value })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="provider-type">{translations.providerType}</Label>
+                  <Select
+                    value={maintenanceData.providerType}
+                    onValueChange={(value) => setMaintenanceData({
+                      ...maintenanceData,
+                      providerType: value,
+                    })}
+                  >
+                    <SelectTrigger id="provider-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Internal">{translations.internal}</SelectItem>
+                      <SelectItem value="External">{translations.external}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {maintenanceData.providerType === 'External' && (
+                  <div>
+                    <Label htmlFor="provider-name">{translations.providerName}</Label>
+                    <Input
+                      id="provider-name"
+                      value={maintenanceData.providerName}
+                      onChange={(e) => setMaintenanceData({
+                        ...maintenanceData,
+                        providerName: e.target.value,
+                      })}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -514,7 +521,7 @@ export default function AssetsTable({
               <Button variant="outline">{translations.cancel}</Button>
             </DialogClose>
             <Button 
-              onClick={handleMaintenanceSave} 
+              onClick={handleMaintenanceSave}
               disabled={!maintenanceData.description}
             >
               {translations.save}
