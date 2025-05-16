@@ -133,11 +133,33 @@ export default function SystemConfig() {
     });
   };
 
+  // State for custom fields
+  const [customAssetTypes, setCustomAssetTypes] = useState<any[]>([]);
+  const [customAssetBrands, setCustomAssetBrands] = useState<any[]>([]);
+  const [customAssetStatuses, setCustomAssetStatuses] = useState<any[]>([]);
+  const [serviceProviders, setServiceProviders] = useState<any[]>([]);
+  
+  // New item form states
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeDescription, setNewTypeDescription] = useState('');
+  
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandDescription, setNewBrandDescription] = useState('');
+  
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusDescription, setNewStatusDescription] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3B82F6'); // Default blue
+  
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderContact, setNewProviderContact] = useState('');
+  const [newProviderPhone, setNewProviderPhone] = useState('');
+  const [newProviderEmail, setNewProviderEmail] = useState('');
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
-        <p className="text-gray-600">{translations.description}</p>
+        <p className="text-gray-600">{translations.pageDescription}</p>
       </div>
 
       <Card className="mb-6">
@@ -198,6 +220,235 @@ export default function SystemConfig() {
               </Button>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Asset Customization Section */}
+      <h2 className="text-xl font-semibold mt-8 mb-4">{translations.assetCustomization}</h2>
+
+      {/* Custom Asset Types Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>{translations.customAssetTypes}</CardTitle>
+          <CardDescription>{translations.customAssetTypesDesc}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Add new type form */}
+            <div className="grid gap-4 md:grid-cols-12">
+              <div className="md:col-span-5">
+                <Label htmlFor="new-type-name">{translations.name}</Label>
+                <Input 
+                  id="new-type-name" 
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
+                />
+              </div>
+              <div className="md:col-span-5">
+                <Label htmlFor="new-type-desc">{translations.description}</Label>
+                <Input 
+                  id="new-type-desc" 
+                  value={newTypeDescription}
+                  onChange={(e) => setNewTypeDescription(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                />
+              </div>
+              <div className="md:col-span-2 flex items-end">
+                <Button 
+                  className="w-full" 
+                  disabled={!newTypeName.trim()}
+                >
+                  {translations.add}
+                </Button>
+              </div>
+            </div>
+            
+            {/* List of custom types */}
+            <div className="border rounded-md">
+              <div className="p-6 text-center text-gray-500">
+                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Custom Asset Brands Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>{translations.customAssetBrands}</CardTitle>
+          <CardDescription>{translations.customAssetBrandsDesc}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Add new brand form */}
+            <div className="grid gap-4 md:grid-cols-12">
+              <div className="md:col-span-5">
+                <Label htmlFor="new-brand-name">{translations.name}</Label>
+                <Input 
+                  id="new-brand-name" 
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
+                />
+              </div>
+              <div className="md:col-span-5">
+                <Label htmlFor="new-brand-desc">{translations.description}</Label>
+                <Input 
+                  id="new-brand-desc" 
+                  value={newBrandDescription}
+                  onChange={(e) => setNewBrandDescription(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                />
+              </div>
+              <div className="md:col-span-2 flex items-end">
+                <Button 
+                  className="w-full" 
+                  disabled={!newBrandName.trim()}
+                >
+                  {translations.add}
+                </Button>
+              </div>
+            </div>
+            
+            {/* List of custom brands */}
+            <div className="border rounded-md">
+              <div className="p-6 text-center text-gray-500">
+                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Custom Asset Statuses Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>{translations.customAssetStatuses}</CardTitle>
+          <CardDescription>{translations.customAssetStatusesDesc}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Add new status form */}
+            <div className="grid gap-4 md:grid-cols-12">
+              <div className="md:col-span-4">
+                <Label htmlFor="new-status-name">{translations.name}</Label>
+                <Input 
+                  id="new-status-name" 
+                  value={newStatusName}
+                  onChange={(e) => setNewStatusName(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
+                />
+              </div>
+              <div className="md:col-span-4">
+                <Label htmlFor="new-status-desc">{translations.description}</Label>
+                <Input 
+                  id="new-status-desc" 
+                  value={newStatusDescription}
+                  onChange={(e) => setNewStatusDescription(e.target.value)}
+                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="new-status-color">{translations.color}</Label>
+                <Input 
+                  id="new-status-color" 
+                  type="color"
+                  value={newStatusColor}
+                  onChange={(e) => setNewStatusColor(e.target.value)}
+                  className="h-10 p-1"
+                />
+              </div>
+              <div className="md:col-span-2 flex items-end">
+                <Button 
+                  className="w-full" 
+                  disabled={!newStatusName.trim()}
+                >
+                  {translations.add}
+                </Button>
+              </div>
+            </div>
+            
+            {/* List of custom statuses */}
+            <div className="border rounded-md">
+              <div className="p-6 text-center text-gray-500">
+                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Service Providers Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>{translations.serviceProviders}</CardTitle>
+          <CardDescription>{translations.serviceProvidersDesc}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Add new provider form */}
+            <div className="grid gap-4 md:grid-cols-12">
+              <div className="md:col-span-3">
+                <Label htmlFor="new-provider-name">{translations.name}</Label>
+                <Input 
+                  id="new-provider-name" 
+                  value={newProviderName}
+                  onChange={(e) => setNewProviderName(e.target.value)}
+                  placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
+                />
+              </div>
+              <div className="md:col-span-3">
+                <Label htmlFor="new-provider-contact">
+                  {language === 'English' ? 'Contact Person' : 'الشخص المسؤول'}
+                </Label>
+                <Input 
+                  id="new-provider-contact" 
+                  value={newProviderContact}
+                  onChange={(e) => setNewProviderContact(e.target.value)}
+                  placeholder={language === 'English' ? 'Contact name' : 'اسم جهة الاتصال'}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="new-provider-phone">
+                  {language === 'English' ? 'Phone' : 'رقم الهاتف'}
+                </Label>
+                <Input 
+                  id="new-provider-phone" 
+                  value={newProviderPhone}
+                  onChange={(e) => setNewProviderPhone(e.target.value)}
+                  placeholder={language === 'English' ? 'Phone number' : 'رقم الهاتف'}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="new-provider-email">
+                  {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+                </Label>
+                <Input 
+                  id="new-provider-email" 
+                  value={newProviderEmail}
+                  onChange={(e) => setNewProviderEmail(e.target.value)}
+                  placeholder={language === 'English' ? 'Email address' : 'البريد الإلكتروني'}
+                />
+              </div>
+              <div className="md:col-span-2 flex items-end">
+                <Button 
+                  className="w-full" 
+                  disabled={!newProviderName.trim()}
+                >
+                  {translations.add}
+                </Button>
+              </div>
+            </div>
+            
+            {/* List of service providers */}
+            <div className="border rounded-md">
+              <div className="p-6 text-center text-gray-500">
+                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
