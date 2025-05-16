@@ -73,10 +73,10 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
 
   // Fetch asset maintenance records
   const { data: maintenanceRecords, isLoading: maintenanceLoading } = useQuery({
-    queryKey: ['/api/asset-maintenance', assetId],
+    queryKey: ['/api/assets/maintenance', assetId],
     queryFn: async () => {
       if (!assetId) return [];
-      const response = await fetch(`/api/asset-maintenance?assetId=${assetId}`);
+      const response = await fetch(`/api/assets/${assetId}/maintenance`);
       if (!response.ok) throw new Error('Failed to fetch maintenance records');
       return response.json();
     },
@@ -85,10 +85,10 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
 
   // Fetch asset transactions
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
-    queryKey: ['/api/asset-transactions', assetId],
+    queryKey: ['/api/assets/transactions', assetId],
     queryFn: async () => {
       if (!assetId) return [];
-      const response = await fetch(`/api/asset-transactions?assetId=${assetId}`);
+      const response = await fetch(`/api/assets/${assetId}/transactions`);
       if (!response.ok) throw new Error('Failed to fetch transactions');
       return response.json();
     },

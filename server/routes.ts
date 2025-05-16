@@ -809,6 +809,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all asset transactions with optional filtering
+  app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
+    try {
+      // Get query parameters for filtering
+      const assetId = req.query.assetId ? parseInt(req.query.assetId as string) : undefined;
+      const employeeId = req.query.employeeId ? parseInt(req.query.employeeId as string) : undefined;
+      const type = req.query.type as string | undefined;
+      
+      // Get all transactions
+      let transactions = await storage.getAllAssetTransactions();
+      
+      // Apply filters if provided
+      if (assetId) {
+        transactions = transactions.filter(t => t.assetId === assetId);
+      }
+      if (employeeId) {
+        transactions = transactions.filter(t => t.employeeId === employeeId);
+      }
+      if (type) {
+        transactions = transactions.filter(t => t.type === type);
+      }
+      
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.get("/api/employees/:id/transactions", authenticateUser, async (req, res) => {
     try {
       const employeeId = parseInt(req.params.id);
