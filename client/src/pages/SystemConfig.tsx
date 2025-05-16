@@ -223,234 +223,654 @@ export default function SystemConfig() {
         </CardContent>
       </Card>
 
-      {/* Asset Customization Section */}
-      <h2 className="text-xl font-semibold mt-8 mb-4">{translations.assetCustomization}</h2>
-
-      {/* Custom Asset Types Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{translations.customAssetTypes}</CardTitle>
-          <CardDescription>{translations.customAssetTypesDesc}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Add new type form */}
-            <div className="grid gap-4 md:grid-cols-12">
-              <div className="md:col-span-5">
-                <Label htmlFor="new-type-name">{translations.name}</Label>
-                <Input 
-                  id="new-type-name" 
-                  value={newTypeName}
-                  onChange={(e) => setNewTypeName(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
-                />
-              </div>
-              <div className="md:col-span-5">
-                <Label htmlFor="new-type-desc">{translations.description}</Label>
-                <Input 
-                  id="new-type-desc" 
-                  value={newTypeDescription}
-                  onChange={(e) => setNewTypeDescription(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                />
-              </div>
-              <div className="md:col-span-2 flex items-end">
-                <Button 
-                  className="w-full" 
-                  disabled={!newTypeName.trim()}
-                >
-                  {translations.add}
-                </Button>
-              </div>
-            </div>
+      {/* Module-Based Customization Sections */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mt-8 mb-6 border-b pb-2">
+          {language === 'English' ? 'Module Customization' : 'تخصيص الوحدات'}
+        </h2>
+        
+        {/* Asset Module Customization */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center text-blue-700">
+            {translations.assetCustomization}
+          </h3>
+          
+          {/* Module Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Custom Asset Types Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{translations.customAssetTypes}</CardTitle>
+                <CardDescription className="text-xs">{translations.customAssetTypesDesc}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new type form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-type-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-type-name" 
+                        value={newTypeName}
+                        onChange={(e) => setNewTypeName(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-type-desc" className="text-xs">{translations.description}</Label>
+                      <Input 
+                        id="new-type-desc" 
+                        value={newTypeDescription}
+                        onChange={(e) => setNewTypeDescription(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button 
+                        className="w-full h-8 text-xs" 
+                        size="sm"
+                        disabled={!newTypeName.trim()}
+                      >
+                        {translations.add}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* List of custom types - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.description}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Predefined Asset Types */}
+                        {[
+                          { id: 1, name: 'Laptop', description: 'Portable computers' },
+                          { id: 2, name: 'Desktop', description: 'Stationary workstations' },
+                          { id: 3, name: 'Mobile', description: 'Smartphones and tablets' },
+                          { id: 4, name: 'Monitor', description: 'Display screens' },
+                          { id: 5, name: 'Printer', description: 'Document printing devices' }
+                        ].map((type) => (
+                          <tr key={type.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{type.name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {type.description}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Default' : 'افتراضي'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Custom Types - Empty State */}
+                        {customAssetTypes.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
+                              {language === 'English' ? 'No custom types added yet' : 'لم تتم إضافة أنواع مخصصة بعد'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            {/* List of custom types */}
-            <div className="border rounded-md">
-              <div className="p-6 text-center text-gray-500">
-                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
-              </div>
-            </div>
+            {/* Custom Asset Brands Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{translations.customAssetBrands}</CardTitle>
+                <CardDescription className="text-xs">{translations.customAssetBrandsDesc}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new brand form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-brand-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-brand-name" 
+                        value={newBrandName}
+                        onChange={(e) => setNewBrandName(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-brand-desc" className="text-xs">{translations.description}</Label>
+                      <Input 
+                        id="new-brand-desc" 
+                        value={newBrandDescription}
+                        onChange={(e) => setNewBrandDescription(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button 
+                        className="w-full h-8 text-xs"
+                        size="sm" 
+                        disabled={!newBrandName.trim()}
+                      >
+                        {translations.add}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* List of custom brands - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.description}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Predefined Brands */}
+                        {[
+                          { id: 1, name: 'Dell', description: 'Dell Technologies' },
+                          { id: 2, name: 'HP', description: 'Hewlett-Packard' },
+                          { id: 3, name: 'Apple', description: 'Apple Inc.' },
+                          { id: 4, name: 'Lenovo', description: 'Lenovo Group Ltd' },
+                          { id: 5, name: 'Microsoft', description: 'Microsoft Corporation' }
+                        ].map((brand) => (
+                          <tr key={brand.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{brand.name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {brand.description}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Common' : 'شائع'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Custom Brands - Empty State */}
+                        {customAssetBrands.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
+                              {language === 'English' ? 'No custom brands added yet' : 'لم تتم إضافة علامات تجارية مخصصة بعد'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Custom Asset Brands Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{translations.customAssetBrands}</CardTitle>
-          <CardDescription>{translations.customAssetBrandsDesc}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Add new brand form */}
-            <div className="grid gap-4 md:grid-cols-12">
-              <div className="md:col-span-5">
-                <Label htmlFor="new-brand-name">{translations.name}</Label>
-                <Input 
-                  id="new-brand-name" 
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
-                />
-              </div>
-              <div className="md:col-span-5">
-                <Label htmlFor="new-brand-desc">{translations.description}</Label>
-                <Input 
-                  id="new-brand-desc" 
-                  value={newBrandDescription}
-                  onChange={(e) => setNewBrandDescription(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                />
-              </div>
-              <div className="md:col-span-2 flex items-end">
-                <Button 
-                  className="w-full" 
-                  disabled={!newBrandName.trim()}
-                >
-                  {translations.add}
-                </Button>
-              </div>
-            </div>
+          
+          {/* Second Row of Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {/* Custom Asset Statuses Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{translations.customAssetStatuses}</CardTitle>
+                <CardDescription className="text-xs">{translations.customAssetStatusesDesc}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new status form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-4">
+                      <Label htmlFor="new-status-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-status-name" 
+                        value={newStatusName}
+                        onChange={(e) => setNewStatusName(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label htmlFor="new-status-desc" className="text-xs">{translations.description}</Label>
+                      <Input 
+                        id="new-status-desc" 
+                        value={newStatusDescription}
+                        onChange={(e) => setNewStatusDescription(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="new-status-color" className="text-xs">{translations.color}</Label>
+                      <div className="flex h-8 items-center">
+                        <Input 
+                          id="new-status-color" 
+                          type="color"
+                          value={newStatusColor}
+                          onChange={(e) => setNewStatusColor(e.target.value)}
+                          className="h-8 p-1 w-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button 
+                        className="w-full h-8 text-xs"
+                        size="sm"
+                        disabled={!newStatusName.trim()}
+                      >
+                        {translations.add}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* List of custom statuses - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.description}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.color}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Predefined Statuses */}
+                        {[
+                          { id: 1, name: 'Available', description: 'Asset ready for use', color: '#22c55e' },
+                          { id: 2, name: 'In Use', description: 'Asset currently assigned', color: '#3b82f6' },
+                          { id: 3, name: 'Maintenance', description: 'Under maintenance', color: '#f59e0b' },
+                          { id: 4, name: 'Damaged', description: 'Asset is damaged', color: '#ef4444' },
+                          { id: 5, name: 'Retired', description: 'No longer in service', color: '#6b7280' }
+                        ].map((status) => (
+                          <tr key={status.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{status.name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {status.description}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div 
+                                className="h-5 w-5 rounded-full mx-auto" 
+                                style={{ backgroundColor: status.color }}
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Default' : 'افتراضي'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Custom Statuses - Empty State */}
+                        {customAssetStatuses.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-3 py-3 text-center text-gray-500 text-xs">
+                              {language === 'English' ? 'No custom statuses added yet' : 'لم تتم إضافة حالات مخصصة بعد'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            {/* List of custom brands */}
-            <div className="border rounded-md">
-              <div className="p-6 text-center text-gray-500">
-                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
-              </div>
-            </div>
+            {/* Service Providers Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{translations.serviceProviders}</CardTitle>
+                <CardDescription className="text-xs">{translations.serviceProvidersDesc}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new provider form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-6">
+                      <Label htmlFor="new-provider-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-provider-name" 
+                        value={newProviderName}
+                        onChange={(e) => setNewProviderName(e.target.value)}
+                        placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label htmlFor="new-provider-contact" className="text-xs">
+                        {language === 'English' ? 'Contact' : 'جهة الاتصال'}
+                      </Label>
+                      <Input 
+                        id="new-provider-contact" 
+                        value={newProviderContact}
+                        onChange={(e) => setNewProviderContact(e.target.value)}
+                        placeholder={language === 'English' ? 'Contact name' : 'اسم جهة الاتصال'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button 
+                        className="w-full h-8 text-xs"
+                        size="sm"
+                        disabled={!newProviderName.trim()}
+                      >
+                        {translations.add}
+                      </Button>
+                    </div>
+                    <div className="md:col-span-6">
+                      <Label htmlFor="new-provider-phone" className="text-xs">
+                        {language === 'English' ? 'Phone' : 'رقم الهاتف'}
+                      </Label>
+                      <Input 
+                        id="new-provider-phone" 
+                        value={newProviderPhone}
+                        onChange={(e) => setNewProviderPhone(e.target.value)}
+                        placeholder={language === 'English' ? 'Phone number' : 'رقم الهاتف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-6">
+                      <Label htmlFor="new-provider-email" className="text-xs">
+                        {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+                      </Label>
+                      <Input 
+                        id="new-provider-email" 
+                        value={newProviderEmail}
+                        onChange={(e) => setNewProviderEmail(e.target.value)}
+                        placeholder={language === 'English' ? 'Email address' : 'البريد الإلكتروني'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* List of service providers - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Contact Info' : 'معلومات الاتصال'}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Sample Service Providers */}
+                        {[
+                          { id: 1, name: 'TechSupport Inc.', contact: 'John Smith', phone: '+1-555-123-4567', email: 'support@techsupport.com' },
+                          { id: 2, name: 'IT Solutions Ltd', contact: 'Jane Doe', phone: '+1-555-987-6543', email: 'service@itsolutions.com' }
+                        ].map((provider) => (
+                          <tr key={provider.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{provider.name}</span>
+                              <div className="text-xs text-gray-500">{provider.contact}</div>
+                            </td>
+                            <td className="px-3 py-2 text-xs text-gray-500">
+                              <div>{provider.phone}</div>
+                              <div>{provider.email}</div>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Sample' : 'عينة'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Custom Providers - Empty State */}
+                        {serviceProviders.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
+                              {language === 'English' ? 'No service providers added yet' : 'لم تتم إضافة مزودي خدمة بعد'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Custom Asset Statuses Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{translations.customAssetStatuses}</CardTitle>
-          <CardDescription>{translations.customAssetStatusesDesc}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Add new status form */}
-            <div className="grid gap-4 md:grid-cols-12">
-              <div className="md:col-span-4">
-                <Label htmlFor="new-status-name">{translations.name}</Label>
-                <Input 
-                  id="new-status-name" 
-                  value={newStatusName}
-                  onChange={(e) => setNewStatusName(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
-                />
-              </div>
-              <div className="md:col-span-4">
-                <Label htmlFor="new-status-desc">{translations.description}</Label>
-                <Input 
-                  id="new-status-desc" 
-                  value={newStatusDescription}
-                  onChange={(e) => setNewStatusDescription(e.target.value)}
-                  placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="new-status-color">{translations.color}</Label>
-                <Input 
-                  id="new-status-color" 
-                  type="color"
-                  value={newStatusColor}
-                  onChange={(e) => setNewStatusColor(e.target.value)}
-                  className="h-10 p-1"
-                />
-              </div>
-              <div className="md:col-span-2 flex items-end">
-                <Button 
-                  className="w-full" 
-                  disabled={!newStatusName.trim()}
-                >
-                  {translations.add}
-                </Button>
-              </div>
-            </div>
+        </div>
+        
+        {/* Ticket Module Customization */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center text-purple-700">
+            {language === 'English' ? 'Ticket Customization' : 'تخصيص التذاكر'}
+          </h3>
+          
+          {/* Ticket Customization Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Ticket Categories Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  {language === 'English' ? 'Ticket Categories' : 'فئات التذاكر'}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {language === 'English' 
+                    ? 'Define custom categories for support tickets' 
+                    : 'تحديد فئات مخصصة لتذاكر الدعم'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new category form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-category-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-category-name"
+                        placeholder={language === 'English' ? 'Enter category name' : 'أدخل اسم الفئة'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-5">
+                      <Label htmlFor="new-category-desc" className="text-xs">{translations.description}</Label>
+                      <Input 
+                        id="new-category-desc"
+                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button className="w-full h-8 text-xs" size="sm">
+                        {translations.add}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* List of ticket categories - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.description}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Default Ticket Categories */}
+                        {[
+                          { id: 1, name: 'Hardware', description: 'Hardware-related issues' },
+                          { id: 2, name: 'Software', description: 'Software-related issues' },
+                          { id: 3, name: 'Network', description: 'Network connectivity issues' },
+                          { id: 4, name: 'Other', description: 'Other miscellaneous issues' }
+                        ].map((category) => (
+                          <tr key={category.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{category.name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {category.description}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Default' : 'افتراضي'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            {/* List of custom statuses */}
-            <div className="border rounded-md">
-              <div className="p-6 text-center text-gray-500">
-                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
-              </div>
-            </div>
+            {/* Ticket Priorities Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  {language === 'English' ? 'Ticket Priorities' : 'أولويات التذاكر'}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {language === 'English' 
+                    ? 'Define custom priorities for support tickets' 
+                    : 'تحديد أولويات مخصصة لتذاكر الدعم'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Add new priority form */}
+                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
+                    <div className="md:col-span-4">
+                      <Label htmlFor="new-priority-name" className="text-xs">{translations.name}</Label>
+                      <Input 
+                        id="new-priority-name"
+                        placeholder={language === 'English' ? 'Enter priority name' : 'أدخل اسم الأولوية'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label htmlFor="new-priority-desc" className="text-xs">{translations.description}</Label>
+                      <Input 
+                        id="new-priority-desc"
+                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="new-priority-color" className="text-xs">{translations.color}</Label>
+                      <div className="flex h-8 items-center">
+                        <Input 
+                          id="new-priority-color" 
+                          type="color"
+                          defaultValue="#ef4444"
+                          className="h-8 p-1 w-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-2 flex items-end">
+                      <Button className="w-full h-8 text-xs" size="sm">
+                        {translations.add}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* List of ticket priorities - Table Format */}
+                  <div className="overflow-auto max-h-80 border rounded-md">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.name}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.description}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {translations.color}
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'English' ? 'Action' : 'إجراء'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Default Ticket Priorities */}
+                        {[
+                          { id: 1, name: 'Low', description: 'Non-urgent issues', color: '#22c55e' },
+                          { id: 2, name: 'Medium', description: 'Standard priority', color: '#f59e0b' },
+                          { id: 3, name: 'High', description: 'Urgent issues', color: '#ef4444' }
+                        ].map((priority) => (
+                          <tr key={priority.id}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="font-medium">{priority.name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {priority.description}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div 
+                                className="h-5 w-5 rounded-full mx-auto" 
+                                style={{ backgroundColor: priority.color }}
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="text-xs text-gray-400">
+                                {language === 'English' ? 'Default' : 'افتراضي'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Service Providers Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>{translations.serviceProviders}</CardTitle>
-          <CardDescription>{translations.serviceProvidersDesc}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Add new provider form */}
-            <div className="grid gap-4 md:grid-cols-12">
-              <div className="md:col-span-3">
-                <Label htmlFor="new-provider-name">{translations.name}</Label>
-                <Input 
-                  id="new-provider-name" 
-                  value={newProviderName}
-                  onChange={(e) => setNewProviderName(e.target.value)}
-                  placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
-                />
-              </div>
-              <div className="md:col-span-3">
-                <Label htmlFor="new-provider-contact">
-                  {language === 'English' ? 'Contact Person' : 'الشخص المسؤول'}
-                </Label>
-                <Input 
-                  id="new-provider-contact" 
-                  value={newProviderContact}
-                  onChange={(e) => setNewProviderContact(e.target.value)}
-                  placeholder={language === 'English' ? 'Contact name' : 'اسم جهة الاتصال'}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="new-provider-phone">
-                  {language === 'English' ? 'Phone' : 'رقم الهاتف'}
-                </Label>
-                <Input 
-                  id="new-provider-phone" 
-                  value={newProviderPhone}
-                  onChange={(e) => setNewProviderPhone(e.target.value)}
-                  placeholder={language === 'English' ? 'Phone number' : 'رقم الهاتف'}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="new-provider-email">
-                  {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
-                </Label>
-                <Input 
-                  id="new-provider-email" 
-                  value={newProviderEmail}
-                  onChange={(e) => setNewProviderEmail(e.target.value)}
-                  placeholder={language === 'English' ? 'Email address' : 'البريد الإلكتروني'}
-                />
-              </div>
-              <div className="md:col-span-2 flex items-end">
-                <Button 
-                  className="w-full" 
-                  disabled={!newProviderName.trim()}
-                >
-                  {translations.add}
-                </Button>
-              </div>
-            </div>
-            
-            {/* List of service providers */}
-            <div className="border rounded-md">
-              <div className="p-6 text-center text-gray-500">
-                {language === 'English' ? 'This feature is coming soon' : 'هذه الميزة قادمة قريبًا'}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
