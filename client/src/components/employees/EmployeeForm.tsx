@@ -176,9 +176,9 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
         <Tabs defaultValue="general">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 grid w-full md:w-auto grid-cols-2">
             <TabsTrigger value="general">{translations.generalInfo}</TabsTrigger>
             <TabsTrigger value="contact">{translations.contactInfo}</TabsTrigger>
           </TabsList>
