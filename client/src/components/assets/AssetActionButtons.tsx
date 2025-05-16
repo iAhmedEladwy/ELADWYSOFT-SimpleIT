@@ -28,6 +28,28 @@ interface AssetActionButtonsProps {
   employees: any[];
 }
 
+// Check-out reason options
+const CHECK_OUT_REASONS = [
+  'Assigned for work use',
+  'Temporary loan',
+  'Replacement for faulty asset',
+  'Project-based use',
+  'Remote work setup',
+  'New employee onboarding',
+  'External use (with approval)',
+];
+
+// Check-in reason options
+const CHECK_IN_REASONS = [
+  'End of assignment',
+  'Employee exit',
+  'Asset not needed anymore',
+  'Asset upgrade/replacement',
+  'Faulty/Needs repair',
+  'Warranty return',
+  'Loan period ended',
+];
+
 export default function AssetActionButtons({ asset, employees }: AssetActionButtonsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
@@ -36,6 +58,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   const [openCheckInDialog, setOpenCheckInDialog] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [checkOutReason, setCheckOutReason] = useState<string>('');
+  const [checkInReason, setCheckInReason] = useState<string>('');
 
   // Translations
   const translations = {
@@ -50,6 +74,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       ? 'Return this asset back to inventory' 
       : 'إعادة هذا الأصل إلى المخزون',
     selectEmployee: language === 'English' ? 'Select Employee' : 'اختر الموظف',
+    reasonLabel: language === 'English' ? 'Reason' : 'السبب',
+    selectReason: language === 'English' ? 'Select reason' : 'اختر السبب',
     notes: language === 'English' ? 'Notes' : 'ملاحظات',
     optionalNotes: language === 'English' ? 'Optional notes about this transaction' : 'ملاحظات اختيارية حول هذه العملية',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
@@ -64,7 +90,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
     mutationFn: async () => {
       const res = await apiRequest('POST', `/api/assets/${asset.id}/check-out`, {
         employeeId: parseInt(selectedEmployeeId),
-        notes: notes.trim() || undefined,
+        notes: `${checkOutReason}${notes ? ': ' + notes : ''}`.trim(),
+        type: 'Check-Out',
       });
       return res.json();
     },
@@ -75,6 +102,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       });
       setOpenCheckOutDialog(false);
       setSelectedEmployeeId('');
+      setCheckOutReason('');
       setNotes('');
     },
     onError: (error: any) => {
@@ -90,7 +118,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   const checkInMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('POST', `/api/assets/${asset.id}/check-in`, {
-        notes: notes.trim() || undefined,
+        notes: `${checkInReason}${notes ? ': ' + notes : ''}`.trim(),
+        type: 'Check-In',
       });
       return res.json();
     },
@@ -100,6 +129,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
         title: translations.checkInSuccess,
       });
       setOpenCheckInDialog(false);
+      setCheckInReason('');
       setNotes('');
     },
     onError: (error: any) => {
@@ -123,12 +153,13 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
 
   // Handle check-out form submit
   const handleCheckOutSubmit = () => {
-    if (!selectedEmployeeId) return;
+    if (!selectedEmployeeId || !checkOutReason) return;
     checkOutMutation.mutate();
   };
 
   // Handle check-in form submit
   const handleCheckInSubmit = () => {
+    if (!checkInReason) return;
     checkInMutation.mutate();
   };
 
@@ -186,6 +217,24 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
               </Select>
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="check-out-reason">{translations.reasonLabel}</Label>
+              <Select 
+                value={checkOutReason} 
+                onValueChange={setCheckOutReason}
+              >
+                <SelectTrigger id="check-out-reason">
+                  <SelectValue placeholder={translations.selectReason} />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHECK_OUT_REASONS.map(reason => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="notes">{translations.notes}</Label>
               <Textarea
                 id="notes"
@@ -201,7 +250,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             </Button>
             <Button 
               onClick={handleCheckOutSubmit} 
-              disabled={checkOutMutation.isPending || !selectedEmployeeId}
+              disabled={checkOutMutation.isPending || !selectedEmployeeId || !checkOutReason}
             >
               {checkOutMutation.isPending ? (
                 <>
@@ -225,6 +274,24 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="check-in-reason">{translations.reasonLabel}</Label>
+              <Select 
+                value={checkInReason} 
+                onValueChange={setCheckInReason}
+              >
+                <SelectTrigger id="check-in-reason">
+                  <SelectValue placeholder={translations.selectReason} />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHECK_IN_REASONS.map(reason => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="check-in-notes">{translations.notes}</Label>
               <Textarea
                 id="check-in-notes"
@@ -240,7 +307,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             </Button>
             <Button 
               onClick={handleCheckInSubmit} 
-              disabled={checkInMutation.isPending}
+              disabled={checkInMutation.isPending || !checkInReason}
             >
               {checkInMutation.isPending ? (
                 <>
