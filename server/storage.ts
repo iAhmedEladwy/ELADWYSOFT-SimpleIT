@@ -708,6 +708,159 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  // Asset Transaction methods
+  async createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction> {
+    try {
+      const [newTransaction] = await db.insert(assetTransactions)
+        .values(transaction)
+        .returning();
+      return newTransaction;
+    } catch (error) {
+      console.error('Error creating asset transaction:', error);
+      throw error;
+    }
+  }
+  
+  async getAssetTransactions(assetId: number): Promise<AssetTransaction[]> {
+    try {
+      return await db.select()
+        .from(assetTransactions)
+        .where(eq(assetTransactions.assetId, assetId))
+        .orderBy(desc(assetTransactions.createdAt));
+    } catch (error) {
+      console.error('Error getting asset transactions:', error);
+      return [];
+    }
+  }
+  
+  async getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]> {
+    try {
+      return await db.select()
+        .from(assetTransactions)
+        .where(eq(assetTransactions.employeeId, employeeId))
+        .orderBy(desc(assetTransactions.createdAt));
+    } catch (error) {
+      console.error('Error getting employee transactions:', error);
+      return [];
+    }
+  }
+  
+  async checkOutAsset(assetId: number, employeeId: number, notes?: string): Promise<AssetTransaction> {
+    const asset = await this.getAsset(assetId);
+    if (!asset) {
+      throw new Error('Asset not found');
+    }
+    
+    // Check if asset is already assigned
+    if (asset.status === 'In Use') {
+      throw new Error('Asset is already checked out');
+    }
+    
+    try {
+      // Begin transaction
+      return await db.transaction(async (tx) => {
+        // 1. Update asset status and assignment
+        const [updatedAsset] = await tx.update(assets)
+          .set({
+            status: 'In Use',
+            assignedEmployeeId: employeeId,
+            updatedAt: new Date()
+          })
+          .where(eq(assets.id, assetId))
+          .returning();
+        
+        // 2. Create transaction record
+        const [transaction] = await tx.insert(assetTransactions)
+          .values({
+            assetId,
+            employeeId,
+            transactionType: 'Check-Out',
+            notes: notes || `Asset checked out to employee ID ${employeeId}`,
+          })
+          .returning();
+        
+        // 3. Log the activity
+        await tx.insert(activityLog)
+          .values({
+            userId: 1, // Default to admin user if not provided
+            action: 'ASSIGN',
+            entityType: 'ASSET',
+            entityId: assetId,
+            details: {
+              assignedTo: employeeId,
+              previousStatus: asset.status,
+              newStatus: 'In Use',
+              transactionId: transaction.id
+            }
+          });
+        
+        return transaction;
+      });
+    } catch (error) {
+      console.error('Error checking out asset:', error);
+      throw error;
+    }
+  }
+  
+  async checkInAsset(assetId: number, notes?: string): Promise<AssetTransaction> {
+    const asset = await this.getAsset(assetId);
+    if (!asset) {
+      throw new Error('Asset not found');
+    }
+    
+    // Check if asset is already available
+    if (asset.status !== 'In Use') {
+      throw new Error('Asset is not currently checked out');
+    }
+    
+    const previousEmployeeId = asset.assignedEmployeeId;
+    
+    try {
+      // Begin transaction
+      return await db.transaction(async (tx) => {
+        // 1. Update asset status and remove assignment
+        const [updatedAsset] = await tx.update(assets)
+          .set({
+            status: 'Available',
+            assignedEmployeeId: null,
+            updatedAt: new Date()
+          })
+          .where(eq(assets.id, assetId))
+          .returning();
+        
+        // 2. Create transaction record
+        const [transaction] = await tx.insert(assetTransactions)
+          .values({
+            assetId,
+            employeeId: previousEmployeeId,
+            transactionType: 'Check-In',
+            notes: notes || `Asset checked in from employee ID ${previousEmployeeId}`,
+          })
+          .returning();
+        
+        // 3. Log the activity
+        await tx.insert(activityLog)
+          .values({
+            userId: 1, // Default to admin user if not provided
+            action: 'UNASSIGN',
+            entityType: 'ASSET',
+            entityId: assetId,
+            details: {
+              unassignedFrom: previousEmployeeId,
+              previousStatus: 'In Use',
+              newStatus: 'Available',
+              transactionId: transaction.id
+            }
+          });
+        
+        return transaction;
+      });
+    } catch (error) {
+      console.error('Error checking in asset:', error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

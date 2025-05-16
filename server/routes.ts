@@ -790,6 +790,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Asset Transaction APIs
+  app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      
+      // Check if asset exists
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      const transactions = await storage.getAssetTransactions(assetId);
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/employees/:id/transactions", authenticateUser, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      
+      // Check if employee exists
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const transactions = await storage.getEmployeeTransactions(employeeId);
+      res.json(transactions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const { employeeId, notes } = req.body;
+      
+      if (!employeeId) {
+        return res.status(400).json({ message: "Employee ID is required" });
+      }
+      
+      // Check if asset exists
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      // Check if employee exists
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const transaction = await storage.checkOutAsset(assetId, employeeId, notes);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "ASSIGN",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: { 
+            assetId: asset.assetId,
+            employeeId: employeeId,
+            transactionId: transaction.id,
+            notes: notes || `Asset checked out to employee ${employee.englishName}`
+          }
+        });
+      }
+      
+      res.status(201).json(transaction);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  app.post("/api/assets/:id/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const { notes } = req.body;
+      
+      // Check if asset exists
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      const transaction = await storage.checkInAsset(assetId, notes);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "UNASSIGN",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: { 
+            assetId: asset.assetId,
+            transactionId: transaction.id,
+            notes: notes || "Asset checked in"
+          }
+        });
+      }
+      
+      res.status(201).json(transaction);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
 
   // Asset Sales
   app.post("/api/asset-sales", authenticateUser, hasAccess(3), async (req, res) => {
