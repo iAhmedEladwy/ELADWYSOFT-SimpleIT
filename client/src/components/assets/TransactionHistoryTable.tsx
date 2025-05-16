@@ -103,13 +103,15 @@ export default function TransactionHistoryTable() {
   
   // Download transaction history as CSV
   const downloadCSV = () => {
-    if (!transactions) return;
+    if (!transactions || !filteredTransactions) return;
     
     // Prepare CSV data
     const headers = ['ID', 'Asset', 'Employee', 'Type', 'Date', 'Notes'];
     const csvRows = [headers.join(',')];
     
-    for (const transaction of filteredTransactions) {
+    // Add null check to ensure filteredTransactions is defined
+    if (filteredTransactions) {
+      for (const transaction of filteredTransactions) {
       const assetName = transaction.asset?.assetId || '';
       const employeeName = transaction.employee?.englishName || '';
       const date = transaction.transactionDate ? format(new Date(transaction.transactionDate), 'yyyy-MM-dd HH:mm') : '';
@@ -123,6 +125,7 @@ export default function TransactionHistoryTable() {
         date,
         notes,
       ].join(','));
+      }
     }
     
     // Create a downloadable CSV
@@ -172,7 +175,7 @@ export default function TransactionHistoryTable() {
                 <SelectItem value="all">{translations.all}</SelectItem>
                 {assets?.map((asset: Asset) => (
                   <SelectItem key={asset.id} value={String(asset.id)}>
-                    {asset.assetId} - {asset.name || 'Unknown'}
+                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown'}
                   </SelectItem>
                 ))}
               </SelectContent>
