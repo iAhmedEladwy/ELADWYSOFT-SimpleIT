@@ -235,7 +235,7 @@ export default function TransactionHistoryTable() {
               </TableHeader>
               <TableBody>
                 {filteredTransactions?.length ? (
-                  filteredTransactions.map((transaction) => (
+                  filteredTransactions.map((transaction: TransactionWithRelations) => (
                     <TableRow key={transaction.id}>
                       <TableCell>{transaction.id}</TableCell>
                       <TableCell>{transaction.asset?.assetId}</TableCell>
