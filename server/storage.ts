@@ -7,7 +7,8 @@ import {
   assetSaleItems, type AssetSaleItem, type InsertAssetSaleItem,
   tickets, type Ticket, type InsertTicket,
   systemConfig, type SystemConfig, type InsertSystemConfig,
-  activityLog, type ActivityLog, type InsertActivityLog
+  activityLog, type ActivityLog, type InsertActivityLog,
+  customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";

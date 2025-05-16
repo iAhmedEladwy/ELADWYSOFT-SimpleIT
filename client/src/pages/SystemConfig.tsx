@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,285 @@ export default function SystemConfig() {
   const [currency, setCurrency] = useState('USD');
   const [currencySymbol, setCurrencySymbol] = useState('$');
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Form state for new items
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeDescription, setNewTypeDescription] = useState('');
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandDescription, setNewBrandDescription] = useState('');
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusDescription, setNewStatusDescription] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3B82F6');
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderContact, setNewProviderContact] = useState('');
+  const [newProviderPhone, setNewProviderPhone] = useState('');
+  const [newProviderEmail, setNewProviderEmail] = useState('');
+  
+  // Custom fields queries
+  const { data: customAssetTypes = [] } = useQuery({
+    queryKey: ['/api/custom-asset-types'],
+    enabled: hasAccess('admin'),
+  });
+  
+  const { data: customAssetBrands = [] } = useQuery({
+    queryKey: ['/api/custom-asset-brands'],
+    enabled: hasAccess('admin'),
+  });
+  
+  const { data: customAssetStatuses = [] } = useQuery({
+    queryKey: ['/api/custom-asset-statuses'],
+    enabled: hasAccess('admin'),
+  });
+  
+  const { data: serviceProviders = [] } = useQuery({
+    queryKey: ['/api/service-providers'],
+    enabled: hasAccess('admin'),
+  });
+  
+  // System config data query
+  const { data: systemConfigData } = useQuery({
+    queryKey: ['/api/system-config'],
+    onSuccess: (data) => {
+      if (data) {
+        setAssetIdPrefix(data.assetIdPrefix || 'BOLT-');
+        setCurrency(data.currency || 'USD');
+        setCurrencySymbol(data.currencySymbol || '$');
+        setIsLoading(false);
+      }
+    }
+  });
+  
+  // Custom fields mutations
+  const createAssetTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-asset-types', { method: 'POST', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      setNewTypeName('');
+      setNewTypeDescription('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type added successfully' : 'تمت إضافة نوع الأصل بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset type' : 'فشل في إضافة نوع الأصل',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest(`/api/custom-asset-types/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset type' : 'فشل في حذف نوع الأصل',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const createAssetBrandMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-asset-brands', { method: 'POST', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      setNewBrandName('');
+      setNewBrandDescription('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Brand added successfully' : 'تمت إضافة العلامة التجارية بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add brand' : 'فشل في إضافة العلامة التجارية',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest(`/api/custom-asset-brands/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Brand deleted successfully' : 'تم حذف العلامة التجارية بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete brand' : 'فشل في حذف العلامة التجارية',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const createAssetStatusMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; color?: string }) => 
+      apiRequest('/api/custom-asset-statuses', { method: 'POST', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      setNewStatusName('');
+      setNewStatusDescription('');
+      setNewStatusColor('#3B82F6');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Status added successfully' : 'تمت إضافة الحالة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add status' : 'فشل في إضافة الحالة',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest(`/api/custom-asset-statuses/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Status deleted successfully' : 'تم حذف الحالة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete status' : 'فشل في حذف الحالة',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const createServiceProviderMutation = useMutation({
+    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('/api/service-providers', { method: 'POST', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      setNewProviderName('');
+      setNewProviderContact('');
+      setNewProviderPhone('');
+      setNewProviderEmail('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider added successfully' : 'تمت إضافة مزود الخدمة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add service provider' : 'فشل في إضافة مزود الخدمة',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest(`/api/service-providers/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مزود الخدمة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete service provider' : 'فشل في حذف مزود الخدمة',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Update system configuration mutation
+  const updateConfigMutation = useMutation({
+    mutationFn: (configData: any) => 
+      apiRequest('/api/system-config', { method: 'PUT', data: configData }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Configuration saved successfully' : 'تم حفظ الإعدادات بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to save configuration' : 'فشل في حفظ الإعدادات',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Handler functions
+  const handleAddAssetType = () => {
+    if (!newTypeName.trim()) return;
+    
+    createAssetTypeMutation.mutate({
+      name: newTypeName.trim(),
+      description: newTypeDescription.trim() || undefined
+    });
+  };
+  
+  const handleAddAssetBrand = () => {
+    if (!newBrandName.trim()) return;
+    
+    createAssetBrandMutation.mutate({
+      name: newBrandName.trim(),
+      description: newBrandDescription.trim() || undefined
+    });
+  };
+  
+  const handleAddAssetStatus = () => {
+    if (!newStatusName.trim()) return;
+    
+    createAssetStatusMutation.mutate({
+      name: newStatusName.trim(),
+      description: newStatusDescription.trim() || undefined,
+      color: newStatusColor
+    });
+  };
+  
+  const handleAddServiceProvider = () => {
+    if (!newProviderName.trim()) return;
+    
+    createServiceProviderMutation.mutate({
+      name: newProviderName.trim(),
+      contactPerson: newProviderContact.trim() || undefined,
+      phone: newProviderPhone.trim() || undefined,
+      email: newProviderEmail.trim() || undefined
+    });
+  };
+
+  const handleSaveConfig = () => {
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      currency,
+      currencySymbol
+    });
+  };
 
   // Translations
   const translations = {
@@ -122,1105 +401,501 @@ export default function SystemConfig() {
     );
   }
 
-  // Fetch system configuration
-  const { data: config } = useQuery({
-    queryKey: ['/api/system-config'],
-    onSuccess: (data) => {
-      if (data?.assetIdPrefix) {
-        setAssetIdPrefix(data.assetIdPrefix);
-      }
-      if (data?.currency) {
-        setCurrency(data.currency);
-      }
-      if (data?.currencySymbol) {
-        setCurrencySymbol(data.currencySymbol);
-      }
-      setIsLoading(false);
-    },
-  });
-
-  // Update system configuration mutation
-  const updateConfigMutation = useMutation({
-    mutationFn: async (configData: any) => {
-      const res = await apiRequest('PUT', '/api/system-config', configData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
-      toast({
-        title: translations.saveSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleSaveConfig = () => {
-    updateConfigMutation.mutate({
-      assetIdPrefix,
-      currency,
-      currencySymbol
-    });
-  };
-
-  // Fetch custom fields data
-  const { data: customAssetTypesData } = useQuery({
-    queryKey: ['/api/custom-asset-types'],
-    onSuccess: (data) => {
-      setCustomAssetTypes(data || []);
-    }
-  });
-  
-  const { data: customAssetBrandsData } = useQuery({
-    queryKey: ['/api/custom-asset-brands'],
-    onSuccess: (data) => {
-      setCustomAssetBrands(data || []);
-    }
-  });
-  
-  const { data: customAssetStatusesData } = useQuery({
-    queryKey: ['/api/custom-asset-statuses'],
-    onSuccess: (data) => {
-      setCustomAssetStatuses(data || []);
-    }
-  });
-  
-  const { data: serviceProvidersData } = useQuery({
-    queryKey: ['/api/service-providers'],
-    onSuccess: (data) => {
-      setServiceProviders(data || []);
-    }
-  });
-  
-  // State for custom fields
-  const [customAssetTypes, setCustomAssetTypes] = useState<any[]>([]);
-  const [customAssetBrands, setCustomAssetBrands] = useState<any[]>([]);
-  const [customAssetStatuses, setCustomAssetStatuses] = useState<any[]>([]);
-  const [serviceProviders, setServiceProviders] = useState<any[]>([]);
-  
-  // New item form states
-  const [newTypeName, setNewTypeName] = useState('');
-  const [newTypeDescription, setNewTypeDescription] = useState('');
-  
-  const [newBrandName, setNewBrandName] = useState('');
-  const [newBrandDescription, setNewBrandDescription] = useState('');
-  
-  const [newStatusName, setNewStatusName] = useState('');
-  const [newStatusDescription, setNewStatusDescription] = useState('');
-  const [newStatusColor, setNewStatusColor] = useState('#3B82F6'); // Default blue
-  
-  const [newProviderName, setNewProviderName] = useState('');
-  const [newProviderContact, setNewProviderContact] = useState('');
-  const [newProviderPhone, setNewProviderPhone] = useState('');
-  const [newProviderEmail, setNewProviderEmail] = useState('');
-  
-  // Create mutation for custom asset types
-  const createAssetTypeMutation = useMutation({
-    mutationFn: (data: { name: string; description: string }) => {
-      return apiRequest('/api/custom-asset-types', {
-        method: 'POST',
-        data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
-      setNewTypeName('');
-      setNewTypeDescription('');
-      toast({
-        title: translations.success,
-        description: translations.assetTypeAddedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetTypeAddError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Delete mutation for custom asset types
-  const deleteAssetTypeMutation = useMutation({
-    mutationFn: (id: number) => {
-      return apiRequest(`/api/custom-asset-types/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
-      toast({
-        title: translations.success,
-        description: translations.assetTypeDeletedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetTypeDeleteError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Create mutation for custom asset brands
-  const createAssetBrandMutation = useMutation({
-    mutationFn: (data: { name: string; description: string }) => {
-      return apiRequest('/api/custom-asset-brands', {
-        method: 'POST',
-        data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      setNewBrandName('');
-      setNewBrandDescription('');
-      toast({
-        title: translations.success,
-        description: translations.assetBrandAddedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetBrandAddError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Delete mutation for custom asset brands
-  const deleteAssetBrandMutation = useMutation({
-    mutationFn: (id: number) => {
-      return apiRequest(`/api/custom-asset-brands/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      toast({
-        title: translations.success,
-        description: translations.assetBrandDeletedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetBrandDeleteError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Create mutation for custom asset statuses
-  const createAssetStatusMutation = useMutation({
-    mutationFn: (data: { name: string; description: string; color: string }) => {
-      return apiRequest('/api/custom-asset-statuses', {
-        method: 'POST',
-        data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      setNewStatusName('');
-      setNewStatusDescription('');
-      setNewStatusColor('#3B82F6');
-      toast({
-        title: translations.success,
-        description: translations.assetStatusAddedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetStatusAddError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Delete mutation for custom asset statuses
-  const deleteAssetStatusMutation = useMutation({
-    mutationFn: (id: number) => {
-      return apiRequest(`/api/custom-asset-statuses/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      toast({
-        title: translations.success,
-        description: translations.assetStatusDeletedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.assetStatusDeleteError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Create mutation for service providers
-  const createServiceProviderMutation = useMutation({
-    mutationFn: (data: { name: string; contactPerson: string; phone: string; email: string }) => {
-      return apiRequest('/api/service-providers', {
-        method: 'POST',
-        data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      setNewProviderName('');
-      setNewProviderContact('');
-      setNewProviderPhone('');
-      setNewProviderEmail('');
-      toast({
-        title: translations.success,
-        description: translations.serviceProviderAddedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.serviceProviderAddError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Delete mutation for service providers
-  const deleteServiceProviderMutation = useMutation({
-    mutationFn: (id: number) => {
-      return apiRequest(`/api/service-providers/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: translations.success,
-        description: translations.serviceProviderDeletedSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message || translations.serviceProviderDeleteError,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Handler functions for adding new items
-  const handleAddAssetType = () => {
-    if (!newTypeName) return;
-    createAssetTypeMutation.mutate({
-      name: newTypeName,
-      description: newTypeDescription
-    });
-  };
-  
-  const handleAddAssetBrand = () => {
-    if (!newBrandName) return;
-    createAssetBrandMutation.mutate({
-      name: newBrandName,
-      description: newBrandDescription
-    });
-  };
-  
-  const handleAddAssetStatus = () => {
-    if (!newStatusName) return;
-    createAssetStatusMutation.mutate({
-      name: newStatusName,
-      description: newStatusDescription,
-      color: newStatusColor
-    });
-  };
-  
-  const handleAddServiceProvider = () => {
-    if (!newProviderName) return;
-    createServiceProviderMutation.mutate({
-      name: newProviderName,
-      contactPerson: newProviderContact,
-      phone: newProviderPhone,
-      email: newProviderEmail
-    });
-  };
-
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
-        <p className="text-gray-600">{translations.pageDescription}</p>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">{translations.title}</h1>
+          <p className="text-muted-foreground">{translations.pageDescription}</p>
+        </div>
+        <Settings className="h-10 w-10 text-muted-foreground" />
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Settings className="h-5 w-5 mr-2" />
-            {translations.generalSettings}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isLoading ? (
-            <Skeleton className="h-40 w-full" />
-          ) : (
-            <>
-              {/* Language Setting */}
-              <div className="space-y-2">
-                <Label htmlFor="language-select">{translations.language}</Label>
-                <div className="flex items-center gap-4">
-                  <Select
-                    value={language}
-                    onValueChange={(value) => {
-                      if (value !== language) {
-                        toggleLanguage(value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <Globe className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder={translations.language} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">{translations.english}</SelectItem>
-                      <SelectItem value="Arabic">{translations.arabic}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {/* Asset ID Prefix */}
-              <div className="space-y-2">
-                <Label htmlFor="asset-prefix">{translations.assetIdPrefix}</Label>
-                <Input
-                  id="asset-prefix"
-                  value={assetIdPrefix}
-                  onChange={(e) => setAssetIdPrefix(e.target.value)}
-                  className="max-w-xs"
-                />
-                <p className="text-sm text-gray-500">{translations.assetIdPrefixDesc}</p>
-              </div>
-
-              {/* Currency Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Currency */}
-                <div className="space-y-2">
-                  <Label htmlFor="currency">{translations.currency}</Label>
-                  <Select
-                    value={currency}
-                    onValueChange={(value) => setCurrency(value)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={translations.currency} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
-                      <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                      <SelectItem value="GBP">GBP (British Pound)</SelectItem>
-                      <SelectItem value="JPY">JPY (Japanese Yen)</SelectItem>
-                      <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
-                      <SelectItem value="AUD">AUD (Australian Dollar)</SelectItem>
-                      <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
-                      <SelectItem value="AED">AED (UAE Dirham)</SelectItem>
-                      <SelectItem value="EGP">EGP (Egyptian Pound)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500">{translations.currencyDesc}</p>
-                </div>
-                
-                {/* Currency Symbol */}
-                <div className="space-y-2">
-                  <Label htmlFor="currency-symbol">{translations.currencySymbol}</Label>
-                  <Select
-                    value={currencySymbol}
-                    onValueChange={(value) => setCurrencySymbol(value)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={translations.currencySymbol} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="$">$ (Dollar)</SelectItem>
-                      <SelectItem value="€">€ (Euro)</SelectItem>
-                      <SelectItem value="£">£ (Pound)</SelectItem>
-                      <SelectItem value="¥">¥ (Yen)</SelectItem>
-                      <SelectItem value="₹">₹ (Rupee)</SelectItem>
-                      <SelectItem value="﷼">﷼ (Riyal)</SelectItem>
-                      <SelectItem value="د.إ">د.إ (Dirham)</SelectItem>
-                      <SelectItem value="د.م">د.م (Dinar)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500">{translations.currencySymbolDesc}</p>
-                </div>
-              </div>
-              
-              {/* Save Button */}
-              <Button 
-                onClick={handleSaveConfig} 
-                disabled={updateConfigMutation.isPending}
+      <div className="grid grid-cols-1 gap-6">
+        {/* General Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{translations.generalSettings}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Language Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="language">{translations.language}</Label>
+              <Select 
+                value={language} 
+                onValueChange={(value) => toggleLanguage(value)}
               >
-                <Save className="h-4 w-4 mr-2" />
-                {translations.save}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                <SelectTrigger id="language" className="w-full">
+                  <SelectValue placeholder={translations.language} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="English">
+                    <div className="flex items-center">
+                      <Globe className="mr-2 h-4 w-4" />
+                      <span>{translations.english}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Arabic">
+                    <div className="flex items-center">
+                      <Globe className="mr-2 h-4 w-4" />
+                      <span>{translations.arabic}</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Module-Based Customization Sections */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mt-8 mb-6 border-b pb-2">
-          {language === 'English' ? 'Module Customization' : 'تخصيص الوحدات'}
-        </h2>
-        
-        {/* Asset Module Customization */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-4 flex items-center text-blue-700">
-            {translations.assetCustomization}
-          </h3>
-          
-          {/* Module Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Custom Asset Types Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{translations.customAssetTypes}</CardTitle>
-                <CardDescription className="text-xs">{translations.customAssetTypesDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new type form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-type-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-type-name" 
-                        value={newTypeName}
-                        onChange={(e) => setNewTypeName(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-type-desc" className="text-xs">{translations.description}</Label>
-                      <Input 
-                        id="new-type-desc" 
-                        value={newTypeDescription}
-                        onChange={(e) => setNewTypeDescription(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button 
-                        className="w-full h-8 text-xs" 
-                        size="sm"
-                        disabled={!newTypeName.trim()}
-                      >
-                        {translations.add}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* List of custom types - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.description}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Predefined Asset Types */}
-                        {[
-                          { id: 1, name: 'Laptop', description: 'Portable computers' },
-                          { id: 2, name: 'Desktop', description: 'Stationary workstations' },
-                          { id: 3, name: 'Mobile', description: 'Smartphones and tablets' },
-                          { id: 4, name: 'Monitor', description: 'Display screens' },
-                          { id: 5, name: 'Printer', description: 'Document printing devices' }
-                        ].map((type) => (
-                          <tr key={type.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{type.name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {type.description}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Default' : 'افتراضي'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        
-                        {/* Custom Types - Empty State */}
-                        {customAssetTypes.length === 0 && (
-                          <tr>
-                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
-                              {language === 'English' ? 'No custom types added yet' : 'لم تتم إضافة أنواع مخصصة بعد'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+            {/* Asset ID Prefix */}
+            <div className="space-y-2">
+              <Label htmlFor="assetIdPrefix">{translations.assetIdPrefix}</Label>
+              <Input 
+                id="assetIdPrefix" 
+                value={assetIdPrefix} 
+                onChange={(e) => setAssetIdPrefix(e.target.value)}
+                placeholder="BOLT-"
+              />
+              <p className="text-sm text-muted-foreground">{translations.assetIdPrefixDesc}</p>
+            </div>
+
+            {/* Currency Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="currency">{translations.currency}</Label>
+              <Select 
+                value={currency} 
+                onValueChange={(value) => setCurrency(value)}
+              >
+                <SelectTrigger id="currency" className="w-full">
+                  <SelectValue placeholder={translations.currency} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD (United States Dollar)</SelectItem>
+                  <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                  <SelectItem value="GBP">GBP (British Pound)</SelectItem>
+                  <SelectItem value="JPY">JPY (Japanese Yen)</SelectItem>
+                  <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
+                  <SelectItem value="AUD">AUD (Australian Dollar)</SelectItem>
+                  <SelectItem value="CNY">CNY (Chinese Yuan)</SelectItem>
+                  <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                  <SelectItem value="AED">AED (UAE Dirham)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">{translations.currencyDesc}</p>
+            </div>
+
+            {/* Currency Symbol */}
+            <div className="space-y-2">
+              <Label htmlFor="currencySymbol">{translations.currencySymbol}</Label>
+              <Select 
+                value={currencySymbol} 
+                onValueChange={(value) => setCurrencySymbol(value)}
+              >
+                <SelectTrigger id="currencySymbol" className="w-full">
+                  <SelectValue placeholder={translations.currencySymbol} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="$">$ (Dollar)</SelectItem>
+                  <SelectItem value="€">€ (Euro)</SelectItem>
+                  <SelectItem value="£">£ (Pound)</SelectItem>
+                  <SelectItem value="¥">¥ (Yen/Yuan)</SelectItem>
+                  <SelectItem value="₹">₹ (Rupee)</SelectItem>
+                  <SelectItem value="₽">₽ (Ruble)</SelectItem>
+                  <SelectItem value="﷼">﷼ (Riyal)</SelectItem>
+                  <SelectItem value="د.إ">د.إ (Dirham)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">{translations.currencySymbolDesc}</p>
+            </div>
+
+            <Button className="mt-4" onClick={handleSaveConfig} disabled={updateConfigMutation.isPending}>
+              <Save className="mr-2 h-4 w-4" />
+              {translations.save}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Custom Asset Types */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{translations.customAssetTypes}</CardTitle>
+            <CardDescription>{translations.customAssetTypesDesc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-5">
+                  <Label htmlFor="newTypeName">{translations.name}</Label>
+                  <Input 
+                    id="newTypeName" 
+                    value={newTypeName} 
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    placeholder="Example: Server Rack"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Custom Asset Brands Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{translations.customAssetBrands}</CardTitle>
-                <CardDescription className="text-xs">{translations.customAssetBrandsDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new brand form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-brand-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-brand-name" 
-                        value={newBrandName}
-                        onChange={(e) => setNewBrandName(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-brand-desc" className="text-xs">{translations.description}</Label>
-                      <Input 
-                        id="new-brand-desc" 
-                        value={newBrandDescription}
-                        onChange={(e) => setNewBrandDescription(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button 
-                        className="w-full h-8 text-xs"
-                        size="sm" 
-                        disabled={!newBrandName.trim()}
-                      >
-                        {translations.add}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* List of custom brands - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.description}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Predefined Brands */}
-                        {[
-                          { id: 1, name: 'Dell', description: 'Dell Technologies' },
-                          { id: 2, name: 'HP', description: 'Hewlett-Packard' },
-                          { id: 3, name: 'Apple', description: 'Apple Inc.' },
-                          { id: 4, name: 'Lenovo', description: 'Lenovo Group Ltd' },
-                          { id: 5, name: 'Microsoft', description: 'Microsoft Corporation' }
-                        ].map((brand) => (
-                          <tr key={brand.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{brand.name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {brand.description}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Common' : 'شائع'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        
-                        {/* Custom Brands - Empty State */}
-                        {customAssetBrands.length === 0 && (
-                          <tr>
-                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
-                              {language === 'English' ? 'No custom brands added yet' : 'لم تتم إضافة علامات تجارية مخصصة بعد'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="md:col-span-5">
+                  <Label htmlFor="newTypeDescription">{translations.description}</Label>
+                  <Input 
+                    id="newTypeDescription" 
+                    value={newTypeDescription} 
+                    onChange={(e) => setNewTypeDescription(e.target.value)}
+                    placeholder="Example: Network server rack equipment"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Second Row of Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {/* Custom Asset Statuses Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{translations.customAssetStatuses}</CardTitle>
-                <CardDescription className="text-xs">{translations.customAssetStatusesDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new status form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-4">
-                      <Label htmlFor="new-status-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-status-name" 
-                        value={newStatusName}
-                        onChange={(e) => setNewStatusName(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-4">
-                      <Label htmlFor="new-status-desc" className="text-xs">{translations.description}</Label>
-                      <Input 
-                        id="new-status-desc" 
-                        value={newStatusDescription}
-                        onChange={(e) => setNewStatusDescription(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="new-status-color" className="text-xs">{translations.color}</Label>
-                      <div className="flex h-8 items-center">
-                        <Input 
-                          id="new-status-color" 
-                          type="color"
-                          value={newStatusColor}
-                          onChange={(e) => setNewStatusColor(e.target.value)}
-                          className="h-8 p-1 w-full"
-                        />
-                      </div>
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button 
-                        className="w-full h-8 text-xs"
-                        size="sm"
-                        disabled={!newStatusName.trim()}
-                      >
-                        {translations.add}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* List of custom statuses - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.description}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.color}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Predefined Statuses */}
-                        {[
-                          { id: 1, name: 'Available', description: 'Asset ready for use', color: '#22c55e' },
-                          { id: 2, name: 'In Use', description: 'Asset currently assigned', color: '#3b82f6' },
-                          { id: 3, name: 'Maintenance', description: 'Under maintenance', color: '#f59e0b' },
-                          { id: 4, name: 'Damaged', description: 'Asset is damaged', color: '#ef4444' },
-                          { id: 5, name: 'Retired', description: 'No longer in service', color: '#6b7280' }
-                        ].map((status) => (
-                          <tr key={status.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{status.name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {status.description}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <div 
-                                className="h-5 w-5 rounded-full mx-auto" 
-                                style={{ backgroundColor: status.color }}
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Default' : 'افتراضي'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        
-                        {/* Custom Statuses - Empty State */}
-                        {customAssetStatuses.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="px-3 py-3 text-center text-gray-500 text-xs">
-                              {language === 'English' ? 'No custom statuses added yet' : 'لم تتم إضافة حالات مخصصة بعد'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="md:col-span-2 flex items-end">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleAddAssetType}
+                    disabled={createAssetTypeMutation.isPending || !newTypeName.trim()}
+                  >
+                    {translations.add}
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Service Providers Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{translations.serviceProviders}</CardTitle>
-                <CardDescription className="text-xs">{translations.serviceProvidersDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new provider form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-6">
-                      <Label htmlFor="new-provider-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-provider-name" 
-                        value={newProviderName}
-                        onChange={(e) => setNewProviderName(e.target.value)}
-                        placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-4">
-                      <Label htmlFor="new-provider-contact" className="text-xs">
-                        {language === 'English' ? 'Contact' : 'جهة الاتصال'}
-                      </Label>
-                      <Input 
-                        id="new-provider-contact" 
-                        value={newProviderContact}
-                        onChange={(e) => setNewProviderContact(e.target.value)}
-                        placeholder={language === 'English' ? 'Contact name' : 'اسم جهة الاتصال'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button 
-                        className="w-full h-8 text-xs"
-                        size="sm"
-                        disabled={!newProviderName.trim()}
-                      >
-                        {translations.add}
-                      </Button>
-                    </div>
-                    <div className="md:col-span-6">
-                      <Label htmlFor="new-provider-phone" className="text-xs">
-                        {language === 'English' ? 'Phone' : 'رقم الهاتف'}
-                      </Label>
-                      <Input 
-                        id="new-provider-phone" 
-                        value={newProviderPhone}
-                        onChange={(e) => setNewProviderPhone(e.target.value)}
-                        placeholder={language === 'English' ? 'Phone number' : 'رقم الهاتف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-6">
-                      <Label htmlFor="new-provider-email" className="text-xs">
-                        {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
-                      </Label>
-                      <Input 
-                        id="new-provider-email" 
-                        value={newProviderEmail}
-                        onChange={(e) => setNewProviderEmail(e.target.value)}
-                        placeholder={language === 'English' ? 'Email address' : 'البريد الإلكتروني'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* List of service providers - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Contact Info' : 'معلومات الاتصال'}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
+              </div>
+
+              <div className="border rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">{translations.name}</th>
+                      <th className="px-4 py-2 text-left">{translations.description}</th>
+                      <th className="px-4 py-2 text-right">{translations.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-2">
+                          <Skeleton className="h-6 w-full" />
+                        </td>
+                      </tr>
+                    ) : Array.isArray(customAssetTypes) && customAssetTypes.length > 0 ? (
+                      customAssetTypes.map((type: any) => (
+                        <tr key={type.id} className="border-b">
+                          <td className="px-4 py-2">{type.name}</td>
+                          <td className="px-4 py-2">{type.description}</td>
+                          <td className="px-4 py-2 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => deleteAssetTypeMutation.mutate(type.id)}
+                              disabled={deleteAssetTypeMutation.isPending}
+                            >
+                              {translations.delete}
+                            </Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Sample Service Providers */}
-                        {[
-                          { id: 1, name: 'TechSupport Inc.', contact: 'John Smith', phone: '+1-555-123-4567', email: 'support@techsupport.com' },
-                          { id: 2, name: 'IT Solutions Ltd', contact: 'Jane Doe', phone: '+1-555-987-6543', email: 'service@itsolutions.com' }
-                        ].map((provider) => (
-                          <tr key={provider.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{provider.name}</span>
-                              <div className="text-xs text-gray-500">{provider.contact}</div>
-                            </td>
-                            <td className="px-3 py-2 text-xs text-gray-500">
-                              <div>{provider.phone}</div>
-                              <div>{provider.email}</div>
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Sample' : 'عينة'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        
-                        {/* Custom Providers - Empty State */}
-                        {serviceProviders.length === 0 && (
-                          <tr>
-                            <td colSpan={3} className="px-3 py-3 text-center text-gray-500 text-xs">
-                              {language === 'English' ? 'No service providers added yet' : 'لم تتم إضافة مزودي خدمة بعد'}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-2 text-center text-muted-foreground">
+                          No custom asset types found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Custom Asset Brands */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{translations.customAssetBrands}</CardTitle>
+            <CardDescription>{translations.customAssetBrandsDesc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-5">
+                  <Label htmlFor="newBrandName">{translations.name}</Label>
+                  <Input 
+                    id="newBrandName" 
+                    value={newBrandName} 
+                    onChange={(e) => setNewBrandName(e.target.value)}
+                    placeholder="Example: TechMax"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-        
-        {/* Ticket Module Customization */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-4 flex items-center text-purple-700">
-            {language === 'English' ? 'Ticket Customization' : 'تخصيص التذاكر'}
-          </h3>
-          
-          {/* Ticket Customization Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Ticket Categories Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  {language === 'English' ? 'Ticket Categories' : 'فئات التذاكر'}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {language === 'English' 
-                    ? 'Define custom categories for support tickets' 
-                    : 'تحديد فئات مخصصة لتذاكر الدعم'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new category form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-category-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-category-name"
-                        placeholder={language === 'English' ? 'Enter category name' : 'أدخل اسم الفئة'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-5">
-                      <Label htmlFor="new-category-desc" className="text-xs">{translations.description}</Label>
-                      <Input 
-                        id="new-category-desc"
-                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button className="w-full h-8 text-xs" size="sm">
-                        {translations.add}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* List of ticket categories - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.description}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
+                <div className="md:col-span-5">
+                  <Label htmlFor="newBrandDescription">{translations.description}</Label>
+                  <Input 
+                    id="newBrandDescription" 
+                    value={newBrandDescription} 
+                    onChange={(e) => setNewBrandDescription(e.target.value)}
+                    placeholder="Example: Network equipment manufacturer"
+                  />
+                </div>
+                <div className="md:col-span-2 flex items-end">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleAddAssetBrand}
+                    disabled={createAssetBrandMutation.isPending || !newBrandName.trim()}
+                  >
+                    {translations.add}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">{translations.name}</th>
+                      <th className="px-4 py-2 text-left">{translations.description}</th>
+                      <th className="px-4 py-2 text-right">{translations.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-2">
+                          <Skeleton className="h-6 w-full" />
+                        </td>
+                      </tr>
+                    ) : Array.isArray(customAssetBrands) && customAssetBrands.length > 0 ? (
+                      customAssetBrands.map((brand: any) => (
+                        <tr key={brand.id} className="border-b">
+                          <td className="px-4 py-2">{brand.name}</td>
+                          <td className="px-4 py-2">{brand.description}</td>
+                          <td className="px-4 py-2 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
+                              disabled={deleteAssetBrandMutation.isPending}
+                            >
+                              {translations.delete}
+                            </Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Default Ticket Categories */}
-                        {[
-                          { id: 1, name: 'Hardware', description: 'Hardware-related issues' },
-                          { id: 2, name: 'Software', description: 'Software-related issues' },
-                          { id: 3, name: 'Network', description: 'Network connectivity issues' },
-                          { id: 4, name: 'Other', description: 'Other miscellaneous issues' }
-                        ].map((category) => (
-                          <tr key={category.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{category.name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {category.description}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Default' : 'افتراضي'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-2 text-center text-muted-foreground">
+                          No custom asset brands found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Custom Asset Statuses */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{translations.customAssetStatuses}</CardTitle>
+            <CardDescription>{translations.customAssetStatusesDesc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-4">
+                  <Label htmlFor="newStatusName">{translations.name}</Label>
+                  <Input 
+                    id="newStatusName" 
+                    value={newStatusName} 
+                    onChange={(e) => setNewStatusName(e.target.value)}
+                    placeholder="Example: On Loan"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Ticket Priorities Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  {language === 'English' ? 'Ticket Priorities' : 'أولويات التذاكر'}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {language === 'English' 
-                    ? 'Define custom priorities for support tickets' 
-                    : 'تحديد أولويات مخصصة لتذاكر الدعم'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Add new priority form */}
-                  <div className="grid gap-4 md:grid-cols-12 border-b pb-4">
-                    <div className="md:col-span-4">
-                      <Label htmlFor="new-priority-name" className="text-xs">{translations.name}</Label>
-                      <Input 
-                        id="new-priority-name"
-                        placeholder={language === 'English' ? 'Enter priority name' : 'أدخل اسم الأولوية'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-4">
-                      <Label htmlFor="new-priority-desc" className="text-xs">{translations.description}</Label>
-                      <Input 
-                        id="new-priority-desc"
-                        placeholder={language === 'English' ? 'Enter description' : 'أدخل الوصف'}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="new-priority-color" className="text-xs">{translations.color}</Label>
-                      <div className="flex h-8 items-center">
-                        <Input 
-                          id="new-priority-color" 
-                          type="color"
-                          defaultValue="#ef4444"
-                          className="h-8 p-1 w-full"
-                        />
-                      </div>
-                    </div>
-                    <div className="md:col-span-2 flex items-end">
-                      <Button className="w-full h-8 text-xs" size="sm">
-                        {translations.add}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* List of ticket priorities - Table Format */}
-                  <div className="overflow-auto max-h-80 border rounded-md">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.name}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.description}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {translations.color}
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {language === 'English' ? 'Action' : 'إجراء'}
-                          </th>
+                <div className="md:col-span-4">
+                  <Label htmlFor="newStatusDescription">{translations.description}</Label>
+                  <Input 
+                    id="newStatusDescription" 
+                    value={newStatusDescription} 
+                    onChange={(e) => setNewStatusDescription(e.target.value)}
+                    placeholder="Example: Temporarily assigned outside department"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="newStatusColor">{translations.color}</Label>
+                  <Input 
+                    id="newStatusColor" 
+                    type="color"
+                    value={newStatusColor} 
+                    onChange={(e) => setNewStatusColor(e.target.value)}
+                  />
+                </div>
+                <div className="md:col-span-2 flex items-end">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleAddAssetStatus}
+                    disabled={createAssetStatusMutation.isPending || !newStatusName.trim()}
+                  >
+                    {translations.add}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">{translations.name}</th>
+                      <th className="px-4 py-2 text-left">{translations.description}</th>
+                      <th className="px-4 py-2 text-left">{translations.color}</th>
+                      <th className="px-4 py-2 text-left">{translations.sample}</th>
+                      <th className="px-4 py-2 text-right">{translations.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-2">
+                          <Skeleton className="h-6 w-full" />
+                        </td>
+                      </tr>
+                    ) : Array.isArray(customAssetStatuses) && customAssetStatuses.length > 0 ? (
+                      customAssetStatuses.map((status: any) => (
+                        <tr key={status.id} className="border-b">
+                          <td className="px-4 py-2">{status.name}</td>
+                          <td className="px-4 py-2">{status.description}</td>
+                          <td className="px-4 py-2">{status.color}</td>
+                          <td className="px-4 py-2">
+                            <div 
+                              className="w-6 h-6 rounded-full" 
+                              style={{ backgroundColor: status.color }}
+                            ></div>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                              disabled={deleteAssetStatusMutation.isPending}
+                            >
+                              {translations.delete}
+                            </Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Default Ticket Priorities */}
-                        {[
-                          { id: 1, name: 'Low', description: 'Non-urgent issues', color: '#22c55e' },
-                          { id: 2, name: 'Medium', description: 'Standard priority', color: '#f59e0b' },
-                          { id: 3, name: 'High', description: 'Urgent issues', color: '#ef4444' }
-                        ].map((priority) => (
-                          <tr key={priority.id}>
-                            <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="font-medium">{priority.name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {priority.description}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <div 
-                                className="h-5 w-5 rounded-full mx-auto" 
-                                style={{ backgroundColor: priority.color }}
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-xs text-gray-400">
-                                {language === 'English' ? 'Default' : 'افتراضي'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-2 text-center text-muted-foreground">
+                          No custom asset statuses found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Service Providers */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{translations.serviceProviders}</CardTitle>
+            <CardDescription>{translations.serviceProvidersDesc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-3">
+                  <Label htmlFor="newProviderName">{translations.name}</Label>
+                  <Input 
+                    id="newProviderName" 
+                    value={newProviderName} 
+                    onChange={(e) => setNewProviderName(e.target.value)}
+                    placeholder="Example: TechSupport Inc"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                <div className="md:col-span-3">
+                  <Label htmlFor="newProviderContact">{translations.contactPerson}</Label>
+                  <Input 
+                    id="newProviderContact" 
+                    value={newProviderContact} 
+                    onChange={(e) => setNewProviderContact(e.target.value)}
+                    placeholder="Example: John Smith"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="newProviderPhone">{translations.phone}</Label>
+                  <Input 
+                    id="newProviderPhone" 
+                    value={newProviderPhone} 
+                    onChange={(e) => setNewProviderPhone(e.target.value)}
+                    placeholder="Example: +1 555-123-4567"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="newProviderEmail">{translations.email}</Label>
+                  <Input 
+                    id="newProviderEmail" 
+                    value={newProviderEmail} 
+                    onChange={(e) => setNewProviderEmail(e.target.value)}
+                    placeholder="Example: contact@techsupport.com"
+                  />
+                </div>
+                <div className="md:col-span-2 flex items-end">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleAddServiceProvider}
+                    disabled={createServiceProviderMutation.isPending || !newProviderName.trim()}
+                  >
+                    {translations.add}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">{translations.name}</th>
+                      <th className="px-4 py-2 text-left">{translations.contactPerson}</th>
+                      <th className="px-4 py-2 text-left">{translations.phone}</th>
+                      <th className="px-4 py-2 text-left">{translations.email}</th>
+                      <th className="px-4 py-2 text-right">{translations.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-2">
+                          <Skeleton className="h-6 w-full" />
+                        </td>
+                      </tr>
+                    ) : Array.isArray(serviceProviders) && serviceProviders.length > 0 ? (
+                      serviceProviders.map((provider: any) => (
+                        <tr key={provider.id} className="border-b">
+                          <td className="px-4 py-2">{provider.name}</td>
+                          <td className="px-4 py-2">{provider.contactPerson || '-'}</td>
+                          <td className="px-4 py-2">{provider.phone || '-'}</td>
+                          <td className="px-4 py-2">{provider.email || '-'}</td>
+                          <td className="px-4 py-2 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                              disabled={deleteServiceProviderMutation.isPending}
+                            >
+                              {translations.delete}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-2 text-center text-muted-foreground">
+                          No service providers found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
