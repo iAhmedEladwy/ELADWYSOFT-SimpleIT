@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
+import AssetDetailView from '@/components/assets/AssetDetailView';
 import { 
   Table, 
   TableBody, 
@@ -88,6 +89,8 @@ export default function AssetsTable({
   const [assetToAssign, setAssetToAssign] = useState<any>(null);
   const [employeeId, setEmployeeId] = useState<string>('');
   const [assetToMaintenance, setAssetToMaintenance] = useState<any>(null);
+  const [assetToView, setAssetToView] = useState<number | null>(null);
+  const [showDetailView, setShowDetailView] = useState<boolean>(false);
   const [maintenanceData, setMaintenanceData] = useState({
     date: new Date().toISOString().split('T')[0],
     type: 'Hardware',
@@ -314,7 +317,10 @@ export default function AssetsTable({
                           {translations.addMaintenanceShort}
                         </DropdownMenuItem>
                         
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setAssetToView(asset.id);
+                          setShowDetailView(true);
+                        }}>
                           <Info className="h-4 w-4 mr-2" />
                           {translations.details}
                         </DropdownMenuItem>
@@ -529,6 +535,13 @@ export default function AssetsTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Asset Detail View */}
+      <AssetDetailView 
+        assetId={assetToView} 
+        open={showDetailView} 
+        onOpenChange={setShowDetailView} 
+      />
     </div>
   );
 }
