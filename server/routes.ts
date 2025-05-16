@@ -1234,6 +1234,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audit Logs
+  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const filter = req.query.filter as string;
+      const entityType = req.query.entityType as string;
+      const action = req.query.action as string;
+      const userId = req.query.userId as string;
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      const logs = await storage.getActivityLogs({
+        page,
+        limit,
+        filter,
+        entityType,
+        action,
+        userId: userId ? parseInt(userId) : undefined,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined
+      });
+      
+      // Get users for populating user information
+      const users = await storage.getAllUsers();
+      const userMap = users.reduce((map, user) => {
+        map[user.id] = user;
+        return map;
+      }, {} as Record<number, schema.User>);
+      
+      // Enhance logs with user information
+      const enhancedLogs = logs.data.map(log => ({
+        ...log,
+        user: log.userId ? {
+          id: userMap[log.userId]?.id,
+          username: userMap[log.userId]?.username
+        } : null
+      }));
+      
+      res.json({
+        data: enhancedLogs,
+        pagination: logs.pagination
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const configData = req.body;

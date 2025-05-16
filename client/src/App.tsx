@@ -13,10 +13,12 @@ import Assets from "@/pages/Assets";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
+import AuditLogs from "@/pages/AuditLogs";
 import Layout from "@/components/layout/Layout";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import { useLanguage, LanguageProvider } from "@/hooks/use-language";
+import { HelmetProvider } from "react-helmet-async";
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -102,6 +104,11 @@ function Router() {
             <PrivateRoute component={SystemConfig} />
           </Layout>
         </Route>
+        <Route path="/audit-logs">
+          <Layout>
+            <PrivateRoute component={AuditLogs} />
+          </Layout>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </div>
@@ -114,10 +121,12 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="light">
         <AuthProvider>
           <LanguageProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
+            <HelmetProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </HelmetProvider>
           </LanguageProvider>
         </AuthProvider>
       </ThemeProvider>
