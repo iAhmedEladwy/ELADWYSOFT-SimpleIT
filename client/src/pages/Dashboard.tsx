@@ -31,8 +31,8 @@ export default function Dashboard() {
   const translations = {
     dashboard: language === 'English' ? 'Dashboard' : 'لوحة التحكم',
     welcome: language === 'English' 
-      ? 'Welcome to SimpleIT Bolt.dev - IT Asset Management System' 
-      : 'مرحبًا بك في SimpleIT Bolt.dev - نظام إدارة أصول تكنولوجيا المعلومات',
+      ? 'Welcome to SimpleIT - IT Asset Management System' 
+      : 'مرحبًا بك في SimpleIT - نظام إدارة أصول تكنولوجيا المعلومات',
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
     recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',

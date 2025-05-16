@@ -3,7 +3,7 @@ import { useLanguage } from '@/hooks/use-language';
 import Layout from '@/components/layout/Layout';
 import TransactionHistoryTable from '@/components/assets/TransactionHistoryTable';
 
-export default function AssetTransactions() {
+export default function AssetHistory() {
   const { language } = useLanguage();
   
   // Translations

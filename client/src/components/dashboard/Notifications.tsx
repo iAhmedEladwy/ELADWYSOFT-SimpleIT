@@ -72,7 +72,7 @@ export default function Notifications() {
     {
       id: 5,
       title: 'System Update',
-      message: 'SimpleIT Bolt.dev has been updated to version 2.3.0. View the changelog for new features and improvements.',
+      message: 'SimpleIT has been updated to version 2.3.0. View the changelog for new features and improvements.',
       time: '1 ' + translations.weekAgo,
       icon: <Bell className="h-5 w-5 text-white" />,
       iconColor: 'bg-gray-500',
