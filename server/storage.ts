@@ -548,6 +548,157 @@ export class DatabaseStorage implements IStorage {
       }
     };
   }
+  
+  // Custom Asset Types
+  async getCustomAssetTypes(): Promise<any[]> {
+    try {
+      const types = await db.select().from(schema.customAssetTypes);
+      return types;
+    } catch (error) {
+      console.error('Error fetching custom asset types:', error);
+      return [];
+    }
+  }
+  
+  async createCustomAssetType(data: { name: string; description?: string }): Promise<any> {
+    try {
+      const [newType] = await db.insert(schema.customAssetTypes)
+        .values({
+          name: data.name,
+          description: data.description || null
+        })
+        .returning();
+      return newType;
+    } catch (error) {
+      console.error('Error creating custom asset type:', error);
+      throw error;
+    }
+  }
+  
+  async deleteCustomAssetType(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(schema.customAssetTypes)
+        .where(eq(schema.customAssetTypes.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting custom asset type:', error);
+      return false;
+    }
+  }
+  
+  // Custom Asset Brands
+  async getCustomAssetBrands(): Promise<any[]> {
+    try {
+      const brands = await db.select().from(schema.customAssetBrands);
+      return brands;
+    } catch (error) {
+      console.error('Error fetching custom asset brands:', error);
+      return [];
+    }
+  }
+  
+  async createCustomAssetBrand(data: { name: string; description?: string }): Promise<any> {
+    try {
+      const [newBrand] = await db.insert(schema.customAssetBrands)
+        .values({
+          name: data.name,
+          description: data.description || null
+        })
+        .returning();
+      return newBrand;
+    } catch (error) {
+      console.error('Error creating custom asset brand:', error);
+      throw error;
+    }
+  }
+  
+  async deleteCustomAssetBrand(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(schema.customAssetBrands)
+        .where(eq(schema.customAssetBrands.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting custom asset brand:', error);
+      return false;
+    }
+  }
+  
+  // Custom Asset Statuses
+  async getCustomAssetStatuses(): Promise<any[]> {
+    try {
+      const statuses = await db.select().from(schema.customAssetStatuses);
+      return statuses;
+    } catch (error) {
+      console.error('Error fetching custom asset statuses:', error);
+      return [];
+    }
+  }
+  
+  async createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any> {
+    try {
+      const [newStatus] = await db.insert(schema.customAssetStatuses)
+        .values({
+          name: data.name,
+          description: data.description || null,
+          color: data.color || '#3B82F6' // Default blue color
+        })
+        .returning();
+      return newStatus;
+    } catch (error) {
+      console.error('Error creating custom asset status:', error);
+      throw error;
+    }
+  }
+  
+  async deleteCustomAssetStatus(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(schema.customAssetStatuses)
+        .where(eq(schema.customAssetStatuses.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting custom asset status:', error);
+      return false;
+    }
+  }
+  
+  // Service Providers
+  async getServiceProviders(): Promise<any[]> {
+    try {
+      const providers = await db.select().from(schema.serviceProviders);
+      return providers;
+    } catch (error) {
+      console.error('Error fetching service providers:', error);
+      return [];
+    }
+  }
+  
+  async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
+    try {
+      const [newProvider] = await db.insert(schema.serviceProviders)
+        .values({
+          name: data.name,
+          contactPerson: data.contactPerson || null,
+          phone: data.phone || null,
+          email: data.email || null
+        })
+        .returning();
+      return newProvider;
+    } catch (error) {
+      console.error('Error creating service provider:', error);
+      throw error;
+    }
+  }
+  
+  async deleteServiceProvider(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(schema.serviceProviders)
+        .where(eq(schema.serviceProviders.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting service provider:', error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

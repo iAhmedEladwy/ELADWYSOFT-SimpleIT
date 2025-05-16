@@ -1627,6 +1627,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Custom Asset Types API
+  app.get('/api/custom-asset-types', authenticateUser, async (req, res) => {
+    try {
+      const types = await storage.getCustomAssetTypes();
+      res.json(types);
+    } catch (error: any) {
+      console.error('Error fetching custom asset types:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post('/api/custom-asset-types', authenticateUser, async (req, res) => {
+    try {
+      const newType = await storage.createCustomAssetType({
+        name: req.body.name,
+        description: req.body.description
+      });
+      res.status(201).json(newType);
+    } catch (error: any) {
+      console.error('Error creating custom asset type:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.delete('/api/custom-asset-types/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomAssetType(id);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: 'Custom asset type not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting custom asset type:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Custom Asset Brands API
+  app.get('/api/custom-asset-brands', authenticateUser, async (req, res) => {
+    try {
+      const brands = await storage.getCustomAssetBrands();
+      res.json(brands);
+    } catch (error: any) {
+      console.error('Error fetching custom asset brands:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post('/api/custom-asset-brands', authenticateUser, async (req, res) => {
+    try {
+      const newBrand = await storage.createCustomAssetBrand({
+        name: req.body.name,
+        description: req.body.description
+      });
+      res.status(201).json(newBrand);
+    } catch (error: any) {
+      console.error('Error creating custom asset brand:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.delete('/api/custom-asset-brands/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomAssetBrand(id);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: 'Custom asset brand not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting custom asset brand:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Custom Asset Statuses API
+  app.get('/api/custom-asset-statuses', authenticateUser, async (req, res) => {
+    try {
+      const statuses = await storage.getCustomAssetStatuses();
+      res.json(statuses);
+    } catch (error: any) {
+      console.error('Error fetching custom asset statuses:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post('/api/custom-asset-statuses', authenticateUser, async (req, res) => {
+    try {
+      const newStatus = await storage.createCustomAssetStatus({
+        name: req.body.name,
+        description: req.body.description,
+        color: req.body.color
+      });
+      res.status(201).json(newStatus);
+    } catch (error: any) {
+      console.error('Error creating custom asset status:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.delete('/api/custom-asset-statuses/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomAssetStatus(id);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: 'Custom asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting custom asset status:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Service Providers API
+  app.get('/api/service-providers', authenticateUser, async (req, res) => {
+    try {
+      const providers = await storage.getServiceProviders();
+      res.json(providers);
+    } catch (error: any) {
+      console.error('Error fetching service providers:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.post('/api/service-providers', authenticateUser, async (req, res) => {
+    try {
+      const newProvider = await storage.createServiceProvider({
+        name: req.body.name,
+        contactPerson: req.body.contactPerson,
+        phone: req.body.phone,
+        email: req.body.email
+      });
+      res.status(201).json(newProvider);
+    } catch (error: any) {
+      console.error('Error creating service provider:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.delete('/api/service-providers/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteServiceProvider(id);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: 'Service provider not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting service provider:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   // Initialize admin user if none exists
   try {
