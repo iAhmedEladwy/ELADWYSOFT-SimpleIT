@@ -8,8 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Settings, Save } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings, Save, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SystemConfig() {
@@ -123,15 +129,25 @@ export default function SystemConfig() {
             <>
               {/* Language Setting */}
               <div className="space-y-2">
-                <Label htmlFor="language-toggle">{translations.language}</Label>
+                <Label htmlFor="language-select">{translations.language}</Label>
                 <div className="flex items-center gap-4">
-                  <span className={language === 'English' ? 'font-bold' : ''}>{translations.english}</span>
-                  <Switch 
-                    id="language-toggle" 
-                    checked={language === 'Arabic'}
-                    onCheckedChange={toggleLanguage} 
-                  />
-                  <span className={language === 'Arabic' ? 'font-bold' : ''}>{translations.arabic}</span>
+                  <Select
+                    value={language}
+                    onValueChange={(value) => {
+                      if (value !== language) {
+                        toggleLanguage(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <Globe className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder={translations.language} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">{translations.english}</SelectItem>
+                      <SelectItem value="Arabic">{translations.arabic}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
