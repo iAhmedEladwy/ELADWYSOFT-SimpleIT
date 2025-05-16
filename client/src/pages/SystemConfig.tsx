@@ -24,6 +24,8 @@ export default function SystemConfig() {
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
   const [assetIdPrefix, setAssetIdPrefix] = useState('BOLT-');
+  const [currency, setCurrency] = useState('USD');
+  const [currencySymbol, setCurrencySymbol] = useState('$');
   const [isLoading, setIsLoading] = useState(true);
 
   // Translations
@@ -40,6 +42,14 @@ export default function SystemConfig() {
     assetIdPrefixDesc: language === 'English' 
       ? 'Prefix added to all asset IDs (e.g., BOLT-LT-0001)' 
       : 'البادئة المضافة إلى جميع معرفات الأصول (مثال: BOLT-LT-0001)',
+    currency: language === 'English' ? 'Currency' : 'العملة',
+    currencyDesc: language === 'English'
+      ? 'Default currency used throughout the system'
+      : 'العملة الافتراضية المستخدمة في جميع أنحاء النظام',
+    currencySymbol: language === 'English' ? 'Currency Symbol' : 'رمز العملة',
+    currencySymbolDesc: language === 'English'
+      ? 'Symbol displayed for monetary values'
+      : 'الرمز المعروض للقيم النقدية',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     saveSuccess: language === 'English' ? 'Configuration saved successfully' : 'تم حفظ الإعدادات بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
@@ -71,6 +81,23 @@ export default function SystemConfig() {
     serviceProvidersDesc: language === 'English' 
       ? 'Manage external service providers for maintenance and support' 
       : 'إدارة مزودي الخدمة الخارجيين للصيانة والدعم',
+    ticketCustomization: language === 'English' ? 'Ticket Customization' : 'تخصيص التذاكر',
+    ticketCategories: language === 'English' ? 'Ticket Categories' : 'فئات التذاكر',
+    ticketCategoriesDesc: language === 'English' 
+      ? 'Define custom categories for tickets' 
+      : 'تحديد فئات مخصصة للتذاكر',
+    ticketPriorities: language === 'English' ? 'Ticket Priorities' : 'أولويات التذاكر',
+    ticketPrioritiesDesc: language === 'English' 
+      ? 'Set custom priorities with color coding' 
+      : 'تعيين أولويات مخصصة مع ترميز الألوان',
+    action: language === 'English' ? 'Action' : 'إجراء',
+    default: language === 'English' ? 'Default' : 'افتراضي',
+    sample: language === 'English' ? 'Sample' : 'عينة',
+    common: language === 'English' ? 'Common' : 'شائع',
+    phone: language === 'English' ? 'Phone' : 'رقم الهاتف',
+    email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
+    contactInfo: language === 'English' ? 'Contact Info' : 'معلومات الاتصال',
+    contactPerson: language === 'English' ? 'Contact Person' : 'جهة الاتصال'
   };
 
   // Check if user has admin access
@@ -102,6 +129,12 @@ export default function SystemConfig() {
       if (data?.assetIdPrefix) {
         setAssetIdPrefix(data.assetIdPrefix);
       }
+      if (data?.currency) {
+        setCurrency(data.currency);
+      }
+      if (data?.currencySymbol) {
+        setCurrencySymbol(data.currencySymbol);
+      }
       setIsLoading(false);
     },
   });
@@ -129,7 +162,9 @@ export default function SystemConfig() {
 
   const handleSaveConfig = () => {
     updateConfigMutation.mutate({
-      assetIdPrefix
+      assetIdPrefix,
+      currency,
+      currencySymbol
     });
   };
 
@@ -208,6 +243,58 @@ export default function SystemConfig() {
                   className="max-w-xs"
                 />
                 <p className="text-sm text-gray-500">{translations.assetIdPrefixDesc}</p>
+              </div>
+
+              {/* Currency Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Currency */}
+                <div className="space-y-2">
+                  <Label htmlFor="currency">{translations.currency}</Label>
+                  <Select
+                    value={currency}
+                    onValueChange={(value) => setCurrency(value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={translations.currency} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                      <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                      <SelectItem value="GBP">GBP (British Pound)</SelectItem>
+                      <SelectItem value="JPY">JPY (Japanese Yen)</SelectItem>
+                      <SelectItem value="CAD">CAD (Canadian Dollar)</SelectItem>
+                      <SelectItem value="AUD">AUD (Australian Dollar)</SelectItem>
+                      <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                      <SelectItem value="AED">AED (UAE Dirham)</SelectItem>
+                      <SelectItem value="EGP">EGP (Egyptian Pound)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">{translations.currencyDesc}</p>
+                </div>
+                
+                {/* Currency Symbol */}
+                <div className="space-y-2">
+                  <Label htmlFor="currency-symbol">{translations.currencySymbol}</Label>
+                  <Select
+                    value={currencySymbol}
+                    onValueChange={(value) => setCurrencySymbol(value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={translations.currencySymbol} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="$">$ (Dollar)</SelectItem>
+                      <SelectItem value="€">€ (Euro)</SelectItem>
+                      <SelectItem value="£">£ (Pound)</SelectItem>
+                      <SelectItem value="¥">¥ (Yen)</SelectItem>
+                      <SelectItem value="₹">₹ (Rupee)</SelectItem>
+                      <SelectItem value="﷼">﷼ (Riyal)</SelectItem>
+                      <SelectItem value="د.إ">د.إ (Dirham)</SelectItem>
+                      <SelectItem value="د.م">د.م (Dinar)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">{translations.currencySymbolDesc}</p>
+                </div>
               </div>
               
               {/* Save Button */}
