@@ -461,7 +461,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">{translations.none}</SelectItem>
+                        <SelectItem value="none">{translations.none}</SelectItem>
                         {users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username} ({user.email})

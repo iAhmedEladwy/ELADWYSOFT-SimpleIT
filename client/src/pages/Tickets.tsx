@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,29 @@ export default function Tickets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Listen for the FAB create ticket event
+  useEffect(() => {
+    const handleFabAddTicket = () => {
+      setOpenDialog(true);
+    };
+    
+    // Register event listener
+    window.addEventListener('fab:add-ticket', handleFabAddTicket);
+    
+    // Check if URL has action=new parameter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new') {
+      handleFabAddTicket();
+      // Clean up the URL to prevent dialog from reopening on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('fab:add-ticket', handleFabAddTicket);
+    };
+  }, []);
 
   // Translations
   const translations = {

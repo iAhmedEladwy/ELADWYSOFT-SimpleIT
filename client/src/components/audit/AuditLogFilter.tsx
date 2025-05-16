@@ -133,7 +133,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">All Actions</SelectItem>
+                        <SelectItem value="all-actions">All Actions</SelectItem>
                         {actionTypes.map(action => (
                           <SelectItem key={action} value={action}>{action}</SelectItem>
                         ))}
@@ -160,7 +160,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">All Entities</SelectItem>
+                        <SelectItem value="all-entities">All Entities</SelectItem>
                         {entityTypes.map(entity => (
                           <SelectItem key={entity} value={entity}>{entity}</SelectItem>
                         ))}
