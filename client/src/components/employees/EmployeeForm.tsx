@@ -148,24 +148,27 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     
     // Format the data for the server according to the database schema
     const formattedData = {
+      // Required fields
       englishName: values.englishName,
       department: values.department,
       idNumber: values.idNumber,
       title: values.title,
       employmentType: values.employmentType,
-      joiningDate: values.joiningDate,
       status: values.status,
       
-      // Optional values - either pass them as null or the actual value
+      // Parse the date strings into proper format
+      joiningDate: values.joiningDate || new Date().toISOString().split('T')[0],
+      
+      // Optional fields with proper null handling
       empId: values.empId || undefined,
       arabicName: values.arabicName || null,
-      directManager: values.directManager ? parseInt(values.directManager) : null,
-      exitDate: values.exitDate || null,
+      directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
+      exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,
       personalMobile: values.personalMobile || null,
       workMobile: values.workMobile || null,
       personalEmail: values.personalEmail || null,
       corporateEmail: values.corporateEmail || null,
-      userId: values.userId ? parseInt(values.userId) : null,
+      userId: values.userId && values.userId !== '' ? parseInt(values.userId) : null,
     };
     
     onSubmit(formattedData);

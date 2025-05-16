@@ -118,7 +118,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
       <div className="mt-auto p-4">
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
-            <span className="text-primary font-bold text-lg">SimpleIT</span>
+            <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
             <span className="text-xs text-gray-500">SimpleIT v1.0</span>
           </div>
         </div>
