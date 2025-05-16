@@ -34,8 +34,8 @@ import { AssetTransaction, Asset, Employee } from '@shared/schema';
 // Define the transaction response structure with joined entities
 interface TransactionResponse {
   asset_transactions: AssetTransaction;
-  asset?: Asset;
-  employee?: Employee;
+  assets?: Asset;
+  employees?: Employee;
 }
 
 // Combine them for easier usage in component
@@ -81,17 +81,12 @@ export default function TransactionHistoryTable() {
     queryKey: ['/api/asset-transactions'],
   });
   
-  // Add a log for debugging the response structure
-  console.log('Transaction response:', transactionResponse);
-  
   // Transform the response to more usable format
   const transactions = transactionResponse?.map(item => {
-    // Add logging for each item transformation
-    console.log('Item to transform:', item);
     return {
       ...item.asset_transactions,
-      asset: item.asset,
-      employee: item.employee
+      asset: item.assets,
+      employee: item.employees
     } as TransactionWithRelations;
   });
   
