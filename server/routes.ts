@@ -13,6 +13,7 @@ import multer from "multer";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
 import { createHash } from "crypto";
+import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 
 // Helper function to generate IDs
 const generateId = (prefix: string, num: number) => {
@@ -89,6 +90,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Add audit logging middleware
+  app.use(auditLogMiddleware);
 
   // Configure passport
   passport.use(
