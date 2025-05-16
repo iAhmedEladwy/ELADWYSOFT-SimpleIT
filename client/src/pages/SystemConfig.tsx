@@ -25,7 +25,6 @@ export default function SystemConfig() {
   const queryClient = useQueryClient();
   const [assetIdPrefix, setAssetIdPrefix] = useState('BOLT-');
   const [currency, setCurrency] = useState('USD');
-  const [currencySymbol, setCurrencySymbol] = useState('$');
   const [isLoading, setIsLoading] = useState(true);
   
   // Form state for new items
