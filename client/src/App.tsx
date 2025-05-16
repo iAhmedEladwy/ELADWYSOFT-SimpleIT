@@ -10,6 +10,7 @@ import Login from "@/pages/Login";
 import Users from "@/pages/Users";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
+import AssetTransactions from "@/pages/AssetTransactions";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
@@ -87,6 +88,11 @@ function Router() {
         <Route path="/assets">
           <Layout>
             <PrivateRoute component={Assets} />
+          </Layout>
+        </Route>
+        <Route path="/asset-transactions">
+          <Layout>
+            <PrivateRoute component={AssetTransactions} />
           </Layout>
         </Route>
         <Route path="/tickets">

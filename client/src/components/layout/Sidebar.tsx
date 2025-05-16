@@ -9,6 +9,7 @@ import {
   Ticket,
   BarChart2,
   Settings,
+  History,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     Users: language === 'English' ? 'Users' : 'المستخدمين',
     Employees: language === 'English' ? 'Employees' : 'الموظفين',
     Assets: language === 'English' ? 'Assets' : 'الأصول',
+    AssetTransactions: language === 'English' ? 'Asset Transactions' : 'معاملات الأصول',
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
@@ -86,6 +88,13 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           <Link href="/assets" className={getLinkClass('/assets')}>
             <Laptop className="h-5 w-5" />
             <span>{translations.Assets}</span>
+          </Link>
+        </div>
+        
+        <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <Link href="/asset-transactions" className={getLinkClass('/asset-transactions')}>
+            <History className="h-5 w-5" />
+            <span>{translations.AssetTransactions}</span>
           </Link>
         </div>
         
