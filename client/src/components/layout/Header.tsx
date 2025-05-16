@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -12,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Menu } from 'lucide-react';
+import { Menu, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
@@ -63,18 +69,23 @@ export default function Header({ toggleSidebar }: HeaderProps) {
         
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="hidden md:inline text-sm text-gray-600">
-              {language === "English" ? "English" : "الإنجليزية"}
-            </span>
-            <Switch 
-              id="language-toggle" 
-              checked={language === "Arabic"} 
-              onCheckedChange={toggleLanguage} 
-              aria-label="Toggle between English and Arabic"
-            />
-            <span className="hidden md:inline text-sm text-gray-600">
-              {language === "English" ? "العربية" : "Arabic"}
-            </span>
+            <Select
+              value={language}
+              onValueChange={(value) => {
+                if (value !== language) {
+                  toggleLanguage(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[130px]">
+                <Globe className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="Arabic">العربية</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <DropdownMenu>

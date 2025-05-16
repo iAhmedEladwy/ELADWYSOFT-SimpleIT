@@ -4,7 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 
 type LanguageContextType = {
   language: string;
-  toggleLanguage: () => void;
+  toggleLanguage: (newLang?: string) => void;
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -16,7 +16,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Fetch current config
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data?.language) {
         setLanguage(data.language);
       }
@@ -34,8 +34,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const toggleLanguage = () => {
-    const newLanguage = language === 'English' ? 'Arabic' : 'English';
+  const toggleLanguage = (newLang?: string) => {
+    // If a specific language is provided, use it; otherwise toggle
+    const newLanguage = newLang || (language === 'English' ? 'Arabic' : 'English');
     setLanguage(newLanguage);
     updateLanguageMutation.mutate(newLanguage);
   };
