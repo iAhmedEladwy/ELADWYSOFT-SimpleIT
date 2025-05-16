@@ -164,8 +164,8 @@ export default function TransactionHistoryTable() {
               <SelectContent>
                 <SelectItem value="">{translations.all}</SelectItem>
                 {assets?.map((asset) => (
-                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                    {asset.assetId} - {asset.name}
+                  <SelectItem key={asset.id} value={String(asset.id)}>
+                    {asset.assetId} - {asset.name || 'Unknown'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -184,8 +184,8 @@ export default function TransactionHistoryTable() {
               <SelectContent>
                 <SelectItem value="">{translations.all}</SelectItem>
                 {employees?.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id.toString()}>
-                    {employee.englishName}
+                  <SelectItem key={employee.id} value={String(employee.id)}>
+                    {employee.englishName || employee.empId || 'Unknown Employee'}
                   </SelectItem>
                 ))}
               </SelectContent>
