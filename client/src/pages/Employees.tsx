@@ -298,7 +298,7 @@ export default function Employees() {
                     {translations.addEmployee}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {editingEmployee ? translations.editEmployee : translations.addEmployee}
