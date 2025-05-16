@@ -81,8 +81,13 @@ export default function TransactionHistoryTable() {
     queryKey: ['/api/asset-transactions'],
   });
   
+  // Add a log for debugging the response structure
+  console.log('Transaction response:', transactionResponse);
+  
   // Transform the response to more usable format
   const transactions = transactionResponse?.map(item => {
+    // Add logging for each item transformation
+    console.log('Item to transform:', item);
     return {
       ...item.asset_transactions,
       asset: item.asset,
@@ -254,8 +259,8 @@ export default function TransactionHistoryTable() {
                   filteredTransactions.map((transaction: TransactionWithRelations) => (
                     <TableRow key={transaction.id}>
                       <TableCell>{transaction.id}</TableCell>
-                      <TableCell>{transaction.asset?.assetId}</TableCell>
-                      <TableCell>{transaction.employee?.englishName}</TableCell>
+                      <TableCell className="font-medium">{transaction.asset?.assetId || '-'}</TableCell>
+                      <TableCell>{transaction.employee?.englishName || '-'}</TableCell>
                       <TableCell>
                         <Badge variant={transaction.type === 'Check-In' ? 'outline' : 'default'}>
                           {transaction.type === 'Check-In' ? translations.checkIn : translations.checkOut}
