@@ -1573,6 +1573,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Asset Transactions
+  app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
+    try {
+      const { assetId, employeeId } = req.query;
+      
+      let transactions;
+      if (assetId) {
+        transactions = await storage.getAssetTransactions(Number(assetId));
+      } else if (employeeId) {
+        transactions = await storage.getEmployeeTransactions(Number(employeeId));
+      } else {
+        transactions = await storage.getAllAssetTransactions();
+      }
+      
+      res.json(transactions);
+    } catch (error: any) {
+      console.error("Error fetching asset transactions:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   // Reports
   app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {

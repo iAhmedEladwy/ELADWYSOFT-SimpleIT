@@ -62,6 +62,7 @@ export interface IStorage {
   createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction>;
   getAssetTransactions(assetId: number): Promise<AssetTransaction[]>;
   getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]>;
+  getAllAssetTransactions(): Promise<AssetTransaction[]>;
   checkOutAsset(assetId: number, employeeId: number, notes?: string, type?: string): Promise<AssetTransaction>;
   checkInAsset(assetId: number, notes?: string, type?: string): Promise<AssetTransaction>;
 
@@ -742,6 +743,34 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(assetTransactions.createdAt));
     } catch (error) {
       console.error('Error getting employee transactions:', error);
+      return [];
+    }
+  }
+  
+  async getAllAssetTransactions(): Promise<AssetTransaction[]> {
+    try {
+      const transactions = await db.select()
+        .from(assetTransactions)
+        .leftJoin(assets, eq(assetTransactions.assetId, assets.id))
+        .leftJoin(employees, eq(assetTransactions.employeeId, employees.id))
+        .orderBy(desc(assetTransactions.createdAt));
+      
+      // Fetch related data to include in the response
+      const result = [];
+      for (const transaction of transactions) {
+        const asset = await this.getAsset(transaction.assetId);
+        const employee = transaction.employeeId ? await this.getEmployee(transaction.employeeId) : null;
+        
+        result.push({
+          ...transaction,
+          asset,
+          employee
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting all asset transactions:', error);
       return [];
     }
   }
