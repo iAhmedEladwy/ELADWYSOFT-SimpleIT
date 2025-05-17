@@ -6,7 +6,9 @@ This document outlines the steps to deploy the SimpleIT Asset Management System 
 
 ### Option 1: One-Click Deployment Script (Easiest)
 
-We provide a simple one-click deployment script that handles everything automatically:
+We provide simple one-click deployment scripts for both Linux/macOS and Windows environments:
+
+#### For Linux/macOS
 
 ```bash
 # Clone repository
@@ -19,7 +21,18 @@ chmod +x docs/deploy-script.sh
 ./docs/deploy-script.sh
 ```
 
-The script will:
+#### For Windows with Docker Desktop
+
+```bash
+# Clone repository
+git clone https://github.com/eladwysoft/simpleit.git
+cd simpleit
+
+# Run the Windows deployment script
+docs\deploy-windows-docker.bat
+```
+
+These scripts will:
 1. Create all necessary Docker configuration files
 2. Start the Docker containers
 3. Initialize the database
@@ -521,25 +534,75 @@ For production environments, you can use IIS as a reverse proxy:
 
 ### Common Issues and Solutions
 
-#### Database Connection Issues
+#### Docker-Specific Issues
+
+##### Containers Not Starting
+```bash
+# Check container status
+docker-compose ps
+
+# View detailed logs
+docker-compose logs -f
+
+# Restart containers
+docker-compose down && docker-compose up -d
+```
+
+##### Database Connection Errors in Docker
+```bash
+# Check if PostgreSQL container is running
+docker ps | grep postgres
+
+# View PostgreSQL logs
+docker-compose logs postgres
+
+# Verify database connection from app container
+docker-compose exec app node -e "const { Pool } = require('@neondatabase/serverless'); const pool = new Pool({ connectionString: process.env.DATABASE_URL }); pool.query('SELECT NOW()').then(res => console.log(res.rows[0])).catch(err => console.error(err)).finally(() => pool.end());"
+```
+
+##### Permission Issues with Docker Volumes
+```bash
+# Fix permissions on upload directory
+sudo chown -R 1000:1000 ./uploads
+
+# Check volume mappings
+docker-compose config
+```
+
+##### Docker Container Out of Memory
+```bash
+# Check container resource usage
+docker stats
+
+# Increase memory limit in docker-compose.yml
+# Add under the app service:
+#   deploy:
+#     resources:
+#       limits:
+#         memory: 1G
+```
+
+#### Standard Deployment Issues
+
+##### Database Connection Issues
 
 - Verify PostgreSQL is running: `sudo systemctl status postgresql` (Ubuntu) or check Services in Windows
 - Check database credentials and connection string in `.env`
 - Ensure the database user has appropriate permissions
 
-#### Node.js Application Won't Start
+##### Node.js Application Won't Start
 
 - Check for errors in the application logs
 - Verify Node.js is installed correctly: `node -v`
 - Ensure all dependencies are installed: `npm install`
 - Verify environment variables are set correctly
 
-#### Permission Issues (Ubuntu)
+##### Permission Issues (Ubuntu)
 
 - Ensure the application directory has appropriate permissions: `sudo chown -R $USER:$USER /path/to/simpleit`
 - Check if the process has permission to bind to the specified port
 
-#### Port Conflicts
+##### Port Conflicts
 
 - Verify no other service is using the specified port: `sudo netstat -tuln | grep PORT` (Ubuntu) or `netstat -an | find "PORT"` (Windows)
 - Change the port in your `.env` file if needed
@@ -550,24 +613,72 @@ For production environments, you can use IIS as a reverse proxy:
 
 #### Database Backup
 
-Ubuntu:
+##### Docker Deployment
+```bash
+# Backup the database
+docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
+
+# Include any uploaded files
+tar -czvf uploads_backup_$(date +%Y%m%d).tar.gz ./uploads
+```
+
+##### Ubuntu Deployment
 ```bash
 # Backup the database
 pg_dump -U simpleituser -d simpleit > simpleit_backup_$(date +%Y%m%d).sql
 ```
 
-Windows:
+##### Windows Deployment
 ```
 pg_dump -U simpleituser -d simpleit > simpleit_backup_%date:~-4,4%%date:~-7,2%%date:~-10,2%.sql
 ```
 
 ### Update Procedures
 
+#### Docker Deployment
+
+1. Backup the database and uploaded files:
+   ```bash
+   # Backup the database
+   docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
+   
+   # Backup uploaded files
+   tar -czvf uploads_backup_$(date +%Y%m%d).tar.gz ./uploads
+   ```
+
+2. Pull the latest changes:
+   ```bash
+   git pull origin main
+   ```
+
+3. Rebuild and restart containers:
+   ```bash
+   # Clean rebuild with the latest code
+   docker-compose down
+   docker-compose up --build -d
+   
+   # Apply any database migrations
+   docker-compose exec app npm run db:push
+   ```
+
+4. Verify the application is running:
+   ```bash
+   # Check container status
+   docker-compose ps
+   
+   # View logs for any errors
+   docker-compose logs -f
+   ```
+
+#### Traditional Deployment
+
 1. Stop the application:
    - Ubuntu: `pm2 stop simpleit`
    - Windows: Stop the Windows service from Services management console
 
-2. Backup the database
+2. Backup the database:
+   - Ubuntu: `pg_dump -U simpleituser -d simpleit > simpleit_backup_$(date +%Y%m%d).sql`
+   - Windows: `pg_dump -U simpleituser -d simpleit > simpleit_backup_%date:~-4,4%%date:~-7,2%%date:~-10,2%.sql`
 
 3. Pull the latest changes:
    ```

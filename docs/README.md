@@ -32,22 +32,38 @@ This docs directory contains comprehensive documentation for the SimpleIT system
 
 ### Quick Start with Docker (Recommended)
 
+#### For Linux/macOS
+
 ```bash
 # Clone repository
 git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
 
-# One-click deployment with our script
+# One-click deployment with our Linux/macOS script
 chmod +x docs/deploy-script.sh && ./docs/deploy-script.sh
 
 # Access the application at http://your-server-ip
 # Default login: admin / admin123
 ```
 
-The one-click deployment script handles everything automatically:
-- Creates all necessary Docker configuration files
-- Starts the Docker containers
-- Initializes the database
-- Provides access instructions
+#### For Windows
+
+```bash
+# Clone repository
+git clone https://github.com/eladwysoft/simpleit.git
+cd simpleit
+
+# One-click deployment with our Windows script
+docs\deploy-windows-docker.bat
+
+# Access the application at http://localhost
+# Default login: admin / admin123
+```
+
+The one-click deployment scripts handle everything automatically:
+- Create all necessary Docker configuration files
+- Start the Docker containers
+- Initialize the database
+- Provide access instructions
 
 ### Standard Setup
 
