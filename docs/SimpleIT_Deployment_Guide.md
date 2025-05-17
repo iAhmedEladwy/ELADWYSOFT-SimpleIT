@@ -61,15 +61,32 @@ docker-compose exec app npm run db:push
 ## Prerequisites
 
 ### For Docker Deployment (Recommended)
-- Docker 20.10.x or higher
-- Docker Compose 2.x or higher
-- At least 2GB of RAM and 1GB of free disk space
+
+#### Required Software
+- **Git**: For cloning the repository
+  - [Download Git](https://git-scm.com/downloads)
+- **Docker**: 20.10.x or higher
+  - [Download Docker](https://www.docker.com/get-started/)
+- **Docker Compose**: 2.x or higher (included with Docker Desktop on Windows/macOS)
+  - [Docker Compose Installation](https://docs.docker.com/compose/install/)
+- **curl**: Recommended for API testing (optional)
+
+> **Note**: Our deployment scripts will automatically check for these dependencies and provide installation instructions if any are missing.
+
+#### Hardware Requirements
+- At least 2GB of RAM
+- At least 1GB of free disk space
+- Internet connection for downloading Docker images
 
 ### For Traditional Deployment
-- Node.js 18.x or higher
-- PostgreSQL 14.x or higher
-- Git (for cloning the repository)
-- At least 2GB of RAM and 1GB of free disk space
+- **Git**: For cloning the repository
+  - [Download Git](https://git-scm.com/downloads)
+- **Node.js**: 18.x or higher
+  - [Download Node.js](https://nodejs.org/en/download/)
+- **npm**: 8.x or higher (included with Node.js)
+- **PostgreSQL**: 14.x or higher
+  - [Download PostgreSQL](https://www.postgresql.org/download/)
+- **Hardware**: At least 2GB of RAM and 1GB of free disk space
 
 ## Docker Deployment (Recommended)
 

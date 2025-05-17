@@ -12,14 +12,69 @@ echo.
 set DB_PASSWORD=simpleit_secure_password
 for /f "tokens=*" %%a in ('powershell -Command "[Guid]::NewGuid().ToString()"') do set SESSION_SECRET=%%a
 
-:: Check if Docker is installed and running
-docker info > nul 2>&1
+:: Check for required dependencies
+echo Checking for required dependencies...
+
+:: Check if Git is installed
+git --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo Docker is not running or not installed.
-    echo Please install Docker Desktop from https://www.docker.com/products/docker-desktop
-    echo and ensure it is running before executing this script.
+    echo ERROR: Git is not installed or not in your PATH.
+    echo Please install Git from https://git-scm.com/download/win
+    echo and ensure it is added to your PATH before running this script.
     exit /b 1
 )
+echo - Git is installed.
+
+:: Check if Docker is installed and running
+docker --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Docker is not installed or not in your PATH.
+    echo Please install Docker Desktop from https://www.docker.com/products/docker-desktop
+    echo and ensure it is added to your PATH before running this script.
+    exit /b 1
+)
+echo - Docker is installed.
+
+:: Check if Docker is running
+docker info >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Docker is installed but not running.
+    echo Please start Docker Desktop before executing this script.
+    exit /b 1
+)
+echo - Docker is running.
+
+:: Check if Docker Compose is available
+docker-compose --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Docker Compose is not installed or not in your PATH.
+    echo Docker Compose is typically included with Docker Desktop.
+    echo Please ensure Docker Desktop is installed correctly.
+    exit /b 1
+)
+echo - Docker Compose is installed.
+
+:: Check if Node.js is installed (needed for database migrations)
+node --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo WARNING: Node.js is not installed or not in your PATH.
+    echo This won't affect the Docker deployment, but might be needed if you need to run 
+    echo database migrations or scripts manually outside the container.
+    echo You can install Node.js from https://nodejs.org/en/download/ if needed.
+) else (
+    echo - Node.js is installed.
+    
+    :: Check if npm is available
+    npm --version >nul 2>&1
+    if %ERRORLEVEL% NEQ 0 (
+        echo WARNING: npm is not installed or not in your PATH.
+        echo This should be included with your Node.js installation.
+    ) else (
+        echo - npm is installed.
+    )
+)
+
+echo All required dependencies are installed and ready.
 
 echo Creating docker-compose.yml file...
 (

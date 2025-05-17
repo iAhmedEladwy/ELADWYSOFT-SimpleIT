@@ -11,24 +11,66 @@ SESSION_SECRET="simpleit_session_secret_$(date +%s%N | sha256sum | base64 | head
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}SimpleIT Docker Deployment Script${NC}"
 echo "----------------------------------------"
 
+echo -e "${BLUE}Checking for required dependencies...${NC}"
+
+# Check if Git is installed
+if ! command -v git &> /dev/null; then
+    echo -e "${RED}Git is not installed. Please install Git first.${NC}"
+    echo -e "For Ubuntu/Debian: ${YELLOW}sudo apt-get update && sudo apt-get install -y git${NC}"
+    echo -e "For CentOS/RHEL: ${YELLOW}sudo yum install -y git${NC}"
+    echo -e "For macOS: ${YELLOW}brew install git${NC}"
+    echo -e "Or visit https://git-scm.com/downloads for installation instructions."
+    exit 1
+fi
+echo -e "✓ ${GREEN}Git is installed${NC}"
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Docker is not installed. Please install Docker first.${NC}"
-    echo "Visit https://docs.docker.com/get-docker/ for installation instructions."
+    echo -e "For Ubuntu/Debian: ${YELLOW}curl -fsSL https://get.docker.com | sh${NC}"
+    echo -e "For macOS: Install Docker Desktop from https://docs.docker.com/desktop/install/mac-install/"
+    echo -e "Or visit https://docs.docker.com/get-docker/ for installation instructions."
     exit 1
 fi
+echo -e "✓ ${GREEN}Docker is installed${NC}"
+
+# Check if Docker is running
+if ! docker info &> /dev/null; then
+    echo -e "${RED}Docker is installed but not running. Please start Docker first.${NC}"
+    echo -e "On Linux: ${YELLOW}sudo systemctl start docker${NC}"
+    echo -e "On macOS: Start Docker Desktop application"
+    exit 1
+fi
+echo -e "✓ ${GREEN}Docker is running${NC}"
 
 # Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null; then
     echo -e "${RED}Docker Compose is not installed. Please install Docker Compose first.${NC}"
-    echo "Visit https://docs.docker.com/compose/install/ for installation instructions."
+    echo -e "For Ubuntu/Debian: ${YELLOW}sudo apt-get install -y docker-compose-plugin${NC}"
+    echo -e "For macOS: Docker Compose is included with Docker Desktop"
+    echo -e "Or visit https://docs.docker.com/compose/install/ for installation instructions."
     exit 1
 fi
+echo -e "✓ ${GREEN}Docker Compose is installed${NC}"
+
+# Check if curl is installed (needed for API testing)
+if ! command -v curl &> /dev/null; then
+    echo -e "${YELLOW}Warning: curl is not installed. It's recommended for testing the API.${NC}"
+    echo -e "For Ubuntu/Debian: ${YELLOW}sudo apt-get install -y curl${NC}"
+    echo -e "For CentOS/RHEL: ${YELLOW}sudo yum install -y curl${NC}"
+    echo -e "For macOS: ${YELLOW}brew install curl${NC}"
+else
+    echo -e "✓ ${GREEN}curl is installed${NC}"
+fi
+
+echo -e "${GREEN}All required dependencies are installed and ready!${NC}"
+echo "----------------------------------------"
 
 # Create docker-compose.yml
 echo -e "${BLUE}Creating docker-compose.yml file...${NC}"
