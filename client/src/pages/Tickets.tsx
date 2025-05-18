@@ -130,12 +130,22 @@ export default function Tickets() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Ticket created successfully:", data);
+      // Force a complete refetch of the tickets
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
+      
       toast({
         title: translations.ticketCreated,
+        description: `Ticket ${data.ticket_id} created successfully`,
       });
       setOpenDialog(false);
+      
+      // Force reload after a short delay to ensure UI updates
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
+      }, 500);
     },
     onError: (error: any) => {
       toast({
