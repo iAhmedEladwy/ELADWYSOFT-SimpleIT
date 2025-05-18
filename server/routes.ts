@@ -292,12 +292,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employeeData = validateBody<schema.InsertEmployee>(schema.insertEmployeeSchema, req.body);
       
-      // Generate employee ID if not provided
-      if (!employeeData.empId) {
-        const allEmployees = await storage.getAllEmployees();
-        const newEmpNum = allEmployees.length + 1;
-        employeeData.empId = `EMP${newEmpNum.toString().padStart(5, "0")}`;
+      // Remove empId if provided - it should be auto-generated
+      delete employeeData.empId;
+      
+      // Find highest employee number to generate a new one
+      const allEmployees = await storage.getAllEmployees();
+      let newEmpNum = 1;
+      
+      if (allEmployees.length > 0) {
+        // Extract employee numbers
+        const empNumbers = allEmployees.map(emp => {
+          const numPart = emp.empId.replace(/\D/g, '');
+          return parseInt(numPart) || 0;
+        });
+        
+        // Get maximum employee number
+        if (empNumbers.length > 0) {
+          newEmpNum = Math.max(...empNumbers) + 1;
+        }
       }
+      
+      // Get prefix from system config
+      const sysConfig = await storage.getSystemConfig();
+      let empIdPrefix = "EMP-";
+      if (sysConfig && sysConfig.empIdPrefix) {
+        empIdPrefix = sysConfig.empIdPrefix;
+      }
+      
+      // Auto-generate employee ID
+      employeeData.empId = `${empIdPrefix}${newEmpNum.toString().padStart(4, "0")}`;
       
       const employee = await storage.createEmployee(employeeData);
       
@@ -524,36 +547,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const assetData = validateBody<schema.InsertAsset>(schema.insertAssetSchema, req.body);
+      // Get the request data but omit assetId as we'll auto-generate it
+      let requestData = { ...req.body };
+      delete requestData.assetId;
       
       // Get system config for asset ID prefix
-      let assetPrefix = "BOLT-";
+      let assetPrefix = "SIT-";
       const sysConfig = await storage.getSystemConfig();
       if (sysConfig && sysConfig.assetIdPrefix) {
         assetPrefix = sysConfig.assetIdPrefix;
       }
       
-      // Generate asset ID if not provided
-      if (!assetData.assetId) {
-        const allAssets = await storage.getAllAssets();
-        const newAssetNum = allAssets.length + 1;
-        
-        // Add type prefix
-        let typePrefix = "";
-        switch (assetData.type) {
-          case "Laptop": typePrefix = "LT-"; break;
-          case "Desktop": typePrefix = "DT-"; break;
-          case "Mobile": typePrefix = "MB-"; break;
-          case "Tablet": typePrefix = "TB-"; break;
-          case "Monitor": typePrefix = "MN-"; break;
-          case "Printer": typePrefix = "PR-"; break;
-          case "Server": typePrefix = "SV-"; break;
-          case "Network": typePrefix = "NW-"; break;
-          default: typePrefix = "OT-";
+      // Find highest existing asset number to generate a new one
+      const allAssets = await storage.getAllAssets();
+      let highestNum = 0;
+      
+      allAssets.forEach(asset => {
+        const parts = asset.assetId.split('-');
+        if (parts.length > 2) {
+          const numPart = parts[parts.length - 1];
+          const num = parseInt(numPart);
+          if (!isNaN(num) && num > highestNum) {
+            highestNum = num;
+          }
         }
-        
-        assetData.assetId = `${assetPrefix}${typePrefix}${newAssetNum.toString().padStart(4, "0")}`;
+      });
+      
+      const newAssetNum = highestNum + 1;
+      
+      // Add type prefix
+      let typePrefix = "";
+      switch (requestData.type) {
+        case "Laptop": typePrefix = "LT-"; break;
+        case "Desktop": typePrefix = "DT-"; break;
+        case "Mobile": typePrefix = "MB-"; break;
+        case "Tablet": typePrefix = "TB-"; break;
+        case "Monitor": typePrefix = "MN-"; break;
+        case "Printer": typePrefix = "PR-"; break;
+        case "Server": typePrefix = "SV-"; break;
+        case "Network": typePrefix = "NW-"; break;
+        default: typePrefix = "OT-";
       }
+      
+      // Auto-generate the asset ID
+      requestData.assetId = `${assetPrefix}${typePrefix}${newAssetNum.toString().padStart(4, "0")}`;
+      
+      // Validate data after adding the assetId
+      const assetData = validateBody<schema.InsertAsset>(schema.insertAssetSchema, requestData);
       
       const asset = await storage.createAsset(assetData);
       
