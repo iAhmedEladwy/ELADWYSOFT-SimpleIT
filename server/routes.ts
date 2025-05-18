@@ -779,9 +779,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
       
+      // Handle cost field properly
+      let requestData = { ...req.body };
+      if (requestData.cost === undefined || requestData.cost === null || requestData.cost === '') {
+        requestData.cost = 0;
+      }
+      
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
         schema.insertAssetMaintenanceSchema, 
-        { ...req.body, assetId }
+        { ...requestData, assetId }
       );
       
       const maintenance = await storage.createAssetMaintenance(maintenanceData);

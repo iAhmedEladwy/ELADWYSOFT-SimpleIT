@@ -221,10 +221,7 @@ export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
   language: varchar("language", { length: 10 }).notNull().default('English'),
   assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('SIT-'),
-  empIdPrefix: varchar("emp_id_prefix", { length: 10 }).notNull().default('EMP-'),
-  ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  departments: text("departments").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
