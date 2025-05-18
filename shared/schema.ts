@@ -405,6 +405,7 @@ export const insertAssetSaleItemSchema = createInsertSchema(assetSaleItems).omit
 });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ 
   id: true, 
+  ticketId: true, // Remove ticketId from validation requirements
   createdAt: true, 
   updatedAt: true 
 });

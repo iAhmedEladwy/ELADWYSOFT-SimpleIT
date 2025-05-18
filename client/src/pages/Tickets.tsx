@@ -113,8 +113,22 @@ export default function Tickets() {
   // Create ticket mutation
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      const res = await apiRequest('POST', '/api/tickets', ticketData);
-      return res.json();
+      // Use fetch directly to bypass any middleware issues
+      const response = await fetch('/api/tickets/create-raw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ticketData),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create ticket');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });

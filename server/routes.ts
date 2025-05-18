@@ -1231,74 +1231,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tickets", authenticateUser, async (req, res) => {
+  app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
     try {
-      // Import directly from server/db.ts to avoid issues
-      const pool = require('./db').pool;
+      console.log("Creating new ticket with:", req.body);
       
-      // Get ticket ID prefix from system config
+      // Get the ticket count to generate ID
+      const { pool } = await import('./db');
+      
+      // Get the ticket ID prefix
       const config = await storage.getSystemConfig();
-      const ticketPrefix = config?.ticketIdPrefix || 'TKT-';
+      const prefix = config?.ticketIdPrefix || 'TKT-';
       
-      // Get the next ticket number
-      const ticketCountQuery = "SELECT COUNT(*) FROM tickets";
-      const countResult = await pool.query(ticketCountQuery);
-      const ticketCount = parseInt(countResult.rows[0].count);
-      const newTicketNum = ticketCount + 1;
+      // Count existing tickets
+      const countResult = await pool.query('SELECT COUNT(*) FROM tickets');
+      const count = parseInt(countResult.rows[0].count);
+      const nextId = count + 1;
       
-      // Generate the ticket ID string
-      const generatedTicketId = `${ticketPrefix}${newTicketNum.toString().padStart(4, "0")}`;
+      // Generate ticket ID
+      const ticketId = `${prefix}${nextId.toString().padStart(4, '0')}`;
+      console.log("Generated ticket ID:", ticketId);
       
-      console.log("Creating ticket with ID:", generatedTicketId);
-      console.log("Submitted by employee ID:", req.body.submittedById);
+      // Create ticket with direct SQL to avoid validation
+      const result = await pool.query(
+        `INSERT INTO tickets 
+         (ticket_id, submitted_by_id, category, priority, description, status) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING *`, 
+        [
+          ticketId,
+          parseInt(req.body.submittedById),
+          req.body.category,
+          req.body.priority,
+          req.body.description,
+          'Open'
+        ]
+      );
       
-      // Direct SQL insertion to avoid validation issues
-      const insertQuery = `
-        INSERT INTO tickets (
-          ticket_id, 
-          submitted_by_id, 
-          category, 
-          priority, 
-          description, 
-          status
-        ) 
-        VALUES ($1, $2, $3, $4, $5, $6) 
-        RETURNING *`;
+      // Get created ticket
+      const ticket = result.rows[0];
+      console.log("Created ticket:", ticket);
       
-      // Execute the query
-      const result = await pool.query(insertQuery, [
-        generatedTicketId,
-        parseInt(req.body.submittedById),
-        req.body.category,
-        req.body.priority,
-        req.body.description,
-        'Open'
-      ]);
-      
-      // Get the newly created ticket
-      const newTicket = result.rows[0];
-      console.log("Created ticket:", newTicket);
-      
-      // Log activity if user is authenticated
+      // Log activity
       if (req.user) {
         await storage.logActivity({
           userId: (req.user as schema.User).id,
           action: "Create",
           entityType: "Ticket",
-          entityId: newTicket.id,
+          entityId: ticket.id,
           details: { 
-            ticketId: newTicket.ticket_id, 
-            category: newTicket.category, 
-            priority: newTicket.priority 
+            ticketId: ticket.ticket_id, 
+            category: ticket.category, 
+            priority: ticket.priority 
           }
         });
       }
       
-      // Return the created ticket
-      res.status(201).json(newTicket);
+      res.status(201).json(ticket);
     } catch (error: any) {
-      console.error("Ticket creation error:", error);
-      res.status(400).json({ message: "Failed to create ticket: " + error.message });
+      console.error("Error creating ticket:", error);
+      res.status(500).json({ message: "Failed to create ticket: " + error.message });
     }
   });
 
