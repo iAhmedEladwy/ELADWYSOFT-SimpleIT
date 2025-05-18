@@ -189,7 +189,14 @@ export default function Tickets() {
   });
 
   const handleCreateTicket = (ticketData: any) => {
-    createTicketMutation.mutate(ticketData);
+    console.log("Creating ticket with data:", ticketData);
+    // Ensure all data is properly formatted for the server
+    const formattedData = {
+      ...ticketData,
+      submittedById: String(ticketData.submittedById),
+      relatedAssetId: ticketData.relatedAssetId ? String(ticketData.relatedAssetId) : undefined
+    };
+    createTicketMutation.mutate(formattedData);
   };
 
   const handleStatusChange = (ticketId: number, status: string, resolutionNotes?: string) => {

@@ -25,21 +25,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 
-// Define the form schema
+// Define the form schema with more flexible validation
 const ticketFormSchema = z.object({
-  submittedById: z.coerce.number({
-    required_error: "Please select who is submitting this ticket",
-  }),
-  relatedAssetId: z.coerce.number().optional(),
-  category: z.enum(["Hardware", "Software", "Network", "Other"], {
+  submittedById: z.string()
+    .min(1, { message: "Please select who is submitting this ticket" })
+    .transform(val => Number(val)),
+  relatedAssetId: z.string()
+    .optional()
+    .transform(val => val ? Number(val) : undefined),
+  category: z.string({
     required_error: "Please select a category",
   }),
-  priority: z.enum(["Low", "Medium", "High"], {
+  priority: z.string({
     required_error: "Please select a priority",
   }),
   description: z.string()
-    .min(10, { message: "Description must be at least 10 characters" })
-    .max(1000, { message: "Description cannot exceed 1000 characters" }),
+    .min(5, { message: "Description must be at least 5 characters" })
+    .max(2000, { message: "Description cannot exceed 2000 characters" }),
 });
 
 // Define props for the component
