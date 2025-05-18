@@ -1233,12 +1233,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tickets", authenticateUser, async (req, res) => {
     try {
-      const ticketData = validateBody<schema.InsertTicket>(schema.insertTicketSchema, req.body);
+      // Get ticket ID prefix from system config
+      const config = await storage.getSystemConfig();
+      const ticketPrefix = config?.ticketIdPrefix || 'TKT-';
       
       // Generate ticket ID
       const allTickets = await storage.getAllTickets();
       const newTicketNum = allTickets.length + 1;
-      ticketData.ticketId = `T-${newTicketNum.toString().padStart(4, "0")}`;
+      const generatedTicketId = `${ticketPrefix}${newTicketNum.toString().padStart(4, "0")}`;
+      
+      // Add the ticketId to the request body before validation
+      const updatedBody = {
+        ...req.body,
+        ticketId: generatedTicketId
+      };
+      
+      // Validate the full data with the added ticketId
+      const ticketData = validateBody<schema.InsertTicket>(schema.insertTicketSchema, updatedBody);
       
       const ticket = await storage.createTicket(ticketData);
       
@@ -1255,6 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(ticket);
     } catch (error: any) {
+      console.error("Ticket creation error:", error);
       res.status(400).json({ message: error.message });
     }
   });
