@@ -716,15 +716,18 @@ export default function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-4 md:grid-cols-5 lg:max-w-4xl mb-4">
+        <TabsList className="grid grid-cols-4 lg:max-w-4xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.generalSettings}
           </TabsTrigger>
-          <TabsTrigger value="ids">{translations.idConfiguration}</TabsTrigger>
-          <TabsTrigger value="departments">{translations.departments}</TabsTrigger>
+          <TabsTrigger value="tickets">
+            {language === 'English' ? 'Tickets' : 'التذاكر'}
+          </TabsTrigger>
           <TabsTrigger value="asset">{translations.assetManagement}</TabsTrigger>
-          <TabsTrigger value="providers">{translations.serviceProviders}</TabsTrigger>
+          <TabsTrigger value="employees">
+            {language === 'English' ? 'Employees' : 'الموظفين'}
+          </TabsTrigger>
         </TabsList>
 
         {/* General Settings Tab */}
@@ -807,10 +810,10 @@ export default function SystemConfig() {
         </TabsContent>
 
         {/* Ticket Configuration Tab */}
-        <TabsContent value="ids">
+        <TabsContent value="tickets">
           <Card>
             <CardHeader>
-              <CardTitle>{translations.ticketConfiguration}</CardTitle>
+              <CardTitle>{language === 'English' ? 'Ticket Configuration' : 'إعدادات التذاكر'}</CardTitle>
               <CardDescription>
                 {language === 'English' 
                   ? 'Configure ticket settings and automation' 
@@ -825,17 +828,15 @@ export default function SystemConfig() {
               ) : (
                 <div className="grid gap-6">
                   <div className="grid gap-2">
-                    <Label>{translations.ticketIdPrefix}</Label>
+                    <Label>{language === 'English' ? 'Ticket ID Format' : 'تنسيق معرف التذكرة'}</Label>
                     <Input 
-                      value={ticketIdPrefix} 
-                      onChange={(e) => setTicketIdPrefix(e.target.value)}
-                      placeholder="TKT-" 
+                      value="TKT-####"
                       disabled={true}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       {language === 'English' 
-                        ? 'Ticket IDs are now auto-generated with TKT- prefix and sequential numbering.' 
-                        : 'يتم الآن إنشاء معرفات التذاكر تلقائيًا ببادئة TKT- وترقيم متسلسل.'}
+                        ? 'Ticket IDs are auto-generated with TKT- prefix and sequential numbering.' 
+                        : 'يتم إنشاء معرفات التذاكر تلقائيًا ببادئة TKT- وترقيم متسلسل.'}
                     </p>
                   </div>
 
