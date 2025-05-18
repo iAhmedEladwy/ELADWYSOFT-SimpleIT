@@ -1233,75 +1233,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tickets", authenticateUser, async (req, res) => {
     try {
-      console.log("Ticket submission:", req.body);
+      // Import directly from server/db.ts to avoid issues
+      const pool = require('./db').pool;
       
       // Get ticket ID prefix from system config
       const config = await storage.getSystemConfig();
       const ticketPrefix = config?.ticketIdPrefix || 'TKT-';
       
-      // Generate ticket ID
-      const allTickets = await storage.getAllTickets();
-      const newTicketNum = allTickets.length + 1;
+      // Get the next ticket number
+      const ticketCountQuery = "SELECT COUNT(*) FROM tickets";
+      const countResult = await pool.query(ticketCountQuery);
+      const ticketCount = parseInt(countResult.rows[0].count);
+      const newTicketNum = ticketCount + 1;
+      
+      // Generate the ticket ID string
       const generatedTicketId = `${ticketPrefix}${newTicketNum.toString().padStart(4, "0")}`;
       
-      // Create a ticket with minimal required fields
-      const ticketData = {
-        ticketId: generatedTicketId,
-        submittedById: parseInt(req.body.submittedById),
-        category: req.body.category,
-        priority: req.body.priority,
-        description: req.body.description,
-        status: 'Open'
-      };
+      console.log("Creating ticket with ID:", generatedTicketId);
+      console.log("Submitted by employee ID:", req.body.submittedById);
       
-      // Import pool from db.ts
-      const { pool } = await import('./db');
-      
-      // Direct database insert to bypass Zod validation issues
-      const query = `
-        INSERT INTO tickets 
-        (ticket_id, submitted_by_id, category, priority, description, status) 
+      // Direct SQL insertion to avoid validation issues
+      const insertQuery = `
+        INSERT INTO tickets (
+          ticket_id, 
+          submitted_by_id, 
+          category, 
+          priority, 
+          description, 
+          status
+        ) 
         VALUES ($1, $2, $3, $4, $5, $6) 
         RETURNING *`;
       
-      const params = [
-        ticketData.ticketId,
-        ticketData.submittedById,
-        ticketData.category,
-        ticketData.priority,
-        ticketData.description,
-        ticketData.status
-      ];
+      // Execute the query
+      const result = await pool.query(insertQuery, [
+        generatedTicketId,
+        parseInt(req.body.submittedById),
+        req.body.category,
+        req.body.priority,
+        req.body.description,
+        'Open'
+      ]);
       
-      console.log("Executing ticket insert with:", params);
+      // Get the newly created ticket
+      const newTicket = result.rows[0];
+      console.log("Created ticket:", newTicket);
       
-      try {
-        const result = await pool.query(query, params);
-        const newTicket = result.rows[0];
-        
-        // Log activity
-        if (req.user) {
-          await storage.logActivity({
-            userId: (req.user as schema.User).id,
-            action: "Create",
-            entityType: "Ticket",
-            entityId: newTicket.id,
-            details: { 
-              ticketId: newTicket.ticket_id, 
-              category: newTicket.category, 
-              priority: newTicket.priority 
-            }
-          });
-        }
-        
-        res.status(201).json(newTicket);
-      } catch (dbError: any) {
-        console.error("Database error creating ticket:", dbError);
-        res.status(500).json({ message: "Database error: " + dbError.message });
+      // Log activity if user is authenticated
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Create",
+          entityType: "Ticket",
+          entityId: newTicket.id,
+          details: { 
+            ticketId: newTicket.ticket_id, 
+            category: newTicket.category, 
+            priority: newTicket.priority 
+          }
+        });
       }
+      
+      // Return the created ticket
+      res.status(201).json(newTicket);
     } catch (error: any) {
       console.error("Ticket creation error:", error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: "Failed to create ticket: " + error.message });
     }
   });
 
