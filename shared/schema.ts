@@ -379,11 +379,20 @@ export const insertAssetSchema = createInsertSchema(assets).omit({
   createdAt: true, 
   updatedAt: true 
 });
-export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
+export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance)
+  .omit({ 
+    id: true, 
+    createdAt: true, 
+    updatedAt: true 
+  })
+  .extend({
+    // Ensure cost can handle string inputs and converts them properly
+    cost: z.union([
+      z.number(),
+      z.string().transform(val => val === '' ? 0 : parseFloat(val)),
+      z.null()
+    ]).transform(val => val === null ? 0 : val).optional().default(0)
+  });
 export const insertAssetSaleSchema = createInsertSchema(assetSales).omit({ 
   id: true, 
   createdAt: true, 
