@@ -170,50 +170,21 @@ try {
     Log-Message "You may need to manually create a database named '$dbName' with user '$dbUser'" -IsWarning
 }
 
-# Clone or update the repository
-Log-Message "Setting up application code..."
+# Verify application files
+Log-Message "Verifying application files..."
 try {
-    if (Test-Path "$installDir\.git") {
-        # Repository exists, update it
-        Set-Location $installDir
-        git pull | Out-File -Append -FilePath $logFile
-        Log-Message "Updated existing repository"
+    # Check if directory has necessary files
+    if (-not (Test-Path "$installDir\package.json")) {
+        Log-Message "Application files not found in $installDir" -IsWarning
+        Log-Message "The installation directory must contain the SimpleIT application files." -IsWarning
+        Log-Message "Please copy the SimpleIT files to $installDir before running this script." -IsWarning
+        Log-Message "Installation aborted. No application files found." -IsError
+        exit 1
     } else {
-        # Clean directory if not empty
-        if ((Get-ChildItem -Path $installDir -Force | Measure-Object).Count -gt 0) {
-            $choice = Read-Host "Directory $installDir is not empty. Do you want to remove its contents? (y/n)"
-            if ($choice -eq "y") {
-                Get-ChildItem -Path $installDir -Force | Remove-Item -Recurse -Force
-            } else {
-                Log-Message "Installation aborted. Please provide an empty directory." -IsError
-                exit 1
-            }
-        }
-        
-        # Clone the repository
-        Log-Message "Cloning repository..."
-        try {
-            git clone $repoUrl $installDir | Out-File -Append -FilePath $logFile
-        } catch {
-            Log-Message "Git clone failed: $_" -IsError
-            $choice = Read-Host "Do you want to download and extract the latest release instead? (y/n)"
-            if ($choice -eq "y") {
-                Log-Message "Downloading latest release..."
-                $tempZip = "$env:TEMP\simpleit.zip"
-                # Replace with your actual release URL
-                Invoke-WebRequest -Uri "https://github.com/yourorganization/simpleit/archive/main.zip" -OutFile $tempZip
-                Expand-Archive -Path $tempZip -DestinationPath $env:TEMP
-                Copy-Item -Path "$env:TEMP\simpleit-main\*" -Destination $installDir -Recurse -Force
-                Remove-Item -Path $tempZip -Force
-                Remove-Item -Path "$env:TEMP\simpleit-main" -Recurse -Force
-            } else {
-                Log-Message "Installation aborted." -IsError
-                exit 1
-            }
-        }
+        Log-Message "Found application files in $installDir"
     }
 } catch {
-    Log-Message "Failed to set up application code: $_" -IsError
+    Log-Message "Failed to verify application files: $_" -IsError
     exit 1
 }
 

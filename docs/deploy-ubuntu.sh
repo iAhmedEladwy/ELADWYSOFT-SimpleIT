@@ -127,41 +127,16 @@ fi
 log "Setting up installation directory..."
 mkdir -p $INSTALL_DIR || error "Failed to create installation directory"
 
-# Clone repository or download release
-log "Downloading SimpleIT source code..."
-if [ -d "$INSTALL_DIR/.git" ]; then
-  cd $INSTALL_DIR
-  git pull >> $LOG_FILE 2>&1 || error "Failed to update source code"
+# Setup application directory
+log "Setting up application directory..."
+
+# Check if directory is not empty
+if [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR")" ]; then
+  log "Using existing files in $INSTALL_DIR"
 else
-  # Using git clone as the primary method
-  if [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR")" ]; then
-    warning "Directory $INSTALL_DIR is not empty. Do you want to remove its contents?"
-    read -p "Remove contents? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      rm -rf $INSTALL_DIR/* $INSTALL_DIR/.* 2>/dev/null
-    else
-      error "Installation aborted. Please provide an empty directory."
-    fi
-  fi
-  
-  # Clone the repository
-  git clone https://github.com/yourorganization/simpleit.git $INSTALL_DIR >> $LOG_FILE 2>&1 || {
-    warning "Git clone failed. Do you want to download and extract the latest release instead?"
-    read -p "Download release? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      log "Downloading latest release..."
-      # Note: Replace with your actual release URL
-      curl -L -o /tmp/simpleit.tar.gz https://github.com/yourorganization/simpleit/archive/main.tar.gz >> $LOG_FILE 2>&1 || error "Failed to download release"
-      
-      tar -xzf /tmp/simpleit.tar.gz -C /tmp >> $LOG_FILE 2>&1 || error "Failed to extract release"
-      cp -R /tmp/simpleit-main/* $INSTALL_DIR/ >> $LOG_FILE 2>&1 || error "Failed to copy files"
-      rm -rf /tmp/simpleit.tar.gz /tmp/simpleit-main
-    else
-      error "Installation aborted."
-    fi
-  }
+  log "Installation directory is empty. Please copy the SimpleIT files to $INSTALL_DIR before running this script."
+  log "You can run: cp -R /path/to/simpleit/* $INSTALL_DIR/"
+  error "No application files found in $INSTALL_DIR. Installation aborted."
 fi
 
 # Set permissions
