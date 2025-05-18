@@ -413,7 +413,7 @@ export default function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full mb-6">
-        <TabsList className="w-full justify-start mb-4 overflow-x-auto">
+        <TabsList className="w-full justify-start mb-4 flex flex-wrap">
           <TabsTrigger value="general" className="px-4 py-2">General Settings</TabsTrigger>
           <TabsTrigger value="id-config" className="px-4 py-2">ID Configuration</TabsTrigger>
           <TabsTrigger value="departments" className="px-4 py-2">Departments</TabsTrigger>
@@ -620,7 +620,7 @@ export default function SystemConfig() {
         {/* Asset Management Tab */}
         <TabsContent value="assets" className="space-y-4">
           <Tabs defaultValue="types" className="w-full">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex flex-wrap">
               <TabsTrigger value="types">Asset Types</TabsTrigger>
               <TabsTrigger value="brands">Brands</TabsTrigger>
               <TabsTrigger value="statuses">Statuses</TabsTrigger>
