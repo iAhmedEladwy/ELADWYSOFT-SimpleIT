@@ -860,7 +860,7 @@ export default function SystemConfig() {
         </TabsContent>
 
         {/* Departments Tab */}
-        <TabsContent value="departments">
+        <TabsContent value="employees">
           <Card>
             <CardHeader>
               <CardTitle>{translations.departments}</CardTitle>
@@ -982,6 +982,55 @@ export default function SystemConfig() {
 
         {/* Asset Management Tab */}
         <TabsContent value="asset">
+          {/* Asset ID Prefix Card */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Asset ID Configuration' : 'إعدادات معرف الأصل'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure prefix for all asset IDs' 
+                  : 'تكوين بادئة لجميع معرفات الأصول'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label>{language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل'}</Label>
+                    <Input 
+                      value={assetIdPrefix} 
+                      onChange={(e) => setAssetIdPrefix(e.target.value)}
+                      placeholder="SIT-" 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'English' 
+                        ? 'The prefix used for all asset IDs throughout the system (e.g., SIT-LT-0001).' 
+                        : 'البادئة المستخدمة لجميع معرفات الأصول في جميع أنحاء النظام (مثال: SIT-LT-0001).'}
+                    </p>
+                  </div>
+
+                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                    {updateConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {translations.save}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Asset Types */}
             <Card>
