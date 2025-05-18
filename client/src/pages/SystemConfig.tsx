@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X } from 'lucide-react';
 import {
   Tabs,
   TabsContent,
@@ -87,6 +87,11 @@ export default function SystemConfig() {
       setIsLoading(false);
     }
   }, [config]);
+
+  // Asset type state management
+  const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
+  const [editedTypeName, setEditedTypeName] = useState('');
+  const [editedTypeDescription, setEditedTypeDescription] = useState('');
 
   // Create custom asset type mutation
   const createAssetTypeMutation = useMutation({
@@ -266,6 +271,27 @@ export default function SystemConfig() {
     });
   };
 
+  // Update asset type mutation
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string; description?: string }) => {
+      const { id, ...updateData } = data;
+      return await apiRequest(`/api/custom-asset-types/${id}`, {
+        method: 'PUT',
+        data: updateData
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
+      });
+      setEditingTypeId(null);
+      setEditedTypeName('');
+      setEditedTypeDescription('');
+    }
+  });
+
   // Handle add asset type
   const handleAddAssetType = () => {
     if (!newTypeName.trim()) return;
@@ -273,6 +299,24 @@ export default function SystemConfig() {
     createAssetTypeMutation.mutate({
       name: newTypeName,
       description: newTypeDescription
+    });
+  };
+
+  // Handle edit asset type
+  const handleEditAssetType = (type: any) => {
+    setEditingTypeId(type.id);
+    setEditedTypeName(type.name);
+    setEditedTypeDescription(type.description || '');
+  };
+
+  // Handle save edited asset type
+  const handleSaveEditedAssetType = () => {
+    if (editingTypeId === null || !editedTypeName.trim()) return;
+    
+    updateAssetTypeMutation.mutate({
+      id: editingTypeId,
+      name: editedTypeName,
+      description: editedTypeDescription || undefined
     });
   };
 
@@ -309,12 +353,33 @@ export default function SystemConfig() {
     });
   };
 
+  // Department state management
+  const [editingDepartmentIndex, setEditingDepartmentIndex] = useState<number | null>(null);
+  const [editedDepartmentName, setEditedDepartmentName] = useState('');
+
   // Handle add department
   const handleAddDepartment = () => {
     if (!newDepartment.trim()) return;
     
     setDepartments([...departments, newDepartment]);
     setNewDepartment('');
+  };
+
+  // Handle edit department mode
+  const handleEditDepartment = (index: number) => {
+    setEditingDepartmentIndex(index);
+    setEditedDepartmentName(departments[index]);
+  };
+
+  // Handle save edited department
+  const handleSaveEditedDepartment = () => {
+    if (editingDepartmentIndex === null || !editedDepartmentName.trim()) return;
+    
+    const newDepartments = [...departments];
+    newDepartments[editingDepartmentIndex] = editedDepartmentName;
+    setDepartments(newDepartments);
+    setEditingDepartmentIndex(null);
+    setEditedDepartmentName('');
   };
 
   // Handle delete department
@@ -581,15 +646,53 @@ export default function SystemConfig() {
                   <ul className="divide-y max-h-80 overflow-y-auto">
                     {departments.map((dept, idx) => (
                       <li key={idx} className="flex justify-between items-center p-3">
-                        <span>{dept}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDeleteDepartment(idx)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          {language === 'English' ? 'Delete' : 'حذف'}
-                        </Button>
+                        {editingDepartmentIndex === idx ? (
+                          <div className="flex items-center gap-2 flex-grow">
+                            <Input
+                              value={editedDepartmentName}
+                              onChange={(e) => setEditedDepartmentName(e.target.value)}
+                              className="h-8"
+                              autoFocus
+                            />
+                            <Button 
+                              size="sm" 
+                              onClick={handleSaveEditedDepartment}
+                              className="px-2 h-8"
+                            >
+                              {language === 'English' ? 'Save' : 'حفظ'}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setEditingDepartmentIndex(null)}
+                              className="px-2 h-8"
+                            >
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span>{dept}</span>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditDepartment(idx)}
+                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDeleteDepartment(idx)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -661,19 +764,69 @@ export default function SystemConfig() {
                       <ul className="divide-y max-h-60 overflow-y-auto">
                         {customAssetTypes.map((type: any) => (
                           <li key={type.id} className="flex justify-between items-center p-3">
-                            <div>
-                              <div className="font-medium">{type.name}</div>
-                              {type.description && <div className="text-xs text-muted-foreground">{type.description}</div>}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => deleteAssetTypeMutation.mutate(type.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              disabled={deleteAssetTypeMutation.isPending}
-                            >
-                              {language === 'English' ? 'Delete' : 'حذف'}
-                            </Button>
+                            {editingTypeId === type.id ? (
+                              <div className="flex flex-col gap-2 w-full">
+                                <Input
+                                  value={editedTypeName}
+                                  onChange={(e) => setEditedTypeName(e.target.value)}
+                                  placeholder="Type name"
+                                  className="h-8"
+                                  autoFocus
+                                />
+                                <Input
+                                  value={editedTypeDescription}
+                                  onChange={(e) => setEditedTypeDescription(e.target.value)}
+                                  placeholder="Description (optional)"
+                                  className="h-8"
+                                />
+                                <div className="flex justify-end gap-2 mt-1">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={handleSaveEditedAssetType}
+                                    disabled={!editedTypeName.trim() || updateAssetTypeMutation.isPending}
+                                    className="h-8 px-2"
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Save' : 'حفظ'}
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setEditingTypeId(null)}
+                                    className="h-8 px-2"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div>
+                                  <div className="font-medium">{type.name}</div>
+                                  {type.description && <div className="text-xs text-muted-foreground">{type.description}</div>}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditAssetType(type)}
+                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => deleteAssetTypeMutation.mutate(type.id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                    disabled={deleteAssetTypeMutation.isPending}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </li>
                         ))}
                       </ul>
