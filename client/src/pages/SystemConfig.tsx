@@ -70,8 +70,11 @@ export default function SystemConfig() {
     queryKey: ['/api/system-config'],
     onSuccess: (data) => {
       if (data) {
-        setAssetIdPrefix(data.assetIdPrefix || 'BOLT-');
+        setAssetIdPrefix(data.assetIdPrefix || 'SIT-');
+        setEmpIdPrefix(data.empIdPrefix || 'EMP-');
+        setTicketIdPrefix(data.ticketIdPrefix || 'TKT-');
         setCurrency(data.currency || 'USD');
+        setDepartments(data.departments || []);
         setIsLoading(false);
       }
     }
@@ -325,7 +328,42 @@ export default function SystemConfig() {
   const handleSaveConfig = () => {
     updateConfigMutation.mutate({
       assetIdPrefix,
-      currency
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments
+    });
+  };
+  
+  const handleAddDepartment = () => {
+    if (!newDepartment.trim()) return;
+    
+    const updatedDepartments = [...departments, newDepartment.trim()];
+    setDepartments(updatedDepartments);
+    setNewDepartment('');
+    
+    // Save changes immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments
+    });
+  };
+  
+  const handleDeleteDepartment = (index: number) => {
+    const updatedDepartments = [...departments];
+    updatedDepartments.splice(index, 1);
+    setDepartments(updatedDepartments);
+    
+    // Save changes immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments
     });
   };
   
@@ -352,10 +390,23 @@ export default function SystemConfig() {
     assetIdPrefixDesc: language === 'English' 
       ? 'Prefix added to all asset IDs (e.g., SIT-LT-0001)' 
       : 'البادئة المضافة إلى جميع معرفات الأصول (مثال: SIT-LT-0001)',
+    empIdPrefix: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
+    empIdPrefixDesc: language === 'English' 
+      ? 'Prefix added to all employee IDs (e.g., EMP-0001)' 
+      : 'البادئة المضافة إلى جميع معرفات الموظفين (مثال: EMP-0001)',
+    ticketIdPrefix: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
+    ticketIdPrefixDesc: language === 'English' 
+      ? 'Prefix added to all ticket IDs (e.g., TKT-0001)' 
+      : 'البادئة المضافة إلى جميع معرفات التذاكر (مثال: TKT-0001)',    
     currency: language === 'English' ? 'Currency' : 'العملة',
     currencyDesc: language === 'English'
       ? 'Default currency and symbol used throughout the system'
       : 'العملة الافتراضية والرمز المستخدمة في جميع أنحاء النظام',
+    departments: language === 'English' ? 'Departments' : 'الأقسام',
+    departmentsDesc: language === 'English'
+      ? 'Manage departments in your organization'
+      : 'إدارة الأقسام في مؤسستك',
+    addDepartment: language === 'English' ? 'Add Department' : 'إضافة قسم',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     saveSuccess: language === 'English' ? 'Configuration saved successfully' : 'تم حفظ الإعدادات بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
@@ -483,6 +534,30 @@ export default function SystemConfig() {
               />
               <p className="text-sm text-muted-foreground">{translations.assetIdPrefixDesc}</p>
             </div>
+            
+            {/* Employee ID Prefix */}
+            <div className="space-y-2">
+              <Label htmlFor="empIdPrefix">{translations.empIdPrefix}</Label>
+              <Input 
+                id="empIdPrefix" 
+                value={empIdPrefix} 
+                onChange={(e) => setEmpIdPrefix(e.target.value)}
+                placeholder="EMP-"
+              />
+              <p className="text-sm text-muted-foreground">{translations.empIdPrefixDesc}</p>
+            </div>
+            
+            {/* Ticket ID Prefix */}
+            <div className="space-y-2">
+              <Label htmlFor="ticketIdPrefix">{translations.ticketIdPrefix}</Label>
+              <Input 
+                id="ticketIdPrefix" 
+                value={ticketIdPrefix} 
+                onChange={(e) => setTicketIdPrefix(e.target.value)}
+                placeholder="TKT-"
+              />
+              <p className="text-sm text-muted-foreground">{translations.ticketIdPrefixDesc}</p>
+            </div>
 
             {/* Currency Selection */}
             <div className="space-y-2">
@@ -497,6 +572,7 @@ export default function SystemConfig() {
                 <SelectContent>
                   <SelectItem value="USD">USD (United States Dollar - $)</SelectItem>
                   <SelectItem value="EUR">EUR (Euro - €)</SelectItem>
+                  <SelectItem value="EGP">EGP (Egyptian Pound - £)</SelectItem>
                   <SelectItem value="GBP">GBP (British Pound - £)</SelectItem>
                   <SelectItem value="JPY">JPY (Japanese Yen - ¥)</SelectItem>
                   <SelectItem value="CAD">CAD (Canadian Dollar - C$)</SelectItem>
