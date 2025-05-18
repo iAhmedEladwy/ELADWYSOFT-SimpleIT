@@ -169,7 +169,7 @@ export const assetMaintenance = pgTable("asset_maintenance", {
   date: date("date").notNull(),
   type: maintenanceTypeEnum("type").notNull(),
   description: text("description").notNull(),
-  cost: decimal("cost", { precision: 10, scale: 2 }),
+  cost: decimal("cost", { precision: 10, scale: 2 }).default('0'),
   providerType: varchar("provider_type", { length: 50 }).notNull(), // Internal or External
   providerName: varchar("provider_name", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
@@ -209,6 +209,9 @@ export const tickets = pgTable("tickets", {
   status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
   resolutionNotes: text("resolution_notes"),
+  startTime: timestamp("start_time"),
+  completionTime: timestamp("completion_time"),
+  timeSpent: integer("time_spent"), // Time spent in minutes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -217,8 +220,11 @@ export const tickets = pgTable("tickets", {
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
   language: varchar("language", { length: 10 }).notNull().default('English'),
-  assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('BOLT-'),
+  assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('SIT-'),
+  empIdPrefix: varchar("emp_id_prefix", { length: 10 }).notNull().default('EMP-'),
+  ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  departments: text("departments").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

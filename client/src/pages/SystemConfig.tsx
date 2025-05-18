@@ -24,7 +24,11 @@ export default function SystemConfig() {
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
   const [assetIdPrefix, setAssetIdPrefix] = useState('SIT-');
+  const [empIdPrefix, setEmpIdPrefix] = useState('EMP-');
+  const [ticketIdPrefix, setTicketIdPrefix] = useState('TKT-');
   const [currency, setCurrency] = useState('USD');
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   // Form state for new items

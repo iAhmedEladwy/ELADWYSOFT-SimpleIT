@@ -168,20 +168,7 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
           
           <TabsContent value="basic" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="assetId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.assetID}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>{translations.idDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Asset ID is auto-generated, removed input field */}
 
               <FormField
                 control={form.control}
