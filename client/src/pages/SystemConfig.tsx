@@ -15,7 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2 } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus } from 'lucide-react';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SystemConfig() {
@@ -493,17 +499,548 @@ export default function SystemConfig() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* General Settings - More compact and responsive */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{translations.generalSettings}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Language Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="language">{translations.language}</Label>
-              <Select 
+      <Tabs defaultValue="general" className="w-full mb-6">
+        <TabsList className="w-full justify-start mb-4 overflow-x-auto">
+          <TabsTrigger value="general" className="px-4 py-2">General Settings</TabsTrigger>
+          <TabsTrigger value="id-config" className="px-4 py-2">ID Configuration</TabsTrigger>
+          <TabsTrigger value="departments" className="px-4 py-2">Departments</TabsTrigger>
+          <TabsTrigger value="assets" className="px-4 py-2">Asset Management</TabsTrigger>
+          <TabsTrigger value="service-providers" className="px-4 py-2">Service Providers</TabsTrigger>
+          <TabsTrigger value="danger" className="px-4 py-2 text-red-500">Danger Zone</TabsTrigger>
+        </TabsList>
+
+        {/* General Settings Tab */}
+        <TabsContent value="general" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">System Settings</CardTitle>
+              <CardDescription>Configure system-wide settings and preferences</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="language" className="text-sm font-medium mb-1 block">{translations.language}</Label>
+                  <Select value={language} onValueChange={(value) => toggleLanguage(value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={translations.language} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">
+                        <div className="flex items-center">
+                          <Globe className="mr-2 h-4 w-4" />
+                          <span>{translations.english}</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Arabic">
+                        <div className="flex items-center">
+                          <Globe className="mr-2 h-4 w-4" />
+                          <span>{translations.arabic}</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="currency" className="text-sm font-medium mb-1 block">{translations.currency}</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={translations.currency} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                      <SelectItem value="EGP">EGP - Egyptian Pound</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>
+                </div>
+              </div>
+              
+              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto mt-4">
+                {updateConfigMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {translations.save}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ID Configuration Tab */}
+        <TabsContent value="id-config" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">ID Format Configuration</CardTitle>
+              <CardDescription>Configure prefixes for system-generated IDs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="assetIdPrefix" className="text-sm font-medium mb-1 block">{translations.assetIdPrefix}</Label>
+                  <Input
+                    id="assetIdPrefix"
+                    value={assetIdPrefix}
+                    onChange={(e) => setAssetIdPrefix(e.target.value)}
+                    maxLength={10}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{translations.assetIdPrefixDesc}</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="empIdPrefix" className="text-sm font-medium mb-1 block">{translations.empIdPrefix}</Label>
+                  <Input
+                    id="empIdPrefix"
+                    value={empIdPrefix}
+                    onChange={(e) => setEmpIdPrefix(e.target.value)}
+                    maxLength={10}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{translations.empIdPrefixDesc}</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="ticketIdPrefix" className="text-sm font-medium mb-1 block">{translations.ticketIdPrefix}</Label>
+                  <Input
+                    id="ticketIdPrefix"
+                    value={ticketIdPrefix}
+                    onChange={(e) => setTicketIdPrefix(e.target.value)}
+                    maxLength={10}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{translations.ticketIdPrefixDesc}</p>
+                </div>
+              </div>
+              
+              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                {updateConfigMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {translations.save}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Departments Tab */}
+        <TabsContent value="departments" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{translations.departments}</CardTitle>
+              <CardDescription>{translations.departmentsDesc}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <Input
+                  placeholder={translations.addDepartment}
+                  value={newDepartment}
+                  onChange={(e) => setNewDepartment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddDepartment()}
+                  className="flex-grow"
+                />
+                <Button 
+                  onClick={handleAddDepartment} 
+                  disabled={!newDepartment.trim()} 
+                  className="sm:w-auto w-full"
+                >
+                  {translations.addDepartment}
+                </Button>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                {departments.length > 0 ? (
+                  <ul className="divide-y max-h-80 overflow-y-auto">
+                    {departments.map((dept, idx) => (
+                      <li key={idx} className="flex justify-between items-center p-3">
+                        <span>{dept}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteDepartment(idx)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          {language === 'English' ? 'Delete' : 'حذف'}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {language === 'English' ? 'No departments added yet' : 'لم تتم إضافة أقسام بعد'}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Asset Management Tab */}
+        <TabsContent value="assets" className="space-y-4">
+          <Tabs defaultValue="types" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="types">Asset Types</TabsTrigger>
+              <TabsTrigger value="brands">Brands</TabsTrigger>
+              <TabsTrigger value="statuses">Statuses</TabsTrigger>
+            </TabsList>
+            
+            {/* Types Tab */}
+            <TabsContent value="types">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{translations.customAssetTypes}</CardTitle>
+                  <CardDescription>Create custom asset types in addition to default types</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2 flex-col sm:flex-row">
+                    <Input
+                      placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Input
+                      placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                      value={newTypeDescription}
+                      onChange={(e) => setNewTypeDescription(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Button 
+                      onClick={handleAddAssetType} 
+                      disabled={!newTypeName.trim() || createAssetTypeMutation.isPending}
+                      className="sm:w-auto w-full"
+                    >
+                      {language === 'English' ? 'Add' : 'إضافة'}
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    {customAssetTypes.length > 0 ? (
+                      <ul className="divide-y max-h-60 overflow-y-auto">
+                        {customAssetTypes.map((type: any) => (
+                          <li key={type.id} className="flex justify-between items-center p-3">
+                            <div>
+                              <div className="font-medium">{type.name}</div>
+                              {type.description && <div className="text-xs text-muted-foreground">{type.description}</div>}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => deleteAssetTypeMutation.mutate(type.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              disabled={deleteAssetTypeMutation.isPending}
+                            >
+                              {language === 'English' ? 'Delete' : 'حذف'}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        {language === 'English' ? 'No custom types added yet' : 'لم تتم إضافة أنواع مخصصة بعد'}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Brands Tab */}
+            <TabsContent value="brands">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{language === 'English' ? 'Custom Asset Brands' : 'علامات تجارية مخصصة للأصول'}</CardTitle>
+                  <CardDescription>
+                    {language === 'English' 
+                      ? 'Create custom asset brands in addition to regular inputs' 
+                      : 'إنشاء علامات تجارية مخصصة للأصول بالإضافة إلى الإدخالات العادية'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2 flex-col sm:flex-row">
+                    <Input
+                      placeholder={language === 'English' ? 'Brand name' : 'اسم العلامة التجارية'}
+                      value={newBrandName}
+                      onChange={(e) => setNewBrandName(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Input
+                      placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                      value={newBrandDescription}
+                      onChange={(e) => setNewBrandDescription(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Button 
+                      onClick={handleAddAssetBrand} 
+                      disabled={!newBrandName.trim() || createAssetBrandMutation.isPending}
+                      className="sm:w-auto w-full"
+                    >
+                      {language === 'English' ? 'Add' : 'إضافة'}
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    {customAssetBrands.length > 0 ? (
+                      <ul className="divide-y max-h-60 overflow-y-auto">
+                        {customAssetBrands.map((brand: any) => (
+                          <li key={brand.id} className="flex justify-between items-center p-3">
+                            <div>
+                              <div className="font-medium">{brand.name}</div>
+                              {brand.description && <div className="text-xs text-muted-foreground">{brand.description}</div>}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              disabled={deleteAssetBrandMutation.isPending}
+                            >
+                              {language === 'English' ? 'Delete' : 'حذف'}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        {language === 'English' ? 'No custom brands added yet' : 'لم تتم إضافة علامات تجارية مخصصة بعد'}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {/* Statuses Tab */}
+            <TabsContent value="statuses">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{language === 'English' ? 'Custom Asset Statuses' : 'حالات مخصصة للأصول'}</CardTitle>
+                  <CardDescription>
+                    {language === 'English' 
+                      ? 'Create custom statuses in addition to default statuses' 
+                      : 'إنشاء حالات مخصصة بالإضافة إلى الحالات الافتراضية'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2 flex-col">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={language === 'English' ? 'Status name' : 'اسم الحالة'}
+                        value={newStatusName}
+                        onChange={(e) => setNewStatusName(e.target.value)}
+                        className="flex-grow"
+                      />
+                      <div className="w-20">
+                        <Input
+                          type="color"
+                          value={newStatusColor}
+                          onChange={(e) => setNewStatusColor(e.target.value)}
+                          className="h-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                        value={newStatusDescription}
+                        onChange={(e) => setNewStatusDescription(e.target.value)}
+                        className="flex-grow"
+                      />
+                      <Button 
+                        onClick={handleAddAssetStatus} 
+                        disabled={!newStatusName.trim() || createAssetStatusMutation.isPending}
+                        className="sm:w-auto w-full"
+                      >
+                        {language === 'English' ? 'Add' : 'إضافة'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    {customAssetStatuses.length > 0 ? (
+                      <ul className="divide-y max-h-60 overflow-y-auto">
+                        {customAssetStatuses.map((status: any) => (
+                          <li key={status.id} className="flex justify-between items-center p-3">
+                            <div className="flex items-center">
+                              <div 
+                                className="w-4 h-4 rounded-full mr-2" 
+                                style={{ backgroundColor: status.color || '#3B82F6' }}
+                              />
+                              <div>
+                                <div className="font-medium">{status.name}</div>
+                                {status.description && <div className="text-xs text-muted-foreground">{status.description}</div>}
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              disabled={deleteAssetStatusMutation.isPending}
+                            >
+                              {language === 'English' ? 'Delete' : 'حذف'}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        {language === 'English' ? 'No custom statuses added yet' : 'لم تتم إضافة حالات مخصصة بعد'}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+        
+        {/* Service Providers Tab */}
+        <TabsContent value="service-providers" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{language === 'English' ? 'Service Providers' : 'مزودي الخدمة'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage service providers for maintenance and support' 
+                  : 'إدارة مزودي الخدمة للصيانة والدعم'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 flex-col">
+                <Input
+                  placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
+                  value={newProviderName}
+                  onChange={(e) => setNewProviderName(e.target.value)}
+                />
+                <Input
+                  placeholder={language === 'English' ? 'Contact person' : 'الشخص المسؤول'}
+                  value={newProviderContact}
+                  onChange={(e) => setNewProviderContact(e.target.value)}
+                />
+                <div className="flex gap-2 flex-col sm:flex-row">
+                  <Input
+                    placeholder={language === 'English' ? 'Phone' : 'الهاتف'}
+                    value={newProviderPhone}
+                    onChange={(e) => setNewProviderPhone(e.target.value)}
+                    className="flex-grow"
+                  />
+                  <Input
+                    placeholder={language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+                    value={newProviderEmail}
+                    onChange={(e) => setNewProviderEmail(e.target.value)}
+                    type="email"
+                    className="flex-grow"
+                  />
+                </div>
+                <Button 
+                  onClick={handleAddServiceProvider} 
+                  disabled={!newProviderName.trim() || createServiceProviderMutation.isPending}
+                  className="self-end sm:w-auto w-full"
+                >
+                  {language === 'English' ? 'Add Provider' : 'إضافة مزود'}
+                </Button>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                {serviceProviders.length > 0 ? (
+                  <ul className="divide-y max-h-80 overflow-y-auto">
+                    {serviceProviders.map((provider: any) => (
+                      <li key={provider.id} className="flex justify-between items-center p-3">
+                        <div>
+                          <div className="font-medium">{provider.name}</div>
+                          {provider.contactPerson && (
+                            <div className="text-sm">{provider.contactPerson}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {provider.phone && <span className="mr-2">{provider.phone}</span>}
+                            {provider.email && <span>{provider.email}</span>}
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          disabled={deleteServiceProviderMutation.isPending}
+                        >
+                          {language === 'English' ? 'Delete' : 'حذف'}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {language === 'English' ? 'No service providers added yet' : 'لم تتم إضافة مزودي خدمة بعد'}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Danger Zone Tab */}
+        <TabsContent value="danger" className="space-y-4">
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-red-600">
+                {language === 'English' ? 'Danger Zone' : 'منطقة الخطر'}
+              </CardTitle>
+              <CardDescription className="text-red-600/70">
+                {language === 'English' 
+                  ? 'Actions that cannot be undone' 
+                  : 'إجراءات لا يمكن التراجع عنها'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white rounded-md border border-red-300">
+                <div>
+                  <div className="font-medium">
+                    {language === 'English' ? 'Remove Demo Data' : 'إزالة بيانات العرض التوضيحي'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {language === 'English' 
+                      ? 'This will remove all demo data from the system.' 
+                      : 'سيؤدي هذا إلى إزالة جميع بيانات العرض التوضيحي من النظام.'}
+                  </div>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleRemoveDemoData}
+                  disabled={removeDemoDataMutation.isPending}
+                  className="sm:w-auto w-full"
+                >
+                  {removeDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
+                    </>
+                  ) : (
+                    language === 'English' ? 'Remove All Demo Data' : 'إزالة كل بيانات العرض'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+        
+      <div className="hidden">{/* Placeholder to close previous div */}
                 value={language} 
                 onValueChange={(value) => toggleLanguage(value)}
               >
