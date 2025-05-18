@@ -483,17 +483,18 @@ export default function SystemConfig() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 max-w-6xl">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{translations.title}</h1>
-          <p className="text-muted-foreground">{translations.pageDescription}</p>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Settings className="h-6 w-6" /> {translations.title}
+          </h1>
+          <p className="text-sm text-muted-foreground">{translations.pageDescription}</p>
         </div>
-        <Settings className="h-10 w-10 text-muted-foreground" />
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* General Settings */}
+        {/* General Settings - More compact and responsive */}
         <Card>
           <CardHeader>
             <CardTitle>{translations.generalSettings}</CardTitle>
