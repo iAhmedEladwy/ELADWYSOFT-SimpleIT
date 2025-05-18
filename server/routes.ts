@@ -1242,16 +1242,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newTicketNum = allTickets.length + 1;
       const generatedTicketId = `${ticketPrefix}${newTicketNum.toString().padStart(4, "0")}`;
       
-      // Add the ticketId to the request body before validation
-      const updatedBody = {
-        ...req.body,
-        ticketId: generatedTicketId
+      // Log the request data for debugging
+      console.log("Creating ticket with:", {
+        ticketId: generatedTicketId,
+        submittedById: parseInt(req.body.submittedById),
+        category: req.body.category,
+        priority: req.body.priority,
+        description: req.body.description
+      });
+      
+      // Create a ticket with required fields
+      const ticketInsert = {
+        ticketId: generatedTicketId,
+        submittedById: parseInt(req.body.submittedById),
+        category: req.body.category,
+        priority: req.body.priority,
+        description: req.body.description,
+        status: 'Open',
       };
       
-      // Validate the full data with the added ticketId
-      const ticketData = validateBody<schema.InsertTicket>(schema.insertTicketSchema, updatedBody);
-      
-      const ticket = await storage.createTicket(ticketData);
+      // Create the ticket in the database
+      const ticket = await storage.createTicket(ticketInsert);
       
       // Log activity
       if (req.user) {
