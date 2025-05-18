@@ -95,12 +95,8 @@ export default function SystemConfig() {
 
   // Create custom asset type mutation
   const createAssetTypeMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string }) => {
-      return await apiRequest('/api/custom-asset-types', {
-        method: 'POST',
-        data
-      })
-    },
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-asset-types', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
@@ -109,76 +105,128 @@ export default function SystemConfig() {
       });
       setNewTypeName('');
       setNewTypeDescription('');
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset type' : 'فشل إضافة نوع الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to add asset type:', error);
     }
   });
 
   // Delete custom asset type mutation
   const deleteAssetTypeMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/custom-asset-types/${id}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/custom-asset-types/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
       });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset type' : 'فشل حذف نوع الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to delete asset type:', error);
     }
   });
 
-  // Update asset brand mutation
-  const updateAssetBrandMutation = useMutation({
-    mutationFn: async (data: { id: number; name: string; description?: string }) => {
-      const { id, ...updateData } = data;
-      return await apiRequest(`/api/custom-asset-brands/${id}`, {
-        method: 'PUT',
-        data: updateData
-      })
-    },
+  // Update asset type mutation
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: { name: string; description?: string } }) => 
+      apiRequest('PUT', `/api/custom-asset-types/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث العلامة التجارية بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
       });
-      setEditingBrandId(null);
-      setEditedBrandName('');
-      setEditedBrandDescription('');
+      setEditingTypeId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset type' : 'فشل تحديث نوع الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to update asset type:', error);
     }
   });
+
+  // Brand state management
+  const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
+  const [editedBrandName, setEditedBrandName] = useState('');
+  const [editedBrandDescription, setEditedBrandDescription] = useState('');
 
   // Create custom asset brand mutation
   const createAssetBrandMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string }) => {
-      return await apiRequest('/api/custom-asset-brands', {
-        method: 'POST',
-        data
-      })
-    },
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-asset-brands', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة العلامة التجارية بنجاح',
+        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل التجارية بنجاح',
       });
       setNewBrandName('');
       setNewBrandDescription('');
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset brand' : 'فشل إضافة علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+      console.error('Failed to add asset brand:', error);
     }
   });
 
   // Delete custom asset brand mutation
   const deleteAssetBrandMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/custom-asset-brands/${id}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف العلامة التجارية بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل التجارية بنجاح',
       });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset brand' : 'فشل حذف علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+      console.error('Failed to delete asset brand:', error);
+    }
+  });
+
+  // Update asset brand mutation
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: { name: string; description?: string } }) => 
+      apiRequest('PUT', `/api/custom-asset-brands/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل التجارية بنجاح',
+      });
+      setEditingBrandId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset brand' : 'فشل تحديث علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+      console.error('Failed to update asset brand:', error);
     }
   });
 
@@ -186,38 +234,12 @@ export default function SystemConfig() {
   const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
   const [editedStatusName, setEditedStatusName] = useState('');
   const [editedStatusDescription, setEditedStatusDescription] = useState('');
-  const [editedStatusColor, setEditedStatusColor] = useState('#3B82F6');
-
-  // Update asset status mutation
-  const updateAssetStatusMutation = useMutation({
-    mutationFn: async (data: { id: number; name: string; description?: string; color?: string }) => {
-      const { id, ...updateData } = data;
-      return await apiRequest(`/api/custom-asset-statuses/${id}`, {
-        method: 'PUT',
-        data: updateData
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
-      });
-      setEditingStatusId(null);
-      setEditedStatusName('');
-      setEditedStatusDescription('');
-      setEditedStatusColor('#3B82F6');
-    }
-  });
+  const [editedStatusColor, setEditedStatusColor] = useState('');
 
   // Create custom asset status mutation
   const createAssetStatusMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string; color?: string }) => {
-      return await apiRequest('/api/custom-asset-statuses', {
-        method: 'POST',
-        data
-      })
-    },
+    mutationFn: (data: { name: string; description?: string; color?: string }) => 
+      apiRequest('POST', '/api/custom-asset-statuses', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
@@ -227,21 +249,57 @@ export default function SystemConfig() {
       setNewStatusName('');
       setNewStatusDescription('');
       setNewStatusColor('#3B82F6');
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset status' : 'فشل إضافة حالة الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to add asset status:', error);
     }
   });
 
   // Delete custom asset status mutation
   const deleteAssetStatusMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/custom-asset-statuses/${id}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
       });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset status' : 'فشل حذف حالة الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to delete asset status:', error);
+    }
+  });
+
+  // Update asset status mutation
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: { name: string; description?: string; color?: string } }) => 
+      apiRequest('PUT', `/api/custom-asset-statuses/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+      setEditingStatusId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset status' : 'فشل تحديث حالة الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to update asset status:', error);
     }
   });
 
@@ -252,37 +310,10 @@ export default function SystemConfig() {
   const [editedProviderPhone, setEditedProviderPhone] = useState('');
   const [editedProviderEmail, setEditedProviderEmail] = useState('');
 
-  // Update service provider mutation
-  const updateServiceProviderMutation = useMutation({
-    mutationFn: async (data: { id: number; name: string; contactPerson?: string; phone?: string; email?: string }) => {
-      const { id, ...updateData } = data;
-      return await apiRequest(`/api/service-providers/${id}`, {
-        method: 'PUT',
-        data: updateData
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مزود الخدمة بنجاح',
-      });
-      setEditingProviderId(null);
-      setEditedProviderName('');
-      setEditedProviderContact('');
-      setEditedProviderPhone('');
-      setEditedProviderEmail('');
-    }
-  });
-
   // Create service provider mutation
   const createServiceProviderMutation = useMutation({
-    mutationFn: async (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => {
-      return await apiRequest('/api/service-providers', {
-        method: 'POST',
-        data
-      })
-    },
+    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('POST', '/api/service-providers', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
@@ -293,33 +324,64 @@ export default function SystemConfig() {
       setNewProviderContact('');
       setNewProviderPhone('');
       setNewProviderEmail('');
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add service provider' : 'فشل إضافة مزود الخدمة',
+        variant: 'destructive'
+      });
+      console.error('Failed to add service provider:', error);
     }
   });
 
   // Delete service provider mutation
   const deleteServiceProviderMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/service-providers/${id}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/service-providers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مزود الخدمة بنجاح',
       });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مزود الخدمة',
+        variant: 'destructive'
+      });
+      console.error('Failed to delete service provider:', error);
+    }
+  });
+
+  // Update service provider mutation
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string } }) => 
+      apiRequest('PUT', `/api/service-providers/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مزود الخدمة بنجاح',
+      });
+      setEditingProviderId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update service provider' : 'فشل تحديث مزود الخدمة',
+        variant: 'destructive'
+      });
+      console.error('Failed to update service provider:', error);
     }
   });
 
   // Update config mutation
   const updateConfigMutation = useMutation({
-    mutationFn: async (data: any) => {
-      console.log("Updating config with:", data);
-      return await apiRequest('/api/system-config', {
-        method: 'PUT',
-        data
-      });
-    },
+    mutationFn: (data: any) => 
+      apiRequest('PUT', '/api/system-config', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
@@ -327,7 +389,7 @@ export default function SystemConfig() {
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error("Config update error:", error);
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
@@ -342,19 +404,92 @@ export default function SystemConfig() {
   // Remove demo data mutation
   const removeDemoDataMutation = useMutation({
     mutationFn: () => 
-      apiRequest('/api/remove-demo-data', {
-        method: 'POST',
-      }),
+      apiRequest('DELETE', '/api/demo-data'),
     onSuccess: () => {
       queryClient.invalidateQueries();
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Demo data removed successfully' : 'تمت إزالة بيانات العرض التوضيحي بنجاح',
+        description: language === 'English' ? 'Demo data removed successfully' : 'تمت إزالة البيانات التجريبية بنجاح',
       });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to remove demo data' : 'فشل إزالة البيانات التجريبية',
+        variant: 'destructive'
+      });
+      console.error('Failed to remove demo data:', error);
     }
   });
-
-  // Handle save config
+  
+  // Department state management
+  const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
+  const [editedDeptName, setEditedDeptName] = useState('');
+  
+  // Handle adding new department
+  const handleAddDepartment = () => {
+    if (!newDepartment.trim()) return;
+    
+    const updatedDepartments = [...departments, newDepartment.trim()];
+    setDepartments(updatedDepartments);
+    setNewDepartment('');
+    
+    // Save immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments
+    });
+  };
+  
+  // Handle delete department
+  const handleDeleteDepartment = (index: number) => {
+    const updatedDepartments = [...departments];
+    updatedDepartments.splice(index, 1);
+    setDepartments(updatedDepartments);
+    
+    // Save immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments
+    });
+  };
+  
+  // Handle edit department
+  const handleEditDepartment = (index: number) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(departments[index]);
+  };
+  
+  // Handle save edited department
+  const handleSaveDepartment = (index: number) => {
+    if (!editedDeptName.trim()) return;
+    
+    const updatedDepartments = [...departments];
+    updatedDepartments[index] = editedDeptName.trim();
+    setDepartments(updatedDepartments);
+    setEditingDeptIndex(null);
+    
+    // Save immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments
+    });
+  };
+  
+  // Handle cancel editing department
+  const handleCancelEditDepartment = () => {
+    setEditingDeptIndex(null);
+  };
+  
   const handleSaveConfig = () => {
     updateConfigMutation.mutate({
       assetIdPrefix,
@@ -365,100 +500,98 @@ export default function SystemConfig() {
     });
   };
 
-  // Brand state management
-  const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
-  const [editedBrandName, setEditedBrandName] = useState('');
-  const [editedBrandDescription, setEditedBrandDescription] = useState('');
-
-  // Update asset type mutation
-  const updateAssetTypeMutation = useMutation({
-    mutationFn: async (data: { id: number; name: string; description?: string }) => {
-      const { id, ...updateData } = data;
-      return await apiRequest(`/api/custom-asset-types/${id}`, {
-        method: 'PUT',
-        data: updateData
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
-      });
-      setEditingTypeId(null);
-      setEditedTypeName('');
-      setEditedTypeDescription('');
-    }
-  });
-
-  // Handle add asset type
+  // Handle adding new custom asset type
   const handleAddAssetType = () => {
     if (!newTypeName.trim()) return;
     
     createAssetTypeMutation.mutate({
-      name: newTypeName,
-      description: newTypeDescription
+      name: newTypeName.trim(),
+      description: newTypeDescription.trim() || undefined
     });
   };
 
-  // Handle edit asset type
+  // Handle editing custom asset type
   const handleEditAssetType = (type: any) => {
     setEditingTypeId(type.id);
     setEditedTypeName(type.name);
     setEditedTypeDescription(type.description || '');
   };
 
-  // Handle save edited asset type
-  const handleSaveEditedAssetType = () => {
-    if (editingTypeId === null || !editedTypeName.trim()) return;
+  // Handle saving edited custom asset type
+  const handleSaveAssetType = () => {
+    if (!editedTypeName.trim() || editingTypeId === null) return;
     
     updateAssetTypeMutation.mutate({
       id: editingTypeId,
-      name: editedTypeName,
-      description: editedTypeDescription || undefined
+      data: {
+        name: editedTypeName.trim(),
+        description: editedTypeDescription.trim() || undefined
+      }
     });
   };
 
-  // Handle add asset brand
+  // Handle canceling edit of custom asset type
+  const handleCancelEditAssetType = () => {
+    setEditingTypeId(null);
+  };
+
+  // Handle deleting custom asset type
+  const handleDeleteAssetType = (id: number) => {
+    deleteAssetTypeMutation.mutate(id);
+  };
+
+  // Handle adding new custom asset brand
   const handleAddAssetBrand = () => {
     if (!newBrandName.trim()) return;
     
     createAssetBrandMutation.mutate({
-      name: newBrandName,
-      description: newBrandDescription
+      name: newBrandName.trim(),
+      description: newBrandDescription.trim() || undefined
     });
   };
-  
-  // Handle edit asset brand
+
+  // Handle editing custom asset brand
   const handleEditAssetBrand = (brand: any) => {
     setEditingBrandId(brand.id);
     setEditedBrandName(brand.name);
     setEditedBrandDescription(brand.description || '');
   };
 
-  // Handle save edited asset brand
-  const handleSaveEditedAssetBrand = () => {
-    if (editingBrandId === null || !editedBrandName.trim()) return;
+  // Handle saving edited custom asset brand
+  const handleSaveAssetBrand = () => {
+    if (!editedBrandName.trim() || editingBrandId === null) return;
     
     updateAssetBrandMutation.mutate({
       id: editingBrandId,
-      name: editedBrandName,
-      description: editedBrandDescription || undefined
+      data: {
+        name: editedBrandName.trim(),
+        description: editedBrandDescription.trim() || undefined
+      }
     });
   };
 
-  // Handle add asset status
+  // Handle canceling edit of custom asset brand
+  const handleCancelEditAssetBrand = () => {
+    setEditingBrandId(null);
+  };
+
+  // Handle deleting custom asset brand
+  const handleDeleteAssetBrand = (id: number) => {
+    deleteAssetBrandMutation.mutate(id);
+  };
+
+  // Handle adding new custom asset status
   const handleAddAssetStatus = () => {
     if (!newStatusName.trim()) return;
     
     createAssetStatusMutation.mutate({
-      name: newStatusName,
-      description: newStatusDescription,
+      name: newStatusName.trim(),
+      description: newStatusDescription.trim() || undefined,
       color: newStatusColor
     });
   };
-  
-  // Handle edit asset status
+
+  // Handle editing custom asset status
   const handleEditAssetStatus = (status: any) => {
     setEditingStatusId(status.id);
     setEditedStatusName(status.name);
@@ -466,31 +599,43 @@ export default function SystemConfig() {
     setEditedStatusColor(status.color || '#3B82F6');
   };
 
-  // Handle save edited asset status
-  const handleSaveEditedAssetStatus = () => {
-    if (editingStatusId === null || !editedStatusName.trim()) return;
+  // Handle saving edited custom asset status
+  const handleSaveAssetStatus = () => {
+    if (!editedStatusName.trim() || editingStatusId === null) return;
     
     updateAssetStatusMutation.mutate({
       id: editingStatusId,
-      name: editedStatusName,
-      description: editedStatusDescription || undefined,
-      color: editedStatusColor
+      data: {
+        name: editedStatusName.trim(),
+        description: editedStatusDescription.trim() || undefined,
+        color: editedStatusColor
+      }
     });
   };
 
-  // Handle add service provider
+  // Handle canceling edit of custom asset status
+  const handleCancelEditAssetStatus = () => {
+    setEditingStatusId(null);
+  };
+
+  // Handle deleting custom asset status
+  const handleDeleteAssetStatus = (id: number) => {
+    deleteAssetStatusMutation.mutate(id);
+  };
+
+  // Handle adding new service provider
   const handleAddServiceProvider = () => {
     if (!newProviderName.trim()) return;
     
     createServiceProviderMutation.mutate({
-      name: newProviderName,
-      contactPerson: newProviderContact || undefined,
-      phone: newProviderPhone || undefined,
-      email: newProviderEmail || undefined
+      name: newProviderName.trim(),
+      contactPerson: newProviderContact.trim() || undefined,
+      phone: newProviderPhone.trim() || undefined,
+      email: newProviderEmail.trim() || undefined
     });
   };
-  
-  // Handle edit service provider
+
+  // Handle editing service provider
   const handleEditServiceProvider = (provider: any) => {
     setEditingProviderId(provider.id);
     setEditedProviderName(provider.name);
@@ -499,962 +644,935 @@ export default function SystemConfig() {
     setEditedProviderEmail(provider.email || '');
   };
 
-  // Handle save edited service provider
-  const handleSaveEditedServiceProvider = () => {
-    if (editingProviderId === null || !editedProviderName.trim()) return;
+  // Handle saving edited service provider
+  const handleSaveServiceProvider = () => {
+    if (!editedProviderName.trim() || editingProviderId === null) return;
     
     updateServiceProviderMutation.mutate({
       id: editingProviderId,
-      name: editedProviderName,
-      contactPerson: editedProviderContact || undefined,
-      phone: editedProviderPhone || undefined,
-      email: editedProviderEmail || undefined
+      data: {
+        name: editedProviderName.trim(),
+        contactPerson: editedProviderContact.trim() || undefined,
+        phone: editedProviderPhone.trim() || undefined,
+        email: editedProviderEmail.trim() || undefined
+      }
     });
   };
 
-  // Department state management
-  const [editingDepartmentIndex, setEditingDepartmentIndex] = useState<number | null>(null);
-  const [editedDepartmentName, setEditedDepartmentName] = useState('');
-
-  // Handle add department
-  const handleAddDepartment = () => {
-    if (!newDepartment.trim()) return;
-    
-    setDepartments([...departments, newDepartment]);
-    setNewDepartment('');
+  // Handle canceling edit of service provider
+  const handleCancelEditServiceProvider = () => {
+    setEditingProviderId(null);
   };
 
-  // Handle edit department mode
-  const handleEditDepartment = (index: number) => {
-    setEditingDepartmentIndex(index);
-    setEditedDepartmentName(departments[index]);
+  // Handle deleting service provider
+  const handleDeleteServiceProvider = (id: number) => {
+    deleteServiceProviderMutation.mutate(id);
   };
 
-  // Handle save edited department
-  const handleSaveEditedDepartment = () => {
-    if (editingDepartmentIndex === null || !editedDepartmentName.trim()) return;
-    
-    const newDepartments = [...departments];
-    newDepartments[editingDepartmentIndex] = editedDepartmentName;
-    setDepartments(newDepartments);
-    setEditingDepartmentIndex(null);
-    setEditedDepartmentName('');
-  };
-
-  // Handle delete department
-  const handleDeleteDepartment = (index: number) => {
-    const newDepartments = [...departments];
-    newDepartments.splice(index, 1);
-    setDepartments(newDepartments);
-  };
-
-  // Handle remove demo data
-  const handleRemoveDemoData = () => {
-    if (window.confirm(language === 'English' 
-      ? 'Are you sure you want to remove all demo data? This cannot be undone.' 
-      : 'هل أنت متأكد أنك تريد إزالة جميع بيانات العرض التوضيحي؟ لا يمكن التراجع عن هذا.')) {
-      removeDemoDataMutation.mutate();
-    }
-  };
-
-  // Translations
   const translations = {
-    title: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
-    pageDescription: language === 'English' ? 'Manage system-wide settings and preferences' : 'إدارة إعدادات وتفضيلات النظام',
+    systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
     generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
     language: language === 'English' ? 'Language' : 'اللغة',
     english: language === 'English' ? 'English' : 'الإنجليزية',
     arabic: language === 'English' ? 'Arabic' : 'العربية',
     currency: language === 'English' ? 'Currency' : 'العملة',
-    currencyDesc: language === 'English' ? 'Currency used throughout the system' : 'العملة المستخدمة في جميع أنحاء النظام',
-    assetIdPrefix: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل',
-    assetIdPrefixDesc: language === 'English' ? 'Prefix for auto-generated asset IDs' : 'بادئة لمعرفات الأصول المولدة تلقائيًا',
-    empIdPrefix: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
-    empIdPrefixDesc: language === 'English' ? 'Prefix for auto-generated employee IDs' : 'بادئة لمعرفات الموظفين المولدة تلقائيًا',
-    ticketIdPrefix: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
-    ticketIdPrefixDesc: language === 'English' ? 'Prefix for auto-generated ticket IDs' : 'بادئة لمعرفات التذاكر المولدة تلقائيًا',
+    currencyDesc: language === 'English' ? 'Currency used for asset values and financial reporting.' : 'العملة المستخدمة لقيم الأصول والتقارير المالية.',
     departments: language === 'English' ? 'Departments' : 'الأقسام',
-    departmentsDesc: language === 'English' ? 'Manage departments in your organization' : 'إدارة الأقسام في مؤسستك',
     addDepartment: language === 'English' ? 'Add Department' : 'إضافة قسم',
-    customAssetTypes: language === 'English' ? 'Custom Asset Types' : 'أنواع الأصول المخصصة',
-    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
+    idConfiguration: language === 'English' ? 'ID Configuration' : 'تكوين المعرف',
+    assetIdPrefix: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل',
+    empIdPrefix: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
+    ticketIdPrefix: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
+    idPrefixDesc: language === 'English' ? 'Prefix for automatically generated IDs.' : 'بادئة للمعرفات التي يتم إنشاؤها تلقائيًا.',
+    assetTypes: language === 'English' ? 'Asset Types' : 'أنواع الأصول',
+    assetBrands: language === 'English' ? 'Asset Brands' : 'علامات الأصول التجارية',
+    assetStatuses: language === 'English' ? 'Asset Statuses' : 'حالات الأصول',
+    serviceProviders: language === 'English' ? 'Service Providers' : 'مزودي الخدمة',
     name: language === 'English' ? 'Name' : 'الاسم',
     description: language === 'English' ? 'Description' : 'الوصف',
-    contactPerson: language === 'English' ? 'Contact Person' : 'الشخص المسؤول',
+    color: language === 'English' ? 'Color' : 'اللون',
+    actions: language === 'English' ? 'Actions' : 'الإجراءات',
+    add: language === 'English' ? 'Add' : 'إضافة',
+    edit: language === 'English' ? 'Edit' : 'تعديل',
+    delete: language === 'English' ? 'Delete' : 'حذف',
+    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
+    remove: language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية',
+    removeConfirm: language === 'English' ? 'Are you sure you want to remove all demo data? This will delete all assets, employees, tickets, and other data except for your admin user.' : 'هل أنت متأكد من أنك تريد إزالة جميع البيانات التجريبية؟ سيؤدي هذا إلى حذف جميع الأصول والموظفين والتذاكر والبيانات الأخرى باستثناء مستخدم المسؤول الخاص بك.',
+    contactPerson: language === 'English' ? 'Contact Person' : 'جهة الاتصال',
     phone: language === 'English' ? 'Phone' : 'الهاتف',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
+    assetManagement: language === 'English' ? 'Asset Management' : 'إدارة الأصول',
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    noData: language === 'English' ? 'No items found' : 'لم يتم العثور على عناصر'
   };
 
-  if (!hasAccess(3)) {
-    return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-xl font-semibold mb-4">
-          {language === 'English' ? 'Access Denied' : 'تم رفض الوصول'}
-        </h1>
-        <p>
-          {language === 'English' 
-            ? 'You do not have permission to access system configuration settings.' 
-            : 'ليس لديك إذن للوصول إلى إعدادات تكوين النظام.'}
-        </p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 max-w-6xl">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
+    <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Settings className="h-6 w-6" /> {translations.title}
-          </h1>
-          <p className="text-sm text-muted-foreground">{translations.pageDescription}</p>
+        <div className="flex items-center">
+          <Settings className="h-6 w-6 mr-2" />
+          <h1 className="text-2xl font-bold">{translations.systemConfig}</h1>
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full mb-6">
-        <TabsList className="w-full justify-start mb-4 flex flex-wrap">
-          <TabsTrigger value="general" className="px-4 py-2">General Settings</TabsTrigger>
-          <TabsTrigger value="id-config" className="px-4 py-2">ID Configuration</TabsTrigger>
-          <TabsTrigger value="departments" className="px-4 py-2">Departments</TabsTrigger>
-          <TabsTrigger value="assets" className="px-4 py-2">Asset Management</TabsTrigger>
-          <TabsTrigger value="service-providers" className="px-4 py-2">Service Providers</TabsTrigger>
-          <TabsTrigger value="danger" className="px-4 py-2 text-red-500">Danger Zone</TabsTrigger>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid grid-cols-4 md:grid-cols-5 lg:max-w-4xl mb-4">
+          <TabsTrigger value="general">
+            <Globe className="h-4 w-4 mr-2" />
+            {translations.generalSettings}
+          </TabsTrigger>
+          <TabsTrigger value="ids">{translations.idConfiguration}</TabsTrigger>
+          <TabsTrigger value="departments">{translations.departments}</TabsTrigger>
+          <TabsTrigger value="asset">{translations.assetManagement}</TabsTrigger>
+          <TabsTrigger value="providers">{translations.serviceProviders}</TabsTrigger>
         </TabsList>
 
         {/* General Settings Tab */}
-        <TabsContent value="general" className="space-y-4">
+        <TabsContent value="general">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">System Settings</CardTitle>
-              <CardDescription>Configure system-wide settings and preferences</CardDescription>
+            <CardHeader>
+              <CardTitle>{translations.generalSettings}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure language and currency preferences for your organization.' 
+                  : 'تكوين تفضيلات اللغة والعملة لمؤسستك.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="language" className="text-sm font-medium mb-1 block">{translations.language}</Label>
-                  <Select value={language} onValueChange={(value) => toggleLanguage(value)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={translations.language} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">
-                        <div className="flex items-center">
-                          <Globe className="mr-2 h-4 w-4" />
-                          <span>{translations.english}</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="Arabic">
-                        <div className="flex items-center">
-                          <Globe className="mr-2 h-4 w-4" />
-                          <span>{translations.arabic}</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                
-                <div>
-                  <Label htmlFor="currency" className="text-sm font-medium mb-1 block">{translations.currency}</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={translations.currency} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                      <SelectItem value="EGP">EGP - Egyptian Pound</SelectItem>
-                      <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
-                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                      <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
-                      <SelectItem value="AED">AED - UAE Dirham</SelectItem>
-                      <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-                      <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                      <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label>{translations.language}</Label>
+                    <Select value={language} onValueChange={toggleLanguage}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={translations.language} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="English">{translations.english}</SelectItem>
+                        <SelectItem value="Arabic">{translations.arabic}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'English' 
+                        ? 'The primary language used throughout the system.' 
+                        : 'اللغة الأساسية المستخدمة في جميع أنحاء النظام.'}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>{translations.currency}</Label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={translations.currency} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                        <SelectItem value="EGP">EGP - Egyptian Pound</SelectItem>
+                        <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                        <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
+                        <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+                        <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                        <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                        <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>
+                  </div>
+
+                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                    {updateConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {translations.save}
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </div>
-              
-              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto mt-4">
-                {updateConfigMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {translations.save}
-                  </>
-                )}
-              </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ID Configuration Tab */}
-        <TabsContent value="id-config" className="space-y-4">
+        <TabsContent value="ids">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">ID Format Configuration</CardTitle>
-              <CardDescription>Configure prefixes for system-generated IDs</CardDescription>
+            <CardHeader>
+              <CardTitle>{translations.idConfiguration}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure ID prefixes for assets, employees, and tickets.' 
+                  : 'تكوين بادئات المعرفات للأصول والموظفين والتذاكر.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <Label htmlFor="assetIdPrefix" className="text-sm font-medium mb-1 block">{translations.assetIdPrefix}</Label>
-                  <Input
-                    id="assetIdPrefix"
-                    value={assetIdPrefix}
-                    onChange={(e) => setAssetIdPrefix(e.target.value)}
-                    maxLength={10}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{translations.assetIdPrefixDesc}</p>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                
-                <div>
-                  <Label htmlFor="empIdPrefix" className="text-sm font-medium mb-1 block">{translations.empIdPrefix}</Label>
-                  <Input
-                    id="empIdPrefix"
-                    value={empIdPrefix}
-                    onChange={(e) => setEmpIdPrefix(e.target.value)}
-                    maxLength={10}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{translations.empIdPrefixDesc}</p>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label>{translations.assetIdPrefix}</Label>
+                    <Input 
+                      value={assetIdPrefix} 
+                      onChange={(e) => setAssetIdPrefix(e.target.value)}
+                      placeholder="SIT-" 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>{translations.empIdPrefix}</Label>
+                    <Input 
+                      value={empIdPrefix} 
+                      onChange={(e) => setEmpIdPrefix(e.target.value)}
+                      placeholder="EMP-" 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>{translations.ticketIdPrefix}</Label>
+                    <Input 
+                      value={ticketIdPrefix} 
+                      onChange={(e) => setTicketIdPrefix(e.target.value)}
+                      placeholder="TKT-" 
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
+                  </div>
+
+                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                    {updateConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {translations.save}
+                      </>
+                    )}
+                  </Button>
                 </div>
-                
-                <div>
-                  <Label htmlFor="ticketIdPrefix" className="text-sm font-medium mb-1 block">{translations.ticketIdPrefix}</Label>
-                  <Input
-                    id="ticketIdPrefix"
-                    value={ticketIdPrefix}
-                    onChange={(e) => setTicketIdPrefix(e.target.value)}
-                    maxLength={10}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{translations.ticketIdPrefixDesc}</p>
-                </div>
-              </div>
-              
-              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
-                {updateConfigMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {translations.save}
-                  </>
-                )}
-              </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Departments Tab */}
-        <TabsContent value="departments" className="space-y-4">
+        <TabsContent value="departments">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">{translations.departments}</CardTitle>
-              <CardDescription>{translations.departmentsDesc}</CardDescription>
+            <CardHeader>
+              <CardTitle>{translations.departments}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage departments for your organization.' 
+                  : 'إدارة الأقسام لمؤسستك.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                <Input
-                  placeholder={translations.addDepartment}
-                  value={newDepartment}
-                  onChange={(e) => setNewDepartment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddDepartment()}
-                  className="flex-grow"
-                />
-                <Button 
-                  onClick={handleAddDepartment} 
-                  disabled={!newDepartment.trim()} 
-                  className="sm:w-auto w-full"
-                >
-                  {translations.addDepartment}
-                </Button>
-              </div>
-              
-              <div className="border rounded-md overflow-hidden">
-                {departments.length > 0 ? (
-                  <ul className="divide-y max-h-80 overflow-y-auto">
-                    {departments.map((dept, idx) => (
-                      <li key={idx} className="flex justify-between items-center p-3">
-                        {editingDepartmentIndex === idx ? (
-                          <div className="flex items-center gap-2 flex-grow">
-                            <Input
-                              value={editedDepartmentName}
-                              onChange={(e) => setEditedDepartmentName(e.target.value)}
-                              className="h-8"
-                              autoFocus
-                            />
-                            <Button 
-                              size="sm" 
-                              onClick={handleSaveEditedDepartment}
-                              className="px-2 h-8"
-                            >
-                              {language === 'English' ? 'Save' : 'حفظ'}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setEditingDepartmentIndex(null)}
-                              className="px-2 h-8"
-                            >
-                              {language === 'English' ? 'Cancel' : 'إلغاء'}
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <span>{dept}</span>
-                            <div className="flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleEditDepartment(idx)}
-                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleDeleteDepartment(idx)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    {language === 'English' ? 'No departments added yet' : 'لم تتم إضافة أقسام بعد'}
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={newDepartment}
+                        onChange={(e) => setNewDepartment(e.target.value)}
+                        placeholder={language === 'English' ? "Add new department" : "إضافة قسم جديد"}
+                        className="flex-grow"
+                      />
+                      <Button 
+                        onClick={handleAddDepartment} 
+                        variant="secondary" 
+                        size="sm" 
+                        className="whitespace-nowrap"
+                        disabled={!newDepartment.trim()}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {translations.add}
+                      </Button>
+                    </div>
+                    
+                    {departments.length > 0 ? (
+                      <div className="border rounded-md overflow-hidden">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="px-4 py-2 text-left">{translations.name}</th>
+                              <th className="px-4 py-2 text-right">{translations.actions}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {departments.map((dept, index) => (
+                              <tr key={index} className="hover:bg-muted/25">
+                                <td className="px-4 py-2">
+                                  {editingDeptIndex === index ? (
+                                    <Input
+                                      value={editedDeptName}
+                                      onChange={(e) => setEditedDeptName(e.target.value)}
+                                      className="w-full"
+                                    />
+                                  ) : (
+                                    dept
+                                  )}
+                                </td>
+                                <td className="px-4 py-2 text-right space-x-1">
+                                  {editingDeptIndex === index ? (
+                                    <>
+                                      <Button
+                                        onClick={() => handleSaveDepartment(index)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Check className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={handleCancelEditDepartment}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => handleEditDepartment(index)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleDeleteDepartment(index)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 border rounded-md bg-muted/10">
+                        {translations.noData}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto mt-4">
-                {updateConfigMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {translations.save}
-                  </>
-                )}
-              </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         {/* Asset Management Tab */}
-        <TabsContent value="assets" className="space-y-4">
-          <Tabs defaultValue="types" className="w-full">
-            <TabsList className="mb-4 flex flex-wrap">
-              <TabsTrigger value="types">Asset Types</TabsTrigger>
-              <TabsTrigger value="brands">Brands</TabsTrigger>
-              <TabsTrigger value="statuses">Statuses</TabsTrigger>
-            </TabsList>
-            
-            {/* Types Tab */}
-            <TabsContent value="types">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{translations.customAssetTypes}</CardTitle>
-                  <CardDescription>Create custom asset types in addition to default types</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2 flex-col sm:flex-row">
+        <TabsContent value="asset">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Asset Types */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{translations.assetTypes}</CardTitle>
+                <CardDescription>
+                  {language === 'English' 
+                    ? 'Manage asset types for categorization.' 
+                    : 'إدارة أنواع الأصول للتصنيف.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        placeholder={language === 'English' ? "Type name" : "اسم النوع"}
+                        value={newTypeName}
+                        onChange={(e) => setNewTypeName(e.target.value)}
+                        className="flex-grow"
+                      />
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={handleAddAssetType}
+                        disabled={!newTypeName.trim()}
+                        className="whitespace-nowrap"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {translations.add}
+                      </Button>
+                    </div>
                     <Input
-                      placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
-                      value={newTypeName}
-                      onChange={(e) => setNewTypeName(e.target.value)}
-                      className="flex-grow"
-                    />
-                    <Input
-                      placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                      placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
                       value={newTypeDescription}
                       onChange={(e) => setNewTypeDescription(e.target.value)}
-                      className="flex-grow"
                     />
-                    <Button 
-                      onClick={handleAddAssetType} 
-                      disabled={!newTypeName.trim() || createAssetTypeMutation.isPending}
-                      className="sm:w-auto w-full"
-                    >
-                      {language === 'English' ? 'Add' : 'إضافة'}
-                    </Button>
                   </div>
                   
-                  <div className="border rounded-md overflow-hidden">
-                    {customAssetTypes && customAssetTypes.length > 0 ? (
-                      <ul className="divide-y max-h-60 overflow-y-auto">
-                        {customAssetTypes.map((type: any) => (
-                          <li key={type.id} className="flex justify-between items-center p-3">
-                            {editingTypeId === type.id ? (
-                              <div className="flex flex-col gap-2 w-full">
-                                <Input
-                                  value={editedTypeName}
-                                  onChange={(e) => setEditedTypeName(e.target.value)}
-                                  placeholder="Type name"
-                                  className="h-8"
-                                  autoFocus
-                                />
-                                <Input
-                                  value={editedTypeDescription}
-                                  onChange={(e) => setEditedTypeDescription(e.target.value)}
-                                  placeholder="Description (optional)"
-                                  className="h-8"
-                                />
-                                <div className="flex justify-end gap-2 mt-1">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={handleSaveEditedAssetType}
-                                    disabled={!editedTypeName.trim() || updateAssetTypeMutation.isPending}
-                                    className="h-8 px-2"
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Save' : 'حفظ'}
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => setEditingTypeId(null)}
-                                    className="h-8 px-2"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div>
-                                  <div className="font-medium">{type.name}</div>
-                                  {type.description && <div className="text-xs text-muted-foreground">{type.description}</div>}
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditAssetType(type)}
-                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => deleteAssetTypeMutation.mutate(type.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                                    disabled={deleteAssetTypeMutation.isPending}
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        {language === 'English' ? 'No custom types added yet' : 'لم تتم إضافة أنواع مخصصة بعد'}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Brands Tab */}
-            <TabsContent value="brands">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{language === 'English' ? 'Custom Asset Brands' : 'علامات تجارية مخصصة للأصول'}</CardTitle>
-                  <CardDescription>
-                    {language === 'English' 
-                      ? 'Create custom asset brands in addition to regular inputs' 
-                      : 'إنشاء علامات تجارية مخصصة للأصول بالإضافة إلى الإدخالات العادية'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2 flex-col sm:flex-row">
+                  {customAssetTypes.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{translations.description}</th>
+                            <th className="px-4 py-2 text-right">{translations.actions}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {customAssetTypes.map((type: any) => (
+                            <tr key={type.id} className="hover:bg-muted/25">
+                              <td className="px-4 py-2">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeName}
+                                    onChange={(e) => setEditedTypeName(e.target.value)}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  type.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-muted-foreground">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeDescription}
+                                    onChange={(e) => setEditedTypeDescription(e.target.value)}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  type.description || '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right space-x-1">
+                                {editingTypeId === type.id ? (
+                                  <>
+                                    <Button
+                                      onClick={handleSaveAssetType}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={handleCancelEditAssetType}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      onClick={() => handleEditAssetType(type)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4 text-blue-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDeleteAssetType(type.id)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Trash className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 border rounded-md bg-muted/10">
+                      {translations.noData}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Asset Brands */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{translations.assetBrands}</CardTitle>
+                <CardDescription>
+                  {language === 'English' 
+                    ? 'Manage asset brands for your inventory.' 
+                    : 'إدارة العلامات التجارية للأصول في المخزون.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        placeholder={language === 'English' ? "Brand name" : "اسم العلامة التجارية"}
+                        value={newBrandName}
+                        onChange={(e) => setNewBrandName(e.target.value)}
+                        className="flex-grow"
+                      />
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={handleAddAssetBrand}
+                        disabled={!newBrandName.trim()}
+                        className="whitespace-nowrap"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {translations.add}
+                      </Button>
+                    </div>
                     <Input
-                      placeholder={language === 'English' ? 'Brand name' : 'اسم العلامة التجارية'}
-                      value={newBrandName}
-                      onChange={(e) => setNewBrandName(e.target.value)}
-                      className="flex-grow"
-                    />
-                    <Input
-                      placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                      placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
                       value={newBrandDescription}
                       onChange={(e) => setNewBrandDescription(e.target.value)}
-                      className="flex-grow"
                     />
-                    <Button 
-                      onClick={handleAddAssetBrand} 
-                      disabled={!newBrandName.trim() || createAssetBrandMutation.isPending}
-                      className="sm:w-auto w-full"
-                    >
-                      {language === 'English' ? 'Add' : 'إضافة'}
-                    </Button>
                   </div>
                   
-                  <div className="border rounded-md overflow-hidden">
-                    {customAssetBrands && customAssetBrands.length > 0 ? (
-                      <ul className="divide-y max-h-60 overflow-y-auto">
-                        {customAssetBrands.map((brand: any) => (
-                          <li key={brand.id} className="flex justify-between items-center p-3">
-                            {editingBrandId === brand.id ? (
-                              <div className="flex flex-col gap-2 w-full">
-                                <Input
-                                  value={editedBrandName}
-                                  onChange={(e) => setEditedBrandName(e.target.value)}
-                                  placeholder="Brand name"
-                                  className="h-8"
-                                  autoFocus
-                                />
-                                <Input
-                                  value={editedBrandDescription}
-                                  onChange={(e) => setEditedBrandDescription(e.target.value)}
-                                  placeholder="Description (optional)"
-                                  className="h-8"
-                                />
-                                <div className="flex justify-end gap-2 mt-1">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={handleSaveEditedAssetBrand}
-                                    disabled={!editedBrandName.trim() || updateAssetBrandMutation.isPending}
-                                    className="h-8 px-2"
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Save' : 'حفظ'}
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => setEditingBrandId(null)}
-                                    className="h-8 px-2"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div>
-                                  <div className="font-medium">{brand.name}</div>
-                                  {brand.description && <div className="text-xs text-muted-foreground">{brand.description}</div>}
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditAssetBrand(brand)}
-                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                                    disabled={deleteAssetBrandMutation.isPending}
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        {language === 'English' ? 'No custom brands added yet' : 'لم تتم إضافة علامات تجارية مخصصة بعد'}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Statuses Tab */}
-            <TabsContent value="statuses">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{language === 'English' ? 'Custom Asset Statuses' : 'حالات مخصصة للأصول'}</CardTitle>
-                  <CardDescription>
-                    {language === 'English' 
-                      ? 'Create custom statuses in addition to default statuses' 
-                      : 'إنشاء حالات مخصصة بالإضافة إلى الحالات الافتراضية'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2 flex-col">
-                    <div className="flex gap-2">
+                  {customAssetBrands.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{translations.description}</th>
+                            <th className="px-4 py-2 text-right">{translations.actions}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {customAssetBrands.map((brand: any) => (
+                            <tr key={brand.id} className="hover:bg-muted/25">
+                              <td className="px-4 py-2">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandName}
+                                    onChange={(e) => setEditedBrandName(e.target.value)}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  brand.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-muted-foreground">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandDescription}
+                                    onChange={(e) => setEditedBrandDescription(e.target.value)}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  brand.description || '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right space-x-1">
+                                {editingBrandId === brand.id ? (
+                                  <>
+                                    <Button
+                                      onClick={handleSaveAssetBrand}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={handleCancelEditAssetBrand}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      onClick={() => handleEditAssetBrand(brand)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4 text-blue-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDeleteAssetBrand(brand.id)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Trash className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 border rounded-md bg-muted/10">
+                      {translations.noData}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Asset Statuses */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{translations.assetStatuses}</CardTitle>
+                <CardDescription>
+                  {language === 'English' 
+                    ? 'Customize statuses for tracking assets.' 
+                    : 'تخصيص حالات لتتبع الأصول.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <div className="flex items-center space-x-2">
                       <Input
-                        placeholder={language === 'English' ? 'Status name' : 'اسم الحالة'}
+                        placeholder={language === 'English' ? "Status name" : "اسم الحالة"}
                         value={newStatusName}
                         onChange={(e) => setNewStatusName(e.target.value)}
                         className="flex-grow"
                       />
-                      <div className="w-20">
-                        <Input
-                          type="color"
-                          value={newStatusColor}
-                          onChange={(e) => setNewStatusColor(e.target.value)}
-                          className="h-full"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
-                        value={newStatusDescription}
-                        onChange={(e) => setNewStatusDescription(e.target.value)}
-                        className="flex-grow"
-                      />
                       <Button 
-                        onClick={handleAddAssetStatus} 
-                        disabled={!newStatusName.trim() || createAssetStatusMutation.isPending}
-                        className="sm:w-auto w-full"
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={handleAddAssetStatus}
+                        disabled={!newStatusName.trim()}
+                        className="whitespace-nowrap"
                       >
-                        {language === 'English' ? 'Add' : 'إضافة'}
+                        <Plus className="h-4 w-4 mr-2" />
+                        {translations.add}
                       </Button>
+                    </div>
+                    <Input
+                      placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
+                      value={newStatusDescription}
+                      onChange={(e) => setNewStatusDescription(e.target.value)}
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Label>{translations.color}</Label>
+                      <Input
+                        type="color"
+                        value={newStatusColor}
+                        onChange={(e) => setNewStatusColor(e.target.value)}
+                        className="w-16 h-8"
+                      />
                     </div>
                   </div>
                   
-                  <div className="border rounded-md overflow-hidden">
-                    {customAssetStatuses && customAssetStatuses.length > 0 ? (
-                      <ul className="divide-y max-h-60 overflow-y-auto">
-                        {customAssetStatuses.map((status: any) => (
-                          <li key={status.id} className="flex justify-between items-center p-3">
-                            {editingStatusId === status.id ? (
-                              <div className="flex flex-col gap-2 w-full">
-                                <div className="flex items-center gap-2">
+                  {customAssetStatuses.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{translations.description}</th>
+                            <th className="px-4 py-2 text-left">{translations.color}</th>
+                            <th className="px-4 py-2 text-right">{translations.actions}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {customAssetStatuses.map((status: any) => (
+                            <tr key={status.id} className="hover:bg-muted/25">
+                              <td className="px-4 py-2">
+                                {editingStatusId === status.id ? (
                                   <Input
                                     value={editedStatusName}
                                     onChange={(e) => setEditedStatusName(e.target.value)}
-                                    placeholder="Status name"
-                                    className="h-8 flex-grow"
-                                    autoFocus
+                                    className="w-full"
                                   />
-                                  <div className="w-14">
-                                    <Input
-                                      type="color"
-                                      value={editedStatusColor}
-                                      onChange={(e) => setEditedStatusColor(e.target.value)}
-                                      className="h-8 w-full"
-                                    />
-                                  </div>
-                                </div>
-                                <Input
-                                  value={editedStatusDescription}
-                                  onChange={(e) => setEditedStatusDescription(e.target.value)}
-                                  placeholder="Description (optional)"
-                                  className="h-8"
-                                />
-                                <div className="flex justify-end gap-2 mt-1">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={handleSaveEditedAssetStatus}
-                                    disabled={!editedStatusName.trim() || updateAssetStatusMutation.isPending}
-                                    className="h-8 px-2"
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Save' : 'حفظ'}
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => setEditingStatusId(null)}
-                                    className="h-8 px-2"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center">
+                                ) : (
+                                  status.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-muted-foreground">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusDescription}
+                                    onChange={(e) => setEditedStatusDescription(e.target.value)}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  status.description || '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-2">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    type="color"
+                                    value={editedStatusColor}
+                                    onChange={(e) => setEditedStatusColor(e.target.value)}
+                                    className="w-16 h-8"
+                                  />
+                                ) : (
                                   <div 
-                                    className="w-4 h-4 rounded-full mr-2" 
+                                    className="w-6 h-6 rounded-full" 
                                     style={{ backgroundColor: status.color || '#3B82F6' }}
                                   />
-                                  <div>
-                                    <div className="font-medium">{status.name}</div>
-                                    {status.description && <div className="text-xs text-muted-foreground">{status.description}</div>}
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditAssetStatus(status)}
-                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => deleteAssetStatusMutation.mutate(status.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                                    disabled={deleteAssetStatusMutation.isPending}
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        {language === 'English' ? 'No custom statuses added yet' : 'لم تتم إضافة حالات مخصصة بعد'}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right space-x-1">
+                                {editingStatusId === status.id ? (
+                                  <>
+                                    <Button
+                                      onClick={handleSaveAssetStatus}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={handleCancelEditAssetStatus}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      onClick={() => handleEditAssetStatus(status)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4 text-blue-600" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDeleteAssetStatus(status.id)}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <Trash className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 border rounded-md bg-muted/10">
+                      {translations.noData}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
-        
+
         {/* Service Providers Tab */}
-        <TabsContent value="service-providers" className="space-y-4">
+        <TabsContent value="providers">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">{language === 'English' ? 'Service Providers' : 'مزودي الخدمة'}</CardTitle>
+            <CardHeader>
+              <CardTitle>{translations.serviceProviders}</CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Manage service providers for maintenance and support' 
-                  : 'إدارة مزودي الخدمة للصيانة والدعم'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2 flex-col">
-                <Input
-                  placeholder={language === 'English' ? 'Provider name' : 'اسم المزود'}
-                  value={newProviderName}
-                  onChange={(e) => setNewProviderName(e.target.value)}
-                />
-                <Input
-                  placeholder={language === 'English' ? 'Contact person' : 'الشخص المسؤول'}
-                  value={newProviderContact}
-                  onChange={(e) => setNewProviderContact(e.target.value)}
-                />
-                <div className="flex gap-2 flex-col sm:flex-row">
-                  <Input
-                    placeholder={language === 'English' ? 'Phone' : 'الهاتف'}
-                    value={newProviderPhone}
-                    onChange={(e) => setNewProviderPhone(e.target.value)}
-                    className="flex-grow"
-                  />
-                  <Input
-                    placeholder={language === 'English' ? 'Email' : 'البريد الإلكتروني'}
-                    value={newProviderEmail}
-                    onChange={(e) => setNewProviderEmail(e.target.value)}
-                    type="email"
-                    className="flex-grow"
-                  />
-                </div>
-                <Button 
-                  onClick={handleAddServiceProvider} 
-                  disabled={!newProviderName.trim() || createServiceProviderMutation.isPending}
-                  className="self-end sm:w-auto w-full"
-                >
-                  {language === 'English' ? 'Add Provider' : 'إضافة مزود'}
-                </Button>
-              </div>
-              
-              <div className="border rounded-md overflow-hidden">
-                {serviceProviders && serviceProviders.length > 0 ? (
-                  <ul className="divide-y max-h-80 overflow-y-auto">
-                    {serviceProviders.map((provider: any) => (
-                      <li key={provider.id} className="flex justify-between items-center p-3">
-                        {editingProviderId === provider.id ? (
-                          <div className="flex flex-col gap-2 w-full">
-                            <Input
-                              value={editedProviderName}
-                              onChange={(e) => setEditedProviderName(e.target.value)}
-                              placeholder="Provider name"
-                              className="h-8"
-                              autoFocus
-                            />
-                            <Input
-                              value={editedProviderContact}
-                              onChange={(e) => setEditedProviderContact(e.target.value)}
-                              placeholder="Contact person (optional)"
-                              className="h-8"
-                            />
-                            <div className="flex gap-2 flex-col sm:flex-row">
-                              <Input
-                                value={editedProviderPhone}
-                                onChange={(e) => setEditedProviderPhone(e.target.value)}
-                                placeholder="Phone (optional)"
-                                className="h-8 flex-grow"
-                              />
-                              <Input
-                                value={editedProviderEmail}
-                                onChange={(e) => setEditedProviderEmail(e.target.value)}
-                                placeholder="Email (optional)"
-                                type="email"
-                                className="h-8 flex-grow"
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2 mt-1">
-                              <Button 
-                                size="sm" 
-                                onClick={handleSaveEditedServiceProvider}
-                                disabled={!editedProviderName.trim() || updateServiceProviderMutation.isPending}
-                                className="h-8 px-2"
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                {language === 'English' ? 'Save' : 'حفظ'}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => setEditingProviderId(null)}
-                                className="h-8 px-2"
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                {language === 'English' ? 'Cancel' : 'إلغاء'}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div>
-                              <div className="font-medium">{provider.name}</div>
-                              {provider.contactPerson && (
-                                <div className="text-sm">{provider.contactPerson}</div>
-                              )}
-                              <div className="text-xs text-muted-foreground">
-                                {provider.phone && <span className="mr-2">{provider.phone}</span>}
-                                {provider.email && <span>{provider.email}</span>}
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleEditServiceProvider(provider)}
-                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                                disabled={deleteServiceProviderMutation.isPending}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    {language === 'English' ? 'No service providers added yet' : 'لم تتم إضافة مزودي خدمة بعد'}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Danger Zone Tab */}
-        <TabsContent value="danger" className="space-y-4">
-          <Card className="border-red-200 bg-red-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-red-600">
-                {language === 'English' ? 'Danger Zone' : 'منطقة الخطر'}
-              </CardTitle>
-              <CardDescription className="text-red-600/70">
-                {language === 'English' 
-                  ? 'Actions that cannot be undone' 
-                  : 'إجراءات لا يمكن التراجع عنها'}
+                  ? 'Manage service providers for asset maintenance and support.' 
+                  : 'إدارة مزودي الخدمة لصيانة ودعم الأصول.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white rounded-md border border-red-300">
-                <div>
-                  <div className="font-medium">
-                    {language === 'English' ? 'Remove Demo Data' : 'إزالة بيانات العرض التوضيحي'}
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      placeholder={language === 'English' ? "Provider name" : "اسم مزود الخدمة"}
+                      value={newProviderName}
+                      onChange={(e) => setNewProviderName(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      onClick={handleAddServiceProvider}
+                      disabled={!newProviderName.trim()}
+                      className="whitespace-nowrap"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {translations.add}
+                    </Button>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {language === 'English' 
-                      ? 'This will remove all demo data from the system.' 
-                      : 'سيؤدي هذا إلى إزالة جميع بيانات العرض التوضيحي من النظام.'}
+                  <Input
+                    placeholder={language === 'English' ? "Contact person (optional)" : "جهة الاتصال (اختياري)"}
+                    value={newProviderContact}
+                    onChange={(e) => setNewProviderContact(e.target.value)}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Input
+                      placeholder={language === 'English' ? "Phone (optional)" : "الهاتف (اختياري)"}
+                      value={newProviderPhone}
+                      onChange={(e) => setNewProviderPhone(e.target.value)}
+                    />
+                    <Input
+                      placeholder={language === 'English' ? "Email (optional)" : "البريد الإلكتروني (اختياري)"}
+                      value={newProviderEmail}
+                      onChange={(e) => setNewProviderEmail(e.target.value)}
+                      type="email"
+                    />
                   </div>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleRemoveDemoData}
-                  disabled={removeDemoDataMutation.isPending}
-                  className="sm:w-auto w-full"
-                >
-                  {removeDemoDataMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
-                    </>
-                  ) : (
-                    language === 'English' ? 'Remove All Demo Data' : 'إزالة كل بيانات العرض'
-                  )}
-                </Button>
+                
+                {serviceProviders.length > 0 ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          <th className="px-4 py-2 text-left">{translations.name}</th>
+                          <th className="px-4 py-2 text-left">{translations.contactPerson}</th>
+                          <th className="px-4 py-2 text-left">{translations.phone}</th>
+                          <th className="px-4 py-2 text-left">{translations.email}</th>
+                          <th className="px-4 py-2 text-right">{translations.actions}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {serviceProviders.map((provider: any) => (
+                          <tr key={provider.id} className="hover:bg-muted/25">
+                            <td className="px-4 py-2">
+                              {editingProviderId === provider.id ? (
+                                <Input
+                                  value={editedProviderName}
+                                  onChange={(e) => setEditedProviderName(e.target.value)}
+                                  className="w-full"
+                                />
+                              ) : (
+                                provider.name
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-sm text-muted-foreground">
+                              {editingProviderId === provider.id ? (
+                                <Input
+                                  value={editedProviderContact}
+                                  onChange={(e) => setEditedProviderContact(e.target.value)}
+                                  className="w-full"
+                                />
+                              ) : (
+                                provider.contactPerson || '-'
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-sm text-muted-foreground">
+                              {editingProviderId === provider.id ? (
+                                <Input
+                                  value={editedProviderPhone}
+                                  onChange={(e) => setEditedProviderPhone(e.target.value)}
+                                  className="w-full"
+                                />
+                              ) : (
+                                provider.phone || '-'
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-sm text-muted-foreground">
+                              {editingProviderId === provider.id ? (
+                                <Input
+                                  value={editedProviderEmail}
+                                  onChange={(e) => setEditedProviderEmail(e.target.value)}
+                                  className="w-full"
+                                  type="email"
+                                />
+                              ) : (
+                                provider.email || '-'
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right space-x-1">
+                              {editingProviderId === provider.id ? (
+                                <>
+                                  <Button
+                                    onClick={handleSaveServiceProvider}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={handleCancelEditServiceProvider}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <X className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    onClick={() => handleEditServiceProvider(provider)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDeleteServiceProvider(provider.id)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 border rounded-md bg-muted/10">
+                    {translations.noData}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
