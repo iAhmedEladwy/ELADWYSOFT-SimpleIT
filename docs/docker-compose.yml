@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Database service
+  postgres:
+    image: postgres:16-alpine
+    container_name: simpleit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: simpleit
+      POSTGRES_USER: simpleit
+      POSTGRES_PASSWORD: simpleit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simpleit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application service
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: simpleit-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgres://simpleit:simpleit@postgres:5432/simpleit
+      - SESSION_SECRET=your_session_secret_here
+      - ASSET_ID_PREFIX=SIT-
+      - EMP_ID_PREFIX=EMP-
+      - TICKET_ID_PREFIX=TKT-
+      - DEFAULT_CURRENCY=USD
+      - DEFAULT_LANGUAGE=English
+    ports:
+      - "3000:3000"
+
+  # Web server for production (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: simpleit-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    environment:
+      - NGINX_HOST=${NGINX_HOST:-localhost}
+      - APP_HOST=app
+      - APP_PORT=3000
+
+volumes:
+  postgres_data:
