@@ -26,7 +26,6 @@ import { Textarea } from '@/components/ui/textarea';
 
 // Define schema for form validation
 const assetFormSchema = z.object({
-  assetId: z.string().optional(),
   type: z.string(),
   brand: z.string().min(1, 'Brand is required'),
   modelNumber: z.string().optional(),
@@ -36,7 +35,10 @@ const assetFormSchema = z.object({
   status: z.string(),
   purchaseDate: z.string().optional(),
   buyPrice: z.string().optional(),
-  warrantyExpiryDate: z.string().optional(),
+  warrantyExpiryDate: z.string().optional().refine(
+    (date) => !date || !isNaN(Date.parse(date)),
+    { message: "Invalid date format" }
+  ),
   lifeSpan: z.string().optional(),
   outOfBoxOs: z.string().optional(),
   assignedEmployeeId: z.string().optional(),
@@ -126,7 +128,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const form = useForm<z.infer<typeof assetFormSchema>>({
     resolver: zodResolver(assetFormSchema),
     defaultValues: getFormattedInitialData() || {
-      assetId: '',
       type: 'Laptop',
       brand: '',
       modelNumber: '',
