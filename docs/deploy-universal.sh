@@ -138,8 +138,8 @@ log "Installing Node.js $NODE_VERSION..."
 if ! command -v node &> /dev/null; then
     case $DISTRO in
         ubuntu|debian)
-            curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - >> $LOG_FILE 2>&1 || error "Failed to set up Node.js repository"
-            apt-get install -y nodejs >> $LOG_FILE 2>&1 || error "Failed to install Node.js"
+            curl -o- https://fnm.vercel.app/install | bash - >> $LOG_FILE 2>&1 || error "Failed to set up Node.js repository"
+           fnm install 22 >> $LOG_FILE 2>&1 || error "Failed to install Node.js"
             ;;
         centos|rhel|fedora|rocky|almalinux)
             curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash - >> $LOG_FILE 2>&1 || error "Failed to set up Node.js repository"
