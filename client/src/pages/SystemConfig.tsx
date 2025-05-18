@@ -1299,25 +1299,90 @@ export default function SystemConfig() {
                   <ul className="divide-y max-h-80 overflow-y-auto">
                     {serviceProviders.map((provider: any) => (
                       <li key={provider.id} className="flex justify-between items-center p-3">
-                        <div>
-                          <div className="font-medium">{provider.name}</div>
-                          {provider.contactPerson && (
-                            <div className="text-sm">{provider.contactPerson}</div>
-                          )}
-                          <div className="text-xs text-muted-foreground">
-                            {provider.phone && <span className="mr-2">{provider.phone}</span>}
-                            {provider.email && <span>{provider.email}</span>}
+                        {editingProviderId === provider.id ? (
+                          <div className="flex flex-col gap-2 w-full">
+                            <Input
+                              value={editedProviderName}
+                              onChange={(e) => setEditedProviderName(e.target.value)}
+                              placeholder="Provider name"
+                              className="h-8"
+                              autoFocus
+                            />
+                            <Input
+                              value={editedProviderContact}
+                              onChange={(e) => setEditedProviderContact(e.target.value)}
+                              placeholder="Contact person (optional)"
+                              className="h-8"
+                            />
+                            <div className="flex gap-2 flex-col sm:flex-row">
+                              <Input
+                                value={editedProviderPhone}
+                                onChange={(e) => setEditedProviderPhone(e.target.value)}
+                                placeholder="Phone (optional)"
+                                className="h-8 flex-grow"
+                              />
+                              <Input
+                                value={editedProviderEmail}
+                                onChange={(e) => setEditedProviderEmail(e.target.value)}
+                                placeholder="Email (optional)"
+                                type="email"
+                                className="h-8 flex-grow"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 mt-1">
+                              <Button 
+                                size="sm" 
+                                onClick={handleSaveEditedServiceProvider}
+                                disabled={!editedProviderName.trim() || updateServiceProviderMutation.isPending}
+                                className="h-8 px-2"
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                {language === 'English' ? 'Save' : 'حفظ'}
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setEditingProviderId(null)}
+                                className="h-8 px-2"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                {language === 'English' ? 'Cancel' : 'إلغاء'}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          disabled={deleteServiceProviderMutation.isPending}
-                        >
-                          {language === 'English' ? 'Delete' : 'حذف'}
-                        </Button>
+                        ) : (
+                          <>
+                            <div>
+                              <div className="font-medium">{provider.name}</div>
+                              {provider.contactPerson && (
+                                <div className="text-sm">{provider.contactPerson}</div>
+                              )}
+                              <div className="text-xs text-muted-foreground">
+                                {provider.phone && <span className="mr-2">{provider.phone}</span>}
+                                {provider.email && <span>{provider.email}</span>}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditServiceProvider(provider)}
+                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                disabled={deleteServiceProviderMutation.isPending}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
