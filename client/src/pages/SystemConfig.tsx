@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -68,17 +68,20 @@ export default function SystemConfig() {
   // System config data query
   const { data: systemConfigData } = useQuery({
     queryKey: ['/api/system-config'],
-    onSuccess: (data) => {
-      if (data) {
-        setAssetIdPrefix(data.assetIdPrefix || 'SIT-');
-        setEmpIdPrefix(data.empIdPrefix || 'EMP-');
-        setTicketIdPrefix(data.ticketIdPrefix || 'TKT-');
-        setCurrency(data.currency || 'USD');
-        setDepartments(data.departments || []);
-        setIsLoading(false);
-      }
-    }
+    enabled: hasAccess(3)
   });
+  
+  // Update state when config data is loaded
+  React.useEffect(() => {
+    if (systemConfigData) {
+      setAssetIdPrefix(systemConfigData.assetIdPrefix || 'SIT-');
+      setEmpIdPrefix(systemConfigData.empIdPrefix || 'EMP-');
+      setTicketIdPrefix(systemConfigData.ticketIdPrefix || 'TKT-');
+      setCurrency(systemConfigData.currency || 'USD');
+      setDepartments(systemConfigData.departments || []);
+      setIsLoading(false);
+    }
+  }, [systemConfigData]);
   
   // Custom fields mutations
   const createAssetTypeMutation = useMutation({
