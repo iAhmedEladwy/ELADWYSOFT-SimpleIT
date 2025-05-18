@@ -51,48 +51,51 @@ export default function SystemConfig() {
   const [newProviderEmail, setNewProviderEmail] = useState('');
   
   // Custom fields queries
-  const { data: customAssetTypes = [] } = useQuery({
+  const { data: customAssetTypes = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-types'],
     enabled: hasAccess(3),
   });
   
-  const { data: customAssetBrands = [] } = useQuery({
+  const { data: customAssetBrands = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-brands'],
     enabled: hasAccess(3),
   });
   
-  const { data: customAssetStatuses = [] } = useQuery({
+  const { data: customAssetStatuses = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-statuses'],
     enabled: hasAccess(3),
   });
   
-  const { data: serviceProviders = [] } = useQuery({
+  const { data: serviceProviders = [] } = useQuery<any[]>({
     queryKey: ['/api/service-providers'],
     enabled: hasAccess(3),
   });
 
-  const { data: config } = useQuery({
-    queryKey: ['/api/config'],
+  const { data: config } = useQuery<any>({
+    queryKey: ['/api/system-config'],
     enabled: hasAccess(3),
-    onSuccess: (data) => {
-      if (data) {
-        setAssetIdPrefix(data.assetIdPrefix || 'SIT-');
-        setEmpIdPrefix(data.empIdPrefix || 'EMP-');
-        setTicketIdPrefix(data.ticketIdPrefix || 'TKT-');
-        setCurrency(data.currency || 'USD');
-        setDepartments(data.departments || []);
-        setIsLoading(false);
-      }
-    }
   });
+  
+  // Update local state when config data is loaded
+  useEffect(() => {
+    if (config) {
+      setAssetIdPrefix(config.assetIdPrefix || 'SIT-');
+      setEmpIdPrefix(config.empIdPrefix || 'EMP-');
+      setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
+      setCurrency(config.currency || 'USD');
+      setDepartments(config.departments || []);
+      setIsLoading(false);
+    }
+  }, [config]);
 
   // Create custom asset type mutation
   const createAssetTypeMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('/api/custom-asset-types', {
+    mutationFn: async (data: { name: string; description?: string }) => {
+      return await apiRequest('/api/custom-asset-types', {
         method: 'POST',
         data
-      }),
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
@@ -224,12 +227,12 @@ export default function SystemConfig() {
   // Update config mutation
   const updateConfigMutation = useMutation({
     mutationFn: (data: any) => 
-      apiRequest('/api/config', {
-        method: 'PATCH',
+      apiRequest('/api/system-config', {
+        method: 'PUT',
         data
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
