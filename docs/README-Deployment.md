@@ -38,7 +38,31 @@ sudo ./docs/deploy-universal.sh
 
 This script provides more flexibility and automatically detects your distribution to install the appropriate dependencies.
 
-### 3. Docker Deployment
+### 3. Windows Deployment
+
+For Windows Server or Windows 10/11 with PowerShell:
+
+1. Open PowerShell as Administrator
+2. Navigate to the project directory
+3. Run the Windows deployment script:
+
+```powershell
+# Set execution policy to allow scripts (if needed)
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
+# Run the deployment script
+.\docs\deploy-windows.ps1
+```
+
+This script will:
+- Install required software (Node.js 22, PostgreSQL, Git) using Chocolatey
+- Set up a PostgreSQL database
+- Clone the application repository
+- Configure environment variables
+- Create a Windows service using NSSM
+- Start the service
+
+### 4. Docker Deployment
 
 For a containerized deployment using Docker and Docker Compose:
 
