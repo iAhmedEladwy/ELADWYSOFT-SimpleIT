@@ -806,54 +806,37 @@ export default function SystemConfig() {
           </Card>
         </TabsContent>
 
-        {/* ID Configuration Tab */}
+        {/* Ticket Configuration Tab */}
         <TabsContent value="ids">
           <Card>
             <CardHeader>
-              <CardTitle>{translations.idConfiguration}</CardTitle>
+              <CardTitle>{translations.ticketConfiguration}</CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure ID prefixes for assets, employees, and tickets.' 
-                  : 'تكوين بادئات المعرفات للأصول والموظفين والتذاكر.'}
+                  ? 'Configure ticket settings and automation' 
+                  : 'تكوين إعدادات التذاكر والأتمتة'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="space-y-4">
                   <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
                 </div>
               ) : (
                 <div className="grid gap-6">
-                  <div className="grid gap-2">
-                    <Label>{translations.assetIdPrefix}</Label>
-                    <Input 
-                      value={assetIdPrefix} 
-                      onChange={(e) => setAssetIdPrefix(e.target.value)}
-                      placeholder="SIT-" 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>{translations.empIdPrefix}</Label>
-                    <Input 
-                      value={empIdPrefix} 
-                      onChange={(e) => setEmpIdPrefix(e.target.value)}
-                      placeholder="EMP-" 
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
-                  </div>
-
                   <div className="grid gap-2">
                     <Label>{translations.ticketIdPrefix}</Label>
                     <Input 
                       value={ticketIdPrefix} 
                       onChange={(e) => setTicketIdPrefix(e.target.value)}
                       placeholder="TKT-" 
+                      disabled={true}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">{translations.idPrefixDesc}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'English' 
+                        ? 'Ticket IDs are now auto-generated with TKT- prefix and sequential numbering.' 
+                        : 'يتم الآن إنشاء معرفات التذاكر تلقائيًا ببادئة TKT- وترقيم متسلسل.'}
+                    </p>
                   </div>
 
                   <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">

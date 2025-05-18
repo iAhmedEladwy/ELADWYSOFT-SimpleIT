@@ -1233,27 +1233,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
     try {
-      console.log("Creating new ticket with simplified approach:", req.body);
+      console.log("Creating new ticket with direct DB access:", req.body);
       
-      // Get current system config for ID prefix
-      const config = await storage.getSystemConfig();
-      const ticketPrefix = config?.ticketIdPrefix || 'TKT-';
+      // Direct access to database pool
+      const { pool } = await import('./db');
       
-      // Generate a new ticket with timestamp for uniqueness
-      const timestamp = new Date().getTime().toString().slice(-4);
-      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      const ticketId = `${ticketPrefix}${timestamp}${randomNum}`;
+      // Generate a unique ticket ID without using config
+      // Count existing tickets
+      const countResult = await pool.query('SELECT COUNT(*) FROM tickets');
+      const count = parseInt(countResult.rows[0].count);
+      const nextId = count + 1;
+      const ticketId = `TKT-${nextId.toString().padStart(4, '0')}`;
       
       console.log(`Generated unique ticket ID: ${ticketId}`);
       
-      // Skip using the storage interface as it's causing issues
+      // Create ticket with direct SQL insertion
+      console.log("Inserting ticket with ID:", ticketId);
       
-      // Create ticket directly with SQL query to bypass any schema issues
-      const { pool } = await import('./db');
-      
-      console.log("Creating ticket with raw SQL insertion");
-      
-      // Using single SQL query to insert the ticket
+      // Using parameterized SQL query for security
       const insertResult = await pool.query(`
         INSERT INTO tickets (
           ticket_id,
@@ -1262,9 +1259,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           priority,
           description,
           status,
+          related_asset_id,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `, [
         ticketId,
@@ -1273,14 +1271,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.body.priority,
         req.body.description,
         'Open',
+        req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
         new Date(),
         new Date()
       ]);
       
-      // Get the created ticket directly from query result
+      // Get the ticket from result
       const finalTicket = insertResult.rows[0];
       
-      console.log("Successfully created ticket with direct SQL:", finalTicket);
+      console.log("Successfully created ticket:", finalTicket);
       
       // Log the activity
       if (req.user) {
