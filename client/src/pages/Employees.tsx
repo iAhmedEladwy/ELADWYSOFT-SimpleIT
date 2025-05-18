@@ -94,7 +94,7 @@ export default function Employees() {
   const addEmployeeMutation = useMutation({
     mutationFn: (employeeData: any) => {
       console.log('Submitting employee data:', employeeData);
-      return apiRequest('POST', '/api/employees', employeeData);
+      return apiRequest('POST', '/api/employees/create-raw', employeeData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });

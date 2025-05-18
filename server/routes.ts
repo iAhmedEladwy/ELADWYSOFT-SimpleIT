@@ -288,7 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employees", authenticateUser, hasAccess(2), async (req, res) => {
+  // Raw endpoint for employee creation, bypassing schema validation
+  app.post("/api/employees/create-raw", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       console.log("Creating new employee with data:", req.body);
       
