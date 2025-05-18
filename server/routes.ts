@@ -1246,36 +1246,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Generated unique ticket ID: ${ticketId}`);
       
-      // Create the ticket using storage interface with proper typing
-      const newTicket = await storage.createTicket({
-        submittedById: parseInt(req.body.submittedById),
-        category: req.body.category,
-        priority: req.body.priority,
-        description: req.body.description,
-        status: 'Open'
-      });
+      // Skip using the storage interface as it's causing issues
       
-      // Make sure the ticket has a proper ID
+      // Create ticket directly with SQL query to bypass any schema issues
       const { pool } = await import('./db');
       
-      // Always update the ticket ID to ensure consistency
-      await pool.query(
-        'UPDATE tickets SET ticket_id = $1 WHERE id = $2',
-        [ticketId, newTicket.id]
-      );
+      console.log("Creating ticket with raw SQL insertion");
       
-      // Fetch the updated ticket to return
-      const updatedResult = await pool.query(
-        'SELECT * FROM tickets WHERE id = $1',
-        [newTicket.id]
-      );
+      // Using single SQL query to insert the ticket
+      const insertResult = await pool.query(`
+        INSERT INTO tickets (
+          ticket_id,
+          submitted_by_id,
+          category,
+          priority,
+          description,
+          status,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+      `, [
+        ticketId,
+        parseInt(req.body.submittedById.toString()),
+        req.body.category,
+        req.body.priority,
+        req.body.description,
+        'Open',
+        new Date(),
+        new Date()
+      ]);
       
-      let finalTicket = newTicket;
-      if (updatedResult.rows.length > 0) {
-        finalTicket = updatedResult.rows[0];
-      }
+      // Get the created ticket directly from query result
+      const finalTicket = insertResult.rows[0];
       
-      console.log("Successfully created ticket:", newTicket);
+      console.log("Successfully created ticket with direct SQL:", finalTicket);
       
       // Log the activity
       if (req.user) {
@@ -1283,17 +1288,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: (req.user as schema.User).id,
           action: "Create",
           entityType: "Ticket",
-          entityId: newTicket.id,
+          entityId: finalTicket.id,
           details: { 
-            ticketId: newTicket.ticketId,
-            category: newTicket.category, 
-            priority: newTicket.priority 
+            ticketId: finalTicket.ticket_id,
+            category: finalTicket.category, 
+            priority: finalTicket.priority 
           }
         });
       }
       
       // Return the created ticket
-      res.status(201).json(newTicket);
+      res.status(201).json(finalTicket);
     } catch (error: any) {
       console.error("Ticket creation failed:", error);
       res.status(500).json({ message: "Failed to create ticket: " + error.message });
