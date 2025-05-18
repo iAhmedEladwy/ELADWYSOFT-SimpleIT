@@ -127,13 +127,35 @@ export default function SystemConfig() {
     }
   });
 
+  // Update asset brand mutation
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string; description?: string }) => {
+      const { id, ...updateData } = data;
+      return await apiRequest(`/api/custom-asset-brands/${id}`, {
+        method: 'PUT',
+        data: updateData
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث العلامة التجارية بنجاح',
+      });
+      setEditingBrandId(null);
+      setEditedBrandName('');
+      setEditedBrandDescription('');
+    }
+  });
+
   // Create custom asset brand mutation
   const createAssetBrandMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('/api/custom-asset-brands', {
+    mutationFn: async (data: { name: string; description?: string }) => {
+      return await apiRequest('/api/custom-asset-brands', {
         method: 'POST',
         data
-      }),
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
@@ -160,13 +182,42 @@ export default function SystemConfig() {
     }
   });
 
+  // Status state management
+  const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
+  const [editedStatusName, setEditedStatusName] = useState('');
+  const [editedStatusDescription, setEditedStatusDescription] = useState('');
+  const [editedStatusColor, setEditedStatusColor] = useState('#3B82F6');
+
+  // Update asset status mutation
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string; description?: string; color?: string }) => {
+      const { id, ...updateData } = data;
+      return await apiRequest(`/api/custom-asset-statuses/${id}`, {
+        method: 'PUT',
+        data: updateData
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+      setEditingStatusId(null);
+      setEditedStatusName('');
+      setEditedStatusDescription('');
+      setEditedStatusColor('#3B82F6');
+    }
+  });
+
   // Create custom asset status mutation
   const createAssetStatusMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; color?: string }) => 
-      apiRequest('/api/custom-asset-statuses', {
+    mutationFn: async (data: { name: string; description?: string; color?: string }) => {
+      return await apiRequest('/api/custom-asset-statuses', {
         method: 'POST',
         data
-      }),
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
@@ -194,13 +245,44 @@ export default function SystemConfig() {
     }
   });
 
+  // Service provider state management
+  const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+  const [editedProviderName, setEditedProviderName] = useState('');
+  const [editedProviderContact, setEditedProviderContact] = useState('');
+  const [editedProviderPhone, setEditedProviderPhone] = useState('');
+  const [editedProviderEmail, setEditedProviderEmail] = useState('');
+
+  // Update service provider mutation
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string; contactPerson?: string; phone?: string; email?: string }) => {
+      const { id, ...updateData } = data;
+      return await apiRequest(`/api/service-providers/${id}`, {
+        method: 'PUT',
+        data: updateData
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مزود الخدمة بنجاح',
+      });
+      setEditingProviderId(null);
+      setEditedProviderName('');
+      setEditedProviderContact('');
+      setEditedProviderPhone('');
+      setEditedProviderEmail('');
+    }
+  });
+
   // Create service provider mutation
   const createServiceProviderMutation = useMutation({
-    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
-      apiRequest('/api/service-providers', {
+    mutationFn: async (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => {
+      return await apiRequest('/api/service-providers', {
         method: 'POST',
         data
-      }),
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
@@ -271,6 +353,11 @@ export default function SystemConfig() {
     });
   };
 
+  // Brand state management
+  const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
+  const [editedBrandName, setEditedBrandName] = useState('');
+  const [editedBrandDescription, setEditedBrandDescription] = useState('');
+
   // Update asset type mutation
   const updateAssetTypeMutation = useMutation({
     mutationFn: async (data: { id: number; name: string; description?: string }) => {
@@ -329,6 +416,24 @@ export default function SystemConfig() {
       description: newBrandDescription
     });
   };
+  
+  // Handle edit asset brand
+  const handleEditAssetBrand = (brand: any) => {
+    setEditingBrandId(brand.id);
+    setEditedBrandName(brand.name);
+    setEditedBrandDescription(brand.description || '');
+  };
+
+  // Handle save edited asset brand
+  const handleSaveEditedAssetBrand = () => {
+    if (editingBrandId === null || !editedBrandName.trim()) return;
+    
+    updateAssetBrandMutation.mutate({
+      id: editingBrandId,
+      name: editedBrandName,
+      description: editedBrandDescription || undefined
+    });
+  };
 
   // Handle add asset status
   const handleAddAssetStatus = () => {
@@ -338,6 +443,26 @@ export default function SystemConfig() {
       name: newStatusName,
       description: newStatusDescription,
       color: newStatusColor
+    });
+  };
+  
+  // Handle edit asset status
+  const handleEditAssetStatus = (status: any) => {
+    setEditingStatusId(status.id);
+    setEditedStatusName(status.name);
+    setEditedStatusDescription(status.description || '');
+    setEditedStatusColor(status.color || '#3B82F6');
+  };
+
+  // Handle save edited asset status
+  const handleSaveEditedAssetStatus = () => {
+    if (editingStatusId === null || !editedStatusName.trim()) return;
+    
+    updateAssetStatusMutation.mutate({
+      id: editingStatusId,
+      name: editedStatusName,
+      description: editedStatusDescription || undefined,
+      color: editedStatusColor
     });
   };
 
@@ -350,6 +475,28 @@ export default function SystemConfig() {
       contactPerson: newProviderContact || undefined,
       phone: newProviderPhone || undefined,
       email: newProviderEmail || undefined
+    });
+  };
+  
+  // Handle edit service provider
+  const handleEditServiceProvider = (provider: any) => {
+    setEditingProviderId(provider.id);
+    setEditedProviderName(provider.name);
+    setEditedProviderContact(provider.contactPerson || '');
+    setEditedProviderPhone(provider.phone || '');
+    setEditedProviderEmail(provider.email || '');
+  };
+
+  // Handle save edited service provider
+  const handleSaveEditedServiceProvider = () => {
+    if (editingProviderId === null || !editedProviderName.trim()) return;
+    
+    updateServiceProviderMutation.mutate({
+      id: editingProviderId,
+      name: editedProviderName,
+      contactPerson: editedProviderContact || undefined,
+      phone: editedProviderPhone || undefined,
+      email: editedProviderEmail || undefined
     });
   };
 
@@ -879,19 +1026,69 @@ export default function SystemConfig() {
                       <ul className="divide-y max-h-60 overflow-y-auto">
                         {customAssetBrands.map((brand: any) => (
                           <li key={brand.id} className="flex justify-between items-center p-3">
-                            <div>
-                              <div className="font-medium">{brand.name}</div>
-                              {brand.description && <div className="text-xs text-muted-foreground">{brand.description}</div>}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              disabled={deleteAssetBrandMutation.isPending}
-                            >
-                              {language === 'English' ? 'Delete' : 'حذف'}
-                            </Button>
+                            {editingBrandId === brand.id ? (
+                              <div className="flex flex-col gap-2 w-full">
+                                <Input
+                                  value={editedBrandName}
+                                  onChange={(e) => setEditedBrandName(e.target.value)}
+                                  placeholder="Brand name"
+                                  className="h-8"
+                                  autoFocus
+                                />
+                                <Input
+                                  value={editedBrandDescription}
+                                  onChange={(e) => setEditedBrandDescription(e.target.value)}
+                                  placeholder="Description (optional)"
+                                  className="h-8"
+                                />
+                                <div className="flex justify-end gap-2 mt-1">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={handleSaveEditedAssetBrand}
+                                    disabled={!editedBrandName.trim() || updateAssetBrandMutation.isPending}
+                                    className="h-8 px-2"
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Save' : 'حفظ'}
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setEditingBrandId(null)}
+                                    className="h-8 px-2"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div>
+                                  <div className="font-medium">{brand.name}</div>
+                                  {brand.description && <div className="text-xs text-muted-foreground">{brand.description}</div>}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditAssetBrand(brand)}
+                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                    disabled={deleteAssetBrandMutation.isPending}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -956,25 +1153,85 @@ export default function SystemConfig() {
                       <ul className="divide-y max-h-60 overflow-y-auto">
                         {customAssetStatuses.map((status: any) => (
                           <li key={status.id} className="flex justify-between items-center p-3">
-                            <div className="flex items-center">
-                              <div 
-                                className="w-4 h-4 rounded-full mr-2" 
-                                style={{ backgroundColor: status.color || '#3B82F6' }}
-                              />
-                              <div>
-                                <div className="font-medium">{status.name}</div>
-                                {status.description && <div className="text-xs text-muted-foreground">{status.description}</div>}
+                            {editingStatusId === status.id ? (
+                              <div className="flex flex-col gap-2 w-full">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editedStatusName}
+                                    onChange={(e) => setEditedStatusName(e.target.value)}
+                                    placeholder="Status name"
+                                    className="h-8 flex-grow"
+                                    autoFocus
+                                  />
+                                  <div className="w-14">
+                                    <Input
+                                      type="color"
+                                      value={editedStatusColor}
+                                      onChange={(e) => setEditedStatusColor(e.target.value)}
+                                      className="h-8 w-full"
+                                    />
+                                  </div>
+                                </div>
+                                <Input
+                                  value={editedStatusDescription}
+                                  onChange={(e) => setEditedStatusDescription(e.target.value)}
+                                  placeholder="Description (optional)"
+                                  className="h-8"
+                                />
+                                <div className="flex justify-end gap-2 mt-1">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={handleSaveEditedAssetStatus}
+                                    disabled={!editedStatusName.trim() || updateAssetStatusMutation.isPending}
+                                    className="h-8 px-2"
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Save' : 'حفظ'}
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setEditingStatusId(null)}
+                                    className="h-8 px-2"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => deleteAssetStatusMutation.mutate(status.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              disabled={deleteAssetStatusMutation.isPending}
-                            >
-                              {language === 'English' ? 'Delete' : 'حذف'}
-                            </Button>
+                            ) : (
+                              <>
+                                <div className="flex items-center">
+                                  <div 
+                                    className="w-4 h-4 rounded-full mr-2" 
+                                    style={{ backgroundColor: status.color || '#3B82F6' }}
+                                  />
+                                  <div>
+                                    <div className="font-medium">{status.name}</div>
+                                    {status.description && <div className="text-xs text-muted-foreground">{status.description}</div>}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditAssetStatus(status)}
+                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                    disabled={deleteAssetStatusMutation.isPending}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </li>
                         ))}
                       </ul>
