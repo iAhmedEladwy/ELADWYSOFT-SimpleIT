@@ -313,16 +313,28 @@ export default function SystemConfig() {
 
   // Update config mutation
   const updateConfigMutation = useMutation({
-    mutationFn: (data: any) => 
-      apiRequest('/api/system-config', {
+    mutationFn: async (data: any) => {
+      console.log("Updating config with:", data);
+      return await apiRequest('/api/system-config', {
         method: 'PUT',
         data
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      console.error("Config update error:", error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' 
+          ? 'Failed to update settings. Please try again.' 
+          : 'فشل تحديث الإعدادات. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive'
       });
     }
   });
@@ -677,6 +689,13 @@ export default function SystemConfig() {
                       <SelectItem value="EUR">EUR - Euro</SelectItem>
                       <SelectItem value="GBP">GBP - British Pound</SelectItem>
                       <SelectItem value="EGP">EGP - Egyptian Pound</SelectItem>
+                      <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
+                      <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+                      <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                      <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                      <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>
