@@ -47,22 +47,22 @@ export default function SystemConfig() {
   // Custom fields queries
   const { data: customAssetTypes = [] } = useQuery({
     queryKey: ['/api/custom-asset-types'],
-    enabled: hasAccess('admin'),
+    enabled: hasAccess(3),
   });
   
   const { data: customAssetBrands = [] } = useQuery({
     queryKey: ['/api/custom-asset-brands'],
-    enabled: hasAccess('admin'),
+    enabled: hasAccess(3),
   });
   
   const { data: customAssetStatuses = [] } = useQuery({
     queryKey: ['/api/custom-asset-statuses'],
-    enabled: hasAccess('admin'),
+    enabled: hasAccess(3),
   });
   
   const { data: serviceProviders = [] } = useQuery({
     queryKey: ['/api/service-providers'],
-    enabled: hasAccess('admin'),
+    enabled: hasAccess(3),
   });
   
   // System config data query
