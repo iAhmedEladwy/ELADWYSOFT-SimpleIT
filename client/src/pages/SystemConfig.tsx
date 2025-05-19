@@ -4,7 +4,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
   TabsContent,
@@ -515,7 +516,15 @@ export default function SystemConfig() {
       empIdPrefix,
       ticketIdPrefix,
       currency,
-      departments
+      departments,
+      // Email configuration
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : undefined,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure
     });
   };
 
@@ -759,6 +768,7 @@ export default function SystemConfig() {
             {language === 'English' ? 'Employees' : 'الموظفين'}
           </TabsTrigger>
           <TabsTrigger value="email">
+            <Mail className="h-4 w-4 mr-2" />
             {translations.emailSettings}
           </TabsTrigger>
         </TabsList>
@@ -832,12 +842,17 @@ export default function SystemConfig() {
                 </div>
                 
                 <div className="flex items-center space-x-2 mt-4">
-                  <Switch
-                    id="emailSecure"
-                    checked={emailSecure}
-                    onCheckedChange={setEmailSecure}
-                  />
-                  <Label htmlFor="emailSecure">{translations.emailSecure}</Label>
+                  <div className="form-control">
+                    <label className="label cursor-pointer flex items-center">
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-primary"
+                        checked={emailSecure}
+                        onChange={(e) => setEmailSecure(e.target.checked)}
+                      />
+                      <span className="label-text ml-2">{translations.emailSecure}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
               
