@@ -241,7 +241,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
   
-  // Remove duplicate security questions endpoint
+  // Security Questions API endpoints - combined implementation
+  
+  // Get default security questions for selection
+  app.get("/api/security-questions", async (req, res) => {
+    try {
+      // Return a list of default security questions
+      const defaultQuestions = [
+        "What was your childhood nickname?",
+        "In what city did you meet your spouse/significant other?",
+        "What is the name of your favorite childhood friend?",
+        "What street did you live on in third grade?",
+        "What is your oldest sibling's middle name?",
+        "What school did you attend for sixth grade?",
+        "What was the name of your first stuffed animal?",
+        "In what city or town did your mother and father meet?",
+        "What was the make of your first car?",
+        "What is your favorite movie?"
+      ];
+      
+      res.json(defaultQuestions);
+    } catch (error: any) {
+      console.error("Error fetching default security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  // Add endpoint for setting security questions for the current user
+  app.post("/api/user/security-questions", authenticateUser, async (req, res) => {
+    try {
+      const userId = req.user?.id || 0;
+      if (userId === 0) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const { questions } = req.body;
+      
+      if (!questions || !Array.isArray(questions) || questions.length === 0) {
+        return res.status(400).json({ message: "Security questions and answers are required" });
+      }
+      
+      // First, delete any existing security questions for this user
+      const existingQuestions = await storage.getSecurityQuestions(userId);
+      for (const question of existingQuestions) {
+        await storage.deleteSecurityQuestion(question.id);
+      }
+      
+      // Then, add the new questions
+      const savedQuestions = [];
+      for (const q of questions) {
+        if (!q.question || !q.answer) {
+          continue;
+        }
+        
+        const newQuestion = await storage.createSecurityQuestion({
+          userId,
+          question: q.question,
+          answer: q.answer,
+        });
+        
+        savedQuestions.push({
+          id: newQuestion.id,
+          question: newQuestion.question
+        });
+      }
+      
+      // Log the activity
+      await logActivity({
+        userId,
+        action: AuditAction.UPDATE,
+        entityType: EntityType.USER,
+        entityId: userId,
+        details: { message: 'Security questions updated' }
+      });
+      
+      res.json({
+        success: true,
+        message: "Security questions saved successfully",
+        questions: savedQuestions
+      });
+    } catch (error: any) {
+      console.error("Error saving security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  // Get current user's security questions (without answers)
+  app.get("/api/user/security-questions", authenticateUser, async (req, res) => {
+    try {
+      const userId = req.user?.id || 0;
+      if (userId === 0) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      // Get security questions for this user
+      const questions = await storage.getSecurityQuestions(userId);
+      
+      // Return only the questions (not the answers)
+      const questionsList = questions.map(q => ({
+        id: q.id,
+        question: q.question
+      }));
+      
+      res.json({ 
+        questions: questionsList,
+        hasSecurityQuestions: questionsList.length > 0
+      });
+    } catch (error: any) {
+      console.error("Error fetching security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  // The following routes are used by the forgot password flow (no authentication required)
   
   app.post("/api/forgot-password/find-user", async (req, res) => {
     try {
@@ -271,104 +382,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/forgot-password/security-questions/:userId", async (req, res) => {
+  // Step 2: Get security questions for a specific user
+  app.get('/api/forgot-password/security-questions/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
       
-      // Get security questions for this user
       const questions = await storage.getSecurityQuestions(userId);
       
       if (!questions || questions.length === 0) {
-        return res.status(404).json({ 
-          message: "No security questions found for this user",
-          hasSecurityQuestions: false
-        });
+        return res.status(404).json({ message: 'No security questions found for this user' });
       }
       
-      // Return only the questions (not the answers)
-      const questionsList = questions.map(q => ({
+      // Return only the questions (not the answers) for security reasons
+      const sanitizedQuestions = questions.map(q => ({
         id: q.id,
         question: q.question
       }));
       
-      res.json({ 
-        questions: questionsList,
-        hasSecurityQuestions: true
-      });
+      res.json({ questions: sanitizedQuestions });
     } catch (error: any) {
-      console.error("Error fetching security questions:", error);
-      res.status(500).json({ message: error.message || "Server error" });
+      console.error('Error getting security questions:', error);
+      res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
   });
   
-  app.post("/api/forgot-password/verify-answers", async (req, res) => {
+  // Step 3: Verify security question answers
+  app.post('/api/forgot-password/verify-answers', async (req, res) => {
     try {
       const { userId, answers } = req.body;
       
-      if (!userId || !answers || !Array.isArray(answers) || answers.length === 0) {
-        return res.status(400).json({ message: "User ID and answers are required" });
+      if (!userId || !answers || !Array.isArray(answers)) {
+        return res.status(400).json({ message: 'User ID and answers are required' });
       }
       
-      const isVerified = await storage.verifySecurityQuestions(userId, answers);
+      // Verify answers
+      const correctAnswers = await storage.verifySecurityQuestions(userId, answers);
       
-      if (!isVerified) {
-        return res.status(401).json({ message: "Security question answers are incorrect" });
+      if (!correctAnswers) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Incorrect answers to security questions' 
+        });
       }
       
-      // Create a password reset token
+      // Generate a reset token
       const resetToken = await storage.createPasswordResetToken(userId);
       
-      res.json({ 
+      res.json({
         success: true,
         token: resetToken.token
       });
     } catch (error: any) {
-      console.error("Error verifying security questions:", error);
-      res.status(500).json({ message: error.message || "Server error" });
+      console.error('Error verifying security answers:', error);
+      res.status(500).json({ message: error.message || 'Error verifying security answers' });
     }
   });
   
-  app.post("/api/forgot-password/reset-password", async (req, res) => {
+  // Step 4: Reset password with token
+  app.post('/api/forgot-password/reset-password', async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
       if (!token || !newPassword) {
-        return res.status(400).json({ message: "Token and new password are required" });
+        return res.status(400).json({ message: 'Token and new password are required' });
       }
       
-      // Validate the token and get the user ID
+      // Validate token and get the associated user
       const userId = await storage.validatePasswordResetToken(token);
       
       if (!userId) {
-        return res.status(401).json({ message: "Invalid or expired token" });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Invalid or expired token' 
+        });
       }
       
       // Hash the new password
       const hashedPassword = await hash(newPassword, 10);
       
       // Update the user's password
-      const user = await storage.updateUser(userId, { password: hashedPassword });
+      const updated = await storage.updateUser(userId, { password: hashedPassword });
       
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      if (!updated) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to update password' 
+        });
       }
       
-      // Invalidate the token so it can't be used again
+      // Delete the used token
       await storage.invalidatePasswordResetToken(token);
       
       // Log the activity
-      await storage.logActivity({
+      await logActivity({
         userId: userId,
-        action: "Reset Password",
-        entityType: "User",
+        action: AuditAction.UPDATE,
+        entityType: EntityType.USER,
         entityId: userId,
-        details: { method: "Security Questions" }
+        details: { message: 'Password was reset using forgot password flow' }
       });
       
-      res.json({ success: true, message: "Password has been reset successfully" });
+      res.json({
+        success: true,
+        message: 'Password has been reset successfully'
+      });
     } catch (error: any) {
-      console.error("Error resetting password:", error);
-      res.status(500).json({ message: error.message || "Server error" });
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: error.message || 'Error resetting password' });
     }
   });
   
