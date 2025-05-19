@@ -10,6 +10,7 @@ import {
   BarChart2,
   Settings,
   History,
+  FileText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +32,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
+    AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
   };
 
@@ -119,6 +121,15 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
             <Link href="/system-config" className={getLinkClass('/system-config')}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
+            </Link>
+          </div>
+        )}
+        
+        {hasAccess(2) && (
+          <div className="transform hover:translate-x-1 transition-transform duration-200">
+            <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
+              <FileText className="h-5 w-5" />
+              <span>{translations.AuditLogs}</span>
             </Link>
           </div>
         )}
