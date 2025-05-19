@@ -94,6 +94,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add audit logging middleware
   app.use(auditLogMiddleware);
 
+  // Security questions list for the system
+  const securityQuestionsList = [
+    "What was your childhood nickname?",
+    "What is your mother's maiden name?",
+    "What was the name of your first pet?",
+    "In what city were you born?",
+    "What high school did you attend?",
+    "What was the make of your first car?",
+    "What is your favorite movie?",
+    "What is your favorite color?",
+    "What was your favorite food as a child?",
+    "Who is your favorite actor/actress?"
+  ];
+
   // Configure passport
   passport.use(
     new LocalStrategy(async (username, password, done) => {
@@ -225,6 +239,195 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Not authenticated" });
     }
     res.json(req.user);
+  });
+  
+  // Forgot Password API - Security Questions
+  app.get("/api/security-questions", (req, res) => {
+    res.json(securityQuestionsList);
+  });
+  
+  app.post("/api/forgot-password/find-user", async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get security questions for this user to check if they exist
+      const questions = await storage.getSecurityQuestions(user.id);
+      const hasSecurityQuestions = questions && questions.length > 0;
+      
+      // Return user ID without any sensitive information
+      res.json({ 
+        userId: user.id,
+        hasSecurityQuestions
+      });
+    } catch (error: any) {
+      console.error("Error in find user for password reset:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  app.get("/api/forgot-password/security-questions/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Get security questions for this user
+      const questions = await storage.getSecurityQuestions(userId);
+      
+      if (!questions || questions.length === 0) {
+        return res.status(404).json({ 
+          message: "No security questions found for this user",
+          hasSecurityQuestions: false
+        });
+      }
+      
+      // Return only the questions (not the answers)
+      const questionsList = questions.map(q => ({
+        id: q.id,
+        question: q.question
+      }));
+      
+      res.json({ 
+        questions: questionsList,
+        hasSecurityQuestions: true
+      });
+    } catch (error: any) {
+      console.error("Error fetching security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  app.post("/api/forgot-password/verify-answers", async (req, res) => {
+    try {
+      const { userId, answers } = req.body;
+      
+      if (!userId || !answers || !Array.isArray(answers) || answers.length === 0) {
+        return res.status(400).json({ message: "User ID and answers are required" });
+      }
+      
+      const isVerified = await storage.verifySecurityQuestions(userId, answers);
+      
+      if (!isVerified) {
+        return res.status(401).json({ message: "Security question answers are incorrect" });
+      }
+      
+      // Create a password reset token
+      const resetToken = await storage.createPasswordResetToken(userId);
+      
+      res.json({ 
+        success: true,
+        token: resetToken.token
+      });
+    } catch (error: any) {
+      console.error("Error verifying security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  app.post("/api/forgot-password/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+      
+      // Validate the token and get the user ID
+      const userId = await storage.validatePasswordResetToken(token);
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hash(newPassword, 10);
+      
+      // Update the user's password
+      const user = await storage.updateUser(userId, { password: hashedPassword });
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Invalidate the token so it can't be used again
+      await storage.invalidatePasswordResetToken(token);
+      
+      // Log the activity
+      await storage.logActivity({
+        userId: userId,
+        action: "Reset Password",
+        entityType: "User",
+        entityId: userId,
+        details: { method: "Security Questions" }
+      });
+      
+      res.json({ success: true, message: "Password has been reset successfully" });
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
+  });
+  
+  // Set up Security Questions for a user
+  app.post("/api/security-questions/setup", authenticateUser, async (req, res) => {
+    try {
+      const userId = (req.user as schema.User).id;
+      const { questions } = req.body;
+      
+      if (!questions || !Array.isArray(questions) || questions.length < 3) {
+        return res.status(400).json({ message: "At least 3 security questions with answers are required" });
+      }
+      
+      // Delete any existing security questions for this user
+      const existingQuestions = await storage.getSecurityQuestions(userId);
+      for (const question of existingQuestions) {
+        await storage.deleteSecurityQuestion(question.id);
+      }
+      
+      // Create new security questions
+      const createdQuestions = [];
+      for (const q of questions) {
+        if (!q.question || !q.answer) {
+          return res.status(400).json({ message: "Each security question must have both a question and an answer" });
+        }
+        
+        const newQuestion = await storage.createSecurityQuestion({
+          userId,
+          question: q.question,
+          answer: q.answer
+        });
+        
+        createdQuestions.push({
+          id: newQuestion.id,
+          question: newQuestion.question
+        });
+      }
+      
+      // Log activity
+      await storage.logActivity({
+        userId,
+        action: "Update",
+        entityType: "User",
+        entityId: userId,
+        details: { action: "Set up security questions" }
+      });
+      
+      res.json({ 
+        success: true, 
+        questionsCount: createdQuestions.length,
+        questions: createdQuestions
+      });
+    } catch (error: any) {
+      console.error("Error setting up security questions:", error);
+      res.status(500).json({ message: error.message || "Server error" });
+    }
   });
 
   // User CRUD routes
