@@ -1,12 +1,13 @@
 import { Switch, Route, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
+import FirstTimeSetup from "@/pages/FirstTimeSetup";
 import Users from "@/pages/Users";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
@@ -65,10 +66,41 @@ function PrivateRoute({ component: Component, ...rest }: any) {
 function Router() {
   const { language } = useLanguage();
   const dir = language === "Arabic" ? "rtl" : "ltr";
+  const [, navigate] = useLocation();
+  
+  // Check if system is initialized
+  const { data: systemStatus, isLoading: checkingSystem } = useQuery({
+    queryKey: ['/api/system-status'],
+    retry: false,
+    onError: () => {
+      console.log('Error checking system status');
+    }
+  });
+  
+  // If system is not initialized and we're not on the setup page, redirect to setup
+  useEffect(() => {
+    if (!checkingSystem && systemStatus && !systemStatus.initialized) {
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/setup') {
+        navigate('/setup');
+      }
+    }
+  }, [systemStatus, checkingSystem, navigate]);
+  
+  // If checking system status, show loading
+  if (checkingSystem) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p>Checking system status...</p>
+      </div>
+    );
+  }
 
   return (
     <div dir={dir} className="min-h-screen bg-gray-50">
       <Switch>
+        <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
         <Route path="/">
           <Layout>

@@ -129,6 +129,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API routes
+  
+  // Check if system is initialized (for first-time setup)
+  app.get("/api/system-status", async (req, res) => {
+    try {
+      // Check if any user exists
+      const users = await storage.getAllUsers();
+      const hasUsers = users.length > 0;
+      
+      // Check if system config exists
+      const systemConfig = await storage.getSystemConfig();
+      
+      res.json({
+        initialized: hasUsers,
+        config: !!systemConfig
+      });
+    } catch (error: any) {
+      console.error("Error checking system status:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // First-time setup endpoint
+  app.post("/api/setup", async (req, res) => {
+    try {
+      // Check if setup has already been completed
+      const users = await storage.getAllUsers();
+      if (users.length > 0) {
+        return res.status(400).json({ message: "Setup has already been completed" });
+      }
+      
+      const { username, password, email } = req.body;
+      
+      // Validate input
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      if (username.length < 3) {
+        return res.status(400).json({ message: "Username must be at least 3 characters" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await hash(password, 10);
+      
+      // Create the admin user
+      const adminUser = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email: email || null,
+        accessLevel: "3", // Admin level
+      });
+      
+      // Get/create system config with defaults if it doesn't exist
+      const systemConfig = await storage.getSystemConfig();
+      
+      // Log the setup completion
+      await logActivity({
+        userId: adminUser.id,
+        action: AuditAction.CREATE,
+        entityType: EntityType.USER,
+        entityId: adminUser.id,
+        details: { message: "Initial system setup completed" }
+      });
+      
+      res.status(201).json({ 
+        message: "Setup completed successfully",
+        initialized: true
+      });
+    } catch (error: any) {
+      console.error("Error during setup:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
     res.json({ message: "Login successful", user: req.user });
   });
