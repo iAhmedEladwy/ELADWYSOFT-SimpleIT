@@ -238,9 +238,9 @@ export function SecurityQuestionsSettings() {
                       </SelectContent>
                     </Select>
                     {!questionObj.question && (
-                      <FormMessage className="text-red-500 text-xs mt-1">
+                      <p className="text-red-500 text-xs mt-1">
                         Please select a question
-                      </FormMessage>
+                      </p>
                     )}
                   </div>
                   
@@ -253,9 +253,9 @@ export function SecurityQuestionsSettings() {
                       placeholder={translations.answerLabel}
                     />
                     {!questionObj.answer && (
-                      <FormMessage className="text-red-500 text-xs mt-1">
+                      <p className="text-red-500 text-xs mt-1">
                         Please provide an answer
-                      </FormMessage>
+                      </p>
                     )}
                   </div>
                 </div>
