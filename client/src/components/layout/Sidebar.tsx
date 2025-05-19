@@ -34,6 +34,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
+    Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
   };
 
@@ -134,6 +135,13 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
             </Link>
           </div>
         )}
+
+        <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <Link href="/profile" className={getLinkClass('/profile')}>
+            <User className="h-5 w-5" />
+            <span>{translations.Profile}</span>
+          </Link>
+        </div>
       </nav>
 
       <div className="mt-auto p-4">
