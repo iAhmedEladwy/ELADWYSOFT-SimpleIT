@@ -153,7 +153,7 @@ export default function Login() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full mb-2" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -163,6 +163,17 @@ export default function Login() {
                   translations.loginButton
                 )}
               </Button>
+              
+              <div className="text-center">
+                <Button 
+                  variant="link" 
+                  className="text-sm text-primary" 
+                  onClick={() => navigate('/forgot-password')}
+                  type="button"
+                >
+                  {language === 'English' ? 'Forgot Password?' : 'نسيت كلمة المرور؟'}
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>

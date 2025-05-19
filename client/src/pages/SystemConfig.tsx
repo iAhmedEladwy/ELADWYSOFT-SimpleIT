@@ -37,6 +37,15 @@ export default function SystemConfig() {
   const [newDepartment, setNewDepartment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
+  // Email configuration states
+  const [emailHost, setEmailHost] = useState('');
+  const [emailPort, setEmailPort] = useState('');
+  const [emailUser, setEmailUser] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailFromAddress, setEmailFromAddress] = useState('');
+  const [emailFromName, setEmailFromName] = useState('');
+  const [emailSecure, setEmailSecure] = useState(true);
+  
   // Form state for new items
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeDescription, setNewTypeDescription] = useState('');
@@ -84,6 +93,16 @@ export default function SystemConfig() {
       setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
       setCurrency(config.currency || 'USD');
       setDepartments(config.departments || []);
+      
+      // Load email configuration
+      setEmailHost(config.emailHost || '');
+      setEmailPort(config.emailPort?.toString() || '');
+      setEmailUser(config.emailUser || '');
+      setEmailPassword(config.emailPassword || '');
+      setEmailFromAddress(config.emailFromAddress || '');
+      setEmailFromName(config.emailFromName || '');
+      setEmailSecure(config.emailSecure !== false);
+      
       setIsLoading(false);
     }
   }, [config]);
@@ -684,6 +703,17 @@ export default function SystemConfig() {
     empIdPrefix: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
     ticketIdPrefix: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
     idPrefixDesc: language === 'English' ? 'Prefix for automatically generated IDs.' : 'بادئة للمعرفات التي يتم إنشاؤها تلقائيًا.',
+    // Email configuration translations
+    emailSettings: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
+    emailSettingsDesc: language === 'English' ? 'Configure email server settings for system notifications and password recovery.' : 'تكوين إعدادات خادم البريد الإلكتروني للإشعارات النظامية واستعادة كلمة المرور.',
+    emailHost: language === 'English' ? 'Email Server/Host' : 'خادم البريد الإلكتروني',
+    emailPort: language === 'English' ? 'Port' : 'المنفذ',
+    emailUser: language === 'English' ? 'Username' : 'اسم المستخدم',
+    emailPassword: language === 'English' ? 'Password' : 'كلمة المرور',
+    emailFromAddress: language === 'English' ? 'From Email Address' : 'عنوان البريد الإلكتروني المرسل',
+    emailFromName: language === 'English' ? 'From Name' : 'اسم المرسل',
+    emailSecure: language === 'English' ? 'Use Secure Connection (SSL/TLS)' : 'استخدام اتصال آمن (SSL/TLS)',
+    emailServerDesc: language === 'English' ? 'SMTP server settings for sending emails' : 'إعدادات خادم SMTP لإرسال رسائل البريد الإلكتروني',
     assetTypes: language === 'English' ? 'Asset Types' : 'أنواع الأصول',
     assetBrands: language === 'English' ? 'Asset Brands' : 'علامات الأصول التجارية',
     assetStatuses: language === 'English' ? 'Asset Statuses' : 'حالات الأصول',
@@ -716,7 +746,7 @@ export default function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-4 lg:max-w-4xl mb-4">
+        <TabsList className="grid grid-cols-5 lg:max-w-4xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.generalSettings}
@@ -728,8 +758,143 @@ export default function SystemConfig() {
           <TabsTrigger value="employees">
             {language === 'English' ? 'Employees' : 'الموظفين'}
           </TabsTrigger>
+          <TabsTrigger value="email">
+            {translations.emailSettings}
+          </TabsTrigger>
         </TabsList>
 
+        {/* Email Configuration Tab */}
+        <TabsContent value="email">
+          <Card>
+            <CardHeader>
+              <CardTitle>{translations.emailSettings}</CardTitle>
+              <CardDescription>
+                {translations.emailSettingsDesc}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">{language === 'English' ? 'SMTP Server Settings' : 'إعدادات خادم SMTP'}</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailHost">{translations.emailHost}</Label>
+                    <Input
+                      id="emailHost"
+                      value={emailHost}
+                      onChange={(e) => setEmailHost(e.target.value)}
+                      placeholder="smtp.example.com"
+                    />
+                    <p className="text-sm text-gray-500">
+                      {language === 'English' ? 'SMTP server hostname' : 'اسم مضيف خادم SMTP'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailPort">{translations.emailPort}</Label>
+                    <Input
+                      id="emailPort"
+                      value={emailPort}
+                      onChange={(e) => setEmailPort(e.target.value)}
+                      placeholder="587"
+                      type="number"
+                      className="max-w-[120px]"
+                    />
+                    <p className="text-sm text-gray-500">
+                      {language === 'English' ? 'Typical ports: 25, 465, 587, 2525' : 'المنافذ النموذجية: 25، 465، 587، 2525'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-6 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailUser">{translations.emailUser}</Label>
+                    <Input
+                      id="emailUser"
+                      value={emailUser}
+                      onChange={(e) => setEmailUser(e.target.value)}
+                      placeholder="username@example.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailPassword">{translations.emailPassword}</Label>
+                    <Input
+                      id="emailPassword"
+                      type="password"
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <p className="text-sm text-gray-500">
+                      {language === 'English' ? 'Password will be stored securely' : 'سيتم تخزين كلمة المرور بشكل آمن'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-4">
+                  <Switch
+                    id="emailSecure"
+                    checked={emailSecure}
+                    onCheckedChange={setEmailSecure}
+                  />
+                  <Label htmlFor="emailSecure">{translations.emailSecure}</Label>
+                </div>
+              </div>
+              
+              <div className="space-y-4 mt-8 border-t pt-6">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'Sender Information' : 'معلومات المرسل'}
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailFromAddress">{translations.emailFromAddress}</Label>
+                    <Input
+                      id="emailFromAddress"
+                      value={emailFromAddress}
+                      onChange={(e) => setEmailFromAddress(e.target.value)}
+                      placeholder="noreply@yourdomain.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailFromName">{translations.emailFromName}</Label>
+                    <Input
+                      id="emailFromName"
+                      value={emailFromName}
+                      onChange={(e) => setEmailFromName(e.target.value)}
+                      placeholder="ELADWYSOFT SimpleIT"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 bg-blue-50 p-4 rounded-md">
+                <p className="text-sm text-blue-800">
+                  {language === 'English' 
+                    ? 'These settings will be used for password recovery and system notifications.' 
+                    : 'سيتم استخدام هذه الإعدادات لاستعادة كلمة المرور وإشعارات النظام.'}
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                onClick={handleSaveConfig} 
+                disabled={updateConfigMutation.isPending}
+                className="mr-2"
+              >
+                {updateConfigMutation.isPending ? (
+                  <div className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {language === 'English' ? 'Saving...' : 'جاري الحفظ...'}
+                  </div>
+                ) : (
+                  translations.save
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
         {/* General Settings Tab */}
         <TabsContent value="general">
           <Card>

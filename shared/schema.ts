@@ -225,6 +225,14 @@ export const systemConfig = pgTable("system_config", {
   ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
   currency: varchar("currency", { length: 10 }).notNull().default('USD'),
   departments: text("departments").array(),
+  // Email configuration settings
+  emailHost: varchar("email_host", { length: 100 }),
+  emailPort: integer("email_port"),
+  emailUser: varchar("email_user", { length: 100 }),
+  emailPassword: varchar("email_password", { length: 100 }),
+  emailFromAddress: varchar("email_from_address", { length: 100 }),
+  emailFromName: varchar("email_from_name", { length: 100 }),
+  emailSecure: boolean("email_secure").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

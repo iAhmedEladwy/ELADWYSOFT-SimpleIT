@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import FirstTimeSetup from "@/pages/FirstTimeSetup";
+import ForgotPassword from "@/pages/ForgotPassword";
 import Users from "@/pages/Users";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
@@ -102,6 +103,7 @@ function Router() {
       <Switch>
         <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/">
           <Layout>
             <PrivateRoute component={Dashboard} />
