@@ -142,6 +142,10 @@ export default function ForgotPassword() {
       const response = await fetch('/api/security-questions');
       if (response.ok) {
         const data = await response.json();
+        // Extract just the question text from the question objects
+        if (Array.isArray(data)) {
+          return data.map((q: any) => q.question);
+        }
         return data;
       }
       return language === 'English' ? securityQuestions : securityQuestionsArabic;

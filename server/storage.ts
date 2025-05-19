@@ -154,9 +154,40 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   
   // Security Questions operations
-  async getSecurityQuestions(userId: number): Promise<SecurityQuestion[]> {
+  async getSecurityQuestions(userId?: number): Promise<SecurityQuestion[]> {
     try {
-      return await db.select().from(securityQuestions).where(eq(securityQuestions.userId, userId));
+      // Special case: userId=0 means return default questions
+      if (userId === 0) {
+        const defaultQuestions = [
+          "What was your childhood nickname?",
+          "In what city did you meet your spouse/significant other?",
+          "What is the name of your favorite childhood friend?",
+          "What street did you live on in third grade?",
+          "What is your oldest sibling's middle name?",
+          "What school did you attend for sixth grade?",
+          "What was the name of your first stuffed animal?",
+          "In what city or town did your mother and father meet?",
+          "What was the make of your first car?",
+          "What is your favorite movie?"
+        ];
+        // Return as SecurityQuestion objects
+        return defaultQuestions.map((q, index) => ({
+          id: index + 1,
+          userId: 0, // Placeholder value
+          question: q,
+          answer: "", // No answers for default questions
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+      }
+      
+      // Normal case: return user's security questions
+      if (userId) {
+        return await db.select().from(securityQuestions).where(eq(securityQuestions.userId, userId));
+      }
+      
+      // If no userId provided, return empty array
+      return [];
     } catch (error) {
       console.error('Error getting security questions:', error);
       return [];
@@ -193,6 +224,16 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error deleting security question:', error);
+      return false;
+    }
+  }
+  
+  async hasSecurityQuestions(userId: number): Promise<boolean> {
+    try {
+      const questions = await this.getSecurityQuestions(userId);
+      return questions.length > 0;
+    } catch (error) {
+      console.error('Error checking for security questions:', error);
       return false;
     }
   }
