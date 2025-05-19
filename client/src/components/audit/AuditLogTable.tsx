@@ -102,7 +102,14 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
     
     try {
       if (typeof details === 'string') {
-        return details;
+        try {
+          // Try to parse if it's a stringified JSON
+          const parsed = JSON.parse(details);
+          return JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          // If it's not valid JSON, return as is
+          return details;
+        }
       }
       return JSON.stringify(details, null, 2);
     } catch (error) {
@@ -180,14 +187,14 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                 <TableCell>{log.entityId || '-'}</TableCell>
                 <TableCell className="max-w-md truncate font-mono text-xs">
                   {log.details ? (
-                    <div className="cursor-pointer group relative" title="Click to copy">
+                    <div className="cursor-pointer group relative" title="Click to view details">
                       <div className="truncate max-w-xs">
                         {typeof log.details === 'object' 
                           ? JSON.stringify(log.details).substring(0, 50) + '...' 
-                          : log.details.substring(0, 50) + '...'}
+                          : String(log.details).substring(0, 50) + (String(log.details).length > 50 ? '...' : '')}
                       </div>
-                      <div className="absolute hidden group-hover:flex bg-gray-800 text-white p-2 rounded text-xs z-10 -top-2 left-full ml-2 max-w-xs whitespace-pre-wrap">
-                        {formatDetails(log.details)}
+                      <div className="absolute hidden group-hover:block bg-gray-800 text-white p-3 rounded text-xs z-50 -top-2 left-0 ml-4 sm:left-full sm:ml-2 max-w-xs sm:max-w-md max-h-96 overflow-auto whitespace-pre-wrap">
+                        <pre className="text-left">{formatDetails(log.details)}</pre>
                       </div>
                     </div>
                   ) : (
