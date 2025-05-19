@@ -9,6 +9,8 @@ import {
   systemConfig, type SystemConfig, type InsertSystemConfig,
   activityLog, type ActivityLog, type InsertActivityLog,
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
+  securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
+  passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
   customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders
 } from "@shared/schema";
 import { db } from "./db";
@@ -26,6 +28,18 @@ export interface UpsertUser {
 }
 
 export interface IStorage {
+  // Security Questions operations
+  getSecurityQuestions(userId: number): Promise<SecurityQuestion[]>;
+  createSecurityQuestion(question: InsertSecurityQuestion): Promise<SecurityQuestion>;
+  updateSecurityQuestion(id: number, question: Partial<InsertSecurityQuestion>): Promise<SecurityQuestion | undefined>;
+  deleteSecurityQuestion(id: number): Promise<boolean>;
+  verifySecurityQuestions(userId: number, questions: { question: string, answer: string }[]): Promise<boolean>;
+  
+  // Password Reset operations
+  createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  validatePasswordResetToken(token: string): Promise<number | undefined>; // Returns userId if valid
+  invalidatePasswordResetToken(token: string): Promise<boolean>;
   // User operations
   getUser(id: string | number): Promise<User | undefined>;
   getUserByUsername?(username: string): Promise<User | undefined>;
@@ -138,6 +152,149 @@ export interface IStorage {
 
 // Implementation of Storage using a PostgreSQL database
 export class DatabaseStorage implements IStorage {
+  
+  // Security Questions operations
+  async getSecurityQuestions(userId: number): Promise<SecurityQuestion[]> {
+    try {
+      return await db.select().from(securityQuestions).where(eq(securityQuestions.userId, userId));
+    } catch (error) {
+      console.error('Error getting security questions:', error);
+      return [];
+    }
+  }
+
+  async createSecurityQuestion(question: InsertSecurityQuestion): Promise<SecurityQuestion> {
+    try {
+      const [newQuestion] = await db.insert(securityQuestions).values(question).returning();
+      return newQuestion;
+    } catch (error) {
+      console.error('Error creating security question:', error);
+      throw error;
+    }
+  }
+
+  async updateSecurityQuestion(id: number, question: Partial<InsertSecurityQuestion>): Promise<SecurityQuestion | undefined> {
+    try {
+      const [updatedQuestion] = await db
+        .update(securityQuestions)
+        .set({ ...question, updatedAt: new Date() })
+        .where(eq(securityQuestions.id, id))
+        .returning();
+      return updatedQuestion;
+    } catch (error) {
+      console.error('Error updating security question:', error);
+      return undefined;
+    }
+  }
+
+  async deleteSecurityQuestion(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(securityQuestions).where(eq(securityQuestions.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting security question:', error);
+      return false;
+    }
+  }
+
+  async verifySecurityQuestions(userId: number, questions: { question: string, answer: string }[]): Promise<boolean> {
+    try {
+      // Get the stored security questions for this user
+      const storedQuestions = await this.getSecurityQuestions(userId);
+      
+      // Make sure we have questions to verify
+      if (storedQuestions.length === 0 || questions.length === 0) {
+        return false;
+      }
+      
+      // For each provided question/answer pair, check if there's a matching stored question
+      let correctAnswers = 0;
+      for (const pair of questions) {
+        // Find the matching question
+        const matchingQuestion = storedQuestions.find(q => q.question === pair.question);
+        if (matchingQuestion && matchingQuestion.answer === pair.answer) {
+          correctAnswers++;
+        }
+      }
+      
+      // Require at least half of the answers to be correct (or at least one if there's only one)
+      const requiredCorrect = Math.max(1, Math.floor(questions.length / 2));
+      return correctAnswers >= requiredCorrect;
+    } catch (error) {
+      console.error('Error verifying security questions:', error);
+      return false;
+    }
+  }
+  
+  // Password Reset operations
+  async createPasswordResetToken(userId: number): Promise<PasswordResetToken> {
+    try {
+      // Generate a secure random token
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      
+      // Set expiration time (24 hours from now)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      // Delete any existing tokens for this user
+      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+      
+      // Create the new token
+      const [resetToken] = await db
+        .insert(passwordResetTokens)
+        .values({
+          userId,
+          token,
+          expiresAt,
+        })
+        .returning();
+      
+      return resetToken;
+    } catch (error) {
+      console.error('Error creating password reset token:', error);
+      throw error;
+    }
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    try {
+      const [resetToken] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(eq(passwordResetTokens.token, token));
+      return resetToken;
+    } catch (error) {
+      console.error('Error getting password reset token:', error);
+      return undefined;
+    }
+  }
+
+  async validatePasswordResetToken(token: string): Promise<number | undefined> {
+    try {
+      const resetToken = await this.getPasswordResetToken(token);
+      
+      // If token doesn't exist or is expired, return undefined
+      if (!resetToken || new Date() > resetToken.expiresAt) {
+        return undefined;
+      }
+      
+      return resetToken.userId;
+    } catch (error) {
+      console.error('Error validating password reset token:', error);
+      return undefined;
+    }
+  }
+
+  async invalidatePasswordResetToken(token: string): Promise<boolean> {
+    try {
+      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+      return true;
+    } catch (error) {
+      console.error('Error invalidating password reset token:', error);
+      return false;
+    }
+  }
   // User operations
   async getUser(id: string | number): Promise<User | undefined> {
     try {
