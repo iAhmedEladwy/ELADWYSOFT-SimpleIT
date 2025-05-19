@@ -29,10 +29,11 @@ export interface UpsertUser {
 
 export interface IStorage {
   // Security Questions operations
-  getSecurityQuestions(userId: number): Promise<SecurityQuestion[]>;
+  getSecurityQuestions(userId?: number): Promise<SecurityQuestion[]>;
   createSecurityQuestion(question: InsertSecurityQuestion): Promise<SecurityQuestion>;
   updateSecurityQuestion(id: number, question: Partial<InsertSecurityQuestion>): Promise<SecurityQuestion | undefined>;
   deleteSecurityQuestion(id: number): Promise<boolean>;
+  hasSecurityQuestions(userId: number): Promise<boolean>;
   verifySecurityQuestions(userId: number, questions: { question: string, answer: string }[]): Promise<boolean>;
   
   // Password Reset operations
