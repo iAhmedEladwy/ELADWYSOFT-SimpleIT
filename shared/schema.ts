@@ -118,6 +118,25 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Security Questions table
+export const securityQuestions = pgTable("security_questions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Password Reset Tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Employees table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
@@ -494,3 +513,21 @@ export const insertAssetTransactionSchema = createInsertSchema(assetTransactions
 
 export type AssetTransaction = typeof assetTransactions.$inferSelect;
 export type InsertAssetTransaction = z.infer<typeof insertAssetTransactionSchema>;
+
+// Security questions and password reset types
+export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true
+});
+
+export type SecurityQuestion = typeof securityQuestions.$inferSelect;
+export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
