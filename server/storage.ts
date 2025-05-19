@@ -97,7 +97,15 @@ export interface IStorage {
     endDate?: Date;
     page?: number;
     limit?: number;
-  }): Promise<ActivityLog[]>;
+  }): Promise<{
+    data: ActivityLog[];
+    pagination: {
+      totalItems: number;
+      totalPages: number;
+      currentPage: number;
+      pageSize: number;
+    }
+  }>;
   getActivityLogsCount(options: {
     filter?: string;
     action?: string;
@@ -128,351 +136,574 @@ export interface IStorage {
   removeDemoData(): Promise<void>;
 }
 
+// Implementation of Storage using a PostgreSQL database
 export class DatabaseStorage implements IStorage {
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+  async getUser(id: string | number): Promise<User | undefined> {
+    try {
+      if (typeof id === 'string' && isNaN(parseInt(id))) {
+        // Handle case for Replit Auth where id is a string and not a number
+        const [user] = await db.select().from(users).where(eq(users.id, id));
+        return user;
+      } else {
+        // Handle normal case where id is a number or can be parsed as a number
+        const numericId = typeof id === 'string' ? parseInt(id) : id;
+        const [user] = await db.select().from(users).where(eq(users.id, numericId));
+        return user;
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error('Error fetching user by username:', error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .insert(users)
+        .values(insertUser)
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set({ ...userData, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return user || undefined;
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ ...userData, updatedAt: new Date() })
+        .where(eq(users.id, id))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return undefined;
+    }
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const result = await db
-      .delete(users)
-      .where(eq(users.id, id));
-    return result.count > 0;
+    try {
+      const result = await db.delete(users).where(eq(users.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
-  }
-  
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    // Convert string ID to number if the user ID is numeric
-    const userId = userData.id;
-    
-    // Create default user data
-    const userValues = {
-      id: userId,
-      username: userData.email || `user_${userId}`,
-      email: userData.email || null,
-      firstName: userData.firstName || null,
-      lastName: userData.lastName || null,
-      password: "hashed_password_placeholder", // We don't use this with external auth
-      profileImageUrl: userData.profileImageUrl || null,
-      accessLevel: userData.accessLevel || "1",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
     try {
-      // Check if user exists
-      const existingUser = await this.getUser(userId);
-      
+      return await db.select().from(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    try {
+      // First, check if user exists
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userData.id));
+
       if (existingUser) {
-        // Update existing user
+        // Update the user if exists
         const [updatedUser] = await db
           .update(users)
           .set({
-            email: userData.email || undefined,
-            firstName: userData.firstName || undefined,
-            lastName: userData.lastName || undefined,
-            profileImageUrl: userData.profileImageUrl || undefined,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
+            accessLevel: userData.accessLevel || existingUser.accessLevel,
             updatedAt: new Date()
           })
-          .where(eq(users.id, userId))
+          .where(eq(users.id, userData.id))
           .returning();
         return updatedUser;
       } else {
-        // Create new user
+        // Create a new user
         const [newUser] = await db
           .insert(users)
-          .values(userValues)
+          .values({
+            id: userData.id,
+            username: userData.id, // Use the ID as username for simplicity
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
+            password: '', // Not used with Replit Auth
+            accessLevel: userData.accessLevel || '1', // Default to regular user
+          })
           .returning();
         return newUser;
       }
     } catch (error) {
-      console.error("Error upserting user:", error);
+      console.error('Error upserting user:', error);
       throw error;
     }
   }
 
   // Employee operations
   async getEmployee(id: number): Promise<Employee | undefined> {
-    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
-    return employee || undefined;
+    try {
+      const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+      return employee;
+    } catch (error) {
+      console.error('Error fetching employee:', error);
+      return undefined;
+    }
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
-    const [newEmployee] = await db
-      .insert(employees)
-      .values(employee)
-      .returning();
-    return newEmployee;
+    try {
+      const [newEmployee] = await db
+        .insert(employees)
+        .values(employee)
+        .returning();
+      return newEmployee;
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      throw error;
+    }
   }
 
   async updateEmployee(id: number, employeeData: Partial<InsertEmployee>): Promise<Employee | undefined> {
-    const [employee] = await db
-      .update(employees)
-      .set({ ...employeeData, updatedAt: new Date() })
-      .where(eq(employees.id, id))
-      .returning();
-    return employee || undefined;
+    try {
+      const [updatedEmployee] = await db
+        .update(employees)
+        .set({ ...employeeData, updatedAt: new Date() })
+        .where(eq(employees.id, id))
+        .returning();
+      return updatedEmployee;
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      return undefined;
+    }
   }
 
   async deleteEmployee(id: number): Promise<boolean> {
-    const result = await db
-      .delete(employees)
-      .where(eq(employees.id, id));
-    return result.count > 0;
+    try {
+      const result = await db.delete(employees).where(eq(employees.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      return false;
+    }
   }
 
   async getAllEmployees(): Promise<Employee[]> {
-    return await db.select().from(employees).orderBy(employees.englishName);
+    try {
+      return await db.select().from(employees).orderBy(asc(employees.empId));
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      return [];
+    }
   }
 
   async searchEmployees(query: string): Promise<Employee[]> {
-    return await db
-      .select()
-      .from(employees)
-      .where(
-        or(
-          like(employees.englishName, `%${query}%`),
-          like(employees.arabicName || '', `%${query}%`),
-          like(employees.empId, `%${query}%`),
-          like(employees.department, `%${query}%`)
+    try {
+      if (!query) {
+        // If no query, return all employees
+        return await this.getAllEmployees();
+      }
+
+      // Search by English name, Arabic name, ID, or department
+      return await db
+        .select()
+        .from(employees)
+        .where(
+          or(
+            like(employees.englishName, `%${query}%`),
+            like(employees.arabicName, `%${query}%`),
+            like(employees.empId, `%${query}%`),
+            like(employees.department, `%${query}%`)
+          )
         )
-      )
-      .orderBy(employees.englishName);
+        .orderBy(asc(employees.empId));
+    } catch (error) {
+      console.error('Error searching employees:', error);
+      return [];
+    }
   }
 
   // Asset operations
   async getAsset(id: number): Promise<Asset | undefined> {
-    const [asset] = await db.select().from(assets).where(eq(assets.id, id));
-    return asset || undefined;
+    try {
+      const [asset] = await db.select().from(assets).where(eq(assets.id, id));
+      return asset;
+    } catch (error) {
+      console.error('Error fetching asset:', error);
+      return undefined;
+    }
   }
 
   async getAssetByAssetId(assetId: string): Promise<Asset | undefined> {
-    const [asset] = await db.select().from(assets).where(eq(assets.assetId, assetId));
-    return asset || undefined;
+    try {
+      const [asset] = await db.select().from(assets).where(eq(assets.assetId, assetId));
+      return asset;
+    } catch (error) {
+      console.error('Error fetching asset by assetId:', error);
+      return undefined;
+    }
   }
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
-    const [newAsset] = await db
-      .insert(assets)
-      .values(asset)
-      .returning();
-    return newAsset;
+    try {
+      const [newAsset] = await db
+        .insert(assets)
+        .values(asset)
+        .returning();
+      return newAsset;
+    } catch (error) {
+      console.error('Error creating asset:', error);
+      throw error;
+    }
   }
 
   async updateAsset(id: number, assetData: Partial<InsertAsset>): Promise<Asset | undefined> {
-    const [asset] = await db
-      .update(assets)
-      .set({ ...assetData, updatedAt: new Date() })
-      .where(eq(assets.id, id))
-      .returning();
-    return asset || undefined;
+    try {
+      const [updatedAsset] = await db
+        .update(assets)
+        .set({ ...assetData, updatedAt: new Date() })
+        .where(eq(assets.id, id))
+        .returning();
+      return updatedAsset;
+    } catch (error) {
+      console.error('Error updating asset:', error);
+      return undefined;
+    }
   }
 
   async deleteAsset(id: number): Promise<boolean> {
-    const result = await db
-      .delete(assets)
-      .where(eq(assets.id, id));
-    return result.count > 0;
+    try {
+      const result = await db.delete(assets).where(eq(assets.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      return false;
+    }
   }
 
   async getAllAssets(): Promise<Asset[]> {
-    return await db.select().from(assets).orderBy(desc(assets.createdAt));
+    try {
+      return await db.select().from(assets).orderBy(asc(assets.assetId));
+    } catch (error) {
+      console.error('Error fetching assets:', error);
+      return [];
+    }
   }
 
   async getAssetsByStatus(status: string): Promise<Asset[]> {
-    return await db
-      .select()
-      .from(assets)
-      .where(eq(assets.status, status))
-      .orderBy(desc(assets.createdAt));
+    try {
+      return await db.select().from(assets).where(eq(assets.status, status)).orderBy(asc(assets.assetId));
+    } catch (error) {
+      console.error(`Error fetching assets with status ${status}:`, error);
+      return [];
+    }
   }
 
   async getAssetsByType(type: string): Promise<Asset[]> {
-    return await db
-      .select()
-      .from(assets)
-      .where(eq(assets.type, type))
-      .orderBy(desc(assets.createdAt));
+    try {
+      return await db.select().from(assets).where(eq(assets.type, type)).orderBy(asc(assets.assetId));
+    } catch (error) {
+      console.error(`Error fetching assets with type ${type}:`, error);
+      return [];
+    }
   }
 
   async getAssetsForEmployee(employeeId: number): Promise<Asset[]> {
-    return await db
-      .select()
-      .from(assets)
-      .where(eq(assets.assignedEmployeeId, employeeId))
-      .orderBy(assets.assetId);
+    try {
+      return await db
+        .select()
+        .from(assets)
+        .where(eq(assets.assignedTo, employeeId))
+        .orderBy(asc(assets.assetId));
+    } catch (error) {
+      console.error(`Error fetching assets for employee ${employeeId}:`, error);
+      return [];
+    }
   }
 
   // Asset Maintenance operations
   async createAssetMaintenance(maintenance: InsertAssetMaintenance): Promise<AssetMaintenance> {
-    const [newMaintenance] = await db
-      .insert(assetMaintenance)
-      .values(maintenance)
-      .returning();
-    return newMaintenance;
+    try {
+      const [newMaintenance] = await db
+        .insert(assetMaintenance)
+        .values(maintenance)
+        .returning();
+      return newMaintenance;
+    } catch (error) {
+      console.error('Error creating asset maintenance record:', error);
+      throw error;
+    }
   }
 
   async getMaintenanceForAsset(assetId: number): Promise<AssetMaintenance[]> {
-    return await db
-      .select()
-      .from(assetMaintenance)
-      .where(eq(assetMaintenance.assetId, assetId))
-      .orderBy(desc(assetMaintenance.date));
+    try {
+      return await db
+        .select()
+        .from(assetMaintenance)
+        .where(eq(assetMaintenance.assetId, assetId))
+        .orderBy(desc(assetMaintenance.date));
+    } catch (error) {
+      console.error(`Error fetching maintenance records for asset ${assetId}:`, error);
+      return [];
+    }
   }
 
   // Asset Sales operations
   async createAssetSale(sale: InsertAssetSale): Promise<AssetSale> {
-    const [newSale] = await db
-      .insert(assetSales)
-      .values(sale)
-      .returning();
-    return newSale;
+    try {
+      const [newSale] = await db
+        .insert(assetSales)
+        .values(sale)
+        .returning();
+      return newSale;
+    } catch (error) {
+      console.error('Error creating asset sale:', error);
+      throw error;
+    }
   }
 
   async addAssetToSale(saleItem: InsertAssetSaleItem): Promise<AssetSaleItem> {
-    const [newSaleItem] = await db
-      .insert(assetSaleItems)
-      .values(saleItem)
-      .returning();
-    return newSaleItem;
+    try {
+      const [newSaleItem] = await db
+        .insert(assetSaleItems)
+        .values(saleItem)
+        .returning();
+      return newSaleItem;
+    } catch (error) {
+      console.error('Error adding asset to sale:', error);
+      throw error;
+    }
   }
 
   async getAssetSales(): Promise<AssetSale[]> {
-    return await db
-      .select()
-      .from(assetSales)
-      .orderBy(desc(assetSales.date));
+    try {
+      // Get all sales with their items
+      const sales = await db
+        .select()
+        .from(assetSales)
+        .orderBy(desc(assetSales.date));
+
+      // For each sale, get the associated items
+      const results = await Promise.all(
+        sales.map(async (sale) => {
+          const items = await db
+            .select()
+            .from(assetSaleItems)
+            .where(eq(assetSaleItems.saleId, sale.id));
+
+          return {
+            ...sale,
+            items,
+          };
+        })
+      );
+
+      return results;
+    } catch (error) {
+      console.error('Error fetching asset sales:', error);
+      return [];
+    }
   }
 
   // Ticket operations
   async getTicket(id: number): Promise<Ticket | undefined> {
-    const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
-    return ticket || undefined;
+    try {
+      const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+      return ticket;
+    } catch (error) {
+      console.error('Error fetching ticket:', error);
+      return undefined;
+    }
   }
 
   async getTicketByTicketId(ticketId: string): Promise<Ticket | undefined> {
-    const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
-    return ticket || undefined;
+    try {
+      const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
+      return ticket;
+    } catch (error) {
+      console.error('Error fetching ticket by ticketId:', error);
+      return undefined;
+    }
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    const [newTicket] = await db
-      .insert(tickets)
-      .values(ticket)
-      .returning();
-    return newTicket;
+    try {
+      const [newTicket] = await db
+        .insert(tickets)
+        .values(ticket)
+        .returning();
+      return newTicket;
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      throw error;
+    }
   }
 
   async updateTicket(id: number, ticketData: Partial<InsertTicket>): Promise<Ticket | undefined> {
-    const [ticket] = await db
-      .update(tickets)
-      .set({ ...ticketData, updatedAt: new Date() })
-      .where(eq(tickets.id, id))
-      .returning();
-    return ticket || undefined;
+    try {
+      // Update only permitted fields
+      const [updatedTicket] = await db
+        .update(tickets)
+        .set({ ...ticketData, updatedAt: new Date() })
+        .where(eq(tickets.id, id))
+        .returning();
+      return updatedTicket;
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      return undefined;
+    }
   }
 
   async getAllTickets(): Promise<Ticket[]> {
-    return await db
-      .select()
-      .from(tickets)
-      .orderBy(desc(tickets.createdAt));
+    try {
+      return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      return [];
+    }
   }
 
   async getTicketsByStatus(status: string): Promise<Ticket[]> {
-    return await db
-      .select()
-      .from(tickets)
-      .where(eq(tickets.status, status))
-      .orderBy(desc(tickets.createdAt));
+    try {
+      return await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.status, status))
+        .orderBy(desc(tickets.createdAt));
+    } catch (error) {
+      console.error(`Error fetching tickets with status ${status}:`, error);
+      return [];
+    }
   }
 
   async getTicketsForEmployee(employeeId: number): Promise<Ticket[]> {
-    return await db
-      .select()
-      .from(tickets)
-      .where(eq(tickets.submittedById, employeeId))
-      .orderBy(desc(tickets.createdAt));
+    try {
+      return await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.submittedById, employeeId))
+        .orderBy(desc(tickets.createdAt));
+    } catch (error) {
+      console.error(`Error fetching tickets for employee ${employeeId}:`, error);
+      return [];
+    }
   }
 
   async getTicketsAssignedToUser(userId: number): Promise<Ticket[]> {
-    return await db
-      .select()
-      .from(tickets)
-      .where(eq(tickets.assignedToId, userId))
-      .orderBy(desc(tickets.createdAt));
+    try {
+      return await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.assignedToId, userId))
+        .orderBy(desc(tickets.createdAt));
+    } catch (error) {
+      console.error(`Error fetching tickets assigned to user ${userId}:`, error);
+      return [];
+    }
   }
 
   // System Config operations
   async getSystemConfig(): Promise<SystemConfig | undefined> {
-    const configs = await db.select().from(systemConfig).orderBy(asc(systemConfig.id)).limit(1);
-    return configs[0] || undefined;
+    try {
+      const configs = await db.select().from(systemConfig);
+      
+      // Return the first config if it exists
+      if (configs.length > 0) {
+        return configs[0];
+      }
+      
+      // Otherwise, create a default config
+      const [newConfig] = await db
+        .insert(systemConfig)
+        .values({
+          language: 'English',
+          assetIdPrefix: 'SIT-',
+          currency: 'USD'
+        })
+        .returning();
+      
+      return newConfig;
+    } catch (error) {
+      console.error('Error fetching system config:', error);
+      return undefined;
+    }
   }
 
   async updateSystemConfig(config: Partial<InsertSystemConfig>): Promise<SystemConfig | undefined> {
-    // Find the config first
-    const configs = await db.select().from(systemConfig).orderBy(asc(systemConfig.id)).limit(1);
-    
-    if (configs.length === 0) {
-      // Create if it doesn't exist
-      const [newConfig] = await db
-        .insert(systemConfig)
-        .values({ ...config })
-        .returning();
-      return newConfig;
-    } else {
-      // Update if it exists
-      const [updatedConfig] = await db
-        .update(systemConfig)
-        .set({ ...config, updatedAt: new Date() })
-        .where(eq(systemConfig.id, configs[0].id))
-        .returning();
-      return updatedConfig;
+    try {
+      const configs = await db.select().from(systemConfig);
+      
+      // Insert if it doesn't exist
+      if (configs.length === 0) {
+        const [newConfig] = await db
+          .insert(systemConfig)
+          .values({
+            language: config.language || 'English',
+            assetIdPrefix: config.assetIdPrefix || 'SIT-',
+            currency: config.currency || 'USD',
+            ...config
+          })
+          .returning();
+        return newConfig;
+      } else {
+        // Update if it exists
+        const [updatedConfig] = await db
+          .update(systemConfig)
+          .set({ ...config, updatedAt: new Date() })
+          .where(eq(systemConfig.id, configs[0].id))
+          .returning();
+        return updatedConfig;
+      }
+    } catch (error) {
+      console.error('Error updating system config:', error);
+      return undefined;
     }
   }
 
   // Activity Log operations
   async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
-    const [newActivity] = await db
-      .insert(activityLog)
-      .values(activity)
-      .returning();
-    return newActivity;
+    try {
+      const [newActivity] = await db
+        .insert(activityLog)
+        .values(activity)
+        .returning();
+      return newActivity;
+    } catch (error) {
+      console.error('Error logging activity:', error);
+      throw error;
+    }
   }
 
   async getRecentActivity(limit: number): Promise<ActivityLog[]> {
-    return await db
-      .select()
-      .from(activityLog)
-      .orderBy(desc(activityLog.createdAt))
-      .limit(limit);
+    try {
+      return await db
+        .select()
+        .from(activityLog)
+        .orderBy(desc(activityLog.createdAt))
+        .limit(limit);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      return [];
+    }
   }
   
   async getActivityLogs(options: {
@@ -484,113 +715,210 @@ export class DatabaseStorage implements IStorage {
     userId?: number;
     startDate?: Date;
     endDate?: Date;
-  }): Promise<{ 
-    data: ActivityLog[]; 
-    pagination: { 
-      totalItems: number; 
-      totalPages: number; 
-      currentPage: number; 
-      pageSize: number; 
-    } 
+  }): Promise<{
+    data: ActivityLog[];
+    pagination: {
+      totalItems: number;
+      totalPages: number;
+      currentPage: number;
+      pageSize: number;
+    }
   }> {
-    const {
-      page = 1,
-      limit = 50,
-      filter,
-      entityType,
-      action,
-      userId,
-      startDate,
-      endDate
-    } = options;
-    
-    // Calculate offset
-    const offset = (page - 1) * limit;
-    
-    // Create conditions array
-    const conditions = [];
-    
-    if (filter) {
-      conditions.push(sql`(${activityLog.action} LIKE ${`%${filter}%`} OR ${activityLog.entityType} LIKE ${`%${filter}%`} OR ${activityLog.details}::text LIKE ${`%${filter}%`})`);
-    }
-    
-    if (entityType) {
-      conditions.push(sql`${activityLog.entityType} = ${entityType}`);
-    }
-    
-    if (action) {
-      conditions.push(sql`${activityLog.action} = ${action}`);
-    }
-    
-    if (userId) {
-      conditions.push(sql`${activityLog.userId} = ${userId}`);
-    }
-    
-    if (startDate) {
-      conditions.push(sql`${activityLog.createdAt} >= ${startDate}`);
-    }
-    
-    if (endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setDate(endOfDay.getDate() + 1);
-      conditions.push(sql`${activityLog.createdAt} < ${endOfDay}`);
-    }
-    
-    // Combine conditions
-    let query;
-    if (conditions.length > 0) {
-      const whereClause = conditions.reduce((acc, condition, index) => {
-        return index === 0 ? condition : sql`${acc} AND ${condition}`;
-      }, sql``);
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        filter,
+        entityType,
+        action,
+        userId,
+        startDate,
+        endDate
+      } = options;
       
-      query = db
-        .select()
-        .from(activityLog)
-        .where(whereClause);
-    } else {
-      query = db.select().from(activityLog);
-    }
-    
-    // Execute count query
-    const countResult = await db.execute(
-      sql`SELECT COUNT(*) FROM ${activityLog} ${conditions.length > 0 ? sql`WHERE ${conditions.reduce((acc, condition, index) => {
-        return index === 0 ? condition : sql`${acc} AND ${condition}`;
-      }, sql``)}` : sql``}`
-    );
-    
-    const totalItems = parseInt(countResult.rows[0]?.count || '0');
-    
-    // Get data with pagination
-    const data = await query
-      .orderBy(desc(activityLog.createdAt))
-      .limit(limit)
-      .offset(offset);
-    
-    // Calculate total pages
-    const totalPages = Math.ceil(totalItems / limit);
-    
-    return {
-      data,
-      pagination: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        pageSize: limit
+      // Start with a base query
+      let query = db.select().from(activityLog);
+      
+      // Add filters
+      if (filter) {
+        query = query.where(
+          or(
+            sql`${activityLog.details}::text ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.action} ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.entityType} ILIKE ${`%${filter}%`}`
+          )
+        );
       }
-    };
+      
+      if (action) {
+        query = query.where(eq(activityLog.action, action));
+      }
+      
+      if (entityType) {
+        query = query.where(eq(activityLog.entityType, entityType));
+      }
+      
+      if (userId) {
+        query = query.where(eq(activityLog.userId, userId));
+      }
+      
+      if (startDate) {
+        query = query.where(gte(activityLog.createdAt, startDate));
+      }
+      
+      if (endDate) {
+        // Add one day to include the end date in the range
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.where(lt(activityLog.createdAt, nextDay));
+      }
+      
+      // Get total count for pagination
+      const countQuery = db.select({ count: sql<number>`count(*)` }).from(activityLog);
+      
+      // Apply the same filters to the count query
+      if (filter) {
+        countQuery.where(
+          or(
+            sql`${activityLog.details}::text ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.action} ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.entityType} ILIKE ${`%${filter}%`}`
+          )
+        );
+      }
+      
+      if (action) {
+        countQuery.where(eq(activityLog.action, action));
+      }
+      
+      if (entityType) {
+        countQuery.where(eq(activityLog.entityType, entityType));
+      }
+      
+      if (userId) {
+        countQuery.where(eq(activityLog.userId, userId));
+      }
+      
+      if (startDate) {
+        countQuery.where(gte(activityLog.createdAt, startDate));
+      }
+      
+      if (endDate) {
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        countQuery.where(lt(activityLog.createdAt, nextDay));
+      }
+      
+      const countResult = await countQuery;
+      const totalItems = Number(countResult[0]?.count || 0);
+      
+      // Add pagination
+      const offset = (page - 1) * limit;
+      
+      // Get results with order and pagination
+      const data = await query
+        .orderBy(desc(activityLog.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      return {
+        data,
+        pagination: {
+          totalItems,
+          totalPages: Math.ceil(totalItems / limit),
+          currentPage: page,
+          pageSize: limit
+        }
+      };
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      return {
+        data: [],
+        pagination: {
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: page || 1,
+          pageSize: limit || 20
+        }
+      };
+    }
   }
   
+  async getActivityLogsCount(options: {
+    filter?: string;
+    action?: string;
+    entityType?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<number> {
+    try {
+      const {
+        filter,
+        action,
+        entityType,
+        userId,
+        startDate,
+        endDate
+      } = options;
+      
+      // Start with a base query
+      let query = db.select({ count: sql<number>`count(*)` }).from(activityLog);
+      
+      // Add filters
+      if (filter) {
+        query = query.where(
+          or(
+            sql`${activityLog.details}::text ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.action} ILIKE ${`%${filter}%`}`,
+            sql`${activityLog.entityType} ILIKE ${`%${filter}%`}`
+          )
+        );
+      }
+      
+      if (action) {
+        query = query.where(eq(activityLog.action, action));
+      }
+      
+      if (entityType) {
+        query = query.where(eq(activityLog.entityType, entityType));
+      }
+      
+      if (userId) {
+        query = query.where(eq(activityLog.userId, userId));
+      }
+      
+      if (startDate) {
+        query = query.where(gte(activityLog.createdAt, startDate));
+      }
+      
+      if (endDate) {
+        // Add one day to include the end date in the range
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.where(lt(activityLog.createdAt, nextDay));
+      }
+      
+      // Get count
+      const result = await query;
+      return Number(result[0]?.count || 0);
+    } catch (error) {
+      console.error('Error counting activity logs:', error);
+      return 0;
+    }
+  }
+
   // Custom Asset Types
   async getCustomAssetTypes(): Promise<any[]> {
     try {
-      const types = await db.select().from(customAssetTypes);
+      const types = await db.select().from(customAssetTypes).orderBy(asc(customAssetTypes.name));
       return types;
     } catch (error) {
       console.error('Error fetching custom asset types:', error);
       return [];
     }
   }
-  
+
   async createCustomAssetType(data: { name: string; description?: string }): Promise<any> {
     try {
       const [newType] = await db.insert(customAssetTypes)
@@ -605,29 +933,28 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async deleteCustomAssetType(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(customAssetTypes)
-        .where(eq(customAssetTypes.id, id));
+      const result = await db.delete(customAssetTypes).where(eq(customAssetTypes.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset type:', error);
       return false;
     }
   }
-  
+
   // Custom Asset Brands
   async getCustomAssetBrands(): Promise<any[]> {
     try {
-      const brands = await db.select().from(customAssetBrands);
+      const brands = await db.select().from(customAssetBrands).orderBy(asc(customAssetBrands.name));
       return brands;
     } catch (error) {
       console.error('Error fetching custom asset brands:', error);
       return [];
     }
   }
-  
+
   async createCustomAssetBrand(data: { name: string; description?: string }): Promise<any> {
     try {
       const [newBrand] = await db.insert(customAssetBrands)
@@ -642,36 +969,35 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async deleteCustomAssetBrand(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(customAssetBrands)
-        .where(eq(customAssetBrands.id, id));
+      const result = await db.delete(customAssetBrands).where(eq(customAssetBrands.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset brand:', error);
       return false;
     }
   }
-  
+
   // Custom Asset Statuses
   async getCustomAssetStatuses(): Promise<any[]> {
     try {
-      const statuses = await db.select().from(customAssetStatuses);
+      const statuses = await db.select().from(customAssetStatuses).orderBy(asc(customAssetStatuses.name));
       return statuses;
     } catch (error) {
       console.error('Error fetching custom asset statuses:', error);
       return [];
     }
   }
-  
+
   async createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any> {
     try {
       const [newStatus] = await db.insert(customAssetStatuses)
         .values({
           name: data.name,
           description: data.description || null,
-          color: data.color || '#3B82F6' // Default blue color
+          color: data.color || '#6b7280' // Default gray color
         })
         .returning();
       return newStatus;
@@ -680,29 +1006,28 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async deleteCustomAssetStatus(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(customAssetStatuses)
-        .where(eq(customAssetStatuses.id, id));
+      const result = await db.delete(customAssetStatuses).where(eq(customAssetStatuses.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting custom asset status:', error);
       return false;
     }
   }
-  
+
   // Service Providers
   async getServiceProviders(): Promise<any[]> {
     try {
-      const providers = await db.select().from(serviceProviders);
+      const providers = await db.select().from(serviceProviders).orderBy(asc(serviceProviders.name));
       return providers;
     } catch (error) {
       console.error('Error fetching service providers:', error);
       return [];
     }
   }
-  
+
   async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
     try {
       const [newProvider] = await db.insert(serviceProviders)
@@ -719,11 +1044,10 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async deleteServiceProvider(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(serviceProviders)
-        .where(eq(serviceProviders.id, id));
+      const result = await db.delete(serviceProviders).where(eq(serviceProviders.id, id));
       return result.rowCount > 0;
     } catch (error) {
       console.error('Error deleting service provider:', error);
@@ -731,10 +1055,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Asset Transaction methods
+  // Asset Transaction operations
   async createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction> {
     try {
-      const [newTransaction] = await db.insert(assetTransactions)
+      const [newTransaction] = await db
+        .insert(assetTransactions)
         .values(transaction)
         .returning();
       return newTransaction;
@@ -743,227 +1068,171 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async getAssetTransactions(assetId: number): Promise<AssetTransaction[]> {
     try {
-      return await db.select()
+      return await db
+        .select()
         .from(assetTransactions)
         .where(eq(assetTransactions.assetId, assetId))
-        .orderBy(desc(assetTransactions.createdAt));
+        .orderBy(desc(assetTransactions.transactionDate));
     } catch (error) {
-      console.error('Error getting asset transactions:', error);
+      console.error(`Error fetching transactions for asset ${assetId}:`, error);
       return [];
     }
   }
-  
+
   async getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]> {
     try {
-      return await db.select()
+      return await db
+        .select()
         .from(assetTransactions)
         .where(eq(assetTransactions.employeeId, employeeId))
-        .orderBy(desc(assetTransactions.createdAt));
+        .orderBy(desc(assetTransactions.transactionDate));
     } catch (error) {
-      console.error('Error getting employee transactions:', error);
+      console.error(`Error fetching transactions for employee ${employeeId}:`, error);
       return [];
     }
   }
-  
+
   async getAllAssetTransactions(): Promise<AssetTransaction[]> {
     try {
-      const transactions = await db.select()
+      const transactions = await db
+        .select()
         .from(assetTransactions)
-        .leftJoin(assets, eq(assetTransactions.assetId, assets.id))
-        .leftJoin(employees, eq(assetTransactions.employeeId, employees.id))
-        .orderBy(desc(assetTransactions.createdAt));
-      
-      // Fetch related data to include in the response
-      const result = [];
-      for (const transaction of transactions) {
-        const asset = await this.getAsset(transaction.assetId);
-        const employee = transaction.employeeId ? await this.getEmployee(transaction.employeeId) : null;
+        .orderBy(desc(assetTransactions.transactionDate));
         
-        result.push({
+      // Enhance with asset and employee details
+      const result = await Promise.all(transactions.map(async (transaction) => {
+        const asset = transaction.assetId 
+          ? await this.getAsset(transaction.assetId) 
+          : undefined;
+          
+        const employee = transaction.employeeId 
+          ? await this.getEmployee(transaction.employeeId) 
+          : undefined;
+          
+        return {
           ...transaction,
           asset,
           employee
-        });
-      }
+        };
+      }));
       
       return result;
     } catch (error) {
-      console.error('Error getting all asset transactions:', error);
+      console.error('Error fetching all asset transactions:', error);
       return [];
     }
   }
-  
-  async checkOutAsset(assetId: number, employeeId: number, notes?: string): Promise<AssetTransaction> {
-    const asset = await this.getAsset(assetId);
-    if (!asset) {
-      throw new Error('Asset not found');
-    }
-    
-    // Check if asset is already assigned
-    if (asset.status === 'In Use') {
-      throw new Error('Asset is already checked out');
-    }
-    
+
+  async checkOutAsset(assetId: number, employeeId: number, notes?: string, type: string = 'Check-Out'): Promise<AssetTransaction> {
     try {
-      // Begin transaction
-      return await db.transaction(async (tx) => {
-        // 1. Update asset status and assignment
-        const [updatedAsset] = await tx.update(assets)
-          .set({
-            status: 'In Use',
-            assignedEmployeeId: employeeId,
-            updatedAt: new Date()
-          })
-          .where(eq(assets.id, assetId))
-          .returning();
-        
-        // 2. Create transaction record
-        const [transaction] = await tx.insert(assetTransactions)
-          .values({
-            assetId,
-            employeeId,
-            type: 'Check-Out',
-            conditionNotes: notes || `Asset checked out to employee ID ${employeeId}`,
-          })
-          .returning();
-        
-        // 3. Log the activity
-        await tx.insert(activityLog)
-          .values({
-            userId: 1, // Default to admin user if not provided
-            action: 'ASSIGN',
-            entityType: 'ASSET',
-            entityId: assetId,
-            details: {
-              assignedTo: employeeId,
-              previousStatus: asset.status,
-              newStatus: 'In Use',
-              transactionId: transaction.id
-            }
-          });
-        
-        return transaction;
+      // First update the asset to set employeeId
+      await this.updateAsset(assetId, { 
+        assignedTo: employeeId,
+        status: 'In Use'
       });
+      
+      // Create transaction record
+      const [transaction] = await db
+        .insert(assetTransactions)
+        .values({
+          type,
+          assetId,
+          employeeId,
+          transactionDate: new Date(),
+          conditionNotes: notes || null
+        })
+        .returning();
+        
+      return transaction;
     } catch (error) {
       console.error('Error checking out asset:', error);
       throw error;
     }
   }
-  
+
   async checkInAsset(assetId: number, notes?: string, type: string = 'Check-In'): Promise<AssetTransaction> {
-    const asset = await this.getAsset(assetId);
-    if (!asset) {
-      throw new Error('Asset not found');
-    }
-    
-    // Check if asset is already available
-    if (asset.status !== 'In Use') {
-      throw new Error('Asset is not currently checked out');
-    }
-    
-    const previousEmployeeId = asset.assignedEmployeeId;
-    
     try {
-      // Begin transaction
-      return await db.transaction(async (tx) => {
-        // 1. Update asset status and remove assignment
-        const [updatedAsset] = await tx.update(assets)
-          .set({
-            status: 'Available',
-            assignedEmployeeId: null,
-            updatedAt: new Date()
-          })
-          .where(eq(assets.id, assetId))
-          .returning();
-        
-        // 2. Create transaction record
-        const [transaction] = await tx.insert(assetTransactions)
-          .values({
-            assetId,
-            employeeId: previousEmployeeId,
-            type: 'Check-In',
-            conditionNotes: notes || `Asset checked in from employee ID ${previousEmployeeId}`,
-          })
-          .returning();
-        
-        // 3. Log the activity
-        await tx.insert(activityLog)
-          .values({
-            userId: 1, // Default to admin user if not provided
-            action: 'UNASSIGN',
-            entityType: 'ASSET',
-            entityId: assetId,
-            details: {
-              unassignedFrom: previousEmployeeId,
-              previousStatus: 'In Use',
-              newStatus: 'Available',
-              transactionId: transaction.id
-            }
-          });
-        
-        return transaction;
+      // Get asset to determine employee
+      const asset = await this.getAsset(assetId);
+      if (!asset) {
+        throw new Error('Asset not found');
+      }
+      
+      const employeeId = asset.assignedTo;
+      
+      // Update asset to remove employee and set status to Available
+      await this.updateAsset(assetId, { 
+        assignedTo: null,
+        status: 'Available'
       });
+      
+      // Create transaction record
+      const [transaction] = await db
+        .insert(assetTransactions)
+        .values({
+          type,
+          assetId,
+          employeeId, // Keep track of who returned it
+          transactionDate: new Date(),
+          actualReturnDate: new Date(),
+          conditionNotes: notes || null
+        })
+        .returning();
+        
+      return transaction;
     } catch (error) {
       console.error('Error checking in asset:', error);
       throw error;
     }
   }
-  
+
   /**
    * Removes all demo data from the database, keeping only the admin user
    * and essential system configuration
    */
   async removeDemoData(): Promise<void> {
     try {
-      console.log('Starting demo data removal process...');
-      
-      // Use a transaction to ensure all operations are atomic
       await db.transaction(async (tx) => {
-        // Delete asset transactions first (because of foreign key constraints)
+        // Remove all asset transactions
         await tx.delete(assetTransactions);
         console.log('Asset transactions removed');
         
-        // Delete asset maintenance records
+        // Remove all asset maintenance records
         await tx.delete(assetMaintenance);
         console.log('Asset maintenance records removed');
         
-        // Delete asset sale items (detail records first)
-        await tx.delete(assetSaleItems);
-        console.log('Asset sale items removed');
-        
-        // Delete asset sales
-        await tx.delete(assetSales);
-        console.log('Asset sales removed');
-        
-        // Delete assets
+        // Remove all assets
         await tx.delete(assets);
         console.log('Assets removed');
         
-        // Delete tickets
+        // Remove all tickets
         await tx.delete(tickets);
         console.log('Tickets removed');
         
-        // Delete employees (keep any that are linked to users)
-        await tx.delete(employees).where(
-          sql`${employees.userId} IS NULL`
-        );
+        // Remove employees except for admin-linked ones
+        await tx.delete(employees);
         console.log('Employees removed');
         
-        // Delete custom fields
+        // Remove all sales and sale items
+        await tx.delete(assetSaleItems);
+        await tx.delete(assetSales);
+        console.log('Asset sales removed');
+        
+        // Clear custom data
         await tx.delete(customAssetTypes);
         await tx.delete(customAssetBrands);
         await tx.delete(customAssetStatuses);
         await tx.delete(serviceProviders);
-        await tx.delete(assetServiceProviders);
-        console.log('Custom fields removed');
+        console.log('Custom data removed');
         
-        // Keep activity logs for audit purposes but could delete if needed
-        // await tx.delete(activityLog);
+        // Remove activity logs
+        await tx.delete(activityLog);
+        console.log('Activity logs removed');
         
-        // Delete all users except the admin user (ID 1)
+        // Remove all users except admin
         await tx.delete(users).where(
           sql`${users.id} > 1`
         );

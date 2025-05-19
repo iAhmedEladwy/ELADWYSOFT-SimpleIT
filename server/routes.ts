@@ -2131,6 +2131,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audit Logs API endpoint
+  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const filter = req.query.filter as string;
+      const action = req.query.action as string;
+      const entityType = req.query.entityType as string;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      // Get logs with pagination
+      const result = await storage.getActivityLogs({
+        filter,
+        action: action !== 'all-actions' ? action : undefined,
+        entityType: entityType !== 'all-entities' ? entityType : undefined,
+        startDate,
+        endDate,
+        page,
+        limit
+      });
+      
+      // Enhance logs with user details
+      const logsWithUserDetails = await Promise.all(
+        result.data.map(async (log) => {
+          let user = undefined;
+          
+          if (log.userId) {
+            user = await storage.getUser(log.userId);
+          }
+          
+          return {
+            ...log,
+            user: user ? { id: user.id, username: user.username } : undefined
+          };
+        })
+      );
+      
+      res.json({
+        data: logsWithUserDetails,
+        pagination: result.pagination
+      });
+    } catch (error: any) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Initialize admin user if none exists
   try {
     const users = await storage.getAllUsers();
