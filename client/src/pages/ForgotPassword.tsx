@@ -136,6 +136,21 @@ export default function ForgotPassword() {
     },
   });
 
+  // Fetch available security questions from the server
+  const fetchSecurityQuestions = async () => {
+    try {
+      const response = await fetch('/api/security-questions');
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      return language === 'English' ? securityQuestions : securityQuestionsArabic;
+    } catch (error) {
+      console.error('Error fetching security questions:', error);
+      return language === 'English' ? securityQuestions : securityQuestionsArabic;
+    }
+  };
+
   // Handle finding user account (Step 1)
   const onFindUser = async (values: z.infer<typeof findUserSchema>) => {
     try {
@@ -145,23 +160,53 @@ export default function ForgotPassword() {
         username: values.username
       });
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'User not found');
+      }
+      
       const data = await response.json();
       
-      if (data.user) {
-        setUserFound(data.user);
+      if (data.userId) {
+        setUserFound({ id: data.userId, username: values.username });
         
-        // Get security questions (or assign default ones for new accounts)
-        if (data.securityQuestions && data.securityQuestions.length > 0) {
-          setSecurityQuestionList(data.securityQuestions);
+        // Check if user has security questions set up
+        if (data.hasSecurityQuestions) {
+          // Fetch user's security questions
+          const questionsResponse = await fetch(`/api/forgot-password/security-questions/${data.userId}`);
+          if (questionsResponse.ok) {
+            const questionsData = await questionsResponse.json();
+            if (questionsData.questions && questionsData.questions.length > 0) {
+              // Set the user's actual questions
+              const userQuestions = questionsData.questions.map((q: any) => q.question);
+              setSecurityQuestionList(userQuestions);
+              
+              // Initialize the form with the right number of answer fields
+              securityForm.setValue('answers', userQuestions.map(() => ({ answer: '' })));
+              
+              // Set the selected questions
+              setSelectedQuestions(userQuestions);
+              
+              // Move to the security questions step
+              setCurrentStep(2);
+              return;
+            }
+          }
+          
+          // If we couldn't fetch the specific questions, use the default list
+          const availableQuestions = await fetchSecurityQuestions();
+          setSecurityQuestionList(availableQuestions);
+          setCurrentStep(2);
         } else {
-          // If no security questions set, we'll let the user set new ones
-          setSecurityQuestionList(
-            language === 'English' ? securityQuestions : securityQuestionsArabic
-          );
+          // No security questions set, inform user
+          toast({
+            title: language === 'English' ? 'No security questions found' : 'لم يتم العثور على أسئلة أمان',
+            description: language === 'English' 
+              ? 'This account does not have security questions set up. Please contact an administrator.' 
+              : 'هذا الحساب ليس لديه أسئلة أمان. يرجى الاتصال بالمسؤول.',
+            variant: 'destructive',
+          });
         }
-        
-        // Move to next step
-        setCurrentStep(2);
       } else {
         toast({
           title: translations.userNotFound,
@@ -169,11 +214,11 @@ export default function ForgotPassword() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error finding user:', error);
       toast({
         title: translations.userNotFound,
-        description: translations.tryAgain,
+        description: error.message || translations.tryAgain,
         variant: 'destructive',
       });
     } finally {
@@ -186,19 +231,28 @@ export default function ForgotPassword() {
     try {
       setIsLoading(true);
       
+      // Create an array of answers that includes both questions and answer values
+      const answerPayload = values.answers.map((a, index) => ({
+        question: selectedQuestions[index],
+        answer: a.answer
+      }));
+      
       const payload = {
-        username: userFound.username,
-        answers: values.answers.map((a, index) => ({
-          question: selectedQuestions[index],
-          answer: a.answer
-        }))
+        userId: userFound.id,
+        answers: answerPayload
       };
       
       const response = await apiRequest('POST', '/api/forgot-password/verify-answers', payload);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || translations.answerIncorrect);
+      }
+      
       const data = await response.json();
       
-      if (data.success && data.resetToken) {
-        setResetToken(data.resetToken);
+      if (data.success && data.token) {
+        setResetToken(data.token);
         setCurrentStep(3);
       } else {
         toast({
@@ -207,11 +261,11 @@ export default function ForgotPassword() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying security answers:', error);
       toast({
         title: translations.answerIncorrect,
-        description: translations.tryAgain,
+        description: error.message || translations.tryAgain,
         variant: 'destructive',
       });
     } finally {
@@ -225,9 +279,14 @@ export default function ForgotPassword() {
       setIsLoading(true);
       
       const response = await apiRequest('POST', '/api/forgot-password/reset-password', {
-        resetToken,
-        password: values.password
+        token: resetToken,
+        newPassword: values.password
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to reset password');
+      }
       
       const data = await response.json();
       
@@ -250,11 +309,11 @@ export default function ForgotPassword() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error resetting password:', error);
       toast({
         title: translations.resetError,
-        description: translations.tryAgain,
+        description: error.message || translations.tryAgain,
         variant: 'destructive',
       });
     } finally {
