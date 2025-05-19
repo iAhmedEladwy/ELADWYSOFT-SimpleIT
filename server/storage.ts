@@ -88,6 +88,24 @@ export interface IStorage {
   // Activity Log operations
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivity(limit: number): Promise<ActivityLog[]>;
+  getActivityLogs(options: {
+    filter?: string;
+    action?: string;
+    entityType?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    page?: number;
+    limit?: number;
+  }): Promise<ActivityLog[]>;
+  getActivityLogsCount(options: {
+    filter?: string;
+    action?: string;
+    entityType?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<number>;
   
   // Custom Fields operations
   getCustomAssetTypes(): Promise<any[]>;
