@@ -12,7 +12,7 @@ import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 
 // Helper function to generate IDs
@@ -2409,6 +2409,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error deleting service provider:', error);
       res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // ====== Forgot Password API endpoints ======
+  
+  // Step 1: Find user by username
+  app.post('/api/forgot-password/find-user', async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Check if user has security questions
+      const hasSecurityQuestions = await storage.getSecurityQuestions(user.id).then(questions => questions.length > 0);
+      
+      res.json({
+        userId: user.id,
+        hasSecurityQuestions
+      });
+    } catch (error: any) {
+      console.error('Error finding user:', error);
+      res.status(500).json({ message: error.message || 'Error finding user' });
+    }
+  });
+  
+  // Step 2: Get security questions for a specific user
+  app.get('/api/forgot-password/security-questions/:userId', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const questions = await storage.getSecurityQuestions(userId);
+      
+      if (!questions || questions.length === 0) {
+        return res.status(404).json({ message: 'No security questions found for this user' });
+      }
+      
+      res.json({ questions });
+    } catch (error: any) {
+      console.error('Error getting security questions:', error);
+      res.status(500).json({ message: error.message || 'Error getting security questions' });
+    }
+  });
+  
+  // Step 3: Get all available security questions (for new setups)
+  app.get('/api/security-questions', async (req, res) => {
+    try {
+      // For default questions, pass no userId - use 0 as a flag for default questions
+      const questions = await storage.getSecurityQuestions(0);
+      res.json(questions);
+    } catch (error: any) {
+      console.error('Error getting security questions:', error);
+      res.status(500).json({ message: error.message || 'Error getting security questions' });
+    }
+  });
+  
+  // Step 4: Verify security question answers
+  app.post('/api/forgot-password/verify-answers', async (req, res) => {
+    try {
+      const { userId, answers } = req.body;
+      
+      if (!userId || !answers || !Array.isArray(answers)) {
+        return res.status(400).json({ message: 'User ID and answers are required' });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Verify answers
+      const correctAnswers = await storage.verifySecurityQuestions(userId, answers);
+      
+      if (!correctAnswers) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Incorrect answers to security questions' 
+        });
+      }
+      
+      // Generate a reset token
+      const resetToken = await storage.createPasswordResetToken(userId);
+      
+      res.json({
+        success: true,
+        token: resetToken.token
+      });
+    } catch (error: any) {
+      console.error('Error verifying security answers:', error);
+      res.status(500).json({ message: error.message || 'Error verifying security answers' });
+    }
+  });
+  
+  // Step 5: Reset password with token
+  app.post('/api/forgot-password/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+      
+      // Validate token and get the associated user
+      const userId = await storage.validatePasswordResetToken(token);
+      
+      if (!userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Invalid or expired token' 
+        });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hash(newPassword, 10);
+      
+      // Update the user's password
+      const updated = await storage.updateUser(userId, { password: hashedPassword });
+      
+      if (!updated) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to update password' 
+        });
+      }
+      
+      // Delete the used token
+      await storage.invalidatePasswordResetToken(token);
+      
+      // Log the activity
+      await logActivity({
+        userId: userId,
+        action: AuditAction.UPDATE,
+        entityType: EntityType.USER,
+        entityId: userId,
+        details: { message: 'Password was reset using forgot password flow' }
+      });
+      
+      res.json({
+        success: true,
+        message: 'Password has been reset successfully'
+      });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: error.message || 'Error resetting password' });
     }
   });
 
