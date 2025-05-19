@@ -241,10 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
   
-  // Forgot Password API - Security Questions
-  app.get("/api/security-questions", (req, res) => {
-    res.json(securityQuestionsList);
-  });
+  // Remove duplicate security questions endpoint
   
   app.post("/api/forgot-password/find-user", async (req, res) => {
     try {
