@@ -17,6 +17,7 @@ import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
+import UserProfile from "@/pages/UserProfile";
 import Layout from "@/components/layout/Layout";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
@@ -147,6 +148,11 @@ function Router() {
         <Route path="/audit-logs">
           <Layout>
             <PrivateRoute component={AuditLogs} />
+          </Layout>
+        </Route>
+        <Route path="/profile">
+          <Layout>
+            <PrivateRoute component={UserProfile} />
           </Layout>
         </Route>
         <Route component={NotFound} />

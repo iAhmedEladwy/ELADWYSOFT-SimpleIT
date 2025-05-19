@@ -11,6 +11,7 @@ import {
   Settings,
   History,
   FileText,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
