@@ -5,8 +5,8 @@ import * as schema from "@shared/schema";
 
 // Configure Neon database settings
 neonConfig.webSocketConstructor = ws;
-neonConfig.useSecureWebSocket = process.env.USE_HTTPS === 'true';
-neonConfig.forceDisablePgSSL = process.env.USE_HTTPS !== 'true';
+// Keep default settings to use direct database connections
+// These settings work better with the deployed environment
 
 if (!process.env.DATABASE_URL) {
   throw new Error(

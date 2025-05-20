@@ -301,7 +301,7 @@ try {
         
         nssm install SimpleIT $nodePath $scriptPath | Out-File -Append -FilePath $logFile
         nssm set SimpleIT AppDirectory $installDir | Out-File -Append -FilePath $logFile
-        nssm set SimpleIT AppEnvironmentExtra "NODE_ENV=production" "PATH=$env:Path" | Out-File -Append -FilePath $logFile
+        nssm set SimpleIT AppEnvironmentExtra "NODE_ENV=production" "PORT=5000" "USE_HTTPS=false" "PATH=$env:Path" | Out-File -Append -FilePath $logFile
         nssm set SimpleIT DisplayName "SimpleIT Asset Management" | Out-File -Append -FilePath $logFile
         nssm set SimpleIT Description "SimpleIT Asset Management System" | Out-File -Append -FilePath $logFile
         nssm set SimpleIT Start SERVICE_AUTO_START | Out-File -Append -FilePath $logFile
