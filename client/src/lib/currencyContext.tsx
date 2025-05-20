@@ -40,6 +40,14 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [config]);
   
+  // Get the currency symbol - this needs to be refreshed when currency changes
+  const [symbol, setSymbol] = useState(getCurrencySymbol(currency));
+  
+  // Update symbol when currency changes
+  useEffect(() => {
+    setSymbol(getCurrencySymbol(currency));
+  }, [currency]);
+  
   // Format currency using the system currency
   const formatValue = (
     value: number | string | null | undefined, 
@@ -47,9 +55,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   ) => {
     return formatCurrency(value, currency, options);
   };
-  
-  // Get the currency symbol
-  const symbol = getCurrencySymbol(currency);
   
   // Context value
   const contextValue: CurrencyContextType = {

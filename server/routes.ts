@@ -1798,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         INSERT INTO tickets (
           ticket_id,
           submitted_by_id,
-          category,
+          request_type,
           priority,
           description,
           status,
@@ -1810,7 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `, [
         ticketId,
         parseInt(req.body.submittedById.toString()),
-        req.body.category,
+        req.body.requestType || req.body.category, // Support both new and old field names
         req.body.priority,
         req.body.description,
         'Open',
