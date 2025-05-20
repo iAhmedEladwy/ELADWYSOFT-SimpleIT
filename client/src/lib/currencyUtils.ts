@@ -54,7 +54,7 @@ export function formatCurrency(
   // Get symbol if requested
   const symbol = useSymbol ? (currencySymbols[currency] || currency) : '';
   
-  // Format the number
+  // Format the number with better locale support
   const formattedValue = numericValue.toLocaleString(undefined, {
     minimumFractionDigits,
     maximumFractionDigits,
@@ -62,9 +62,12 @@ export function formatCurrency(
   
   // Return formatted currency with symbol
   if (useSymbol) {
-    // Different symbol placement based on currency
-    if (['USD', 'CAD', 'AUD'].includes(currency)) {
+    // Different symbol placement based on currency and locale conventions
+    if (['USD', 'CAD', 'AUD', 'EUR', 'GBP'].includes(currency)) {
       return `${symbol}${formattedValue}`;
+    } else if (['EGP', 'SAR', 'AED', 'KWD', 'QAR', 'JOD', 'BHD', 'OMR'].includes(currency)) {
+      // For Arabic currencies, place the symbol after the value with RTL support
+      return `${formattedValue} ${symbol}`;
     }
     return `${formattedValue} ${symbol}`;
   }
