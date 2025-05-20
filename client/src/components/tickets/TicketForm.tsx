@@ -33,8 +33,8 @@ const ticketFormSchema = z.object({
   relatedAssetId: z.string()
     .optional()
     .transform(val => val ? Number(val) : undefined),
-  category: z.string({
-    required_error: "Please select a category",
+  requestType: z.string({
+    required_error: "Please select a request type",
   }),
   priority: z.string({
     required_error: "Please select a priority",
@@ -95,7 +95,7 @@ export default function TicketForm({
     defaultValues: initialData || {
       submittedById: 0,
       relatedAssetId: undefined,
-      category: undefined,
+      requestType: undefined,
       priority: undefined,
       description: '',
     },
