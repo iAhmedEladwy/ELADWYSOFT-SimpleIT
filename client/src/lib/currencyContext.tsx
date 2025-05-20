@@ -2,6 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency, getCurrencySymbol } from './currencyUtils';
 
+// Define a type for system config
+interface SystemConfig {
+  currency: string;
+  language: string;
+  [key: string]: any;
+}
+
 // Context type definition
 interface CurrencyContextType {
   currency: string;
@@ -13,11 +20,15 @@ interface CurrencyContextType {
   symbol: string;
 }
 
+// Default values
+const defaultCurrency = 'USD';
+const defaultSymbol = '$';
+
 // Create context with default values
 const CurrencyContext = createContext<CurrencyContextType>({
-  currency: 'USD',
+  currency: defaultCurrency,
   formatCurrency: (value) => String(value),
-  symbol: '$'
+  symbol: defaultSymbol
 });
 
 // Hook to use the currency context
@@ -25,39 +36,35 @@ export const useCurrency = () => useContext(CurrencyContext);
 
 // Provider component to wrap the application
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>(defaultCurrency);
+  const [symbol, setSymbol] = useState<string>(defaultSymbol);
   
   // Fetch system configuration to get the currency
-  const { data: config } = useQuery({
+  const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
     refetchOnWindowFocus: false,
+    staleTime: 1000 * 60, // 1 minute
+    retry: 2,
   });
   
-  // Update currency state when configuration is loaded
+  // Update currency state and symbol when configuration is loaded
   useEffect(() => {
     if (config && config.currency) {
       setCurrency(config.currency);
+      setSymbol(getCurrencySymbol(config.currency));
     }
   }, [config]);
   
-  // Get the currency symbol - this needs to be refreshed when currency changes
-  const [symbol, setSymbol] = useState(getCurrencySymbol(currency));
-  
-  // Update symbol when currency changes
-  useEffect(() => {
-    setSymbol(getCurrencySymbol(currency));
-  }, [currency]);
-  
-  // Format currency using the system currency
+  // Format currency with current system currency
   const formatValue = (
     value: number | string | null | undefined, 
     options = {}
-  ) => {
+  ): string => {
     return formatCurrency(value, currency, options);
   };
   
-  // Context value
-  const contextValue: CurrencyContextType = {
+  // Create the context value
+  const contextValue = {
     currency,
     formatCurrency: formatValue,
     symbol

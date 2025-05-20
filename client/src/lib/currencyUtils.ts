@@ -58,6 +58,7 @@ export function formatCurrency(
   const formattedValue = numericValue.toLocaleString(undefined, {
     minimumFractionDigits,
     maximumFractionDigits,
+    style: useSymbol ? undefined : 'decimal',
   });
   
   // Return formatted currency with symbol

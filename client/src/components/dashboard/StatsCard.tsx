@@ -50,7 +50,13 @@ export default function StatsCard({
         <div>
           <p className="text-gray-500 text-sm">{title}</p>
           <h3 className="text-2xl font-bold text-gray-900">
-            {isCurrency && typeof value === 'number' ? formatCurrency(value) : value}
+            {isCurrency 
+              ? formatCurrency(value, { 
+                  minimumFractionDigits: 2, 
+                  maximumFractionDigits: 2,
+                  useSymbol: true 
+                }) 
+              : value}
           </h3>
         </div>
         <div className={cn("h-12 w-12 rounded-full flex items-center justify-center", getIconColor())}>
