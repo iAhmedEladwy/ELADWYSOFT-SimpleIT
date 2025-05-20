@@ -53,6 +53,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
     accessLevelDesc: language === 'English' ? 'Determines what actions the user can perform' : 'يحدد الإجراءات التي يمكن للمستخدم تنفيذها',
     admin: language === 'English' ? 'Admin (Level 3)' : 'مسؤول (المستوى 3)',
     manager: language === 'English' ? 'Manager (Level 2)' : 'مدير (المستوى 2)',
+    user: language === 'English' ? 'User (Level 1)' : 'مستخدم (المستوى 1)',
     viewer: language === 'English' ? 'Viewer (Level 1)' : 'مشاهد (المستوى 1)',
     create: language === 'English' ? 'Create User' : 'إنشاء مستخدم',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',

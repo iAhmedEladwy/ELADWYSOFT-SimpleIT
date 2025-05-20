@@ -980,8 +980,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Asset CRUD routes
   app.get("/api/assets", authenticateUser, async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
-      res.json(assets);
+      const user = req.user as schema.User;
+      const userAccessLevel = parseInt(user.accessLevel);
+      
+      // If user has level 1 access (User), only show assets that aren't being modified
+      if (userAccessLevel === 1) {
+        const assets = await storage.getAllAssets();
+        // Filter out assets that are in maintenance, being sold, etc.
+        const filteredAssets = assets.filter(asset => 
+          asset.status === 'Available' || asset.status === 'In Use'
+        );
+        res.json(filteredAssets);
+      } else {
+        // Admin/Manager can see all assets
+        const assets = await storage.getAllAssets();
+        res.json(assets);
+      }
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -994,6 +1008,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
+      
+      const user = req.user as schema.User;
+      const userAccessLevel = parseInt(user.accessLevel);
+      
+      // If user is access level 1 (User role) and asset is not viewable
+      if (userAccessLevel === 1 && 
+          asset.status !== 'Available' && 
+          asset.status !== 'In Use') {
+        return res.status(403).json({ 
+          message: "You don't have permission to view this asset" 
+        });
+      }
+      
       res.json(asset);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

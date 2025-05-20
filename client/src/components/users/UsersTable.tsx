@@ -54,7 +54,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     admin: language === 'English' ? 'Admin' : 'مسؤول',
     manager: language === 'English' ? 'Manager' : 'مدير',
-    viewer: language === 'English' ? 'Viewer' : 'مشاهد',
+    user: language === 'English' ? 'User' : 'مستخدم',
     edit: language === 'English' ? 'Edit' : 'تعديل',
     delete: language === 'English' ? 'Delete' : 'حذف',
     confirmDelete: language === 'English' ? 'Confirm Deletion' : 'تأكيد الحذف',
@@ -86,7 +86,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             <Shield className="h-3.5 w-3.5 mr-1" />
-            {translations.viewer}
+            {translations.user}
           </Badge>
         );
       default:
