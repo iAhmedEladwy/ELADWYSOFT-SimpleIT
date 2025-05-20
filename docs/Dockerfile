@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Set working directory
 WORKDIR /app
@@ -6,8 +6,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev
+# Install npm and global build dependencies
+RUN npm install -g npm@latest && \
+    npm install -g drizzle-kit vite
+
+# Install all dependencies (including dev dependencies needed for build)
+RUN npm install
 
 # Copy application code
 COPY . .

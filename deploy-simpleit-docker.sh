@@ -89,7 +89,8 @@ fi
 # Start containers
 echo -e "${BLUE}Starting Docker containers...${NC}"
 docker-compose down
-docker-compose up -d
+# Use --build to ensure latest image is built with updated Node.js version
+docker-compose up -d --build
 
 # Wait for containers to initialize
 echo -e "${BLUE}Waiting for containers to initialize (30 seconds)...${NC}"

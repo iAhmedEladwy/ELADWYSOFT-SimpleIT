@@ -2,7 +2,7 @@
 
 # SimpleIT Deployment Script for Ubuntu 22.04/24.04
 # This script automates the deployment of the SimpleIT Asset Management System
-# Usage: sudo bash deploy-ubuntu-fixed.sh
+# Usage: sudo bash deploy-ubuntu-updated.sh
 
 set -e
 
@@ -20,8 +20,8 @@ LOG_FILE="/tmp/simpleit-install.log"
 # System user to run the application
 SYS_USER="simpleit"
 
-# NodeJS version
-NODE_VERSION="18"
+# NodeJS version - Updated to latest LTS
+NODE_VERSION="22"
 
 # Functions
 log() {
@@ -72,15 +72,30 @@ apt-get update || error "Failed to update package lists"
 # Install essential tools
 apt-get install -y curl wget git build-essential nginx unzip || error "Failed to install essential packages"
 
-# Install Node.js
-if ! command -v node &> /dev/null; then
-  log "Installing Node.js ${NODE_VERSION}..."
+# Install Node.js (Latest LTS version)
+log "Installing Node.js ${NODE_VERSION}.x LTS..."
+if ! command -v node &> /dev/null || [[ $(node -v | sed 's/v//') < "${NODE_VERSION}" ]]; then
   curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - || error "Failed to set up Node.js repository"
   apt-get install -y nodejs || error "Failed to install Node.js"
   log "Node.js $(node -v) installed"
+
+  # Upgrade npm to latest version (11.x)
+  log "Upgrading npm to latest version..."
+  npm install -g npm@latest || warning "Failed to upgrade npm to latest version"
+  log "NPM version: $(npm -v)"
 else
   log "Node.js $(node -v) already installed"
+  
+  # Still upgrade npm to latest
+  log "Upgrading npm to latest version..."
+  npm install -g npm@latest || warning "Failed to upgrade npm to latest version"
+  log "NPM version: $(npm -v)"
 fi
+
+# Install global dependencies
+log "Installing required global npm packages..."
+npm install -g drizzle-kit vite || error "Failed to install global npm packages"
+log "Global npm packages installed: drizzle-kit and vite"
 
 # Install PostgreSQL
 if ! command -v psql &> /dev/null; then
@@ -188,20 +203,61 @@ EOL
 chmod 640 "$INSTALL_DIR/.env" || error "Failed to set environment file permissions"
 chown "$SYS_USER:$SYS_USER" "$INSTALL_DIR/.env" || error "Failed to set environment file ownership"
 
+# Make node and npm available to the simpleit user
+log "Making node and npm available to the $SYS_USER user..."
+NODE_PATH=$(which node)
+NPM_PATH=$(which npm)
+
+# Add symbolic links if needed
+if [ ! -f "/usr/local/bin/node" ]; then
+  ln -sf "$NODE_PATH" /usr/local/bin/node || warning "Failed to create node symlink"
+fi
+
+if [ ! -f "/usr/local/bin/npm" ]; then
+  ln -sf "$NPM_PATH" /usr/local/bin/npm || warning "Failed to create npm symlink"
+fi
+
 # Install npm dependencies and build application
 log "Installing npm dependencies and building application..."
 cd "$INSTALL_DIR" || error "Failed to change to installation directory"
 
-# Install dependencies as the system user
-su - "$SYS_USER" -c "cd $INSTALL_DIR && npm install --omit=dev" || warning "Failed to install npm dependencies"
+# Make sure global npm packages are available to the user
+mkdir -p "/home/$SYS_USER/.npm-global"
+chown -R "$SYS_USER:$SYS_USER" "/home/$SYS_USER/.npm-global"
+
+cat > "/home/$SYS_USER/.npmrc" << EOL
+prefix=/home/$SYS_USER/.npm-global
+EOL
+
+chown "$SYS_USER:$SYS_USER" "/home/$SYS_USER/.npmrc"
+
+# Add to user's PATH
+cat > "/home/$SYS_USER/.bash_profile" << EOL
+export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH
+export NODE_PATH=\$(npm root -g)
+EOL
+
+chown "$SYS_USER:$SYS_USER" "/home/$SYS_USER/.bash_profile"
+
+# Install global packages for the user
+su - "$SYS_USER" -c "npm install -g drizzle-kit vite" || warning "Failed to install global packages for user"
+
+# Copy global modules to local node_modules for reliable access
+if [ ! -d "$INSTALL_DIR/node_modules/.bin" ]; then
+  mkdir -p "$INSTALL_DIR/node_modules/.bin"
+fi
+
+# Install dependencies with all packages (not omitting dev dependencies)
+log "Installing all npm dependencies including dev dependencies..."
+su - "$SYS_USER" -c "cd $INSTALL_DIR && npm install" || warning "Failed to install npm dependencies"
 
 # Build the application
 log "Building the application..."
-su - "$SYS_USER" -c "cd $INSTALL_DIR && npm run build" || warning "Failed to build the application"
+su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH && npm run build" || warning "Failed to build the application"
 
 # Run database migrations
 log "Running database migrations..."
-su - "$SYS_USER" -c "cd $INSTALL_DIR && npm run db:push" || warning "Failed to run database migrations"
+su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH && npm run db:push" || warning "Failed to run database migrations"
 
 # Create systemd service
 log "Creating systemd service..."
@@ -217,6 +273,8 @@ WorkingDirectory=$INSTALL_DIR
 ExecStart=/usr/bin/node $INSTALL_DIR/server/index.js
 Restart=on-failure
 Environment=NODE_ENV=production
+Environment=PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+Environment=NODE_PATH=/home/$SYS_USER/.npm-global/lib/node_modules
 
 [Install]
 WantedBy=multi-user.target
