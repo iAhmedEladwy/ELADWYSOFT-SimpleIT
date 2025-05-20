@@ -252,15 +252,122 @@ export default function AuditLogs() {
             </p>
           </div>
           
-          <Button 
-            onClick={exportToCSV} 
-            variant="outline" 
-            className="mt-4 sm:mt-0"
-            disabled={isLoading || isError || !data?.data?.length}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex space-x-2">
+            {hasAccess(3) && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4 sm:mt-0"
+                    disabled={isLoading || isError || !data?.data?.length}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Logs
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center">
+                      <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
+                      Clear Audit Logs
+                    </DialogTitle>
+                    <DialogDescription>
+                      This action cannot be undone. Please select which logs to clear.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="timeframe">Time Period</Label>
+                      <Select
+                        value={clearOptions.timeframe}
+                        onValueChange={(value) => setClearOptions({...clearOptions, timeframe: value})}
+                      >
+                        <SelectTrigger id="timeframe">
+                          <SelectValue placeholder="Select time period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All logs</SelectItem>
+                          <SelectItem value="week">Older than 1 week</SelectItem>
+                          <SelectItem value="month">Older than 1 month</SelectItem>
+                          <SelectItem value="year">Older than 1 year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="entityType">Entity Type (Optional)</Label>
+                      <Select
+                        value={clearOptions.entityType}
+                        onValueChange={(value) => setClearOptions({...clearOptions, entityType: value})}
+                      >
+                        <SelectTrigger id="entityType">
+                          <SelectValue placeholder="All entity types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All entity types</SelectItem>
+                          <SelectItem value="USER">User</SelectItem>
+                          <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                          <SelectItem value="ASSET">Asset</SelectItem>
+                          <SelectItem value="TICKET">Ticket</SelectItem>
+                          <SelectItem value="REPORT">Report</SelectItem>
+                          <SelectItem value="SYSTEM">System</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="action">Action (Optional)</Label>
+                      <Select
+                        value={clearOptions.action}
+                        onValueChange={(value) => setClearOptions({...clearOptions, action: value})}
+                      >
+                        <SelectTrigger id="action">
+                          <SelectValue placeholder="All actions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All actions</SelectItem>
+                          <SelectItem value="CREATE">Create</SelectItem>
+                          <SelectItem value="UPDATE">Update</SelectItem>
+                          <SelectItem value="DELETE">Delete</SelectItem>
+                          <SelectItem value="LOGIN">Login</SelectItem>
+                          <SelectItem value="LOGOUT">Logout</SelectItem>
+                          <SelectItem value="VIEW">View</SelectItem>
+                          <SelectItem value="EXPORT">Export</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleClearLogs}
+                      disabled={clearLogsMutation.isPending}
+                    >
+                      {clearLogsMutation.isPending ? 'Clearing...' : 'Clear Logs'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+            
+            <Button 
+              onClick={exportToCSV} 
+              variant="outline" 
+              className="mt-4 sm:mt-0"
+              disabled={isLoading || isError || !data?.data?.length}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         <AuditLogFilter 
