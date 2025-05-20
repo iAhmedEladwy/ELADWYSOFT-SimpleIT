@@ -12,6 +12,7 @@ import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
+import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 
