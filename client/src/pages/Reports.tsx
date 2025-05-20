@@ -147,7 +147,7 @@ export default function Reports() {
     value
   })) : [];
 
-  const ticketsByCategoryData = ticketReports ? Object.entries(ticketReports.ticketsByCategory).map(([name, value]) => ({
+  const ticketsByCategoryData = ticketReports ? Object.entries(ticketReports.ticketsByRequestType).map(([name, value]) => ({
     name,
     value
   })) : [];
