@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Helmet } from "react-helmet-async";
 import { 
   FileText, 
   AlertTriangle,
   Download,
-  Search
+  Search,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import AuditLogTable from '@/components/audit/AuditLogTable';
 import AuditLogFilter from '@/components/audit/AuditLogFilter';
 import { useAuth } from '@/lib/authContext';
@@ -36,6 +57,18 @@ export default function AuditLogs() {
   const [filters, setFilters] = useState<any>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [clearOptions, setClearOptions] = useState<{
+    timeframe: string;
+    entityType: string;
+    action: string;
+  }>({
+    timeframe: 'all',
+    entityType: '',
+    action: ''
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Build query parameters
   const queryParams = new URLSearchParams();
@@ -87,6 +120,63 @@ export default function AuditLogs() {
     queryKey: ['/api/audit-logs', page, limit, filters],
     enabled: hasAccess(3), // Only accessible to level 3 users
   });
+  
+  // Clear logs mutation
+  const clearLogsMutation = useMutation({
+    mutationFn: async (options: any) => {
+      return apiRequest({
+        url: '/api/audit-logs',
+        method: 'DELETE',
+        data: options
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Logs cleared',
+        description: data.message || `Successfully cleared ${data.deletedCount} log entries`,
+      });
+      setDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/audit-logs'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to clear logs',
+        variant: 'destructive'
+      });
+    }
+  });
+  
+  // Handle clear logs
+  const handleClearLogs = () => {
+    const options: any = {};
+    
+    // Set olderThan date based on timeframe selection
+    if (clearOptions.timeframe !== 'all') {
+      const now = new Date();
+      if (clearOptions.timeframe === 'week') {
+        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        options.olderThan = weekAgo.toISOString();
+      } else if (clearOptions.timeframe === 'month') {
+        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        options.olderThan = monthAgo.toISOString();
+      } else if (clearOptions.timeframe === 'year') {
+        const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+        options.olderThan = yearAgo.toISOString();
+      }
+    }
+    
+    // Add entity type and action filters if selected
+    if (clearOptions.entityType) {
+      options.entityType = clearOptions.entityType;
+    }
+    
+    if (clearOptions.action) {
+      options.action = clearOptions.action;
+    }
+    
+    clearLogsMutation.mutate(options);
+  };
 
   // Fetch users for filtering
   const { data: users = [] } = useQuery<Array<{ id: number; username: string }>>({
