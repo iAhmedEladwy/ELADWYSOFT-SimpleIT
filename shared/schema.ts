@@ -24,7 +24,7 @@ export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned
 export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Hardware', 'Software', 'Both']);
-export const ticketCategoryEnum = pgEnum('ticket_category', ['Hardware', 'Software', 'Network', 'Other']);
+export const ticketRequestTypeEnum = pgEnum('ticket_request_type', ['Hardware', 'Software', 'Network', 'Other']);
 export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
 
