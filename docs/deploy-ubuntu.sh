@@ -274,17 +274,33 @@ if [ ! -d "$INSTALL_DIR/node_modules/.bin" ]; then
   mkdir -p "$INSTALL_DIR/node_modules/.bin"
 fi
 
-# Install dependencies with all packages (not omitting dev dependencies)
+# Fix permissions for node_modules directory
+log "Setting correct permissions for npm installation..."
+mkdir -p "$INSTALL_DIR/node_modules"
+chown -R "$SYS_USER:$SYS_USER" "$INSTALL_DIR/node_modules"
+chmod -R 755 "$INSTALL_DIR/node_modules"
+
+# Install all dependencies with proper permissions
 log "Installing all npm dependencies including dev dependencies..."
-su - "$SYS_USER" -c "cd $INSTALL_DIR && npm install" || warning "Failed to install npm dependencies"
+cd "$INSTALL_DIR"
+sudo -u "$SYS_USER" npm install --no-fund || warning "Failed to install npm dependencies"
 
-# Build the application
+# Install specific required packages that might be missing
+log "Installing specific required packages..."
+cd "$INSTALL_DIR"
+sudo -u "$SYS_USER" npm install --save-dev vite drizzle-orm drizzle-kit esbuild @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal || warning "Failed to install specific packages"
+
+# Build the application with proper path settings
 log "Building the application..."
-su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH && npm run build" || warning "Failed to build the application"
+cd "$INSTALL_DIR"
+export NODE_PATH=$(npm root -g)
+sudo -u "$SYS_USER" bash -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:\$PATH && export NODE_PATH=$NODE_PATH && npm run build" || warning "Failed to build the application"
 
-# Run database migrations
+# Run database migrations with specific package path
 log "Running database migrations..."
-su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH && npm run db:push" || warning "Failed to run database migrations"
+cd "$INSTALL_DIR"
+export NODE_PATH=$(npm root -g)
+sudo -u "$SYS_USER" bash -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:\$PATH && export NODE_PATH=$NODE_PATH && npx drizzle-kit push" || warning "Failed to run database migrations"
 
 # Verify critical files exist before creating service
 log "Verifying critical application files..."

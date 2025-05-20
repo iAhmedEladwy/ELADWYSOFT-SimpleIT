@@ -1,0 +1,124 @@
+root@dev-VMware-Virtual-Platform:/home/dev/Downloads/ELADWYSOFT-SimpleIT# ./deploy-ubuntu.sh 
+==============================================
+    SimpleIT Asset Management System         
+         Deployment Script                   
+==============================================
+
+[2025-05-20 10:39:08] Starting installation
+[2025-05-20 10:39:08] Installing dependencies...
+Hit:1 http://eg.archive.ubuntu.com/ubuntu noble InRelease
+Hit:2 http://eg.archive.ubuntu.com/ubuntu noble-updates InRelease   
+Hit:3 https://deb.nodesource.com/node_22.x nodistro InRelease       
+Hit:4 http://eg.archive.ubuntu.com/ubuntu noble-backports InRelease 
+Hit:5 http://security.ubuntu.com/ubuntu noble-security InRelease
+Reading package lists... Done
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+curl is already the newest version (8.5.0-2ubuntu10.6).
+wget is already the newest version (1.21.4-1ubuntu4.1).
+git is already the newest version (1:2.43.0-1ubuntu7.2).
+build-essential is already the newest version (12.10ubuntu1).
+nginx is already the newest version (1.24.0-2ubuntu7.3).
+unzip is already the newest version (6.0-28ubuntu4.1).
+0 upgraded, 0 newly installed, 0 to remove and 6 not upgraded.
+[2025-05-20 10:39:11] Installing Node.js 22.x LTS...
+[2025-05-20 10:39:11] Node.js v22.15.1 already installed
+[2025-05-20 10:39:11] Upgrading npm to latest version...
+
+changed 15 packages in 3s
+
+25 packages are looking for funding
+  run `npm fund` for details
+[2025-05-20 10:39:14] NPM version: 11.4.0
+[2025-05-20 10:39:14] Installing required global npm packages...
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 89 packages, and changed 29 packages in 11s
+
+7 packages are looking for funding
+  run `npm fund` for details
+[2025-05-20 10:39:26] Global npm packages installed: drizzle-kit and vite
+[2025-05-20 10:39:26] PostgreSQL already installed
+[2025-05-20 10:39:26] System user simpleit already exists
+[2025-05-20 10:39:26] Installation directory already exists
+[2025-05-20 10:39:26] Application files already exist in /opt/simpleit
+Do you want to reinstall the application? This will overwrite any existing files. (y/n) y
+[2025-05-20 10:39:31] Removing existing application files...
+[2025-05-20 10:39:31] Installing application files...
+[2025-05-20 10:39:31] Copying application files to /opt/simpleit...
+[2025-05-20 10:39:31] Configuring PostgreSQL...
+GRANT
+[2025-05-20 10:39:31] PostgreSQL database 'simpleit' configured
+Warning: The unit file, source configuration file or drop-ins of postgresql.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+[2025-05-20 10:39:34] Creating environment file...
+[2025-05-20 10:39:34] Creating troubleshooting script...
+[2025-05-20 10:39:34] Making node and npm available to the simpleit user...
+[2025-05-20 10:39:34] Installing npm dependencies and building application...
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 89 packages, and changed 29 packages in 8s
+
+7 packages are looking for funding
+  run `npm fund` for details
+[2025-05-20 10:39:42] Installing all npm dependencies including dev dependencies...
+npm error code EACCES
+npm error syscall mkdir
+npm error path /opt/simpleit/node_modules/@alloc
+npm error errno -13
+npm error Error: EACCES: permission denied, mkdir '/opt/simpleit/node_modules/@alloc'
+npm error     at async mkdir (node:internal/fs/promises:852:10)
+npm error     at async /usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:638:20
+npm error     at async Promise.allSettled (index 0)
+npm error     at async [reifyPackages] (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:336:11)
+npm error     at async Arborist.reify (/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:141:5)
+npm error     at async Install.exec (/usr/lib/node_modules/npm/lib/commands/install.js:149:5)
+npm error     at async Npm.exec (/usr/lib/node_modules/npm/lib/npm.js:208:9)
+npm error     at async module.exports (/usr/lib/node_modules/npm/lib/cli/entry.js:67:5) {
+npm error   errno: -13,
+npm error   code: 'EACCES',
+npm error   syscall: 'mkdir',
+npm error   path: '/opt/simpleit/node_modules/@alloc'
+npm error }
+npm error
+npm error The operation was rejected by your operating system.
+npm error It is likely you do not have the permissions to access this file as the current user
+npm error
+npm error If you believe this might be a permissions issue, please double-check the
+npm error permissions of the file and its containing directories, or try running
+npm error the command again as root/Administrator.
+npm error A complete log of this run can be found in: /home/simpleit/.npm/_logs/2025-05-20T07_39_43_159Z-debug-0.log
+[2025-05-20 10:39:43] WARNING: Failed to install npm dependencies
+[2025-05-20 10:39:43] Building the application...
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+failed to load config from /opt/simpleit/vite.config.ts
+error during build:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /opt/simpleit/vite.config.ts.timestamp-1747726784199-fcd6d3e1dc7fe.mjs
+Did you mean to import "vite/dist/node/index.js"?
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:268:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:137:49)
+[2025-05-20 10:39:44] WARNING: Failed to build the application
+[2025-05-20 10:39:44] Running database migrations...
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/opt/simpleit/drizzle.config.ts'
+Error please install required packages: 'drizzle-orm'
+[2025-05-20 10:39:44] WARNING: Failed to run database migrations
+[2025-05-20 10:39:44] Verifying critical application files...
+[2025-05-20 10:39:44] WARNING: Directory 'dist' not found. Application may not have built correctly.
+[2025-05-20 10:39:44] ERROR: Critical file index.js not found in either dist/ or server/. Build may have failed
