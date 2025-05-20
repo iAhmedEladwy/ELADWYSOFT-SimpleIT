@@ -89,6 +89,52 @@ chmod -R 755 node_modules
 # Install all dependencies with proper permissions
 su - simpleit -c "cd $INSTALL_DIR && npm install"
 
+# Fix WebSocket URL in source files to prevent HTTPS connection attempts
+echo "Patching WebSocket configuration to use HTTP instead of HTTPS..."
+
+# Patch the WebSocket configuration in db.ts
+cat > "$INSTALL_DIR/server/db.ts" << EOL
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from "ws";
+import * as schema from "@shared/schema";
+
+// Configure Neon database settings to avoid HTTPS connection attempts
+neonConfig.webSocketConstructor = ws;
+neonConfig.useSecureWebSocket = false;
+neonConfig.forceDisablePgSSL = true;
+
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
+
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle({ client: pool, schema });
+EOL
+
+chown simpleit:simpleit "$INSTALL_DIR/server/db.ts"
+
+# Patch replitAuth.ts to use HTTP instead of HTTPS for callback URLs
+if [ -f "$INSTALL_DIR/server/replitAuth.ts" ]; then
+  echo "Patching authentication to use HTTP instead of HTTPS..."
+  
+  # First, backup the original file
+  cp "$INSTALL_DIR/server/replitAuth.ts" "$INSTALL_DIR/server/replitAuth.ts.bak"
+  
+  # Replace HTTPS callback URLs with HTTP
+  sed -i 's/callbackURL: `https:\/\/${domain}\/api\/callback`/callbackURL: `http:\/\/${domain}\/api\/callback`/g' "$INSTALL_DIR/server/replitAuth.ts"
+  
+  # Replace secure cookie setting to use USE_HTTPS environment variable
+  sed -i 's/secure: process.env.NODE_ENV === "production"/secure: process.env.USE_HTTPS === "true"/g' "$INSTALL_DIR/server/replitAuth.ts"
+  
+  # Fix logout redirect URL to use HTTP
+  sed -i 's/post_logout_redirect_uri: `${req.protocol}:\/\/${req.hostname}`/post_logout_redirect_uri: `http:\/\/${req.hostname}`/g' "$INSTALL_DIR/server/replitAuth.ts"
+  
+  chown simpleit:simpleit "$INSTALL_DIR/server/replitAuth.ts"
+fi
+
 # Build the application
 echo "Building the application..."
 su - simpleit -c "cd $INSTALL_DIR && npm run build"
