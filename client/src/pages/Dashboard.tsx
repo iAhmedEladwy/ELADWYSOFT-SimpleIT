@@ -106,11 +106,12 @@ export default function Dashboard() {
                 />
                 <StatsCard
                   title={translations.assetValue}
-                  value={formatCurrency(dashboardData?.counts?.totalAssetValue || 0)}
+                  value={dashboardData?.counts?.totalAssetValue || 0}
                   icon={<DollarSign className="h-6 w-6" />}
                   change="+14%"
                   changeLabel={translations.fromLastQuarter}
                   iconColor="warning"
+                  isCurrency={true}
                 />
               </>
             )}
