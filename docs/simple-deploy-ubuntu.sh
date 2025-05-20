@@ -110,9 +110,19 @@ User=simpleit
 WorkingDirectory=$INSTALL_DIR
 ExecStart=/usr/bin/node $INSTALL_DIR/dist/index.js
 Restart=on-failure
+
+# Set environment variables directly in the service
 Environment=NODE_ENV=production
 Environment=PORT=5000
 Environment=USE_HTTPS=false
+Environment=DATABASE_URL=postgres://simpleit:simpleit@localhost:5432/simpleit
+Environment=SESSION_SECRET=$(openssl rand -hex 32)
+Environment=REPLIT_DOMAINS=localhost
+Environment=ISSUER_URL=http://localhost:5000
+Environment=REPL_ID=simpleit-production
+
+# Also load environment variables from file
+EnvironmentFile=$INSTALL_DIR/.env
 
 [Install]
 WantedBy=multi-user.target
