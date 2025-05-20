@@ -185,7 +185,7 @@ log "Creating environment file..."
 cat > "$INSTALL_DIR/.env" << EOL
 # Application Environment
 NODE_ENV=production
-PORT=3000
+PORT=5000
 
 # Database Configuration
 DATABASE_URL=postgres://simpleit:simpleit@localhost:5432/simpleit
@@ -195,8 +195,9 @@ SESSION_SECRET=$(openssl rand -hex 32)
 
 # Application Settings
 REPLIT_DOMAINS=$(hostname -f),localhost
-ISSUER_URL=http://localhost:3000
+ISSUER_URL=http://localhost:5000
 REPL_ID=simpleit-production
+USE_HTTPS=false
 
 # Debug Settings - uncomment if needed
 # DEBUG=simpleit:*
@@ -364,7 +365,7 @@ server {
     server_name _;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
