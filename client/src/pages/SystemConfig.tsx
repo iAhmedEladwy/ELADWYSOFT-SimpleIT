@@ -954,17 +954,22 @@ export default function SystemConfig() {
                         <SelectValue placeholder={translations.currency} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="EGP">EGP - Egyptian Pound</SelectItem>
-                        <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
-                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                        <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
-                        <SelectItem value="AED">AED - UAE Dirham</SelectItem>
-                        <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-                        <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                        <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                        <SelectItem value="USD">$ USD - US Dollar</SelectItem>
+                        <SelectItem value="EUR">€ EUR - Euro</SelectItem>
+                        <SelectItem value="GBP">£ GBP - British Pound</SelectItem>
+                        <SelectItem value="EGP">ج.م EGP - Egyptian Pound</SelectItem>
+                        <SelectItem value="CNY">¥ CNY - Chinese Yuan</SelectItem>
+                        <SelectItem value="JPY">¥ JPY - Japanese Yen</SelectItem>
+                        <SelectItem value="SAR">ر.س SAR - Saudi Riyal</SelectItem>
+                        <SelectItem value="AED">د.إ AED - UAE Dirham</SelectItem>
+                        <SelectItem value="INR">₹ INR - Indian Rupee</SelectItem>
+                        <SelectItem value="CAD">$ CAD - Canadian Dollar</SelectItem>
+                        <SelectItem value="AUD">$ AUD - Australian Dollar</SelectItem>
+                        <SelectItem value="KWD">د.ك KWD - Kuwaiti Dinar</SelectItem>
+                        <SelectItem value="QAR">ر.ق QAR - Qatari Riyal</SelectItem>
+                        <SelectItem value="JOD">د.ا JOD - Jordanian Dinar</SelectItem>
+                        <SelectItem value="BHD">د.ب BHD - Bahraini Dinar</SelectItem>
+                        <SelectItem value="OMR">ر.ع OMR - Omani Rial</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>

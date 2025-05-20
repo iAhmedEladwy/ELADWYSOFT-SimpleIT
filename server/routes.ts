@@ -2492,7 +2492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         ticketsByStatus,
         ticketsByPriority,
-        ticketsByCategory,
+        ticketsByRequestType,
         recentTicketsCount: recentTickets.length,
         averageResolutionTime: averageResolutionTime.toFixed(2) + " hours"
       });
