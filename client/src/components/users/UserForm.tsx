@@ -147,7 +147,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
                 <SelectContent>
                   <SelectItem value="3">{translations.admin}</SelectItem>
                   <SelectItem value="2">{translations.manager}</SelectItem>
-                  <SelectItem value="1">{translations.viewer}</SelectItem>
+                  <SelectItem value="1">{translations.user}</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>{translations.accessLevelDesc}</FormDescription>
