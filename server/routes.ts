@@ -346,9 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questions: questionsList,
         hasSecurityQuestions: questionsList.length > 0
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching security questions:", error);
-      res.status(500).json({ message: error.message || "Server error" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Server error" });
     }
   });
   
