@@ -67,7 +67,7 @@ export default function TicketsTable({
   const translations = {
     ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
     dateCreated: language === 'English' ? 'Date Created' : 'تاريخ الإنشاء',
-    category: language === 'English' ? 'Category' : 'التصنيف',
+    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
     priority: language === 'English' ? 'Priority' : 'الأولوية',
     status: language === 'English' ? 'Status' : 'الحالة',
     submittedBy: language === 'English' ? 'Submitted By' : 'مقدم من',
