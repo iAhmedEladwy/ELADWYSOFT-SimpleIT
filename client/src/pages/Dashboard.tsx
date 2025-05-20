@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useCurrency } from '@/lib/currencyContext';
 import StatsCard from '@/components/dashboard/StatsCard';
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
@@ -24,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard() {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Get translations based on language
@@ -104,7 +106,7 @@ export default function Dashboard() {
                 />
                 <StatsCard
                   title={translations.assetValue}
-                  value={`$${(dashboardData?.counts?.totalAssetValue || 0).toLocaleString()}`}
+                  value={formatCurrency(dashboardData?.counts?.totalAssetValue || 0)}
                   icon={<DollarSign className="h-6 w-6" />}
                   change="+14%"
                   changeLabel={translations.fromLastQuarter}

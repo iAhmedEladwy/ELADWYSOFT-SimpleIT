@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
+import { useCurrency } from '@/lib/currencyContext';
 import { useQuery } from '@tanstack/react-query';
 import {
   Form,
@@ -54,6 +55,7 @@ interface AssetFormProps {
 
 export default function AssetForm({ onSubmit, initialData, isSubmitting }: AssetFormProps) {
   const { language } = useLanguage();
+  const { formatCurrency, symbol } = useCurrency();
   const isEditMode = !!initialData;
 
   // Fetch employees list for assignment dropdown
