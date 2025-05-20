@@ -24,6 +24,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SystemConfig() {
   const { language, toggleLanguage } = useLanguage();
