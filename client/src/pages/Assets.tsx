@@ -8,7 +8,7 @@ import AssetsTable from '@/components/assets/AssetsTable';
 import AssetForm from '@/components/assets/AssetForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Upload, DollarSign } from 'lucide-react';
+import { Plus, RefreshCw, Download, Upload, DollarSign, FileUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
