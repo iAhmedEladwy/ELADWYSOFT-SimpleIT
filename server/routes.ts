@@ -1330,6 +1330,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
       
+      const user = req.user as schema.User;
+      const userAccessLevel = parseInt(user.accessLevel);
+      
+      // If user has level 1 access (User), check if they can see this asset
+      if (userAccessLevel === 1 && 
+          asset.status !== 'Available' && 
+          asset.status !== 'In Use') {
+        return res.status(403).json({ 
+          message: "You don't have permission to view this asset's transactions" 
+        });
+      }
+      
       const transactions = await storage.getAssetTransactions(assetId);
       res.json(transactions);
     } catch (error: any) {
@@ -1693,8 +1705,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ticket CRUD routes
   app.get("/api/tickets", authenticateUser, async (req, res) => {
     try {
-      const tickets = await storage.getAllTickets();
-      res.json(tickets);
+      const user = req.user as schema.User;
+      const userAccessLevel = parseInt(user.accessLevel);
+      
+      // If user has level 1 access (User), only show tickets they're assigned to
+      // or ones they've submitted through an employee profile
+      if (userAccessLevel === 1) {
+        const allTickets = await storage.getAllTickets();
+        // Get the employee record for this user if exists
+        const userEmployee = await storage.getEmployeeByUserId(user.id);
+        
+        const filteredTickets = allTickets.filter(ticket => {
+          // Show tickets assigned to this user
+          if (ticket.assignedToId === user.id) return true;
+          
+          // Show tickets submitted by this user through employee profile
+          if (userEmployee && ticket.submittedById === userEmployee.id) return true;
+          
+          // Otherwise don't show the ticket
+          return false;
+        });
+        
+        res.json(filteredTickets);
+      } else {
+        // Admin/Manager can see all tickets
+        const tickets = await storage.getAllTickets();
+        res.json(tickets);
+      }
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -1707,6 +1744,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!ticket) {
         return res.status(404).json({ message: "Ticket not found" });
       }
+      
+      const user = req.user as schema.User;
+      const userAccessLevel = parseInt(user.accessLevel);
+      
+      // If user has level 1 access (User), verify they have permission to view this ticket
+      if (userAccessLevel === 1) {
+        // Check if user is assigned to this ticket
+        if (ticket.assignedToId === user.id) {
+          return res.json(ticket);
+        }
+        
+        // Check if user submitted this ticket through employee profile
+        const userEmployee = await storage.getEmployeeByUserId(user.id);
+        if (userEmployee && ticket.submittedById === userEmployee.id) {
+          return res.json(ticket);
+        }
+        
+        // User doesn't have permission to view this ticket
+        return res.status(403).json({ 
+          message: "You don't have permission to view this ticket" 
+        });
+      }
+      
+      // Admin/Manager can view any ticket
       res.json(ticket);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

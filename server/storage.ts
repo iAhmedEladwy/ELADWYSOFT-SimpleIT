@@ -545,6 +545,19 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  
+  async getEmployeeByUserId(userId: number): Promise<Employee | undefined> {
+    try {
+      const [employee] = await db
+        .select()
+        .from(employees)
+        .where(eq(employees.userId, userId));
+      return employee;
+    } catch (error) {
+      console.error('Error fetching employee by user ID:', error);
+      return undefined;
+    }
+  }
 
   // Asset operations
   async getAsset(id: number): Promise<Asset | undefined> {
