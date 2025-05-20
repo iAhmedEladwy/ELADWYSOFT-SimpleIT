@@ -2461,10 +2461,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketsByPriority[ticket.priority] = (ticketsByPriority[ticket.priority] || 0) + 1;
       });
       
-      // Tickets by Category
-      const ticketsByCategory: Record<string, number> = {};
+      // Tickets by Request Type
+      const ticketsByRequestType: Record<string, number> = {};
       tickets.forEach(ticket => {
-        ticketsByCategory[ticket.category] = (ticketsByCategory[ticket.category] || 0) + 1;
+        ticketsByRequestType[ticket.requestType] = (ticketsByRequestType[ticket.requestType] || 0) + 1;
       });
       
       // Recent Tickets (last 30 days)
