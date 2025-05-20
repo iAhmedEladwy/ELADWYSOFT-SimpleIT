@@ -978,6 +978,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Asset Template and Export Routes
+  app.get("/api/assets/template", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      // Create template CSV with all the fields
+      const templateData = [
+        {
+          'Type': 'Laptop',
+          'Brand': 'Example Brand',
+          'Model Number': 'M123456',
+          'Model Name': 'Example Model',
+          'Serial Number': 'SN123456789',
+          'Specs': '16GB RAM, 512GB SSD, i7 Processor',
+          'Status': 'Available',
+          'Purchase Date': '2023-01-15',
+          'Purchase Price': '1200.00',
+          'Warranty Expiry Date': '2025-01-15',
+          'Out Of Box OS': 'Windows 11',
+          'Life Span (months)': '36'
+        }
+      ];
+      
+      // Convert to CSV using csv-stringify
+      csvStringify(templateData, { header: true }, (err, output) => {
+        if (err) {
+          throw new Error('Error generating CSV template');
+        }
+        
+        // Set headers for file download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=asset-template.csv');
+        
+        // Send CSV data
+        res.send(output);
+      });
+      
+    } catch (error: any) {
+      console.error('Error generating asset template:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const assets = await storage.getAllAssets();
+      
+      // Get employees for mapping assignedEmployeeId to employee names
+      const employees = await storage.getAllEmployees();
+      const employeeMap = new Map();
+      employees.forEach(emp => {
+        employeeMap.set(emp.id, emp.englishName);
+      });
+      
+      // Transform asset data for CSV export
+      const csvData = assets.map(asset => {
+        const assignedTo = asset.assignedEmployeeId ? 
+          employeeMap.get(asset.assignedEmployeeId) || '' : '';
+          
+        return {
+          'Asset ID': asset.assetId,
+          'Type': asset.type,
+          'Brand': asset.brand,
+          'Model Number': asset.modelNumber || '',
+          'Model Name': asset.modelName || '',
+          'Serial Number': asset.serialNumber,
+          'Status': asset.status,
+          'Specs': asset.specs || '',
+          'Purchase Date': asset.purchaseDate ? 
+            new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
+          'Purchase Price': asset.buyPrice || '',
+          'Warranty Expiry Date': asset.warrantyExpiryDate ? 
+            new Date(asset.warrantyExpiryDate).toISOString().split('T')[0] : '',
+          'Life Span (months)': asset.lifeSpan || '',
+          'Factory OS': asset.outOfBoxOs || '',
+          'Assigned To': assignedTo,
+          'Last Updated': asset.updatedAt ? 
+            new Date(asset.updatedAt).toISOString().split('T')[0] : ''
+        };
+      });
+      
+      // Convert to CSV using csv-stringify
+      csvStringify(csvData, { header: true }, (err, output) => {
+        if (err) {
+          throw new Error('Error generating CSV export');
+        }
+        
+        // Set headers for file download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=assets-export.csv');
+        
+        // Send CSV data
+        res.send(output);
+        
+        // Log activity
+        if (req.user) {
+          logActivity({
+            userId: (req.user as schema.User).id,
+            action: AuditAction.EXPORT,
+            entityType: EntityType.ASSET,
+            details: { count: assets.length }
+          });
+        }
+      });
+    } catch (error: any) {
+      console.error('Error exporting assets to CSV:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Asset CRUD routes
   app.get("/api/assets", authenticateUser, async (req, res) => {
     try {
@@ -1555,7 +1663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asset Import/Export
+  // Improved Asset Import handler
   app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {

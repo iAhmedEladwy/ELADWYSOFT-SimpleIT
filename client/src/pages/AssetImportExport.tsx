@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Download, Upload, AlertCircle, CheckCircle2, FileDown, FileUp } from 'lucide-react';
-import { useCurrencyContext } from '@/lib/currencyContext';
+import { useCurrency } from '@/lib/currencyContext';
 import { queryClient } from '@/lib/queryClient';
 
 const AssetImportExport = () => {
@@ -18,7 +18,12 @@ const AssetImportExport = () => {
   const [importProgress, setImportProgress] = useState(0);
   const [importResults, setImportResults] = useState<any | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
-  const { language } = useCurrencyContext();
+  // Get language from system config
+  const { data: systemConfig } = useQuery({
+    queryKey: ['/api/system-config'],
+  });
+  
+  const language = systemConfig?.language || 'English';
 
   // Translations based on language
   const translations = {

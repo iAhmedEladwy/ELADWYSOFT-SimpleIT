@@ -13,6 +13,7 @@ import Users from "@/pages/Users";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
+import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
@@ -128,6 +129,11 @@ function Router() {
         <Route path="/asset-history">
           <Layout>
             <PrivateRoute component={AssetHistory} />
+          </Layout>
+        </Route>
+        <Route path="/asset-import-export">
+          <Layout>
+            <PrivateRoute component={AssetImportExport} />
           </Layout>
         </Route>
         <Route path="/tickets">
