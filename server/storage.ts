@@ -11,7 +11,8 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders
+  customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders,
+  notifications, type Notification, type InsertNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
