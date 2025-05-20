@@ -1,11 +1,13 @@
-FROM node:22-alpine
+FROM node:18-alpine
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Install dependencies first (for better caching)
+# Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install dependencies
+RUN npm ci --omit=dev
 
 # Copy application code
 COPY . .
@@ -13,8 +15,12 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose the port
+# Set environment variables
+ENV NODE_ENV=production \
+    PORT=3000
+
+# Expose the application port
 EXPOSE 3000
 
-# Run the app
-CMD ["node", "dist/server/index.js"]
+# Start the application
+CMD ["node", "server/index.js"]

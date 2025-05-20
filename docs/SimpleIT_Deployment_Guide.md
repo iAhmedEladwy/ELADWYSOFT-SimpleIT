@@ -1,739 +1,483 @@
-# SimpleIT Deployment Guide
+# SimpleIT Asset Management System - Deployment Guide
 
-This document outlines the steps to deploy the SimpleIT Asset Management System using Docker (recommended for simplicity) or on Ubuntu and Windows servers.
+This comprehensive guide provides detailed instructions for deploying the SimpleIT Asset Management System in various environments with multiple deployment options.
 
-## Quick Start (Docker)
+## Table of Contents
 
-### Option 1: One-Click Deployment Script (Easiest)
-
-We provide simple one-click deployment scripts for both Linux/macOS and Windows environments:
-
-#### For Linux/macOS
-
-```bash
-# Clone repository
-git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
-
-# Make the deployment script executable
-chmod +x docs/deploy-script.sh
-
-# Run the deployment script
-./docs/deploy-script.sh
-```
-
-#### For Windows with Docker Desktop
-
-```bash
-# Clone repository
-git clone https://github.com/eladwysoft/simpleit.git
-cd simpleit
-
-# Run the Windows deployment script
-docs\deploy-windows-docker.bat
-```
-
-These scripts will:
-1. Create all necessary Docker configuration files
-2. Start the Docker containers
-3. Initialize the database
-4. Provide instructions for accessing the application
-
-### Option 2: Manual Docker Setup
-
-If you prefer to set up manually:
-
-```bash
-# Clone repository
-git clone https://github.com/eladwysoft/simpleit.git && cd simpleit
-
-# Create docker-compose.yml and Dockerfile (see Docker Deployment section below)
-
-# Deploy with Docker
-docker-compose up -d
-
-# Initialize database (first time only)
-docker-compose exec app npm run db:push
-
-# Access the application at http://your-server-ip
-# Default login: admin / admin123
-```
+- [Prerequisites](#prerequisites)
+- [Deployment Options](#deployment-options)
+  - [Docker Deployment (Recommended)](#docker-deployment-recommended)
+  - [Ubuntu/Debian Deployment](#ubuntudebian-deployment)
+  - [Windows Deployment](#windows-deployment)
+- [Post-Deployment Steps](#post-deployment-steps)
+- [Troubleshooting](#troubleshooting)
+- [Backup and Restore](#backup-and-restore)
+- [Updating the Application](#updating-the-application)
 
 ## Prerequisites
 
-### For Docker Deployment (Recommended)
+### Hardware Requirements
 
-#### Required Software
-- **Git**: For cloning the repository
-  - [Download Git](https://git-scm.com/downloads)
-- **Docker**: 20.10.x or higher
-  - [Download Docker](https://www.docker.com/get-started/)
-- **Docker Compose**: 2.x or higher (included with Docker Desktop on Windows/macOS)
-  - [Docker Compose Installation](https://docs.docker.com/compose/install/)
-- **curl**: Recommended for API testing (optional)
+* **CPU**: 2+ cores recommended
+* **RAM**: Minimum 2GB, 4GB+ recommended
+* **Storage**: At least 2GB of free disk space
+* **Network**: Internet connection required for initial setup
 
-> **Note**: Our deployment scripts will automatically check for these dependencies and provide installation instructions if any are missing.
+### Software Requirements
 
-#### Hardware Requirements
-- At least 2GB of RAM
-- At least 1GB of free disk space
-- Internet connection for downloading Docker images
+For all deployment methods:
+* **Git**: Required to clone the repository
+  * [Download Git](https://git-scm.com/downloads)
 
-### For Traditional Deployment
-- **Git**: For cloning the repository
-  - [Download Git](https://git-scm.com/downloads)
-- **Node.js**: 18.x or higher
-  - [Download Node.js](https://nodejs.org/en/download/)
-- **npm**: 8.x or higher (included with Node.js)
-- **PostgreSQL**: 14.x or higher
-  - [Download PostgreSQL](https://www.postgresql.org/download/)
-- **Hardware**: At least 2GB of RAM and 1GB of free disk space
+For Docker Deployment:
+* **Docker**: Version 20.10.x or higher
+  * [Download Docker](https://www.docker.com/get-started/)
+* **Docker Compose**: Version 2.x or higher (included with Docker Desktop on Windows/macOS)
+  * [Docker Compose Installation](https://docs.docker.com/compose/install/)
 
-## Docker Deployment (Recommended)
+For Ubuntu/Debian Deployment:
+* **Ubuntu 22.04/24.04 LTS** or **Debian 11/12**
+* **Node.js**: Version 18 LTS (installed by the deployment script)
+* **PostgreSQL**: Version 14 or higher (installed by the deployment script)
 
-Docker deployment is the recommended method for deploying SimpleIT as it greatly simplifies the process and ensures a consistent environment across different platforms.
+For Windows Deployment:
+* **Windows 10/11** or **Windows Server 2019/2022**
+* **PowerShell**: Version 5.1 or higher
+* **Chocolatey**: Package manager (installed by the deployment script)
+* **Node.js**: Version 18 LTS (installed by the deployment script)
+* **PostgreSQL**: Version 14 or higher (installed by the deployment script)
 
-### 1. Clone the Repository
+## Deployment Options
+
+### Docker Deployment (Recommended)
+
+Docker deployment is the recommended method as it:
+- Requires minimal setup and configuration
+- Ensures consistent environment across platforms
+- Simplifies future updates and maintenance
+
+#### Step 1: Clone the Repository
 
 ```bash
-# Clone the repository
 git clone https://github.com/eladwysoft/simpleit.git
 cd simpleit
 ```
 
-### 2. Create Docker Configuration Files
-
-Create a `docker-compose.yml` file in the project root directory:
-
-```yaml
-version: '3.8'
-
-services:
-  # PostgreSQL database
-  postgres:
-    image: postgres:14
-    container_name: simpleit-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: simpleituser
-      POSTGRES_PASSWORD: your_secure_password
-      POSTGRES_DB: simpleit
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U simpleituser -d simpleit"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # SimpleIT application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: simpleit-app
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://simpleituser:your_secure_password@postgres:5432/simpleit
-      SESSION_SECRET: your_long_random_session_secret
-    ports:
-      - "80:3000"
-    volumes:
-      - ./uploads:/app/uploads
-
-volumes:
-  postgres_data:
-```
-
-Create a `Dockerfile` in the project root directory:
-
-```Dockerfile
-# Use Node.js LTS
-FROM node:18-alpine
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci
-
-# Copy application code
-COPY . .
-
-# Build the application
-RUN npm run build
-
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Expose the application port
-EXPOSE 3000
-
-# Start the application
-CMD ["npm", "start"]
-```
-
-### 3. Deploy the Application
+#### Step 2: Create Docker Configuration Files
 
 ```bash
-# Build and start the containers
-docker-compose up -d
-
-# Initialize the database (first time only)
-docker-compose exec app npm run db:push
-
-# View logs
-docker-compose logs -f
+# Copy improved Docker files
+cp docs/Dockerfile.fixed ./Dockerfile
+cp docs/docker-compose.yml.fixed ./docker-compose.yml
+mkdir -p nginx
+cp docs/nginx/default.conf.fixed ./nginx/default.conf
 ```
 
-### 4. Access the Application
-
-Once the containers are running, you can access the SimpleIT application by navigating to:
-
-```
-http://your-server-ip
-```
-
-The default admin credentials are:
-- Username: admin
-- Password: admin123
-
-### 5. Update the Application
-
-To update the application when new code is available:
+#### Step 3: Set Environment Variables
 
 ```bash
-# Pull the latest code
-git pull
+# Generate secure passwords
+export DB_PASSWORD=$(openssl rand -base64 16)
+export SESSION_SECRET=$(openssl rand -base64 32)
 
-# Rebuild and restart the containers
-docker-compose down
-docker-compose up --build -d
+# Save for later reference (optional)
+echo "DB_PASSWORD: $DB_PASSWORD" > credentials.txt
+echo "SESSION_SECRET: $SESSION_SECRET" >> credentials.txt
+chmod 600 credentials.txt
 ```
 
-### 6. Backup and Restore
-
-To backup the database:
+#### Step 4: Start Docker Containers
 
 ```bash
-# Create a backup
-docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
-```
-
-To restore from a backup:
-
-```bash
-# Stop the containers
-docker-compose down
-
-# Start only the database
-docker-compose up -d postgres
-
-# Wait for the database to be ready
-sleep 10
-
-# Restore from backup
-cat your_backup_file.sql | docker exec -i simpleit-postgres psql -U simpleituser -d simpleit
-
-# Start the application
+# Start the containers in detached mode
 docker-compose up -d
 ```
 
-## Deployment on Ubuntu
+#### Step 5: Verify Deployment
 
-### 1. Update System Packages
+Wait for the containers to initialize (this may take a few minutes), then check if they're running:
 
 ```bash
-sudo apt update
-sudo apt upgrade -y
+docker-compose ps
 ```
 
-### 2. Install Node.js and npm
+Access the application in your browser at:
+- http://localhost (or your server IP address)
+
+Default login credentials:
+- Username: `admin`
+- Password: `admin123`
+
+### Ubuntu/Debian Deployment
+
+For direct installation on Ubuntu or Debian systems:
+
+#### Step 1: Clone the Repository
 
 ```bash
-# Install Node.js 18.x
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Verify installation
-node -v  # Should show v18.x.x
-npm -v   # Should show 8.x.x or higher
-```
-
-### 3. Install PostgreSQL
-
-```bash
-# Install PostgreSQL
-sudo apt install -y postgresql postgresql-contrib
-
-# Start PostgreSQL service
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-
-# Verify installation
-sudo -u postgres psql -c "SELECT version();"
-```
-
-### 4. Configure PostgreSQL
-
-```bash
-# Connect to PostgreSQL
-sudo -u postgres psql
-
-# Create a database and user for SimpleIT
-CREATE DATABASE simpleit;
-CREATE USER simpleituser WITH ENCRYPTED PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE simpleit TO simpleituser;
-
-# Exit PostgreSQL
-\q
-```
-
-### 5. Clone the Repository
-
-```bash
-# Navigate to the directory where you want to deploy
-cd /opt
-
-# Clone the repository (replace with your actual repository URL)
-sudo git clone https://github.com/eladwysoft/simpleit.git
+git clone https://github.com/eladwysoft/simpleit.git
 cd simpleit
-
-# Set permissions
-sudo chown -R $USER:$USER /opt/simpleit
 ```
 
-### 6. Install Dependencies
+#### Step 2: Run the Deployment Script
 
 ```bash
-# Install project dependencies
-npm install
+# Make the script executable
+chmod +x docs/deploy-ubuntu-fixed.sh
+
+# Run the script with sudo
+sudo ./docs/deploy-ubuntu-fixed.sh
 ```
 
-### 7. Configure Environment Variables
+The script will:
+- Install required dependencies (Node.js, PostgreSQL)
+- Set up a PostgreSQL database
+- Configure the application
+- Create a systemd service
+- Configure Nginx as a reverse proxy
+- Start the application
 
-Create a `.env` file in the project root:
+#### Step 3: Verify Deployment
+
+Access the application in your browser at:
+- http://localhost (or your server IP address)
+
+Default login credentials:
+- Username: `admin`
+- Password: `admin123`
+
+Check service status:
+```bash
+sudo systemctl status simpleit
+```
+
+### Windows Deployment
+
+For installation on Windows servers:
+
+#### Step 1: Prepare Your Environment
+
+1. Open PowerShell as Administrator
+2. Navigate to where you want to install SimpleIT
+
+#### Step 2: Clone the Repository
+
+```powershell
+git clone https://github.com/eladwysoft/simpleit.git
+cd simpleit
+```
+
+#### Step 3: Run the Deployment Script
+
+```powershell
+# Set execution policy to allow scripts (if needed)
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
+# Run the deployment script
+.\docs\deploy-windows-fixed.ps1
+```
+
+The script will:
+- Install Chocolatey package manager (if not already installed)
+- Install Node.js, Git, PostgreSQL, and NSSM
+- Configure the PostgreSQL database
+- Build the application
+- Create a Windows service
+- Start the application
+
+#### Step 4: Verify Deployment
+
+Access the application in your browser at:
+- http://localhost:3000 (or your server IP address)
+
+Default login credentials:
+- Username: `admin`
+- Password: `admin123`
+
+Check service status:
+```powershell
+Get-Service -Name SimpleIT
+```
+
+## Post-Deployment Steps
+
+After successful deployment, consider the following important steps:
+
+### 1. Change Default Credentials
+
+For security reasons, change the default admin password immediately after first login:
+1. Login with the default credentials
+2. Go to Profile > Change Password
+3. Set a strong password
+
+### 2. Configure Security Questions
+
+Set up security questions for account recovery:
+1. Go to Profile > Security Questions
+2. Set up at least 3 security questions
+
+### 3. Configure HTTPS
+
+For production environments, always use HTTPS:
+
+#### For Docker/Ubuntu with Nginx:
 
 ```bash
-touch .env
-nano .env
+# Ubuntu: Install Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# Obtain and install SSL certificate
+sudo certbot --nginx -d yourdomain.com
 ```
 
-Add the following environment variables:
+#### For Windows with IIS:
 
-```
-# Database Configuration
-DATABASE_URL=postgres://simpleituser:your_secure_password@localhost:5432/simpleit
+1. Install IIS URL Rewrite Module
+2. Configure URL Rewrite to redirect HTTP to HTTPS
+3. Add SSL certificate through IIS Manager
 
-# Session Configuration
-SESSION_SECRET=your_long_random_session_secret
+### 4. Set Up Database Backups
 
-# Server Configuration
-PORT=3000
-```
-
-### 8. Initialize the Database
+#### For Docker:
 
 ```bash
-# Apply database migrations
-npm run db:push
+# Create backup script
+cat > backup.sh << 'EOL'
+#!/bin/bash
+BACKUP_DIR="./backups"
+mkdir -p $BACKUP_DIR
+DATE=$(date +%Y%m%d_%H%M%S)
+docker-compose exec -T postgres pg_dump -U simpleituser simpleit > $BACKUP_DIR/simpleit_db_$DATE.sql
+tar -czvf $BACKUP_DIR/simpleit_uploads_$DATE.tar.gz ./uploads
+EOL
+
+chmod +x backup.sh
+
+# Set up cron job for daily backups at 2 AM
+(crontab -l 2>/dev/null; echo "0 2 * * * $(pwd)/backup.sh") | crontab -
 ```
 
-### 9. Build the Application
+#### For Ubuntu:
 
 ```bash
-# Build the frontend
-npm run build
+# Create backup script
+sudo bash -c 'cat > /usr/local/bin/simpleit-backup.sh << "EOL"
+#!/bin/bash
+BACKUP_DIR="/var/backups/simpleit"
+mkdir -p $BACKUP_DIR
+DATE=$(date +%Y%m%d_%H%M%S)
+sudo -u postgres pg_dump simpleit > $BACKUP_DIR/simpleit_db_$DATE.sql
+tar -czvf $BACKUP_DIR/simpleit_uploads_$DATE.tar.gz /opt/simpleit/uploads
+find $BACKUP_DIR -name "simpleit_db_*" -mtime +30 -delete
+find $BACKUP_DIR -name "simpleit_uploads_*" -mtime +30 -delete
+EOL'
+
+sudo chmod +x /usr/local/bin/simpleit-backup.sh
+
+# Set up cron job for daily backups at 2 AM
+(sudo crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/simpleit-backup.sh") | sudo crontab -
 ```
 
-### 10. Set Up a Process Manager (PM2)
+#### For Windows:
 
-```bash
-# Install PM2 globally
-sudo npm install -g pm2
-
-# Start the application with PM2
-pm2 start npm --name "simpleit" -- start
-
-# Configure PM2 to start on system boot
-pm2 startup
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME
-pm2 save
-```
-
-### 11. Configure Nginx as a Reverse Proxy
-
-```bash
-# Install Nginx
-sudo apt install -y nginx
-
-# Configure Nginx
-sudo nano /etc/nginx/sites-available/simpleit
-```
-
-Add the following configuration:
-
-```nginx
-server {
-    listen 80;
-    server_name your_domain.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-Enable the site and restart Nginx:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/simpleit /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-### 12. Set Up SSL with Let's Encrypt
-
-```bash
-# Install Certbot
-sudo apt install -y certbot python3-certbot-nginx
-
-# Obtain SSL certificate
-sudo certbot --nginx -d your_domain.com
-
-# Test renewal
-sudo certbot renew --dry-run
-```
-
-## Deployment on Windows
-
-### 1. Install Node.js
-
-1. Download the Node.js installer from [nodejs.org](https://nodejs.org/)
-2. Run the installer and follow the instructions
-3. Verify installation by opening Command Prompt and running:
-   ```
-   node -v
-   npm -v
-   ```
-
-### 2. Install PostgreSQL
-
-1. Download PostgreSQL installer from [postgresql.org](https://www.postgresql.org/download/windows/)
-2. Run the installer and follow the instructions
-   - Note the password you set for the 'postgres' user
-   - Keep the default port (5432)
-3. After installation, open pgAdmin (installed with PostgreSQL)
-
-### 3. Configure PostgreSQL
-
-1. Open pgAdmin and connect to the server
-2. Create a new database named 'simpleit'
-3. Create a new login role:
-   - Name: simpleituser
-   - Password: your_secure_password
-   - Privileges: Can login, Create database
-
-### 4. Clone the Repository
-
-1. Download and install Git from [git-scm.com](https://git-scm.com/download/win)
-2. Open Command Prompt as administrator
-3. Navigate to your desired installation directory:
-   ```
-   cd C:\
-   mkdir SimpleIT
-   cd SimpleIT
-   ```
-4. Clone the repository:
-   ```
-   git clone https://github.com/eladwysoft/simpleit.git .
-   ```
-
-### 5. Install Dependencies
-
-```
-npm install
-```
-
-### 6. Configure Environment Variables
-
-1. Create a file named `.env` in the project root directory
-2. Add the following environment variables:
-
-```
-# Database Configuration
-DATABASE_URL=postgres://simpleituser:your_secure_password@localhost:5432/simpleit
-
-# Session Configuration
-SESSION_SECRET=your_long_random_session_secret
-
-# Server Configuration
-PORT=3000
-```
-
-### 7. Initialize the Database
-
-```
-npm run db:push
-```
-
-### 8. Build the Application
-
-```
-npm run build
-```
-
-### 9. Install Windows Service Manager (optional)
-
-For production environments, it's recommended to run the application as a Windows service:
-
-1. Install node-windows globally:
-   ```
-   npm install -g node-windows
-   ```
-
-2. Create a service installation script in the project directory:
-   Create a file named `install-service.js`:
-
-   ```javascript
-   const Service = require('node-windows').Service;
-   const path = require('path');
-
-   // Create a new service object
-   const svc = new Service({
-     name: 'SimpleIT Asset Management',
-     description: 'SimpleIT Asset Management System',
-     script: path.join(__dirname, 'server/index.js'),
-     nodeOptions: [],
-     env: {
-       name: "NODE_ENV",
-       value: "production"
-     }
-   });
-
-   // Listen for the "install" event
-   svc.on('install', function() {
-     svc.start();
-     console.log('Service installed successfully');
-   });
-
-   // Install the service
-   svc.install();
-   ```
-
-3. Run the script to install the service:
-   ```
-   node install-service.js
-   ```
-
-### 10. Configure IIS as a Reverse Proxy (optional)
-
-For production environments, you can use IIS as a reverse proxy:
-
-1. Install IIS from Windows Features
-2. Install URL Rewrite module for IIS
-3. Install Application Request Routing for IIS
-4. Configure URL Rewrite rules to forward requests to your Node.js application
+Create a PowerShell script for backups and schedule it using Task Scheduler.
 
 ## Troubleshooting
 
 ### Common Issues and Solutions
 
-#### Docker-Specific Issues
+#### Docker Deployment
 
-##### Containers Not Starting
+**Issue**: Container keeps restarting
+**Solution**: Check container logs for errors
 ```bash
-# Check container status
-docker-compose ps
-
-# View detailed logs
-docker-compose logs -f
-
-# Restart containers
-docker-compose down && docker-compose up -d
+docker-compose logs app
 ```
 
-##### Database Connection Errors in Docker
+**Issue**: Database connection failure
+**Solution**: Ensure PostgreSQL container is healthy
 ```bash
-# Check if PostgreSQL container is running
-docker ps | grep postgres
-
-# View PostgreSQL logs
+docker-compose ps postgres
 docker-compose logs postgres
-
-# Verify database connection from app container
-docker-compose exec app node -e "const { Pool } = require('@neondatabase/serverless'); const pool = new Pool({ connectionString: process.env.DATABASE_URL }); pool.query('SELECT NOW()').then(res => console.log(res.rows[0])).catch(err => console.error(err)).finally(() => pool.end());"
 ```
 
-##### Permission Issues with Docker Volumes
-```bash
-# Fix permissions on upload directory
-sudo chown -R 1000:1000 ./uploads
+#### Ubuntu Deployment
 
-# Check volume mappings
-docker-compose config
+**Issue**: Service fails to start
+**Solution**: Check logs for errors
+```bash
+sudo journalctl -u simpleit -f
 ```
 
-##### Docker Container Out of Memory
+**Issue**: Cannot connect to PostgreSQL
+**Solution**: Verify PostgreSQL is running and accessible
 ```bash
-# Check container resource usage
-docker stats
-
-# Increase memory limit in docker-compose.yml
-# Add under the app service:
-#   deploy:
-#     resources:
-#       limits:
-#         memory: 1G
+sudo systemctl status postgresql
+sudo -u postgres psql -c "\l" # List databases
 ```
 
-#### Standard Deployment Issues
+#### Windows Deployment
 
-##### Database Connection Issues
+**Issue**: Service fails to start
+**Solution**: Check Windows Event Viewer and service logs
+```powershell
+Get-EventLog -LogName Application -Source "SimpleIT" -Newest 20
+# Or check the error log file
+cat C:\SimpleIT\error.log
+```
 
-- Verify PostgreSQL is running: `sudo systemctl status postgresql` (Ubuntu) or check Services in Windows
-- Check database credentials and connection string in `.env`
-- Ensure the database user has appropriate permissions
+**Issue**: Port binding error
+**Solution**: Check if port 3000 is already in use
+```powershell
+netstat -ano | findstr :3000
+# If in use, change the port in .env file
+```
 
-##### Node.js Application Won't Start
+### Diagnosing Network Issues
 
-- Check for errors in the application logs
-- Verify Node.js is installed correctly: `node -v`
-- Ensure all dependencies are installed: `npm install`
-- Verify environment variables are set correctly
+#### Error connecting to port 433
 
-##### Permission Issues (Ubuntu)
+This error typically occurs when:
+1. The application is trying to connect via HTTPS but no SSL certificate is configured
+2. Firewall is blocking the connection
 
-- Ensure the application directory has appropriate permissions: `sudo chown -R $USER:$USER /path/to/simpleit`
-- Check if the process has permission to bind to the specified port
+**Solution**:
+- Check if SSL is properly configured in Nginx
+- Ensure port 443 is open in your firewall
+- If SSL is not needed, update the configuration to use HTTP only
 
-##### Port Conflicts
-
-- Verify no other service is using the specified port: `sudo netstat -tuln | grep PORT` (Ubuntu) or `netstat -an | find "PORT"` (Windows)
-- Change the port in your `.env` file if needed
-
-## Maintenance
-
-### Backup Procedures
-
-#### Database Backup
-
-##### Docker Deployment
 ```bash
-# Backup the database
+# Check Nginx configuration
+sudo nginx -t
+
+# Check firewall status
+sudo ufw status
+
+# Open port if needed
+sudo ufw allow 443/tcp
+```
+
+## Backup and Restore
+
+### Creating Manual Backups
+
+#### For Docker:
+
+```bash
+# Backup database
 docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
 
-# Include any uploaded files
+# Backup uploaded files
 tar -czvf uploads_backup_$(date +%Y%m%d).tar.gz ./uploads
 ```
 
-##### Ubuntu Deployment
+#### For Ubuntu:
+
 ```bash
-# Backup the database
-pg_dump -U simpleituser -d simpleit > simpleit_backup_$(date +%Y%m%d).sql
+# Backup database
+sudo -u postgres pg_dump simpleit > simpleit_backup_$(date +%Y%m%d).sql
+
+# Backup uploaded files
+tar -czvf uploads_backup_$(date +%Y%m%d).tar.gz /opt/simpleit/uploads
 ```
 
-##### Windows Deployment
+#### For Windows:
+
+```powershell
+# Backup database
+& 'C:\Program Files\PostgreSQL\14\bin\pg_dump.exe' -U simpleit simpleit > simpleit_backup_$(Get-Date -Format "yyyyMMdd").sql
+
+# Backup uploaded files
+Compress-Archive -Path C:\SimpleIT\uploads -DestinationPath uploads_backup_$(Get-Date -Format "yyyyMMdd").zip
 ```
-pg_dump -U simpleituser -d simpleit > simpleit_backup_%date:~-4,4%%date:~-7,2%%date:~-10,2%.sql
+
+### Restoring from Backup
+
+#### For Docker:
+
+```bash
+# Restore database
+cat simpleit_backup_YYYYMMDD.sql | docker-compose exec -T postgres psql -U simpleituser simpleit
+
+# Restore uploaded files
+tar -xzvf uploads_backup_YYYYMMDD.tar.gz
 ```
 
-### Update Procedures
+#### For Ubuntu:
 
-#### Docker Deployment
+```bash
+# Restore database
+sudo -u postgres psql simpleit < simpleit_backup_YYYYMMDD.sql
 
-1. Backup the database and uploaded files:
-   ```bash
-   # Backup the database
-   docker-compose exec postgres pg_dump -U simpleituser simpleit > simpleit_backup_$(date +%Y%m%d).sql
-   
-   # Backup uploaded files
-   tar -czvf uploads_backup_$(date +%Y%m%d).tar.gz ./uploads
-   ```
+# Restore uploaded files
+tar -xzvf uploads_backup_YYYYMMDD.tar.gz -C /opt/simpleit/
+sudo chown -R simpleit:simpleit /opt/simpleit/uploads
+```
 
-2. Pull the latest changes:
-   ```bash
-   git pull origin main
-   ```
+#### For Windows:
 
-3. Rebuild and restart containers:
-   ```bash
-   # Clean rebuild with the latest code
-   docker-compose down
-   docker-compose up --build -d
-   
-   # Apply any database migrations
-   docker-compose exec app npm run db:push
-   ```
+```powershell
+# Restore database
+Get-Content simpleit_backup_YYYYMMDD.sql | & 'C:\Program Files\PostgreSQL\14\bin\psql.exe' -U simpleit simpleit
 
-4. Verify the application is running:
-   ```bash
-   # Check container status
-   docker-compose ps
-   
-   # View logs for any errors
-   docker-compose logs -f
-   ```
+# Restore uploaded files
+Expand-Archive -Path uploads_backup_YYYYMMDD.zip -DestinationPath C:\SimpleIT\
+```
 
-#### Traditional Deployment
+## Updating the Application
 
-1. Stop the application:
-   - Ubuntu: `pm2 stop simpleit`
-   - Windows: Stop the Windows service from Services management console
+### Docker Deployment
 
-2. Backup the database:
-   - Ubuntu: `pg_dump -U simpleituser -d simpleit > simpleit_backup_$(date +%Y%m%d).sql`
-   - Windows: `pg_dump -U simpleituser -d simpleit > simpleit_backup_%date:~-4,4%%date:~-7,2%%date:~-10,2%.sql`
+```bash
+# Pull latest changes
+git pull origin main
 
-3. Pull the latest changes:
-   ```
-   git pull origin main
-   ```
+# Rebuild and restart containers
+docker-compose down
+docker-compose up --build -d
 
-4. Install any new dependencies:
-   ```
-   npm install
-   ```
+# Apply database migrations
+docker-compose exec app npm run db:push
+```
 
-5. Apply database migrations:
-   ```
-   npm run db:push
-   ```
+### Ubuntu Deployment
 
-6. Rebuild the application:
-   ```
-   npm run build
-   ```
+```bash
+# Pull latest changes
+cd /opt/simpleit
+sudo -u simpleit git pull origin main
 
-7. Restart the application:
-   - Ubuntu: `pm2 start simpleit`
-   - Windows: Start the Windows service from Services management console
+# Install dependencies and rebuild
+sudo -u simpleit npm install --omit=dev
+sudo -u simpleit npm run build
 
-## Security Considerations
+# Apply database migrations
+sudo -u simpleit npm run db:push
 
-- Always use strong, unique passwords for the database and admin user
-- Keep the system and all dependencies updated
-- Use HTTPS in production environments
-- Configure a firewall to restrict access to the server
-- Regularly backup the database
-- Implement regular security audits and updates
+# Restart service
+sudo systemctl restart simpleit
+```
 
-## Additional Resources
+### Windows Deployment
 
-- [Node.js Documentation](https://nodejs.org/en/docs/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [PM2 Documentation](https://pm2.keymetrics.io/docs/usage/quick-start/)
-- [Nginx Documentation](https://nginx.org/en/docs/)
-- [IIS Documentation](https://docs.microsoft.com/en-us/iis/get-started/introduction-to-iis/iis-introduction)
+```powershell
+# Pull latest changes
+cd C:\SimpleIT
+git pull origin main
+
+# Install dependencies and rebuild
+npm install --omit=dev
+npm run build
+
+# Apply database migrations
+npm run db:push
+
+# Restart service
+nssm restart SimpleIT
+```
+
+---
+
+For additional support or questions, please contact the SimpleIT team at support@eladwysoft.com or create an issue on our GitHub repository.
+
+Last updated: 2024-05

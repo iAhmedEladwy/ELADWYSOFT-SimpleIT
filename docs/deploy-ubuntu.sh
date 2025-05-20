@@ -2,7 +2,7 @@
 
 # SimpleIT Deployment Script for Ubuntu 22.04/24.04
 # This script automates the deployment of the SimpleIT Asset Management System
-# Usage: sudo bash deploy-ubuntu.sh
+# Usage: sudo bash deploy-ubuntu-fixed.sh
 
 set -e
 
@@ -21,7 +21,7 @@ LOG_FILE="/tmp/simpleit-install.log"
 SYS_USER="simpleit"
 
 # NodeJS version
-NODE_VERSION="22"
+NODE_VERSION="18"
 
 # Functions
 log() {
@@ -61,124 +61,151 @@ rm -f $LOG_FILE
 log "Starting installation"
 
 # Check Ubuntu version
-. /etc/os-release
-log "Detected Ubuntu version: $VERSION_ID"
-
-if [[ $VERSION_ID != "22.04" && $VERSION_ID != "24.04" ]]; then
-  warning "This script is optimized for Ubuntu 22.04 and 24.04. You are using $VERSION_ID."
-  read -p "Continue anyway? (y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    error "Installation aborted."
-  fi
+if ! grep -q "Ubuntu" /etc/os-release; then
+  error "This script is designed for Ubuntu. Please use the universal deployment script for other distributions."
 fi
 
-# Update system
-log "Updating system package lists..."
-apt-get update -y >> $LOG_FILE 2>&1 || error "Failed to update package lists"
+# Install dependencies
+log "Installing dependencies..."
+apt-get update || error "Failed to update package lists"
 
-# Install required packages
-log "Installing required system dependencies..."
-apt-get install -y curl git postgresql postgresql-contrib build-essential >> $LOG_FILE 2>&1 || error "Failed to install dependencies"
+# Install essential tools
+apt-get install -y curl wget git build-essential nginx unzip || error "Failed to install essential packages"
 
 # Install Node.js
-log "Installing Node.js $NODE_VERSION..."
 if ! command -v node &> /dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - >> $LOG_FILE 2>&1 || error "Failed to set up Node.js repository"
-  apt-get install -y nodejs >> $LOG_FILE 2>&1 || error "Failed to install Node.js"
+  log "Installing Node.js ${NODE_VERSION}..."
+  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - || error "Failed to set up Node.js repository"
+  apt-get install -y nodejs || error "Failed to install Node.js"
+  log "Node.js $(node -v) installed"
 else
-  current_node_version=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-  if [ "$current_node_version" != "$NODE_VERSION" ]; then
-    warning "Node.js version $current_node_version is installed, but version $NODE_VERSION is recommended."
-    read -p "Continue with existing Node.js version? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      apt-get remove -y nodejs npm >> $LOG_FILE 2>&1
-      curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - >> $LOG_FILE 2>&1 || error "Failed to set up Node.js repository"
-      apt-get install -y nodejs >> $LOG_FILE 2>&1 || error "Failed to install Node.js"
-    fi
-  else
-    log "Node.js $NODE_VERSION is already installed."
-  fi
+  log "Node.js $(node -v) already installed"
 fi
 
-# Create system user
-log "Creating system user '$SYS_USER'..."
-if ! id "$SYS_USER" &>/dev/null; then
-  useradd -m -r -s /bin/bash $SYS_USER >> $LOG_FILE 2>&1 || error "Failed to create system user"
+# Install PostgreSQL
+if ! command -v psql &> /dev/null; then
+  log "Installing PostgreSQL..."
+  apt-get install -y postgresql postgresql-contrib || error "Failed to install PostgreSQL"
+  log "PostgreSQL installed"
 else
-  log "System user '$SYS_USER' already exists."
+  log "PostgreSQL already installed"
 fi
 
-# Set up PostgreSQL
-log "Setting up PostgreSQL database..."
-if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "simpleit"; then
-  log "Database 'simpleit' already exists."
+# Create system user if it doesn't exist
+if ! id -u "$SYS_USER" &>/dev/null; then
+  log "Creating system user $SYS_USER..."
+  useradd -m -s /bin/bash "$SYS_USER" || error "Failed to create system user"
+  log "System user created"
 else
-  # Create PostgreSQL user and database
-  sudo -u postgres psql -c "CREATE USER simpleit WITH PASSWORD 'simpleit';" >> $LOG_FILE 2>&1 || error "Failed to create database user"
-  sudo -u postgres psql -c "CREATE DATABASE simpleit OWNER simpleit;" >> $LOG_FILE 2>&1 || error "Failed to create database"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE simpleit TO simpleit;" >> $LOG_FILE 2>&1 || error "Failed to grant privileges"
-  
-  log "Created PostgreSQL database 'simpleit'"
+  log "System user $SYS_USER already exists"
 fi
 
 # Create installation directory
-log "Setting up installation directory..."
-mkdir -p $INSTALL_DIR || error "Failed to create installation directory"
-
-# Setup application directory
-log "Setting up application directory..."
-
-# Check if directory is not empty
-if [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR")" ]; then
-  log "Using existing files in $INSTALL_DIR"
+if [ ! -d "$INSTALL_DIR" ]; then
+  log "Creating installation directory at $INSTALL_DIR..."
+  mkdir -p "$INSTALL_DIR" || error "Failed to create installation directory"
+  log "Installation directory created"
 else
-  log "Installation directory is empty. Please copy the SimpleIT files to $INSTALL_DIR before running this script."
-  log "You can run: cp -R /path/to/simpleit/* $INSTALL_DIR/"
-  error "No application files found in $INSTALL_DIR. Installation aborted."
+  log "Installation directory already exists"
 fi
 
-# Set permissions
-log "Setting permissions..."
-chown -R $SYS_USER:$SYS_USER $INSTALL_DIR >> $LOG_FILE 2>&1 || error "Failed to set permissions"
-chmod -R 750 $INSTALL_DIR >> $LOG_FILE 2>&1 || error "Failed to set permissions"
+# Set ownership
+chown -R "$SYS_USER:$SYS_USER" "$INSTALL_DIR" || error "Failed to set directory ownership"
 
-# Create .env file
-log "Creating environment configuration..."
-cat > $INSTALL_DIR/.env << EOF
-# SimpleIT Environment Configuration
+# Check if application files already exist
+if [ -f "$INSTALL_DIR/package.json" ]; then
+  log "Application files already exist in $INSTALL_DIR"
+  
+  # Ask for confirmation to overwrite
+  read -p "Do you want to reinstall the application? This will overwrite any existing files. (y/n) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    log "Keeping existing files and continuing with configuration..."
+  else
+    log "Removing existing application files..."
+    rm -rf "$INSTALL_DIR"/* || error "Failed to remove existing files"
+    log "Installing application files..."
+    
+    # Clone the application repository or copy files
+    log "Copying application files to $INSTALL_DIR..."
+    cp -r ./* "$INSTALL_DIR/" || error "Failed to copy application files"
+  fi
+else
+  # Clone the application repository or copy files
+  log "Copying application files to $INSTALL_DIR..."
+  cp -r ./* "$INSTALL_DIR/" || error "Failed to copy application files"
+fi
+
+# Set ownership again after copying files
+chown -R "$SYS_USER:$SYS_USER" "$INSTALL_DIR" || error "Failed to set directory ownership"
+
+# Configure PostgreSQL
+log "Configuring PostgreSQL..."
+PG_VERSION=$(psql --version | grep -oP '(?<=psql \(PostgreSQL\) )[0-9]+' || echo "14")
+PG_HBA_PATH="/etc/postgresql/$PG_VERSION/main/pg_hba.conf"
+
+if [ -f "$PG_HBA_PATH" ]; then
+  # Backup pg_hba.conf
+  cp "$PG_HBA_PATH" "${PG_HBA_PATH}.bak" || warning "Failed to backup pg_hba.conf"
+  
+  # Add a user to PostgreSQL if not exists
+  su - postgres -c "psql -c \"SELECT 1 FROM pg_roles WHERE rolname = 'simpleit'\" | grep -q 1 || psql -c \"CREATE USER simpleit WITH PASSWORD 'simpleit'\"" || warning "Failed to create PostgreSQL user"
+  
+  # Create database if not exists
+  su - postgres -c "psql -c \"SELECT 1 FROM pg_database WHERE datname = 'simpleit'\" | grep -q 1 || psql -c \"CREATE DATABASE simpleit OWNER simpleit\"" || warning "Failed to create PostgreSQL database"
+  
+  # Grant privileges
+  su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE simpleit TO simpleit\"" || warning "Failed to grant privileges"
+  
+  log "PostgreSQL database 'simpleit' configured"
+  
+  # Restart PostgreSQL to apply changes
+  systemctl restart postgresql || warning "Failed to restart PostgreSQL"
+else
+  warning "PostgreSQL configuration file not found at $PG_HBA_PATH. Manual configuration may be required."
+fi
+
+# Create environment file with correct configuration
+log "Creating environment file..."
+cat > "$INSTALL_DIR/.env" << EOL
+# Application Environment
 NODE_ENV=production
 PORT=3000
 
-# Database configuration
+# Database Configuration
 DATABASE_URL=postgres://simpleit:simpleit@localhost:5432/simpleit
 
-# Session configuration (generate a random string)
+# Session Configuration
 SESSION_SECRET=$(openssl rand -hex 32)
 
-# Application settings
-ASSET_ID_PREFIX=SIT-
-EMP_ID_PREFIX=EMP-
-TICKET_ID_PREFIX=TKT-
-DEFAULT_CURRENCY=USD
-DEFAULT_LANGUAGE=English
-EOF
+# Application Settings
+REPLIT_DOMAINS=$(hostname -f),localhost
+ISSUER_URL=http://localhost:3000
+REPL_ID=simpleit-production
+EOL
 
-chown $SYS_USER:$SYS_USER $INSTALL_DIR/.env
-chmod 640 $INSTALL_DIR/.env
+# Set permissions
+chmod 640 "$INSTALL_DIR/.env" || error "Failed to set environment file permissions"
+chown "$SYS_USER:$SYS_USER" "$INSTALL_DIR/.env" || error "Failed to set environment file ownership"
 
-# Install dependencies and build
-log "Installing Node.js dependencies..."
-cd $INSTALL_DIR
-sudo -u $SYS_USER npm install --production >> $LOG_FILE 2>&1 || error "Failed to install dependencies"
+# Install npm dependencies and build application
+log "Installing npm dependencies and building application..."
+cd "$INSTALL_DIR" || error "Failed to change to installation directory"
 
-log "Building application..."
-sudo -u $SYS_USER npm run build >> $LOG_FILE 2>&1 || error "Failed to build application"
+# Install dependencies as the system user
+su - "$SYS_USER" -c "cd $INSTALL_DIR && npm install --omit=dev" || warning "Failed to install npm dependencies"
+
+# Build the application
+log "Building the application..."
+su - "$SYS_USER" -c "cd $INSTALL_DIR && npm run build" || warning "Failed to build the application"
+
+# Run database migrations
+log "Running database migrations..."
+su - "$SYS_USER" -c "cd $INSTALL_DIR && npm run db:push" || warning "Failed to run database migrations"
 
 # Create systemd service
 log "Creating systemd service..."
-cat > /etc/systemd/system/simpleit.service << EOF
+cat > /etc/systemd/system/simpleit.service << EOL
 [Unit]
 Description=SimpleIT Asset Management System
 After=network.target postgresql.service
@@ -187,57 +214,85 @@ After=network.target postgresql.service
 Type=simple
 User=$SYS_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/node $INSTALL_DIR/dist/server/index.js
+ExecStart=/usr/bin/node $INSTALL_DIR/server/index.js
 Restart=on-failure
 Environment=NODE_ENV=production
-Environment=PORT=3000
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOL
 
-# Setup database schema
-log "Setting up database schema..."
-cd $INSTALL_DIR
-sudo -u $SYS_USER npm run db:push >> $LOG_FILE 2>&1 || error "Failed to setup database schema"
+# Reload systemd
+systemctl daemon-reload || error "Failed to reload systemd"
 
-# Enable and start service
+# Enable and start the service
 log "Starting SimpleIT service..."
-systemctl daemon-reload >> $LOG_FILE 2>&1 || error "Failed to reload systemd configuration"
-systemctl enable simpleit.service >> $LOG_FILE 2>&1 || error "Failed to enable service"
-systemctl start simpleit.service >> $LOG_FILE 2>&1 || warning "Failed to start service"
+systemctl enable simpleit || warning "Failed to enable SimpleIT service"
+systemctl start simpleit || warning "Failed to start SimpleIT service"
 
-# Check if the service is running
-if systemctl is-active --quiet simpleit.service; then
+# Check if service is running
+if systemctl is-active --quiet simpleit; then
   log "SimpleIT service is running"
 else
-  warning "SimpleIT service is not running. Check logs with 'journalctl -u simpleit.service'"
+  warning "SimpleIT service failed to start. Check logs with 'journalctl -u simpleit'"
 fi
 
-# Display installation summary
-ip_address=$(hostname -I | awk '{print $1}')
-echo ""
-echo -e "${GREEN}==============================================${NC}"
-echo -e "${GREEN}    SimpleIT Installation Complete!          ${NC}"
-echo -e "${GREEN}==============================================${NC}"
-echo ""
-echo -e "Installation directory: ${BLUE}$INSTALL_DIR${NC}"
-echo -e "Database name: ${BLUE}simpleit${NC}"
-echo -e "Database user: ${BLUE}simpleit${NC}"
-echo -e "Application URL: ${BLUE}http://$ip_address:3000${NC}"
-echo ""
-echo -e "To manage the service:"
-echo -e "  ${YELLOW}sudo systemctl start|stop|restart|status simpleit${NC}"
-echo ""
-echo -e "To view logs:"
-echo -e "  ${YELLOW}sudo journalctl -u simpleit -f${NC}"
-echo ""
-echo -e "Installation log: ${BLUE}$LOG_FILE${NC}"
-echo ""
-echo -e "${YELLOW}IMPORTANT: For production use, configure a reverse proxy${NC}"
-echo -e "${YELLOW}           with HTTPS using Nginx or Apache.${NC}"
-echo ""
-echo -e "${GREEN}Thank you for installing SimpleIT Asset Management!${NC}"
-echo ""
+# Configure Nginx
+log "Configuring Nginx..."
+cat > /etc/nginx/sites-available/simpleit << EOL
+server {
+    listen 80;
+    server_name _;
 
-exit 0
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+
+# Enable Nginx site
+if [ -f /etc/nginx/sites-enabled/default ]; then
+  rm /etc/nginx/sites-enabled/default || warning "Failed to remove default Nginx site"
+fi
+
+ln -sf /etc/nginx/sites-available/simpleit /etc/nginx/sites-enabled/ || warning "Failed to enable Nginx site"
+
+# Test Nginx configuration
+nginx -t && systemctl restart nginx || warning "Failed to configure Nginx"
+
+# Get server IP address
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
+# Installation completed
+echo -e "${GREEN}==============================================${NC}"
+echo -e "${GREEN}   SimpleIT Installation Completed!         ${NC}"
+echo -e "${GREEN}==============================================${NC}"
+echo ""
+echo -e "${BLUE}Installation directory:${NC} $INSTALL_DIR"
+echo -e "${BLUE}Application URL:${NC} http://$SERVER_IP"
+echo -e "${BLUE}Default login:${NC} admin / admin123"
+echo ""
+echo -e "${YELLOW}IMPORTANT:${NC}"
+echo "1. For production use, configure HTTPS using Let's Encrypt:"
+echo "   sudo apt install certbot python3-certbot-nginx"
+echo "   sudo certbot --nginx -d yourdomain.com"
+echo ""
+echo "2. If you encounter any issues:"
+echo "   - Check application logs: journalctl -u simpleit -f"
+echo "   - Check Nginx logs: tail -f /var/log/nginx/error.log"
+echo ""
+echo "3. To restart the service:"
+echo "   sudo systemctl restart simpleit"
+echo ""
+echo "4. To monitor the service:"
+echo "   sudo systemctl status simpleit"
+echo ""
+log "Installation completed successfully"
