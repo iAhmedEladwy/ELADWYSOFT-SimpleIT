@@ -287,12 +287,12 @@ su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/
 
 # Verify critical files exist before creating service
 log "Verifying critical application files..."
-if [ ! -f "$INSTALL_DIR/server/index.js" ]; then
-  error "Critical file server/index.js not found. Build may have failed."
-fi
-
 if [ ! -d "$INSTALL_DIR/dist" ]; then
   warning "Directory 'dist' not found. Application may not have built correctly."
+fi
+
+if [ ! -f "$INSTALL_DIR/dist/index.js" ] && [ ! -f "$INSTALL_DIR/server/index.js" ]; then
+  error "Critical file index.js not found in either dist/ or server/. Build may have failed."
 fi
 
 # Check if required environment variables are set in .env
@@ -311,7 +311,7 @@ After=network.target postgresql.service
 Type=simple
 User=$SYS_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/node $INSTALL_DIR/server/index.js
+ExecStart=/usr/bin/node $INSTALL_DIR/dist/index.js
 Restart=on-failure
 Environment=NODE_ENV=production
 Environment=PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
