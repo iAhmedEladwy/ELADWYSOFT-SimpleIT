@@ -221,7 +221,7 @@ export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
   submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
-  category: ticketCategoryEnum("category").notNull(),
+  requestType: ticketRequestTypeEnum("request_type").notNull(),
   priority: ticketPriorityEnum("priority").notNull(),
   description: text("description").notNull(),
   relatedAssetId: integer("related_asset_id").references(() => assets.id),
