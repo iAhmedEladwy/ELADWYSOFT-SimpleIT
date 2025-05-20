@@ -21,10 +21,11 @@ RUN npm run build
 
 # Set environment variables
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=5000 \
+    USE_HTTPS=false
 
 # Expose the application port
-EXPOSE 3000
+EXPOSE 5000
 
 # Start the application
-CMD ["node", "server/index.js"]
+CMD ["node", "dist/index.js"]

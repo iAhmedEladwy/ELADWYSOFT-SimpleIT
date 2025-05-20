@@ -203,7 +203,7 @@ try {
     $envContent = @"
 # SimpleIT Environment Configuration
 NODE_ENV=production
-PORT=$appPort
+PORT=5000
 
 # Database configuration
 DATABASE_URL=postgres://$dbUser:$dbPassword@localhost:5432/$dbName
@@ -213,8 +213,9 @@ SESSION_SECRET=$sessionSecret
 
 # Required for Replit Auth to work
 REPLIT_DOMAINS=localhost
-ISSUER_URL=http://localhost:$appPort
+ISSUER_URL=http://localhost:5000
 REPL_ID=simpleit-production
+USE_HTTPS=false
 
 # Application settings
 ASSET_ID_PREFIX=SIT-
@@ -267,13 +268,35 @@ try {
         # Create new service
         Log-Message "Creating SimpleIT service..."
         $nodePath = (Get-Command node).Path
-        $scriptPath = "$installDir\server\index.js"
+        $scriptPath = "$installDir\dist\index.js"
         
         # Ensure the script path exists
         if (-not (Test-Path $scriptPath)) {
-            Log-Message "Script not found at: $scriptPath" -IsError
-            $scriptPath = Get-ChildItem -Path $installDir -Recurse -Filter "index.js" | Where-Object { $_.DirectoryName -match "server" } | Select-Object -First 1 -ExpandProperty FullName
-            Log-Message "Found script at: $scriptPath" -IsWarning
+            Log-Message "Script not found at: $scriptPath" -IsWarning
+            # Try to find the built JS file in common locations
+            $possiblePaths = @(
+                "$installDir\dist\index.js",
+                "$installDir\server\index.js",
+                "$installDir\build\index.js"
+            )
+            
+            foreach ($path in $possiblePaths) {
+                if (Test-Path $path) {
+                    $scriptPath = $path
+                    Log-Message "Found script at: $scriptPath" -IsWarning
+                    break
+                }
+            }
+            
+            # If still not found, try to search recursively
+            if (-not (Test-Path $scriptPath)) {
+                $scriptPath = Get-ChildItem -Path $installDir -Recurse -Filter "index.js" | Where-Object { $_.DirectoryName -match "dist|server|build" } | Select-Object -First 1 -ExpandProperty FullName
+                if ($scriptPath) {
+                    Log-Message "Found script at: $scriptPath" -IsWarning
+                } else {
+                    Log-Message "Could not find index.js file. Build may have failed." -IsError
+                }
+            }
         }
         
         nssm install SimpleIT $nodePath $scriptPath | Out-File -Append -FilePath $logFile

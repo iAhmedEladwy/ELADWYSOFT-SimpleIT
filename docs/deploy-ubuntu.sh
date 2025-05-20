@@ -300,7 +300,21 @@ sudo -u "$SYS_USER" bash -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm
 log "Running database migrations..."
 cd "$INSTALL_DIR"
 export NODE_PATH=$(npm root -g)
-sudo -u "$SYS_USER" bash -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:\$PATH && export NODE_PATH=$NODE_PATH && npx drizzle-kit push" || warning "Failed to run database migrations"
+export USE_HTTPS=false
+# Create a migration script with environment variables explicitly set
+cat > "$INSTALL_DIR/run-migration.sh" << EOL
+#!/bin/bash
+cd $INSTALL_DIR
+export PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:\$PATH
+export NODE_PATH=$NODE_PATH
+export USE_HTTPS=false
+npx drizzle-kit push
+EOL
+chmod +x "$INSTALL_DIR/run-migration.sh"
+chown "$SYS_USER:$SYS_USER" "$INSTALL_DIR/run-migration.sh"
+
+# Run the migration script
+sudo -u "$SYS_USER" bash "$INSTALL_DIR/run-migration.sh" || warning "Failed to run database migrations"
 
 # Verify critical files exist before creating service
 log "Verifying critical application files..."
