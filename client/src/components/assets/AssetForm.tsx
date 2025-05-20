@@ -335,7 +335,18 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.buyPrice}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="number" step="0.01" value={field.value || ''} />
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <span className="text-gray-500">{symbol}</span>
+                        </div>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          step="0.01" 
+                          value={field.value || ''} 
+                          className="pl-8" 
+                        />
+                      </div>
                     </FormControl>
                     <FormDescription>{translations.buyPriceDesc}</FormDescription>
                     <FormMessage />
