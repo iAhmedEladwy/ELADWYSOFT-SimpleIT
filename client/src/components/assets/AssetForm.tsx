@@ -64,6 +64,22 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     queryKey: ['/api/employees'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+  
+  // Fetch custom asset types, brands, and statuses
+  const { data: customAssetTypes = [] } = useQuery({
+    queryKey: ['/api/custom-asset-types'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  const { data: customAssetBrands = [] } = useQuery({
+    queryKey: ['/api/custom-asset-brands'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  const { data: customAssetStatuses = [] } = useQuery({
+    queryKey: ['/api/custom-asset-statuses'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   // Translations
   const translations = {
@@ -214,9 +230,50 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{translations.brand}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.brand} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <ScrollArea className="h-72">
+                          {/* Default brands */}
+                          <SelectItem value="Dell">Dell</SelectItem>
+                          <SelectItem value="HP">HP</SelectItem>
+                          <SelectItem value="Lenovo">Lenovo</SelectItem>
+                          <SelectItem value="Apple">Apple</SelectItem>
+                          <SelectItem value="Samsung">Samsung</SelectItem>
+                          <SelectItem value="Asus">Asus</SelectItem>
+                          <SelectItem value="Acer">Acer</SelectItem>
+                          <SelectItem value="Microsoft">Microsoft</SelectItem>
+                          <SelectItem value="Sony">Sony</SelectItem>
+                          <SelectItem value="LG">LG</SelectItem>
+                          
+                          {/* Custom brands */}
+                          {customAssetBrands && customAssetBrands.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-sm font-semibold border-t">
+                                {language === 'English' ? 'Custom Brands' : 'علامات تجارية مخصصة'}
+                              </div>
+                              {customAssetBrands.map((brand: any) => (
+                                <SelectItem key={brand.id} value={brand.name}>
+                                  {brand.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                          
+                          {/* Other option */}
+                          <SelectItem value="Other">
+                            {language === 'English' ? 'Other' : 'أخرى'}
+                          </SelectItem>
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -282,12 +339,39 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Available">{translations.available}</SelectItem>
-                        <SelectItem value="In Use">{translations.inUse}</SelectItem>
-                        <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
-                        <SelectItem value="Damaged">{translations.damaged}</SelectItem>
-                        <SelectItem value="Sold">{translations.sold}</SelectItem>
-                        <SelectItem value="Retired">{translations.retired}</SelectItem>
+                        <ScrollArea className="h-72">
+                          {/* Default statuses */}
+                          <SelectItem value="Available">{translations.available}</SelectItem>
+                          <SelectItem value="In Use">{translations.inUse}</SelectItem>
+                          <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
+                          <SelectItem value="Damaged">{translations.damaged}</SelectItem>
+                          <SelectItem value="Sold">{translations.sold}</SelectItem>
+                          <SelectItem value="Retired">{translations.retired}</SelectItem>
+                          
+                          {/* Custom statuses */}
+                          {customAssetStatuses && customAssetStatuses.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-sm font-semibold border-t">
+                                {language === 'English' ? 'Custom Statuses' : 'حالات مخصصة'}
+                              </div>
+                              {customAssetStatuses.map((status: any) => (
+                                <SelectItem 
+                                  key={status.id} 
+                                  value={status.name}
+                                  className="flex items-center"
+                                >
+                                  {status.color && (
+                                    <span 
+                                      className="w-3 h-3 rounded-full inline-block mr-2" 
+                                      style={{ backgroundColor: status.color }}
+                                    />
+                                  )}
+                                  {status.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                     <FormMessage />
