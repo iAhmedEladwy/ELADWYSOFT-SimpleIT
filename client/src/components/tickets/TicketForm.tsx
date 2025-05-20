@@ -70,8 +70,8 @@ export default function TicketForm({
     relatedAsset: language === 'English' ? 'Related Asset (Optional)' : 'الأصل المرتبط (اختياري)',
     selectAsset: language === 'English' ? 'Select asset' : 'اختر الأصل',
     none: language === 'English' ? 'None' : 'لا يوجد',
-    category: language === 'English' ? 'Category' : 'التصنيف',
-    selectCategory: language === 'English' ? 'Select category' : 'اختر التصنيف',
+    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
+    selectRequestType: language === 'English' ? 'Select request type' : 'اختر نوع الطلب',
     hardware: language === 'English' ? 'Hardware' : 'أجهزة',
     software: language === 'English' ? 'Software' : 'برمجيات',
     network: language === 'English' ? 'Network' : 'شبكة',
@@ -173,10 +173,10 @@ export default function TicketForm({
 
         <FormField
           control={form.control}
-          name="category"
+          name="requestType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{translations.category}</FormLabel>
+              <FormLabel>{translations.requestType}</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
@@ -184,7 +184,7 @@ export default function TicketForm({
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={translations.selectCategory} />
+                    <SelectValue placeholder={translations.selectRequestType} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>

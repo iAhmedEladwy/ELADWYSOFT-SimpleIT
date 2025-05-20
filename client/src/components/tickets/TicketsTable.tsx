@@ -207,7 +207,7 @@ export default function TicketsTable({
           <TableRow>
             <TableHead>{translations.ticketId}</TableHead>
             <TableHead>{translations.dateCreated}</TableHead>
-            <TableHead>{translations.category}</TableHead>
+            <TableHead>{translations.requestType}</TableHead>
             <TableHead>{translations.priority}</TableHead>
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.submittedBy}</TableHead>
@@ -222,7 +222,7 @@ export default function TicketsTable({
               <TableCell>
                 {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
               </TableCell>
-              <TableCell>{ticket.category}</TableCell>
+              <TableCell>{ticket.requestType}</TableCell>
               <TableCell>
                 <Badge variant={getPriorityBadgeVariant(ticket.priority)}>
                   {ticket.priority}
