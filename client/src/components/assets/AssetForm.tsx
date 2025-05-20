@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
 import { useQuery } from '@tanstack/react-query';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Form,
   FormControl,
