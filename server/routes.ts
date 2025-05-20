@@ -1978,6 +1978,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Clear audit logs (admin only)
+  app.delete("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { olderThan, entityType, action } = req.body;
+      
+      // Parse olderThan date if provided
+      const olderThanDate = olderThan ? new Date(olderThan) : undefined;
+      
+      // Clear logs based on provided filters
+      const deletedCount = await storage.clearActivityLogs({
+        olderThan: olderThanDate,
+        entityType,
+        action
+      });
+      
+      // Log the clear action itself
+      if (req.user) {
+        await logActivity({
+          userId: (req.user as any).id,
+          action: AuditAction.DELETE,
+          entityType: EntityType.REPORT,
+          details: { 
+            message: 'Audit logs cleared',
+            deletedCount,
+            filters: { olderThan, entityType, action }
+          }
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        deletedCount,
+        message: `Successfully cleared ${deletedCount} audit log entries` 
+      });
+    } catch (error: any) {
+      console.error("Error clearing audit logs:", error);
+      res.status(500).json({ message: error.message || "Failed to clear audit logs" });
+    }
+  });
+  
   // Export audit logs to CSV
   app.get("/api/audit-logs/export", authenticateUser, hasAccess(3), async (req, res) => {
     try {

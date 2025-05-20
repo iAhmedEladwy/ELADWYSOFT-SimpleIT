@@ -129,6 +129,11 @@ export interface IStorage {
     startDate?: Date;
     endDate?: Date;
   }): Promise<number>;
+  clearActivityLogs(options?: {
+    olderThan?: Date;
+    entityType?: string;
+    action?: string;
+  }): Promise<number>; // Returns number of deleted logs
   
   // Custom Fields operations
   getCustomAssetTypes(): Promise<any[]>;
@@ -1040,6 +1045,51 @@ export class DatabaseStorage implements IStorage {
           pageSize: limit || 20
         }
       };
+    }
+  }
+  
+  /**
+   * Clear audit logs based on filter criteria
+   * @param options Optional filter criteria
+   * @returns Number of deleted audit log entries
+   */
+  async clearActivityLogs(options?: {
+    olderThan?: Date;
+    entityType?: string;
+    action?: string;
+  }): Promise<number> {
+    try {
+      // Build delete query
+      let deleteQuery = db.delete(activityLog);
+      
+      // Apply filters if provided
+      if (options) {
+        if (options.olderThan) {
+          deleteQuery = deleteQuery.where(
+            lt(activityLog.createdAt, options.olderThan)
+          );
+        }
+        
+        if (options.entityType) {
+          deleteQuery = deleteQuery.where(
+            eq(activityLog.entityType, options.entityType)
+          );
+        }
+        
+        if (options.action) {
+          deleteQuery = deleteQuery.where(
+            eq(activityLog.action, options.action)
+          );
+        }
+      }
+      
+      // Execute the query
+      const result = await deleteQuery;
+      
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error("Error clearing activity logs:", error);
+      throw error;
     }
   }
   
