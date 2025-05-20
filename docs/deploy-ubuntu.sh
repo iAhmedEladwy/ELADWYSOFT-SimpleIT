@@ -197,7 +197,33 @@ SESSION_SECRET=$(openssl rand -hex 32)
 REPLIT_DOMAINS=$(hostname -f),localhost
 ISSUER_URL=http://localhost:3000
 REPL_ID=simpleit-production
+
+# Debug Settings - uncomment if needed
+# DEBUG=simpleit:*
 EOL
+
+# Create a diagnostic script for better troubleshooting
+log "Creating troubleshooting script..."
+cat > "$INSTALL_DIR/diagnose.sh" << EOL
+#!/bin/bash
+echo "===== SimpleIT Diagnostic Tool ====="
+echo "Node.js version: \$(node -v)"
+echo "NPM version: \$(npm -v)"
+echo "PostgreSQL status: \$(systemctl is-active postgresql)"
+echo "===== Environment Variables ====="
+grep -v "^#" .env | sort
+echo "===== Critical Files ====="
+ls -la server/index.js
+ls -la dist 2>/dev/null || echo "dist directory not found!"
+echo "===== Database Connection Test ====="
+NODE_ENV=production node -e "const { Pool } = require('@neondatabase/serverless'); const pool = new Pool({ connectionString: process.env.DATABASE_URL }); pool.query('SELECT NOW()').then(res => console.log('Database connection successful:', res.rows[0])).catch(err => console.error('Database connection failed:', err)).finally(() => pool.end());" || echo "Database connection test failed!"
+echo "===== Service Status ====="
+systemctl status simpleit || true
+echo "===== End of Diagnostics ====="
+EOL
+
+chmod +x "$INSTALL_DIR/diagnose.sh"
+chown "$SYS_USER:$SYS_USER" "$INSTALL_DIR/diagnose.sh"
 
 # Set permissions
 chmod 640 "$INSTALL_DIR/.env" || error "Failed to set environment file permissions"
@@ -259,6 +285,21 @@ su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/
 log "Running database migrations..."
 su - "$SYS_USER" -c "cd $INSTALL_DIR && export PATH=/home/$SYS_USER/.npm-global/bin:\$PATH && npm run db:push" || warning "Failed to run database migrations"
 
+# Verify critical files exist before creating service
+log "Verifying critical application files..."
+if [ ! -f "$INSTALL_DIR/server/index.js" ]; then
+  error "Critical file server/index.js not found. Build may have failed."
+fi
+
+if [ ! -d "$INSTALL_DIR/dist" ]; then
+  warning "Directory 'dist' not found. Application may not have built correctly."
+fi
+
+# Check if required environment variables are set in .env
+if [ ! -f "$INSTALL_DIR/.env" ]; then
+  warning ".env file not found. Service may fail to start."
+fi
+
 # Create systemd service
 log "Creating systemd service..."
 cat > /etc/systemd/system/simpleit.service << EOL
@@ -276,6 +317,9 @@ Environment=NODE_ENV=production
 Environment=PATH=/home/$SYS_USER/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
 Environment=NODE_PATH=/home/$SYS_USER/.npm-global/lib/node_modules
 
+# Load environment variables from .env file
+EnvironmentFile=-$INSTALL_DIR/.env
+
 [Install]
 WantedBy=multi-user.target
 EOL
@@ -292,7 +336,24 @@ systemctl start simpleit || warning "Failed to start SimpleIT service"
 if systemctl is-active --quiet simpleit; then
   log "SimpleIT service is running"
 else
-  warning "SimpleIT service failed to start. Check logs with 'journalctl -u simpleit'"
+  warning "SimpleIT service failed to start. Checking logs..."
+  
+  # Display service logs for troubleshooting
+  log "Service logs:"
+  journalctl -u simpleit -n 50 >> $LOG_FILE
+  tail -n 50 $LOG_FILE
+  
+  # Check if NODE_ENV is properly set
+  log "Verifying environment configuration..."
+  su - "$SYS_USER" -c "cd $INSTALL_DIR && node -e 'console.log(\"Node version:\", process.version); console.log(\"Environment:\", process.env.NODE_ENV);'" >> $LOG_FILE
+  
+  warning "Service failed to start. Please check the full logs with 'journalctl -u simpleit'"
+  
+  # Attempt to run the application directly to see errors
+  log "Attempting to run application directly for diagnostic purposes..."
+  su - "$SYS_USER" -c "cd $INSTALL_DIR && NODE_ENV=production node server/index.js" >> $LOG_FILE 2>&1 &
+  sleep 5
+  log "Check $LOG_FILE for detailed error information"
 fi
 
 # Configure Nginx
