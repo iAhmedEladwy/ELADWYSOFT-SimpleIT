@@ -6,7 +6,6 @@ import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
 import AssetsByType from '@/components/dashboard/AssetsByType';
 import DepartmentDistribution from '@/components/dashboard/DepartmentDistribution';
-import FeaturedAssets from '@/components/dashboard/FeaturedAssets';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import Notifications from '@/components/dashboard/Notifications';
 import { 
@@ -132,9 +131,6 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
           </div>
-
-          {/* Featured Assets */}
-          <FeaturedAssets />
         </TabsContent>
 
         <TabsContent value="recent-activity">

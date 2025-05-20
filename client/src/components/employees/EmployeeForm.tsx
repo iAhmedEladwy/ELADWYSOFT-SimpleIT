@@ -64,6 +64,12 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     queryKey: ['/api/employees'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+  
+  // Fetch system configuration for departments
+  const { data: systemConfig } = useQuery({
+    queryKey: ['/api/system-config'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   // Translations
   const translations = {
@@ -235,9 +241,29 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{translations.department}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.department} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {systemConfig?.departments?.map((dept: string) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                        {(!systemConfig?.departments || systemConfig.departments.length === 0) && (
+                          <SelectItem value="General">General</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {language === 'English' ? 
+                        'Select from departments defined in System Configuration' : 
+                        'اختر من الأقسام المعرفة في إعدادات النظام'}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
