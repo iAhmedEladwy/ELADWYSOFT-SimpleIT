@@ -215,6 +215,11 @@ export default function TicketDetailForm({
     return employee?.name || 'Unknown';
   };
 
+  const getUserName = (id: number) => {
+    const user = users.find(u => u.id === id);
+    return user?.username || 'Unknown User';
+  };
+
   const getAssetName = (id: number) => {
     const asset = assets.find(asset => asset.id === id);
     return asset?.name || 'Unknown';
@@ -523,7 +528,7 @@ export default function TicketDetailForm({
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        <span className="font-medium">{getEmployeeName(comment.authorId)}</span>
+                        <span className="font-medium">{getUserName(comment.userId)}</span>
                         {comment.isPrivate && (
                           <Badge variant="secondary" className="text-xs">Private</Badge>
                         )}
