@@ -17,6 +17,8 @@ import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 import { emailService } from "./emailService";
+import { exportToCSV, importFromCSV } from "@shared/csvUtils";
+import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
 // Helper function to generate IDs
 const generateId = (prefix: string, num: number) => {
@@ -984,47 +986,253 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asset Template and Export Routes
-  app.get("/api/assets/template", authenticateUser, hasAccess(2), async (req, res) => {
+  // Standardized CSV Template Generation
+  app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      // Create template CSV with all the fields
-      const templateData = [
-        {
-          'Type': 'Laptop',
-          'Brand': 'Example Brand',
-          'Model Number': 'M123456',
-          'Model Name': 'Example Model',
-          'Serial Number': 'SN123456789',
-          'Specs': '16GB RAM, 512GB SSD, i7 Processor',
-          'Status': 'Available',
-          'Purchase Date': '2023-01-15',
-          'Purchase Price': '1200.00',
-          'Warranty Expiry Date': '2025-01-15',
-          'Out Of Box OS': 'Windows 11',
-          'Life Span (months)': '36'
-        }
-      ];
+      const { entity } = req.params;
+      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
       
-      // Convert to CSV using csv-stringify
-      csvStringify(templateData, { header: true }, (err, output) => {
-        if (err) {
-          throw new Error('Error generating CSV template');
-        }
-        
-        // Set headers for file download
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=asset-template.csv');
-        
-        // Send CSV data
-        res.send(output);
+      if (!validEntities.includes(entity)) {
+        return res.status(400).json({ error: "Invalid entity type" });
+      }
+
+      let templateData: any[] = [];
+      
+      switch (entity) {
+        case 'assets':
+          templateData = [{
+            'type': 'Laptop',
+            'brand': 'Example Brand',
+            'assetId': 'AST00001',
+            'serialNumber': 'SN123456789',
+            'status': 'Active',
+            'modelNumber': 'M123456',
+            'modelName': 'Example Model',
+            'specs': '16GB RAM, 512GB SSD, i7 Processor',
+            'purchaseDate': '2023-01-15',
+            'buyPrice': '1200.00',
+            'warrantyEndDate': '2025-01-15',
+            'assignedEmployeeId': '1'
+          }];
+          break;
+        case 'employees':
+          templateData = [{
+            'employeeId': 'EMP00001',
+            'name': 'John Doe',
+            'email': 'john.doe@company.com',
+            'department': 'IT',
+            'position': 'Software Developer',
+            'phone': '+1234567890',
+            'location': 'Office Building A',
+            'managerId': '2',
+            'startDate': '2023-01-15',
+            'salary': '5000.00',
+            'status': 'Active'
+          }];
+          break;
+        case 'tickets':
+          templateData = [{
+            'summary': 'Computer not starting',
+            'description': 'Employee computer fails to boot up after power outage',
+            'category': 'Hardware',
+            'requestType': 'Incident',
+            'urgency': 'High',
+            'impact': 'Medium',
+            'submittedById': '1',
+            'assignedToId': '2',
+            'dueDate': '2024-01-20T10:00:00Z'
+          }];
+          break;
+        default:
+          return res.status(400).json({ error: "Template not available for this entity" });
+      }
+
+      const { content, headers } = await exportToCSV(templateData, `${entity}-template`, { headers: true });
+      
+      Object.entries(headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
       });
       
+      res.send(content);
     } catch (error: any) {
-      console.error('Error generating asset template:', error);
+      console.error('Error generating template:', error);
       res.status(500).json({ message: error.message });
     }
   });
-  
+  // Standardized CSV Import/Export routes
+  app.post("/api/:entity/import", authenticateUser, hasAccess(3), upload.single("file"), async (req, res) => {
+    try {
+      const { entity } = req.params;
+      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
+      
+      if (!validEntities.includes(entity)) {
+        return res.status(400).json({ error: "Invalid entity type" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Get validation rules for entity type
+      const validationRules = getValidationRules(entity);
+      
+      // Import and validate CSV data
+      const { data, validation, transformedData } = await importFromCSV(
+        req.file.buffer,
+        validationRules,
+        { headers: true }
+      );
+
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: "Validation failed",
+          errors: validation.errors,
+          warnings: validation.warnings
+        });
+      }
+
+      // Process the transformed data based on entity type
+      const importResults = [];
+      const errors: string[] = [];
+
+      for (const row of transformedData) {
+        try {
+          let result;
+          switch (entity) {
+            case 'assets':
+              // Generate asset ID if not provided
+              if (!row.assetId) {
+                const config = await storage.getSystemConfig();
+                const prefix = config?.assetIdPrefix || 'AST';
+                row.assetId = generateId(prefix, Date.now() % 100000);
+              }
+              result = await storage.createAsset(row);
+              break;
+            case 'employees':
+              if (!row.empId) {
+                const config = await storage.getSystemConfig();
+                const prefix = config?.empIdPrefix || 'EMP';
+                row.empId = generateId(prefix, Date.now() % 100000);
+              }
+              result = await storage.createEmployee(row);
+              break;
+            case 'tickets':
+              if (!row.ticketId) {
+                const config = await storage.getSystemConfig();
+                const prefix = config?.ticketIdPrefix || 'TKT';
+                row.ticketId = generateId(prefix, Date.now() % 100000);
+              }
+              result = await storage.createTicket(row);
+              break;
+            case 'users':
+              // Hash password if provided
+              if (row.password) {
+                row.password = await hash(row.password, 12);
+              }
+              result = await storage.createUser(row);
+              break;
+            case 'asset-maintenance':
+              result = await storage.createAssetMaintenance(row);
+              break;
+            case 'asset-transactions':
+              result = await storage.createAssetTransaction(row);
+              break;
+            default:
+              throw new Error("Unsupported entity type");
+          }
+          
+          importResults.push(result);
+          
+          // Log the import activity
+          await logActivity({
+            userId: req.user?.id,
+            action: AuditAction.IMPORT,
+            entityType: entity.toUpperCase().replace('-', '_') as EntityType,
+            entityId: result.id,
+            details: { importedData: row }
+          });
+        } catch (error) {
+          errors.push(`Row error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+      }
+
+      res.json({
+        message: `Imported ${importResults.length} ${entity} successfully`,
+        imported: importResults.length,
+        errors: errors.length > 0 ? errors : undefined,
+        warnings: validation.warnings.length > 0 ? validation.warnings : undefined
+      });
+    } catch (error) {
+      console.error("Import error:", error);
+      res.status(500).json({ error: "Import failed" });
+    }
+  });
+
+  app.get("/api/:entity/export", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { entity } = req.params;
+      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
+      
+      if (!validEntities.includes(entity)) {
+        return res.status(400).json({ error: "Invalid entity type" });
+      }
+
+      // Get data based on entity type
+      let data;
+      switch (entity) {
+        case 'assets':
+          data = await storage.getAllAssets();
+          break;
+        case 'employees':
+          data = await storage.getAllEmployees();
+          break;
+        case 'tickets':
+          data = await storage.getAllTickets();
+          break;
+        case 'users':
+          data = await storage.getAllUsers();
+          // Remove password from export
+          data = data.map(user => ({ ...user, password: undefined }));
+          break;
+        case 'asset-maintenance':
+          data = await storage.getAllAssetMaintenances();
+          break;
+        case 'asset-transactions':
+          data = await storage.getAllAssetTransactions();
+          break;
+        default:
+          throw new Error("Unsupported entity type");
+      }
+
+      // Get export columns for entity type
+      const columns = getExportColumns(entity);
+      
+      // Export to CSV
+      const { content, headers } = await exportToCSV(data, entity, { 
+        headers: true,
+        columns 
+      });
+
+      // Set response headers
+      Object.entries(headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+
+      // Log the export activity
+      await logActivity({
+        userId: req.user?.id,
+        action: AuditAction.EXPORT,
+        entityType: entity.toUpperCase().replace('-', '_') as EntityType,
+        details: { exportCount: data.length }
+      });
+
+      res.send(content);
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ error: "Export failed" });
+    }
+  });
+
   app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
