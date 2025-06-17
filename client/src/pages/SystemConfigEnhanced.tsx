@@ -847,6 +847,7 @@ export default function SystemConfigEnhanced() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteAssetBrand(brand.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -894,6 +895,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="status-name"
+                                value={newStatusName}
+                                onChange={(e) => setNewStatusName(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
                               />
                             </div>
@@ -903,6 +906,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="status-description"
+                                value={newStatusDescription}
+                                onChange={(e) => setNewStatusDescription(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
                               />
                             </div>
@@ -913,7 +918,8 @@ export default function SystemConfigEnhanced() {
                               <Input
                                 id="status-color"
                                 type="color"
-                                defaultValue="#3B82F6"
+                                value={newStatusColor}
+                                onChange={(e) => setNewStatusColor(e.target.value)}
                                 placeholder={language === 'English' ? 'Choose color' : 'اختر اللون'}
                               />
                             </div>
@@ -923,7 +929,7 @@ export default function SystemConfigEnhanced() {
                                   {language === 'English' ? 'Cancel' : 'إلغاء'}
                                 </Button>
                               </DialogClose>
-                              <Button>
+                              <Button onClick={handleAddAssetStatus} disabled={!newStatusName.trim()}>
                                 {language === 'English' ? 'Add' : 'إضافة'}
                               </Button>
                             </div>
@@ -958,6 +964,7 @@ export default function SystemConfigEnhanced() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteAssetStatus(status.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -1005,6 +1012,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="provider-name"
+                                value={newProviderName}
+                                onChange={(e) => setNewProviderName(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter provider name' : 'أدخل اسم مقدم الخدمة'}
                               />
                             </div>
@@ -1014,6 +1023,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="provider-contact"
+                                value={newProviderContact}
+                                onChange={(e) => setNewProviderContact(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter contact person (optional)' : 'أدخل الشخص المسؤول (اختياري)'}
                               />
                             </div>
@@ -1023,6 +1034,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="provider-phone"
+                                value={newProviderPhone}
+                                onChange={(e) => setNewProviderPhone(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter phone number (optional)' : 'أدخل رقم الهاتف (اختياري)'}
                               />
                             </div>
@@ -1033,6 +1046,8 @@ export default function SystemConfigEnhanced() {
                               <Input
                                 id="provider-email"
                                 type="email"
+                                value={newProviderEmail}
+                                onChange={(e) => setNewProviderEmail(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter email address (optional)' : 'أدخل البريد الإلكتروني (اختياري)'}
                               />
                             </div>
@@ -1042,7 +1057,7 @@ export default function SystemConfigEnhanced() {
                                   {language === 'English' ? 'Cancel' : 'إلغاء'}
                                 </Button>
                               </DialogClose>
-                              <Button>
+                              <Button onClick={handleAddServiceProvider} disabled={!newProviderName.trim()}>
                                 {language === 'English' ? 'Add' : 'إضافة'}
                               </Button>
                             </div>
@@ -1073,6 +1088,7 @@ export default function SystemConfigEnhanced() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteServiceProvider(provider.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
