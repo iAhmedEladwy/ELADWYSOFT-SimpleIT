@@ -8,6 +8,7 @@ import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import AdvancedTicketManagement from '@/components/tickets/AdvancedTicketManagement';
 import TicketForm from '@/components/tickets/TicketForm';
+import TicketUpdateForm from '@/components/tickets/TicketUpdateForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';

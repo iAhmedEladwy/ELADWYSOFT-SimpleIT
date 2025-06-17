@@ -50,6 +50,8 @@ export class MemoryStorage implements IStorage {
     customRequestTypes: 1,
     ticketHistory: 1,
     ticketCategories: 1,
+    timeEntries: 1,
+    comments: 1,
     ticketComments: 1
   };
 
@@ -1634,5 +1636,51 @@ export class MemoryStorage implements IStorage {
     };
     this.ticketHistory.push(history);
     return history;
+  }
+
+  async addTicketComment(commentData: any): Promise<any> {
+    const comment = {
+      id: this.idCounters.comments++,
+      ticketId: commentData.ticketId,
+      userId: commentData.userId,
+      content: commentData.content,
+      isPrivate: commentData.isPrivate || false,
+      attachments: commentData.attachments || [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.comments.push(comment);
+    
+    // Update ticket's last activity
+    const ticket = this.tickets.find(t => t.id === commentData.ticketId);
+    if (ticket) {
+      ticket.lastActivityAt = new Date();
+    }
+    
+    return comment;
+  }
+
+  async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
+    const timeEntry = {
+      id: this.idCounters.timeEntries++,
+      ticketId,
+      userId,
+      hours,
+      description,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.timeEntries.push(timeEntry);
+    
+    // Update ticket's actual hours
+    const ticket = this.tickets.find(t => t.id === ticketId);
+    if (ticket) {
+      ticket.actualHours = (ticket.actualHours || 0) + hours;
+      ticket.lastActivityAt = new Date();
+    }
+    
+    return timeEntry;
   }
 }
