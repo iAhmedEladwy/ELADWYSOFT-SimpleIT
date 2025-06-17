@@ -669,6 +669,77 @@ export default function EnhancedTicketTable({
                       </DialogContent>
                     </Dialog>
 
+                    {/* Comment Button */}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddComment(ticket)}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {language === 'English' ? 'Add Comment' : 'إضافة تعليق'} - {ticket.ticketId}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>{language === 'English' ? 'Comment' : 'التعليق'}</Label>
+                            <Textarea
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                              placeholder={language === 'English' ? 'Enter your comment...' : 'أدخل تعليقك...'}
+                              rows={4}
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="private-comment"
+                              checked={isPrivateComment}
+                              onCheckedChange={setIsPrivateComment}
+                            />
+                            <Label htmlFor="private-comment">
+                              {language === 'English' ? 'Private Comment (Admin Only)' : 'تعليق خاص (للمشرفين فقط)'}
+                            </Label>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setShowAddComment(false)}
+                            >
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button
+                              onClick={handleSubmitComment}
+                              disabled={addCommentMutation.isPending || !commentText.trim()}
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              {language === 'English' ? 'Add Comment' : 'إضافة تعليق'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* File Attachment Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // File attachment functionality placeholder
+                        toast({
+                          title: language === 'English' ? 'File Attachment' : 'إرفاق ملف',
+                          description: language === 'English' ? 'File attachment feature will be implemented' : 'سيتم تنفيذ ميزة إرفاق الملفات',
+                        });
+                      }}
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+
                     {/* Admin Delete Button */}
                     {hasAccess('admin') && (
                       <AlertDialog>
