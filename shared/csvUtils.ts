@@ -49,33 +49,28 @@ export function parseCSV(
 ): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const results: any[] = [];
-    const parseOptions = {
-      columns: options.headers !== false,
-      delimiter: options.delimiter || ',',
-      skip_empty_lines: options.skipEmptyLines !== false,
-      ...options
+    
+    // Create readable stream from data
+    const stream = Readable.from(data.toString());
+    
+    // Configure parser options
+    const parserOptions = {
+      separator: options.delimiter || ',',
+      skipEmptyLines: options.skipEmptyLines !== false,
+      headers: options.headers !== false
     };
 
-    const parser = csvParse(parseOptions);
-    
-    parser.on('data', (row) => {
-      results.push(row);
-    });
-    
-    parser.on('end', () => {
-      resolve(results);
-    });
-    
-    parser.on('error', (error) => {
-      reject(error);
-    });
-
-    if (typeof data === 'string') {
-      parser.write(data);
-    } else {
-      parser.write(data.toString());
-    }
-    parser.end();
+    stream
+      .pipe(csvParser(parserOptions))
+      .on('data', (row) => {
+        results.push(row);
+      })
+      .on('end', () => {
+        resolve(results);
+      })
+      .on('error', (error) => {
+        reject(error);
+      });
   });
 }
 

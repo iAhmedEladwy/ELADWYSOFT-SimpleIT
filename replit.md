@@ -38,6 +38,12 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
   - Consolidated duplicate authentication implementations
   - Integrated password reset with email notifications
   - Added comprehensive deployment documentation for Ubuntu servers
+- **COMPLETED**: Standardized CSV Import/Export Utilities
+  - Created shared CSV parsing utilities with comprehensive validation (shared/csvUtils.ts)
+  - Implemented entity-specific validation rules for all modules (shared/importExportRules.ts)
+  - Added unified import/export routes supporting assets, employees, tickets, users, maintenance, and transactions
+  - Enhanced data validation with field type checking, pattern matching, and custom validation rules
+  - Standardized CSV template generation for all entity types with proper field mapping
 - **COMPLETED**: Email Integration and Security Features
   - Password reset functionality with secure token generation
   - Email service integration for notifications
