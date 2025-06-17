@@ -229,22 +229,61 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Tickets table
+// Tickets table with enhanced features
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
   submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
   requestType: varchar("request_type", { length: 100 }).notNull(),
+  category: varchar("category", { length: 100 }).default('General'),
   priority: ticketPriorityEnum("priority").notNull(),
   description: text("description").notNull(),
   relatedAssetId: integer("related_asset_id").references(() => assets.id),
   status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
+  resolution: text("resolution"),
   resolutionNotes: text("resolution_notes"),
+  tags: text("tags").array(),
+  dueDate: timestamp("due_date"),
+  slaTarget: integer("sla_target"), // SLA target in hours
+  slaBreached: boolean("sla_breached").default(false),
+  escalationLevel: integer("escalation_level").default(0),
+  mergedIntoId: integer("merged_into_id").references(() => tickets.id),
+  reopenCount: integer("reopen_count").default(0),
+  customerRating: integer("customer_rating"), // 1-5 rating
+  customerFeedback: text("customer_feedback"),
+  privateNotes: text("private_notes"), // Staff-only notes
+  attachments: text("attachments").array(), // File paths
   startTime: timestamp("start_time"),
   completionTime: timestamp("completion_time"),
   timeSpent: integer("time_spent"), // Time spent in minutes
   isTimeTracking: boolean("is_time_tracking").default(false),
+  lastActivityAt: timestamp("last_activity_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket Comments table for public and private comments
+export const ticketComments = pgTable("ticket_comments", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  isPrivate: boolean("is_private").default(false), // Private staff notes
+  attachments: text("attachments").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket Categories table
+export const ticketCategories = pgTable("ticket_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }).default('#3B82F6'), // Hex color code
+  slaHours: integer("sla_hours").default(24), // Default SLA in hours
+  escalationRules: json("escalation_rules"), // JSON array of escalation rules
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -259,6 +298,18 @@ export const ticketHistory = pgTable("ticket_history", {
   oldValue: text("old_value"),
   newValue: text("new_value"),
   notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Ticket Notifications table for status change notifications
+export const ticketNotifications = pgTable("ticket_notifications", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: varchar("type", { length: 50 }).notNull(), // 'status_change', 'assignment', 'comment', etc.
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  emailSent: boolean("email_sent").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -505,8 +556,23 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
   id: true, 
   ticketId: true, // Remove ticketId from validation requirements
   createdAt: true, 
-  updatedAt: true 
+  updatedAt: true,
+  lastActivityAt: true
 });
+
+// Enhanced ticket schemas
+export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertTicketCategorySchema = createInsertSchema(ticketCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ 
   id: true, 
   createdAt: true, 
@@ -559,11 +625,6 @@ export const insertCustomRequestTypeSchema = createInsertSchema(customRequestTyp
   updatedAt: true
 });
 
-export const insertTicketHistorySchema = createInsertSchema(ticketHistory).omit({
-  id: true,
-  createdAt: true
-});
-
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -585,6 +646,18 @@ export type InsertAssetSaleItem = z.infer<typeof insertAssetSaleItemSchema>;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+
+export type TicketComment = typeof ticketComments.$inferSelect;
+export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
+
+export type TicketCategory = typeof ticketCategories.$inferSelect;
+export type InsertTicketCategory = z.infer<typeof insertTicketCategorySchema>;
+
+export type TicketHistory = typeof ticketHistory.$inferSelect;
+export type InsertTicketHistory = z.infer<typeof insertTicketHistorySchema>;
+
+export type TicketNotification = typeof ticketNotifications.$inferSelect;
+export type InsertTicketNotification = z.infer<typeof insertTicketNotificationSchema>;
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;

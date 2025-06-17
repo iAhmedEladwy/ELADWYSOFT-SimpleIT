@@ -165,7 +165,7 @@ export default function TicketForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="0">{translations.none}</SelectItem>
+                  <SelectItem value="none">{translations.none}</SelectItem>
                   {assets.map((asset) => (
                     <SelectItem key={asset.id} value={asset.id.toString()}>
                       {asset.name} - {asset.assetId} ({asset.type})
