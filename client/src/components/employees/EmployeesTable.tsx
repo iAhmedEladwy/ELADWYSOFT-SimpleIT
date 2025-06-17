@@ -198,8 +198,8 @@ export default function EmployeesTable({
                 <TableCell className="font-medium">{employee.empId || employee.employeeId}</TableCell>
                 <TableCell>{employee.englishName || employee.name}</TableCell>
                 <TableCell>{employee.department}</TableCell>
-                <TableCell>{employee.title}</TableCell>
-                <TableCell>{getStatusBadge(employee.status)}</TableCell>
+                <TableCell>{employee.title || employee.position}</TableCell>
+                <TableCell>{getStatusBadge(employee.status || (employee.isActive ? 'Active' : 'Inactive'))}</TableCell>
                 <TableCell>{formatDate(employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

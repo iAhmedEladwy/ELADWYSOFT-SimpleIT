@@ -895,6 +895,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee export endpoint
+  app.get("/api/employees/export", authenticateUser, async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      
+      // Map to CSV format with all fields
+      const csvData = employees.map(emp => ({
+        'Employee ID': emp.employeeId || emp.empId,
+        'English Name': emp.name || emp.englishName,
+        'Arabic Name': emp.arabicName || '',
+        'Department': emp.department,
+        'Position': emp.position || emp.title,
+        'Employment Type': emp.employmentType || 'Full-time',
+        'Status': emp.status || (emp.isActive ? 'Active' : 'Inactive'),
+        'Joining Date': emp.joiningDate || '',
+        'Exit Date': emp.exitDate || '',
+        'Personal Email': emp.email || emp.personalEmail,
+        'Corporate Email': emp.corporateEmail || '',
+        'Personal Mobile': emp.phone || emp.personalMobile,
+        'Work Mobile': emp.workMobile || '',
+        'ID Number': emp.idNumber || '',
+        'Direct Manager': emp.directManager || '',
+        'Created At': emp.createdAt,
+        'Updated At': emp.updatedAt
+      }));
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=employees_export.csv');
+      
+      if (csvData.length === 0) {
+        res.send('No employees found');
+        return;
+      }
+      
+      // Convert to CSV format
+      const headers = Object.keys(csvData[0]);
+      const csvRows = [
+        headers.join(','),
+        ...csvData.map(row => 
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            // Escape commas and quotes in CSV
+            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+              ? `"${value.replace(/"/g, '""')}"` 
+              : value;
+          }).join(',')
+        )
+      ];
+      
+      res.send(csvRows.join('\n'));
+    } catch (error: any) {
+      console.error('Employee export error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Employee Import/Export
   app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
