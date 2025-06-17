@@ -854,6 +854,10 @@ export default function EnhancedTicketTable({
               employees={employees}
               assets={assets}
               users={users}
+              onTicketUpdate={(updatedTicket) => {
+                setSelectedTicketForDetail(updatedTicket);
+                queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+              }}
             />
           </DialogContent>
         </Dialog>

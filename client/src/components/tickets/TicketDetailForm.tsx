@@ -58,6 +58,7 @@ interface TicketDetailFormProps {
   employees: any[];
   assets: any[];
   users: any[];
+  onTicketUpdate?: (updatedTicket: Ticket) => void;
 }
 
 export default function TicketDetailForm({ 
@@ -65,7 +66,8 @@ export default function TicketDetailForm({
   onClose, 
   employees, 
   assets, 
-  users 
+  users,
+  onTicketUpdate 
 }: TicketDetailFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -166,9 +168,9 @@ export default function TicketDetailForm({
     },
     onSuccess: (updatedTicket) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      // Update the ticket state locally
-      if (updatedTicket && ticket) {
-        Object.assign(ticket, updatedTicket);
+      // Update the parent component's ticket state
+      if (updatedTicket && onTicketUpdate) {
+        onTicketUpdate(updatedTicket);
       }
       toast({
         title: updatedTicket?.isTimeTracking ? 'Time tracking started' : 'Time tracking stopped',
