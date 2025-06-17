@@ -3484,6 +3484,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get ticket comments
+  app.get("/api/tickets/:id/comments", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const comments = await storage.getTicketComments(ticketId);
+      res.json(comments);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Feature 4: Delete Ticket (admin only)
   app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {

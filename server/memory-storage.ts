@@ -1436,7 +1436,7 @@ export class MemoryStorage implements IStorage {
     if (!ticket) return undefined;
     
     ticket.isTimeTracking = true;
-    ticket.timeStarted = new Date();
+    ticket.timeTrackingStartedAt = new Date().toISOString();
     ticket.updatedAt = new Date();
     
     // Log activity
@@ -1445,7 +1445,7 @@ export class MemoryStorage implements IStorage {
       entityType: "Ticket",
       entityId: ticketId,
       userId,
-      details: { ticketId: ticket.ticketId, startTime: ticket.timeStarted }
+      details: { ticketId: ticket.ticketId, startTime: ticket.timeTrackingStartedAt }
     });
     
     return ticket;
@@ -1456,11 +1456,11 @@ export class MemoryStorage implements IStorage {
     if (!ticket || !ticket.isTimeTracking) return undefined;
     
     const endTime = new Date();
-    const startTime = ticket.timeStarted || new Date();
+    const startTime = ticket.timeTrackingStartedAt ? new Date(ticket.timeTrackingStartedAt) : new Date();
     const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60); // minutes
     
     ticket.isTimeTracking = false;
-    ticket.timeEnded = endTime;
+    ticket.timeTrackingStartedAt = null;
     ticket.timeSpent = (ticket.timeSpent || 0) + duration;
     ticket.updatedAt = new Date();
     
@@ -1472,7 +1472,7 @@ export class MemoryStorage implements IStorage {
       userId,
       details: { 
         ticketId: ticket.ticketId, 
-        endTime, 
+        endTime: endTime.toISOString(), 
         duration: `${duration} minutes`,
         totalTime: `${ticket.timeSpent} minutes`
       }
@@ -1819,6 +1819,12 @@ export class MemoryStorage implements IStorage {
     }
     
     return comment;
+  }
+
+  async getTicketComments(ticketId: number): Promise<any[]> {
+    return this.ticketComments
+      .filter(comment => comment.ticketId === ticketId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
