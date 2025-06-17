@@ -758,7 +758,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/employees/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const employeeData = req.body;
+      const {
+        englishName,
+        arabicName,
+        department,
+        idNumber,
+        title,
+        directManager,
+        employmentType,
+        joiningDate,
+        exitDate,
+        status,
+        personalMobile,
+        workMobile,
+        personalEmail,
+        corporateEmail,
+        userId
+      } = req.body;
+      
+      // Map frontend fields to storage schema
+      const employeeData = {
+        name: englishName,
+        email: personalEmail || corporateEmail || req.body.email,
+        phone: personalMobile || workMobile || req.body.phone || '',
+        department: department,
+        position: title,
+        employeeId: req.body.employeeId, // Keep existing employeeId
+        isActive: status === 'Active',
+        // Store additional fields that might be used by other parts of the system
+        englishName,
+        arabicName,
+        idNumber,
+        title,
+        directManager,
+        employmentType,
+        joiningDate,
+        exitDate,
+        status,
+        personalMobile,
+        workMobile,
+        personalEmail,
+        corporateEmail,
+        userId
+      };
       
       const updatedEmployee = await storage.updateEmployee(id, employeeData);
       if (!updatedEmployee) {
@@ -772,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: "Update",
           entityType: "Employee",
           entityId: updatedEmployee.id,
-          details: { name: updatedEmployee.englishName, empId: updatedEmployee.empId }
+          details: { name: updatedEmployee.name || updatedEmployee.englishName, empId: updatedEmployee.employeeId }
         });
       }
       
