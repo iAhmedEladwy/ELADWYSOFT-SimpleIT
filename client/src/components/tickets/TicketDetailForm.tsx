@@ -103,9 +103,22 @@ export default function TicketDetailForm({
     mutationFn: async (updates: any) => {
       return await apiRequest('PUT', `/api/tickets/${ticket?.id}/enhanced`, updates);
     },
-    onSuccess: () => {
+    onSuccess: (updatedTicket) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/history`] });
+      // Update local form state with the updated ticket data
+      if (updatedTicket) {
+        setEditForm({
+          summary: updatedTicket.summary || '',
+          description: updatedTicket.description || '',
+          priority: updatedTicket.priority || 'Medium',
+          status: updatedTicket.status || 'Open',
+          assignedToId: updatedTicket.assignedToId?.toString() || '',
+          requestType: updatedTicket.requestType || 'Support',
+          slaTarget: updatedTicket.slaTarget?.toString() || '',
+          dueDate: updatedTicket.dueDate ? new Date(updatedTicket.dueDate).toISOString().slice(0, 16) : '',
+        });
+      }
       toast({
         title: 'Ticket updated',
         description: 'Ticket has been updated successfully',
@@ -149,11 +162,15 @@ export default function TicketDetailForm({
     mutationFn: async (action: 'start' | 'stop') => {
       return await apiRequest('POST', `/api/tickets/${ticket?.id}/${action}-tracking`);
     },
-    onSuccess: () => {
+    onSuccess: (updatedTicket) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      // Update the ticket state locally
+      if (updatedTicket && ticket) {
+        Object.assign(ticket, updatedTicket);
+      }
       toast({
-        title: ticket?.isTimeTracking ? 'Time tracking stopped' : 'Time tracking started',
-        description: ticket?.isTimeTracking ? 'Time tracking has been stopped' : 'Time tracking has been started',
+        title: updatedTicket?.isTimeTracking ? 'Time tracking started' : 'Time tracking stopped',
+        description: updatedTicket?.isTimeTracking ? 'Time tracking has been started' : 'Time tracking has been stopped',
       });
     },
     onError: (error) => {
@@ -185,6 +202,12 @@ export default function TicketDetailForm({
     }
     if (editForm.requestType !== ticket?.requestType) {
       updates.requestType = editForm.requestType;
+    }
+    if (editForm.slaTarget !== ticket?.slaTarget?.toString()) {
+      updates.slaTarget = editForm.slaTarget ? parseInt(editForm.slaTarget) : null;
+    }
+    if (editForm.dueDate !== (ticket?.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '')) {
+      updates.dueDate = editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -357,10 +380,8 @@ export default function TicketDetailForm({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="New">New</SelectItem>
                         <SelectItem value="Open">Open</SelectItem>
                         <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
                         <SelectItem value="Resolved">Resolved</SelectItem>
                         <SelectItem value="Closed">Closed</SelectItem>
                       </SelectContent>
@@ -381,6 +402,27 @@ export default function TicketDetailForm({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>SLA Target (Hours)</Label>
+                    <Input
+                      type="number"
+                      value={editForm.slaTarget || ''}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, slaTarget: e.target.value }))}
+                      placeholder="Enter SLA target in hours"
+                      min="1"
+                      max="168"
+                    />
+                  </div>
+                  <div>
+                    <Label>Due Date</Label>
+                    <Input
+                      type="datetime-local"
+                      value={editForm.dueDate || ''}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                    />
                   </div>
                 </div>
               </CardContent>

@@ -299,7 +299,7 @@ export default function EnhancedTicketTable({
       case 'Medium':
         return 'default';
       case 'Low':
-        return 'secondary';
+        return 'outline'; // Changed to yellow color
       default:
         return 'default';
     }
@@ -570,7 +570,7 @@ export default function EnhancedTicketTable({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Low">
-                        <Badge variant="secondary" className="text-xs">Low</Badge>
+                        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">Low</Badge>
                       </SelectItem>
                       <SelectItem value="Medium">
                         <Badge variant="default" className="text-xs">Medium</Badge>

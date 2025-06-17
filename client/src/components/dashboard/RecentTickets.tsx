@@ -29,7 +29,7 @@ export default function RecentTickets({ tickets, isLoading }: RecentTicketsProps
       case 'Medium':
         return 'bg-yellow-100 text-warning';
       case 'Low':
-        return 'bg-green-100 text-success';
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-600';
     }
