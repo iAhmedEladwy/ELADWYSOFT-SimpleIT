@@ -822,14 +822,28 @@ export default function SystemConfigEnhanced() {
                                   <p className="text-sm text-muted-foreground">{type.description}</p>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleDeleteAssetType(type.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700"
+                                  onClick={() => {
+                                    setEditingTypeId(type.id);
+                                    setEditTypeName(type.name);
+                                    setEditTypeDescription(type.description || '');
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteAssetType(type.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -947,14 +961,28 @@ export default function SystemConfigEnhanced() {
                                   <p className="text-sm text-muted-foreground">{brand.description}</p>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleDeleteAssetBrand(brand.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700"
+                                  onClick={() => {
+                                    setEditingBrandId(brand.id);
+                                    setEditBrandName(brand.name);
+                                    setEditBrandDescription(brand.description || '');
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteAssetBrand(brand.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1064,14 +1092,29 @@ export default function SystemConfigEnhanced() {
                                   )}
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleDeleteAssetStatus(status.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700"
+                                  onClick={() => {
+                                    setEditingStatusId(status.id);
+                                    setEditStatusName(status.name);
+                                    setEditStatusDescription(status.description || '');
+                                    setEditStatusColor(status.color || '#3B82F6');
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteAssetStatus(status.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1188,14 +1231,30 @@ export default function SystemConfigEnhanced() {
                                   {provider.email && <p>Email: {provider.email}</p>}
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleDeleteServiceProvider(provider.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700"
+                                  onClick={() => {
+                                    setEditingProviderId(provider.id);
+                                    setEditProviderName(provider.name);
+                                    setEditProviderContactPerson(provider.contactPerson || '');
+                                    setEditProviderPhone(provider.phone || '');
+                                    setEditProviderEmail(provider.email || '');
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteServiceProvider(provider.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
