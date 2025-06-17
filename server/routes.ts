@@ -3505,6 +3505,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Time tracking endpoints
+  app.post("/api/tickets/:id/start-tracking", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      const updatedTicket = await storage.startTicketTimeTracking(ticketId, userId);
+      if (!updatedTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(updatedTicket);
+    } catch (error: any) {
+      console.error("Start time tracking error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/tickets/:id/stop-tracking", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      const updatedTicket = await storage.stopTicketTimeTracking(ticketId, userId);
+      if (!updatedTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(updatedTicket);
+    } catch (error: any) {
+      console.error("Stop time tracking error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Ticket history endpoint
+  app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const history = await storage.getTicketHistory(ticketId);
+      res.json(history);
+    } catch (error: any) {
+      console.error("Get ticket history error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin delete ticket endpoint
+  app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      const success = await storage.deleteTicket(ticketId, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json({ message: "Ticket deleted successfully" });
+    } catch (error: any) {
+      console.error("Delete ticket error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Enhanced ticket update endpoint
+  app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = req.user.id;
+      const updateData = req.body;
+      
+      const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
+      if (!updatedTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(updatedTicket);
+    } catch (error: any) {
+      console.error("Enhanced ticket update error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Custom Request Types CRUD routes
   app.get("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
     try {

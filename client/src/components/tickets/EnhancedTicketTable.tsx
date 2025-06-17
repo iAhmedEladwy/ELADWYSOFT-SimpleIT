@@ -6,6 +6,16 @@ import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -43,7 +53,9 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Timer
+  Timer,
+  Edit,
+  Save
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -106,6 +118,95 @@ export default function EnhancedTicketTable({
   });
 
   // Time tracking mutations
+  const startTimeTrackingMutation = useMutation({
+    mutationFn: (ticketId: number) => 
+      apiRequest('POST', `/api/tickets/${ticketId}/time-tracking/start`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Time tracking started' : 'بدء تتبع الوقت',
+        description: language === 'English' ? 'Time tracking has been started for this ticket' : 'تم بدء تتبع الوقت لهذه التذكرة',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to start time tracking' : 'فشل في بدء تتبع الوقت',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const stopTimeTrackingMutation = useMutation({
+    mutationFn: (ticketId: number) => 
+      apiRequest('POST', `/api/tickets/${ticketId}/time-tracking/stop`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Time tracking stopped' : 'إيقاف تتبع الوقت',
+        description: language === 'English' ? 'Time tracking has been stopped for this ticket' : 'تم إيقاف تتبع الوقت لهذه التذكرة',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to stop time tracking' : 'فشل في إيقاف تتبع الوقت',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete ticket mutation (admin only)
+  const deleteTicketMutation = useMutation({
+    mutationFn: (ticketId: number) => 
+      apiRequest('DELETE', `/api/tickets/${ticketId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Ticket deleted' : 'تم حذف التذكرة',
+        description: language === 'English' ? 'Ticket has been successfully deleted' : 'تم حذف التذكرة بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete ticket' : 'فشل في حذف التذكرة',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Enhanced ticket update states
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: '',
+    priority: 'Medium' as 'Low' | 'Medium' | 'High',
+    status: 'Open' as 'Open' | 'In Progress' | 'Resolved' | 'Closed',
+    assignedToId: '',
+    resolution: '',
+    resolutionNotes: ''
+  });
+
+  // Enhanced update mutation
+  const updateTicketMutation = useMutation({
+    mutationFn: (data: { id: number; updates: any }) => 
+      apiRequest('PUT', `/api/tickets/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      setEditingTicket(null);
+      toast({
+        title: language === 'English' ? 'Ticket updated' : 'تم تحديث التذكرة',
+        description: language === 'English' ? 'Ticket has been successfully updated' : 'تم تحديث التذكرة بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update ticket' : 'فشل في تحديث التذكرة',
+        variant: 'destructive',
+      });
+    },
+  });
   const startTimeMutation = useMutation({
     mutationFn: async (ticketId: number) => {
       return await apiRequest(`/api/tickets/${ticketId}/start-time`, {
@@ -150,27 +251,54 @@ export default function EnhancedTicketTable({
     },
   });
 
-  // Delete ticket mutation (admin only)
-  const deleteTicketMutation = useMutation({
-    mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}`, {
-        method: 'DELETE'
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: "Ticket deleted",
-        description: "The ticket has been permanently deleted.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete ticket",
-        variant: "destructive",
-      });
-    },
+  // Utility functions
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'High': return 'destructive';
+      case 'Medium': return 'default';
+      case 'Low': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Open': return 'destructive';
+      case 'In Progress': return 'default';
+      case 'Resolved': return 'secondary';
+      case 'Closed': return 'outline';
+      default: return 'default';
+    }
+  };
+
+  const handleEditTicket = (ticket: Ticket) => {
+    setEditingTicket(ticket);
+    setEditForm({
+      description: ticket.description,
+      priority: ticket.priority,
+      status: ticket.status,
+      assignedToId: ticket.assignedToId?.toString() || '',
+      resolution: ticket.resolution || '',
+      resolutionNotes: ticket.resolutionNotes || ''
+    });
+  };
+
+  const handleUpdateTicket = () => {
+    if (!editingTicket) return;
+    
+    const updates = {
+      ...editForm,
+      assignedToId: editForm.assignedToId ? parseInt(editForm.assignedToId) : null
+    };
+    
+    updateTicketMutation.mutate({ id: editingTicket.id, updates });
+  };
   });
 
   const getStatusIcon = (status: string) => {

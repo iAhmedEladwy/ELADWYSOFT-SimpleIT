@@ -26,6 +26,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -1513,7 +1521,7 @@ export default function SystemConfigEnhanced() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getPaginatedItems(filteredRequestTypes, requestTypePage).map((requestType) => (
+                      {getPaginatedItems(filteredRequestTypes, currentPage.requestTypes).map((requestType) => (
                         <TableRow key={requestType.id}>
                           <TableCell className="font-medium">{requestType.name}</TableCell>
                           <TableCell>{requestType.description || '-'}</TableCell>
