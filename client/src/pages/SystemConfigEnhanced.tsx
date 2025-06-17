@@ -499,6 +499,15 @@ export default function SystemConfigEnhanced() {
     deleteAssetTypeMutation.mutate(id);
   };
 
+  const handleUpdateAssetType = () => {
+    if (!editTypeName.trim() || !editingTypeId) return;
+    updateAssetTypeMutation.mutate({
+      id: editingTypeId,
+      name: editTypeName.trim(),
+      description: editTypeDescription.trim() || undefined
+    });
+  };
+
   const handleAddAssetBrand = () => {
     if (!newBrandName.trim()) return;
     createAssetBrandMutation.mutate({
@@ -509,6 +518,15 @@ export default function SystemConfigEnhanced() {
 
   const handleDeleteAssetBrand = (id: number) => {
     deleteAssetBrandMutation.mutate(id);
+  };
+
+  const handleUpdateAssetBrand = () => {
+    if (!editBrandName.trim() || !editingBrandId) return;
+    updateAssetBrandMutation.mutate({
+      id: editingBrandId,
+      name: editBrandName.trim(),
+      description: editBrandDescription.trim() || undefined
+    });
   };
 
   const handleAddAssetStatus = () => {
@@ -524,6 +542,16 @@ export default function SystemConfigEnhanced() {
     deleteAssetStatusMutation.mutate(id);
   };
 
+  const handleUpdateAssetStatus = () => {
+    if (!editStatusName.trim() || !editingStatusId) return;
+    updateAssetStatusMutation.mutate({
+      id: editingStatusId,
+      name: editStatusName.trim(),
+      description: editStatusDescription.trim() || undefined,
+      color: editStatusColor
+    });
+  };
+
   const handleAddServiceProvider = () => {
     if (!newProviderName.trim()) return;
     createServiceProviderMutation.mutate({
@@ -536,6 +564,17 @@ export default function SystemConfigEnhanced() {
 
   const handleDeleteServiceProvider = (id: number) => {
     deleteServiceProviderMutation.mutate(id);
+  };
+
+  const handleUpdateServiceProvider = () => {
+    if (!editProviderName.trim() || !editingProviderId) return;
+    updateServiceProviderMutation.mutate({
+      id: editingProviderId,
+      name: editProviderName.trim(),
+      contactPerson: editProviderContact.trim() || undefined,
+      phone: editProviderPhone.trim() || undefined,
+      email: editProviderEmail.trim() || undefined
+    });
   };
 
   // Pagination helpers
@@ -1239,7 +1278,7 @@ export default function SystemConfigEnhanced() {
                                   onClick={() => {
                                     setEditingProviderId(provider.id);
                                     setEditProviderName(provider.name);
-                                    setEditProviderContactPerson(provider.contactPerson || '');
+                                    setEditProviderContact(provider.contactPerson || '');
                                     setEditProviderPhone(provider.phone || '');
                                     setEditProviderEmail(provider.email || '');
                                   }}
@@ -1455,6 +1494,213 @@ export default function SystemConfigEnhanced() {
               {language === 'English' ? 'Import' : 'استيراد'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Type Dialog */}
+      <Dialog open={editingTypeId !== null} onOpenChange={() => setEditingTypeId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Edit Asset Type' : 'تعديل نوع الأصل'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-type-name">
+                {language === 'English' ? 'Name' : 'الاسم'}
+              </Label>
+              <Input
+                id="edit-type-name"
+                value={editTypeName}
+                onChange={(e) => setEditTypeName(e.target.value)}
+                placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-type-description">
+                {language === 'English' ? 'Description' : 'الوصف'}
+              </Label>
+              <Input
+                id="edit-type-description"
+                value={editTypeDescription}
+                onChange={(e) => setEditTypeDescription(e.target.value)}
+                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingTypeId(null)}>
+                {language === 'English' ? 'Cancel' : 'إلغاء'}
+              </Button>
+              <Button onClick={handleUpdateAssetType} disabled={!editTypeName.trim()}>
+                {language === 'English' ? 'Update' : 'تحديث'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Brand Dialog */}
+      <Dialog open={editingBrandId !== null} onOpenChange={() => setEditingBrandId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Edit Asset Brand' : 'تعديل العلامة التجارية للأصل'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-brand-name">
+                {language === 'English' ? 'Name' : 'الاسم'}
+              </Label>
+              <Input
+                id="edit-brand-name"
+                value={editBrandName}
+                onChange={(e) => setEditBrandName(e.target.value)}
+                placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-brand-description">
+                {language === 'English' ? 'Description' : 'الوصف'}
+              </Label>
+              <Input
+                id="edit-brand-description"
+                value={editBrandDescription}
+                onChange={(e) => setEditBrandDescription(e.target.value)}
+                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingBrandId(null)}>
+                {language === 'English' ? 'Cancel' : 'إلغاء'}
+              </Button>
+              <Button onClick={handleUpdateAssetBrand} disabled={!editBrandName.trim()}>
+                {language === 'English' ? 'Update' : 'تحديث'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Status Dialog */}
+      <Dialog open={editingStatusId !== null} onOpenChange={() => setEditingStatusId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Edit Asset Status' : 'تعديل حالة الأصل'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-status-name">
+                {language === 'English' ? 'Name' : 'الاسم'}
+              </Label>
+              <Input
+                id="edit-status-name"
+                value={editStatusName}
+                onChange={(e) => setEditStatusName(e.target.value)}
+                placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status-description">
+                {language === 'English' ? 'Description' : 'الوصف'}
+              </Label>
+              <Input
+                id="edit-status-description"
+                value={editStatusDescription}
+                onChange={(e) => setEditStatusDescription(e.target.value)}
+                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status-color">
+                {language === 'English' ? 'Color' : 'اللون'}
+              </Label>
+              <Input
+                id="edit-status-color"
+                type="color"
+                value={editStatusColor}
+                onChange={(e) => setEditStatusColor(e.target.value)}
+                placeholder={language === 'English' ? 'Choose color' : 'اختر اللون'}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingStatusId(null)}>
+                {language === 'English' ? 'Cancel' : 'إلغاء'}
+              </Button>
+              <Button onClick={handleUpdateAssetStatus} disabled={!editStatusName.trim()}>
+                {language === 'English' ? 'Update' : 'تحديث'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Provider Dialog */}
+      <Dialog open={editingProviderId !== null} onOpenChange={() => setEditingProviderId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Edit Service Provider' : 'تعديل مقدم الخدمة'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-provider-name">
+                {language === 'English' ? 'Name' : 'الاسم'}
+              </Label>
+              <Input
+                id="edit-provider-name"
+                value={editProviderName}
+                onChange={(e) => setEditProviderName(e.target.value)}
+                placeholder={language === 'English' ? 'Enter provider name' : 'أدخل اسم مقدم الخدمة'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-provider-contact">
+                {language === 'English' ? 'Contact Person' : 'شخص الاتصال'}
+              </Label>
+              <Input
+                id="edit-provider-contact"
+                value={editProviderContact}
+                onChange={(e) => setEditProviderContact(e.target.value)}
+                placeholder={language === 'English' ? 'Enter contact person (optional)' : 'أدخل شخص الاتصال (اختياري)'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-provider-phone">
+                {language === 'English' ? 'Phone' : 'الهاتف'}
+              </Label>
+              <Input
+                id="edit-provider-phone"
+                value={editProviderPhone}
+                onChange={(e) => setEditProviderPhone(e.target.value)}
+                placeholder={language === 'English' ? 'Enter phone (optional)' : 'أدخل الهاتف (اختياري)'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-provider-email">
+                {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+              </Label>
+              <Input
+                id="edit-provider-email"
+                type="email"
+                value={editProviderEmail}
+                onChange={(e) => setEditProviderEmail(e.target.value)}
+                placeholder={language === 'English' ? 'Enter email (optional)' : 'أدخل البريد الإلكتروني (اختياري)'}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingProviderId(null)}>
+                {language === 'English' ? 'Cancel' : 'إلغاء'}
+              </Button>
+              <Button onClick={handleUpdateServiceProvider} disabled={!editProviderName.trim()}>
+                {language === 'English' ? 'Update' : 'تحديث'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
