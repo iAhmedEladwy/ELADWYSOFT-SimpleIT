@@ -98,6 +98,19 @@ export default function SystemConfigEnhanced() {
   const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
   const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
   const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+  
+  // Edit form states
+  const [editTypeName, setEditTypeName] = useState('');
+  const [editTypeDescription, setEditTypeDescription] = useState('');
+  const [editBrandName, setEditBrandName] = useState('');
+  const [editBrandDescription, setEditBrandDescription] = useState('');
+  const [editStatusName, setEditStatusName] = useState('');
+  const [editStatusDescription, setEditStatusDescription] = useState('');
+  const [editStatusColor, setEditStatusColor] = useState('#3B82F6');
+  const [editProviderName, setEditProviderName] = useState('');
+  const [editProviderContact, setEditProviderContact] = useState('');
+  const [editProviderPhone, setEditProviderPhone] = useState('');
+  const [editProviderEmail, setEditProviderEmail] = useState('');
 
   // Custom fields queries
   const { data: customAssetTypes = [] } = useQuery<any[]>({
@@ -259,6 +272,28 @@ export default function SystemConfigEnhanced() {
     }
   });
 
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: (data: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-types/${data.id}`, { name: data.name, description: data.description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
+      });
+      setEditingTypeId(null);
+      setEditTypeName('');
+      setEditTypeDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset type' : 'فشل تحديث نوع الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Asset Brand Mutations
   const createAssetBrandMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
@@ -294,6 +329,28 @@ export default function SystemConfigEnhanced() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: language === 'English' ? 'Failed to delete asset brand' : 'فشل حذف علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: (data: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-brands/${data.id}`, { name: data.name, description: data.description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل التجارية بنجاح',
+      });
+      setEditingBrandId(null);
+      setEditBrandName('');
+      setEditBrandDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset brand' : 'فشل تحديث علامة الأصل التجارية',
         variant: 'destructive'
       });
     }
@@ -340,6 +397,29 @@ export default function SystemConfigEnhanced() {
     }
   });
 
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: (data: { id: number; name: string; description?: string; color?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-statuses/${data.id}`, { name: data.name, description: data.description, color: data.color }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+      setEditingStatusId(null);
+      setEditStatusName('');
+      setEditStatusDescription('');
+      setEditStatusColor('#3B82F6');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update asset status' : 'فشل تحديث حالة الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Service Provider Mutations
   const createServiceProviderMutation = useMutation({
     mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
@@ -377,6 +457,30 @@ export default function SystemConfigEnhanced() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مقدم الخدمة',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: (data: { id: number; name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('PUT', `/api/service-providers/${data.id}`, { name: data.name, contactPerson: data.contactPerson, phone: data.phone, email: data.email }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مقدم الخدمة بنجاح',
+      });
+      setEditingProviderId(null);
+      setEditProviderName('');
+      setEditProviderContact('');
+      setEditProviderPhone('');
+      setEditProviderEmail('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update service provider' : 'فشل تحديث مقدم الخدمة',
         variant: 'destructive'
       });
     }

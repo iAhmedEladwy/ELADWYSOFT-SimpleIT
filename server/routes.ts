@@ -2612,6 +2612,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put('/api/custom-asset-types/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedType = await storage.updateCustomAssetType(id, {
+        name: req.body.name,
+        description: req.body.description
+      });
+      if (updatedType) {
+        res.json(updatedType);
+      } else {
+        res.status(404).json({ message: 'Custom asset type not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating custom asset type:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete('/api/custom-asset-types/:id', authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
