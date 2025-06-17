@@ -72,11 +72,13 @@ export default function SystemConfigEnhanced() {
   const [assetBrandSearch, setAssetBrandSearch] = useState('');
   const [assetStatusSearch, setAssetStatusSearch] = useState('');
   const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+  const [requestTypeSearch, setRequestTypeSearch] = useState('');
   const [currentPage, setCurrentPage] = useState({
     types: 1,
     brands: 1,
     statuses: 1,
-    providers: 1
+    providers: 1,
+    requestTypes: 1
   });
   const itemsPerPage = 10;
 
@@ -92,12 +94,15 @@ export default function SystemConfigEnhanced() {
   const [newProviderContact, setNewProviderContact] = useState('');
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
+  const [newRequestTypeName, setNewRequestTypeName] = useState('');
+  const [newRequestTypeDescription, setNewRequestTypeDescription] = useState('');
 
   // Edit states
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
   const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
   const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
   const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+  const [editingRequestTypeId, setEditingRequestTypeId] = useState<number | null>(null);
   
   // Edit form states
   const [editTypeName, setEditTypeName] = useState('');
@@ -111,6 +116,8 @@ export default function SystemConfigEnhanced() {
   const [editProviderContact, setEditProviderContact] = useState('');
   const [editProviderPhone, setEditProviderPhone] = useState('');
   const [editProviderEmail, setEditProviderEmail] = useState('');
+  const [editRequestTypeName, setEditRequestTypeName] = useState('');
+  const [editRequestTypeDescription, setEditRequestTypeDescription] = useState('');
 
   // Custom fields queries
   const { data: customAssetTypes = [] } = useQuery<any[]>({
