@@ -9,6 +9,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -43,12 +44,45 @@ interface EmployeesTableProps {
   employees: any[];
   onEdit: (employee: any) => void;
   onDelete: (employeeId: number) => void;
+  selectedEmployees?: number[];
+  onSelectionChange?: (selectedIds: number[]) => void;
 }
 
-export default function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTableProps) {
+export default function EmployeesTable({ 
+  employees, 
+  onEdit, 
+  onDelete, 
+  selectedEmployees = [],
+  onSelectionChange
+}: EmployeesTableProps) {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
   const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
+
+  // Handle individual checkbox selection
+  const handleEmployeeSelect = (employeeId: number, checked: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (checked) {
+      onSelectionChange([...selectedEmployees, employeeId]);
+    } else {
+      onSelectionChange(selectedEmployees.filter(id => id !== employeeId));
+    }
+  };
+
+  // Handle select all checkbox
+  const handleSelectAll = (checked: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (checked) {
+      onSelectionChange(employees.map(emp => emp.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const isAllSelected = employees.length > 0 && selectedEmployees.length === employees.length;
+  const isIndeterminate = selectedEmployees.length > 0 && selectedEmployees.length < employees.length;
 
   // Translations
   const translations = {
@@ -129,6 +163,16 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
       <Table>
         <TableHeader>
           <TableRow>
+            {onSelectionChange && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all employees"
+                  className={isIndeterminate ? "data-[state=checked]:bg-blue-600" : ""}
+                />
+              </TableHead>
+            )}
             <TableHead>{translations.employeeID}</TableHead>
             <TableHead>{translations.name}</TableHead>
             <TableHead>{translations.department}</TableHead>
@@ -142,6 +186,15 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
           {employees.length > 0 ? (
             employees.map((employee) => (
               <TableRow key={employee.id}>
+                {onSelectionChange && (
+                  <TableCell className="w-12">
+                    <Checkbox
+                      checked={selectedEmployees.includes(employee.id)}
+                      onCheckedChange={(checked) => handleEmployeeSelect(employee.id, checked as boolean)}
+                      aria-label={`Select employee ${employee.englishName}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">{employee.empId}</TableCell>
                 <TableCell>{employee.englishName}</TableCell>
                 <TableCell>{employee.department}</TableCell>
@@ -193,7 +246,7 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={onSelectionChange ? 8 : 7} className="text-center h-24 text-muted-foreground">
                 {translations.noEmployees}
               </TableCell>
             </TableRow>

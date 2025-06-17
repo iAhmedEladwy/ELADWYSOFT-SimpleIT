@@ -573,9 +573,9 @@ export default function Employees() {
         {/* Results Summary */}
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>
-            Showing {filteredEmployees.length} of {employees?.length || 0} employees
+            Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {employees?.length || 0} employees
           </span>
-          {(searchQuery || statusFilter !== 'Active' || departmentFilter !== 'All' || employmentTypeFilter !== 'All') && (
+          {activeFilterCount > 0 && (
             <span className="text-blue-600">
               Filters applied
             </span>
@@ -587,7 +587,7 @@ export default function Employees() {
         <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded" />
       ) : (
         <EmployeesTable 
-          employees={filteredEmployees} 
+          employees={Array.isArray(filteredEmployees) ? filteredEmployees : []} 
           onEdit={handleEditEmployee} 
           onDelete={handleDeleteEmployee} 
           selectedEmployees={selectedEmployees}
