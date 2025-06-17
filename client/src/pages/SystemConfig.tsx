@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
@@ -60,6 +60,26 @@ export default function SystemConfig() {
   const [newProviderContact, setNewProviderContact] = useState('');
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
+  
+  // Export/Import states
+  const [importing, setImporting] = useState(false);
+  const [importType, setImportType] = useState<'employees' | 'assets' | null>(null);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
+  
+  // Asset Management pagination and search
+  const [assetTypeSearch, setAssetTypeSearch] = useState('');
+  const [assetBrandSearch, setAssetBrandSearch] = useState('');
+  const [assetStatusSearch, setAssetStatusSearch] = useState('');
+  const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState({
+    types: 1,
+    brands: 1,
+    statuses: 1,
+    providers: 1
+  });
+  const itemsPerPage = 10;
   
   // Custom fields queries
   const { data: customAssetTypes = [] } = useQuery<any[]>({
@@ -440,6 +460,31 @@ export default function SystemConfig() {
         variant: 'destructive'
       });
       console.error('Failed to remove demo data:', error);
+    }
+  });
+
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: (data: { type: string; data: any[]; mapping: Record<string, string> }) =>
+      apiRequest('POST', `/api/import/${data.type}`, { data: data.data, mapping: data.mapping }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries();
+      setImporting(false);
+      setImportType(null);
+      setCsvData([]);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' 
+          ? `Successfully imported ${result.imported} records` 
+          : `تم استيراد ${result.imported} سجل بنجاح`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to import data' : 'فشل استيراد البيانات',
+        variant: 'destructive'
+      });
     }
   });
   

@@ -3071,6 +3071,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export API endpoints
+  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      const csvData = employees.map(emp => ({
+        'Employee ID': emp.empId,
+        'English Name': emp.englishName,
+        'Arabic Name': emp.arabicName || '',
+        'Email': emp.email,
+        'Phone': emp.phone || '',
+        'Department': emp.department || '',
+        'Position': emp.position || '',
+        'Hire Date': emp.hireDate || '',
+        'Salary': emp.salary || '',
+        'Status': emp.status
+      }));
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const assets = await storage.getAllAssets();
+      const csvData = assets.map(asset => ({
+        'Asset ID': asset.assetId,
+        'Name': asset.name,
+        'Type': asset.type,
+        'Brand': asset.brand || '',
+        'Model': asset.model || '',
+        'Serial Number': asset.serialNumber,
+        'Status': asset.status,
+        'Purchase Date': asset.purchaseDate || '',
+        'Purchase Price': asset.buyPrice || '',
+        'Warranty Expiry': asset.warrantyExpiryDate || '',
+        'Location': asset.location || '',
+        'Department': asset.department || '',
+        'Specifications': asset.specs || ''
+      }));
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assets.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const tickets = await storage.getAllTickets();
+      const csvData = tickets.map(ticket => ({
+        'Ticket ID': ticket.ticketId,
+        'Description': ticket.description,
+        'Request Type': ticket.requestType,
+        'Priority': ticket.priority,
+        'Status': ticket.status,
+        'Submitted By': ticket.submittedById,
+        'Assigned To': ticket.assignedToId || '',
+        'Created Date': ticket.createdAt?.toISOString() || '',
+        'Resolution': ticket.resolution || '',
+        'Time Spent': ticket.timeSpent || ''
+      }));
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="tickets.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Import API endpoints
+  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { data, mapping } = req.body;
+      const importedEmployees = [];
+      
+      for (const row of data) {
+        const employeeData = {
+          empId: row[mapping.empId] || '',
+          englishName: row[mapping.englishName] || '',
+          arabicName: row[mapping.arabicName] || '',
+          email: row[mapping.email] || '',
+          phone: row[mapping.phone] || '',
+          department: row[mapping.department] || '',
+          position: row[mapping.position] || '',
+          hireDate: row[mapping.hireDate] || '',
+          salary: row[mapping.salary] || '',
+          status: row[mapping.status] || 'Active'
+        };
+        
+        const employee = await storage.createEmployee(employeeData);
+        importedEmployees.push(employee);
+      }
+      
+      res.json({ 
+        success: true, 
+        imported: importedEmployees.length,
+        employees: importedEmployees
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { data, mapping } = req.body;
+      const importedAssets = [];
+      
+      for (const row of data) {
+        const assetData = {
+          assetId: row[mapping.assetId] || '',
+          name: row[mapping.name] || '',
+          type: row[mapping.type] || '',
+          brand: row[mapping.brand] || '',
+          model: row[mapping.model] || '',
+          serialNumber: row[mapping.serialNumber] || '',
+          status: row[mapping.status] || 'Available',
+          purchaseDate: row[mapping.purchaseDate] || '',
+          buyPrice: row[mapping.buyPrice] || '',
+          warrantyExpiryDate: row[mapping.warrantyExpiryDate] || '',
+          location: row[mapping.location] || '',
+          department: row[mapping.department] || '',
+          specs: row[mapping.specs] || ''
+        };
+        
+        const asset = await storage.createAsset(assetData);
+        importedAssets.push(asset);
+      }
+      
+      res.json({ 
+        success: true, 
+        imported: importedAssets.length,
+        assets: importedAssets
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Initialize admin user if none exists
   try {
     const users = await storage.getAllUsers();
