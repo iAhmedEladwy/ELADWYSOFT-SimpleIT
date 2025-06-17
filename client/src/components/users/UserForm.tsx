@@ -27,7 +27,7 @@ const userFormSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
-  accessLevel: z.string(),
+  role: z.string(),
 });
 
 interface UserFormProps {
@@ -51,10 +51,10 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
     newPassword: language === 'English' ? 'New Password' : 'كلمة مرور جديدة',
     accessLevel: language === 'English' ? 'Access Level' : 'مستوى الوصول',
     accessLevelDesc: language === 'English' ? 'Determines what actions the user can perform' : 'يحدد الإجراءات التي يمكن للمستخدم تنفيذها',
-    admin: language === 'English' ? 'Admin (Level 3)' : 'مسؤول (المستوى 3)',
-    manager: language === 'English' ? 'Manager (Level 2)' : 'مدير (المستوى 2)',
-    user: language === 'English' ? 'User (Level 1)' : 'مستخدم (المستوى 1)',
-    viewer: language === 'English' ? 'Viewer (Level 1)' : 'مشاهد (المستوى 1)',
+    admin: language === 'English' ? 'Admin (Full Access)' : 'مسؤول (وصول كامل)',
+    manager: language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)',
+    agent: language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)',
+    employee: language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)',
     create: language === 'English' ? 'Create User' : 'إنشاء مستخدم',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
@@ -67,7 +67,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
       username: initialData?.username || '',
       email: initialData?.email || '',
       password: '',
-      accessLevel: initialData?.accessLevel || '1',
+      role: initialData?.role || 'employee',
     },
   });
 
@@ -132,7 +132,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
 
         <FormField
           control={form.control}
-          name="accessLevel"
+          name="role"
           render={({ field }) => (
             <FormItem>
               <FormLabel>{translations.accessLevel}</FormLabel>
@@ -146,9 +146,10 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="3">{translations.admin}</SelectItem>
-                  <SelectItem value="2">{translations.manager}</SelectItem>
-                  <SelectItem value="1">{translations.user}</SelectItem>
+                  <SelectItem value="admin">{translations.admin}</SelectItem>
+                  <SelectItem value="manager">{translations.manager}</SelectItem>
+                  <SelectItem value="agent">{translations.agent}</SelectItem>
+                  <SelectItem value="employee">{translations.employee}</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>{translations.accessLevelDesc}</FormDescription>
