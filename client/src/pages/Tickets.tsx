@@ -115,10 +115,14 @@ export default function Tickets() {
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
       // Use the new enhanced ticket creation endpoint
-      return await apiRequest('/api/tickets/enhanced', {
+      const response = await apiRequest('/api/tickets/enhanced', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(ticketData),
       });
+      return response;
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
