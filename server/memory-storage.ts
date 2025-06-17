@@ -865,6 +865,13 @@ export class MemoryStorage implements IStorage {
     return newType;
   }
 
+  async updateCustomAssetType(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    const index = this.customAssetTypes.findIndex(t => t.id === id);
+    if (index === -1) return undefined;
+    this.customAssetTypes[index] = { ...this.customAssetTypes[index], ...data };
+    return this.customAssetTypes[index];
+  }
+
   async deleteCustomAssetType(id: number): Promise<boolean> {
     const index = this.customAssetTypes.findIndex(t => t.id === id);
     if (index === -1) return false;
@@ -880,6 +887,13 @@ export class MemoryStorage implements IStorage {
     const newBrand = { id: Date.now(), ...data };
     this.customAssetBrands.push(newBrand);
     return newBrand;
+  }
+
+  async updateCustomAssetBrand(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    const index = this.customAssetBrands.findIndex(b => b.id === id);
+    if (index === -1) return undefined;
+    this.customAssetBrands[index] = { ...this.customAssetBrands[index], ...data };
+    return this.customAssetBrands[index];
   }
 
   async deleteCustomAssetBrand(id: number): Promise<boolean> {
@@ -899,6 +913,13 @@ export class MemoryStorage implements IStorage {
     return newStatus;
   }
 
+  async updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any | undefined> {
+    const index = this.customAssetStatuses.findIndex(s => s.id === id);
+    if (index === -1) return undefined;
+    this.customAssetStatuses[index] = { ...this.customAssetStatuses[index], ...data };
+    return this.customAssetStatuses[index];
+  }
+
   async deleteCustomAssetStatus(id: number): Promise<boolean> {
     const index = this.customAssetStatuses.findIndex(s => s.id === id);
     if (index === -1) return false;
@@ -914,6 +935,13 @@ export class MemoryStorage implements IStorage {
     const newProvider = { id: Date.now(), ...data };
     this.serviceProviders.push(newProvider);
     return newProvider;
+  }
+
+  async updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any | undefined> {
+    const index = this.serviceProviders.findIndex(p => p.id === id);
+    if (index === -1) return undefined;
+    this.serviceProviders[index] = { ...this.serviceProviders[index], ...data };
+    return this.serviceProviders[index];
   }
 
   async deleteServiceProvider(id: number): Promise<boolean> {

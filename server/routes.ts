@@ -2669,6 +2669,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put('/api/custom-asset-brands/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedBrand = await storage.updateCustomAssetBrand(id, {
+        name: req.body.name,
+        description: req.body.description
+      });
+      if (updatedBrand) {
+        res.json(updatedBrand);
+      } else {
+        res.status(404).json({ message: 'Custom asset brand not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating custom asset brand:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete('/api/custom-asset-brands/:id', authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -2709,6 +2727,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put('/api/custom-asset-statuses/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedStatus = await storage.updateCustomAssetStatus(id, {
+        name: req.body.name,
+        description: req.body.description,
+        color: req.body.color
+      });
+      if (updatedStatus) {
+        res.json(updatedStatus);
+      } else {
+        res.status(404).json({ message: 'Custom asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating custom asset status:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete('/api/custom-asset-statuses/:id', authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -2750,6 +2787,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put('/api/service-providers/:id', authenticateUser, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedProvider = await storage.updateServiceProvider(id, {
+        name: req.body.name,
+        contactPerson: req.body.contactPerson,
+        phone: req.body.phone,
+        email: req.body.email
+      });
+      if (updatedProvider) {
+        res.json(updatedProvider);
+      } else {
+        res.status(404).json({ message: 'Service provider not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating service provider:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.delete('/api/service-providers/:id', authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
