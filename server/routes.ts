@@ -68,6 +68,8 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session with memory store for reliability
+  const MemStore = MemoryStore(session);
+  
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
@@ -79,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer persistence
         sameSite: 'lax'
       },
-      store: new (require('memorystore')(session))({
+      store: new MemStore({
         checkPeriod: 86400000 // prune expired entries every 24h
       })
     })
