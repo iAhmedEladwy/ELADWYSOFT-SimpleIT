@@ -128,7 +128,7 @@ export default function Tickets() {
       
       toast({
         title: translations.ticketCreated,
-        description: `Ticket ${data.ticket_id} created successfully`,
+        description: `Ticket ${data.ticketId || data.ticket_id} created successfully`,
       });
       setOpenDialog(false);
       
@@ -331,33 +331,23 @@ export default function Tickets() {
         </TabsContent>
 
         <TabsContent value="closed">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={closedTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={closedTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="mytickets">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={myTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={myTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
       </Tabs>
     </div>
