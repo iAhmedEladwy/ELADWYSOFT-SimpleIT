@@ -56,9 +56,9 @@ export class MemoryStorage implements IStorage {
   };
 
   constructor() {
-    // Initialize with admin user
+    // Initialize with admin user only
     this.initializeAdminUser();
-    this.initializeDefaultData();
+    this.initializeSystemConfig();
   }
 
   private async initializeAdminUser() {
@@ -81,143 +81,32 @@ export class MemoryStorage implements IStorage {
     });
   }
 
-  private initializeDefaultData() {
+  private initializeSystemConfig() {
     // Initialize system config
     this.systemConfig = {
       id: 1,
-      companyName: "ELADWYSOFT",
-      companyAddress: "123 Business Street",
-      companyPhone: "+1-555-0123",
-      companyEmail: "info@eladwysoft.com",
-      systemVersion: "1.0.0",
+      language: "en",
+      assetIdPrefix: "AST",
+      empIdPrefix: "EMP",
+      ticketIdPrefix: "TKT",
       currency: "USD",
-      timezone: "UTC",
-      theme: "light",
-      maintenanceMode: false,
-      backupFrequency: "daily",
-      sessionTimeout: 30,
-      maxLoginAttempts: 5,
-      passwordPolicy: JSON.stringify({
-        minLength: 8,
-        requireUppercase: true,
-        requireLowercase: true,
-        requireNumbers: true,
-        requireSpecialChars: false
-      }),
-      emailSettings: JSON.stringify({
-        smtpHost: "",
-        smtpPort: 587,
-        smtpUser: "",
-        smtpPassword: "",
-        fromEmail: "noreply@eladwysoft.com"
-      }),
+      departments: ["IT", "HR", "Finance", "Operations"],
+      assetTypes: ["Hardware", "Software"],
+      assetBrands: ["Dell", "HP", "Lenovo", "Apple"],
+      assetStatuses: ["Available", "In Use", "Under Maintenance", "Retired"],
+      emailHost: null,
+      emailPort: null,
+      emailUser: null,
+      emailPassword: null,
+      emailSecure: null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-
-    // Add some sample data for demonstration
-    this.addSampleData();
   }
 
-  private addSampleData() {
-    // Add sample employee
-    this.employees.push({
-      id: this.idCounters.employees++,
-      name: "John Doe",
-      email: "john.doe@eladwysoft.com",
-      phone: "+1-555-0101",
-      department: "IT",
-      position: "System Administrator",
-      employeeId: "EMP001",
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+  // Removed all sample data for clean production deployment
 
-    // Add sample assets
-    this.assets.push({
-      id: this.idCounters.assets++,
-      assetId: "AST001",
-      name: "Dell Laptop",
-      type: "Laptop",
-      brand: "Dell",
-      model: "Inspiron 15",
-      serialNumber: "DL123456789",
-      status: "Available",
-      purchasePrice: "999.99",
-      purchaseDate: new Date("2024-01-15"),
-      warrantyExpiry: new Date("2027-01-15"),
-      location: "IT Storage",
-      notes: "Standard business laptop",
-      employeeId: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    // Add sample change log
-    this.changesLogs.push({
-      id: this.idCounters.changesLogs++,
-      version: "1.0.0",
-      changeType: "Feature",
-      description: "Initial system setup with core asset management functionality",
-      status: "Completed",
-      implementationDate: new Date(),
-      notes: "System initialized with basic features",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    // Initialize custom asset management data
-    this.initializeCustomAssetData();
-    
-    // Initialize default request types
-    this.initializeDefaultRequestTypes();
-    
-    // Add sample tickets with ITIL best practices
-    this.addSampleTickets();
-  }
-
-  private initializeCustomAssetData() {
-    // Default asset types
-    this.customAssetTypes = [
-      { id: this.idCounters.customAssetTypes++, name: "Laptops", description: "Laptop computers", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetTypes++, name: "Desktop", description: "Desktop computers", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetTypes++, name: "Mobile", description: "Mobile devices", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetTypes++, name: "Monitor", description: "Computer monitors", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Default asset brands
-    this.customAssetBrands = [
-      { id: this.idCounters.customAssetBrands++, name: "Dell", description: "Dell Technologies", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetBrands++, name: "HP", description: "HP Inc.", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetBrands++, name: "Lenovo", description: "Lenovo Group", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetBrands++, name: "Apple", description: "Apple Inc.", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Default asset statuses
-    this.customAssetStatuses = [
-      { id: this.idCounters.customAssetStatuses++, name: "Available", description: "Asset is available for assignment", color: "#10b981", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetStatuses++, name: "In Use", description: "Asset is currently assigned", color: "#3b82f6", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetStatuses++, name: "Maintenance", description: "Asset is under maintenance", color: "#f59e0b", createdAt: new Date(), updatedAt: new Date() },
-      { id: this.idCounters.customAssetStatuses++, name: "Damaged", description: "Asset is damaged", color: "#ef4444", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Default service providers
-    this.serviceProviders = [
-      { 
-        id: this.idCounters.serviceProviders++, 
-        name: "Tech Solutions Inc", 
-        contactPerson: "John Smith",
-        phone: "+1-555-0199",
-        email: "support@techsolutions.com",
-        address: "123 Tech Street, IT City",
-        serviceType: "Hardware Maintenance",
-        notes: "Primary hardware service provider",
-        createdAt: new Date(), 
-        updatedAt: new Date() 
-      }
-    ];
-  }
+  // Custom asset data removed for clean production deployment
 
   private initializeDefaultRequestTypes() {
     // Default request types for tickets
