@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Package, Ticket, Building } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Package, Ticket, Building, FileDown, Users, Monitor } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
@@ -828,6 +828,47 @@ export default function SystemConfig() {
     deleteServiceProviderMutation.mutate(id);
   };
 
+  // Handle file import
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`/api/import/${type}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast({
+          title: language === 'English' ? 'Success' : 'تم بنجاح',
+          description: language === 'English' ? `${type} imported successfully` : `تم استيراد ${type} بنجاح`,
+        });
+        // Reset file input
+        event.target.value = '';
+        // Invalidate relevant queries to refresh data
+        queryClient.invalidateQueries({ queryKey: [`/api/${type}`] });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Import failed');
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' 
+          ? `Failed to import ${type}. Please check the file format.` 
+          : `فشل استيراد ${type}. يرجى التحقق من تنسيق الملف.`,
+        variant: 'destructive'
+      });
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
   const translations = {
     systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
     generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
@@ -1002,6 +1043,126 @@ export default function SystemConfig() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+              </div>
+
+              {/* Import/Export Section */}
+              <div className="space-y-4 mt-8 border-t pt-6">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <FileDown className="h-5 w-5" />
+                  {language === 'English' ? 'Data Import/Export' : 'استيراد/تصدير البيانات'}
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Export Section */}
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      {language === 'English' ? 'Export Data' : 'تصدير البيانات'}
+                    </h4>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => window.open('/api/export/employees', '_blank')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
+                      </Button>
+                      <Button
+                        onClick={() => window.open('/api/export/assets', '_blank')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
+                      >
+                        <Monitor className="h-4 w-4 mr-2" />
+                        {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
+                      </Button>
+                      <Button
+                        onClick={() => window.open('/api/export/tickets', '_blank')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        {language === 'English' ? 'Export Tickets' : 'تصدير التذاكر'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import Section */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
+                    </h4>
+                    <div className="space-y-2">
+                      <div>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          id="import-employees"
+                          className="hidden"
+                          onChange={(e) => handleImport(e, 'employees')}
+                        />
+                        <Button
+                          onClick={() => document.getElementById('import-employees')?.click()}
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
+                        </Button>
+                      </div>
+                      <div>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          id="import-assets"
+                          className="hidden"
+                          onChange={(e) => handleImport(e, 'assets')}
+                        />
+                        <Button
+                          onClick={() => document.getElementById('import-assets')?.click()}
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
+                        >
+                          <Monitor className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
+                        </Button>
+                      </div>
+                      <div>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          id="import-tickets"
+                          className="hidden"
+                          onChange={(e) => handleImport(e, 'tickets')}
+                        />
+                        <Button
+                          onClick={() => document.getElementById('import-tickets')?.click()}
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
+                        >
+                          <Ticket className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Import Tickets' : 'استيراد التذاكر'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                  <p className="text-yellow-800 text-sm">
+                    <strong>{language === 'English' ? 'Note:' : 'ملاحظة:'}</strong>{' '}
+                    {language === 'English' 
+                      ? 'CSV files should match the system format. Export a sample file first to see the required structure.' 
+                      : 'يجب أن تتطابق ملفات CSV مع تنسيق النظام. قم بتصدير ملف عينة أولاً لرؤية الهيكل المطلوب.'}
+                  </p>
                 </div>
               </div>
 
