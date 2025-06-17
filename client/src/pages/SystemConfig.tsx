@@ -902,7 +902,7 @@ export default function SystemConfig() {
       <div className="container mx-auto px-4 lg:px-6 pb-6">
 
       <Tabs defaultValue="departments" className="w-full">
-        <TabsList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 w-full mb-4 h-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 w-full mb-4 h-auto gap-1" style={{ gridTemplateRows: 'auto auto' }}>
           <TabsTrigger value="general" className="text-sm py-3 px-2">
             <Globe className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{translations.generalSettings}</span>
