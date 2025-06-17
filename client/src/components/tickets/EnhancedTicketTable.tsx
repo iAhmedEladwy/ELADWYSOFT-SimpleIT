@@ -495,7 +495,7 @@ export default function EnhancedTicketTable({
                                 <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">{language === 'English' ? 'Unassigned' : 'غير مُكلف'}</SelectItem>
+                                <SelectItem value="0">{language === 'English' ? 'Unassigned' : 'غير مُكلف'}</SelectItem>
                                 {users.map(user => (
                                   <SelectItem key={user.id} value={user.id.toString()}>
                                     {user.username}

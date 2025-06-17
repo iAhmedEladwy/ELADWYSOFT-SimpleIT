@@ -305,7 +305,7 @@ export default function AuditLogs() {
                           <SelectValue placeholder="All entity types" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All entity types</SelectItem>
+                          <SelectItem value="all">All entity types</SelectItem>
                           <SelectItem value="USER">User</SelectItem>
                           <SelectItem value="EMPLOYEE">Employee</SelectItem>
                           <SelectItem value="ASSET">Asset</SelectItem>
@@ -326,7 +326,7 @@ export default function AuditLogs() {
                           <SelectValue placeholder="All actions" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All actions</SelectItem>
+                          <SelectItem value="all">All actions</SelectItem>
                           <SelectItem value="CREATE">Create</SelectItem>
                           <SelectItem value="UPDATE">Update</SelectItem>
                           <SelectItem value="DELETE">Delete</SelectItem>

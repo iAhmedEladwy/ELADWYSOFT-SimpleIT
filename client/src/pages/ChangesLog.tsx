@@ -395,7 +395,7 @@ export default function ChangesLog() {
                 <SelectValue placeholder="Change Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Feature">Feature</SelectItem>
                 <SelectItem value="Bug Fix">Bug Fix</SelectItem>
                 <SelectItem value="Enhancement">Enhancement</SelectItem>
@@ -410,7 +410,7 @@ export default function ChangesLog() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Archived">Archived</SelectItem>
               </SelectContent>
