@@ -877,27 +877,33 @@ export default function SystemConfig() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-4 px-4 lg:px-6">
+      <div className="flex justify-between items-center mb-4 lg:mb-6">
         <div className="flex items-center">
-          <Settings className="h-6 w-6 mr-2" />
-          <h1 className="text-2xl font-bold">{translations.systemConfig}</h1>
+          <Settings className="h-5 w-5 lg:h-6 lg:w-6 mr-2" />
+          <h1 className="text-xl lg:text-2xl font-bold">{translations.systemConfig}</h1>
         </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-4 w-full mb-4">
-          <TabsTrigger value="general">
-            <Globe className="h-4 w-4 mr-2" />
-            {translations.generalSettings}
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full mb-4">
+          <TabsTrigger value="general" className="text-xs md:text-sm">
+            <Globe className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">{translations.generalSettings}</span>
+            <span className="sm:hidden">{language === 'English' ? 'General' : 'عام'}</span>
           </TabsTrigger>
-          <TabsTrigger value="tickets">
-            {language === 'English' ? 'Tickets' : 'التذاكر'}
+          <TabsTrigger value="tickets" className="text-xs md:text-sm">
+            <span className="hidden sm:inline">{language === 'English' ? 'Tickets' : 'التذاكر'}</span>
+            <span className="sm:hidden">{language === 'English' ? 'Tickets' : 'تذاكر'}</span>
           </TabsTrigger>
-          <TabsTrigger value="asset">{translations.assetManagement}</TabsTrigger>
-          <TabsTrigger value="email">
-            <Mail className="h-4 w-4 mr-2" />
-            {translations.emailSettings}
+          <TabsTrigger value="asset" className="text-xs md:text-sm">
+            <span className="hidden sm:inline">{translations.assetManagement}</span>
+            <span className="sm:hidden">{language === 'English' ? 'Assets' : 'أصول'}</span>
+          </TabsTrigger>
+          <TabsTrigger value="email" className="text-xs md:text-sm">
+            <Mail className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">{translations.emailSettings}</span>
+            <span className="sm:hidden">{language === 'English' ? 'Email' : 'بريد'}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1127,72 +1133,77 @@ export default function SystemConfig() {
                     
                     {departments.length > 0 ? (
                       <div className="border rounded-md overflow-hidden">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-muted/50">
-                              <th className="px-4 py-2 text-left">{translations.name}</th>
-                              <th className="px-4 py-2 text-right">{translations.actions}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            {departments.map((dept, index) => (
-                              <tr key={index} className="hover:bg-muted/25">
-                                <td className="px-4 py-2">
-                                  {editingDeptIndex === index ? (
-                                    <Input
-                                      value={editedDeptName}
-                                      onChange={(e) => setEditedDeptName(e.target.value)}
-                                      className="w-full"
-                                    />
-                                  ) : (
-                                    dept
-                                  )}
-                                </td>
-                                <td className="px-4 py-2 text-right space-x-1">
-                                  {editingDeptIndex === index ? (
-                                    <>
-                                      <Button
-                                        onClick={() => handleSaveDepartment(index)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                      >
-                                        <Check className="h-4 w-4 text-green-600" />
-                                      </Button>
-                                      <Button
-                                        onClick={handleCancelEditDepartment}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                      >
-                                        <X className="h-4 w-4 text-red-600" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        onClick={() => handleEditDepartment(index)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                      >
-                                        <Edit className="h-4 w-4 text-blue-600" />
-                                      </Button>
-                                      <Button
-                                        onClick={() => handleDeleteDepartment(index)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                      >
-                                        <Trash className="h-4 w-4 text-red-600" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </td>
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[300px]">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="px-2 md:px-4 py-2 text-left text-sm">{translations.name}</th>
+                                <th className="px-2 md:px-4 py-2 text-right text-sm">{translations.actions}</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y">
+                              {departments.map((dept, index) => (
+                                <tr key={index} className="hover:bg-muted/25">
+                                  <td className="px-2 md:px-4 py-2">
+                                    {editingDeptIndex === index ? (
+                                      <Input
+                                        value={editedDeptName}
+                                        onChange={(e) => setEditedDeptName(e.target.value)}
+                                        className="w-full min-w-[120px]"
+                                        size="sm"
+                                      />
+                                    ) : (
+                                      <span className="text-sm break-words">{dept}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-2 md:px-4 py-2 text-right">
+                                    <div className="flex justify-end gap-1">
+                                      {editingDeptIndex === index ? (
+                                        <>
+                                          <Button
+                                            onClick={() => handleSaveDepartment(index)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0"
+                                          >
+                                            <Check className="h-3 w-3 text-green-600" />
+                                          </Button>
+                                          <Button
+                                            onClick={handleCancelEditDepartment}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0"
+                                          >
+                                            <X className="h-3 w-3 text-red-600" />
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Button
+                                            onClick={() => handleEditDepartment(index)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0"
+                                          >
+                                            <Edit className="h-3 w-3 text-blue-600" />
+                                          </Button>
+                                          <Button
+                                            onClick={() => handleDeleteDepartment(index)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0"
+                                          >
+                                            <Trash className="h-3 w-3 text-red-600" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-4 border rounded-md bg-muted/10">
