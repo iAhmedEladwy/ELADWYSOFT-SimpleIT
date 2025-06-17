@@ -93,6 +93,12 @@ export default function SystemConfigEnhanced() {
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
 
+  // Edit states
+  const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
+  const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
+  const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
+  const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+
   // Custom fields queries
   const { data: customAssetTypes = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-types'],
@@ -211,6 +217,221 @@ export default function SystemConfigEnhanced() {
       data: csvData,
       mapping: fieldMapping
     });
+  };
+
+  // Asset Type Mutations
+  const createAssetTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-asset-types', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type added successfully' : 'تم إضافة نوع الأصل بنجاح',
+      });
+      setNewTypeName('');
+      setNewTypeDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset type' : 'فشل إضافة نوع الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset type' : 'فشل حذف نوع الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Asset Brand Mutations
+  const createAssetBrandMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-asset-brands', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand added successfully' : 'تم إضافة علامة الأصل التجارية بنجاح',
+      });
+      setNewBrandName('');
+      setNewBrandDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset brand' : 'فشل إضافة علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل التجارية بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset brand' : 'فشل حذف علامة الأصل التجارية',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Asset Status Mutations
+  const createAssetStatusMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; color?: string }) => 
+      apiRequest('POST', '/api/custom-asset-statuses', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status added successfully' : 'تم إضافة حالة الأصل بنجاح',
+      });
+      setNewStatusName('');
+      setNewStatusDescription('');
+      setNewStatusColor('#3B82F6');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset status' : 'فشل إضافة حالة الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete asset status' : 'فشل حذف حالة الأصل',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Service Provider Mutations
+  const createServiceProviderMutation = useMutation({
+    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('POST', '/api/service-providers', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider added successfully' : 'تم إضافة مقدم الخدمة بنجاح',
+      });
+      setNewProviderName('');
+      setNewProviderContact('');
+      setNewProviderPhone('');
+      setNewProviderEmail('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add service provider' : 'فشل إضافة مقدم الخدمة',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/service-providers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مقدم الخدمة',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Handler functions
+  const handleAddAssetType = () => {
+    if (!newTypeName.trim()) return;
+    createAssetTypeMutation.mutate({
+      name: newTypeName.trim(),
+      description: newTypeDescription.trim() || undefined
+    });
+  };
+
+  const handleDeleteAssetType = (id: number) => {
+    deleteAssetTypeMutation.mutate(id);
+  };
+
+  const handleAddAssetBrand = () => {
+    if (!newBrandName.trim()) return;
+    createAssetBrandMutation.mutate({
+      name: newBrandName.trim(),
+      description: newBrandDescription.trim() || undefined
+    });
+  };
+
+  const handleDeleteAssetBrand = (id: number) => {
+    deleteAssetBrandMutation.mutate(id);
+  };
+
+  const handleAddAssetStatus = () => {
+    if (!newStatusName.trim()) return;
+    createAssetStatusMutation.mutate({
+      name: newStatusName.trim(),
+      description: newStatusDescription.trim() || undefined,
+      color: newStatusColor
+    });
+  };
+
+  const handleDeleteAssetStatus = (id: number) => {
+    deleteAssetStatusMutation.mutate(id);
+  };
+
+  const handleAddServiceProvider = () => {
+    if (!newProviderName.trim()) return;
+    createServiceProviderMutation.mutate({
+      name: newProviderName.trim(),
+      contactPerson: newProviderContact.trim() || undefined,
+      phone: newProviderPhone.trim() || undefined,
+      email: newProviderEmail.trim() || undefined
+    });
+  };
+
+  const handleDeleteServiceProvider = (id: number) => {
+    deleteServiceProviderMutation.mutate(id);
   };
 
   // Pagination helpers
@@ -450,6 +671,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="type-name"
+                                value={newTypeName}
+                                onChange={(e) => setNewTypeName(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
                               />
                             </div>
@@ -459,6 +682,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="type-description"
+                                value={newTypeDescription}
+                                onChange={(e) => setNewTypeDescription(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
                               />
                             </div>
@@ -468,7 +693,7 @@ export default function SystemConfigEnhanced() {
                                   {language === 'English' ? 'Cancel' : 'إلغاء'}
                                 </Button>
                               </DialogClose>
-                              <Button>
+                              <Button onClick={handleAddAssetType} disabled={!newTypeName.trim()}>
                                 {language === 'English' ? 'Add' : 'إضافة'}
                               </Button>
                             </div>
@@ -497,6 +722,7 @@ export default function SystemConfigEnhanced() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteAssetType(type.id)}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -570,6 +796,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="brand-name"
+                                value={newBrandName}
+                                onChange={(e) => setNewBrandName(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
                               />
                             </div>
@@ -579,6 +807,8 @@ export default function SystemConfigEnhanced() {
                               </Label>
                               <Input
                                 id="brand-description"
+                                value={newBrandDescription}
+                                onChange={(e) => setNewBrandDescription(e.target.value)}
                                 placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
                               />
                             </div>
@@ -588,7 +818,7 @@ export default function SystemConfigEnhanced() {
                                   {language === 'English' ? 'Cancel' : 'إلغاء'}
                                 </Button>
                               </DialogClose>
-                              <Button>
+                              <Button onClick={handleAddAssetBrand} disabled={!newBrandName.trim()}>
                                 {language === 'English' ? 'Add' : 'إضافة'}
                               </Button>
                             </div>
