@@ -6,7 +6,6 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import AdvancedTicketManagement from '@/components/tickets/AdvancedTicketManagement';
 import TicketForm from '@/components/tickets/TicketForm';
 import TicketUpdateForm from '@/components/tickets/TicketUpdateForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -292,10 +291,7 @@ export default function Tickets() {
           <TabsTrigger value="resolved">{translations.resolved}</TabsTrigger>
           <TabsTrigger value="closed">{translations.closed}</TabsTrigger>
           <TabsTrigger value="mytickets">{translations.myTickets}</TabsTrigger>
-          <TabsTrigger value="advanced">
-            <Zap className="h-4 w-4 mr-2" />
-            Advanced Management
-          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="all">
@@ -358,9 +354,7 @@ export default function Tickets() {
           />
         </TabsContent>
 
-        <TabsContent value="advanced">
-          <AdvancedTicketManagement />
-        </TabsContent>
+
       </Tabs>
     </div>
   );

@@ -106,7 +106,7 @@ export default function EnhancedTicketTable({
   // Time tracking mutations
   const startTimeTrackingMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}/start-tracking`, { method: 'POST' });
+      return await apiRequest('POST', `/api/tickets/${ticketId}/start-tracking`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
