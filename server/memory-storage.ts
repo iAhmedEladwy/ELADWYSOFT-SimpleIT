@@ -834,9 +834,20 @@ export class MemoryStorage implements IStorage {
     { id: 6, name: "Network", description: "Networking equipment" }
   ];
 
-  private customAssetBrands: any[] = [];
+  private customAssetBrands = [
+    { id: 1, name: "Dell", description: "Dell Technologies" },
+    { id: 2, name: "HP", description: "Hewlett-Packard" },
+    { id: 3, name: "Lenovo", description: "Lenovo Group" },
+    { id: 4, name: "Apple", description: "Apple Inc." }
+  ];
 
-  private customAssetStatuses: any[] = [];
+  private customAssetStatuses = [
+    { id: 1, name: "Available", description: "Ready for assignment", color: "#28a745" },
+    { id: 2, name: "In Use", description: "Currently assigned", color: "#007bff" },
+    { id: 3, name: "Maintenance", description: "Under maintenance", color: "#ffc107" },
+    { id: 4, name: "Damaged", description: "Needs repair", color: "#dc3545" },
+    { id: 5, name: "Retired", description: "End of life", color: "#6c757d" }
+  ];
 
   private serviceProviders = [
     { id: 1, name: "Tech Solutions Inc", contactPerson: "John Smith", phone: "555-0101", email: "john@techsolutions.com" },

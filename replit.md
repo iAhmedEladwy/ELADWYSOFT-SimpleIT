@@ -33,7 +33,7 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - Improved asset management with configurable brands and statuses from system config
 - **COMPLETED**: Enhanced System Configuration with tabbed asset management UI
 - **COMPLETED**: Restored complete add/update functionality for asset types, brands, statuses, and service providers
-- **RESOLVED**: Removed duplicate static data from Asset Brands and Asset Statuses - now only uses System Configuration data
+- **BALANCED**: Restored essential default Asset Brands and Statuses while keeping them fully manageable through System Configuration
 
 ### Current Progress
 - ✓ Changes log system accessible within the application (COMPLETED)
