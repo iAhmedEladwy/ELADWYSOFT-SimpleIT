@@ -45,6 +45,7 @@ export default function Notifications() {
     minsAgo: language === 'English' ? 'mins ago' : 'دقائق مضت',
     hourAgo: language === 'English' ? 'hour ago' : 'ساعة مضت',
     daysAgo: language === 'English' ? 'days ago' : 'أيام مضت',
+    hoursAgo: language === 'English' ? 'hours ago' : 'ساعات مضت',
     weekAgo: language === 'English' ? 'week ago' : 'أسبوع مضت',
     noNotifications: language === 'English' ? 'No notifications to display' : 'لا توجد إشعارات للعرض',
   };
@@ -141,30 +142,41 @@ export default function Notifications() {
         <button className="text-primary text-sm hover:underline">{translations.markAllAsRead}</button>
       </div>
       <div className="divide-y divide-gray-200">
-        {notifications.map((notification) => (
-          <div key={notification.id} className={notification.unread ? "p-4 bg-blue-50" : "p-4"}>
-            <div className="flex items-start gap-4">
-              <div className={`h-10 w-10 rounded-full ${notification.iconColor} flex items-center justify-center flex-shrink-0`}>
-                {notification.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <h4 className="font-medium text-gray-900">{notification.title}</h4>
-                  <span className="text-xs text-gray-500">{notification.time}</span>
+        {isLoading ? (
+          <div className="p-4">
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <div key={notification.id} className={notification.unread ? "p-4 bg-blue-50" : "p-4"}>
+              <div className="flex items-start gap-4">
+                <div className={`h-10 w-10 rounded-full ${notification.iconColor} flex items-center justify-center flex-shrink-0`}>
+                  {notification.icon}
                 </div>
-                <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-white">
-                    {notification.primaryAction}
-                  </Button>
-                  <Button variant="outline" size="sm" className="border-gray-300 text-gray-600 hover:bg-gray-100">
-                    {translations.dismiss}
-                  </Button>
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                    <span className="text-xs text-gray-500">{notification.time}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-white">
+                      {notification.primaryAction}
+                    </Button>
+                    <Button variant="outline" size="sm" className="border-gray-300 text-gray-600 hover:bg-gray-100">
+                      {translations.dismiss}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
+          ))
+        ) : (
+          <div className="p-8 text-center text-gray-500">
+            <Bell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>{translations.noNotifications}</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
