@@ -89,6 +89,8 @@ export default function EnhancedTicketTable({
   const [showHistory, setShowHistory] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
+  const [showTicketDetail, setShowTicketDetail] = useState(false);
+  const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<Ticket | null>(null);
   const [commentText, setCommentText] = useState('');
   const [isPrivateComment, setIsPrivateComment] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -500,8 +502,8 @@ export default function EnhancedTicketTable({
         <TableHeader>
           <TableRow>
             <TableHead>{language === 'English' ? 'Ticket ID' : 'رقم التذكرة'}</TableHead>
+            <TableHead>{language === 'English' ? 'Summary' : 'الملخص'}</TableHead>
             <TableHead>{language === 'English' ? 'Submitted By' : 'مُقدم من'}</TableHead>
-            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
             <TableHead>{language === 'English' ? 'Type' : 'النوع'}</TableHead>
             <TableHead>{language === 'English' ? 'Priority' : 'الأولوية'}</TableHead>
             <TableHead>{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
@@ -517,10 +519,19 @@ export default function EnhancedTicketTable({
             const submittedByEmployee = employees.find(e => e.id === ticket.submittedById);
             
             return (
-              <TableRow key={ticket.id}>
+              <TableRow 
+                key={ticket.id} 
+                className="cursor-pointer hover:bg-gray-50"
+                onClick={() => {
+                  setSelectedTicketForDetail(ticket);
+                  setShowTicketDetail(true);
+                }}
+              >
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                <TableCell className="max-w-xs truncate font-medium">
+                  {ticket.summary || ticket.description.substring(0, 50) + '...'}
+                </TableCell>
                 <TableCell>{submittedByEmployee?.name || 'Unknown'}</TableCell>
-                <TableCell className="max-w-xs truncate">{ticket.description}</TableCell>
                 <TableCell>
                   <Select
                     value={ticket.requestType}
@@ -1063,6 +1074,29 @@ export default function EnhancedTicketTable({
           })}
         </TableBody>
       </Table>
+
+      {/* Ticket Detail Form Dialog */}
+      {showTicketDetail && selectedTicketForDetail && (
+        <Dialog open={showTicketDetail} onOpenChange={setShowTicketDetail}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Ticket Details - {selectedTicketForDetail.ticketId}
+              </DialogTitle>
+            </DialogHeader>
+            <TicketDetailForm
+              ticket={selectedTicketForDetail}
+              onClose={() => {
+                setShowTicketDetail(false);
+                setSelectedTicketForDetail(null);
+              }}
+              employees={employees}
+              assets={assets}
+              users={users}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

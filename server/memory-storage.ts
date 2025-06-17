@@ -168,6 +168,9 @@ export class MemoryStorage implements IStorage {
     
     // Initialize default request types
     this.initializeDefaultRequestTypes();
+    
+    // Add sample tickets with ITIL best practices
+    this.addSampleTickets();
   }
 
   private initializeCustomAssetData() {
@@ -261,6 +264,141 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
+  }
+
+  private addSampleTickets() {
+    // Helper function to calculate priority based on urgency and impact (ITIL best practice)
+    const calculatePriority = (urgency: string, impact: string): string => {
+      const matrix = {
+        'Critical': { 'Critical': 'High', 'High': 'High', 'Medium': 'High', 'Low': 'Medium' },
+        'High': { 'Critical': 'High', 'High': 'High', 'Medium': 'Medium', 'Low': 'Medium' },
+        'Medium': { 'Critical': 'High', 'High': 'Medium', 'Medium': 'Medium', 'Low': 'Low' },
+        'Low': { 'Critical': 'Medium', 'High': 'Medium', 'Medium': 'Low', 'Low': 'Low' }
+      };
+      return matrix[urgency]?.[impact] || 'Medium';
+    };
+
+    // Add ITIL-compliant sample tickets
+    const sampleTickets = [
+      {
+        id: this.idCounters.tickets++,
+        ticketId: "TKT-0001",
+        summary: "Email server connectivity issues",
+        description: "Users are unable to access their email accounts through Outlook. Connection timeouts reported.",
+        category: "Incident",
+        requestType: "Network",
+        urgency: "High",
+        impact: "High",
+        priority: "High",
+        status: "Open",
+        submittedById: 1,
+        assignedToId: null,
+        relatedAssetId: null,
+        rootCause: "",
+        workaround: "Use webmail interface temporarily",
+        resolution: "",
+        resolutionNotes: "",
+        slaTarget: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+        escalationLevel: 0,
+        isTimeTracking: false,
+        timeSpent: 0,
+        timeTrackingStartedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.tickets++,
+        ticketId: "TKT-0002",
+        summary: "New employee laptop setup request",
+        description: "New hire John Smith requires laptop configuration with standard software package and domain access.",
+        category: "Service Request",
+        requestType: "Hardware",
+        urgency: "Medium",
+        impact: "Low",
+        priority: "Low",
+        status: "In Progress",
+        submittedById: 1,
+        assignedToId: 1,
+        relatedAssetId: 1,
+        rootCause: "",
+        workaround: "",
+        resolution: "",
+        resolutionNotes: "",
+        slaTarget: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        escalationLevel: 0,
+        isTimeTracking: true,
+        timeSpent: 45,
+        timeTrackingStartedAt: new Date(),
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.tickets++,
+        ticketId: "TKT-0003",
+        summary: "Recurring printer driver crashes",
+        description: "HP LaserJet printer driver crashes repeatedly on Windows 10 workstations causing print queue failures.",
+        category: "Problem",
+        requestType: "Software",
+        urgency: "Medium",
+        impact: "Medium",
+        priority: "Medium",
+        status: "Resolved",
+        submittedById: 1,
+        assignedToId: 1,
+        relatedAssetId: null,
+        rootCause: "Outdated printer driver incompatible with latest Windows updates",
+        workaround: "Restart print spooler service when crashes occur",
+        resolution: "Updated to latest printer driver version",
+        resolutionNotes: "Downloaded driver v3.2.1 from HP website and deployed via Group Policy. Tested on 5 workstations successfully.",
+        slaTarget: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+        escalationLevel: 0,
+        isTimeTracking: false,
+        timeSpent: 120,
+        timeTrackingStartedAt: null,
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+        updatedAt: new Date()
+      }
+    ];
+
+    // Calculate priority for each ticket and add to tickets array
+    sampleTickets.forEach(ticket => {
+      ticket.priority = calculatePriority(ticket.urgency, ticket.impact);
+      this.tickets.push(ticket);
+    });
+
+    // Add sample ticket history entries
+    this.ticketHistory.push(
+      {
+        id: this.idCounters.ticketHistory++,
+        ticketId: 1,
+        changedBy: 1,
+        changeType: "Status Change",
+        oldValue: "New",
+        newValue: "Open",
+        changeDescription: "Ticket opened and assigned to IT team",
+        createdAt: new Date()
+      },
+      {
+        id: this.idCounters.ticketHistory++,
+        ticketId: 2,
+        changedBy: 1,
+        changeType: "Assignment",
+        oldValue: "Unassigned",
+        newValue: "John Doe",
+        changeDescription: "Assigned to John Doe for laptop configuration",
+        createdAt: new Date()
+      },
+      {
+        id: this.idCounters.ticketHistory++,
+        ticketId: 3,
+        changedBy: 1,
+        changeType: "Resolution",
+        oldValue: "In Progress",
+        newValue: "Resolved",
+        changeDescription: "Driver issue resolved with latest update",
+        createdAt: new Date()
+      }
+    );
   }
 
   // Security Questions operations
