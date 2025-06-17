@@ -651,3 +651,11 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Custom request types for ticket module
+export type CustomRequestType = typeof customRequestTypes.$inferSelect;
+export type InsertCustomRequestType = z.infer<typeof insertCustomRequestTypeSchema>;
+
+// Ticket history types
+export type TicketHistory = typeof ticketHistory.$inferSelect;
+export type InsertTicketHistory = z.infer<typeof insertTicketHistorySchema>;

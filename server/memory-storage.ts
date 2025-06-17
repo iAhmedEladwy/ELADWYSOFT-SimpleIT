@@ -23,6 +23,8 @@ export class MemoryStorage implements IStorage {
   private customAssetBrands: any[] = [];
   private customAssetStatuses: any[] = [];
   private serviceProviders: any[] = [];
+  private customRequestTypes: schema.CustomRequestType[] = [];
+  private ticketHistory: schema.TicketHistory[] = [];
   
   private idCounters = {
     users: 1,
@@ -40,7 +42,9 @@ export class MemoryStorage implements IStorage {
     customAssetTypes: 1,
     customAssetBrands: 1,
     customAssetStatuses: 1,
-    serviceProviders: 1
+    serviceProviders: 1,
+    customRequestTypes: 1,
+    ticketHistory: 1
   };
 
   constructor() {
@@ -153,6 +157,9 @@ export class MemoryStorage implements IStorage {
 
     // Initialize custom asset management data
     this.initializeCustomAssetData();
+    
+    // Initialize default request types
+    this.initializeDefaultRequestTypes();
   }
 
   private initializeCustomAssetData() {
@@ -193,6 +200,57 @@ export class MemoryStorage implements IStorage {
         notes: "Primary hardware service provider",
         createdAt: new Date(), 
         updatedAt: new Date() 
+      }
+    ];
+  }
+
+  private initializeDefaultRequestTypes() {
+    // Default request types for tickets
+    this.customRequestTypes = [
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Hardware",
+        description: "Hardware-related issues and requests",
+        priority: "Medium",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Software",
+        description: "Software installation, updates, and issues",
+        priority: "Medium",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Network",
+        description: "Network connectivity and configuration issues",
+        priority: "High",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Access Request",
+        description: "User access and permission requests",
+        priority: "Medium",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Other",
+        description: "General IT support requests",
+        priority: "Low",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ];
   }
@@ -1126,5 +1184,273 @@ export class MemoryStorage implements IStorage {
     this.assetMaintenance = [];
     this.assetSales = [];
     this.assetSaleItems = [];
+  }
+
+  // Custom Request Types operations (Feature 1: Change Category to Request Type)
+  async getCustomRequestTypes(): Promise<schema.CustomRequestType[]> {
+    return this.customRequestTypes.filter(type => type.isActive);
+  }
+
+  async getAllCustomRequestTypes(): Promise<schema.CustomRequestType[]> {
+    return this.customRequestTypes;
+  }
+
+  async createCustomRequestType(requestType: schema.InsertCustomRequestType): Promise<schema.CustomRequestType> {
+    const newRequestType: schema.CustomRequestType = {
+      id: this.idCounters.customRequestTypes++,
+      ...requestType,
+      isActive: requestType.isActive ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.customRequestTypes.push(newRequestType);
+    
+    // Log activity
+    await this.logActivity({
+      action: "Created",
+      entityType: "Request Type",
+      entityId: newRequestType.id,
+      userId: 1, // System user
+      details: { name: newRequestType.name, description: newRequestType.description }
+    });
+    
+    return newRequestType;
+  }
+
+  async updateCustomRequestType(id: number, requestType: Partial<schema.InsertCustomRequestType>): Promise<schema.CustomRequestType | undefined> {
+    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+    if (index === -1) return undefined;
+    
+    const oldRequestType = { ...this.customRequestTypes[index] };
+    this.customRequestTypes[index] = {
+      ...this.customRequestTypes[index],
+      ...requestType,
+      updatedAt: new Date()
+    };
+    
+    // Log activity
+    await this.logActivity({
+      action: "Updated",
+      entityType: "Request Type",
+      entityId: id,
+      userId: 1, // System user
+      details: { 
+        old: { name: oldRequestType.name, description: oldRequestType.description },
+        new: { name: this.customRequestTypes[index].name, description: this.customRequestTypes[index].description }
+      }
+    });
+    
+    return this.customRequestTypes[index];
+  }
+
+  async deleteCustomRequestType(id: number): Promise<boolean> {
+    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+    if (index === -1) return false;
+    
+    const requestType = this.customRequestTypes[index];
+    this.customRequestTypes.splice(index, 1);
+    
+    // Log activity
+    await this.logActivity({
+      action: "Deleted",
+      entityType: "Request Type",
+      entityId: id,
+      userId: 1, // System user
+      details: { name: requestType.name }
+    });
+    
+    return true;
+  }
+
+  // Enhanced Ticket operations with time tracking (Feature 2: Manual time tracking)
+  async startTicketTimeTracking(ticketId: number, userId: number): Promise<schema.Ticket | undefined> {
+    const ticket = this.tickets.find(t => t.id === ticketId);
+    if (!ticket) return undefined;
+    
+    ticket.isTimeTracking = true;
+    ticket.timeStarted = new Date();
+    ticket.updatedAt = new Date();
+    
+    // Log activity
+    await this.logActivity({
+      action: "Started Time Tracking",
+      entityType: "Ticket",
+      entityId: ticketId,
+      userId,
+      details: { ticketId: ticket.ticketId, startTime: ticket.timeStarted }
+    });
+    
+    return ticket;
+  }
+
+  async stopTicketTimeTracking(ticketId: number, userId: number): Promise<schema.Ticket | undefined> {
+    const ticket = this.tickets.find(t => t.id === ticketId);
+    if (!ticket || !ticket.isTimeTracking) return undefined;
+    
+    const endTime = new Date();
+    const startTime = ticket.timeStarted || new Date();
+    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60); // minutes
+    
+    ticket.isTimeTracking = false;
+    ticket.timeEnded = endTime;
+    ticket.timeSpent = (ticket.timeSpent || 0) + duration;
+    ticket.updatedAt = new Date();
+    
+    // Log activity
+    await this.logActivity({
+      action: "Stopped Time Tracking",
+      entityType: "Ticket",
+      entityId: ticketId,
+      userId,
+      details: { 
+        ticketId: ticket.ticketId, 
+        endTime, 
+        duration: `${duration} minutes`,
+        totalTime: `${ticket.timeSpent} minutes`
+      }
+    });
+    
+    return ticket;
+  }
+
+  // Ticket History operations (Feature 3: Ticket history and updates display)
+  async getTicketHistory(ticketId: number): Promise<schema.TicketHistory[]> {
+    return this.ticketHistory
+      .filter(h => h.ticketId === ticketId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async createTicketHistory(history: schema.InsertTicketHistory): Promise<schema.TicketHistory> {
+    const newHistory: schema.TicketHistory = {
+      id: this.idCounters.ticketHistory++,
+      ...history,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.ticketHistory.push(newHistory);
+    return newHistory;
+  }
+
+  // Enhanced Ticket Update with history tracking (Feature 5: Update ticket details)
+  async updateTicketWithHistory(id: number, ticketData: Partial<schema.InsertTicket>, userId: number): Promise<schema.Ticket | undefined> {
+    const ticket = this.tickets.find(t => t.id === id);
+    if (!ticket) return undefined;
+    
+    const oldTicket = { ...ticket };
+    const changes: string[] = [];
+    
+    // Track changes
+    if (ticketData.status && ticketData.status !== ticket.status) {
+      changes.push(`Status changed from "${ticket.status}" to "${ticketData.status}"`);
+    }
+    if (ticketData.priority && ticketData.priority !== ticket.priority) {
+      changes.push(`Priority changed from "${ticket.priority}" to "${ticketData.priority}"`);
+    }
+    if (ticketData.assignedToId && ticketData.assignedToId !== ticket.assignedToId) {
+      const oldAssignee = ticket.assignedToId ? await this.getUser(ticket.assignedToId) : null;
+      const newAssignee = await this.getUser(ticketData.assignedToId);
+      changes.push(`Assigned from "${oldAssignee?.username || 'Unassigned'}" to "${newAssignee?.username || 'Unassigned'}"`);
+    }
+    if (ticketData.description && ticketData.description !== ticket.description) {
+      changes.push("Description updated");
+    }
+    if (ticketData.requestType && ticketData.requestType !== ticket.requestType) {
+      changes.push(`Request type changed from "${ticket.requestType}" to "${ticketData.requestType}"`);
+    }
+    
+    // Update ticket
+    Object.assign(ticket, ticketData);
+    ticket.updatedAt = new Date();
+    
+    // Create history entry for each change
+    if (changes.length > 0) {
+      await this.createTicketHistory({
+        ticketId: ticket.id,
+        userId,
+        action: "Updated",
+        changes: changes.join("; "),
+        oldValues: JSON.stringify({
+          status: oldTicket.status,
+          priority: oldTicket.priority,
+          assignedToId: oldTicket.assignedToId,
+          requestType: oldTicket.requestType
+        }),
+        newValues: JSON.stringify({
+          status: ticket.status,
+          priority: ticket.priority,
+          assignedToId: ticket.assignedToId,
+          requestType: ticket.requestType
+        })
+      });
+      
+      // Log activity
+      await this.logActivity({
+        action: "Updated",
+        entityType: "Ticket",
+        entityId: id,
+        userId,
+        details: { 
+          ticketId: ticket.ticketId, 
+          changes: changes.join("; ")
+        }
+      });
+    }
+    
+    return ticket;
+  }
+
+  // Delete Ticket with admin permission (Feature 4: Delete ticket function - admin only)
+  async deleteTicket(id: number, userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user || user.accessLevel !== '1') { // Only admin can delete
+      throw new Error("Unauthorized: Only administrators can delete tickets");
+    }
+    
+    const ticketIndex = this.tickets.findIndex(t => t.id === id);
+    if (ticketIndex === -1) return false;
+    
+    const ticket = this.tickets[ticketIndex];
+    
+    // Remove ticket
+    this.tickets.splice(ticketIndex, 1);
+    
+    // Remove related history
+    this.ticketHistory = this.ticketHistory.filter(h => h.ticketId !== id);
+    
+    // Log activity
+    await this.logActivity({
+      action: "Deleted",
+      entityType: "Ticket",
+      entityId: id,
+      userId,
+      details: { 
+        ticketId: ticket.ticketId,
+        description: ticket.description,
+        status: ticket.status
+      }
+    });
+    
+    return true;
+  }
+
+  // Enhanced ticket creation with history
+  async createTicketWithHistory(ticket: schema.InsertTicket): Promise<schema.Ticket> {
+    const newTicket = await this.createTicket(ticket);
+    
+    // Create initial history entry
+    await this.createTicketHistory({
+      ticketId: newTicket.id,
+      userId: ticket.submittedById,
+      action: "Created",
+      changes: `Ticket created with status "${newTicket.status}" and priority "${newTicket.priority}"`,
+      oldValues: null,
+      newValues: JSON.stringify({
+        status: newTicket.status,
+        priority: newTicket.priority,
+        requestType: newTicket.requestType
+      })
+    });
+    
+    return newTicket;
   }
 }

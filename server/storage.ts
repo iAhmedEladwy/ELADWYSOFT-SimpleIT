@@ -174,6 +174,30 @@ export interface IStorage {
   createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
   deleteServiceProvider(id: number): Promise<boolean>;
   
+  // Custom Request Types operations (Feature 1: Change Category to Request Type)
+  getCustomRequestTypes(): Promise<any[]>;
+  getAllCustomRequestTypes(): Promise<any[]>;
+  createCustomRequestType(requestType: any): Promise<any>;
+  updateCustomRequestType(id: number, requestType: any): Promise<any | undefined>;
+  deleteCustomRequestType(id: number): Promise<boolean>;
+  
+  // Enhanced Ticket operations with time tracking (Feature 2: Manual time tracking)
+  startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
+  stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
+  
+  // Ticket History operations (Feature 3: Ticket history and updates display)
+  getTicketHistory(ticketId: number): Promise<any[]>;
+  createTicketHistory(history: any): Promise<any>;
+  
+  // Enhanced Ticket Update with history tracking (Feature 5: Update ticket details)
+  updateTicketWithHistory(id: number, ticketData: Partial<InsertTicket>, userId: number): Promise<Ticket | undefined>;
+  
+  // Delete Ticket with admin permission (Feature 4: Delete ticket function - admin only)
+  deleteTicket(id: number, userId: number): Promise<boolean>;
+  
+  // Enhanced ticket creation with history
+  createTicketWithHistory(ticket: InsertTicket): Promise<Ticket>;
+  
   // Remove Demo Data
   removeDemoData(): Promise<void>;
 }
