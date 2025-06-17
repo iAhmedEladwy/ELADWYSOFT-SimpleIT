@@ -351,6 +351,16 @@ export default function Employees() {
     });
   }, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
 
+  // Count active filters for display
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery) count++;
+    if (statusFilter !== 'Active') count++;
+    if (departmentFilter !== 'All') count++;
+    if (employmentTypeFilter !== 'All') count++;
+    return count;
+  }, [searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
