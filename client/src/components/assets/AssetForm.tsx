@@ -216,15 +216,25 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Laptop">{translations.laptop}</SelectItem>
-                        <SelectItem value="Desktop">{translations.desktop}</SelectItem>
-                        <SelectItem value="Mobile">{translations.mobile}</SelectItem>
-                        <SelectItem value="Tablet">{translations.tablet}</SelectItem>
-                        <SelectItem value="Monitor">{translations.monitor}</SelectItem>
-                        <SelectItem value="Printer">{translations.printer}</SelectItem>
-                        <SelectItem value="Server">{translations.server}</SelectItem>
-                        <SelectItem value="Network">{translations.network}</SelectItem>
-                        <SelectItem value="Other">{translations.other}</SelectItem>
+                        <ScrollArea className="h-72">
+                          {/* Custom asset types only */}
+                          {customAssetTypes && customAssetTypes.length > 0 ? (
+                            customAssetTypes.map((type: any) => (
+                              <SelectItem key={type.id} value={type.name}>
+                                {type.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No asset types configured' : 'لا توجد أنواع أصول مكونة'}
+                            </div>
+                          )}
+                          
+                          {/* Other option */}
+                          <SelectItem value="Other">
+                            {language === 'English' ? 'Other' : 'أخرى'}
+                          </SelectItem>
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                     <FormMessage />
