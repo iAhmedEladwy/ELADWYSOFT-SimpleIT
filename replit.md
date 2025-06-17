@@ -42,6 +42,8 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **COMPLETED**: Clickable ticket table rows - Integrated TicketDetailForm with seamless ticket management interface
 - **COMPLETED**: Tabbed ticket detail form - Comprehensive interface with Details, Comments, History, and Attachments tabs
 - **FIXED**: SelectItem empty value error - Resolved UI component validation issues
+- **COMPLETED**: UI simplification - Removed Ticket History, Attachment, Edit, and Comment buttons from ticket interface
+- **FIXED**: Comment display issue - Comments now show current user's username instead of "unknown"
 
 ### Current Progress
 - ✓ Changes log system accessible within the application (COMPLETED)
@@ -61,6 +63,8 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - ✓ **COMPLETED**: Enhanced Time Tracking - Displays actual consumed time with proper formatting and active tracking indicators
 - ✓ **COMPLETED**: Dialog Management - Automatic closing after successful operations with proper state management
 - ✓ **COMPLETED**: Ticket History System - Complete audit trail with automatic history creation for all changes
+- ✓ **COMPLETED**: UI Simplification - Removed Ticket History, Attachment, Edit, and Comment buttons as requested
+- ✓ **COMPLETED**: Comment system with proper user attribution - Comments display current user's username correctly
 - ✓ All major system features fully functional and production-ready
 
 ## Resolved Issues
