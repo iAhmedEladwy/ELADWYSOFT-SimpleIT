@@ -177,6 +177,7 @@ export default function EmployeesTable({
             <TableHead>{translations.name}</TableHead>
             <TableHead>{translations.department}</TableHead>
             <TableHead>{translations.title}</TableHead>
+            <TableHead>Employment Type</TableHead>
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.joiningDate}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -196,9 +197,17 @@ export default function EmployeesTable({
                   </TableCell>
                 )}
                 <TableCell className="font-medium">{employee.empId || employee.employeeId}</TableCell>
-                <TableCell>{employee.englishName || employee.name}</TableCell>
+                <TableCell>
+                  <button 
+                    className="text-blue-600 hover:text-blue-800 underline text-left"
+                    onClick={() => onEdit(employee)}
+                  >
+                    {employee.englishName || employee.name}
+                  </button>
+                </TableCell>
                 <TableCell>{employee.department}</TableCell>
                 <TableCell>{employee.title || employee.position}</TableCell>
+                <TableCell>{employee.employmentType || 'Full-time'}</TableCell>
                 <TableCell>{getStatusBadge(employee.status || (employee.isActive ? 'Active' : 'Inactive'))}</TableCell>
                 <TableCell>{formatDate(employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">

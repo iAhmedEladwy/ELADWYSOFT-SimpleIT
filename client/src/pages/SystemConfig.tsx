@@ -37,6 +37,9 @@ export default function SystemConfig() {
   const [currency, setCurrency] = useState('USD');
   const [departments, setDepartments] = useState<string[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
+  const [departmentSearch, setDepartmentSearch] = useState('');
+  const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
+  const [editedDeptName, setEditedDeptName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   // Email configuration states
@@ -564,6 +567,88 @@ export default function SystemConfig() {
       currency,
       departments,
       // Email configuration
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : undefined,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure
+    });
+  };
+
+  // Department management handlers
+  const handleAddDepartment = () => {
+    if (!newDepartment.trim()) return;
+    
+    const updatedDepartments = [...departments, newDepartment.trim()];
+    setDepartments(updatedDepartments);
+    
+    // Save to server immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments,
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : undefined,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure
+    });
+    
+    setNewDepartment('');
+  };
+
+  const handleEditDepartment = (index: number) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(departments[index]);
+  };
+
+  const handleSaveDepartment = () => {
+    if (!editedDeptName.trim() || editingDeptIndex === null) return;
+    
+    const updatedDepartments = [...departments];
+    updatedDepartments[editingDeptIndex] = editedDeptName.trim();
+    setDepartments(updatedDepartments);
+    
+    // Save to server immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments,
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : undefined,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure
+    });
+    
+    setEditingDeptIndex(null);
+  };
+
+  const handleCancelEditDepartment = () => {
+    setEditingDeptIndex(null);
+  };
+
+  const handleDeleteDepartment = (index: number) => {
+    const updatedDepartments = departments.filter((_, i) => i !== index);
+    setDepartments(updatedDepartments);
+    
+    // Save to server immediately
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments: updatedDepartments,
       emailHost,
       emailPort: emailPort ? parseInt(emailPort) : undefined,
       emailUser,
