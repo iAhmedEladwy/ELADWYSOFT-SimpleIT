@@ -8,7 +8,7 @@ import EmployeesTable from '@/components/employees/EmployeesTable';
 import EmployeeForm from '@/components/employees/EmployeeForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Upload } from 'lucide-react';
+import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,11 @@ export default function Employees() {
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Active'); // Default to Active employees
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   
@@ -68,6 +73,18 @@ export default function Employees() {
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
     onLeave: language === 'English' ? 'On Leave' : 'في إجازة',
     filterByStatus: language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة',
+    advancedFilters: language === 'English' ? 'Advanced Filters' : 'فلاتر متقدمة',
+    department: language === 'English' ? 'Department' : 'القسم',
+    employmentType: language === 'English' ? 'Employment Type' : 'نوع التوظيف',
+    allDepartments: language === 'English' ? 'All Departments' : 'جميع الأقسام',
+    allTypes: language === 'English' ? 'All Types' : 'جميع الأنواع',
+    clearFilters: language === 'English' ? 'Clear Filters' : 'مسح الفلاتر',
+    selectAll: language === 'English' ? 'Select All' : 'تحديد الكل',
+    deselectAll: language === 'English' ? 'Deselect All' : 'إلغاء تحديد الكل',
+    bulkActions: language === 'English' ? 'Bulk Actions' : 'العمليات المجمعة',
+    deleteSelected: language === 'English' ? 'Delete Selected' : 'حذف المحدد',
+    changeStatus: language === 'English' ? 'Change Status' : 'تغيير الحالة',
+    exportSelected: language === 'English' ? 'Export Selected' : 'تصدير المحدد',
     addEmployee: language === 'English' ? 'Add Employee' : 'إضافة موظف',
     editEmployee: language === 'English' ? 'Edit Employee' : 'تعديل الموظف',
     refresh: language === 'English' ? 'Refresh' : 'تحديث',

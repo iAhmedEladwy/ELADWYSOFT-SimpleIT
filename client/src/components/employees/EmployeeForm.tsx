@@ -167,7 +167,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     if (initialData) {
       const formattedData = getFormattedInitialData();
       if (formattedData) {
-        form.reset(formattedData);
+        // Use setTimeout to ensure form is ready
+        setTimeout(() => {
+          form.reset(formattedData);
+        }, 0);
       }
     } else {
       // Reset to default values for create mode
