@@ -440,32 +440,135 @@ export default function EnhancedTicketTable({
               <TableRow key={ticket.id}>
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
                 <TableCell className="max-w-xs truncate">{ticket.description}</TableCell>
-                <TableCell>{ticket.requestType}</TableCell>
                 <TableCell>
-                  <Badge variant={getPriorityColor(ticket.priority)}>
-                    {ticket.priority}
-                  </Badge>
+                  <Select
+                    value={ticket.requestType}
+                    onValueChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { requestType: value } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-24 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Hardware">Hardware</SelectItem>
+                      <SelectItem value="Software">Software</SelectItem>
+                      <SelectItem value="Network">Network</SelectItem>
+                      <SelectItem value="Support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={ticket.priority}
+                    onValueChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { priority: value } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-20 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">
+                        <Badge variant="secondary" className="text-xs">Low</Badge>
+                      </SelectItem>
+                      <SelectItem value="Medium">
+                        <Badge variant="default" className="text-xs">Medium</Badge>
+                      </SelectItem>
+                      <SelectItem value="High">
+                        <Badge variant="destructive" className="text-xs">High</Badge>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={ticket.status}
+                    onValueChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { status: value } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-28 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Open">
+                        <div className="flex items-center space-x-1">
+                          <AlertCircle className="h-3 w-3 text-blue-500" />
+                          <span>Open</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="In Progress">
+                        <div className="flex items-center space-x-1">
+                          <Timer className="h-3 w-3 text-yellow-500" />
+                          <span>In Progress</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Resolved">
+                        <div className="flex items-center space-x-1">
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          <span>Resolved</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Closed">
+                        <div className="flex items-center space-x-1">
+                          <XCircle className="h-3 w-3 text-gray-500" />
+                          <span>Closed</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={ticket.assignedToId?.toString() || "0"}
+                    onValueChange={(value) => {
+                      const assignedToId = value === "0" ? null : parseInt(value);
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { assignedToId } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-24 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
+                      <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مُكلف'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">
+                        <span className="text-gray-500 text-xs">
+                          {language === 'English' ? 'Unassigned' : 'غير مُكلف'}
+                        </span>
+                      </SelectItem>
+                      {users.map(user => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          <span className="text-xs">{user.username}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    {getStatusIcon(ticket.status)}
-                    <Badge variant={getStatusColor(ticket.status)}>
-                      {ticket.status}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {assignedUser ? assignedUser.username : 
-                   language === 'English' ? 'Unassigned' : 'غير مُكلف'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{ticket.timeSpent ? formatTime(ticket.timeSpent) : '0h 0m'}</span>
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium">
+                      {ticket.timeSpent ? formatTime(ticket.timeSpent) : '0h 0m'}
+                    </span>
                     {ticket.isTimeTracking && (
-                      <Badge variant="outline" className="text-green-600">
-                        {language === 'English' ? 'Tracking' : 'تتبع'}
-                      </Badge>
+                      <div className="flex items-center space-x-1">
+                        <Timer className="h-3 w-3 text-green-500 animate-pulse" />
+                        <span className="text-xs text-green-600 font-medium">
+                          {language === 'English' ? 'Active' : 'نشط'}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </TableCell>
