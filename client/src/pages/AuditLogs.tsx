@@ -153,25 +153,27 @@ export default function AuditLogs() {
     
     // Set olderThan date based on timeframe selection
     if (clearOptions.timeframe !== 'all') {
-      const now = new Date();
       if (clearOptions.timeframe === 'week') {
-        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
         options.olderThan = weekAgo.toISOString();
       } else if (clearOptions.timeframe === 'month') {
-        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
         options.olderThan = monthAgo.toISOString();
       } else if (clearOptions.timeframe === 'year') {
-        const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+        const yearAgo = new Date();
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
         options.olderThan = yearAgo.toISOString();
       }
     }
     
     // Add entity type and action filters if selected
-    if (clearOptions.entityType) {
+    if (clearOptions.entityType && clearOptions.entityType !== '') {
       options.entityType = clearOptions.entityType;
     }
     
-    if (clearOptions.action) {
+    if (clearOptions.action && clearOptions.action !== '') {
       options.action = clearOptions.action;
     }
     

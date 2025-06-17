@@ -117,10 +117,21 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     if (!initialData) return undefined;
     
     return {
-      ...initialData,
+      empId: initialData.employeeId || initialData.empId || '',
+      englishName: initialData.name || initialData.englishName || '',
+      arabicName: initialData.arabicName || '',
+      department: initialData.department || '',
+      idNumber: initialData.nationalId || initialData.idNumber || '',
+      title: initialData.position || initialData.title || '',
+      directManager: initialData.directManager ? initialData.directManager.toString() : '',
+      employmentType: initialData.employmentType || 'Full-time',
       joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : '',
       exitDate: initialData.exitDate ? new Date(initialData.exitDate).toISOString().split('T')[0] : '',
-      directManager: initialData.directManager ? initialData.directManager.toString() : '',
+      status: initialData.status || 'Active',
+      personalMobile: initialData.phone || initialData.personalMobile || '',
+      workMobile: initialData.workMobile || '',
+      personalEmail: initialData.email || initialData.personalEmail || '',
+      corporateEmail: initialData.corporateEmail || '',
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
   };
@@ -251,10 +262,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {systemConfig?.departments?.map((dept: string) => (
+                        {(systemConfig as any)?.departments?.map((dept: string) => (
                           <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                         ))}
-                        {(!systemConfig?.departments || systemConfig.departments.length === 0) && (
+                        {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
                           <SelectItem value="General">General</SelectItem>
                         )}
                       </SelectContent>
@@ -315,9 +326,9 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">{translations.none}</SelectItem>
-                        {employees.map((employee: any) => (
+                        {(employees as any[])?.map((employee: any) => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.englishName}
+                            {employee.name || employee.englishName}
                           </SelectItem>
                         ))}
                       </SelectContent>

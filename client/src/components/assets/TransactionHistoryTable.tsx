@@ -88,7 +88,7 @@ export default function TransactionHistoryTable() {
       asset: item.assets,
       employee: item.employees
     } as TransactionWithRelations;
-  });
+  }) || [];
   
   // Assets data for the filter
   const { data: assets } = useQuery<Asset[]>({
