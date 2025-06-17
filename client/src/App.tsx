@@ -16,7 +16,7 @@ import AssetHistory from "@/pages/AssetHistory";
 import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
-import SystemConfig from "@/pages/SystemConfig";
+import SystemConfigEnhanced from "@/pages/SystemConfigEnhanced";
 import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
 import ChangesLog from "@/pages/ChangesLog";
@@ -149,7 +149,7 @@ function Router() {
         </Route>
         <Route path="/system-config">
           <Layout>
-            <PrivateRoute component={SystemConfig} />
+            <PrivateRoute component={SystemConfigEnhanced} />
           </Layout>
         </Route>
         <Route path="/audit-logs">

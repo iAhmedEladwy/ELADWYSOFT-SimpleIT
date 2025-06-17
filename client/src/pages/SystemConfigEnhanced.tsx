@@ -1,0 +1,841 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/use-language';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/lib/authContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+export default function SystemConfigEnhanced() {
+  const { language, toggleLanguage } = useLanguage();
+  const { toast } = useToast();
+  const { hasAccess } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Basic configuration states
+  const [assetIdPrefix, setAssetIdPrefix] = useState('SIT-');
+  const [empIdPrefix, setEmpIdPrefix] = useState('EMP-');
+  const [ticketIdPrefix, setTicketIdPrefix] = useState('TKT-');
+  const [currency, setCurrency] = useState('USD');
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Email configuration states
+  const [emailHost, setEmailHost] = useState('');
+  const [emailPort, setEmailPort] = useState('');
+  const [emailUser, setEmailUser] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailFromAddress, setEmailFromAddress] = useState('');
+  const [emailFromName, setEmailFromName] = useState('');
+  const [emailSecure, setEmailSecure] = useState(true);
+  
+  // Export/Import states
+  const [importing, setImporting] = useState(false);
+  const [importType, setImportType] = useState<'employees' | 'assets' | null>(null);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
+  
+  // Asset Management pagination and search
+  const [assetTypeSearch, setAssetTypeSearch] = useState('');
+  const [assetBrandSearch, setAssetBrandSearch] = useState('');
+  const [assetStatusSearch, setAssetStatusSearch] = useState('');
+  const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState({
+    types: 1,
+    brands: 1,
+    statuses: 1,
+    providers: 1
+  });
+  const itemsPerPage = 10;
+
+  // Form states for new items
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeDescription, setNewTypeDescription] = useState('');
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandDescription, setNewBrandDescription] = useState('');
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusDescription, setNewStatusDescription] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3B82F6');
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderContact, setNewProviderContact] = useState('');
+  const [newProviderPhone, setNewProviderPhone] = useState('');
+  const [newProviderEmail, setNewProviderEmail] = useState('');
+
+  // Custom fields queries
+  const { data: customAssetTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-types'],
+    enabled: hasAccess(3),
+  });
+  
+  const { data: customAssetBrands = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-brands'],
+    enabled: hasAccess(3),
+  });
+  
+  const { data: customAssetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-statuses'],
+    enabled: hasAccess(3),
+  });
+  
+  const { data: serviceProviders = [] } = useQuery<any[]>({
+    queryKey: ['/api/service-providers'],
+    enabled: hasAccess(3),
+  });
+
+  const { data: config } = useQuery<any>({
+    queryKey: ['/api/system-config'],
+    enabled: hasAccess(3),
+  });
+
+  // Update local state when config data is loaded
+  useEffect(() => {
+    if (config) {
+      setAssetIdPrefix(config.assetIdPrefix || 'SIT-');
+      setEmpIdPrefix(config.empIdPrefix || 'EMP-');
+      setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
+      setCurrency(config.currency || 'USD');
+      setDepartments(config.departments || []);
+      
+      // Load email configuration
+      setEmailHost(config.emailHost || '');
+      setEmailPort(config.emailPort || '');
+      setEmailUser(config.emailUser || '');
+      setEmailPassword(config.emailPassword || '');
+      setEmailFromAddress(config.emailFromAddress || '');
+      setEmailFromName(config.emailFromName || '');
+      setEmailSecure(config.emailSecure !== false);
+      setIsLoading(false);
+    }
+  }, [config]);
+
+  // Export functions
+  const handleExport = (type: 'employees' | 'assets' | 'tickets') => {
+    window.open(`/api/export/${type}`, '_blank');
+  };
+
+  // CSV parsing function
+  const parseCSV = (csvText: string) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const data = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+      const row: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      return row;
+    });
+    return { headers, data };
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'employees' | 'assets') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csvText = e.target?.result as string;
+      const { headers, data } = parseCSV(csvText);
+      setCsvHeaders(headers);
+      setCsvData(data);
+      setImportType(type);
+      setImporting(true);
+    };
+    reader.readAsText(file);
+  };
+
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: (data: { type: string; data: any[]; mapping: Record<string, string> }) =>
+      apiRequest('POST', `/api/import/${data.type}`, { data: data.data, mapping: data.mapping }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries();
+      setImporting(false);
+      setImportType(null);
+      setCsvData([]);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' 
+          ? `Successfully imported ${result.imported} records` 
+          : `تم استيراد ${result.imported} سجل بنجاح`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to import data' : 'فشل استيراد البيانات',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Handle import with field mapping
+  const handleImport = () => {
+    if (!importType || !csvData.length) return;
+    
+    importMutation.mutate({
+      type: importType,
+      data: csvData,
+      mapping: fieldMapping
+    });
+  };
+
+  // Pagination helpers
+  const getPaginatedItems = (items: any[], page: number) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return items.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getTotalPages = (itemsLength: number) => {
+    return Math.ceil(itemsLength / itemsPerPage);
+  };
+
+  // Filtered items
+  const filteredAssetTypes = customAssetTypes.filter(type => 
+    type.name.toLowerCase().includes(assetTypeSearch.toLowerCase())
+  );
+  const filteredAssetBrands = customAssetBrands.filter(brand => 
+    brand.name.toLowerCase().includes(assetBrandSearch.toLowerCase())
+  );
+  const filteredAssetStatuses = customAssetStatuses.filter(status => 
+    status.name.toLowerCase().includes(assetStatusSearch.toLowerCase())
+  );
+  const filteredServiceProviders = serviceProviders.filter(provider => 
+    provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
+  );
+
+  const translations = {
+    systemConfiguration: language === 'English' ? 'System Configuration' : 'تكوين النظام',
+    generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
+    assetManagement: language === 'English' ? 'Asset Management' : 'إدارة الأصول',
+    exportImport: language === 'English' ? 'Export/Import' : 'تصدير/استيراد',
+    emailSettings: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
+    language: language === 'English' ? 'Language' : 'اللغة',
+    currency: language === 'English' ? 'Currency' : 'العملة',
+    save: language === 'English' ? 'Save' : 'حفظ',
+    english: language === 'English' ? 'English' : 'الإنجليزية',
+    arabic: language === 'English' ? 'Arabic' : 'العربية',
+    noData: language === 'English' ? 'No data available' : 'لا توجد بيانات متاحة'
+  };
+
+  if (!hasAccess(3)) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {language === 'English' ? 'Access Denied' : 'تم رفض الوصول'}
+              </h3>
+              <p className="text-gray-500">
+                {language === 'English' 
+                  ? 'You do not have permission to access system configuration.' 
+                  : 'ليس لديك صلاحية للوصول إلى تكوين النظام.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{translations.systemConfiguration}</h1>
+          <p className="text-gray-600 mt-2">
+            {language === 'English' 
+              ? 'Configure system settings, manage data, and customize your organization preferences.' 
+              : 'تكوين إعدادات النظام وإدارة البيانات وتخصيص تفضيلات المؤسسة.'}
+          </p>
+        </div>
+        <Settings className="h-8 w-8 text-gray-400" />
+      </div>
+
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="general">{translations.generalSettings}</TabsTrigger>
+          <TabsTrigger value="export-import">{translations.exportImport}</TabsTrigger>
+          <TabsTrigger value="assets">{translations.assetManagement}</TabsTrigger>
+          <TabsTrigger value="email">{translations.emailSettings}</TabsTrigger>
+        </TabsList>
+
+        {/* Export/Import Tab */}
+        <TabsContent value="export-import">
+          <div className="space-y-6">
+            {/* Export Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Download className="mr-2 h-5 w-5" />
+                  {language === 'English' ? 'Export Data' : 'تصدير البيانات'}
+                </CardTitle>
+                <CardDescription>
+                  {language === 'English' 
+                    ? 'Export your data to CSV files for backup or analysis' 
+                    : 'تصدير البيانات إلى ملفات CSV للنسخ الاحتياطي أو التحليل'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button 
+                    onClick={() => handleExport('employees')}
+                    variant="outline" 
+                    className="flex items-center justify-center p-6"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
+                  </Button>
+                  <Button 
+                    onClick={() => handleExport('assets')}
+                    variant="outline" 
+                    className="flex items-center justify-center p-6"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
+                  </Button>
+                  <Button 
+                    onClick={() => handleExport('tickets')}
+                    variant="outline" 
+                    className="flex items-center justify-center p-6"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {language === 'English' ? 'Export Tickets' : 'تصدير التذاكر'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Import Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Upload className="mr-2 h-5 w-5" />
+                  {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
+                </CardTitle>
+                <CardDescription>
+                  {language === 'English' 
+                    ? 'Import data from CSV files with field mapping' 
+                    : 'استيراد البيانات من ملفات CSV مع تعيين الحقول'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="employee-upload">
+                      {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
+                    </Label>
+                    <Input
+                      id="employee-upload"
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => handleFileUpload(e, 'employees')}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="asset-upload">
+                      {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
+                    </Label>
+                    <Input
+                      id="asset-upload"
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => handleFileUpload(e, 'assets')}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Asset Management Tab with Tabbed Layout */}
+        <TabsContent value="assets">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="mr-2 h-5 w-5" />
+                {translations.assetManagement}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure custom asset types, brands, statuses, and service providers for your organization.' 
+                  : 'تكوين أنواع الأصول المخصصة والعلامات التجارية والحالات ومقدمي الخدمات لمؤسستك.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="types" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="types">
+                    {language === 'English' ? 'Types' : 'الأنواع'}
+                  </TabsTrigger>
+                  <TabsTrigger value="brands">
+                    {language === 'English' ? 'Brands' : 'العلامات التجارية'}
+                  </TabsTrigger>
+                  <TabsTrigger value="statuses">
+                    {language === 'English' ? 'Statuses' : 'الحالات'}
+                  </TabsTrigger>
+                  <TabsTrigger value="providers">
+                    {language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Asset Types Tab */}
+                <TabsContent value="types">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={language === 'English' ? 'Search asset types...' : 'البحث في أنواع الأصول...'}
+                          value={assetTypeSearch}
+                          onChange={(e) => setAssetTypeSearch(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg">
+                      <div className="p-4 border-b bg-muted/50">
+                        <h4 className="font-medium">
+                          {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
+                        </h4>
+                      </div>
+                      {filteredAssetTypes.length > 0 ? (
+                        <div className="divide-y">
+                          {getPaginatedItems(filteredAssetTypes, currentPage.types).map((type) => (
+                            <div key={type.id} className="p-4 flex items-center justify-between">
+                              <div>
+                                <h5 className="font-medium">{type.name}</h5>
+                                {type.description && (
+                                  <p className="text-sm text-muted-foreground">{type.description}</p>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          {translations.noData}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pagination for Types */}
+                    {getTotalPages(filteredAssetTypes.length) > 1 && (
+                      <div className="flex justify-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage.types === 1}
+                          onClick={() => setCurrentPage(prev => ({ ...prev, types: prev.types - 1 }))}
+                        >
+                          {language === 'English' ? 'Previous' : 'السابق'}
+                        </Button>
+                        <span className="px-4 py-2 text-sm">
+                          {currentPage.types} / {getTotalPages(filteredAssetTypes.length)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage.types === getTotalPages(filteredAssetTypes.length)}
+                          onClick={() => setCurrentPage(prev => ({ ...prev, types: prev.types + 1 }))}
+                        >
+                          {language === 'English' ? 'Next' : 'التالي'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Similar structure for Brands, Statuses, and Providers tabs */}
+                <TabsContent value="brands">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={language === 'English' ? 'Search brands...' : 'البحث في العلامات التجارية...'}
+                          value={assetBrandSearch}
+                          onChange={(e) => setAssetBrandSearch(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg">
+                      <div className="p-4 border-b bg-muted/50">
+                        <h4 className="font-medium">
+                          {language === 'English' ? 'Asset Brands' : 'العلامات التجارية للأصول'}
+                        </h4>
+                      </div>
+                      {filteredAssetBrands.length > 0 ? (
+                        <div className="divide-y">
+                          {getPaginatedItems(filteredAssetBrands, currentPage.brands).map((brand) => (
+                            <div key={brand.id} className="p-4 flex items-center justify-between">
+                              <div>
+                                <h5 className="font-medium">{brand.name}</h5>
+                                {brand.description && (
+                                  <p className="text-sm text-muted-foreground">{brand.description}</p>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          {translations.noData}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="statuses">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={language === 'English' ? 'Search statuses...' : 'البحث في الحالات...'}
+                          value={assetStatusSearch}
+                          onChange={(e) => setAssetStatusSearch(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg">
+                      <div className="p-4 border-b bg-muted/50">
+                        <h4 className="font-medium">
+                          {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
+                        </h4>
+                      </div>
+                      {filteredAssetStatuses.length > 0 ? (
+                        <div className="divide-y">
+                          {getPaginatedItems(filteredAssetStatuses, currentPage.statuses).map((status) => (
+                            <div key={status.id} className="p-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div 
+                                  className="w-4 h-4 rounded"
+                                  style={{ backgroundColor: status.color || '#3B82F6' }}
+                                />
+                                <div>
+                                  <h5 className="font-medium">{status.name}</h5>
+                                  {status.description && (
+                                    <p className="text-sm text-muted-foreground">{status.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          {translations.noData}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="providers">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={language === 'English' ? 'Search service providers...' : 'البحث في مقدمي الخدمات...'}
+                          value={serviceProviderSearch}
+                          onChange={(e) => setServiceProviderSearch(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg">
+                      <div className="p-4 border-b bg-muted/50">
+                        <h4 className="font-medium">
+                          {language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}
+                        </h4>
+                      </div>
+                      {filteredServiceProviders.length > 0 ? (
+                        <div className="divide-y">
+                          {getPaginatedItems(filteredServiceProviders, currentPage.providers).map((provider) => (
+                            <div key={provider.id} className="p-4 flex items-center justify-between">
+                              <div>
+                                <h5 className="font-medium">{provider.name}</h5>
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                  {provider.contactPerson && <p>Contact: {provider.contactPerson}</p>}
+                                  {provider.phone && <p>Phone: {provider.phone}</p>}
+                                  {provider.email && <p>Email: {provider.email}</p>}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          {translations.noData}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* General Settings Tab */}
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle>{translations.generalSettings}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure language and currency preferences for your organization.' 
+                  : 'تكوين تفضيلات اللغة والعملة لمؤسستك.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6">
+                <div className="grid gap-2">
+                  <Label>{translations.language}</Label>
+                  <Select value={language} onValueChange={toggleLanguage}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={translations.language} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">{translations.english}</SelectItem>
+                      <SelectItem value="Arabic">{translations.arabic}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>{translations.currency}</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={translations.currency} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="SAR">SAR (ر.س)</SelectItem>
+                      <SelectItem value="AED">AED (د.إ)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Email Settings Tab */}
+        <TabsContent value="email">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="mr-2 h-5 w-5" />
+                {translations.emailSettings}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure SMTP settings for system email notifications' 
+                  : 'تكوين إعدادات SMTP لإشعارات النظام عبر البريد الإلكتروني'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailHost">
+                      {language === 'English' ? 'SMTP Host' : 'خادم SMTP'}
+                    </Label>
+                    <Input
+                      id="emailHost"
+                      value={emailHost}
+                      onChange={(e) => setEmailHost(e.target.value)}
+                      placeholder="smtp.gmail.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailPort">
+                      {language === 'English' ? 'SMTP Port' : 'منفذ SMTP'}
+                    </Label>
+                    <Input
+                      id="emailPort"
+                      type="number"
+                      value={emailPort}
+                      onChange={(e) => setEmailPort(e.target.value)}
+                      placeholder="587"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailUser">
+                      {language === 'English' ? 'SMTP Username' : 'اسم مستخدم SMTP'}
+                    </Label>
+                    <Input
+                      id="emailUser"
+                      value={emailUser}
+                      onChange={(e) => setEmailUser(e.target.value)}
+                      placeholder="your-email@domain.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailPassword">
+                      {language === 'English' ? 'SMTP Password' : 'كلمة مرور SMTP'}
+                    </Label>
+                    <Input
+                      id="emailPassword"
+                      type="password"
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Import Dialog */}
+      <Dialog open={importing} onOpenChange={setImporting}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'English' 
+                ? 'Map CSV columns to system fields' 
+                : 'تعيين أعمدة CSV إلى حقول النظام'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {csvHeaders.map((header) => (
+              <div key={header} className="grid grid-cols-2 gap-4 items-center">
+                <Label>{header}</Label>
+                <Select 
+                  value={fieldMapping[header] || ''} 
+                  onValueChange={(value) => setFieldMapping(prev => ({ ...prev, [header]: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select field..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {importType === 'employees' ? (
+                      <>
+                        <SelectItem value="empId">Employee ID</SelectItem>
+                        <SelectItem value="englishName">English Name</SelectItem>
+                        <SelectItem value="arabicName">Arabic Name</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="phone">Phone</SelectItem>
+                        <SelectItem value="department">Department</SelectItem>
+                        <SelectItem value="position">Position</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="assetId">Asset ID</SelectItem>
+                        <SelectItem value="name">Name</SelectItem>
+                        <SelectItem value="type">Type</SelectItem>
+                        <SelectItem value="brand">Brand</SelectItem>
+                        <SelectItem value="model">Model</SelectItem>
+                        <SelectItem value="serialNumber">Serial Number</SelectItem>
+                        <SelectItem value="status">Status</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImporting(false)}>
+              {language === 'English' ? 'Cancel' : 'إلغاء'}
+            </Button>
+            <Button onClick={handleImport} disabled={importMutation.isPending}>
+              {importMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {language === 'English' ? 'Import' : 'استيراد'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
