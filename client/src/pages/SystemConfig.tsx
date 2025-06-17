@@ -869,6 +869,101 @@ export default function SystemConfig() {
     }
   };
 
+  // Department management functions
+  const handleAddDepartment = () => {
+    if (!newDepartment.trim()) return;
+    
+    const updatedDepartments = [...departments, newDepartment.trim()];
+    setDepartments(updatedDepartments);
+    setNewDepartment('');
+    
+    // Save immediately
+    const configData = {
+      language,
+      assetIdPrefix,
+      ticketIdPrefix,
+      currency,
+      emailHost,
+      emailPort,
+      emailUsername,
+      emailPassword,
+      emailSecure,
+      departments: updatedDepartments
+    };
+    updateConfigMutation.mutate(configData);
+  };
+
+  const handleEditDepartment = (index: number, deptName: string) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(deptName);
+  };
+
+  const handleSaveDepartment = (index: number) => {
+    if (!editedDeptName.trim()) return;
+    
+    const updatedDepartments = [...departments];
+    updatedDepartments[index] = editedDeptName.trim();
+    setDepartments(updatedDepartments);
+    setEditingDeptIndex(null);
+    setEditedDeptName('');
+    
+    // Save immediately
+    const configData = {
+      language,
+      assetIdPrefix,
+      ticketIdPrefix,
+      currency,
+      emailHost,
+      emailPort,
+      emailUsername,
+      emailPassword,
+      emailSecure,
+      departments: updatedDepartments
+    };
+    updateConfigMutation.mutate(configData);
+  };
+
+  const handleCancelEditDepartment = () => {
+    setEditingDeptIndex(null);
+    setEditedDeptName('');
+  };
+
+  const handleDeleteDepartment = (index: number) => {
+    const updatedDepartments = departments.filter((_, i) => i !== index);
+    setDepartments(updatedDepartments);
+    
+    // Save immediately
+    const configData = {
+      language,
+      assetIdPrefix,
+      ticketIdPrefix,
+      currency,
+      emailHost,
+      emailPort,
+      emailUsername,
+      emailPassword,
+      emailSecure,
+      departments: updatedDepartments
+    };
+    updateConfigMutation.mutate(configData);
+  };
+
+  const handleSaveConfig = () => {
+    const configData = {
+      language,
+      assetIdPrefix,
+      ticketIdPrefix,
+      currency,
+      emailHost,
+      emailPort,
+      emailUsername,
+      emailPassword,
+      emailSecure,
+      departments: departments || []
+    };
+    updateConfigMutation.mutate(configData);
+  };
+
   const translations = {
     systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
     generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
@@ -942,8 +1037,8 @@ export default function SystemConfig() {
 
       <div className="container mx-auto px-4 lg:px-6 pb-6">
 
-      <Tabs defaultValue="departments" className="w-full">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 w-full mb-4 h-auto gap-1" style={{ gridTemplateRows: 'auto auto' }}>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid grid-cols-3 lg:grid-cols-5 w-full mb-4 h-auto gap-1">
           <TabsTrigger value="general" className="text-sm py-3 px-2">
             <Globe className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{translations.generalSettings}</span>
