@@ -90,7 +90,7 @@ export class MemoryStorage implements IStorage {
       empIdPrefix: "EMP",
       ticketIdPrefix: "TKT",
       currency: "USD",
-      departments: [],
+      departments: ["IT Department", "HR Department", "Finance Department", "Operations", "Marketing"],
       emailHost: null,
       emailPort: null,
       emailUser: null,
