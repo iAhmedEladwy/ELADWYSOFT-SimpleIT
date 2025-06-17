@@ -877,13 +877,29 @@ export default function SystemConfig() {
   };
 
   return (
-    <div className="container mx-auto py-4 px-4 lg:px-6">
-      <div className="flex justify-between items-center mb-4 lg:mb-6">
-        <div className="flex items-center">
-          <Settings className="h-5 w-5 lg:h-6 lg:w-6 mr-2" />
-          <h1 className="text-xl lg:text-2xl font-bold">{translations.systemConfig}</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 lg:bg-none lg:bg-background">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 mb-6">
+        <div className="flex items-center justify-center">
+          <Settings className="h-8 w-8 mr-3" />
+          <h1 className="text-2xl font-bold text-center">{translations.systemConfig}</h1>
+        </div>
+        <p className="text-center text-blue-100 mt-2 text-lg">
+          {language === 'English' ? 'Mobile Optimized' : 'محسّن للجوال'}
+        </p>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block container mx-auto py-4 px-4 lg:px-6">
+        <div className="flex justify-between items-center mb-4 lg:mb-6">
+          <div className="flex items-center">
+            <Settings className="h-5 w-5 lg:h-6 lg:w-6 mr-2" />
+            <h1 className="text-xl lg:text-2xl font-bold">{translations.systemConfig}</h1>
+          </div>
         </div>
       </div>
+
+      <div className="container mx-auto px-4 lg:px-6 pb-6">
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full mb-4 h-auto">
@@ -1921,6 +1937,7 @@ export default function SystemConfig() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
