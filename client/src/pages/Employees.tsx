@@ -239,25 +239,114 @@ export default function Employees() {
     importEmployeesMutation.mutate(formData);
   };
 
-  // Filter employees based on search query and status
-  const filteredEmployees = (employees as any[]).filter((employee: any) => {
-    const searchString = searchQuery.toLowerCase();
-    const matchesSearch = (
-      employee.englishName?.toLowerCase().includes(searchString) ||
-      employee.arabicName?.toLowerCase().includes(searchString) ||
-      employee.empId?.toLowerCase().includes(searchString) ||
-      employee.department?.toLowerCase().includes(searchString) ||
-      employee.title?.toLowerCase().includes(searchString)
-    );
+  // Get unique departments and employment types for filters
+  const departments = useMemo(() => {
+    const depts = [...new Set(employees?.map((emp: any) => emp.department).filter(Boolean))];
+    return ['All', ...depts];
+  }, [employees]);
+
+  const employmentTypes = useMemo(() => {
+    const types = [...new Set(employees?.map((emp: any) => emp.employmentType).filter(Boolean))];
+    return ['All', ...types];
+  }, [employees]);
+
+  // Bulk operations handlers
+  const handleSelectAll = () => {
+    if (selectedEmployees.length === filteredEmployees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(filteredEmployees.map((emp: any) => emp.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEmployees.length === 0) return;
     
-    const matchesStatus = statusFilter === 'All' || 
-      (statusFilter === 'Active' && employee.isActive !== false) ||
-      (statusFilter === 'Resigned' && employee.status === 'Resigned') ||
-      (statusFilter === 'Terminated' && employee.status === 'Terminated') ||
-      (statusFilter === 'On Leave' && employee.status === 'On Leave');
+    try {
+      await Promise.all(
+        selectedEmployees.map(id => 
+          apiRequest('DELETE', `/api/employees/${id}`)
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      toast({
+        title: `${selectedEmployees.length} employees deleted successfully`,
+      });
+      setSelectedEmployees([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to delete employees',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedEmployees.length === 0) return;
     
-    return matchesSearch && matchesStatus;
-  });
+    try {
+      await Promise.all(
+        selectedEmployees.map(id => 
+          apiRequest('PUT', `/api/employees/${id}`, { 
+            status: newStatus,
+            isActive: newStatus === 'Active'
+          })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      toast({
+        title: `${selectedEmployees.length} employees updated successfully`,
+      });
+      setSelectedEmployees([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to update employees',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Enhanced filtering with multiple criteria
+  const filteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    
+    return (employees as any[]).filter((employee: any) => {
+      // Search filter
+      const searchString = searchQuery.toLowerCase();
+      const matchesSearch = searchQuery === '' || (
+        employee.englishName?.toLowerCase().includes(searchString) ||
+        employee.arabicName?.toLowerCase().includes(searchString) ||
+        employee.empId?.toLowerCase().includes(searchString) ||
+        employee.department?.toLowerCase().includes(searchString) ||
+        employee.title?.toLowerCase().includes(searchString) ||
+        employee.personalEmail?.toLowerCase().includes(searchString) ||
+        employee.corporateEmail?.toLowerCase().includes(searchString)
+      );
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'All' || 
+        (statusFilter === 'Active' && employee.isActive !== false) ||
+        (statusFilter === 'Resigned' && employee.status === 'Resigned') ||
+        (statusFilter === 'Terminated' && employee.status === 'Terminated') ||
+        (statusFilter === 'On Leave' && employee.status === 'On Leave');
+      
+      // Department filter
+      const matchesDepartment = departmentFilter === 'All' || 
+        employee.department === departmentFilter;
+      
+      // Employment type filter
+      const matchesEmploymentType = employmentTypeFilter === 'All' || 
+        employee.employmentType === employmentTypeFilter;
+      
+      return matchesSearch && matchesStatus && matchesDepartment && matchesEmploymentType;
+    });
+  }, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
 
   return (
     <div className="p-6">
