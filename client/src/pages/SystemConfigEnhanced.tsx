@@ -1454,6 +1454,126 @@ export default function SystemConfigEnhanced() {
           </Card>
         </TabsContent>
 
+        {/* Ticket Settings Tab - Custom Request Types */}
+        <TabsContent value="tickets">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="mr-2 h-5 w-5" />
+                {language === 'English' ? 'Custom Request Types' : 'أنواع الطلبات المخصصة'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage custom request types for ticket system' 
+                  : 'إدارة أنواع الطلبات المخصصة لنظام التذاكر'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Add New Request Type */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Input
+                    placeholder={language === 'English' ? 'Request type name' : 'اسم نوع الطلب'}
+                    value={newRequestTypeName}
+                    onChange={(e) => setNewRequestTypeName(e.target.value)}
+                  />
+                  <Input
+                    placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
+                    value={newRequestTypeDescription}
+                    onChange={(e) => setNewRequestTypeDescription(e.target.value)}
+                  />
+                  <Button 
+                    onClick={handleAddRequestType}
+                    disabled={!newRequestTypeName.trim() || createRequestTypeMutation.isPending}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add' : 'إضافة'}
+                  </Button>
+                </div>
+
+                {/* Search */}
+                <div className="flex items-center space-x-2">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder={language === 'English' ? 'Search request types...' : 'البحث في أنواع الطلبات...'}
+                    value={requestTypeSearch}
+                    onChange={(e) => setRequestTypeSearch(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+
+                {/* Request Types Table */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{language === 'English' ? 'Name' : 'الاسم'}</TableHead>
+                        <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                        <TableHead className="text-right">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getPaginatedItems(filteredRequestTypes, requestTypePage).map((requestType) => (
+                        <TableRow key={requestType.id}>
+                          <TableCell className="font-medium">{requestType.name}</TableCell>
+                          <TableCell>{requestType.description || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingRequestTypeId(requestType.id);
+                                  setEditRequestTypeName(requestType.name);
+                                  setEditRequestTypeDescription(requestType.description || '');
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteRequestType(requestType.id)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {getTotalPages(filteredRequestTypes.length) > 1 && (
+                  <div className="flex justify-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRequestTypePage(Math.max(1, requestTypePage - 1))}
+                      disabled={requestTypePage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="flex items-center px-4 py-2 text-sm">
+                      {requestTypePage} {language === 'English' ? 'of' : 'من'} {getTotalPages(filteredRequestTypes.length)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRequestTypePage(Math.min(getTotalPages(filteredRequestTypes.length), requestTypePage + 1))}
+                      disabled={requestTypePage === getTotalPages(filteredRequestTypes.length)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Email Settings Tab */}
         <TabsContent value="email">
           <Card>
@@ -1796,6 +1916,52 @@ export default function SystemConfigEnhanced() {
                 {language === 'English' ? 'Cancel' : 'إلغاء'}
               </Button>
               <Button onClick={handleUpdateServiceProvider} disabled={!editProviderName.trim()}>
+                {language === 'English' ? 'Update' : 'تحديث'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Custom Request Type Dialog */}
+      <Dialog open={editingRequestTypeId !== null} onOpenChange={() => setEditingRequestTypeId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Edit Request Type' : 'تعديل نوع الطلب'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'English' ? 'Modify the request type details' : 'تعديل تفاصيل نوع الطلب'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-request-type-name">
+                {language === 'English' ? 'Name' : 'الاسم'}
+              </Label>
+              <Input
+                id="edit-request-type-name"
+                value={editRequestTypeName}
+                onChange={(e) => setEditRequestTypeName(e.target.value)}
+                placeholder={language === 'English' ? 'Enter request type name' : 'أدخل اسم نوع الطلب'}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-request-type-description">
+                {language === 'English' ? 'Description' : 'الوصف'}
+              </Label>
+              <Input
+                id="edit-request-type-description"
+                value={editRequestTypeDescription}
+                onChange={(e) => setEditRequestTypeDescription(e.target.value)}
+                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingRequestTypeId(null)}>
+                {language === 'English' ? 'Cancel' : 'إلغاء'}
+              </Button>
+              <Button onClick={handleUpdateRequestType} disabled={!editRequestTypeName.trim()}>
                 {language === 'English' ? 'Update' : 'تحديث'}
               </Button>
             </div>

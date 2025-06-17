@@ -3461,6 +3461,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Creating enhanced ticket with history:", req.body);
       
+      // Validate required fields
+      if (!req.body.submittedById || !req.body.requestType || !req.body.priority || !req.body.description) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
       // Get system config for ticket ID prefix
       const sysConfig = await storage.getSystemConfig();
       let ticketIdPrefix = "TKT-";
@@ -3473,7 +3478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextId = allTickets.length + 1;
       const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
-      // Create ticket data
+      // Create ticket data with proper field mapping
       const ticketData = {
         ticketId,
         submittedById: parseInt(req.body.submittedById.toString()),
@@ -3481,13 +3486,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: req.body.priority,
         description: req.body.description,
         status: 'Open' as const,
-        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
-        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
-        isTimeTracking: false,
-        timeSpent: 0
+        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : undefined,
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined
       };
       
-      // Create the ticket with history tracking
+      // Create the ticket
       const newTicket = await storage.createTicket(ticketData);
       
       console.log("Enhanced ticket creation successful:", newTicket);
