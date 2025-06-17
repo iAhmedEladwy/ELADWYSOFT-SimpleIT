@@ -1883,6 +1883,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Standard ticket creation endpoint
+  app.post("/api/tickets", authenticateUser, async (req, res) => {
+    try {
+      console.log("Creating ticket:", req.body);
+      
+      // Validate required fields
+      const { submittedById, requestType, priority, description } = req.body;
+      if (!submittedById || !requestType || !priority || !description) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Get system config for ticket ID prefix
+      const sysConfig = await storage.getSystemConfig();
+      let ticketIdPrefix = "TKT-";
+      if (sysConfig && sysConfig.ticketIdPrefix) {
+        ticketIdPrefix = sysConfig.ticketIdPrefix;
+      }
+      
+      // Generate ticket ID
+      const allTickets = await storage.getAllTickets();
+      const nextId = allTickets.length + 1;
+      const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
+      
+      // Create ticket data
+      const ticketData = {
+        ticketId,
+        submittedById: parseInt(submittedById.toString()),
+        requestType,
+        priority,
+        description,
+        status: 'Open' as const,
+        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : undefined,
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined
+      };
+      
+      // Create the ticket
+      const newTicket = await storage.createTicket(ticketData);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Create",
+          entityType: "Ticket",
+          entityId: newTicket.id,
+          details: { 
+            ticketId: newTicket.ticketId,
+            requestType: newTicket.requestType, 
+            priority: newTicket.priority 
+          }
+        });
+      }
+      
+      res.status(201).json(newTicket);
+    } catch (error: any) {
+      console.error("Ticket creation error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
     try {
       console.log("Creating new ticket with storage system:", req.body);
