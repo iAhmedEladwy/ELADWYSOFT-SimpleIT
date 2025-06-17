@@ -673,7 +673,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/employees", authenticateUser, async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
-      res.json(employees);
+      
+      // Map storage format to frontend format
+      const mappedEmployees = employees.map(emp => ({
+        id: emp.id,
+        englishName: emp.name,
+        arabicName: emp.arabicName || null,
+        empId: emp.employeeId,
+        department: emp.department,
+        title: emp.position,
+        employmentType: emp.employmentType || 'Full-time',
+        status: emp.isActive ? 'Active' : 'Inactive',
+        isActive: emp.isActive,
+        joiningDate: emp.joiningDate || null,
+        exitDate: emp.exitDate || null,
+        personalEmail: emp.email,
+        corporateEmail: emp.corporateEmail || null,
+        personalMobile: emp.phone,
+        workMobile: emp.workMobile || null,
+        directManager: emp.directManager || null,
+        idNumber: emp.idNumber || null,
+        userId: emp.userId || null,
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt,
+        // Legacy fields for compatibility
+        name: emp.name,
+        email: emp.email,
+        phone: emp.phone,
+        position: emp.position,
+        employeeId: emp.employeeId
+      }));
+      
+      res.json(mappedEmployees);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

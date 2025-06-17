@@ -157,20 +157,27 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Employees table
-export const employees: any = pgTable("employees", {
+// Employees table - Updated to match both frontend expectations and memory storage
+export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
-  empId: varchar("emp_id", { length: 20 }).notNull().unique(),
-  englishName: varchar("english_name", { length: 100 }).notNull(),
-  arabicName: varchar("arabic_name", { length: 100 }),
+  name: varchar("name", { length: 100 }).notNull(), // Primary name field
+  email: varchar("email", { length: 100 }).notNull(), // Primary email field
+  phone: varchar("phone", { length: 20 }).default(''), // Primary phone field
   department: varchar("department", { length: 100 }).notNull(),
-  idNumber: varchar("id_number", { length: 50 }).notNull(),
-  title: varchar("title", { length: 100 }).notNull(),
+  position: varchar("position", { length: 100 }).notNull(), // Job title/position
+  employeeId: varchar("employee_id", { length: 20 }).notNull().unique(), // Employee ID
+  isActive: boolean("is_active").notNull().default(true), // Active status
+  // Extended fields for comprehensive employee management
+  empId: varchar("emp_id", { length: 20 }), // Legacy field for compatibility
+  englishName: varchar("english_name", { length: 100 }),
+  arabicName: varchar("arabic_name", { length: 100 }),
+  idNumber: varchar("id_number", { length: 50 }),
+  title: varchar("title", { length: 100 }), // Job title
   directManager: integer("direct_manager").references((): any => employees.id),
-  employmentType: employmentTypeEnum("employment_type").notNull(),
-  joiningDate: date("joining_date").notNull(),
+  employmentType: employmentTypeEnum("employment_type").default('Full-time'),
+  joiningDate: date("joining_date"),
   exitDate: date("exit_date"),
-  status: employeeStatusEnum("status").notNull().default('Active'),
+  status: employeeStatusEnum("status").default('Active'),
   personalMobile: varchar("personal_mobile", { length: 20 }),
   workMobile: varchar("work_mobile", { length: 20 }),
   personalEmail: varchar("personal_email", { length: 100 }),

@@ -480,8 +480,29 @@ export class MemoryStorage implements IStorage {
   async createEmployee(employee: schema.InsertEmployee): Promise<schema.Employee> {
     const newEmployee: schema.Employee = {
       id: this.idCounters.employees++,
-      ...employee,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone || '',
+      department: employee.department,
+      position: employee.position,
+      employeeId: employee.employeeId,
       isActive: employee.isActive ?? true,
+      // Extended fields
+      empId: employee.employeeId, // Compatibility
+      englishName: employee.name,
+      arabicName: employee.arabicName || null,
+      idNumber: employee.idNumber || null,
+      title: employee.position,
+      directManager: employee.directManager || null,
+      employmentType: employee.employmentType || 'Full-time',
+      joiningDate: employee.joiningDate || null,
+      exitDate: employee.exitDate || null,
+      status: employee.status || 'Active',
+      personalMobile: employee.phone || null,
+      workMobile: employee.workMobile || null,
+      personalEmail: employee.email,
+      corporateEmail: employee.corporateEmail || null,
+      userId: employee.userId || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };

@@ -195,8 +195,8 @@ export default function EmployeesTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">{employee.empId}</TableCell>
-                <TableCell>{employee.englishName}</TableCell>
+                <TableCell className="font-medium">{employee.empId || employee.employeeId}</TableCell>
+                <TableCell>{employee.englishName || employee.name}</TableCell>
                 <TableCell>{employee.department}</TableCell>
                 <TableCell>{employee.title}</TableCell>
                 <TableCell>{getStatusBadge(employee.status)}</TableCell>

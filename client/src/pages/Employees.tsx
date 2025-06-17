@@ -317,24 +317,29 @@ export default function Employees() {
 
   // Enhanced filtering with multiple criteria
   const filteredEmployees = useMemo(() => {
-    if (!employees) return [];
+    if (!employees || !Array.isArray(employees)) return [];
     
-    return (employees as any[]).filter((employee: any) => {
-      // Search filter
+    return employees.filter((employee: any) => {
+      // Search filter - check all available name and identifier fields
       const searchString = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || (
         employee.englishName?.toLowerCase().includes(searchString) ||
+        employee.name?.toLowerCase().includes(searchString) ||
         employee.arabicName?.toLowerCase().includes(searchString) ||
         employee.empId?.toLowerCase().includes(searchString) ||
+        employee.employeeId?.toLowerCase().includes(searchString) ||
         employee.department?.toLowerCase().includes(searchString) ||
         employee.title?.toLowerCase().includes(searchString) ||
+        employee.position?.toLowerCase().includes(searchString) ||
         employee.personalEmail?.toLowerCase().includes(searchString) ||
+        employee.email?.toLowerCase().includes(searchString) ||
         employee.corporateEmail?.toLowerCase().includes(searchString)
       );
       
-      // Status filter
+      // Status filter - handle both isActive boolean and status string
       const matchesStatus = statusFilter === 'All' || 
-        (statusFilter === 'Active' && employee.isActive !== false) ||
+        (statusFilter === 'Active' && (employee.isActive === true || employee.status === 'Active')) ||
+        (statusFilter === 'Inactive' && (employee.isActive === false || employee.status === 'Inactive')) ||
         (statusFilter === 'Resigned' && employee.status === 'Resigned') ||
         (statusFilter === 'Terminated' && employee.status === 'Terminated') ||
         (statusFilter === 'On Leave' && employee.status === 'On Leave');
