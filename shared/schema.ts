@@ -229,18 +229,23 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Tickets table with enhanced features
+// Tickets table with enhanced features and ITIL compliance
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
   submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
   requestType: varchar("request_type", { length: 100 }).notNull(),
-  category: varchar("category", { length: 100 }).default('General'),
+  category: varchar("category", { length: 100 }).default('Incident'), // ITIL: Incident, Service Request, Problem, Change
   priority: ticketPriorityEnum("priority").notNull(),
+  urgency: varchar("urgency", { length: 20 }).default('Medium'), // ITIL: Critical, High, Medium, Low
+  impact: varchar("impact", { length: 20 }).default('Medium'), // ITIL: Critical, High, Medium, Low
+  summary: varchar("summary", { length: 255 }), // Brief one-line summary
   description: text("description").notNull(),
   relatedAssetId: integer("related_asset_id").references(() => assets.id),
   status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
+  rootCause: text("root_cause"), // ITIL Problem Management
+  workaround: text("workaround"), // ITIL Incident Management
   resolution: text("resolution"),
   resolutionNotes: text("resolution_notes"),
   tags: text("tags").array(),
