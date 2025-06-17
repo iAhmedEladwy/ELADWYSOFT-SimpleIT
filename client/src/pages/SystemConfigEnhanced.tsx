@@ -140,6 +140,11 @@ export default function SystemConfigEnhanced() {
     enabled: hasAccess(3),
   });
 
+  const { data: customRequestTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-request-types'],
+    enabled: hasAccess(3),
+  });
+
   const { data: config } = useQuery<any>({
     queryKey: ['/api/system-config'],
     enabled: hasAccess(3),
@@ -493,6 +498,68 @@ export default function SystemConfigEnhanced() {
     }
   });
 
+  // Custom Request Types mutations
+  const createRequestTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-request-types', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type created successfully' : 'تم إنشاء نوع الطلب بنجاح',
+      });
+      setNewRequestTypeName('');
+      setNewRequestTypeDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to create request type' : 'فشل إنشاء نوع الطلب',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteRequestTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-request-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete request type' : 'فشل حذف نوع الطلب',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: (data: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-request-types/${data.id}`, { name: data.name, description: data.description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+      });
+      setEditingRequestTypeId(null);
+      setEditRequestTypeName('');
+      setEditRequestTypeDescription('');
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update request type' : 'فشل تحديث نوع الطلب',
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Handler functions
   const handleAddAssetType = () => {
     if (!newTypeName.trim()) return;
@@ -584,6 +651,27 @@ export default function SystemConfigEnhanced() {
     });
   };
 
+  const handleAddRequestType = () => {
+    if (!newRequestTypeName.trim()) return;
+    createRequestTypeMutation.mutate({
+      name: newRequestTypeName.trim(),
+      description: newRequestTypeDescription.trim() || undefined
+    });
+  };
+
+  const handleDeleteRequestType = (id: number) => {
+    deleteRequestTypeMutation.mutate(id);
+  };
+
+  const handleUpdateRequestType = () => {
+    if (!editRequestTypeName.trim() || !editingRequestTypeId) return;
+    updateRequestTypeMutation.mutate({
+      id: editingRequestTypeId,
+      name: editRequestTypeName.trim(),
+      description: editRequestTypeDescription.trim() || undefined
+    });
+  };
+
   // Pagination helpers
   const getPaginatedItems = (items: any[], page: number) => {
     const startIndex = (page - 1) * itemsPerPage;
@@ -606,6 +694,9 @@ export default function SystemConfigEnhanced() {
   );
   const filteredServiceProviders = serviceProviders.filter(provider => 
     provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
+  );
+  const filteredRequestTypes = customRequestTypes.filter(type => 
+    type.name.toLowerCase().includes(requestTypeSearch.toLowerCase())
   );
 
   const translations = {
@@ -659,10 +750,11 @@ export default function SystemConfigEnhanced() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">{translations.generalSettings}</TabsTrigger>
           <TabsTrigger value="export-import">{translations.exportImport}</TabsTrigger>
           <TabsTrigger value="assets">{translations.assetManagement}</TabsTrigger>
+          <TabsTrigger value="tickets">{language === 'English' ? 'Ticket Settings' : 'إعدادات التذاكر'}</TabsTrigger>
           <TabsTrigger value="email">{translations.emailSettings}</TabsTrigger>
         </TabsList>
 

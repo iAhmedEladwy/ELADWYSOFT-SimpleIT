@@ -3488,13 +3488,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Create the ticket with history tracking
-      const newTicket = await storage.createTicketWithHistory(ticketData);
+      const newTicket = await storage.createTicket(ticketData);
       
       console.log("Enhanced ticket creation successful:", newTicket);
       res.status(201).json(newTicket);
     } catch (error: any) {
       console.error("Enhanced ticket creation error:", error);
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Custom Request Types CRUD routes
+  app.get("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const requestTypes = await storage.getCustomRequestTypes();
+      res.json(requestTypes);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      
+      const requestType = await storage.createCustomRequestType({
+        name: name.trim(),
+        description: description?.trim() || null
+      });
+      
+      res.status(201).json(requestType);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/custom-request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      
+      const requestType = await storage.updateCustomRequestType(id, {
+        name: name.trim(),
+        description: description?.trim() || null
+      });
+      
+      if (!requestType) {
+        return res.status(404).json({ message: "Request type not found" });
+      }
+      
+      res.json(requestType);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/custom-request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCustomRequestType(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Request type not found" });
+      }
+      
+      res.json({ message: "Request type deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 
