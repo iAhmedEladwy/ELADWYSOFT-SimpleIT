@@ -452,6 +452,23 @@ export class MemoryStorage implements IStorage {
       createdAt: new Date()
     };
     this.assetTransactions.push(newTransaction);
+    
+    // Log the transaction activity
+    const asset = this.assets.find(a => a.id === transaction.assetId);
+    const employee = transaction.employeeId ? this.employees.find(e => e.id === transaction.employeeId) : null;
+    
+    await this.logActivity({
+      userId: 1, // System user for automated transactions
+      action: transaction.type === 'Check-Out' ? 'CHECK_OUT' : 'CHECK_IN',
+      entityType: 'ASSET',
+      entityId: transaction.assetId,
+      details: {
+        assetId: asset?.assetId,
+        employeeName: employee?.name,
+        notes: transaction.notes
+      }
+    });
+    
     return newTransaction;
   }
 
@@ -771,64 +788,107 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Custom Fields operations (simplified for memory storage)
+  // Custom Fields operations with persistent storage
+  private customAssetTypes = [
+    { id: 1, name: "Laptop", description: "Portable computer devices" },
+    { id: 2, name: "Desktop", description: "Desktop computer systems" },
+    { id: 3, name: "Monitor", description: "Display screens and monitors" },
+    { id: 4, name: "Printer", description: "Printing devices" },
+    { id: 5, name: "Server", description: "Server equipment" },
+    { id: 6, name: "Network", description: "Networking equipment" }
+  ];
+
+  private customAssetBrands = [
+    { id: 1, name: "Dell", description: "Dell Technologies" },
+    { id: 2, name: "HP", description: "Hewlett-Packard" },
+    { id: 3, name: "Lenovo", description: "Lenovo Group" },
+    { id: 4, name: "Apple", description: "Apple Inc." },
+    { id: 5, name: "ASUS", description: "ASUSTeK Computer" },
+    { id: 6, name: "Cisco", description: "Cisco Systems" },
+    { id: 7, name: "Microsoft", description: "Microsoft Corporation" },
+    { id: 8, name: "Samsung", description: "Samsung Electronics" }
+  ];
+
+  private customAssetStatuses = [
+    { id: 1, name: "Available", description: "Ready for assignment", color: "#28a745" },
+    { id: 2, name: "In Use", description: "Currently assigned", color: "#007bff" },
+    { id: 3, name: "Maintenance", description: "Under maintenance", color: "#ffc107" },
+    { id: 4, name: "Damaged", description: "Needs repair", color: "#dc3545" },
+    { id: 5, name: "Retired", description: "End of life", color: "#6c757d" },
+    { id: 6, name: "Sold", description: "Sold or disposed", color: "#17a2b8" }
+  ];
+
+  private serviceProviders = [
+    { id: 1, name: "Tech Solutions Inc", contactPerson: "John Smith", phone: "555-0101", email: "john@techsolutions.com" },
+    { id: 2, name: "Hardware Express", contactPerson: "Sarah Johnson", phone: "555-0102", email: "sarah@hardwareexpress.com" },
+    { id: 3, name: "IT Services Pro", contactPerson: "Mike Brown", phone: "555-0103", email: "mike@itservices.com" }
+  ];
+
   async getCustomAssetTypes(): Promise<any[]> {
-    return [
-      { id: 1, name: "Custom Type 1", description: "Custom asset type 1" },
-      { id: 2, name: "Custom Type 2", description: "Custom asset type 2" }
-    ];
+    return this.customAssetTypes;
   }
 
   async createCustomAssetType(data: { name: string; description?: string }): Promise<any> {
-    return { id: Date.now(), ...data };
+    const newType = { id: Date.now(), ...data };
+    this.customAssetTypes.push(newType);
+    return newType;
   }
 
   async deleteCustomAssetType(id: number): Promise<boolean> {
+    const index = this.customAssetTypes.findIndex(t => t.id === id);
+    if (index === -1) return false;
+    this.customAssetTypes.splice(index, 1);
     return true;
   }
 
   async getCustomAssetBrands(): Promise<any[]> {
-    return [
-      { id: 1, name: "Custom Brand 1", description: "Custom brand 1" },
-      { id: 2, name: "Custom Brand 2", description: "Custom brand 2" }
-    ];
+    return this.customAssetBrands;
   }
 
   async createCustomAssetBrand(data: { name: string; description?: string }): Promise<any> {
-    return { id: Date.now(), ...data };
+    const newBrand = { id: Date.now(), ...data };
+    this.customAssetBrands.push(newBrand);
+    return newBrand;
   }
 
   async deleteCustomAssetBrand(id: number): Promise<boolean> {
+    const index = this.customAssetBrands.findIndex(b => b.id === id);
+    if (index === -1) return false;
+    this.customAssetBrands.splice(index, 1);
     return true;
   }
 
   async getCustomAssetStatuses(): Promise<any[]> {
-    return [
-      { id: 1, name: "Custom Status 1", description: "Custom status 1", color: "#007bff" },
-      { id: 2, name: "Custom Status 2", description: "Custom status 2", color: "#28a745" }
-    ];
+    return this.customAssetStatuses;
   }
 
   async createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any> {
-    return { id: Date.now(), ...data };
+    const newStatus = { id: Date.now(), color: "#007bff", ...data };
+    this.customAssetStatuses.push(newStatus);
+    return newStatus;
   }
 
   async deleteCustomAssetStatus(id: number): Promise<boolean> {
+    const index = this.customAssetStatuses.findIndex(s => s.id === id);
+    if (index === -1) return false;
+    this.customAssetStatuses.splice(index, 1);
     return true;
   }
 
   async getServiceProviders(): Promise<any[]> {
-    return [
-      { id: 1, name: "Provider 1", contactPerson: "Contact 1", phone: "123-456-7890", email: "contact1@provider.com" },
-      { id: 2, name: "Provider 2", contactPerson: "Contact 2", phone: "098-765-4321", email: "contact2@provider.com" }
-    ];
+    return this.serviceProviders;
   }
 
   async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
-    return { id: Date.now(), ...data };
+    const newProvider = { id: Date.now(), ...data };
+    this.serviceProviders.push(newProvider);
+    return newProvider;
   }
 
   async deleteServiceProvider(id: number): Promise<boolean> {
+    const index = this.serviceProviders.findIndex(p => p.id === id);
+    if (index === -1) return false;
+    this.serviceProviders.splice(index, 1);
     return true;
   }
 

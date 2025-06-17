@@ -37,10 +37,10 @@ const assetFormSchema = z.object({
   status: z.string(),
   purchaseDate: z.string().optional(),
   buyPrice: z.string().optional()
-    .transform(value => value === "" ? undefined : value)
+    .transform(value => value === "" ? "0" : value)
     .refine(
-      (value) => !value || !isNaN(parseFloat(value)),
-      { message: "Invalid price format" }
+      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+      { message: "Enter a valid price (e.g., 999.99)" }
     ),
   warrantyExpiryDate: z.string().optional()
     .transform(value => value === "" ? undefined : value)
