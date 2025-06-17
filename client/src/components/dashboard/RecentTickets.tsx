@@ -54,8 +54,8 @@ export default function RecentTickets({ tickets, isLoading }: RecentTicketsProps
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="font-semibold text-lg text-gray-900">{translations.recentTickets}</h3>
-        <Link href="/tickets">
-          <a className="text-primary text-sm hover:underline">{translations.viewAll}</a>
+        <Link href="/tickets" className="text-primary text-sm hover:underline">
+          {translations.viewAll}
         </Link>
       </div>
       <div className="p-6">

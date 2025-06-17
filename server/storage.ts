@@ -820,7 +820,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [newTicket] = await db
         .insert(tickets)
-        .values([ticket])
+        .values(ticket)
         .returning();
       return newTicket;
     } catch (error) {

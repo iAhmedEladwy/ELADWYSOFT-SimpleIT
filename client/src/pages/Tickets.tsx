@@ -13,6 +13,7 @@ import { Plus, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -263,6 +264,9 @@ export default function Tickets() {
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{translations.createTicket}</DialogTitle>
+                <DialogDescription>
+                  Fill in the details below to create a new support ticket.
+                </DialogDescription>
               </DialogHeader>
               <TicketForm
                 onSubmit={handleCreateTicket}
