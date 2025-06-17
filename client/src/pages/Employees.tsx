@@ -463,14 +463,29 @@ export default function Employees() {
               </SelectContent>
             </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              {translations.advancedFilters}
-            </Button>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Departments</SelectItem>
+                {departments.map((dept: string) => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Types</SelectItem>
+                {employmentTypes.map((type: string) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {(departmentFilter !== 'All' || employmentTypeFilter !== 'All') && (
               <Button
@@ -503,36 +518,7 @@ export default function Employees() {
           )}
         </div>
 
-        {/* Advanced Filters */}
-        {showAdvancedFilters && (
-          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder={translations.department} />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept === 'All' ? translations.allDepartments : dept}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder={translations.employmentType} />
-              </SelectTrigger>
-              <SelectContent>
-                {employmentTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type === 'All' ? translations.allTypes : type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
 
         {/* Bulk Operations */}
         {showBulkActions && selectedEmployees.length > 0 && (
