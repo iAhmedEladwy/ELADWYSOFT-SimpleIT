@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Package, Ticket } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
@@ -886,21 +886,23 @@ export default function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full mb-4">
-          <TabsTrigger value="general" className="text-xs md:text-sm">
+        <TabsList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full mb-4 h-auto">
+          <TabsTrigger value="general" className="text-sm py-3 px-2">
             <Globe className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{translations.generalSettings}</span>
             <span className="sm:hidden">{language === 'English' ? 'General' : 'عام'}</span>
           </TabsTrigger>
-          <TabsTrigger value="tickets" className="text-xs md:text-sm">
+          <TabsTrigger value="tickets" className="text-sm py-3 px-2">
+            <Ticket className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{language === 'English' ? 'Tickets' : 'التذاكر'}</span>
             <span className="sm:hidden">{language === 'English' ? 'Tickets' : 'تذاكر'}</span>
           </TabsTrigger>
-          <TabsTrigger value="asset" className="text-xs md:text-sm">
+          <TabsTrigger value="asset" className="text-sm py-3 px-2">
+            <Package className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{translations.assetManagement}</span>
             <span className="sm:hidden">{language === 'English' ? 'Assets' : 'أصول'}</span>
           </TabsTrigger>
-          <TabsTrigger value="email" className="text-xs md:text-sm">
+          <TabsTrigger value="email" className="text-sm py-3 px-2">
             <Mail className="h-4 w-4 mr-1 md:mr-2" />
             <span className="hidden sm:inline">{translations.emailSettings}</span>
             <span className="sm:hidden">{language === 'English' ? 'Email' : 'بريد'}</span>
