@@ -197,24 +197,3 @@ export default function ForgotPassword() {
     </div>
   );
 }
-        
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        {renderStep()}
-        <CardFooter className="text-sm text-center text-gray-500">
-          <p className="w-full">
-            {language === 'English' 
-              ? 'This process allows you to reset your password using security questions' 
-              : 'تتيح لك هذه العملية إعادة تعيين كلمة المرور باستخدام أسئلة الأمان'}
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-}
