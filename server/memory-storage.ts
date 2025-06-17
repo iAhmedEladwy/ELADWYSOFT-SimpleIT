@@ -18,6 +18,12 @@ export class MemoryStorage implements IStorage {
   private assetSaleItems: schema.AssetSaleItem[] = [];
   private systemConfig: schema.SystemConfig | undefined;
   
+  // Custom asset management data
+  private customAssetTypes: any[] = [];
+  private customAssetBrands: any[] = [];
+  private customAssetStatuses: any[] = [];
+  private serviceProviders: any[] = [];
+  
   private idCounters = {
     users: 1,
     employees: 1,
@@ -30,7 +36,11 @@ export class MemoryStorage implements IStorage {
     assetTransactions: 1,
     assetMaintenance: 1,
     assetSales: 1,
-    assetSaleItems: 1
+    assetSaleItems: 1,
+    customAssetTypes: 1,
+    customAssetBrands: 1,
+    customAssetStatuses: 1,
+    serviceProviders: 1
   };
 
   constructor() {
@@ -140,6 +150,51 @@ export class MemoryStorage implements IStorage {
       createdAt: new Date(),
       updatedAt: new Date()
     });
+
+    // Initialize custom asset management data
+    this.initializeCustomAssetData();
+  }
+
+  private initializeCustomAssetData() {
+    // Default asset types
+    this.customAssetTypes = [
+      { id: this.idCounters.customAssetTypes++, name: "Laptops", description: "Laptop computers", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetTypes++, name: "Desktop", description: "Desktop computers", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetTypes++, name: "Mobile", description: "Mobile devices", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetTypes++, name: "Monitor", description: "Computer monitors", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Default asset brands
+    this.customAssetBrands = [
+      { id: this.idCounters.customAssetBrands++, name: "Dell", description: "Dell Technologies", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetBrands++, name: "HP", description: "HP Inc.", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetBrands++, name: "Lenovo", description: "Lenovo Group", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetBrands++, name: "Apple", description: "Apple Inc.", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Default asset statuses
+    this.customAssetStatuses = [
+      { id: this.idCounters.customAssetStatuses++, name: "Available", description: "Asset is available for assignment", color: "#10b981", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetStatuses++, name: "In Use", description: "Asset is currently assigned", color: "#3b82f6", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetStatuses++, name: "Maintenance", description: "Asset is under maintenance", color: "#f59e0b", createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounters.customAssetStatuses++, name: "Damaged", description: "Asset is damaged", color: "#ef4444", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Default service providers
+    this.serviceProviders = [
+      { 
+        id: this.idCounters.serviceProviders++, 
+        name: "Tech Solutions Inc", 
+        contactPerson: "John Smith",
+        phone: "+1-555-0199",
+        email: "support@techsolutions.com",
+        address: "123 Tech Street, IT City",
+        serviceType: "Hardware Maintenance",
+        notes: "Primary hardware service provider",
+        createdAt: new Date(), 
+        updatedAt: new Date() 
+      }
+    ];
   }
 
   // Security Questions operations
@@ -948,6 +1003,111 @@ export class MemoryStorage implements IStorage {
     const index = this.serviceProviders.findIndex(p => p.id === id);
     if (index === -1) return false;
     this.serviceProviders.splice(index, 1);
+    return true;
+  }
+
+  // Custom Asset Types operations
+  async getCustomAssetTypes(): Promise<any[]> {
+    return this.customAssetTypes;
+  }
+
+  async createCustomAssetType(type: any): Promise<any> {
+    const newType = {
+      id: this.idCounters.customAssetTypes++,
+      ...type,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.customAssetTypes.push(newType);
+    return newType;
+  }
+
+  async updateCustomAssetType(id: number, type: any): Promise<any | undefined> {
+    const index = this.customAssetTypes.findIndex(t => t.id === id);
+    if (index === -1) return undefined;
+    
+    this.customAssetTypes[index] = {
+      ...this.customAssetTypes[index],
+      ...type,
+      updatedAt: new Date()
+    };
+    return this.customAssetTypes[index];
+  }
+
+  async deleteCustomAssetType(id: number): Promise<boolean> {
+    const index = this.customAssetTypes.findIndex(t => t.id === id);
+    if (index === -1) return false;
+    this.customAssetTypes.splice(index, 1);
+    return true;
+  }
+
+  // Custom Asset Brands operations
+  async getCustomAssetBrands(): Promise<any[]> {
+    return this.customAssetBrands;
+  }
+
+  async createCustomAssetBrand(brand: any): Promise<any> {
+    const newBrand = {
+      id: this.idCounters.customAssetBrands++,
+      ...brand,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.customAssetBrands.push(newBrand);
+    return newBrand;
+  }
+
+  async updateCustomAssetBrand(id: number, brand: any): Promise<any | undefined> {
+    const index = this.customAssetBrands.findIndex(b => b.id === id);
+    if (index === -1) return undefined;
+    
+    this.customAssetBrands[index] = {
+      ...this.customAssetBrands[index],
+      ...brand,
+      updatedAt: new Date()
+    };
+    return this.customAssetBrands[index];
+  }
+
+  async deleteCustomAssetBrand(id: number): Promise<boolean> {
+    const index = this.customAssetBrands.findIndex(b => b.id === id);
+    if (index === -1) return false;
+    this.customAssetBrands.splice(index, 1);
+    return true;
+  }
+
+  // Custom Asset Statuses operations
+  async getCustomAssetStatuses(): Promise<any[]> {
+    return this.customAssetStatuses;
+  }
+
+  async createCustomAssetStatus(status: any): Promise<any> {
+    const newStatus = {
+      id: this.idCounters.customAssetStatuses++,
+      ...status,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.customAssetStatuses.push(newStatus);
+    return newStatus;
+  }
+
+  async updateCustomAssetStatus(id: number, status: any): Promise<any | undefined> {
+    const index = this.customAssetStatuses.findIndex(s => s.id === id);
+    if (index === -1) return undefined;
+    
+    this.customAssetStatuses[index] = {
+      ...this.customAssetStatuses[index],
+      ...status,
+      updatedAt: new Date()
+    };
+    return this.customAssetStatuses[index];
+  }
+
+  async deleteCustomAssetStatus(id: number): Promise<boolean> {
+    const index = this.customAssetStatuses.findIndex(s => s.id === id);
+    if (index === -1) return false;
+    this.customAssetStatuses.splice(index, 1);
     return true;
   }
 
