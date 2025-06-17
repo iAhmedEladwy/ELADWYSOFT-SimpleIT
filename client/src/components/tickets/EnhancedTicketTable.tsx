@@ -1,63 +1,31 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLanguage } from '@/hooks/use-language';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/lib/authContext';
-import { apiRequest } from '@/lib/queryClient';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   Play, 
   Pause, 
   History, 
+  Edit, 
   Trash2, 
+  Save, 
   Clock, 
-  User, 
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Timer,
-  Edit,
-  Save
+  AlertCircle, 
+  CheckCircle, 
+  XCircle, 
+  Timer 
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface Ticket {
   id: number;
@@ -98,86 +66,18 @@ interface EnhancedTicketTableProps {
 }
 
 export default function EnhancedTicketTable({ 
-  tickets = [], 
-  employees = [], 
-  assets = [], 
-  users = [], 
+  tickets, 
+  employees, 
+  assets, 
+  users, 
   isLoading 
 }: EnhancedTicketTableProps) {
-  const { language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { user, hasAccess } = useAuth();
   const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Fetch ticket history for selected ticket
-  const { data: ticketHistory = [], isLoading: historyLoading } = useQuery({
-    queryKey: ['/api/tickets', selectedTicket?.id, 'history'],
-    enabled: !!selectedTicket && showHistory,
-  });
-
-  // Time tracking mutations
-  const startTimeTrackingMutation = useMutation({
-    mutationFn: (ticketId: number) => 
-      apiRequest('POST', `/api/tickets/${ticketId}/time-tracking/start`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Time tracking started' : 'بدء تتبع الوقت',
-        description: language === 'English' ? 'Time tracking has been started for this ticket' : 'تم بدء تتبع الوقت لهذه التذكرة',
-      });
-    },
-    onError: () => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to start time tracking' : 'فشل في بدء تتبع الوقت',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const stopTimeTrackingMutation = useMutation({
-    mutationFn: (ticketId: number) => 
-      apiRequest('POST', `/api/tickets/${ticketId}/time-tracking/stop`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Time tracking stopped' : 'إيقاف تتبع الوقت',
-        description: language === 'English' ? 'Time tracking has been stopped for this ticket' : 'تم إيقاف تتبع الوقت لهذه التذكرة',
-      });
-    },
-    onError: () => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to stop time tracking' : 'فشل في إيقاف تتبع الوقت',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Delete ticket mutation (admin only)
-  const deleteTicketMutation = useMutation({
-    mutationFn: (ticketId: number) => 
-      apiRequest('DELETE', `/api/tickets/${ticketId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Ticket deleted' : 'تم حذف التذكرة',
-        description: language === 'English' ? 'Ticket has been successfully deleted' : 'تم حذف التذكرة بنجاح',
-      });
-    },
-    onError: () => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to delete ticket' : 'فشل في حذف التذكرة',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Enhanced ticket update states
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [editForm, setEditForm] = useState({
     description: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
@@ -187,94 +87,143 @@ export default function EnhancedTicketTable({
     resolutionNotes: ''
   });
 
-  // Enhanced update mutation
+  // Check access level
+  const hasAccess = (level: string) => {
+    if (!user) return false;
+    const userLevel = parseInt(user.accessLevel);
+    return level === 'admin' ? userLevel === 3 : userLevel >= 2;
+  };
+
+  // Get system language
+  const language = 'English'; // Default to English
+
+  // Fetch ticket history
+  const { data: ticketHistory = [], isLoading: historyLoading } = useQuery({
+    queryKey: ['/api/tickets', selectedTicket?.id, 'history'],
+    enabled: !!selectedTicket,
+  });
+
+  // Time tracking mutations
+  const startTimeTrackingMutation = useMutation({
+    mutationFn: async (ticketId: number) => {
+      return await apiRequest(`/api/tickets/${ticketId}/start-tracking`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Time tracking started' : 'بدء تتبع الوقت',
+        description: language === 'English' ? 'Time tracking has been started for this ticket' : 'تم بدء تتبع الوقت لهذه التذكرة',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const stopTimeTrackingMutation = useMutation({
+    mutationFn: async (ticketId: number) => {
+      return await apiRequest(`/api/tickets/${ticketId}/stop-tracking`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Time tracking stopped' : 'توقف تتبع الوقت',
+        description: language === 'English' ? 'Time tracking has been stopped for this ticket' : 'تم إيقاف تتبع الوقت لهذه التذكرة',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update ticket mutation
   const updateTicketMutation = useMutation({
-    mutationFn: (data: { id: number; updates: any }) => 
-      apiRequest('PUT', `/api/tickets/${data.id}`, data.updates),
+    mutationFn: async (data: { id: number; updates: any }) => {
+      return await apiRequest(`/api/tickets/${data.id}/enhanced`, {
+        method: 'PUT',
+        body: JSON.stringify(data.updates),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       setEditingTicket(null);
       toast({
         title: language === 'English' ? 'Ticket updated' : 'تم تحديث التذكرة',
-        description: language === 'English' ? 'Ticket has been successfully updated' : 'تم تحديث التذكرة بنجاح',
+        description: language === 'English' ? 'Ticket has been updated successfully' : 'تم تحديث التذكرة بنجاح',
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to update ticket' : 'فشل في تحديث التذكرة',
+        description: error.message,
         variant: 'destructive',
       });
     },
   });
-  const startTimeMutation = useMutation({
+
+  // Delete ticket mutation
+  const deleteTicketMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}/start-time`, {
-        method: 'POST'
-      });
+      return await apiRequest(`/api/tickets/${ticketId}`, { method: 'DELETE' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
-        title: "Time tracking started",
-        description: "Timer is now running for this ticket.",
+        title: language === 'English' ? 'Ticket deleted' : 'تم حذف التذكرة',
+        description: language === 'English' ? 'Ticket has been deleted successfully' : 'تم حذف التذكرة بنجاح',
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to start time tracking",
-        variant: "destructive",
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
       });
     },
   });
-
-  const stopTimeMutation = useMutation({
-    mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}/stop-time`, {
-        method: 'POST'
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: "Time tracking stopped",
-        description: "Time has been recorded for this ticket.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to stop time tracking",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Utility functions
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'destructive';
-      case 'Medium': return 'default';
-      case 'Low': return 'secondary';
-      default: return 'default';
+      case 'High':
+        return 'destructive';
+      case 'Medium':
+        return 'default';
+      case 'Low':
+        return 'secondary';
+      default:
+        return 'default';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Open': return 'destructive';
-      case 'In Progress': return 'default';
-      case 'Resolved': return 'secondary';
-      case 'Closed': return 'outline';
-      default: return 'default';
+      case 'Open':
+        return 'default';
+      case 'In Progress':
+        return 'secondary';
+      case 'Resolved':
+        return 'outline';
+      case 'Closed':
+        return 'secondary';
+      default:
+        return 'default';
     }
+  };
+
+  const formatTime = (minutes: number) => {
+    if (!minutes) return '0h 0m';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   const handleEditTicket = (ticket: Ticket) => {
@@ -291,70 +240,50 @@ export default function EnhancedTicketTable({
 
   const handleUpdateTicket = () => {
     if (!editingTicket) return;
+
+    const updates: any = {};
     
-    const updates = {
-      ...editForm,
-      assignedToId: editForm.assignedToId ? parseInt(editForm.assignedToId) : null
-    };
+    if (editForm.description !== editingTicket.description) {
+      updates.description = editForm.description;
+    }
+    if (editForm.priority !== editingTicket.priority) {
+      updates.priority = editForm.priority;
+    }
+    if (editForm.status !== editingTicket.status) {
+      updates.status = editForm.status;
+    }
+    if (editForm.assignedToId !== (editingTicket.assignedToId?.toString() || '')) {
+      updates.assignedToId = editForm.assignedToId ? parseInt(editForm.assignedToId) : null;
+    }
+    if (editForm.resolution !== (editingTicket.resolution || '')) {
+      updates.resolution = editForm.resolution;
+    }
+    if (editForm.resolutionNotes !== (editingTicket.resolutionNotes || '')) {
+      updates.resolutionNotes = editForm.resolutionNotes;
+    }
     
     updateTicketMutation.mutate({ id: editingTicket.id, updates });
   };
-  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Open':
         return <AlertCircle className="h-4 w-4 text-blue-500" />;
       case 'In Progress':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Timer className="h-4 w-4 text-yellow-500" />;
       case 'Resolved':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'Closed':
         return <XCircle className="h-4 w-4 text-gray-500" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />;
+        return <AlertCircle className="h-4 w-4" />;
     }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Low':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const formatTimeSpent = (minutes: number) => {
-    if (!minutes) return '0m';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const getEmployeeName = (id: number) => {
-    const employee = employees.find(emp => emp.id === id);
-    return employee?.englishName || `Employee #${id}`;
-  };
-
-  const getUserName = (id: number) => {
-    const foundUser = users.find(u => u.id === id);
-    return foundUser?.username || `User #${id}`;
-  };
-
-  const getAssetName = (id: number) => {
-    const asset = assets.find(a => a.id === id);
-    return asset ? `${asset.name} (${asset.assetId})` : `Asset #${id}`;
   };
 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-16 w-full" />
         ))}
       </div>
@@ -366,175 +295,294 @@ export default function EnhancedTicketTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Ticket ID</TableHead>
-            <TableHead>Request Type</TableHead>
-            <TableHead>Priority</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Submitted By</TableHead>
-            <TableHead>Assigned To</TableHead>
-            <TableHead>Time Spent</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{language === 'English' ? 'Ticket ID' : 'رقم التذكرة'}</TableHead>
+            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+            <TableHead>{language === 'English' ? 'Type' : 'النوع'}</TableHead>
+            <TableHead>{language === 'English' ? 'Priority' : 'الأولوية'}</TableHead>
+            <TableHead>{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
+            <TableHead>{language === 'English' ? 'Assigned To' : 'مُكلف إلى'}</TableHead>
+            <TableHead>{language === 'English' ? 'Time Spent' : 'الوقت المستغرق'}</TableHead>
+            <TableHead>{language === 'English' ? 'Created' : 'تاريخ الإنشاء'}</TableHead>
+            <TableHead className="text-right">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tickets.map((ticket) => (
-            <TableRow key={ticket.id}>
-              <TableCell className="font-medium">{ticket.ticketId}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{ticket.requestType}</Badge>
-              </TableCell>
-              <TableCell>
-                <Badge className={getPriorityColor(ticket.priority)}>
-                  {ticket.priority}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(ticket.status)}
-                  <span>{ticket.status}</span>
-                  {ticket.isTimeTracking && (
-                    <Timer className="h-4 w-4 text-orange-500 animate-pulse" />
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>{getEmployeeName(ticket.submittedById)}</TableCell>
-              <TableCell>
-                {ticket.assignedToId ? getUserName(ticket.assignedToId) : 'Unassigned'}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span>{formatTimeSpent(ticket.timeSpent || 0)}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <Calendar className="h-4 w-4" />
+          {tickets.map((ticket) => {
+            const assignedUser = users.find(u => u.id === ticket.assignedToId);
+            
+            return (
+              <TableRow key={ticket.id}>
+                <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                <TableCell className="max-w-xs truncate">{ticket.description}</TableCell>
+                <TableCell>{ticket.requestType}</TableCell>
+                <TableCell>
+                  <Badge variant={getPriorityColor(ticket.priority)}>
+                    {ticket.priority}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(ticket.status)}
+                    <Badge variant={getStatusColor(ticket.status)}>
+                      {ticket.status}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {assignedUser ? assignedUser.username : 
+                   language === 'English' ? 'Unassigned' : 'غير مُكلف'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{ticket.timeSpent ? formatTime(ticket.timeSpent) : '0h 0m'}</span>
+                    {ticket.isTimeTracking && (
+                      <Badge variant="outline" className="text-green-600">
+                        {language === 'English' ? 'Tracking' : 'تتبع'}
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
                   {new Date(ticket.createdAt).toLocaleDateString()}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {/* Time Tracking Controls */}
-                  {ticket.isTimeTracking ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => stopTimeMutation.mutate(ticket.id)}
-                      disabled={stopTimeMutation.isPending}
-                    >
-                      <Pause className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => startTimeMutation.mutate(ticket.id)}
-                      disabled={startTimeMutation.isPending}
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
-                  )}
-
-                  {/* History Dialog */}
-                  <Dialog open={showHistory && selectedTicket?.id === ticket.id} 
-                          onOpenChange={(open) => {
-                            setShowHistory(open);
-                            if (open) setSelectedTicket(ticket);
-                            else setSelectedTicket(null);
-                          }}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">
-                        <History className="h-4 w-4" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    {/* Time Tracking Controls */}
+                    {ticket.isTimeTracking ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => stopTimeTrackingMutation.mutate(ticket.id)}
+                        disabled={stopTimeTrackingMutation.isPending}
+                      >
+                        <Pause className="h-4 w-4" />
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Ticket History - {ticket.ticketId}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        {historyLoading ? (
-                          <div className="space-y-2">
-                            {[...Array(3)].map((_, i) => (
-                              <Skeleton key={i} className="h-16 w-full" />
-                            ))}
-                          </div>
-                        ) : ticketHistory.length > 0 ? (
-                          ticketHistory.map((history: TicketHistory) => (
-                            <div key={history.id} className="border rounded-lg p-4 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-gray-400" />
-                                  <span className="font-medium">
-                                    {getUserName(history.changedBy)}
-                                  </span>
-                                  <Badge variant="outline">{history.changeType}</Badge>
-                                </div>
-                                <span className="text-sm text-gray-500">
-                                  {new Date(history.createdAt).toLocaleString()}
-                                </span>
-                              </div>
-                              <p className="text-sm">{history.changeDescription}</p>
-                              {history.oldValue && history.newValue && (
-                                <div className="text-sm bg-gray-50 p-2 rounded">
-                                  <span className="text-red-600">- {history.oldValue}</span>
-                                  <br />
-                                  <span className="text-green-600">+ {history.newValue}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-center text-gray-500 py-8">
-                            No history available for this ticket.
-                          </p>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startTimeTrackingMutation.mutate(ticket.id)}
+                        disabled={startTimeTrackingMutation.isPending}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    )}
 
-                  {/* Delete Button (Admin Only) */}
-                  {hasAccess(3) && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
+                    {/* History Button */}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setShowHistory(true);
+                          }}
+                        >
+                          <History className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete ticket {ticket.ticketId}? 
-                            This action cannot be undone and will permanently remove 
-                            the ticket and all its history.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteTicketMutation.mutate(ticket.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete Ticket
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {language === 'English' ? 'Ticket History' : 'تاريخ التذكرة'} - {ticket.ticketId}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="max-h-96 overflow-y-auto">
+                          {historyLoading ? (
+                            <div className="space-y-2">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} className="h-8 w-full" />
+                              ))}
+                            </div>
+                          ) : ticketHistory.length > 0 ? (
+                            <div className="space-y-4">
+                              {ticketHistory.map((history: TicketHistory) => (
+                                <div key={history.id} className="border-l-2 border-blue-200 pl-4">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{history.changeType}</span>
+                                    <span className="text-sm text-gray-500">
+                                      {new Date(history.createdAt).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600">{history.changeDescription}</p>
+                                  {history.oldValue && history.newValue && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {language === 'English' ? 'Changed from' : 'تغير من'}: {history.oldValue} → {history.newValue}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-center text-gray-500">
+                              {language === 'English' ? 'No history available' : 'لا يوجد تاريخ متاح'}
+                            </p>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Edit Button */}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTicket(ticket)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة'} - {ticket.ticketId}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                            <Textarea
+                              value={editForm.description}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                              placeholder={language === 'English' ? 'Ticket description' : 'وصف التذكرة'}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>{language === 'English' ? 'Priority' : 'الأولوية'}</Label>
+                              <Select
+                                value={editForm.priority}
+                                onValueChange={(value) => setEditForm(prev => ({ ...prev, priority: value as any }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                  <SelectItem value="Medium">Medium</SelectItem>
+                                  <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+                              <Select
+                                value={editForm.status}
+                                onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value as any }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Open">Open</SelectItem>
+                                  <SelectItem value="In Progress">In Progress</SelectItem>
+                                  <SelectItem value="Resolved">Resolved</SelectItem>
+                                  <SelectItem value="Closed">Closed</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <Label>{language === 'English' ? 'Assign To' : 'إسناد إلى'}</Label>
+                            <Select
+                              value={editForm.assignedToId}
+                              onValueChange={(value) => setEditForm(prev => ({ ...prev, assignedToId: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">{language === 'English' ? 'Unassigned' : 'غير مُكلف'}</SelectItem>
+                                {users.map(user => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {editForm.status === 'Resolved' && (
+                            <>
+                              <div>
+                                <Label>{language === 'English' ? 'Resolution' : 'الحل'}</Label>
+                                <Input
+                                  value={editForm.resolution}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, resolution: e.target.value }))}
+                                  placeholder={language === 'English' ? 'Brief resolution summary' : 'ملخص الحل'}
+                                />
+                              </div>
+                              <div>
+                                <Label>{language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل'}</Label>
+                                <Textarea
+                                  value={editForm.resolutionNotes}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, resolutionNotes: e.target.value }))}
+                                  placeholder={language === 'English' ? 'Detailed resolution notes' : 'ملاحظات مفصلة للحل'}
+                                />
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setEditingTicket(null)}
+                            >
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button
+                              onClick={handleUpdateTicket}
+                              disabled={updateTicketMutation.isPending}
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              {language === 'English' ? 'Save Changes' : 'حفظ التغييرات'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Admin Delete Button */}
+                    {hasAccess('admin') && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {language === 'English' ? 'Delete Ticket' : 'حذف التذكرة'}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {language === 'English' 
+                                ? 'Are you sure you want to permanently delete this ticket? This action cannot be undone.'
+                                : 'هل أنت متأكد من حذف هذه التذكرة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.'}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteTicketMutation.mutate(ticket.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {language === 'English' ? 'Delete' : 'حذف'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
-
-      {tickets.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No tickets found. Create your first ticket to get started.
-        </div>
-      )}
     </div>
   );
 }
