@@ -722,52 +722,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = null
       } = req.body;
       
-      // Create employee with direct SQL
-      const insertResult = await pool.query(`
-        INSERT INTO employees (
-          emp_id,
-          english_name,
-          arabic_name,
-          department,
-          id_number,
-          title,
-          direct_manager,
-          employment_type,
-          joining_date,
-          exit_date,
-          status,
-          personal_mobile,
-          work_mobile,
-          personal_email,
-          corporate_email,
-          user_id,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-        RETURNING *
-      `, [
-        empId,
-        englishName,
-        arabicName,
-        department,
-        idNumber,
-        title,
-        directManager ? parseInt(directManager.toString()) : null,
-        employmentType,
-        joiningDate,
-        exitDate,
-        status,
-        personalMobile,
-        workMobile,
-        personalEmail,
-        corporateEmail,
-        userId ? parseInt(userId.toString()) : null,
-        new Date(),
-        new Date()
-      ]);
+      // Create employee using storage interface
+      const employeeData = {
+        name: englishName,
+        email: personalEmail || corporateEmail || `${englishName.toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
+        phone: personalMobile || workMobile || '',
+        department: department,
+        position: title,
+        employeeId: empId,
+        isActive: status === 'Active'
+      };
       
-      // Get the employee from result
-      const employee = insertResult.rows[0];
+      const employee = await storage.createEmployee(employeeData);
       
       console.log("Successfully created employee:", employee);
       
@@ -778,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: "Create",
           entityType: "Employee",
           entityId: employee.id,
-          details: { name: employee.english_name, empId: employee.emp_id }
+          details: { name: employee.name, empId: employee.employeeId }
         });
       }
       
