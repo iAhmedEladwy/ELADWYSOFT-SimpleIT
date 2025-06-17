@@ -163,6 +163,246 @@ export default function SystemConfig() {
     updateConfigMutation.mutate(configData);
   };
 
+  // Asset management mutations
+  const addAssetTypeMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-types', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      setNewAssetType('');
+      setNewAssetTypeDesc('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type added successfully' : 'تم إضافة نوع الأصل بنجاح',
+      });
+    },
+  });
+
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-types/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      setEditingAssetTypeId(null);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
+      });
+    },
+  });
+
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
+      });
+    },
+  });
+
+  const addAssetBrandMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-brands', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      setNewAssetBrand('');
+      setNewAssetBrandDesc('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand added successfully' : 'تم إضافة علامة الأصل بنجاح',
+      });
+    },
+  });
+
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-brands/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      setEditingAssetBrandId(null);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+      });
+    },
+  });
+
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
+      });
+    },
+  });
+
+  const addAssetStatusMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-statuses', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      setNewAssetStatus('');
+      setNewAssetStatusDesc('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status added successfully' : 'تم إضافة حالة الأصل بنجاح',
+      });
+    },
+  });
+
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-statuses/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      setEditingAssetStatusId(null);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+    },
+  });
+
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
+      });
+    },
+  });
+
+  const addServiceProviderMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/service-providers', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      setNewServiceProvider('');
+      setNewServiceProviderContact('');
+      setNewServiceProviderPhone('');
+      setNewServiceProviderEmail('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider added successfully' : 'تم إضافة مقدم الخدمة بنجاح',
+      });
+    },
+  });
+
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/service-providers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
+      });
+    },
+  });
+
+  // Handler functions for asset management
+  const handleAddAssetType = () => {
+    if (!newAssetType.trim()) return;
+    addAssetTypeMutation.mutate({
+      name: newAssetType,
+      description: newAssetTypeDesc
+    });
+  };
+
+  const handleEditAssetType = (type: any) => {
+    setEditingAssetTypeId(type.id);
+    setEditedAssetTypeName(type.name);
+    setEditedAssetTypeDesc(type.description || '');
+  };
+
+  const handleUpdateAssetType = (id: number) => {
+    updateAssetTypeMutation.mutate({
+      id,
+      data: {
+        name: editedAssetTypeName,
+        description: editedAssetTypeDesc
+      }
+    });
+  };
+
+  const handleDeleteAssetType = (id: number) => {
+    deleteAssetTypeMutation.mutate(id);
+  };
+
+  const handleAddAssetBrand = () => {
+    if (!newAssetBrand.trim()) return;
+    addAssetBrandMutation.mutate({
+      name: newAssetBrand,
+      description: newAssetBrandDesc
+    });
+  };
+
+  const handleEditAssetBrand = (brand: any) => {
+    setEditingAssetBrandId(brand.id);
+    setEditedAssetBrandName(brand.name);
+    setEditedAssetBrandDesc(brand.description || '');
+  };
+
+  const handleUpdateAssetBrand = (id: number) => {
+    updateAssetBrandMutation.mutate({
+      id,
+      data: {
+        name: editedAssetBrandName,
+        description: editedAssetBrandDesc
+      }
+    });
+  };
+
+  const handleDeleteAssetBrand = (id: number) => {
+    deleteAssetBrandMutation.mutate(id);
+  };
+
+  const handleAddAssetStatus = () => {
+    if (!newAssetStatus.trim()) return;
+    addAssetStatusMutation.mutate({
+      name: newAssetStatus,
+      description: newAssetStatusDesc
+    });
+  };
+
+  const handleEditAssetStatus = (status: any) => {
+    setEditingAssetStatusId(status.id);
+    setEditedAssetStatusName(status.name);
+    setEditedAssetStatusDesc(status.description || '');
+  };
+
+  const handleUpdateAssetStatus = (id: number) => {
+    updateAssetStatusMutation.mutate({
+      id,
+      data: {
+        name: editedAssetStatusName,
+        description: editedAssetStatusDesc
+      }
+    });
+  };
+
+  const handleDeleteAssetStatus = (id: number) => {
+    deleteAssetStatusMutation.mutate(id);
+  };
+
+  const handleAddServiceProvider = () => {
+    if (!newServiceProvider.trim()) return;
+    addServiceProviderMutation.mutate({
+      name: newServiceProvider,
+      contactPerson: newServiceProviderContact,
+      phone: newServiceProviderPhone,
+      email: newServiceProviderEmail
+    });
+  };
+
+  const handleDeleteServiceProvider = (id: number) => {
+    deleteServiceProviderMutation.mutate(id);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAssetTypeId(null);
+    setEditingAssetBrandId(null);
+    setEditingAssetStatusId(null);
+  };
+
   // Department management functions
   const handleAddDepartment = () => {
     if (!newDepartment.trim()) return;
