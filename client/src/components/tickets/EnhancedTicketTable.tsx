@@ -521,14 +521,16 @@ export default function EnhancedTicketTable({
             return (
               <TableRow 
                 key={ticket.id} 
-                className="cursor-pointer hover:bg-gray-50"
-                onClick={() => {
-                  setSelectedTicketForDetail(ticket);
-                  setShowTicketDetail(true);
-                }}
+                className="hover:bg-gray-50"
               >
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
-                <TableCell className="max-w-xs truncate font-medium">
+                <TableCell 
+                  className="max-w-xs truncate font-medium cursor-pointer text-blue-600 hover:text-blue-800"
+                  onClick={() => {
+                    setSelectedTicketForDetail(ticket);
+                    setShowTicketDetail(true);
+                  }}
+                >
                   {ticket.summary || ticket.description.substring(0, 50) + '...'}
                 </TableCell>
                 <TableCell>{submittedByEmployee?.name || 'Unknown'}</TableCell>

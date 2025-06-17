@@ -1800,7 +1800,7 @@ export class MemoryStorage implements IStorage {
 
   async addTicketComment(commentData: any): Promise<any> {
     const comment = {
-      id: this.idCounters.comments++,
+      id: this.idCounters.ticketComments++,
       ticketId: commentData.ticketId,
       userId: commentData.userId,
       content: commentData.content,
@@ -1810,7 +1810,7 @@ export class MemoryStorage implements IStorage {
       updatedAt: new Date()
     };
     
-    this.comments.push(comment);
+    this.ticketComments.push(comment);
     
     // Update ticket's last activity
     const ticket = this.tickets.find(t => t.id === commentData.ticketId);
