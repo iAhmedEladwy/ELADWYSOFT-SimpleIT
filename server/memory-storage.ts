@@ -734,11 +734,33 @@ export class MemoryStorage implements IStorage {
     const index = this.tickets.findIndex(t => t.id === id);
     if (index === -1) return undefined;
     
+    const oldTicket = { ...this.tickets[index] };
+    
     this.tickets[index] = {
       ...this.tickets[index],
       ...ticketData,
       updatedAt: new Date()
     };
+    
+    // Create history entries for changes
+    const changes = Object.keys(ticketData).filter(key => 
+      oldTicket[key as keyof schema.Ticket] !== ticketData[key as keyof Partial<schema.InsertTicket>]
+    );
+    
+    for (const field of changes) {
+      const oldValue = oldTicket[field as keyof schema.Ticket];
+      const newValue = ticketData[field as keyof Partial<schema.InsertTicket>];
+      
+      await this.addTicketHistory({
+        ticketId: id,
+        changedBy: 1, // Default to admin user for now
+        changeType: 'field_update',
+        oldValue: oldValue?.toString() || '',
+        newValue: newValue?.toString() || '',
+        changeDescription: `Updated ${field} from "${oldValue}" to "${newValue}"`
+      });
+    }
+    
     return this.tickets[index];
   }
 

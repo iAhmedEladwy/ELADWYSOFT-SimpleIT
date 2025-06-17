@@ -113,7 +113,7 @@ export default function EnhancedTicketTable({
 
   // Fetch ticket history
   const { data: ticketHistory = [], isLoading: historyLoading } = useQuery({
-    queryKey: ['/api/tickets', selectedTicket?.id, 'history'],
+    queryKey: [`/api/tickets/${selectedTicket?.id}/history`],
     enabled: !!selectedTicket,
   });
 
@@ -208,9 +208,17 @@ export default function EnhancedTicketTable({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${selectedTicket?.id}/history`] });
       setCommentText('');
       setIsPrivateComment(false);
       setShowAddComment(false);
+      // Force close the dialog
+      setTimeout(() => {
+        const dialogTrigger = document.querySelector('[data-state="open"]');
+        if (dialogTrigger) {
+          dialogTrigger.setAttribute('data-state', 'closed');
+        }
+      }, 100);
       toast({
         title: language === 'English' ? 'Comment added' : 'تم إضافة التعليق',
         description: language === 'English' ? 'Comment has been added successfully' : 'تم إضافة التعليق بنجاح',
@@ -761,7 +769,11 @@ export default function EnhancedTicketTable({
                               {language === 'English' ? 'Cancel' : 'إلغاء'}
                             </Button>
                             <Button
-                              onClick={handleUpdateTicket}
+                              onClick={() => {
+                                handleUpdateTicket();
+                                // Close dialog after successful save
+                                setTimeout(() => setEditingTicket(null), 500);
+                              }}
                               disabled={updateTicketMutation.isPending}
                             >
                               <Save className="h-4 w-4 mr-2" />
