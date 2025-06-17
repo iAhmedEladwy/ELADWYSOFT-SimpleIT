@@ -594,9 +594,15 @@ export class DatabaseStorage implements IStorage {
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
     try {
+      // Convert numeric buyPrice to string for database storage
+      const processedAsset = {
+        ...asset,
+        buyPrice: asset.buyPrice ? asset.buyPrice.toString() : null
+      };
+      
       const [newAsset] = await db
         .insert(assets)
-        .values(asset)
+        .values(processedAsset)
         .returning();
       return newAsset;
     } catch (error) {
@@ -607,9 +613,16 @@ export class DatabaseStorage implements IStorage {
 
   async updateAsset(id: number, assetData: Partial<InsertAsset>): Promise<Asset | undefined> {
     try {
+      // Convert numeric buyPrice to string for database storage
+      const processedData = {
+        ...assetData,
+        buyPrice: assetData.buyPrice ? assetData.buyPrice.toString() : assetData.buyPrice,
+        updatedAt: new Date()
+      };
+      
       const [updatedAsset] = await db
         .update(assets)
-        .set({ ...assetData, updatedAt: new Date() })
+        .set(processedData)
         .where(eq(assets.id, id))
         .returning();
       return updatedAsset;

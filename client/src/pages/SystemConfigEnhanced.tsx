@@ -32,6 +32,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 
 export default function SystemConfigEnhanced() {
@@ -428,6 +430,51 @@ export default function SystemConfigEnhanced() {
                           className="pl-8"
                         />
                       </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {language === 'English' ? 'Add Type' : 'إضافة نوع'}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل'}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="type-name">
+                                {language === 'English' ? 'Name' : 'الاسم'}
+                              </Label>
+                              <Input
+                                id="type-name"
+                                placeholder={language === 'English' ? 'Enter type name' : 'أدخل اسم النوع'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="type-description">
+                                {language === 'English' ? 'Description' : 'الوصف'}
+                              </Label>
+                              <Input
+                                id="type-description"
+                                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <DialogClose asChild>
+                                <Button variant="outline">
+                                  {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                </Button>
+                              </DialogClose>
+                              <Button>
+                                {language === 'English' ? 'Add' : 'إضافة'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     
                     <div className="border rounded-lg">
