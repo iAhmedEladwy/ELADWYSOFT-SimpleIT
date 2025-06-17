@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Package, Ticket } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Package, Ticket, Building } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
   Tabs,
@@ -1128,8 +1128,14 @@ export default function SystemConfig() {
                   </div>
 
                   {/* Departments Management */}
-                  <div className="grid gap-2 border-t pt-6">
-                    <Label>{translations.departments}</Label>
+                  <div className="grid gap-4 border-t pt-6 bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-5 w-5 text-blue-600" />
+                      <Label className="text-lg font-semibold text-blue-800">{translations.departments}</Label>
+                    </div>
+                    <p className="text-sm text-blue-700">
+                      {language === 'English' ? 'Manage company departments. These will be available when creating employees.' : 'إدارة أقسام الشركة. ستكون متاحة عند إنشاء الموظفين.'}
+                    </p>
                     <div className="flex items-center space-x-2">
                       <Input
                         value={newDepartment}

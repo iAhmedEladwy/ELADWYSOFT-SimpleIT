@@ -95,6 +95,8 @@ export class MemoryStorage implements IStorage {
       emailPort: null,
       emailUser: null,
       emailPassword: null,
+      emailFromAddress: null,
+      emailFromName: null,
       emailSecure: null,
       createdAt: new Date(),
       updatedAt: new Date()
