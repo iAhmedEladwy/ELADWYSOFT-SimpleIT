@@ -3319,6 +3319,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Error creating admin user:", error);
   }
 
+  // ===== ENHANCED TICKET MODULE API ROUTES =====
+  
+  // Feature 1: Custom Request Types operations (replaces Category)
+  app.get("/api/request-types", authenticateUser, async (req, res) => {
+    try {
+      const requestTypes = await storage.getCustomRequestTypes();
+      res.json(requestTypes);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/request-types/all", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const requestTypes = await storage.getAllCustomRequestTypes();
+      res.json(requestTypes);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/request-types", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const requestType = await storage.createCustomRequestType(req.body);
+      res.status(201).json(requestType);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const requestType = await storage.updateCustomRequestType(id, req.body);
+      if (!requestType) {
+        return res.status(404).json({ message: "Request type not found" });
+      }
+      res.json(requestType);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomRequestType(id);
+      if (!success) {
+        return res.status(404).json({ message: "Request type not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Feature 2: Time Tracking operations
+  app.post("/api/tickets/:id/start-time", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = (req.user as schema.User).id;
+      
+      const ticket = await storage.startTicketTimeTracking(ticketId, userId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/tickets/:id/stop-time", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = (req.user as schema.User).id;
+      
+      const ticket = await storage.stopTicketTimeTracking(ticketId, userId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found or time tracking not started" });
+      }
+      
+      res.json(ticket);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Feature 3: Ticket History operations
+  app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const history = await storage.getTicketHistory(ticketId);
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Feature 4: Delete Ticket (admin only)
+  app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = (req.user as schema.User).id;
+      
+      const success = await storage.deleteTicket(ticketId, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json({ success: true, message: "Ticket deleted successfully" });
+    } catch (error: any) {
+      if (error.message.includes("Unauthorized")) {
+        return res.status(403).json({ message: error.message });
+      }
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Feature 5: Enhanced Ticket Update with history tracking
+  app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const userId = (req.user as schema.User).id;
+      
+      const ticket = await storage.updateTicketWithHistory(ticketId, req.body, userId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      res.json(ticket);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Enhanced ticket creation with history
+  app.post("/api/tickets/enhanced", authenticateUser, async (req, res) => {
+    try {
+      console.log("Creating enhanced ticket with history:", req.body);
+      
+      // Get system config for ticket ID prefix
+      const sysConfig = await storage.getSystemConfig();
+      let ticketIdPrefix = "TKT-";
+      if (sysConfig && sysConfig.ticketIdPrefix) {
+        ticketIdPrefix = sysConfig.ticketIdPrefix;
+      }
+      
+      // Generate ticket ID
+      const allTickets = await storage.getAllTickets();
+      const nextId = allTickets.length + 1;
+      const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
+      
+      // Create ticket data
+      const ticketData = {
+        ticketId,
+        submittedById: parseInt(req.body.submittedById.toString()),
+        requestType: req.body.requestType,
+        priority: req.body.priority,
+        description: req.body.description,
+        status: 'Open' as const,
+        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
+        isTimeTracking: false,
+        timeSpent: 0
+      };
+      
+      // Create the ticket with history tracking
+      const newTicket = await storage.createTicketWithHistory(ticketData);
+      
+      console.log("Enhanced ticket creation successful:", newTicket);
+      res.status(201).json(newTicket);
+    } catch (error: any) {
+      console.error("Enhanced ticket creation error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
