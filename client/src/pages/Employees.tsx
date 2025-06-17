@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import EmployeesTable from '@/components/employees/EmployeesTable';
 import EmployeeForm from '@/components/employees/EmployeeForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Download, Upload } from 'lucide-react';
 import {
@@ -27,6 +27,7 @@ export default function Employees() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Active'); // Default to Active employees
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   
@@ -66,6 +67,7 @@ export default function Employees() {
     resigned: language === 'English' ? 'Resigned' : 'استقال',
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
     onLeave: language === 'English' ? 'On Leave' : 'في إجازة',
+    filterByStatus: language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة',
     addEmployee: language === 'English' ? 'Add Employee' : 'إضافة موظف',
     editEmployee: language === 'English' ? 'Edit Employee' : 'تعديل الموظف',
     refresh: language === 'English' ? 'Refresh' : 'تحديث',
@@ -220,23 +222,25 @@ export default function Employees() {
     importEmployeesMutation.mutate(formData);
   };
 
-  // Filter employees based on search query
-  const filteredEmployees = employees.filter((employee: any) => {
+  // Filter employees based on search query and status
+  const filteredEmployees = (employees as any[]).filter((employee: any) => {
     const searchString = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       employee.englishName?.toLowerCase().includes(searchString) ||
       employee.arabicName?.toLowerCase().includes(searchString) ||
       employee.empId?.toLowerCase().includes(searchString) ||
       employee.department?.toLowerCase().includes(searchString) ||
       employee.title?.toLowerCase().includes(searchString)
     );
+    
+    const matchesStatus = statusFilter === 'All' || 
+      (statusFilter === 'Active' && employee.isActive !== false) ||
+      (statusFilter === 'Resigned' && employee.status === 'Resigned') ||
+      (statusFilter === 'Terminated' && employee.status === 'Terminated') ||
+      (statusFilter === 'On Leave' && employee.status === 'On Leave');
+    
+    return matchesSearch && matchesStatus;
   });
-
-  // Filter employees by status
-  const activeEmployees = filteredEmployees.filter((employee: any) => employee.status === 'Active');
-  const resignedEmployees = filteredEmployees.filter((employee: any) => employee.status === 'Resigned');
-  const terminatedEmployees = filteredEmployees.filter((employee: any) => employee.status === 'Terminated');
-  const onLeaveEmployees = filteredEmployees.filter((employee: any) => employee.status === 'On Leave');
 
   return (
     <div className="p-6">
@@ -316,84 +320,37 @@ export default function Employees() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="flex gap-4 mb-6">
         <Input
           placeholder={translations.search}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
+        
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={translations.filterByStatus} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">{translations.allEmployees}</SelectItem>
+            <SelectItem value="Active">{translations.active}</SelectItem>
+            <SelectItem value="Resigned">{translations.resigned}</SelectItem>
+            <SelectItem value="Terminated">{translations.terminated}</SelectItem>
+            <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">{translations.allEmployees}</TabsTrigger>
-          <TabsTrigger value="active">{translations.active}</TabsTrigger>
-          <TabsTrigger value="resigned">{translations.resigned}</TabsTrigger>
-          <TabsTrigger value="terminated">{translations.terminated}</TabsTrigger>
-          <TabsTrigger value="onleave">{translations.onLeave}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <EmployeesTable 
-              employees={filteredEmployees} 
-              onEdit={handleEditEmployee} 
-              onDelete={handleDeleteEmployee} 
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="active">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <EmployeesTable 
-              employees={activeEmployees} 
-              onEdit={handleEditEmployee} 
-              onDelete={handleDeleteEmployee} 
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="resigned">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <EmployeesTable 
-              employees={resignedEmployees} 
-              onEdit={handleEditEmployee} 
-              onDelete={handleDeleteEmployee} 
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="terminated">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <EmployeesTable 
-              employees={terminatedEmployees} 
-              onEdit={handleEditEmployee} 
-              onDelete={handleDeleteEmployee} 
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="onleave">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <EmployeesTable 
-              employees={onLeaveEmployees} 
-              onEdit={handleEditEmployee} 
-              onDelete={handleDeleteEmployee} 
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      {isLoading ? (
+        <Skeleton className="h-[400px] w-full" />
+      ) : (
+        <EmployeesTable 
+          employees={filteredEmployees} 
+          onEdit={handleEditEmployee} 
+          onDelete={handleDeleteEmployee} 
+        />
+      )}
     </div>
   );
 }

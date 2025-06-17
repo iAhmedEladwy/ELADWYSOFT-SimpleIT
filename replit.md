@@ -67,6 +67,7 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **RESOLVED**: Notification system - now uses real data from assets, tickets, and system config
 - **COMPLETED**: Dashboard Recent Activity display - improved user-readable messages
 - **RESOLVED**: Employee form data mapping issue - Fixed form to properly populate existing employee data instead of showing hardcoded values
+- **COMPLETED**: Employee interface enhancement - Changed from tabbed views to filtration options with active employees as default view
 - Enhanced memory storage with comprehensive asset brands, types, and statuses
 - Improved asset management with configurable brands and statuses from system config
 - **COMPLETED**: Enhanced System Configuration with tabbed asset management UI
