@@ -6,6 +6,13 @@ type User = {
   id: number;
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  role: string;
+  employeeId?: number;
+  managerId?: number;
+  isActive: boolean;
   accessLevel: string;
 };
 

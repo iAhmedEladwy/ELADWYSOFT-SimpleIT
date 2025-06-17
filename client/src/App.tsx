@@ -25,6 +25,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 import { HelmetProvider } from "react-helmet-async";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -114,12 +115,20 @@ function Router() {
         </Route>
         <Route path="/users">
           <Layout>
-            <PrivateRoute component={Users} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <Users />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/employees">
           <Layout>
-            <PrivateRoute component={Employees} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+                <Employees />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/assets">
@@ -129,12 +138,20 @@ function Router() {
         </Route>
         <Route path="/asset-history">
           <Layout>
-            <PrivateRoute component={AssetHistory} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+                <AssetHistory />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/asset-import-export">
           <Layout>
-            <PrivateRoute component={AssetImportExport} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+                <AssetImportExport />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/tickets">
@@ -144,17 +161,29 @@ function Router() {
         </Route>
         <Route path="/reports">
           <Layout>
-            <PrivateRoute component={Reports} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <Reports />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/system-config">
           <Layout>
-            <PrivateRoute component={SystemConfigEnhanced} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <SystemConfigEnhanced />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/audit-logs">
           <Layout>
-            <PrivateRoute component={AuditLogs} />
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <AuditLogs />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/profile">

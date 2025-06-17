@@ -68,10 +68,14 @@ export class MemoryStorage implements IStorage {
       username: "admin",
       password: hashedPassword,
       email: "admin@simpleit.com",
-      accessLevel: "3",
       firstName: "System",
       lastName: "Administrator",
+      profileImageUrl: null,
+      role: "admin",
+      employeeId: null,
+      managerId: null,
       isActive: true,
+      accessLevel: "3",
       createdAt: new Date(),
       updatedAt: new Date()
     });
