@@ -930,6 +930,279 @@ export default function SystemConfig() {
           </TabsTrigger>
         </TabsList>
 
+        {/* General Configuration Tab */}
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                {translations.generalSettings}
+              </CardTitle>
+              <CardDescription>
+                {translations.generalSettingsDesc}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{translations.language}</Label>
+                    <Select value={language} onValueChange={toggleLanguage}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="English">English</SelectItem>
+                        <SelectItem value="Arabic">العربية</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{translations.assetIdPrefix}</Label>
+                    <Input
+                      value={assetIdPrefix}
+                      onChange={(e) => setAssetIdPrefix(e.target.value)}
+                      placeholder="AST-"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{translations.empIdPrefix}</Label>
+                    <Input
+                      value={empIdPrefix}
+                      onChange={(e) => setEmpIdPrefix(e.target.value)}
+                      placeholder="EMP-"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{translations.ticketIdPrefix}</Label>
+                    <Input
+                      value={ticketIdPrefix}
+                      onChange={(e) => setTicketIdPrefix(e.target.value)}
+                      placeholder="TKT-"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{translations.currency}</Label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="SAR">SAR (ر.س)</SelectItem>
+                        <SelectItem value="AED">AED (د.إ)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                {updateConfigMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {translations.save}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Departments Tab */}
+        <TabsContent value="departments">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-blue-800">
+                    {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
+                  </CardTitle>
+                  <CardDescription className="text-blue-600">
+                    {language === 'English' ? 'Manage company departments for employee organization' : 'إدارة أقسام الشركة لتنظيم الموظفين'}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-800">
+                    {language === 'English' ? 'Add New Department' : 'إضافة قسم جديد'}
+                  </h3>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    value={newDepartment}
+                    onChange={(e) => setNewDepartment(e.target.value)}
+                    placeholder={language === 'English' ? "Enter department name (e.g., IT Department, HR, Finance)" : "أدخل اسم القسم (مثل: قسم تكنولوجيا المعلومات، الموارد البشرية)"}
+                    className="flex-grow"
+                  />
+                  <Button 
+                    onClick={handleAddDepartment} 
+                    variant="default" 
+                    className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
+                    disabled={!newDepartment.trim()}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add Department' : 'إضافة القسم'}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {language === 'English' ? 'Current Departments' : 'الأقسام الحالية'}
+                </h3>
+                
+                {departments.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[300px]">
+                        <thead>
+                          <tr className="bg-blue-50 border-b">
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">
+                              {language === 'English' ? 'Department Name' : 'اسم القسم'}
+                            </th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-blue-800">
+                              {language === 'English' ? 'Actions' : 'الإجراءات'}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {departments.map((dept, index) => (
+                            <tr key={index} className="hover:bg-blue-25">
+                              <td className="px-4 py-3">
+                                {editingDeptIndex === index ? (
+                                  <Input
+                                    value={editedDeptName}
+                                    onChange={(e) => setEditedDeptName(e.target.value)}
+                                    className="w-full"
+                                    size="sm"
+                                  />
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Building className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm font-medium">{dept}</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-2">
+                                  {editingDeptIndex === index ? (
+                                    <>
+                                      <Button
+                                        onClick={() => handleSaveDepartment(index)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={handleCancelEditDepartment}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => handleEditDepartment(index, dept)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => handleDeleteDepartment(index)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                                      >
+                                        <Trash className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-lg bg-gray-50">
+                    <Building className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">
+                      {language === 'English' ? 'No departments configured yet' : 'لم يتم تكوين أقسام بعد'}
+                    </p>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {language === 'English' ? 'Add departments to organize your employees' : 'أضف أقسامًا لتنظيم موظفيك'}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="flex items-start gap-2">
+                    <Building className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800">
+                        {language === 'English' ? 'Important Note' : 'ملاحظة مهمة'}
+                      </h4>
+                      <p className="text-yellow-700 text-sm mt-1">
+                        {language === 'English' 
+                          ? 'These departments will be available when creating or editing employee records. Make sure to save your changes.' 
+                          : 'ستكون هذه الأقسام متاحة عند إنشاء أو تعديل سجلات الموظفين. تأكد من حفظ التغييرات.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSaveConfig} 
+                disabled={updateConfigMutation.isPending} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {updateConfigMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {language === 'English' ? 'Saving Departments...' : 'جارٍ حفظ الأقسام...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {language === 'English' ? 'Save Department Changes' : 'حفظ تغييرات الأقسام'}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Email Configuration Tab */}
         <TabsContent value="email">
           <Card>
