@@ -824,7 +824,7 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Custom Fields operations with persistent storage
+  // Custom Fields operations - only user-defined data from System Configuration
   private customAssetTypes = [
     { id: 1, name: "Laptop", description: "Portable computer devices" },
     { id: 2, name: "Desktop", description: "Desktop computer systems" },
@@ -834,25 +834,9 @@ export class MemoryStorage implements IStorage {
     { id: 6, name: "Network", description: "Networking equipment" }
   ];
 
-  private customAssetBrands = [
-    { id: 1, name: "Dell", description: "Dell Technologies" },
-    { id: 2, name: "HP", description: "Hewlett-Packard" },
-    { id: 3, name: "Lenovo", description: "Lenovo Group" },
-    { id: 4, name: "Apple", description: "Apple Inc." },
-    { id: 5, name: "ASUS", description: "ASUSTeK Computer" },
-    { id: 6, name: "Cisco", description: "Cisco Systems" },
-    { id: 7, name: "Microsoft", description: "Microsoft Corporation" },
-    { id: 8, name: "Samsung", description: "Samsung Electronics" }
-  ];
+  private customAssetBrands: any[] = [];
 
-  private customAssetStatuses = [
-    { id: 1, name: "Available", description: "Ready for assignment", color: "#28a745" },
-    { id: 2, name: "In Use", description: "Currently assigned", color: "#007bff" },
-    { id: 3, name: "Maintenance", description: "Under maintenance", color: "#ffc107" },
-    { id: 4, name: "Damaged", description: "Needs repair", color: "#dc3545" },
-    { id: 5, name: "Retired", description: "End of life", color: "#6c757d" },
-    { id: 6, name: "Sold", description: "Sold or disposed", color: "#17a2b8" }
-  ];
+  private customAssetStatuses: any[] = [];
 
   private serviceProviders = [
     { id: 1, name: "Tech Solutions Inc", contactPerson: "John Smith", phone: "555-0101", email: "john@techsolutions.com" },
