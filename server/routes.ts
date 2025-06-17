@@ -3570,6 +3570,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced tickets endpoint with detailed information
+  app.get("/api/tickets/enhanced", authenticateUser, async (req, res) => {
+    try {
+      const tickets = await storage.getEnhancedTickets();
+      res.json(tickets);
+    } catch (error: any) {
+      console.error("Error fetching enhanced tickets:", error);
+      res.status(500).json({ message: "Failed to fetch enhanced tickets" });
+    }
+  });
+
+  // Get ticket categories
+  app.get("/api/tickets/categories", authenticateUser, async (req, res) => {
+    try {
+      const categories = await storage.getTicketCategories();
+      res.json(categories);
+    } catch (error: any) {
+      console.error("Error fetching ticket categories:", error);
+      res.status(500).json({ message: "Failed to fetch ticket categories" });
+    }
+  });
+
+  // Create ticket category
+  app.post("/api/tickets/categories", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const categoryData = req.body;
+      const category = await storage.createTicketCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error: any) {
+      console.error("Error creating ticket category:", error);
+      res.status(500).json({ message: "Failed to create ticket category" });
+    }
+  });
+
+  // Add ticket comment
+  app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
+    try {
+      const commentData = {
+        ...req.body,
+        userId: req.user.id
+      };
+      const comment = await storage.addTicketComment(commentData);
+      
+      res.status(201).json(comment);
+    } catch (error: any) {
+      console.error("Error adding ticket comment:", error);
+      res.status(500).json({ message: "Failed to add ticket comment" });
+    }
+  });
+
+  // Add time entry to ticket
+  app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const { hours, description } = req.body;
+      
+      const result = await storage.addTimeEntry(ticketId, hours, description, req.user.id);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error adding time entry:", error);
+      res.status(500).json({ message: "Failed to add time entry" });
+    }
+  });
+
+  // Merge tickets
+  app.post("/api/tickets/merge", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { primaryTicketId, secondaryTicketIds } = req.body;
+      const result = await storage.mergeTickets(primaryTicketId, secondaryTicketIds, req.user.id);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error merging tickets:", error);
+      res.status(500).json({ message: "Failed to merge tickets" });
+    }
+  });
+
   // Time tracking endpoints
   app.post("/api/tickets/:id/start-tracking", authenticateUser, async (req, res) => {
     try {
