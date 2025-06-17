@@ -92,6 +92,9 @@ export default function EnhancedTicketTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [resolvingTicket, setResolvingTicket] = useState<Ticket | null>(null);
+  const [resolutionType, setResolutionType] = useState('');
+  const [resolutionComment, setResolutionComment] = useState('');
   const [editForm, setEditForm] = useState({
     description: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
@@ -222,6 +225,35 @@ export default function EnhancedTicketTable({
       toast({
         title: language === 'English' ? 'Comment added' : 'تم إضافة التعليق',
         description: language === 'English' ? 'Comment has been added successfully' : 'تم إضافة التعليق بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mark as done mutation
+  const markAsDoneMutation = useMutation({
+    mutationFn: async ({ ticketId, resolutionType, comment }: { ticketId: number, resolutionType: string, comment: string }) => {
+      const status = resolutionType === 'Resolved' ? 'Resolved' : 'Closed';
+      return await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, {
+        status,
+        resolution: resolutionType,
+        resolutionNotes: comment
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      setResolvingTicket(null);
+      setResolutionType('');
+      setResolutionComment('');
+      toast({
+        title: language === 'English' ? 'Ticket resolved' : 'تم حل التذكرة',
+        description: language === 'English' ? 'Ticket has been marked as done successfully' : 'تم وضع علامة على التذكرة كمكتملة بنجاح',
       });
     },
     onError: (error) => {
@@ -854,6 +886,88 @@ export default function EnhancedTicketTable({
                     >
                       <Paperclip className="h-4 w-4" />
                     </Button>
+
+                    {/* Mark as Done Button */}
+                    {ticket.status !== 'Closed' && ticket.status !== 'Resolved' && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setResolvingTicket(ticket);
+                              setResolutionType('');
+                              setResolutionComment('');
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {language === 'English' ? 'Mark as Done' : 'وضع علامة كمكتمل'} - {ticket.ticketId}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label>{language === 'English' ? 'Resolution Type' : 'نوع الحل'}</Label>
+                              <Select value={resolutionType} onValueChange={setResolutionType}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={language === 'English' ? 'Select resolution type' : 'اختر نوع الحل'} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Resolved">{language === 'English' ? 'Resolved' : 'محلول'}</SelectItem>
+                                  <SelectItem value="Closed">{language === 'English' ? 'Closed' : 'مغلق'}</SelectItem>
+                                  <SelectItem value="Duplicate">{language === 'English' ? 'Duplicate' : 'مكرر'}</SelectItem>
+                                  <SelectItem value="Declined">{language === 'English' ? 'Declined' : 'مرفوض'}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>{language === 'English' ? 'Resolution Comment' : 'تعليق الحل'}</Label>
+                              <Textarea
+                                value={resolutionComment}
+                                onChange={(e) => setResolutionComment(e.target.value)}
+                                placeholder={language === 'English' ? 'Add resolution details...' : 'أضف تفاصيل الحل...'}
+                                rows={3}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setResolvingTicket(null)}
+                              >
+                                {language === 'English' ? 'Cancel' : 'إلغاء'}
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  if (resolutionType && resolutionComment.trim()) {
+                                    markAsDoneMutation.mutate({
+                                      ticketId: ticket.id,
+                                      resolutionType,
+                                      comment: resolutionComment
+                                    });
+                                  } else {
+                                    toast({
+                                      title: language === 'English' ? 'Required Fields' : 'حقول مطلوبة',
+                                      description: language === 'English' ? 'Please select a resolution type and add a comment' : 'يرجى اختيار نوع الحل وإضافة تعليق',
+                                      variant: 'destructive'
+                                    });
+                                  }
+                                }}
+                                disabled={markAsDoneMutation.isPending || !resolutionType || !resolutionComment.trim()}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {language === 'English' ? 'Mark as Done' : 'وضع علامة كمكتمل'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
 
                     {/* Admin Delete Button */}
                     {hasAccess('admin') && (

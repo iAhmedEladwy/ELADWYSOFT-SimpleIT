@@ -37,6 +37,7 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **COMPLETED**: Enhanced Ticket System - All 5 advanced features fully implemented and working
 - **FIXED**: UI warnings - Removed nested anchor tags and added proper dialog descriptions
 - **RESOLVED**: Ticket creation authentication error - Fixed session store configuration and verified working ticket creation
+- **COMPLETED**: Mark as Done feature - Added resolution button with options (Closed, Resolved, Duplicate, Declined) and comment requirement
 
 ### Current Progress
 - ✓ Changes log system accessible within the application (COMPLETED)
