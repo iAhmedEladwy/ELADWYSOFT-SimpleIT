@@ -19,6 +19,7 @@ import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
+import ChangesLog from "@/pages/ChangesLog";
 import Layout from "@/components/layout/Layout";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
@@ -159,6 +160,11 @@ function Router() {
         <Route path="/profile">
           <Layout>
             <PrivateRoute component={UserProfile} />
+          </Layout>
+        </Route>
+        <Route path="/changes-log">
+          <Layout>
+            <PrivateRoute component={ChangesLog} />
           </Layout>
         </Route>
         <Route component={NotFound} />

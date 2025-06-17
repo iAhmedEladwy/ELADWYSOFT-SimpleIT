@@ -1,0 +1,73 @@
+📊 Dashboard
+•	Improve Recent Activity display: make activities more user-readable with clear messages and timestamps.
+•	Check and fix Notification function: ensure proper delivery, visibility, and dismissal.
+________________________________________
+💼 Assets Module
+•	Brands: Fetch only from System Configuration > Asset Settings; preload common brands (e.g., HP, Dell, Lenovo).
+•	Status: Fetch only from System Configuration > Asset Settings; preload common statuses (e.g., In Use, Available, Damaged).
+•	Fix validation bug: Purchase Price should accept numbers, not strings; remove error "expected string received number".
+•	Asset Transactions: Ensure only the first transaction is recorded (e.g., when asset is assigned).
+•	Remove/Disable Maintenance record section (not needed).
+________________________________________
+⚙️ System Configuration
+•	Add Export functionality for:
+o	Employees
+o	Assets
+o	Tickets
+•	Add Import functionality for:
+o	Employees (CSV/Excel with mapping)
+o	Assets (CSV/Excel with mapping)
+•	Improve Asset Management UI under System Config:
+o	Make a tabbed layout for Brands, Statuses, Categories.
+o	Add pagination/search for long lists.
+________________________________________
+🎫 Ticket Module
+•	Rename Category to Request Type.
+o	Add CRUD control for Request Types under System Config.
+•	Add Time Tracking feature:
+o	Start and End manually per ticket.
+o	Show total time taken to resolve.
+•	Add a Ticket History panel:
+o	Display all updates, changes, status, and assigned users.
+•	Add Delete Ticket function:
+o	Only accessible to users with admin role.
+•	Add function to Edit/Update ticket details (subject, description, type, etc.)
+________________________________________
+📘 Asset History
+•	Paginate results.
+•	Add user-selectable limit per page (20 / 50 / 100).
+________________________________________
+👥 Employee Module
+•	Fix the following broken functions:
+o	View Details
+o	View Assets
+o	View Tickets
+________________________________________
+👤 User Management
+•	Fix user deletion:
+o	Ensure "admin" is not hardcoded as missing.
+o	Prevent deleting user with role superadmin.
+________________________________________
+🔐 Access Control
+•	Define that Users with Employee role can:
+o	Create tickets
+o	View their own tickets and progress only
+________________________________________
+🔐 Login & Security
+•	Fix issue where Security Question Answer is not saved.
+•	Fix Forgot Password flow:
+o	Remove or hide "Add Security Question" (irrelevant at this stage).
+________________________________________
+🧾 Audit & Changes Log
+•	Create an Admin Dashboard tab with:
+o	Audit Log: showing who changed what and when.
+o	Changes Log: list of newly deployed features/bugs fixed.
+•	Under user profile menu (top right):
+o	Add User-specific Change Log (display visible changes relevant to the user).
+________________________________________
+🧩 Notes for AI Agent
+•	Ensure proper role-based access for all changes.
+•	Use existing styling and component libraries where possible.
+•	Maintain clean code structure with comments and commits per feature.
+•	Follow RESTful API structure and update database schema only if needed.
+

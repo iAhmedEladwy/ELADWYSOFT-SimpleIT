@@ -35,47 +35,71 @@ export default function RecentActivity({ activities = [], isLoading }: RecentAct
     user: language === 'English' ? 'User' : 'المستخدم',
   };
 
-  // Sample activity data for UI demonstration
-  const sampleActivities = [
-    {
-      id: 1,
-      action: 'Create',
-      entityType: 'Asset',
-      details: { assetId: 'SIT-LT-2592', description: 'Dell XPS 15 has been added to inventory by Admin User' },
-      createdAt: new Date(Date.now() - 10 * 60 * 1000),
-    },
-    {
-      id: 2,
-      action: 'Resolve',
-      entityType: 'Ticket',
-      details: { ticketId: 'T-1040', description: 'Laptop battery replacement has been resolved by Support Team' },
-      createdAt: new Date(Date.now() - 42 * 60 * 1000),
-    },
-    {
-      id: 3,
-      action: 'Transfer',
-      entityType: 'Asset',
-      details: { assetId: 'SIT-LT-2350', description: 'MacBook Pro transferred from John Smith to Sarah Johnson' },
-      createdAt: new Date(Date.now() - 60 * 60 * 1000),
-    },
-    {
-      id: 4,
-      action: 'Delete',
-      entityType: 'Asset',
-      details: { assetId: 'SIT-DT-1023', description: 'Dell Inspiron has been marked as retired by System Admin' },
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    },
-    {
-      id: 5,
-      action: 'Update',
-      entityType: 'Employee',
-      details: { name: 'Michael Chen', description: "Michael Chen's department changed from Marketing to Sales" },
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    },
-  ];
+  // Generate user-readable messages for activities
+  const generateActivityMessage = (activity: any) => {
+    const action = activity.action;
+    const entityType = activity.entityType;
+    const details = activity.details || {};
+    const user = activity.user?.username || 'System';
 
-  // Use backend data if available, otherwise use sample data
-  const displayActivities = activities.length > 0 ? activities : sampleActivities;
+    switch (action) {
+      case 'CREATE':
+        switch (entityType) {
+          case 'ASSET':
+            return `${user} added new asset ${details.assetId || details.name || 'to inventory'}`;
+          case 'EMPLOYEE':
+            return `${user} created new employee profile for ${details.name || 'a team member'}`;
+          case 'TICKET':
+            return `${user} submitted a new ${details.requestType || 'support'} ticket`;
+          case 'USER':
+            return `${user} created new user account for ${details.username || 'someone'}`;
+          default:
+            return `${user} created a new ${entityType.toLowerCase()}`;
+        }
+      case 'UPDATE':
+        switch (entityType) {
+          case 'ASSET':
+            return `${user} updated asset ${details.assetId || details.name || 'information'}`;
+          case 'EMPLOYEE':
+            return `${user} modified ${details.name || 'employee'} profile`;
+          case 'TICKET':
+            return `${user} updated ticket ${details.ticketId || 'status'}`;
+          case 'USER':
+            return `${user} updated user ${details.username || 'account'}`;
+          default:
+            return `${user} updated ${entityType.toLowerCase()}`;
+        }
+      case 'DELETE':
+        switch (entityType) {
+          case 'ASSET':
+            return `${user} removed asset ${details.assetId || details.name || 'from inventory'}`;
+          case 'EMPLOYEE':
+            return `${user} removed ${details.name || 'employee'} from system`;
+          case 'TICKET':
+            return `${user} deleted ticket ${details.ticketId || ''}`;
+          case 'USER':
+            return `${user} deleted user ${details.username || 'account'}`;
+          default:
+            return `${user} deleted ${entityType.toLowerCase()}`;
+        }
+      case 'CHECK_OUT':
+        return `${user} checked out ${details.assetId || 'asset'} to ${details.employeeName || 'employee'}`;
+      case 'CHECK_IN':
+        return `${user} checked in ${details.assetId || 'asset'} from ${details.employeeName || 'employee'}`;
+      case 'LOGIN':
+        return `${user} logged into the system`;
+      case 'LOGOUT':
+        return `${user} logged out of the system`;
+      default:
+        return `${user} performed ${action.toLowerCase()} on ${entityType.toLowerCase()}`;
+    }
+  };
+
+  // Use backend data with enhanced messages
+  const displayActivities = activities.length > 0 ? activities.map(activity => ({
+    ...activity,
+    enhancedMessage: generateActivityMessage(activity)
+  })) : [];
 
   // Format relative time
   const getRelativeTime = (date: Date) => {
@@ -212,7 +236,7 @@ export default function RecentActivity({ activities = [], isLoading }: RecentAct
                 </div>
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium text-gray-900">
-                    {activity.details?.description || `${activity.action} ${activity.entityType}`}
+                    {activity.enhancedMessage || activity.details?.description || `${activity.action} ${activity.entityType}`}
                   </h4>
                   <span className="text-xs text-gray-500">
                     {getRelativeTime(new Date(activity.createdAt))}

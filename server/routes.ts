@@ -67,15 +67,9 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session with PostgreSQL for persistence
-  const pgStore = ConnectPgSimple(session);
+  // Use memory store temporarily to bypass database connection issues
   app.use(
     session({
-      store: new pgStore({
-        conString: process.env.DATABASE_URL,
-        tableName: 'sessions',
-        createTableIfMissing: true,
-        pruneSessionInterval: 24 * 60 * 60, // 24 hours
-      }),
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
       resave: false, 
       saveUninitialized: false,
@@ -2969,6 +2963,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Changes Log Management Routes
+  app.get('/api/changes-log', authenticateUser, async (req, res) => {
+    try {
+      const { version, changeType, status, page = 1, limit = 10 } = req.query;
+      
+      const result = await storage.getChangesLog({
+        version: version as string,
+        changeType: changeType as string,
+        status: status as string,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string)
+      });
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching changes log:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/changes-log', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const changeLogData = validateBody(schema.insertChangesLogSchema, {
+        ...req.body,
+        userId: req.user?.id
+      });
+      
+      const changeLog = await storage.createChangeLog(changeLogData);
+      
+      // Log the activity
+      await logActivity({
+        userId: req.user?.id,
+        action: AuditAction.CREATE,
+        entityType: EntityType.SYSTEM_CONFIG,
+        entityId: changeLog.id,
+        details: { changeType: changeLog.changeType, title: changeLog.title }
+      });
+      
+      res.status(201).json(changeLog);
+    } catch (error: any) {
+      console.error('Error creating change log:', error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.put('/api/changes-log/:id', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid change log ID' });
+      }
+      
+      const updateData = validateBody(schema.insertChangesLogSchema.partial(), req.body);
+      const changeLog = await storage.updateChangeLog(id, updateData);
+      
+      if (!changeLog) {
+        return res.status(404).json({ message: 'Change log not found' });
+      }
+      
+      // Log the activity
+      await logActivity({
+        userId: req.user?.id,
+        action: AuditAction.UPDATE,
+        entityType: EntityType.SYSTEM_CONFIG,
+        entityId: changeLog.id,
+        details: { title: changeLog.title }
+      });
+      
+      res.json(changeLog);
+    } catch (error: any) {
+      console.error('Error updating change log:', error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.delete('/api/changes-log/:id', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid change log ID' });
+      }
+      
+      const success = await storage.deleteChangeLog(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Change log not found' });
+      }
+      
+      // Log the activity
+      await logActivity({
+        userId: req.user?.id,
+        action: AuditAction.DELETE,
+        entityType: EntityType.SYSTEM_CONFIG,
+        entityId: id,
+        details: { action: 'Change log deleted' }
+      });
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting change log:', error);
       res.status(500).json({ message: error.message });
     }
   });

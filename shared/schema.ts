@@ -138,7 +138,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 });
 
 // Employees table
-export const employees = pgTable("employees", {
+export const employees: any = pgTable("employees", {
   id: serial("id").primaryKey(),
   empId: varchar("emp_id", { length: 20 }).notNull().unique(),
   englishName: varchar("english_name", { length: 100 }).notNull(),
@@ -146,7 +146,7 @@ export const employees = pgTable("employees", {
   department: varchar("department", { length: 100 }).notNull(),
   idNumber: varchar("id_number", { length: 50 }).notNull(),
   title: varchar("title", { length: 100 }).notNull(),
-  directManager: integer("direct_manager").references(() => employees.id),
+  directManager: integer("direct_manager").references((): any => employees.id),
   employmentType: employmentTypeEnum("employment_type").notNull(),
   joiningDate: date("joining_date").notNull(),
   exitDate: date("exit_date"),
@@ -267,6 +267,22 @@ export const activityLog = pgTable("activity_log", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Changes Log table for tracking system updates
+export const changesLog = pgTable("changes_log", {
+  id: serial("id").primaryKey(),
+  version: varchar("version", { length: 20 }).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description").notNull(),
+  changeType: varchar("change_type", { length: 50 }).notNull(), // Feature, Bug Fix, Enhancement, Security
+  priority: varchar("priority", { length: 20 }).notNull().default('Medium'), // Low, Medium, High, Critical
+  affectedModules: text("affected_modules").array(),
+  userId: integer("user_id").references(() => users.id),
+  status: varchar("status", { length: 20 }).notNull().default('Active'), // Active, Archived
+  releaseDate: timestamp("release_date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const employeesRelations = relations(employees, ({ one, many }) => ({
   manager: one(employees, {
@@ -374,6 +390,13 @@ export const activityLogRelations = relations(activityLog, ({ one }) => ({
   }),
 }));
 
+export const changesLogRelations = relations(changesLog, ({ one }) => ({
+  user: one(users, {
+    fields: [changesLog.userId],
+    references: [users.id],
+  }),
+}));
+
 // Relations for service providers
 export const serviceProvidersRelations = relations(serviceProviders, ({ many }) => ({
   assetServiceProviders: many(assetServiceProviders),
@@ -446,6 +469,12 @@ export const insertActivityLogSchema = createInsertSchema(activityLog).omit({
   createdAt: true
 });
 
+export const insertChangesLogSchema = createInsertSchema(changesLog).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
 export const insertCustomAssetTypeSchema = createInsertSchema(customAssetTypes).omit({
   id: true,
   createdAt: true,
@@ -503,6 +532,9 @@ export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 
 export type ActivityLog = typeof activityLog.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+export type ChangeLog = typeof changesLog.$inferSelect;
+export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
 
 // Asset Transaction types
 export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({
