@@ -1030,48 +1030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/export", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const employees = await storage.getAllEmployees();
-      
-      // Convert to CSV
-      const fields = [
-        'empId', 'englishName', 'arabicName', 'department', 'idNumber', 
-        'title', 'directManager', 'employmentType', 'joiningDate', 'exitDate', 
-        'status', 'personalMobile', 'workMobile', 'personalEmail', 'corporateEmail'
-      ];
-      
-      let csv = fields.join(',') + '\n';
-      
-      employees.forEach(employee => {
-        const row = fields.map(field => {
-          const value = employee[field as keyof schema.Employee];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && value.includes(',')) return `"${value}"`;
-          return value;
-        }).join(',');
-        csv += row + '\n';
-      });
-      
-      // Set headers for file download
-      res.setHeader('Content-Disposition', 'attachment; filename=employees.csv');
-      res.setHeader('Content-Type', 'text/csv');
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Export",
-          entityType: "Employee",
-          details: { count: employees.length }
-        });
-      }
-      
-      res.send(csv);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
+
 
   // Standardized CSV Template Generation
   app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
