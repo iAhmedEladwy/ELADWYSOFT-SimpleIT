@@ -36,8 +36,11 @@ const assetFormSchema = z.object({
   specs: z.string().optional(),
   status: z.string(),
   purchaseDate: z.string().optional(),
-  buyPrice: z.string().optional()
-    .transform(value => value === "" ? "0" : value)
+  buyPrice: z.union([z.string(), z.number()]).optional()
+    .transform(value => {
+      if (value === "" || value === undefined || value === null) return undefined;
+      return typeof value === "string" ? value : String(value);
+    })
     .refine(
       (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
       { message: "Enter a valid price (e.g., 999.99)" }

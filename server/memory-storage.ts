@@ -437,6 +437,22 @@ export class MemoryStorage implements IStorage {
       updatedAt: new Date()
     };
     this.assetMaintenance.push(newMaintenance);
+    
+    // Log maintenance activity
+    const asset = this.assets.find(a => a.id === maintenance.assetId);
+    await this.logActivity({
+      userId: 1,
+      action: 'CREATE',
+      entityType: 'ASSET_MAINTENANCE',
+      entityId: maintenance.assetId,
+      details: {
+        assetId: asset?.assetId,
+        maintenanceType: maintenance.type,
+        description: maintenance.description,
+        cost: maintenance.cost
+      }
+    });
+    
     return newMaintenance;
   }
 
@@ -494,14 +510,34 @@ export class MemoryStorage implements IStorage {
       employeeId: employeeId
     });
 
-    // Create transaction
-    return this.createAssetTransaction({
+    // Create transaction with proper ID generation
+    const newTransaction: schema.AssetTransaction = {
+      id: this.idCounters.assetTransactions++,
       assetId,
       employeeId,
       type,
       notes: notes || `Asset checked out to employee ${employeeId}`,
-      transactionDate: new Date()
+      transactionDate: new Date(),
+      createdAt: new Date()
+    };
+    
+    this.assetTransactions.push(newTransaction);
+    
+    // Log activity
+    const employee = this.employees.find(e => e.id === employeeId);
+    await this.logActivity({
+      userId: 1,
+      action: 'CHECK_OUT',
+      entityType: 'ASSET',
+      entityId: assetId,
+      details: {
+        assetId: asset.assetId,
+        employeeName: employee?.name,
+        notes: notes
+      }
     });
+    
+    return newTransaction;
   }
 
   async checkInAsset(assetId: number, notes?: string, type: string = 'Check-In'): Promise<schema.AssetTransaction> {
