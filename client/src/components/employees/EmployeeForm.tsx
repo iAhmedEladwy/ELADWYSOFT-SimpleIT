@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import {
   Form,
   FormControl,
@@ -116,21 +117,23 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   const getFormattedInitialData = () => {
     if (!initialData) return undefined;
     
+    console.log('Initial data received:', initialData);
+    
     return {
-      empId: initialData.employeeId || initialData.empId || '',
-      englishName: initialData.name || initialData.englishName || '',
+      empId: initialData.employeeId || '',
+      englishName: initialData.name || '',
       arabicName: initialData.arabicName || '',
       department: initialData.department || '',
-      idNumber: initialData.nationalId || initialData.idNumber || '',
-      title: initialData.position || initialData.title || '',
+      idNumber: initialData.idNumber || '',
+      title: initialData.position || '',
       directManager: initialData.directManager ? initialData.directManager.toString() : '',
       employmentType: initialData.employmentType || 'Full-time',
       joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : '',
       exitDate: initialData.exitDate ? new Date(initialData.exitDate).toISOString().split('T')[0] : '',
-      status: initialData.status || 'Active',
-      personalMobile: initialData.phone || initialData.personalMobile || '',
+      status: (initialData.isActive !== false ? 'Active' : 'Resigned') as 'Active' | 'Resigned' | 'Terminated' | 'On Leave',
+      personalMobile: initialData.phone || '',
       workMobile: initialData.workMobile || '',
-      personalEmail: initialData.email || initialData.personalEmail || '',
+      personalEmail: initialData.email || '',
       corporateEmail: initialData.corporateEmail || '',
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
@@ -139,7 +142,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   // Initialize form with default values
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: getFormattedInitialData() || {
+    defaultValues: {
       empId: '',
       englishName: '',
       arabicName: '',
@@ -158,6 +161,36 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       userId: '',
     },
   });
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      const formattedData = getFormattedInitialData();
+      if (formattedData) {
+        form.reset(formattedData);
+      }
+    } else {
+      // Reset to default values for create mode
+      form.reset({
+        empId: '',
+        englishName: '',
+        arabicName: '',
+        department: '',
+        idNumber: '',
+        title: '',
+        directManager: '',
+        employmentType: 'Full-time',
+        joiningDate: new Date().toISOString().split('T')[0],
+        exitDate: '',
+        status: 'Active',
+        personalMobile: '',
+        workMobile: '',
+        personalEmail: '',
+        corporateEmail: '',
+        userId: '',
+      });
+    }
+  }, [initialData]);
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
