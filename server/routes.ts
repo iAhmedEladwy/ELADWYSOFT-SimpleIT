@@ -3462,7 +3462,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Creating enhanced ticket with history:", req.body);
       
       // Validate required fields
-      if (!req.body.submittedById || !req.body.requestType || !req.body.priority || !req.body.description) {
+      const { submittedById, requestType, priority, description } = req.body;
+      if (!submittedById || !requestType || !priority || !description) {
+        console.log("Missing required fields:", { submittedById, requestType, priority, description });
         return res.status(400).json({ message: "Missing required fields" });
       }
       
@@ -3481,23 +3483,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create ticket data with proper field mapping
       const ticketData = {
         ticketId,
-        submittedById: parseInt(req.body.submittedById.toString()),
-        requestType: req.body.requestType,
-        priority: req.body.priority,
-        description: req.body.description,
+        submittedById: parseInt(submittedById.toString()),
+        requestType,
+        priority,
+        description,
         status: 'Open' as const,
         relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : undefined,
         assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined
       };
       
-      // Create the ticket
+      console.log("Formatted ticket data:", ticketData);
+      
+      // Create the ticket using the standard method 
       const newTicket = await storage.createTicket(ticketData);
       
       console.log("Enhanced ticket creation successful:", newTicket);
       res.status(201).json(newTicket);
     } catch (error: any) {
-      console.error("Enhanced ticket creation error:", error);
-      res.status(400).json({ message: error.message });
+      console.error("Enhanced ticket creation error:", error.message, error.stack);
+      res.status(500).json({ message: `Failed to create ticket: ${error.message}` });
     }
   });
 
