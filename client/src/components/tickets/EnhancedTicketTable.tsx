@@ -462,6 +462,7 @@ export default function EnhancedTicketTable({
         <TableHeader>
           <TableRow>
             <TableHead>{language === 'English' ? 'Ticket ID' : 'رقم التذكرة'}</TableHead>
+            <TableHead>{language === 'English' ? 'Submitted By' : 'مُقدم من'}</TableHead>
             <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
             <TableHead>{language === 'English' ? 'Type' : 'النوع'}</TableHead>
             <TableHead>{language === 'English' ? 'Priority' : 'الأولوية'}</TableHead>
@@ -475,10 +476,12 @@ export default function EnhancedTicketTable({
         <TableBody>
           {filteredTickets.map((ticket) => {
             const assignedUser = users.find(u => u.id === ticket.assignedToId);
+            const submittedByEmployee = employees.find(e => e.id === ticket.submittedById);
             
             return (
               <TableRow key={ticket.id}>
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                <TableCell>{submittedByEmployee?.name || 'Unknown'}</TableCell>
                 <TableCell className="max-w-xs truncate">{ticket.description}</TableCell>
                 <TableCell>
                   <Select
