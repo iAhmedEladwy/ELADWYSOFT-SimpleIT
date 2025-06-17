@@ -696,11 +696,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         empIdPrefix = sysConfig.empIdPrefix;
       }
       
-      // Direct database access to get the next employee number
-      const { pool } = await import('./db');
-      const countResult = await pool.query('SELECT COUNT(*) FROM employees');
-      const count = parseInt(countResult.rows[0].count);
-      const nextId = count + 1;
+      // Use storage interface to get the next employee number
+      const allEmployees = await storage.getAllEmployees();
+      const nextId = allEmployees.length + 1;
       const empId = `${empIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
       console.log(`Generated employee ID: ${empId}`);
@@ -1879,53 +1877,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
     try {
-      console.log("Creating new ticket with direct DB access:", req.body);
+      console.log("Creating new ticket with storage system:", req.body);
       
-      // Direct access to database pool
-      const { pool } = await import('./db');
+      // Get system config for ticket ID prefix
+      const sysConfig = await storage.getSystemConfig();
+      let ticketIdPrefix = "TKT-";
+      if (sysConfig && sysConfig.ticketIdPrefix) {
+        ticketIdPrefix = sysConfig.ticketIdPrefix;
+      }
       
-      // Generate a unique ticket ID without using config
-      // Count existing tickets
-      const countResult = await pool.query('SELECT COUNT(*) FROM tickets');
-      const count = parseInt(countResult.rows[0].count);
-      const nextId = count + 1;
-      const ticketId = `TKT-${nextId.toString().padStart(4, '0')}`;
+      // Use storage interface to get the next ticket number
+      const allTickets = await storage.getAllTickets();
+      const nextId = allTickets.length + 1;
+      const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
-      console.log(`Generated unique ticket ID: ${ticketId}`);
+      console.log(`Generated ticket ID: ${ticketId}`);
       
-      // Create ticket with direct SQL insertion
-      console.log("Inserting ticket with ID:", ticketId);
-      
-      // Using parameterized SQL query for security
-      const insertResult = await pool.query(`
-        INSERT INTO tickets (
-          ticket_id,
-          submitted_by_id,
-          request_type,
-          priority,
-          description,
-          status,
-          related_asset_id,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING *
-      `, [
+      // Create ticket data
+      const ticketData = {
         ticketId,
-        parseInt(req.body.submittedById.toString()),
-        req.body.requestType || req.body.category, // Support both new and old field names
-        req.body.priority,
-        req.body.description,
-        'Open',
-        req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
-        new Date(),
-        new Date()
-      ]);
+        submittedById: parseInt(req.body.submittedById.toString()),
+        requestType: req.body.requestType || req.body.category,
+        priority: req.body.priority,
+        description: req.body.description,
+        status: 'Open' as const,
+        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
+      };
       
-      // Get the ticket from result
-      const finalTicket = insertResult.rows[0];
+      // Create the ticket using storage interface
+      const newTicket = await storage.createTicket(ticketData);
       
-      console.log("Successfully created ticket:", finalTicket);
+      console.log("Ticket creation successful:", newTicket);
       
       // Log the activity
       if (req.user) {
@@ -1933,17 +1915,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: (req.user as schema.User).id,
           action: "Create",
           entityType: "Ticket",
-          entityId: finalTicket.id,
+          entityId: newTicket.id,
           details: { 
-            ticketId: finalTicket.ticket_id,
-            category: finalTicket.category, 
-            priority: finalTicket.priority 
+            ticketId: newTicket.ticketId,
+            requestType: newTicket.requestType, 
+            priority: newTicket.priority 
           }
         });
       }
       
-      // Return the created ticket
-      res.status(201).json(finalTicket);
+      res.status(201).json({
+        message: "Ticket created successfully",
+        ticket: newTicket
+      });
     } catch (error: any) {
       console.error("Ticket creation failed:", error);
       res.status(500).json({ message: "Failed to create ticket: " + error.message });
