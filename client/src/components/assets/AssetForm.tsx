@@ -249,30 +249,17 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                       </FormControl>
                       <SelectContent>
                         <ScrollArea className="h-72">
-                          {/* Default brands */}
-                          <SelectItem value="Dell">Dell</SelectItem>
-                          <SelectItem value="HP">HP</SelectItem>
-                          <SelectItem value="Lenovo">Lenovo</SelectItem>
-                          <SelectItem value="Apple">Apple</SelectItem>
-                          <SelectItem value="Samsung">Samsung</SelectItem>
-                          <SelectItem value="Asus">Asus</SelectItem>
-                          <SelectItem value="Acer">Acer</SelectItem>
-                          <SelectItem value="Microsoft">Microsoft</SelectItem>
-                          <SelectItem value="Sony">Sony</SelectItem>
-                          <SelectItem value="LG">LG</SelectItem>
-                          
-                          {/* Custom brands */}
-                          {customAssetBrands && customAssetBrands.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-sm font-semibold border-t">
-                                {language === 'English' ? 'Custom Brands' : 'علامات تجارية مخصصة'}
-                              </div>
-                              {customAssetBrands.map((brand: any) => (
-                                <SelectItem key={brand.id} value={brand.name}>
-                                  {brand.name}
-                                </SelectItem>
-                              ))}
-                            </>
+                          {/* Custom brands only */}
+                          {customAssetBrands && customAssetBrands.length > 0 ? (
+                            customAssetBrands.map((brand: any) => (
+                              <SelectItem key={brand.id} value={brand.name}>
+                                {brand.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No brands configured' : 'لا توجد علامات تجارية مكونة'}
+                            </div>
                           )}
                           
                           {/* Other option */}
@@ -348,36 +335,27 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                       </FormControl>
                       <SelectContent>
                         <ScrollArea className="h-72">
-                          {/* Default statuses */}
-                          <SelectItem value="Available">{translations.available}</SelectItem>
-                          <SelectItem value="In Use">{translations.inUse}</SelectItem>
-                          <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
-                          <SelectItem value="Damaged">{translations.damaged}</SelectItem>
-                          <SelectItem value="Sold">{translations.sold}</SelectItem>
-                          <SelectItem value="Retired">{translations.retired}</SelectItem>
-                          
-                          {/* Custom statuses */}
-                          {customAssetStatuses && customAssetStatuses.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-sm font-semibold border-t">
-                                {language === 'English' ? 'Custom Statuses' : 'حالات مخصصة'}
-                              </div>
-                              {customAssetStatuses.map((status: any) => (
-                                <SelectItem 
-                                  key={status.id} 
-                                  value={status.name}
-                                  className="flex items-center"
-                                >
-                                  {status.color && (
-                                    <span 
-                                      className="w-3 h-3 rounded-full inline-block mr-2" 
-                                      style={{ backgroundColor: status.color }}
-                                    />
-                                  )}
-                                  {status.name}
-                                </SelectItem>
-                              ))}
-                            </>
+                          {/* Custom statuses only */}
+                          {customAssetStatuses && customAssetStatuses.length > 0 ? (
+                            customAssetStatuses.map((status: any) => (
+                              <SelectItem 
+                                key={status.id} 
+                                value={status.name}
+                                className="flex items-center"
+                              >
+                                {status.color && (
+                                  <span 
+                                    className="w-3 h-3 rounded-full inline-block mr-2" 
+                                    style={{ backgroundColor: status.color }}
+                                  />
+                                )}
+                                {status.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No statuses configured' : 'لا توجد حالات مكونة'}
+                            </div>
                           )}
                         </ScrollArea>
                       </SelectContent>
