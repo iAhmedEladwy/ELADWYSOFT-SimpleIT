@@ -117,6 +117,8 @@ export default function TicketDetailForm({
           requestType: updatedTicket.requestType || 'Support',
           slaTarget: updatedTicket.slaTarget?.toString() || '',
           dueDate: updatedTicket.dueDate ? new Date(updatedTicket.dueDate).toISOString().slice(0, 16) : '',
+          workaround: updatedTicket.workaround || '',
+          rootCause: updatedTicket.rootCause || '',
         });
       }
       toast({
@@ -208,6 +210,12 @@ export default function TicketDetailForm({
     }
     if (editForm.dueDate !== (ticket?.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '')) {
       updates.dueDate = editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null;
+    }
+    if (editForm.workaround !== ticket?.workaround) {
+      updates.workaround = editForm.workaround;
+    }
+    if (editForm.rootCause !== ticket?.rootCause) {
+      updates.rootCause = editForm.rootCause;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -463,19 +471,19 @@ export default function TicketDetailForm({
               <CardContent>
                 <div className="flex items-center gap-4">
                   <Button
-                    variant={ticket.isTimeTracking ? "destructive" : "default"}
+                    variant={ticket?.isTimeTracking ? "destructive" : "default"}
                     size="sm"
-                    onClick={() => timeTrackingMutation.mutate(ticket.isTimeTracking ? 'stop' : 'start')}
+                    onClick={() => timeTrackingMutation.mutate(ticket?.isTimeTracking ? 'stop' : 'start')}
                     disabled={timeTrackingMutation.isPending}
                   >
-                    {ticket.isTimeTracking ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-                    {ticket.isTimeTracking ? 'Stop Tracking' : 'Start Tracking'}
+                    {ticket?.isTimeTracking ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+                    {ticket?.isTimeTracking ? 'Stop Tracking' : 'Start Tracking'}
                   </Button>
                   <div className="text-sm">
                     <span className="font-medium">Time Spent: </span>
-                    <span className={ticket.isTimeTracking ? "text-green-600 font-medium" : ""}>
-                      {formatTime(ticket.timeSpent || 0)}
-                      {ticket.isTimeTracking && " (Active)"}
+                    <span className={ticket?.isTimeTracking ? "text-green-600 font-medium" : ""}>
+                      {formatTime(ticket?.timeSpent || 0)}
+                      {ticket?.isTimeTracking && " (Active)"}
                     </span>
                   </div>
                   {ticket.slaTarget && (
