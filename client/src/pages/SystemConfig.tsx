@@ -886,7 +886,7 @@ export default function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-5 lg:max-w-4xl mb-4">
+        <TabsList className="grid grid-cols-4 w-full mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.generalSettings}
@@ -895,9 +895,6 @@ export default function SystemConfig() {
             {language === 'English' ? 'Tickets' : 'التذاكر'}
           </TabsTrigger>
           <TabsTrigger value="asset">{translations.assetManagement}</TabsTrigger>
-          <TabsTrigger value="employees">
-            {language === 'English' ? 'Employees' : 'الموظفين'}
-          </TabsTrigger>
           <TabsTrigger value="email">
             <Mail className="h-4 w-4 mr-2" />
             {translations.emailSettings}
@@ -1106,96 +1103,9 @@ export default function SystemConfig() {
                     <p className="text-xs text-muted-foreground mt-1">{translations.currencyDesc}</p>
                   </div>
 
-                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
-                    {updateConfigMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        {translations.save}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Ticket Configuration Tab */}
-        <TabsContent value="tickets">
-          <Card>
-            <CardHeader>
-              <CardTitle>{language === 'English' ? 'Ticket Configuration' : 'إعدادات التذاكر'}</CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Configure ticket settings and automation' 
-                  : 'تكوين إعدادات التذاكر والأتمتة'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  <div className="grid gap-2">
-                    <Label>{language === 'English' ? 'Ticket ID Format' : 'تنسيق معرف التذكرة'}</Label>
-                    <Input 
-                      value="TKT-####"
-                      disabled={true}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {language === 'English' 
-                        ? 'Ticket IDs are auto-generated with TKT- prefix and sequential numbering.' 
-                        : 'يتم إنشاء معرفات التذاكر تلقائيًا ببادئة TKT- وترقيم متسلسل.'}
-                    </p>
-                  </div>
-
-                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
-                    {updateConfigMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        {translations.save}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Departments Tab */}
-        <TabsContent value="employees">
-          <Card>
-            <CardHeader>
-              <CardTitle>{translations.departments}</CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Manage departments for your organization.' 
-                  : 'إدارة الأقسام لمؤسستك.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  <div className="flex flex-col space-y-4">
+                  {/* Departments Management */}
+                  <div className="grid gap-2 border-t pt-6">
+                    <Label>{translations.departments}</Label>
                     <div className="flex items-center space-x-2">
                       <Input
                         value={newDepartment}
@@ -1289,12 +1199,83 @@ export default function SystemConfig() {
                         {translations.noData}
                       </div>
                     )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'English' 
+                        ? 'Manage departments used in employee records and organizational structure.' 
+                        : 'إدارة الأقسام المستخدمة في سجلات الموظفين والهيكل التنظيمي.'}
+                    </p>
                   </div>
+
+                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                    {updateConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {translations.save}
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Ticket Configuration Tab */}
+        <TabsContent value="tickets">
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Ticket Configuration' : 'إعدادات التذاكر'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure ticket settings and automation' 
+                  : 'تكوين إعدادات التذاكر والأتمتة'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label>{language === 'English' ? 'Ticket ID Format' : 'تنسيق معرف التذكرة'}</Label>
+                    <Input 
+                      value="TKT-####"
+                      disabled={true}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === 'English' 
+                        ? 'Ticket IDs are auto-generated with TKT- prefix and sequential numbering.' 
+                        : 'يتم إنشاء معرفات التذاكر تلقائيًا ببادئة TKT- وترقيم متسلسل.'}
+                    </p>
+                  </div>
+
+                  <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+                    {updateConfigMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {translations.save}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
 
         {/* Asset Management Tab */}
         <TabsContent value="asset">
