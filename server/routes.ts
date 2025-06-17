@@ -16,6 +16,7 @@ import { Readable } from "stream";
 import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
+import { emailService } from "./emailService";
 
 // Helper function to generate IDs
 const generateId = (prefix: string, num: number) => {

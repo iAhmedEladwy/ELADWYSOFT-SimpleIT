@@ -1758,6 +1758,8 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use memory storage for reliable operation with database fallback architecture
+// Use memory storage for development, PostgreSQL for production
 import { MemoryStorage } from "./memory-storage";
-export const storage = new MemoryStorage();
+export const storage = process.env.NODE_ENV === 'production' 
+  ? new DatabaseStorage() 
+  : new MemoryStorage();
