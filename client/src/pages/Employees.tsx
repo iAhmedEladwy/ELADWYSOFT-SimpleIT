@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +68,7 @@ export default function Employees() {
       ? 'Add, edit and manage company employees' 
       : 'إضافة وتعديل وإدارة موظفي الشركة',
     allEmployees: language === 'English' ? 'All Employees' : 'جميع الموظفين',
+    all: language === 'English' ? 'All' : 'الكل',
     active: language === 'English' ? 'Active' : 'نشط',
     resigned: language === 'English' ? 'Resigned' : 'استقال',
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
@@ -241,12 +242,14 @@ export default function Employees() {
 
   // Get unique departments and employment types for filters
   const departments = useMemo(() => {
-    const depts = [...new Set(employees?.map((emp: any) => emp.department).filter(Boolean))];
+    if (!employees || !Array.isArray(employees)) return ['All'];
+    const depts = Array.from(new Set(employees.map((emp: any) => emp.department).filter(Boolean)));
     return ['All', ...depts];
   }, [employees]);
 
   const employmentTypes = useMemo(() => {
-    const types = [...new Set(employees?.map((emp: any) => emp.employmentType).filter(Boolean))];
+    if (!employees || !Array.isArray(employees)) return ['All'];
+    const types = Array.from(new Set(employees.map((emp: any) => emp.employmentType).filter(Boolean)));
     return ['All', ...types];
   }, [employees]);
 
@@ -426,35 +429,169 @@ export default function Employees() {
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <Input
-          placeholder={translations.search}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder={translations.filterByStatus} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">{translations.allEmployees}</SelectItem>
-            <SelectItem value="Active">{translations.active}</SelectItem>
-            <SelectItem value="Resigned">{translations.resigned}</SelectItem>
-            <SelectItem value="Terminated">{translations.terminated}</SelectItem>
-            <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Advanced Search and Filter Controls */}
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Input
+              placeholder={translations.search}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={translations.filterByStatus} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">{translations.all}</SelectItem>
+                <SelectItem value="Active">{translations.active}</SelectItem>
+                <SelectItem value="Resigned">{translations.resigned}</SelectItem>
+                <SelectItem value="Terminated">{translations.terminated}</SelectItem>
+                <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              {translations.advancedFilters}
+            </Button>
+
+            {(departmentFilter !== 'All' || employmentTypeFilter !== 'All') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDepartmentFilter('All');
+                  setEmploymentTypeFilter('All');
+                }}
+              >
+                <X className="h-4 w-4 mr-2" />
+                {translations.clearFilters}
+              </Button>
+            )}
+          </div>
+
+          {selectedEmployees.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                {selectedEmployees.length} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBulkActions(!showBulkActions)}
+              >
+                {translations.bulkActions}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Advanced Filters */}
+        {showAdvancedFilters && (
+          <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={translations.department} />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept === 'All' ? translations.allDepartments : dept}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={translations.employmentType} />
+              </SelectTrigger>
+              <SelectContent>
+                {employmentTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type === 'All' ? translations.allTypes : type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Bulk Operations */}
+        {showBulkActions && selectedEmployees.length > 0 && (
+          <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              {selectedEmployees.length === filteredEmployees.length ? (
+                <Square className="h-4 w-4 mr-2" />
+              ) : (
+                <CheckSquare className="h-4 w-4 mr-2" />
+              )}
+              {selectedEmployees.length === filteredEmployees.length ? 
+                translations.deselectAll : translations.selectAll}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBulkStatusChange('Active')}
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
+              Activate Selected
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBulkStatusChange('Resigned')}
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Mark as Resigned
+            </Button>
+
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {translations.deleteSelected}
+            </Button>
+          </div>
+        )}
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>
+            Showing {filteredEmployees.length} of {employees?.length || 0} employees
+          </span>
+          {(searchQuery || statusFilter !== 'Active' || departmentFilter !== 'All' || employmentTypeFilter !== 'All') && (
+            <span className="text-blue-600">
+              Filters applied
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
-        <Skeleton className="h-[400px] w-full" />
+        <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded" />
       ) : (
         <EmployeesTable 
           employees={filteredEmployees} 
           onEdit={handleEditEmployee} 
           onDelete={handleDeleteEmployee} 
+          selectedEmployees={selectedEmployees}
+          onSelectionChange={setSelectedEmployees}
         />
       )}
     </div>
