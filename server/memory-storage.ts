@@ -25,6 +25,8 @@ export class MemoryStorage implements IStorage {
   private serviceProviders: any[] = [];
   private customRequestTypes: schema.CustomRequestType[] = [];
   private ticketHistory: schema.TicketHistory[] = [];
+  private ticketCategories: any[] = [];
+  private ticketComments: any[] = [];
   
   private idCounters = {
     users: 1,
@@ -44,7 +46,9 @@ export class MemoryStorage implements IStorage {
     customAssetStatuses: 1,
     serviceProviders: 1,
     customRequestTypes: 1,
-    ticketHistory: 1
+    ticketHistory: 1,
+    ticketCategories: 1,
+    ticketComments: 1
   };
 
   constructor() {
@@ -1452,5 +1456,181 @@ export class MemoryStorage implements IStorage {
     });
     
     return newTicket;
+  }
+
+  // Advanced ticket management operations
+  async getEnhancedTickets(): Promise<any[]> {
+    const tickets = [...this.tickets];
+    const enhanced = await Promise.all(tickets.map(async (ticket) => {
+      const submittedBy = await this.getEmployee(ticket.submittedById);
+      const assignedTo = ticket.assignedToId ? await this.getUser(ticket.assignedToId) : undefined;
+      const comments = this.ticketComments.filter(c => c.ticketId === ticket.id);
+      const history = this.ticketHistory.filter(h => h.ticketId === ticket.id);
+      
+      return {
+        ...ticket,
+        submittedBy: submittedBy ? {
+          firstName: submittedBy.firstName || submittedBy.name?.split(' ')[0] || '',
+          lastName: submittedBy.lastName || submittedBy.name?.split(' ')[1] || '',
+          department: submittedBy.department || ''
+        } : undefined,
+        assignedTo: assignedTo ? {
+          firstName: assignedTo.firstName || '',
+          lastName: assignedTo.lastName || ''
+        } : undefined,
+        comments,
+        history,
+        attachments: [],
+        tags: []
+      };
+    }));
+    
+    return enhanced;
+  }
+
+  async getTicketCategories(): Promise<any[]> {
+    // Initialize default categories if empty
+    if (this.ticketCategories.length === 0) {
+      this.ticketCategories = [
+        {
+          id: this.idCounters.ticketCategories++,
+          name: "Hardware Issues",
+          description: "Hardware-related problems and requests",
+          color: "#ef4444",
+          slaHours: 24,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: this.idCounters.ticketCategories++,
+          name: "Software Issues", 
+          description: "Software installation and troubleshooting",
+          color: "#3b82f6",
+          slaHours: 48,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: this.idCounters.ticketCategories++,
+          name: "Network Issues",
+          description: "Network connectivity and configuration",
+          color: "#f59e0b",
+          slaHours: 8,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+    }
+    return [...this.ticketCategories];
+  }
+
+  async createTicketCategory(categoryData: any): Promise<any> {
+    const category = {
+      id: this.idCounters.ticketCategories++,
+      ...categoryData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.ticketCategories.push(category);
+    return category;
+  }
+
+  async addTicketComment(commentData: any): Promise<any> {
+    const comment = {
+      id: this.idCounters.ticketComments++,
+      ...commentData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.ticketComments.push(comment);
+    
+    // Add to ticket history
+    await this.addTicketHistory({
+      ticketId: commentData.ticketId,
+      userId: commentData.userId,
+      action: "Comment Added",
+      fieldChanged: "comments",
+      newValue: commentData.content,
+      notes: commentData.isPrivate ? "Private comment" : "Public comment"
+    });
+    
+    return comment;
+  }
+
+  async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
+    const ticket = this.tickets.find(t => t.id === ticketId);
+    if (!ticket) throw new Error("Ticket not found");
+    
+    // Update ticket with time tracking
+    const currentActualHours = ticket.actualHours || 0;
+    ticket.actualHours = currentActualHours + hours;
+    ticket.updatedAt = new Date();
+    
+    // Add to history
+    await this.addTicketHistory({
+      ticketId,
+      userId,
+      action: "Time Entry Added",
+      fieldChanged: "actualHours",
+      oldValue: currentActualHours.toString(),
+      newValue: ticket.actualHours.toString(),
+      notes: `${hours} hours - ${description}`
+    });
+    
+    return { success: true, totalHours: ticket.actualHours };
+  }
+
+  async mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any> {
+    const primaryTicket = this.tickets.find(t => t.id === primaryTicketId);
+    if (!primaryTicket) throw new Error("Primary ticket not found");
+    
+    const secondaryTickets = this.tickets.filter(t => secondaryTicketIds.includes(t.id));
+    if (secondaryTickets.length !== secondaryTicketIds.length) {
+      throw new Error("Some secondary tickets not found");
+    }
+    
+    // Merge comments and history
+    secondaryTickets.forEach(ticket => {
+      // Update comments to point to primary ticket
+      this.ticketComments.forEach(comment => {
+        if (comment.ticketId === ticket.id) {
+          comment.ticketId = primaryTicketId;
+        }
+      });
+      
+      // Update history to point to primary ticket  
+      this.ticketHistory.forEach(history => {
+        if (history.ticketId === ticket.id) {
+          history.ticketId = primaryTicketId;
+        }
+      });
+      
+      // Remove merged ticket
+      const index = this.tickets.findIndex(t => t.id === ticket.id);
+      if (index > -1) this.tickets.splice(index, 1);
+    });
+    
+    // Add merge history
+    await this.addTicketHistory({
+      ticketId: primaryTicketId,
+      userId,
+      action: "Tickets Merged",
+      notes: `Merged tickets: ${secondaryTicketIds.join(', ')}`
+    });
+    
+    return { success: true, mergedTicketIds: secondaryTicketIds };
+  }
+
+  async addTicketHistory(historyData: any): Promise<any> {
+    const history = {
+      id: this.idCounters.ticketHistory++,
+      ...historyData,
+      createdAt: new Date()
+    };
+    this.ticketHistory.push(history);
+    return history;
   }
 }

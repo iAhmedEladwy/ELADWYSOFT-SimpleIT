@@ -199,6 +199,15 @@ export interface IStorage {
   // Enhanced ticket creation with history
   createTicketWithHistory(ticket: InsertTicket): Promise<Ticket>;
   
+  // Advanced ticket management operations
+  getEnhancedTickets(): Promise<any[]>;
+  getTicketCategories(): Promise<any[]>;
+  createTicketCategory(categoryData: any): Promise<any>;
+  addTicketComment(commentData: any): Promise<any>;
+  addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any>;
+  mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any>;
+  addTicketHistory(historyData: any): Promise<any>;
+  
   // Remove Demo Data
   removeDemoData(): Promise<void>;
 }
