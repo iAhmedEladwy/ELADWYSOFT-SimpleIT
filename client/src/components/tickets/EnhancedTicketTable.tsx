@@ -126,7 +126,7 @@ export default function EnhancedTicketTable({
 
   const stopTimeTrackingMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}/stop-tracking`, { method: 'POST' });
+      return await apiRequest('POST', `/api/tickets/${ticketId}/stop-tracking`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -147,11 +147,7 @@ export default function EnhancedTicketTable({
   // Update ticket mutation
   const updateTicketMutation = useMutation({
     mutationFn: async (data: { id: number; updates: any }) => {
-      return await apiRequest(`/api/tickets/${data.id}/enhanced`, {
-        method: 'PUT',
-        body: JSON.stringify(data.updates),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return await apiRequest('PATCH', `/api/tickets/${data.id}`, data.updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -173,7 +169,7 @@ export default function EnhancedTicketTable({
   // Delete ticket mutation
   const deleteTicketMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+      return await apiRequest('DELETE', `/api/tickets/${ticketId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
