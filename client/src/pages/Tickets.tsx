@@ -112,18 +112,12 @@ export default function Tickets() {
     enabled: hasAccess(2), // Only fetch if user has manager access
   });
 
-  // Create ticket mutation using enhanced API
+  // Create ticket mutation using standard API
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      // Use the new enhanced ticket creation endpoint
-      const response = await apiRequest('/api/tickets/enhanced', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(ticketData),
-      });
-      return response;
+      console.log('Creating ticket with data:', ticketData);
+      const response = await apiRequest('POST', '/api/tickets', ticketData);
+      return response.json();
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);

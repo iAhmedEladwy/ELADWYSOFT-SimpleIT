@@ -100,7 +100,7 @@ export default function TicketForm({
   const form = useForm<z.infer<typeof ticketFormSchema>>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: initialData || {
-      submittedById: 0,
+      submittedById: '',
       relatedAssetId: undefined,
       requestType: undefined,
       priority: undefined,
@@ -127,7 +127,7 @@ export default function TicketForm({
               <FormLabel>{translations.submitter}</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value.toString()}
+                defaultValue={field.value ? field.value.toString() : undefined}
                 disabled={isSubmitting}
               >
                 <FormControl>
