@@ -3521,6 +3521,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive ticket update endpoint
+  app.patch("/api/tickets/:id", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const updateData = req.body;
+      const userId = req.user.id;
+      
+      const updatedTicket = await storage.updateTicket(ticketId, updateData);
+      if (!updatedTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Log the update activity
+      await storage.logActivity({
+        action: "Updated",
+        entityType: "Ticket",
+        entityId: ticketId,
+        userId,
+        details: updateData
+      });
+      
+      res.json(updatedTicket);
+    } catch (error: any) {
+      console.error("Update ticket error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Add comment to ticket
+  app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
+    try {
+      const { ticketId, content, isPrivate, attachments } = req.body;
+      const userId = req.user.id;
+      
+      const comment = await storage.addTicketComment({
+        ticketId,
+        content,
+        userId,
+        isPrivate: isPrivate || false,
+        attachments: attachments || []
+      });
+      
+      res.json(comment);
+    } catch (error: any) {
+      console.error("Add comment error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Add time entry to ticket
+  app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const { hours, description } = req.body;
+      const userId = req.user.id;
+      
+      const timeEntry = await storage.addTimeEntry(ticketId, hours, description, userId);
+      
+      res.json(timeEntry);
+    } catch (error: any) {
+      console.error("Add time entry error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Assign ticket to user
+  app.post("/api/tickets/:id/assign", authenticateUser, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const { userId: assignedUserId } = req.body;
+      
+      const updatedTicket = await storage.updateTicket(ticketId, { assignedToId: assignedUserId });
+      if (!updatedTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Log assignment activity
+      await storage.logActivity({
+        action: "Assigned",
+        entityType: "Ticket",
+        entityId: ticketId,
+        userId: req.user.id,
+        details: { assignedToId: assignedUserId }
+      });
+      
+      res.json(updatedTicket);
+    } catch (error: any) {
+      console.error("Assign ticket error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Enhanced ticket creation with history
   app.post("/api/tickets/enhanced", authenticateUser, async (req, res) => {
     try {

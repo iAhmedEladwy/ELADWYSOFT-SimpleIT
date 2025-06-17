@@ -1528,6 +1528,63 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Advanced ticket management methods
+  async addTicketComment(commentData: any): Promise<any> {
+    try {
+      const comment = {
+        id: this.comments.length + 1,
+        ticketId: commentData.ticketId,
+        userId: commentData.userId,
+        content: commentData.content,
+        isPrivate: commentData.isPrivate || false,
+        attachments: commentData.attachments || [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.comments.push(comment);
+      
+      // Update ticket's last activity
+      const ticket = this.tickets.find(t => t.id === commentData.ticketId);
+      if (ticket) {
+        ticket.lastActivityAt = new Date();
+      }
+      
+      return comment;
+    } catch (error) {
+      console.error('Error adding ticket comment:', error);
+      throw error;
+    }
+  }
+
+  async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
+    try {
+      const timeEntry = {
+        id: this.timeEntries.length + 1,
+        ticketId,
+        userId,
+        hours,
+        description,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.timeEntries.push(timeEntry);
+      
+      // Update ticket's actual hours
+      const ticket = this.tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        ticket.actualHours = (ticket.actualHours || 0) + hours;
+        ticket.lastActivityAt = new Date();
+      }
+      
+      return timeEntry;
+    } catch (error) {
+      console.error('Error adding time entry:', error);
+      throw error;
+    }
+  }
+
   /**
    * Removes all demo data from the database, keeping only the admin user
    * and essential system configuration
