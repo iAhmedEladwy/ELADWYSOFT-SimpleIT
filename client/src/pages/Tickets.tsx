@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
+import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import TicketForm from '@/components/tickets/TicketForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -110,25 +111,14 @@ export default function Tickets() {
     enabled: hasAccess(2), // Only fetch if user has manager access
   });
 
-  // Create ticket mutation
+  // Create ticket mutation using enhanced API
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      // Use fetch directly to bypass any middleware issues
-      const response = await fetch('/api/tickets/create-raw', {
+      // Use the new enhanced ticket creation endpoint
+      return await apiRequest('/api/tickets/enhanced', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(ticketData),
-        credentials: 'include'
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create ticket');
-      }
-      
-      return response.json();
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
@@ -301,63 +291,43 @@ export default function Tickets() {
         </TabsList>
 
         <TabsContent value="all">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={filteredTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={filteredTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="open">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={openTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={openTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="inprogress">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={inProgressTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={inProgressTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="resolved">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={resolvedTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
+          <EnhancedTicketTable 
+            tickets={resolvedTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="closed">

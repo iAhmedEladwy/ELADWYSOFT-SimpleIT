@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,12 @@ export default function TicketForm({
 }: TicketFormProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
+
+  // Fetch custom request types
+  const { data: requestTypes = [] } = useQuery({
+    queryKey: ['/api/request-types'],
+    enabled: true
+  });
 
   // Translations
   const translations = {
@@ -188,10 +195,11 @@ export default function TicketForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Hardware">{translations.hardware}</SelectItem>
-                  <SelectItem value="Software">{translations.software}</SelectItem>
-                  <SelectItem value="Network">{translations.network}</SelectItem>
-                  <SelectItem value="Other">{translations.other}</SelectItem>
+                  {requestTypes.map((type: any) => (
+                    <SelectItem key={type.id} value={type.name}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
