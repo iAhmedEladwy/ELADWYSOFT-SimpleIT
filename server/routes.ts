@@ -10,6 +10,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { compare, hash } from "bcryptjs";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
+import MemoryStore from "memorystore";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
 import { stringify as csvStringify } from "csv-stringify";
@@ -66,8 +67,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session with PostgreSQL for persistence
-  // Use memory store temporarily to bypass database connection issues
+  // Setup session with memory store for reliability
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
@@ -75,10 +75,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       saveUninitialized: false,
       cookie: { 
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: false, // Set to false for development
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for longer persistence
         sameSite: 'lax'
       },
+      store: new (require('memorystore')(session))({
+        checkPeriod: 86400000 // prune expired entries every 24h
+      })
     })
   );
 
