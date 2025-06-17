@@ -82,6 +82,19 @@ export const serviceProviders = pgTable(
   }
 );
 
+export const customRequestTypes = pgTable(
+  "custom_request_types",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 100 }).notNull().unique(),
+    description: varchar("description", { length: 255 }),
+    priority: varchar("priority", { length: 50 }).default('Medium'),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  }
+);
+
 export const assetServiceProviders = pgTable(
   "asset_service_providers",
   {
@@ -221,7 +234,7 @@ export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
   submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
-  requestType: ticketRequestTypeEnum("request_type").notNull(),
+  requestType: varchar("request_type", { length: 100 }).notNull(),
   priority: ticketPriorityEnum("priority").notNull(),
   description: text("description").notNull(),
   relatedAssetId: integer("related_asset_id").references(() => assets.id),
@@ -231,8 +244,22 @@ export const tickets = pgTable("tickets", {
   startTime: timestamp("start_time"),
   completionTime: timestamp("completion_time"),
   timeSpent: integer("time_spent"), // Time spent in minutes
+  isTimeTracking: boolean("is_time_tracking").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket History table for tracking all changes and updates
+export const ticketHistory = pgTable("ticket_history", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  fieldChanged: varchar("field_changed", { length: 100 }),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // System Configuration table
@@ -367,7 +394,7 @@ export const assetTransactionsRelations = relations(assetTransactions, ({ one })
   }),
 }));
 
-export const ticketsRelations = relations(tickets, ({ one }) => ({
+export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedBy: one(employees, {
     fields: [tickets.submittedById],
     references: [employees.id],
@@ -379,6 +406,18 @@ export const ticketsRelations = relations(tickets, ({ one }) => ({
   }),
   assignedTo: one(users, {
     fields: [tickets.assignedToId],
+    references: [users.id],
+  }),
+  history: many(ticketHistory),
+}));
+
+export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
+  ticket: one(tickets, {
+    fields: [ticketHistory.ticketId],
+    references: [tickets.id],
+  }),
+  user: one(users, {
+    fields: [ticketHistory.userId],
     references: [users.id],
   }),
 }));
@@ -512,6 +551,17 @@ export const insertAssetServiceProviderSchema = createInsertSchema(assetServiceP
   id: true,
   createdAt: true,
   updatedAt: true
+});
+
+export const insertCustomRequestTypeSchema = createInsertSchema(customRequestTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertTicketHistorySchema = createInsertSchema(ticketHistory).omit({
+  id: true,
+  createdAt: true
 });
 
 // Export types
