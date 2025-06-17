@@ -499,7 +499,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">{translations.none}</SelectItem>
-                        {users.map((user: any) => (
+                        {(users as any[])?.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username} ({user.email})
                           </SelectItem>

@@ -130,7 +130,7 @@ export default function AuditLogs() {
         data: options
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Logs cleared',
         description: data.message || `Successfully cleared ${data.deletedCount} log entries`,
