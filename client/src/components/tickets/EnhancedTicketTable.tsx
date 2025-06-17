@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -24,7 +26,12 @@ import {
   AlertCircle, 
   CheckCircle, 
   XCircle, 
-  Timer 
+  Timer,
+  Filter,
+  RotateCcw,
+  MessageSquare,
+  Paperclip,
+  Send
 } from 'lucide-react';
 
 interface Ticket {
@@ -78,6 +85,13 @@ export default function EnhancedTicketTable({
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isPrivateComment, setIsPrivateComment] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [editForm, setEditForm] = useState({
     description: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
@@ -176,6 +190,30 @@ export default function EnhancedTicketTable({
       toast({
         title: language === 'English' ? 'Ticket deleted' : 'تم حذف التذكرة',
         description: language === 'English' ? 'Ticket has been deleted successfully' : 'تم حذف التذكرة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Add comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (commentData: any) => {
+      return await apiRequest('POST', '/api/tickets/comments', commentData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      setCommentText('');
+      setIsPrivateComment(false);
+      setShowAddComment(false);
+      toast({
+        title: language === 'English' ? 'Comment added' : 'تم إضافة التعليق',
+        description: language === 'English' ? 'Comment has been added successfully' : 'تم إضافة التعليق بنجاح',
       });
     },
     onError: (error) => {
@@ -286,8 +324,100 @@ export default function EnhancedTicketTable({
     );
   }
 
+  // Filter tickets based on search and filters
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const handleAddComment = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setShowAddComment(true);
+  };
+
+  const handleSubmitComment = () => {
+    if (!selectedTicket || !commentText.trim()) return;
+    
+    addCommentMutation.mutate({
+      ticketId: selectedTicket.id,
+      content: commentText,
+      isPrivate: isPrivateComment,
+      authorId: user?.id
+    });
+  };
+
   return (
     <div className="space-y-4">
+      {/* Advanced Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            {language === 'English' ? 'Filter & Search Tickets' : 'تصفية والبحث في التذاكر'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label>{language === 'English' ? 'Search' : 'البحث'}</Label>
+              <Input
+                placeholder={language === 'English' ? 'Search tickets...' : 'البحث في التذاكر...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{language === 'English' ? 'All Statuses' : 'جميع الحالات'}</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Resolved">Resolved</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{language === 'English' ? 'Priority' : 'الأولوية'}</Label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{language === 'English' ? 'All Priorities' : 'جميع الأولويات'}</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setPriorityFilter('all');
+                }}
+                className="w-full"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {language === 'English' ? 'Clear Filters' : 'مسح المرشحات'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -303,7 +433,7 @@ export default function EnhancedTicketTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tickets.map((ticket) => {
+          {filteredTickets.map((ticket) => {
             const assignedUser = users.find(u => u.id === ticket.assignedToId);
             
             return (
