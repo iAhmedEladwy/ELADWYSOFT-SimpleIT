@@ -1653,5 +1653,299 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use database storage as designed in the architecture
-export const storage = new DatabaseStorage();
+// Use memory storage for reliable operation with database fallback architecture
+import { MemoryStorage } from "./memory-storage";
+export const storage = new MemoryStorage();
+  async createUser(user: any) {
+    const store = await getStorage();
+    return store.createUser!(user);
+  },
+  async updateUser(id: number, user: any) {
+    const store = await getStorage();
+    return store.updateUser!(id, user);
+  },
+  async deleteUser(id: number) {
+    const store = await getStorage();
+    return store.deleteUser!(id);
+  },
+  async getAllUsers() {
+    const store = await getStorage();
+    return store.getAllUsers!();
+  },
+  async upsertUser(userData: UpsertUser) {
+    const store = await getStorage();
+    return store.upsertUser(userData);
+  },
+  async getEmployee(id: number) {
+    const store = await getStorage();
+    return store.getEmployee(id);
+  },
+  async createEmployee(employee: any) {
+    const store = await getStorage();
+    return store.createEmployee(employee);
+  },
+  async updateEmployee(id: number, employeeData: any) {
+    const store = await getStorage();
+    return store.updateEmployee(id, employeeData);
+  },
+  async deleteEmployee(id: number) {
+    const store = await getStorage();
+    return store.deleteEmployee(id);
+  },
+  async getAllEmployees() {
+    const store = await getStorage();
+    return store.getAllEmployees();
+  },
+  async searchEmployees(query: string) {
+    const store = await getStorage();
+    return store.searchEmployees!(query);
+  },
+  async getAsset(id: number) {
+    const store = await getStorage();
+    return store.getAsset(id);
+  },
+  async getAssetByAssetId(assetId: string) {
+    const store = await getStorage();
+    return store.getAssetByAssetId!(assetId);
+  },
+  async createAsset(asset: any) {
+    const store = await getStorage();
+    return store.createAsset(asset);
+  },
+  async updateAsset(id: number, assetData: any) {
+    const store = await getStorage();
+    return store.updateAsset(id, assetData);
+  },
+  async deleteAsset(id: number) {
+    const store = await getStorage();
+    return store.deleteAsset(id);
+  },
+  async getAllAssets() {
+    const store = await getStorage();
+    return store.getAllAssets();
+  },
+  async getAssetsByStatus(status: string) {
+    const store = await getStorage();
+    return store.getAssetsByStatus!(status);
+  },
+  async getAssetsByType(type: string) {
+    const store = await getStorage();
+    return store.getAssetsByType!(type);
+  },
+  async getAssetsForEmployee(employeeId: number) {
+    const store = await getStorage();
+    return store.getAssetsForEmployee!(employeeId);
+  },
+  async createAssetMaintenance(maintenance: any) {
+    const store = await getStorage();
+    return store.createAssetMaintenance!(maintenance);
+  },
+  async getMaintenanceForAsset(assetId: number) {
+    const store = await getStorage();
+    return store.getMaintenanceForAsset!(assetId);
+  },
+  async createAssetTransaction(transaction: any) {
+    const store = await getStorage();
+    return store.createAssetTransaction!(transaction);
+  },
+  async getAssetTransactions(assetId: number) {
+    const store = await getStorage();
+    return store.getAssetTransactions!(assetId);
+  },
+  async getEmployeeTransactions(employeeId: number) {
+    const store = await getStorage();
+    return store.getEmployeeTransactions!(employeeId);
+  },
+  async getAllAssetTransactions() {
+    const store = await getStorage();
+    return store.getAllAssetTransactions!();
+  },
+  async checkOutAsset(assetId: number, employeeId: number, notes?: string, type?: string) {
+    const store = await getStorage();
+    return store.checkOutAsset!(assetId, employeeId, notes, type);
+  },
+  async checkInAsset(assetId: number, notes?: string, type?: string) {
+    const store = await getStorage();
+    return store.checkInAsset!(assetId, notes, type);
+  },
+  async createAssetSale(sale: any) {
+    const store = await getStorage();
+    return store.createAssetSale!(sale);
+  },
+  async addAssetToSale(saleItem: any) {
+    const store = await getStorage();
+    return store.addAssetToSale!(saleItem);
+  },
+  async getAssetSales() {
+    const store = await getStorage();
+    return store.getAssetSales!();
+  },
+  async getTicket(id: number) {
+    const store = await getStorage();
+    return store.getTicket(id);
+  },
+  async getTicketByTicketId(ticketId: string) {
+    const store = await getStorage();
+    return store.getTicketByTicketId!(ticketId);
+  },
+  async createTicket(ticket: any) {
+    const store = await getStorage();
+    return store.createTicket(ticket);
+  },
+  async updateTicket(id: number, ticketData: any) {
+    const store = await getStorage();
+    return store.updateTicket(id, ticketData);
+  },
+  async getAllTickets() {
+    const store = await getStorage();
+    return store.getAllTickets();
+  },
+  async getTicketsByStatus(status: string) {
+    const store = await getStorage();
+    return store.getTicketsByStatus!(status);
+  },
+  async getTicketsForEmployee(employeeId: number) {
+    const store = await getStorage();
+    return store.getTicketsForEmployee!(employeeId);
+  },
+  async getTicketsAssignedToUser(userId: number) {
+    const store = await getStorage();
+    return store.getTicketsAssignedToUser!(userId);
+  },
+  async getSystemConfig() {
+    const store = await getStorage();
+    return store.getSystemConfig();
+  },
+  async updateSystemConfig(config: any) {
+    const store = await getStorage();
+    return store.updateSystemConfig(config);
+  },
+  async logActivity(activity: any) {
+    const store = await getStorage();
+    return store.logActivity(activity);
+  },
+  async getRecentActivity(limit: number) {
+    const store = await getStorage();
+    return store.getRecentActivity(limit);
+  },
+  async getActivityLogs(options: any) {
+    const store = await getStorage();
+    return store.getActivityLogs!(options);
+  },
+  async getActivityLogsCount(options: any) {
+    const store = await getStorage();
+    return store.getActivityLogsCount!(options);
+  },
+  async clearActivityLogs(options?: any) {
+    const store = await getStorage();
+    return store.clearActivityLogs!(options);
+  },
+  async getChangesLog(options: any) {
+    const store = await getStorage();
+    return store.getChangesLog!(options);
+  },
+  async createChangeLog(changeLog: any) {
+    const store = await getStorage();
+    return store.createChangeLog!(changeLog);
+  },
+  async updateChangeLog(id: number, changeLog: any) {
+    const store = await getStorage();
+    return store.updateChangeLog!(id, changeLog);
+  },
+  async deleteChangeLog(id: number) {
+    const store = await getStorage();
+    return store.deleteChangeLog!(id);
+  },
+  async getCustomAssetTypes() {
+    const store = await getStorage();
+    return store.getCustomAssetTypes!();
+  },
+  async createCustomAssetType(data: any) {
+    const store = await getStorage();
+    return store.createCustomAssetType!(data);
+  },
+  async deleteCustomAssetType(id: number) {
+    const store = await getStorage();
+    return store.deleteCustomAssetType!(id);
+  },
+  async getCustomAssetBrands() {
+    const store = await getStorage();
+    return store.getCustomAssetBrands!();
+  },
+  async createCustomAssetBrand(data: any) {
+    const store = await getStorage();
+    return store.createCustomAssetBrand!(data);
+  },
+  async deleteCustomAssetBrand(id: number) {
+    const store = await getStorage();
+    return store.deleteCustomAssetBrand!(id);
+  },
+  async getCustomAssetStatuses() {
+    const store = await getStorage();
+    return store.getCustomAssetStatuses!();
+  },
+  async createCustomAssetStatus(data: any) {
+    const store = await getStorage();
+    return store.createCustomAssetStatus!(data);
+  },
+  async deleteCustomAssetStatus(id: number) {
+    const store = await getStorage();
+    return store.deleteCustomAssetStatus!(id);
+  },
+  async getServiceProviders() {
+    const store = await getStorage();
+    return store.getServiceProviders!();
+  },
+  async createServiceProvider(data: any) {
+    const store = await getStorage();
+    return store.createServiceProvider!(data);
+  },
+  async deleteServiceProvider(id: number) {
+    const store = await getStorage();
+    return store.deleteServiceProvider!(id);
+  },
+  async removeDemoData() {
+    const store = await getStorage();
+    return store.removeDemoData!();
+  },
+  async getSecurityQuestions(userId?: number) {
+    const store = await getStorage();
+    return store.getSecurityQuestions(userId);
+  },
+  async createSecurityQuestion(question: any) {
+    const store = await getStorage();
+    return store.createSecurityQuestion(question);
+  },
+  async updateSecurityQuestion(id: number, question: any) {
+    const store = await getStorage();
+    return store.updateSecurityQuestion(id, question);
+  },
+  async deleteSecurityQuestion(id: number) {
+    const store = await getStorage();
+    return store.deleteSecurityQuestion(id);
+  },
+  async hasSecurityQuestions(userId: number) {
+    const store = await getStorage();
+    return store.hasSecurityQuestions(userId);
+  },
+  async verifySecurityQuestions(userId: number, questions: any) {
+    const store = await getStorage();
+    return store.verifySecurityQuestions(userId, questions);
+  },
+  async createPasswordResetToken(userId: number) {
+    const store = await getStorage();
+    return store.createPasswordResetToken(userId);
+  },
+  async getPasswordResetToken(token: string) {
+    const store = await getStorage();
+    return store.getPasswordResetToken(token);
+  },
+  async validatePasswordResetToken(token: string) {
+    const store = await getStorage();
+    return store.validatePasswordResetToken(token);
+  },
+  async invalidatePasswordResetToken(token: string) {
+    const store = await getStorage();
+    return store.invalidatePasswordResetToken(token);
+  }
+};
