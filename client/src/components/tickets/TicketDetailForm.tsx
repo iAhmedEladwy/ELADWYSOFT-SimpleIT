@@ -368,7 +368,7 @@ export default function TicketDetailForm({
                         <SelectValue placeholder="Select employee" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="0">Unassigned</SelectItem>
                         {employees.map(employee => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
                             {employee.name}
