@@ -1653,6 +1653,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Temporarily using memory storage to bypass database connection issues
-import { MemoryStorage } from "./memory-storage";
-export const storage = new MemoryStorage();
+// Use database storage as designed in the architecture
+export const storage = new DatabaseStorage();
