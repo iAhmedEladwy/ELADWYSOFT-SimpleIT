@@ -31,7 +31,8 @@ import {
   RotateCcw,
   MessageSquare,
   Paperclip,
-  Send
+  Send,
+  RefreshCw
 } from 'lucide-react';
 
 interface Ticket {
@@ -265,6 +266,29 @@ export default function EnhancedTicketTable({
     },
   });
 
+  // Reopen ticket mutation
+  const reopenTicketMutation = useMutation({
+    mutationFn: async (ticketId: number) => {
+      return await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, {
+        status: 'Open'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Ticket reopened' : 'تم إعادة فتح التذكرة',
+        description: language === 'English' ? 'Ticket has been reopened successfully' : 'تم إعادة فتح التذكرة بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'High':
@@ -368,7 +392,18 @@ export default function EnhancedTicketTable({
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    
+    let matchesStatus = true;
+    if (statusFilter === 'all') {
+      matchesStatus = true;
+    } else if (statusFilter === 'active') {
+      matchesStatus = ticket.status === 'Open' || ticket.status === 'In Progress';
+    } else if (statusFilter === 'completed') {
+      matchesStatus = ticket.status === 'Resolved' || ticket.status === 'Closed';
+    } else {
+      matchesStatus = ticket.status === statusFilter;
+    }
+    
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     
     return matchesSearch && matchesStatus && matchesPriority;
@@ -419,10 +454,12 @@ export default function EnhancedTicketTable({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{language === 'English' ? 'All Statuses' : 'جميع الحالات'}</SelectItem>
+                  <SelectItem value="active">{language === 'English' ? 'Active (Open/In Progress)' : 'النشطة (مفتوحة/قيد التنفيذ)'}</SelectItem>
                   <SelectItem value="Open">Open</SelectItem>
                   <SelectItem value="In Progress">In Progress</SelectItem>
                   <SelectItem value="Resolved">Resolved</SelectItem>
                   <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="completed">{language === 'English' ? 'Completed (Resolved/Closed)' : 'المكتملة (محلولة/مغلقة)'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -970,6 +1007,19 @@ export default function EnhancedTicketTable({
                           </div>
                         </DialogContent>
                       </Dialog>
+                    )}
+
+                    {/* Reopen Button - Only for completed tickets */}
+                    {(ticket.status === 'Closed' || ticket.status === 'Resolved') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => reopenTicketMutation.mutate(ticket.id)}
+                        disabled={reopenTicketMutation.isPending}
+                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                     )}
 
                     {/* Admin Delete Button */}
