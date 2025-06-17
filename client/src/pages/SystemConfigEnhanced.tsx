@@ -550,6 +550,51 @@ export default function SystemConfigEnhanced() {
                           className="pl-8"
                         />
                       </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {language === 'English' ? 'Add Brand' : 'إضافة علامة تجارية'}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {language === 'English' ? 'Add Asset Brand' : 'إضافة علامة تجارية للأصل'}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="brand-name">
+                                {language === 'English' ? 'Name' : 'الاسم'}
+                              </Label>
+                              <Input
+                                id="brand-name"
+                                placeholder={language === 'English' ? 'Enter brand name' : 'أدخل اسم العلامة التجارية'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="brand-description">
+                                {language === 'English' ? 'Description' : 'الوصف'}
+                              </Label>
+                              <Input
+                                id="brand-description"
+                                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <DialogClose asChild>
+                                <Button variant="outline">
+                                  {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                </Button>
+                              </DialogClose>
+                              <Button>
+                                {language === 'English' ? 'Add' : 'إضافة'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     
                     <div className="border rounded-lg">
@@ -599,6 +644,62 @@ export default function SystemConfigEnhanced() {
                           className="pl-8"
                         />
                       </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {language === 'English' ? 'Add Status' : 'إضافة حالة'}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل'}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="status-name">
+                                {language === 'English' ? 'Name' : 'الاسم'}
+                              </Label>
+                              <Input
+                                id="status-name"
+                                placeholder={language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="status-description">
+                                {language === 'English' ? 'Description' : 'الوصف'}
+                              </Label>
+                              <Input
+                                id="status-description"
+                                placeholder={language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="status-color">
+                                {language === 'English' ? 'Color' : 'اللون'}
+                              </Label>
+                              <Input
+                                id="status-color"
+                                type="color"
+                                defaultValue="#3B82F6"
+                                placeholder={language === 'English' ? 'Choose color' : 'اختر اللون'}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <DialogClose asChild>
+                                <Button variant="outline">
+                                  {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                </Button>
+                              </DialogClose>
+                              <Button>
+                                {language === 'English' ? 'Add' : 'إضافة'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     
                     <div className="border rounded-lg">
@@ -654,6 +755,70 @@ export default function SystemConfigEnhanced() {
                           className="pl-8"
                         />
                       </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            {language === 'English' ? 'Add Provider' : 'إضافة مقدم خدمة'}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="provider-name">
+                                {language === 'English' ? 'Name' : 'الاسم'}
+                              </Label>
+                              <Input
+                                id="provider-name"
+                                placeholder={language === 'English' ? 'Enter provider name' : 'أدخل اسم مقدم الخدمة'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="provider-contact">
+                                {language === 'English' ? 'Contact Person' : 'الشخص المسؤول'}
+                              </Label>
+                              <Input
+                                id="provider-contact"
+                                placeholder={language === 'English' ? 'Enter contact person (optional)' : 'أدخل الشخص المسؤول (اختياري)'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="provider-phone">
+                                {language === 'English' ? 'Phone' : 'الهاتف'}
+                              </Label>
+                              <Input
+                                id="provider-phone"
+                                placeholder={language === 'English' ? 'Enter phone number (optional)' : 'أدخل رقم الهاتف (اختياري)'}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="provider-email">
+                                {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+                              </Label>
+                              <Input
+                                id="provider-email"
+                                type="email"
+                                placeholder={language === 'English' ? 'Enter email address (optional)' : 'أدخل البريد الإلكتروني (اختياري)'}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <DialogClose asChild>
+                                <Button variant="outline">
+                                  {language === 'English' ? 'Cancel' : 'إلغاء'}
+                                </Button>
+                              </DialogClose>
+                              <Button>
+                                {language === 'English' ? 'Add' : 'إضافة'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     
                     <div className="border rounded-lg">

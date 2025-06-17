@@ -614,11 +614,15 @@ export class DatabaseStorage implements IStorage {
   async updateAsset(id: number, assetData: Partial<InsertAsset>): Promise<Asset | undefined> {
     try {
       // Convert numeric buyPrice to string for database storage
-      const processedData = {
+      const processedData: any = {
         ...assetData,
-        buyPrice: assetData.buyPrice ? assetData.buyPrice.toString() : assetData.buyPrice,
         updatedAt: new Date()
       };
+      
+      // Handle buyPrice conversion if present
+      if (assetData.buyPrice !== undefined) {
+        processedData.buyPrice = typeof assetData.buyPrice === 'number' ? assetData.buyPrice.toString() : assetData.buyPrice;
+      }
       
       const [updatedAsset] = await db
         .update(assets)
