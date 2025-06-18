@@ -284,16 +284,7 @@ function SystemConfig() {
     },
   });
 
-  const deleteAssetBrandMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
-      });
-    },
-  });
+
 
   const createAssetBrandMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
@@ -318,6 +309,17 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+      });
+    },
+  });
+
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
       });
     },
   });
@@ -361,6 +363,8 @@ function SystemConfig() {
     },
   });
 
+
+
   const createServiceProviderMutation = useMutation({
     mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
       apiRequest('POST', '/api/service-providers', data),
@@ -400,6 +404,8 @@ function SystemConfig() {
       });
     },
   });
+
+
 
 
 
