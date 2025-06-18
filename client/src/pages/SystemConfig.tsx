@@ -257,55 +257,22 @@ function SystemConfig() {
       });
       setNewTypeName('');
       setNewTypeDescription('');
+      setIsAssetTypeDialogOpen(false);
     },
   });
 
-  const createAssetBrandMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('POST', '/api/custom-asset-brands', data),
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-types/${id}`, { name, description }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
       });
-      setNewBrandName('');
-      setNewBrandDescription('');
     },
   });
 
-  const createAssetStatusMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; color?: string }) => 
-      apiRequest('POST', '/api/custom-asset-statuses', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status added successfully' : 'تمت إضافة حالة الأصل بنجاح',
-      });
-      setNewStatusName('');
-      setNewStatusDescription('');
-      setNewStatusColor('#3B82F6');
-    },
-  });
-
-  const createServiceProviderMutation = useMutation({
-    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
-      apiRequest('POST', '/api/service-providers', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider added successfully' : 'تمت إضافة مزود الخدمة بنجاح',
-      });
-      setNewProviderName('');
-      setNewProviderContact('');
-      setNewProviderPhone('');
-      setNewProviderEmail('');
-    },
-  });
-
-  // Delete mutations
   const deleteAssetTypeMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-types/${id}`),
     onSuccess: () => {
@@ -328,6 +295,61 @@ function SystemConfig() {
     },
   });
 
+  const createAssetBrandMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-asset-brands', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل بنجاح',
+      });
+      setNewBrandName('');
+      setNewBrandDescription('');
+      setIsAssetBrandDialogOpen(false);
+    },
+  });
+
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-brands/${id}`, { name, description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+      });
+    },
+  });
+
+  const createAssetStatusMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; color?: string }) => 
+      apiRequest('POST', '/api/custom-asset-statuses', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status added successfully' : 'تمت إضافة حالة الأصل بنجاح',
+      });
+      setNewStatusName('');
+      setNewStatusDescription('');
+      setNewStatusColor('#3B82F6');
+      setIsAssetStatusDialogOpen(false);
+    },
+  });
+
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: ({ id, name, description, color }: { id: number; name: string; description?: string; color?: string }) => 
+      apiRequest('PUT', `/api/custom-asset-statuses/${id}`, { name, description, color }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+    },
+  });
+
   const deleteAssetStatusMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
     onSuccess: () => {
@@ -335,6 +357,35 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
+      });
+    },
+  });
+
+  const createServiceProviderMutation = useMutation({
+    mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('POST', '/api/service-providers', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider added successfully' : 'تمت إضافة مزود الخدمة بنجاح',
+      });
+      setNewProviderName('');
+      setNewProviderContact('');
+      setNewProviderPhone('');
+      setNewProviderEmail('');
+      setIsServiceProviderDialogOpen(false);
+    },
+  });
+
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: ({ id, name, contactPerson, phone, email }: { id: number; name: string; contactPerson?: string; phone?: string; email?: string }) => 
+      apiRequest('PUT', `/api/service-providers/${id}`, { name, contactPerson, phone, email }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مزود الخدمة بنجاح',
       });
     },
   });
@@ -349,6 +400,8 @@ function SystemConfig() {
       });
     },
   });
+
+
 
   // Import mutation
   const importMutation = useMutation({
@@ -1411,20 +1464,79 @@ function SystemConfig() {
                               <td className="px-4 py-2 flex items-center">
                                 <div 
                                   className="w-4 h-4 rounded mr-2" 
-                                  style={{ backgroundColor: status.color }}
+                                  style={{ backgroundColor: editingStatusId === status.id ? editedStatusColor : status.color }}
                                 />
-                                <span className="font-medium">{status.name}</span>
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusName}
+                                    onChange={(e) => setEditedStatusName(e.target.value)}
+                                    className="w-full"
+                                    onBlur={() => {
+                                      if (editedStatusName.trim() && editedStatusName !== status.name) {
+                                        updateAssetStatusMutation.mutate({
+                                          id: status.id,
+                                          name: editedStatusName,
+                                          description: editedStatusDescription,
+                                          color: editedStatusColor
+                                        });
+                                      }
+                                      setEditingStatusId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span className="font-medium">{status.name}</span>
+                                )}
                               </td>
-                              <td className="px-4 py-2 text-muted-foreground">{status.description || '-'}</td>
+                              <td className="px-4 py-2 text-muted-foreground">
+                                {editingStatusId === status.id ? (
+                                  <div className="flex gap-2 items-center">
+                                    <Input
+                                      value={editedStatusDescription}
+                                      onChange={(e) => setEditedStatusDescription(e.target.value)}
+                                      className="flex-1"
+                                      placeholder={language === 'English' ? "Description" : "الوصف"}
+                                    />
+                                    <input
+                                      type="color"
+                                      value={editedStatusColor}
+                                      onChange={(e) => setEditedStatusColor(e.target.value)}
+                                      className="w-8 h-8 border rounded cursor-pointer"
+                                    />
+                                  </div>
+                                ) : (
+                                  status.description || '-'
+                                )}
+                              </td>
                               <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteAssetStatusMutation.mutate(status.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button
+                                    onClick={() => {
+                                      setEditingStatusId(status.id);
+                                      setEditedStatusName(status.name);
+                                      setEditedStatusDescription(status.description || '');
+                                      setEditedStatusColor(status.color || '#3B82F6');
+                                    }}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
