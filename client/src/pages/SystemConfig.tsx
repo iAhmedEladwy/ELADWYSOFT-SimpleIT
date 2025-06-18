@@ -1261,17 +1261,68 @@ function SystemConfig() {
                         <tbody className="divide-y">
                           {filteredAssetBrands.map((brand: any) => (
                             <tr key={brand.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2 font-medium">{brand.name}</td>
-                              <td className="px-4 py-2 text-muted-foreground">{brand.description || '-'}</td>
+                              <td className="px-4 py-2 font-medium">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandName}
+                                    onChange={(e) => setEditedBrandName(e.target.value)}
+                                    className="w-full"
+                                    onBlur={() => {
+                                      if (editedBrandName.trim() && editedBrandName !== brand.name) {
+                                        updateAssetBrandMutation.mutate({
+                                          id: brand.id,
+                                          name: editedBrandName,
+                                          description: editedBrandDescription
+                                        });
+                                      }
+                                      setEditingBrandId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  brand.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandDescription}
+                                    onChange={(e) => setEditedBrandDescription(e.target.value)}
+                                    className="w-full"
+                                    placeholder={language === 'English' ? "Description" : "الوصف"}
+                                  />
+                                ) : (
+                                  brand.description || '-'
+                                )}
+                              </td>
                               <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button
+                                    onClick={() => {
+                                      setEditingBrandId(brand.id);
+                                      setEditedBrandName(brand.name);
+                                      setEditedBrandDescription(brand.description || '');
+                                    }}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1496,81 +1547,6 @@ function SystemConfig() {
               </Tabs>
             </CardContent>
           </Card>
-
-            {/* Asset Statuses */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{translations.assetStatuses}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      placeholder={language === 'English' ? "Status name" : "اسم الحالة"}
-                      value={newStatusName}
-                      onChange={(e) => setNewStatusName(e.target.value)}
-                      className="flex-grow"
-                    />
-                    <input
-                      type="color"
-                      value={newStatusColor}
-                      onChange={(e) => setNewStatusColor(e.target.value)}
-                      className="w-12 h-10 border rounded"
-                    />
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={handleAddAssetStatus}
-                      disabled={!newStatusName.trim()}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {translations.add}
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
-                    value={newStatusDescription}
-                    onChange={(e) => setNewStatusDescription(e.target.value)}
-                  />
-                  
-                  {customAssetStatuses.length > 0 && (
-                    <div className="border rounded-md overflow-hidden max-h-60 overflow-y-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="bg-muted/50 sticky top-0">
-                            <th className="px-4 py-2 text-left">{translations.name}</th>
-                            <th className="px-4 py-2 text-right">{translations.actions}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {customAssetStatuses.map((status: any) => (
-                            <tr key={status.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2 flex items-center">
-                                <div 
-                                  className="w-4 h-4 rounded mr-2" 
-                                  style={{ backgroundColor: status.color }}
-                                />
-                                {status.name}
-                              </td>
-                              <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteAssetStatusMutation.mutate(status.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
 
 
         </TabsContent>
