@@ -23,6 +23,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -48,144 +49,130 @@ export default function SystemConfig() {
   const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
   const [editedDeptName, setEditedDeptName] = useState('');
 
-  // Asset management state
+  // Asset management states
   const [newAssetType, setNewAssetType] = useState('');
-  const [newAssetTypeDesc, setNewAssetTypeDesc] = useState('');
-  const [editingAssetTypeId, setEditingAssetTypeId] = useState<number | null>(null);
-  const [editedAssetTypeName, setEditedAssetTypeName] = useState('');
-  const [editedAssetTypeDesc, setEditedAssetTypeDesc] = useState('');
-
   const [newAssetBrand, setNewAssetBrand] = useState('');
-  const [newAssetBrandDesc, setNewAssetBrandDesc] = useState('');
-  const [editingAssetBrandId, setEditingAssetBrandId] = useState<number | null>(null);
-  const [editedAssetBrandName, setEditedAssetBrandName] = useState('');
-  const [editedAssetBrandDesc, setEditedAssetBrandDesc] = useState('');
-
   const [newAssetStatus, setNewAssetStatus] = useState('');
-  const [newAssetStatusDesc, setNewAssetStatusDesc] = useState('');
-  const [editingAssetStatusId, setEditingAssetStatusId] = useState<number | null>(null);
-  const [editedAssetStatusName, setEditedAssetStatusName] = useState('');
-  const [editedAssetStatusDesc, setEditedAssetStatusDesc] = useState('');
-
   const [newServiceProvider, setNewServiceProvider] = useState('');
   const [newServiceProviderContact, setNewServiceProviderContact] = useState('');
   const [newServiceProviderPhone, setNewServiceProviderPhone] = useState('');
   const [newServiceProviderEmail, setNewServiceProviderEmail] = useState('');
-  
-  // Email configuration states
-  const [emailHost, setEmailHost] = useState('');
-  const [emailPort, setEmailPort] = useState('');
-  const [emailUsername, setEmailUsername] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
-  const [emailSecure, setEmailSecure] = useState(true);
 
-  // Fetch system config
-  const { data: config } = useQuery<any>({
+  // Ticket management states
+  const [newTicketType, setNewTicketType] = useState('');
+  const [newTicketCategory, setNewTicketCategory] = useState('');
+  const [newTicketPriority, setNewTicketPriority] = useState('');
+  const [newTicketStatus, setNewTicketStatus] = useState('');
+
+  // Editing states
+  const [editingAssetTypeId, setEditingAssetTypeId] = useState<number | null>(null);
+  const [editedAssetTypeName, setEditedAssetTypeName] = useState('');
+  const [editingAssetBrandId, setEditingAssetBrandId] = useState<number | null>(null);
+  const [editedAssetBrandName, setEditedAssetBrandName] = useState('');
+  const [editingAssetStatusId, setEditingAssetStatusId] = useState<number | null>(null);
+  const [editedAssetStatusName, setEditedAssetStatusName] = useState('');
+
+  const [editingTicketTypeId, setEditingTicketTypeId] = useState<number | null>(null);
+  const [editedTicketTypeName, setEditedTicketTypeName] = useState('');
+  const [editingTicketCategoryId, setEditingTicketCategoryId] = useState<number | null>(null);
+  const [editedTicketCategoryName, setEditedTicketCategoryName] = useState('');
+  const [editingTicketPriorityId, setEditingTicketPriorityId] = useState<number | null>(null);
+  const [editedTicketPriorityName, setEditedTicketPriorityName] = useState('');
+  const [editingTicketStatusId, setEditingTicketStatusId] = useState<number | null>(null);
+  const [editedTicketStatusName, setEditedTicketStatusName] = useState('');
+
+  // Fetch system configuration
+  const { data: systemConfig, isLoading: configLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    enabled: hasAccess(3),
   });
 
-  // Fetch asset management data
-  const { data: assetTypes = [] } = useQuery<any[]>({
+  // Fetch asset data
+  const { data: assetTypes = [] } = useQuery({
     queryKey: ['/api/custom-asset-types'],
-    enabled: hasAccess(3),
   });
 
-  const { data: assetBrands = [] } = useQuery<any[]>({
+  const { data: assetBrands = [] } = useQuery({
     queryKey: ['/api/custom-asset-brands'],
-    enabled: hasAccess(3),
   });
 
-  const { data: assetStatuses = [] } = useQuery<any[]>({
+  const { data: assetStatuses = [] } = useQuery({
     queryKey: ['/api/custom-asset-statuses'],
-    enabled: hasAccess(3),
   });
 
-  const { data: serviceProviders = [] } = useQuery<any[]>({
+  const { data: serviceProviders = [] } = useQuery({
     queryKey: ['/api/service-providers'],
-    enabled: hasAccess(3),
   });
-  
-  // Update local state when config data is loaded
-  useEffect(() => {
-    if (config) {
-      setAssetIdPrefix(config.assetIdPrefix || 'SIT-');
-      setEmpIdPrefix(config.empIdPrefix || 'EMP-');
-      setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
-      setCurrency(config.currency || 'USD');
-      setDepartments(config.departments || []);
-      setEmailHost(config.emailHost || '');
-      setEmailPort(config.emailPort || '');
-      setEmailUsername(config.emailUsername || '');
-      setEmailPassword(config.emailPassword || '');
-      setEmailSecure(config.emailSecure !== undefined ? config.emailSecure : true);
-    }
-  }, [config]);
 
-  // Update config mutation
+  // Fetch ticket data
+  const { data: ticketTypes = [] } = useQuery({
+    queryKey: ['/api/custom-ticket-types'],
+  });
+
+  const { data: ticketCategories = [] } = useQuery({
+    queryKey: ['/api/custom-ticket-categories'],
+  });
+
+  const { data: ticketPriorities = [] } = useQuery({
+    queryKey: ['/api/custom-ticket-priorities'],
+  });
+
+  const { data: ticketStatuses = [] } = useQuery({
+    queryKey: ['/api/custom-ticket-statuses'],
+  });
+
+  // Initialize state from system config
+  useEffect(() => {
+    if (systemConfig) {
+      setAssetIdPrefix(systemConfig.assetIdPrefix || 'SIT-');
+      setEmpIdPrefix(systemConfig.empIdPrefix || 'EMP-');
+      setTicketIdPrefix(systemConfig.ticketIdPrefix || 'TKT-');
+      setCurrency(systemConfig.currency || 'USD');
+      setDepartments(systemConfig.departments || []);
+    }
+  }, [systemConfig]);
+
+  // Update system configuration mutation
   const updateConfigMutation = useMutation({
-    mutationFn: (data: any) => 
-      apiRequest('PUT', '/api/system-config', data),
+    mutationFn: (data: any) => apiRequest('PUT', '/api/system-config', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
+        description: language === 'English' ? 'System configuration updated successfully' : 'تم تحديث إعدادات النظام بنجاح',
       });
     },
-    onError: (error) => {
-      console.error("Config update error:", error);
+    onError: () => {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' 
-          ? 'Failed to update settings. Please try again.' 
-          : 'فشل تحديث الإعدادات. يرجى المحاولة مرة أخرى.',
+        description: language === 'English' ? 'Failed to update system configuration' : 'فشل تحديث إعدادات النظام',
         variant: 'destructive'
       });
     }
   });
 
-  // Handle saving configuration
-  const handleSaveConfig = () => {
-    const configData = {
-      language,
-      assetIdPrefix,
-      empIdPrefix,
-      ticketIdPrefix,
-      currency,
-      emailHost,
-      emailPort,
-      emailUsername,
-      emailPassword,
-      emailSecure,
-      departments: departments || []
-    };
-    updateConfigMutation.mutate(configData);
-  };
-
-  // Asset management mutations
-  const addAssetTypeMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-types', data),
+  // Asset Management Mutations
+  const createAssetTypeMutation = useMutation({
+    mutationFn: (data: { name: string }) => apiRequest('POST', '/api/custom-asset-types', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
-      setNewAssetType('');
-      setNewAssetTypeDesc('');
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset type added successfully' : 'تم إضافة نوع الأصل بنجاح',
       });
+      setNewAssetType('');
     },
   });
 
   const updateAssetTypeMutation = useMutation({
-    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-types/${id}`, data),
+    mutationFn: (data: { id: number; name: string }) => 
+      apiRequest('PUT', `/api/custom-asset-types/${data.id}`, { name: data.name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
-      setEditingAssetTypeId(null);
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
       });
+      handleCancelEdit();
     },
   });
 
@@ -200,1532 +187,392 @@ export default function SystemConfig() {
     },
   });
 
-  const addAssetBrandMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-brands', data),
+  // Ticket Management Mutations
+  const createTicketTypeMutation = useMutation({
+    mutationFn: (data: { name: string }) => apiRequest('POST', '/api/custom-ticket-types', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      setNewAssetBrand('');
-      setNewAssetBrandDesc('');
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-ticket-types'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand added successfully' : 'تم إضافة علامة الأصل بنجاح',
+        description: language === 'English' ? 'Ticket type added successfully' : 'تم إضافة نوع التذكرة بنجاح',
+      });
+      setNewTicketType('');
+    },
+  });
+
+  const updateTicketTypeMutation = useMutation({
+    mutationFn: (data: { id: number; name: string }) => 
+      apiRequest('PUT', `/api/custom-ticket-types/${data.id}`, { name: data.name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-ticket-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Ticket type updated successfully' : 'تم تحديث نوع التذكرة بنجاح',
+      });
+      handleCancelEdit();
+    },
+  });
+
+  const deleteTicketTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-ticket-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-ticket-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Ticket type deleted successfully' : 'تم حذف نوع التذكرة بنجاح',
       });
     },
   });
 
-  const updateAssetBrandMutation = useMutation({
-    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-brands/${id}`, data),
+  // Similar mutations for other ticket fields (categories, priorities, statuses)
+  const createTicketCategoryMutation = useMutation({
+    mutationFn: (data: { name: string }) => apiRequest('POST', '/api/custom-ticket-categories', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      setEditingAssetBrandId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-ticket-categories'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+        description: language === 'English' ? 'Ticket category added successfully' : 'تم إضافة فئة التذكرة بنجاح',
       });
+      setNewTicketCategory('');
     },
   });
 
-  const deleteAssetBrandMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
-      });
-    },
-  });
-
-  const addAssetStatusMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/custom-asset-statuses', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      setNewAssetStatus('');
-      setNewAssetStatusDesc('');
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status added successfully' : 'تم إضافة حالة الأصل بنجاح',
-      });
-    },
-  });
-
-  const updateAssetStatusMutation = useMutation({
-    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/custom-asset-statuses/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      setEditingAssetStatusId(null);
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
-      });
-    },
-  });
-
-  const deleteAssetStatusMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
-      });
-    },
-  });
-
-  const addServiceProviderMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/service-providers', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      setNewServiceProvider('');
-      setNewServiceProviderContact('');
-      setNewServiceProviderPhone('');
-      setNewServiceProviderEmail('');
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider added successfully' : 'تم إضافة مقدم الخدمة بنجاح',
-      });
-    },
-  });
-
-  const deleteServiceProviderMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/service-providers/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
-      });
-    },
-  });
-
-  // Handler functions for asset management
-  const handleAddAssetType = () => {
-    if (!newAssetType.trim()) return;
-    addAssetTypeMutation.mutate({
-      name: newAssetType,
-      description: newAssetTypeDesc
+  // Event handlers
+  const handleSaveConfig = () => {
+    updateConfigMutation.mutate({
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments,
     });
+  };
+
+  const handleAddAssetType = () => {
+    if (newAssetType.trim()) {
+      createAssetTypeMutation.mutate({ name: newAssetType.trim() });
+    }
   };
 
   const handleEditAssetType = (type: any) => {
     setEditingAssetTypeId(type.id);
     setEditedAssetTypeName(type.name);
-    setEditedAssetTypeDesc(type.description || '');
   };
 
   const handleUpdateAssetType = (id: number) => {
-    updateAssetTypeMutation.mutate({
-      id,
-      data: {
-        name: editedAssetTypeName,
-        description: editedAssetTypeDesc
-      }
-    });
+    if (editedAssetTypeName.trim()) {
+      updateAssetTypeMutation.mutate({ id, name: editedAssetTypeName.trim() });
+    }
   };
 
   const handleDeleteAssetType = (id: number) => {
     deleteAssetTypeMutation.mutate(id);
   };
 
-  const handleAddAssetBrand = () => {
-    if (!newAssetBrand.trim()) return;
-    addAssetBrandMutation.mutate({
-      name: newAssetBrand,
-      description: newAssetBrandDesc
-    });
+  const handleAddTicketType = () => {
+    if (newTicketType.trim()) {
+      createTicketTypeMutation.mutate({ name: newTicketType.trim() });
+    }
   };
 
-  const handleEditAssetBrand = (brand: any) => {
-    setEditingAssetBrandId(brand.id);
-    setEditedAssetBrandName(brand.name);
-    setEditedAssetBrandDesc(brand.description || '');
+  const handleEditTicketType = (type: any) => {
+    setEditingTicketTypeId(type.id);
+    setEditedTicketTypeName(type.name);
   };
 
-  const handleUpdateAssetBrand = (id: number) => {
-    updateAssetBrandMutation.mutate({
-      id,
-      data: {
-        name: editedAssetBrandName,
-        description: editedAssetBrandDesc
-      }
-    });
+  const handleUpdateTicketType = (id: number) => {
+    if (editedTicketTypeName.trim()) {
+      updateTicketTypeMutation.mutate({ id, name: editedTicketTypeName.trim() });
+    }
   };
 
-  const handleDeleteAssetBrand = (id: number) => {
-    deleteAssetBrandMutation.mutate(id);
-  };
-
-  const handleAddAssetStatus = () => {
-    if (!newAssetStatus.trim()) return;
-    addAssetStatusMutation.mutate({
-      name: newAssetStatus,
-      description: newAssetStatusDesc
-    });
-  };
-
-  const handleEditAssetStatus = (status: any) => {
-    setEditingAssetStatusId(status.id);
-    setEditedAssetStatusName(status.name);
-    setEditedAssetStatusDesc(status.description || '');
-  };
-
-  const handleUpdateAssetStatus = (id: number) => {
-    updateAssetStatusMutation.mutate({
-      id,
-      data: {
-        name: editedAssetStatusName,
-        description: editedAssetStatusDesc
-      }
-    });
-  };
-
-  const handleDeleteAssetStatus = (id: number) => {
-    deleteAssetStatusMutation.mutate(id);
-  };
-
-  const handleAddServiceProvider = () => {
-    if (!newServiceProvider.trim()) return;
-    addServiceProviderMutation.mutate({
-      name: newServiceProvider,
-      contactPerson: newServiceProviderContact,
-      phone: newServiceProviderPhone,
-      email: newServiceProviderEmail
-    });
-  };
-
-  const handleDeleteServiceProvider = (id: number) => {
-    deleteServiceProviderMutation.mutate(id);
+  const handleDeleteTicketType = (id: number) => {
+    deleteTicketTypeMutation.mutate(id);
   };
 
   const handleCancelEdit = () => {
     setEditingAssetTypeId(null);
-    setEditingAssetBrandId(null);
-    setEditingAssetStatusId(null);
+    setEditedAssetTypeName('');
+    setEditingTicketTypeId(null);
+    setEditedTicketTypeName('');
   };
 
-  // Department management functions
-  const handleAddDepartment = () => {
-    if (!newDepartment.trim()) return;
-    
-    const updatedDepartments = [...departments, newDepartment.trim()];
-    setDepartments(updatedDepartments);
-    setNewDepartment('');
-    
-    // Save immediately
-    const configData = {
-      language,
-      assetIdPrefix,
-      empIdPrefix,
-      ticketIdPrefix,
-      currency,
-      emailHost,
-      emailPort,
-      emailUsername,
-      emailPassword,
-      emailSecure,
-      departments: updatedDepartments
-    };
-    updateConfigMutation.mutate(configData);
-  };
-
-  const handleEditDepartment = (index: number, deptName: string) => {
-    setEditingDeptIndex(index);
-    setEditedDeptName(deptName);
-  };
-
-  const handleSaveDepartment = (index: number) => {
-    if (!editedDeptName.trim()) return;
-    
-    const updatedDepartments = [...departments];
-    updatedDepartments[index] = editedDeptName.trim();
-    setDepartments(updatedDepartments);
-    setEditingDeptIndex(null);
-    setEditedDeptName('');
-    
-    // Save immediately
-    const configData = {
-      language,
-      assetIdPrefix,
-      empIdPrefix,
-      ticketIdPrefix,
-      currency,
-      emailHost,
-      emailPort,
-      emailUsername,
-      emailPassword,
-      emailSecure,
-      departments: updatedDepartments
-    };
-    updateConfigMutation.mutate(configData);
-  };
-
-  const handleCancelEditDepartment = () => {
-    setEditingDeptIndex(null);
-    setEditedDeptName('');
-  };
-
-  const handleDeleteDepartment = (index: number) => {
-    const updatedDepartments = departments.filter((_, i) => i !== index);
-    setDepartments(updatedDepartments);
-    
-    // Save immediately
-    const configData = {
-      language,
-      assetIdPrefix,
-      empIdPrefix,
-      ticketIdPrefix,
-      currency,
-      emailHost,
-      emailPort,
-      emailUsername,
-      emailPassword,
-      emailSecure,
-      departments: updatedDepartments
-    };
-    updateConfigMutation.mutate(configData);
-  };
-
-  // Handle file import
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`/api/import/${type}`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        toast({
-          title: language === 'English' ? 'Success' : 'تم بنجاح',
-          description: language === 'English' ? `${type} imported successfully` : `تم استيراد ${type} بنجاح`,
-        });
-        // Reset file input
-        event.target.value = '';
-        // Invalidate relevant queries to refresh data
-        queryClient.invalidateQueries({ queryKey: [`/api/${type}`] });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Import failed');
-      }
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' 
-          ? `Failed to import ${type}. Please check the file format.` 
-          : `فشل استيراد ${type}. يرجى التحقق من تنسيق الملف.`,
-        variant: 'destructive'
-      });
-      // Reset file input
-      event.target.value = '';
-    }
-  };
-
-  const translations = {
-    systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
-    generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
-    generalSettingsDesc: language === 'English' ? 'Configure basic system settings, language, currency, and data management' : 'تكوين إعدادات النظام الأساسية واللغة والعملة وإدارة البيانات',
-    language: language === 'English' ? 'Language' : 'اللغة',
-    currency: language === 'English' ? 'Currency' : 'العملة',
-    assetIdPrefix: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل',
-    empIdPrefix: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
-    ticketIdPrefix: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
-    emailSettings: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
-    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات'
-  };
+  if (configLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 lg:bg-none lg:bg-background">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 mb-6">
-        <div className="flex items-center justify-center">
-          <Settings className="h-8 w-8 mr-3" />
-          <h1 className="text-2xl font-bold text-center">{translations.systemConfig}</h1>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">
+            {language === 'English' ? 'System Configuration' : 'إعدادات النظام'}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {language === 'English' ? 'Manage system settings and configurations' : 'إدارة إعدادات وتكوينات النظام'}
+          </p>
         </div>
-        <p className="text-center text-blue-100 mt-2 text-lg">
-          {language === 'English' ? 'Mobile Optimized' : 'محسّن للجوال'}
-        </p>
+        <Button onClick={toggleLanguage} variant="outline">
+          <Globe className="h-4 w-4 mr-2" />
+          {language === 'English' ? 'العربية' : 'English'}
+        </Button>
       </div>
 
-      {/* Desktop Header */}
-      <div className="hidden lg:block container mx-auto py-4 px-4 lg:px-6">
-        <div className="flex justify-between items-center mb-4 lg:mb-6">
-          <div className="flex items-center">
-            <Settings className="h-5 w-5 lg:h-6 lg:w-6 mr-2" />
-            <h1 className="text-xl lg:text-2xl font-bold">{translations.systemConfig}</h1>
-          </div>
-        </div>
-      </div>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="general">{language === 'English' ? 'General' : 'عام'}</TabsTrigger>
+          <TabsTrigger value="departments">{language === 'English' ? 'Departments' : 'الأقسام'}</TabsTrigger>
+          <TabsTrigger value="assets">{language === 'English' ? 'Assets' : 'الأصول'}</TabsTrigger>
+          <TabsTrigger value="tickets">{language === 'English' ? 'Tickets' : 'التذاكر'}</TabsTrigger>
+          <TabsTrigger value="email">{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TabsTrigger>
+        </TabsList>
 
-      <div className="container mx-auto px-4 lg:px-6 pb-6">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid grid-cols-4 w-full mb-4 h-auto gap-1">
-            <TabsTrigger value="general" className="text-sm py-3 px-2">
-              <Globe className="h-4 w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">{translations.generalSettings}</span>
-              <span className="sm:hidden">{language === 'English' ? 'General' : 'عام'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="departments" className="text-sm py-3 px-2">
-              <Building className="h-4 w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">{language === 'English' ? 'Departments' : 'الأقسام'}</span>
-              <span className="sm:hidden">{language === 'English' ? 'Depts' : 'أقسام'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="assets" className="text-sm py-3 px-2">
-              <Settings className="h-4 w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">{language === 'English' ? 'Assets' : 'الأصول'}</span>
-              <span className="sm:hidden">{language === 'English' ? 'Assets' : 'أصول'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="text-sm py-3 px-2">
-              <Mail className="h-4 w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">{translations.emailSettings}</span>
-              <span className="sm:hidden">{language === 'English' ? 'Email' : 'بريد'}</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* General Tab */}
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                {language === 'English' ? 'General Settings' : 'الإعدادات العامة'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل'}</Label>
+                  <Input
+                    value={assetIdPrefix}
+                    onChange={(e) => setAssetIdPrefix(e.target.value)}
+                    placeholder="SIT-"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف'}</Label>
+                  <Input
+                    value={empIdPrefix}
+                    onChange={(e) => setEmpIdPrefix(e.target.value)}
+                    placeholder="EMP-"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة'}</Label>
+                  <Input
+                    value={ticketIdPrefix}
+                    onChange={(e) => setTicketIdPrefix(e.target.value)}
+                    placeholder="TKT-"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Currency' : 'العملة'}</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
+                      <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button onClick={handleSaveConfig} className="w-full">
+                <Save className="h-4 w-4 mr-2" />
+                {language === 'English' ? 'Save Configuration' : 'حفظ التكوين'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* General Configuration Tab */}
-          <TabsContent value="general">
+        {/* Assets Tab */}
+        <TabsContent value="assets">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Asset Types Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  {translations.generalSettings}
+                  <Settings className="h-5 w-5" />
+                  {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
                 </CardTitle>
                 <CardDescription>
-                  {translations.generalSettingsDesc}
+                  {language === 'English' ? 'Manage asset type categories' : 'إدارة فئات أنواع الأصول'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{translations.language}</Label>
-                      <Select value={language} onValueChange={toggleLanguage}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="English">English</SelectItem>
-                          <SelectItem value="Arabic">العربية</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>{translations.assetIdPrefix}</Label>
-                      <Input
-                        value={assetIdPrefix}
-                        onChange={(e) => setAssetIdPrefix(e.target.value)}
-                        placeholder="AST-"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>{translations.empIdPrefix}</Label>
-                      <Input
-                        value={empIdPrefix}
-                        onChange={(e) => setEmpIdPrefix(e.target.value)}
-                        placeholder="EMP-"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{translations.ticketIdPrefix}</Label>
-                      <Input
-                        value={ticketIdPrefix}
-                        onChange={(e) => setTicketIdPrefix(e.target.value)}
-                        placeholder="TKT-"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>{translations.currency}</Label>
-                      <Select value={currency} onValueChange={setCurrency}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="SAR">SAR (ر.س)</SelectItem>
-                          <SelectItem value="AED">AED (د.إ)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Import/Export Section */}
-                <div className="space-y-4 mt-8 border-t pt-6">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <FileDown className="h-5 w-5" />
-                    {language === 'English' ? 'Data Import/Export' : 'استيراد/تصدير البيانات'}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Export Section */}
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                        <Download className="h-4 w-4" />
-                        {language === 'English' ? 'Export Data' : 'تصدير البيانات'}
-                      </h4>
-                      <div className="space-y-2">
-                        <Button
-                          onClick={() => window.open('/api/export/employees', '_blank')}
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
-                        </Button>
-                        <Button
-                          onClick={() => window.open('/api/export/assets', '_blank')}
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
-                        >
-                          <Monitor className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
-                        </Button>
-                        <Button
-                          onClick={() => window.open('/api/export/tickets', '_blank')}
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100"
-                        >
-                          <Ticket className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Export Tickets' : 'تصدير التذاكر'}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Import Section */}
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
-                      </h4>
-                      <div className="space-y-2">
-                        <div>
-                          <label htmlFor="import-employees" className="cursor-pointer">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
-                              asChild
-                            >
-                              <span>
-                                <Users className="h-4 w-4 mr-2" />
-                                {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
-                              </span>
-                            </Button>
-                          </label>
-                          <input
-                            id="import-employees"
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={(e) => handleImport(e, 'employees')}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="import-assets" className="cursor-pointer">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
-                              asChild
-                            >
-                              <span>
-                                <Monitor className="h-4 w-4 mr-2" />
-                                {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
-                              </span>
-                            </Button>
-                          </label>
-                          <input
-                            id="import-assets"
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={(e) => handleImport(e, 'assets')}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="import-tickets" className="cursor-pointer">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-100"
-                              asChild
-                            >
-                              <span>
-                                <Ticket className="h-4 w-4 mr-2" />
-                                {language === 'English' ? 'Import Tickets' : 'استيراد التذاكر'}
-                              </span>
-                            </Button>
-                          </label>
-                          <input
-                            id="import-tickets"
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={(e) => handleImport(e, 'tickets')}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                    <p className="text-yellow-800 text-sm">
-                      <strong>{language === 'English' ? 'Note:' : 'ملاحظة:'}</strong>{' '}
-                      {language === 'English' 
-                        ? 'CSV files should match the system format. Export a sample file first to see the required structure.' 
-                        : 'يجب أن تتطابق ملفات CSV مع تنسيق النظام. قم بتصدير ملف عينة أولاً لرؤية الهيكل المطلوب.'}
-                    </p>
-                  </div>
-                </div>
-
-                <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
-                  {updateConfigMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      {translations.save}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Departments Tab */}
-          <TabsContent value="departments">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Building className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl text-blue-800">
-                      {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
-                    </CardTitle>
-                    <CardDescription className="text-blue-600">
-                      {language === 'English' ? 'Manage company departments for employee organization' : 'إدارة أقسام الشركة لتنظيم الموظفين'}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-800">
-                      {language === 'English' ? 'Add New Department' : 'إضافة قسم جديد'}
-                    </h3>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3">
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
                     <Input
-                      value={newDepartment}
-                      onChange={(e) => setNewDepartment(e.target.value)}
-                      placeholder={language === 'English' ? "Enter department name (e.g., IT Department, HR, Finance)" : "أدخل اسم القسم (مثل: قسم تكنولوجيا المعلومات، الموارد البشرية)"}
-                      className="flex-grow"
+                      placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
+                      value={newAssetType}
+                      onChange={(e) => setNewAssetType(e.target.value)}
+                      className="flex-1"
                     />
-                    <Button 
-                      onClick={handleAddDepartment} 
-                      variant="default" 
-                      className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
-                      disabled={!newDepartment.trim()}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {language === 'English' ? 'Add Department' : 'إضافة القسم'}
+                    <Button onClick={handleAddAssetType} disabled={!newAssetType.trim()}>
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {language === 'English' ? 'Current Departments' : 'الأقسام الحالية'}
-                  </h3>
-                  
-                  {departments.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[300px]">
-                          <thead>
-                            <tr className="bg-blue-50 border-b">
-                              <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">
-                                {language === 'English' ? 'Department Name' : 'اسم القسم'}
-                              </th>
-                              <th className="px-4 py-3 text-right text-sm font-semibold text-blue-800">
-                                {language === 'English' ? 'Actions' : 'الإجراءات'}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            {departments.map((dept, index) => (
-                              <tr key={index} className="hover:bg-blue-25">
-                                <td className="px-4 py-3">
-                                  {editingDeptIndex === index ? (
-                                    <Input
-                                      value={editedDeptName}
-                                      onChange={(e) => setEditedDeptName(e.target.value)}
-                                      className="w-full text-sm"
-                                    />
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      <Building className="h-4 w-4 text-blue-500" />
-                                      <span className="text-sm font-medium">{dept}</span>
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {editingDeptIndex === index ? (
-                                      <>
-                                        <Button
-                                          onClick={() => handleSaveDepartment(index)}
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
-                                        >
-                                          <Check className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          onClick={handleCancelEditDepartment}
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          onClick={() => handleEditDepartment(index, dept)}
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          onClick={() => handleDeleteDepartment(index)}
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                                        >
-                                          <Trash className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                  <ScrollArea className="h-48">
+                    <div className="space-y-2">
+                      {assetTypes.map((type: any) => (
+                        <div key={type.id} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1">
+                            {editingAssetTypeId === type.id ? (
+                              <Input
+                                value={editedAssetTypeName}
+                                onChange={(e) => setEditedAssetTypeName(e.target.value)}
+                                className="text-sm"
+                              />
+                            ) : (
+                              <span className="text-sm font-medium">{type.name}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            {editingAssetTypeId === type.id ? (
+                              <>
+                                <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetType(type.id)}>
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="ghost" onClick={() => handleEditAssetType(type)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetType(type.id)}>
+                                  <Trash className="h-3 w-3 text-red-500" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8 border rounded-lg bg-gray-50">
-                      <Building className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-600 font-medium">
-                        {language === 'English' ? 'No departments configured yet' : 'لم يتم تكوين أقسام بعد'}
-                      </p>
-                      <p className="text-gray-500 text-sm mt-1">
-                        {language === 'English' ? 'Add departments to organize your employees' : 'أضف أقسامًا لتنظيم موظفيك'}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <div className="flex items-start gap-2">
-                      <Building className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-yellow-800">
-                          {language === 'English' ? 'Important Note' : 'ملاحظة مهمة'}
-                        </h4>
-                        <p className="text-yellow-700 text-sm mt-1">
-                          {language === 'English' 
-                            ? 'These departments will be available when creating or editing employee records. Changes are saved automatically.' 
-                            : 'ستكون هذه الأقسام متاحة عند إنشاء أو تعديل سجلات الموظفين. يتم حفظ التغييرات تلقائيًا.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  </ScrollArea>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Asset Management Tab */}
-          <TabsContent value="assets">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Asset Types Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
-                  </CardTitle>
-                  <CardDescription>
-                    {language === 'English' ? 'Manage asset type categories' : 'إدارة فئات أنواع الأصول'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
-                        value={newAssetType}
-                        onChange={(e) => setNewAssetType(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button onClick={handleAddAssetType} disabled={!newAssetType.trim()}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2">
-                        {assetTypes.map((type) => (
-                          <div key={type.id} className="flex items-center justify-between p-2 border rounded">
-                            <div className="flex-1">
-                              {editingAssetTypeId === type.id ? (
-                                <Input
-                                  value={editedAssetTypeName}
-                                  onChange={(e) => setEditedAssetTypeName(e.target.value)}
-                                  className="text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium">{type.name}</span>
-                              )}
-                            </div>
-                            <div className="flex gap-1">
-                              {editingAssetTypeId === type.id ? (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetType(type.id)}>
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetType(type)}>
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetType(type.id)}>
-                                    <Trash className="h-3 w-3 text-red-500" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </CardContent>
-              </Card>
+          </div>
+        </TabsContent>
 
-              {/* Asset Brands Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    {language === 'English' ? 'Asset Brands' : 'علامات الأصول'}
-                  </CardTitle>
-                  <CardDescription>
-                    {language === 'English' ? 'Manage asset brand names' : 'إدارة أسماء علامات الأصول'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder={language === 'English' ? 'Brand name' : 'اسم العلامة التجارية'}
-                        value={newAssetBrand}
-                        onChange={(e) => setNewAssetBrand(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button onClick={handleAddAssetBrand} disabled={!newAssetBrand.trim()}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2">
-                        {assetBrands.map((brand) => (
-                          <div key={brand.id} className="flex items-center justify-between p-2 border rounded">
-                            <div className="flex-1">
-                              {editingAssetBrandId === brand.id ? (
-                                <Input
-                                  value={editedAssetBrandName}
-                                  onChange={(e) => setEditedAssetBrandName(e.target.value)}
-                                  className="text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium">{brand.name}</span>
-                              )}
-                            </div>
-                            <div className="flex gap-1">
-                              {editingAssetBrandId === brand.id ? (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetBrand(brand.id)}>
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetBrand(brand)}>
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetBrand(brand.id)}>
-                                    <Trash className="h-3 w-3 text-red-500" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Asset Statuses Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
-                  </CardTitle>
-                  <CardDescription>
-                    {language === 'English' ? 'Manage asset status options' : 'إدارة خيارات حالة الأصول'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder={language === 'English' ? 'Status name' : 'اسم الحالة'}
-                        value={newAssetStatus}
-                        onChange={(e) => setNewAssetStatus(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button onClick={handleAddAssetStatus} disabled={!newAssetStatus.trim()}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2">
-                        {assetStatuses.map((status) => (
-                          <div key={status.id} className="flex items-center justify-between p-2 border rounded">
-                            <div className="flex-1">
-                              {editingAssetStatusId === status.id ? (
-                                <Input
-                                  value={editedAssetStatusName}
-                                  onChange={(e) => setEditedAssetStatusName(e.target.value)}
-                                  className="text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium">{status.name}</span>
-                              )}
-                            </div>
-                            <div className="flex gap-1">
-                              {editingAssetStatusId === status.id ? (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetStatus(status.id)}>
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetStatus(status)}>
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetStatus(status.id)}>
-                                    <Trash className="h-3 w-3 text-red-500" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Service Providers Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    {language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}
-                  </CardTitle>
-                  <CardDescription>
-                    {language === 'English' ? 'Manage service provider information' : 'إدارة معلومات مقدمي الخدمات'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          placeholder={language === 'English' ? 'Provider name' : 'اسم مقدم الخدمة'}
-                          value={newServiceProvider}
-                          onChange={(e) => setNewServiceProvider(e.target.value)}
-                        />
-                        <Input
-                          placeholder={language === 'English' ? 'Contact person' : 'الشخص المسؤول'}
-                          value={newServiceProviderContact}
-                          onChange={(e) => setNewServiceProviderContact(e.target.value)}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          placeholder={language === 'English' ? 'Phone' : 'الهاتف'}
-                          value={newServiceProviderPhone}
-                          onChange={(e) => setNewServiceProviderPhone(e.target.value)}
-                        />
-                        <Input
-                          placeholder={language === 'English' ? 'Email' : 'البريد الإلكتروني'}
-                          value={newServiceProviderEmail}
-                          onChange={(e) => setNewServiceProviderEmail(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={handleAddServiceProvider} disabled={!newServiceProvider.trim()} className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}
-                      </Button>
-                    </div>
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2">
-                        {serviceProviders.map((provider) => (
-                          <div key={provider.id} className="p-3 border rounded">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="text-sm font-medium">{provider.name}</div>
-                                {provider.contactPerson && (
-                                  <div className="text-xs text-gray-600">{provider.contactPerson}</div>
-                                )}
-                                <div className="flex gap-2 text-xs text-gray-500 mt-1">
-                                  {provider.phone && <span>{provider.phone}</span>}
-                                  {provider.email && <span>{provider.email}</span>}
-                                </div>
-                              </div>
-                              <Button size="sm" variant="ghost" onClick={() => handleDeleteServiceProvider(provider.id)}>
-                                <Trash className="h-3 w-3 text-red-500" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-                {/* Asset Types */}
-                <TabsContent value="types">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{language === 'English' ? 'Asset Types' : 'أنواع الأصول'}</CardTitle>
-                      <CardDescription>
-                        {language === 'English' ? 'Manage asset type categories' : 'إدارة فئات أنواع الأصول'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
-                            value={newAssetType}
-                            onChange={(e) => setNewAssetType(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
-                            value={newAssetTypeDesc}
-                            onChange={(e) => setNewAssetTypeDesc(e.target.value)}
-                          />
-                          <Button onClick={handleAddAssetType} disabled={!newAssetType.trim()}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Add' : 'إضافة'}
-                          </Button>
-                        </div>
-                        <div className="border rounded-lg">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{language === 'English' ? 'Name' : 'الاسم'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {assetTypes.map((type) => (
-                                <TableRow key={type.id}>
-                                  <TableCell>
-                                    {editingAssetTypeId === type.id ? (
-                                      <Input
-                                        value={editedAssetTypeName}
-                                        onChange={(e) => setEditedAssetTypeName(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="font-medium">{type.name}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {editingAssetTypeId === type.id ? (
-                                      <Input
-                                        value={editedAssetTypeDesc}
-                                        onChange={(e) => setEditedAssetTypeDesc(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="text-sm text-gray-600">{type.description || '-'}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      {editingAssetTypeId === type.id ? (
-                                        <>
-                                          <Button size="sm" onClick={() => handleUpdateAssetType(type.id)}>
-                                            <Check className="h-4 w-4" />
-                                          </Button>
-                                          <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                                            <X className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleEditAssetType(type)}
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700"
-                                            onClick={() => handleDeleteAssetType(type.id)}
-                                          >
-                                            <Trash className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Asset Brands */}
-                <TabsContent value="brands">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{language === 'English' ? 'Asset Brands' : 'علامات الأصول'}</CardTitle>
-                      <CardDescription>
-                        {language === 'English' ? 'Manage asset brand names' : 'إدارة أسماء علامات الأصول'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={language === 'English' ? 'Brand name' : 'اسم العلامة التجارية'}
-                            value={newAssetBrand}
-                            onChange={(e) => setNewAssetBrand(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
-                            value={newAssetBrandDesc}
-                            onChange={(e) => setNewAssetBrandDesc(e.target.value)}
-                          />
-                          <Button onClick={handleAddAssetBrand} disabled={!newAssetBrand.trim()}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Add' : 'إضافة'}
-                          </Button>
-                        </div>
-                        <div className="border rounded-lg">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{language === 'English' ? 'Name' : 'الاسم'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {assetBrands.map((brand) => (
-                                <TableRow key={brand.id}>
-                                  <TableCell>
-                                    {editingAssetBrandId === brand.id ? (
-                                      <Input
-                                        value={editedAssetBrandName}
-                                        onChange={(e) => setEditedAssetBrandName(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="font-medium">{brand.name}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {editingAssetBrandId === brand.id ? (
-                                      <Input
-                                        value={editedAssetBrandDesc}
-                                        onChange={(e) => setEditedAssetBrandDesc(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="text-sm text-gray-600">{brand.description || '-'}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      {editingAssetBrandId === brand.id ? (
-                                        <>
-                                          <Button size="sm" onClick={() => handleUpdateAssetBrand(brand.id)}>
-                                            <Check className="h-4 w-4" />
-                                          </Button>
-                                          <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                                            <X className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleEditAssetBrand(brand)}
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700"
-                                            onClick={() => handleDeleteAssetBrand(brand.id)}
-                                          >
-                                            <Trash className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Asset Statuses */}
-                <TabsContent value="statuses">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}</CardTitle>
-                      <CardDescription>
-                        {language === 'English' ? 'Manage asset status options' : 'إدارة خيارات حالة الأصول'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={language === 'English' ? 'Status name' : 'اسم الحالة'}
-                            value={newAssetStatus}
-                            onChange={(e) => setNewAssetStatus(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Description (optional)' : 'الوصف (اختياري)'}
-                            value={newAssetStatusDesc}
-                            onChange={(e) => setNewAssetStatusDesc(e.target.value)}
-                          />
-                          <Button onClick={handleAddAssetStatus} disabled={!newAssetStatus.trim()}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Add' : 'إضافة'}
-                          </Button>
-                        </div>
-                        <div className="border rounded-lg">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{language === 'English' ? 'Name' : 'الاسم'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {assetStatuses.map((status) => (
-                                <TableRow key={status.id}>
-                                  <TableCell>
-                                    {editingAssetStatusId === status.id ? (
-                                      <Input
-                                        value={editedAssetStatusName}
-                                        onChange={(e) => setEditedAssetStatusName(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="font-medium">{status.name}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {editingAssetStatusId === status.id ? (
-                                      <Input
-                                        value={editedAssetStatusDesc}
-                                        onChange={(e) => setEditedAssetStatusDesc(e.target.value)}
-                                        className="w-full text-sm"
-                                      />
-                                    ) : (
-                                      <span className="text-sm text-gray-600">{status.description || '-'}</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      {editingAssetStatusId === status.id ? (
-                                        <>
-                                          <Button size="sm" onClick={() => handleUpdateAssetStatus(status.id)}>
-                                            <Check className="h-4 w-4" />
-                                          </Button>
-                                          <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                                            <X className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleEditAssetStatus(status)}
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700"
-                                            onClick={() => handleDeleteAssetStatus(status.id)}
-                                          >
-                                            <Trash className="h-4 w-4" />
-                                          </Button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Service Providers */}
-                <TabsContent value="providers">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}</CardTitle>
-                      <CardDescription>
-                        {language === 'English' ? 'Manage service provider information' : 'إدارة معلومات مقدمي الخدمات'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <Input
-                            placeholder={language === 'English' ? 'Provider name' : 'اسم مقدم الخدمة'}
-                            value={newServiceProvider}
-                            onChange={(e) => setNewServiceProvider(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Contact person' : 'الشخص المسؤول'}
-                            value={newServiceProviderContact}
-                            onChange={(e) => setNewServiceProviderContact(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Phone' : 'الهاتف'}
-                            value={newServiceProviderPhone}
-                            onChange={(e) => setNewServiceProviderPhone(e.target.value)}
-                          />
-                          <Input
-                            placeholder={language === 'English' ? 'Email' : 'البريد الإلكتروني'}
-                            value={newServiceProviderEmail}
-                            onChange={(e) => setNewServiceProviderEmail(e.target.value)}
-                          />
-                        </div>
-                        <Button onClick={handleAddServiceProvider} disabled={!newServiceProvider.trim()}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}
-                        </Button>
-                        <div className="border rounded-lg">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{language === 'English' ? 'Name' : 'الاسم'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Contact' : 'الاتصال'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Phone' : 'الهاتف'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Email' : 'البريد'}</TableHead>
-                                <TableHead>{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {serviceProviders.map((provider) => (
-                                <TableRow key={provider.id}>
-                                  <TableCell>
-                                    <span className="font-medium">{provider.name}</span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="text-sm text-gray-600">{provider.contactPerson || '-'}</span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="text-sm text-gray-600">{provider.phone || '-'}</span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="text-sm text-gray-600">{provider.email || '-'}</span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="text-red-600 hover:text-red-700"
-                                        onClick={() => handleDeleteServiceProvider(provider.id)}
-                                      >
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </TabsContent>
-
-          {/* Email Configuration Tab */}
-          <TabsContent value="email">
+        {/* Tickets Tab */}
+        <TabsContent value="tickets">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Ticket Types Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  {translations.emailSettings}
+                  <Ticket className="h-5 w-5" />
+                  {language === 'English' ? 'Ticket Types' : 'أنواع التذاكر'}
                 </CardTitle>
                 <CardDescription>
-                  {language === 'English' ? 'Configure email server settings for system notifications' : 'تكوين إعدادات خادم البريد الإلكتروني للإشعارات النظامية'}
+                  {language === 'English' ? 'Manage ticket type categories' : 'إدارة فئات أنواع التذاكر'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Email Host' : 'خادم البريد الإلكتروني'}</Label>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
                     <Input
-                      value={emailHost}
-                      onChange={(e) => setEmailHost(e.target.value)}
-                      placeholder="smtp.gmail.com"
+                      placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
+                      value={newTicketType}
+                      onChange={(e) => setNewTicketType(e.target.value)}
+                      className="flex-1"
                     />
+                    <Button onClick={handleAddTicketType} disabled={!newTicketType.trim()}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Port' : 'المنفذ'}</Label>
-                    <Input
-                      value={emailPort}
-                      onChange={(e) => setEmailPort(e.target.value)}
-                      placeholder="587"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
-                    <Input
-                      value={emailUsername}
-                      onChange={(e) => setEmailUsername(e.target.value)}
-                      placeholder="your-email@example.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
-                    <Input
-                      type="password"
-                      value={emailPassword}
-                      onChange={(e) => setEmailPassword(e.target.value)}
-                      placeholder="••••••••"
-                    />
-                  </div>
+                  <ScrollArea className="h-48">
+                    <div className="space-y-2">
+                      {ticketTypes.map((type: any) => (
+                        <div key={type.id} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1">
+                            {editingTicketTypeId === type.id ? (
+                              <Input
+                                value={editedTicketTypeName}
+                                onChange={(e) => setEditedTicketTypeName(e.target.value)}
+                                className="text-sm"
+                              />
+                            ) : (
+                              <span className="text-sm font-medium">{type.name}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            {editingTicketTypeId === type.id ? (
+                              <>
+                                <Button size="sm" variant="ghost" onClick={() => handleUpdateTicketType(type.id)}>
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="ghost" onClick={() => handleEditTicketType(type)}>
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => handleDeleteTicketType(type.id)}>
+                                  <Trash className="h-3 w-3 text-red-500" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="email-secure"
-                    checked={emailSecure}
-                    onCheckedChange={setEmailSecure}
-                  />
-                  <Label htmlFor="email-secure">
-                    {language === 'English' ? 'Use Secure Connection (SSL/TLS)' : 'استخدام اتصال آمن (SSL/TLS)'}
-                  </Label>
-                </div>
-                <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
-                  {updateConfigMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      {translations.save}
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+
+          </div>
+        </TabsContent>
+
+        {/* Email Tab */}
+        <TabsContent value="email">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                {language === 'English' ? 'Email Configuration' : 'تكوين البريد الإلكتروني'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                {language === 'English' ? 'Email configuration will be available in future updates' : 'سيتوفر تكوين البريد الإلكتروني في التحديثات المستقبلية'}
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Departments Tab */}
+        <TabsContent value="departments">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                {language === 'English' ? 'Department management functionality' : 'وظائف إدارة الأقسام'}
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
