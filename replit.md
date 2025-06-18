@@ -105,6 +105,7 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - ✓ **COMPLETED**: Advanced Employee Filtering - All filter criteria now work correctly with proper field mapping
 - ✓ **COMPLETED**: Employee Export Functionality - Fixed routing conflict and added comprehensive CSV export endpoint
 - ✓ **COMPLETED**: Custom Department Management System - Full CRUD operations in System Configuration with real-time sync to employee forms
+- ✓ **COMPLETED**: System Configuration Restructuring - Enhanced tab organization with popup forms for request types, moved Export/Import to General Settings, added ID prefix configuration for assets/employees/tickets, restored complete currency selection including EGP
 - ✓ Changes log system accessible within the application (COMPLETED)
 - ✓ Dashboard Recent Activity display improvements (COMPLETED)  
 - ✓ Asset management bugs resolved (brands, status, purchase price, transactions)
