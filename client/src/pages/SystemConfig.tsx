@@ -1486,7 +1486,7 @@ function SystemConfig() {
                                 )}
                               </td>
                               <td className="px-4 py-2 text-right">
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 justify-end">
                                   <Button
                                     onClick={() => {
                                       setEditingBrandId(brand.id);
@@ -1646,7 +1646,7 @@ function SystemConfig() {
                                 )}
                               </td>
                               <td className="px-4 py-2 text-right">
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 justify-end">
                                   <Button
                                     onClick={() => {
                                       setEditingStatusId(status.id);
