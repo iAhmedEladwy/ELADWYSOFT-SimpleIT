@@ -16,7 +16,7 @@ import AssetHistory from "@/pages/AssetHistory";
 import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
-import SystemConfigEnhanced from "@/pages/SystemConfigEnhanced";
+import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
 import ChangesLog from "@/pages/ChangesLog";
@@ -76,10 +76,7 @@ function Router() {
   // Check if system is initialized
   const { data: systemStatus, isLoading: checkingSystem } = useQuery({
     queryKey: ['/api/system-status'],
-    retry: false,
-    onError: () => {
-      console.log('Error checking system status');
-    }
+    retry: false
   });
   
   // If system is not initialized and we're not on the setup page, redirect to setup
@@ -172,7 +169,7 @@ function Router() {
           <Layout>
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
-                <SystemConfigEnhanced />
+                <SystemConfig />
               </RoleGuard>
             )} />
           </Layout>
