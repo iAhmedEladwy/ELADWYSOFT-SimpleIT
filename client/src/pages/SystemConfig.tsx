@@ -106,6 +106,9 @@ function SystemConfig() {
   const [editedProviderContact, setEditedProviderContact] = useState('');
   const [editedProviderPhone, setEditedProviderPhone] = useState('');
   const [editedProviderEmail, setEditedProviderEmail] = useState('');
+  const [editingRequestTypeId, setEditingRequestTypeId] = useState<number | null>(null);
+  const [editedRequestTypeName, setEditedRequestTypeName] = useState('');
+  const [editedRequestTypeDescription, setEditedRequestTypeDescription] = useState('');
 
   // Queries
   const { data: config } = useQuery<any>({
@@ -221,6 +224,27 @@ function SystemConfig() {
         variant: 'destructive'
       });
       console.error('Failed to create request type:', error);
+    }
+  });
+
+  // Update custom request type mutation
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-request-types/${id}`, { name, description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update request type' : 'فشل تحديث نوع الطلب',
+        variant: 'destructive'
+      });
+      console.error('Failed to update request type:', error);
     }
   });
 
@@ -1000,19 +1024,70 @@ function SystemConfig() {
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {customRequestTypes.map((type: any) => (
-                          <tr key={type.id} className="hover:bg-muted/25">
-                            <td className="px-4 py-2 font-medium">{type.name}</td>
-                            <td className="px-4 py-2 text-muted-foreground">{type.description || '-'}</td>
+                        {customRequestTypes.map((requestType: any) => (
+                          <tr key={requestType.id} className="hover:bg-muted/25">
+                            <td className="px-4 py-2 font-medium">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeName}
+                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
+                                  className="w-full"
+                                  onBlur={() => {
+                                    if (editedRequestTypeName.trim() && editedRequestTypeName !== requestType.name) {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        name: editedRequestTypeName,
+                                        description: editedRequestTypeDescription
+                                      });
+                                    }
+                                    setEditingRequestTypeId(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                requestType.name
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeDescription}
+                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
+                                  className="w-full"
+                                  placeholder={language === 'English' ? "Description" : "الوصف"}
+                                />
+                              ) : (
+                                requestType.description || '-'
+                              )}
+                            </td>
                             <td className="px-4 py-2 text-right">
-                              <Button
-                                onClick={() => handleDeleteRequestType(type.id)}
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <Trash className="h-4 w-4 text-red-600" />
-                              </Button>
+                              <div className="flex gap-1 justify-end">
+                                <Button
+                                  onClick={() => {
+                                    setEditingRequestTypeId(requestType.id);
+                                    setEditedRequestTypeName(requestType.name);
+                                    setEditedRequestTypeDescription(requestType.description || '');
+                                  }}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Edit className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button
+                                  onClick={() => deleteRequestTypeMutation.mutate(requestType.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1233,17 +1308,68 @@ function SystemConfig() {
                         <tbody className="divide-y">
                           {filteredAssetTypes.map((type: any) => (
                             <tr key={type.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2 font-medium">{type.name}</td>
-                              <td className="px-4 py-2 text-muted-foreground">{type.description || '-'}</td>
+                              <td className="px-4 py-2 font-medium">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeName}
+                                    onChange={(e) => setEditedTypeName(e.target.value)}
+                                    className="w-full"
+                                    onBlur={() => {
+                                      if (editedTypeName.trim() && editedTypeName !== type.name) {
+                                        updateAssetTypeMutation.mutate({
+                                          id: type.id,
+                                          name: editedTypeName,
+                                          description: editedTypeDescription
+                                        });
+                                      }
+                                      setEditingTypeId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  type.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeDescription}
+                                    onChange={(e) => setEditedTypeDescription(e.target.value)}
+                                    className="w-full"
+                                    placeholder={language === 'English' ? "Description" : "الوصف"}
+                                  />
+                                ) : (
+                                  type.description || '-'
+                                )}
+                              </td>
                               <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteAssetTypeMutation.mutate(type.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
+                                <div className="flex gap-1 justify-end">
+                                  <Button
+                                    onClick={() => {
+                                      setEditingTypeId(type.id);
+                                      setEditedTypeName(type.name);
+                                      setEditedTypeDescription(type.description || '');
+                                    }}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteAssetTypeMutation.mutate(type.id)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1638,18 +1764,84 @@ function SystemConfig() {
                         <tbody className="divide-y">
                           {filteredServiceProviders.map((provider: any) => (
                             <tr key={provider.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2 font-medium">{provider.name}</td>
-                              <td className="px-4 py-2">{provider.contactPerson || '-'}</td>
-                              <td className="px-4 py-2">{provider.phone || '-'}</td>
+                              <td className="px-4 py-2 font-medium">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderName}
+                                    onChange={(e) => setEditedProviderName(e.target.value)}
+                                    className="w-full"
+                                    onBlur={() => {
+                                      if (editedProviderName.trim() && editedProviderName !== provider.name) {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          name: editedProviderName,
+                                          contactPerson: editedProviderContact,
+                                          phone: editedProviderPhone,
+                                          email: editedProviderEmail
+                                        });
+                                      }
+                                      setEditingProviderId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  provider.name
+                                )}
+                              </td>
+                              <td className="px-4 py-2">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderContact}
+                                    onChange={(e) => setEditedProviderContact(e.target.value)}
+                                    className="w-full"
+                                    placeholder={language === 'English' ? "Contact person" : "جهة الاتصال"}
+                                  />
+                                ) : (
+                                  provider.contactPerson || '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-2">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderPhone}
+                                    onChange={(e) => setEditedProviderPhone(e.target.value)}
+                                    className="w-full"
+                                    placeholder={language === 'English' ? "Phone" : "الهاتف"}
+                                  />
+                                ) : (
+                                  provider.phone || '-'
+                                )}
+                              </td>
                               <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
+                                <div className="flex gap-1 justify-end">
+                                  <Button
+                                    onClick={() => {
+                                      setEditingProviderId(provider.id);
+                                      setEditedProviderName(provider.name);
+                                      setEditedProviderContact(provider.contactPerson || '');
+                                      setEditedProviderPhone(provider.phone || '');
+                                      setEditedProviderEmail(provider.email || '');
+                                    }}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4 text-blue-600" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <Trash className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
