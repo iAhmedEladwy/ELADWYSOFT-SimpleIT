@@ -213,7 +213,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       joiningDate: values.joiningDate || new Date().toISOString().split('T')[0],
       
       // Optional fields with proper null handling
-      empId: values.empId || undefined,
+      empId: values.empId || (initialData ? initialData.empId : undefined),
       arabicName: values.arabicName || null,
       directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
       exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,

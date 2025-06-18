@@ -78,6 +78,18 @@ export default function SystemConfig() {
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
 
+  // Asset Management dialog states
+  const [isAssetTypeDialogOpen, setIsAssetTypeDialogOpen] = useState(false);
+  const [isAssetBrandDialogOpen, setIsAssetBrandDialogOpen] = useState(false);
+  const [isAssetStatusDialogOpen, setIsAssetStatusDialogOpen] = useState(false);
+  const [isServiceProviderDialogOpen, setIsServiceProviderDialogOpen] = useState(false);
+
+  // Asset Management search states
+  const [assetTypeSearch, setAssetTypeSearch] = useState('');
+  const [assetBrandSearch, setAssetBrandSearch] = useState('');
+  const [assetStatusSearch, setAssetStatusSearch] = useState('');
+  const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+
   // Editing states for asset management
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
   const [editedTypeName, setEditedTypeName] = useState('');
@@ -125,6 +137,23 @@ export default function SystemConfig() {
     queryKey: ['/api/service-providers'],
     enabled: hasAccess(3),
   });
+
+  // Filtered arrays for search functionality
+  const filteredAssetTypes = customAssetTypes.filter((type: any) =>
+    type.name.toLowerCase().includes(assetTypeSearch.toLowerCase())
+  );
+
+  const filteredAssetBrands = customAssetBrands.filter((brand: any) =>
+    brand.name.toLowerCase().includes(assetBrandSearch.toLowerCase())
+  );
+
+  const filteredAssetStatuses = customAssetStatuses.filter((status: any) =>
+    status.name.toLowerCase().includes(assetStatusSearch.toLowerCase())
+  );
+
+  const filteredServiceProviders = serviceProviders.filter((provider: any) =>
+    provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
+  );
 
   // Update local state when config data is loaded
   useEffect(() => {
@@ -1063,51 +1092,90 @@ export default function SystemConfig() {
         </TabsContent>
 
         {/* Asset Management Tab */}
-        <TabsContent value="assets" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Asset Types */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{translations.assetTypes}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
+        <TabsContent value="assets">
+          <Card>
+            <CardHeader>
+              <CardTitle>{translations.assetManagement}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage asset types, brands, statuses, and service providers for your organization.' 
+                  : 'إدارة أنواع الأصول والعلامات التجارية والحالات ومقدمي الخدمة لمؤسستك.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="types" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="types">{translations.assetTypes}</TabsTrigger>
+                  <TabsTrigger value="brands">{translations.assetBrands}</TabsTrigger>
+                  <TabsTrigger value="statuses">{translations.assetStatuses}</TabsTrigger>
+                  <TabsTrigger value="providers">{translations.serviceProviders}</TabsTrigger>
+                </TabsList>
+
+                {/* Asset Types Sub-tab */}
+                <TabsContent value="types" className="space-y-4">
+                  <div className="flex items-center justify-between">
                     <Input
-                      placeholder={language === 'English' ? "Type name" : "اسم النوع"}
-                      value={newTypeName}
-                      onChange={(e) => setNewTypeName(e.target.value)}
-                      className="flex-grow"
+                      placeholder={language === 'English' ? "Search asset types..." : "البحث في أنواع الأصول..."}
+                      value={assetTypeSearch}
+                      onChange={(e) => setAssetTypeSearch(e.target.value)}
+                      className="max-w-sm"
                     />
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={handleAddAssetType}
-                      disabled={!newTypeName.trim()}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {translations.add}
-                    </Button>
+                    <Dialog open={isAssetTypeDialogOpen} onOpenChange={setIsAssetTypeDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل'}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid gap-2">
+                            <Label>{translations.name}</Label>
+                            <Input
+                              value={newTypeName}
+                              onChange={(e) => setNewTypeName(e.target.value)}
+                              placeholder={language === 'English' ? "Asset type name" : "اسم نوع الأصل"}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{translations.description}</Label>
+                            <Input
+                              value={newTypeDescription}
+                              onChange={(e) => setNewTypeDescription(e.target.value)}
+                              placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsAssetTypeDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={handleAddAssetType} disabled={!newTypeName.trim()}>
+                              {translations.add}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
-                  <Input
-                    placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
-                    value={newTypeDescription}
-                    onChange={(e) => setNewTypeDescription(e.target.value)}
-                  />
                   
-                  {customAssetTypes.length > 0 && (
-                    <div className="border rounded-md overflow-hidden max-h-60 overflow-y-auto">
+                  {filteredAssetTypes.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-muted/50 sticky top-0">
                             <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{language === 'English' ? 'Description' : 'الوصف'}</th>
                             <th className="px-4 py-2 text-right">{translations.actions}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {customAssetTypes.map((type: any) => (
+                          {filteredAssetTypes.map((type: any) => (
                             <tr key={type.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2">{type.name}</td>
+                              <td className="px-4 py-2 font-medium">{type.name}</td>
+                              <td className="px-4 py-2 text-muted-foreground">{type.description || '-'}</td>
                               <td className="px-4 py-2 text-right">
                                 <Button
                                   onClick={() => deleteAssetTypeMutation.mutate(type.id)}
@@ -1123,54 +1191,78 @@ export default function SystemConfig() {
                         </tbody>
                       </table>
                     </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {language === 'English' ? 'No asset types found' : 'لم يتم العثور على أنواع أصول'}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                </TabsContent>
 
-            {/* Asset Brands */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{translations.assetBrands}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
+                {/* Asset Brands Sub-tab */}
+                <TabsContent value="brands" className="space-y-4">
+                  <div className="flex items-center justify-between">
                     <Input
-                      placeholder={language === 'English' ? "Brand name" : "اسم العلامة"}
-                      value={newBrandName}
-                      onChange={(e) => setNewBrandName(e.target.value)}
-                      className="flex-grow"
+                      placeholder={language === 'English' ? "Search asset brands..." : "البحث في العلامات التجارية..."}
+                      value={assetBrandSearch}
+                      onChange={(e) => setAssetBrandSearch(e.target.value)}
+                      className="max-w-sm"
                     />
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={handleAddAssetBrand}
-                      disabled={!newBrandName.trim()}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {translations.add}
-                    </Button>
+                    <Dialog open={isAssetBrandDialogOpen} onOpenChange={setIsAssetBrandDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Add Asset Brand' : 'إضافة علامة تجارية'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Asset Brand' : 'إضافة علامة تجارية'}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid gap-2">
+                            <Label>{translations.name}</Label>
+                            <Input
+                              value={newBrandName}
+                              onChange={(e) => setNewBrandName(e.target.value)}
+                              placeholder={language === 'English' ? "Brand name" : "اسم العلامة التجارية"}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{translations.description}</Label>
+                            <Input
+                              value={newBrandDescription}
+                              onChange={(e) => setNewBrandDescription(e.target.value)}
+                              placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsAssetBrandDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={handleAddAssetBrand} disabled={!newBrandName.trim()}>
+                              {translations.add}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
-                  <Input
-                    placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
-                    value={newBrandDescription}
-                    onChange={(e) => setNewBrandDescription(e.target.value)}
-                  />
                   
-                  {customAssetBrands.length > 0 && (
-                    <div className="border rounded-md overflow-hidden max-h-60 overflow-y-auto">
+                  {filteredAssetBrands.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-muted/50 sticky top-0">
                             <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{language === 'English' ? 'Description' : 'الوصف'}</th>
                             <th className="px-4 py-2 text-right">{translations.actions}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {customAssetBrands.map((brand: any) => (
+                          {filteredAssetBrands.map((brand: any) => (
                             <tr key={brand.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2">{brand.name}</td>
+                              <td className="px-4 py-2 font-medium">{brand.name}</td>
+                              <td className="px-4 py-2 text-muted-foreground">{brand.description || '-'}</td>
                               <td className="px-4 py-2 text-right">
                                 <Button
                                   onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
@@ -1186,10 +1278,224 @@ export default function SystemConfig() {
                         </tbody>
                       </table>
                     </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {language === 'English' ? 'No asset brands found' : 'لم يتم العثور على علامات تجارية'}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                </TabsContent>
+
+                {/* Asset Statuses Sub-tab */}
+                <TabsContent value="statuses" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Input
+                      placeholder={language === 'English' ? "Search asset statuses..." : "البحث في حالات الأصول..."}
+                      value={assetStatusSearch}
+                      onChange={(e) => setAssetStatusSearch(e.target.value)}
+                      className="max-w-sm"
+                    />
+                    <Dialog open={isAssetStatusDialogOpen} onOpenChange={setIsAssetStatusDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل'}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid gap-2">
+                            <Label>{translations.name}</Label>
+                            <Input
+                              value={newStatusName}
+                              onChange={(e) => setNewStatusName(e.target.value)}
+                              placeholder={language === 'English' ? "Status name" : "اسم الحالة"}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{language === 'English' ? 'Color' : 'اللون'}</Label>
+                            <input
+                              type="color"
+                              value={newStatusColor}
+                              onChange={(e) => setNewStatusColor(e.target.value)}
+                              className="w-16 h-10 border rounded cursor-pointer"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{translations.description}</Label>
+                            <Input
+                              value={newStatusDescription}
+                              onChange={(e) => setNewStatusDescription(e.target.value)}
+                              placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsAssetStatusDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={handleAddAssetStatus} disabled={!newStatusName.trim()}>
+                              {translations.add}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  
+                  {filteredAssetStatuses.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-muted/50 sticky top-0">
+                            <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{language === 'English' ? 'Description' : 'الوصف'}</th>
+                            <th className="px-4 py-2 text-right">{translations.actions}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {filteredAssetStatuses.map((status: any) => (
+                            <tr key={status.id} className="hover:bg-muted/25">
+                              <td className="px-4 py-2 flex items-center">
+                                <div 
+                                  className="w-4 h-4 rounded mr-2" 
+                                  style={{ backgroundColor: status.color }}
+                                />
+                                <span className="font-medium">{status.name}</span>
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground">{status.description || '-'}</td>
+                              <td className="px-4 py-2 text-right">
+                                <Button
+                                  onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {language === 'English' ? 'No asset statuses found' : 'لم يتم العثور على حالات أصول'}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Service Providers Sub-tab */}
+                <TabsContent value="providers" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Input
+                      placeholder={language === 'English' ? "Search service providers..." : "البحث في مقدمي الخدمة..."}
+                      value={serviceProviderSearch}
+                      onChange={(e) => setServiceProviderSearch(e.target.value)}
+                      className="max-w-sm"
+                    />
+                    <Dialog open={isServiceProviderDialogOpen} onOpenChange={setIsServiceProviderDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          {language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid gap-2">
+                            <Label>{translations.name}</Label>
+                            <Input
+                              value={newProviderName}
+                              onChange={(e) => setNewProviderName(e.target.value)}
+                              placeholder={language === 'English' ? "Provider name" : "اسم المزود"}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{language === 'English' ? 'Contact Person' : 'جهة الاتصال'}</Label>
+                            <Input
+                              value={newProviderContact}
+                              onChange={(e) => setNewProviderContact(e.target.value)}
+                              placeholder={language === 'English' ? "Contact person" : "جهة الاتصال"}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="grid gap-2">
+                              <Label>{language === 'English' ? 'Phone' : 'الهاتف'}</Label>
+                              <Input
+                                value={newProviderPhone}
+                                onChange={(e) => setNewProviderPhone(e.target.value)}
+                                placeholder={language === 'English' ? "Phone" : "الهاتف"}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                              <Input
+                                value={newProviderEmail}
+                                onChange={(e) => setNewProviderEmail(e.target.value)}
+                                placeholder={language === 'English' ? "Email" : "البريد الإلكتروني"}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsServiceProviderDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={handleAddServiceProvider} disabled={!newProviderName.trim()}>
+                              {translations.add}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  
+                  {filteredServiceProviders.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-muted/50 sticky top-0">
+                            <th className="px-4 py-2 text-left">{translations.name}</th>
+                            <th className="px-4 py-2 text-left">{language === 'English' ? 'Contact' : 'جهة الاتصال'}</th>
+                            <th className="px-4 py-2 text-left">{language === 'English' ? 'Phone' : 'الهاتف'}</th>
+                            <th className="px-4 py-2 text-right">{translations.actions}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {filteredServiceProviders.map((provider: any) => (
+                            <tr key={provider.id} className="hover:bg-muted/25">
+                              <td className="px-4 py-2 font-medium">{provider.name}</td>
+                              <td className="px-4 py-2">{provider.contactPerson || '-'}</td>
+                              <td className="px-4 py-2">{provider.phone || '-'}</td>
+                              <td className="px-4 py-2 text-right">
+                                <Button
+                                  onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {language === 'English' ? 'No service providers found' : 'لم يتم العثور على مقدمي خدمة'}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
             {/* Asset Statuses */}
             <Card>
