@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function SystemConfig() {
+function SystemConfig() {
   const { language, toggleLanguage } = useLanguage();
   const { toast } = useToast();
   const { hasAccess } = useAuth();
@@ -1572,87 +1572,7 @@ export default function SystemConfig() {
               </CardContent>
             </Card>
 
-            {/* Service Providers */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{translations.serviceProviders}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        placeholder={language === 'English' ? "Provider name" : "اسم المزود"}
-                        value={newProviderName}
-                        onChange={(e) => setNewProviderName(e.target.value)}
-                        className="flex-grow"
-                      />
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={handleAddServiceProvider}
-                        disabled={!newProviderName.trim()}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        {translations.add}
-                      </Button>
-                    </div>
-                    <Input
-                      placeholder={language === 'English' ? "Contact person" : "جهة الاتصال"}
-                      value={newProviderContact}
-                      onChange={(e) => setNewProviderContact(e.target.value)}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder={language === 'English' ? "Phone" : "الهاتف"}
-                        value={newProviderPhone}
-                        onChange={(e) => setNewProviderPhone(e.target.value)}
-                      />
-                      <Input
-                        placeholder={language === 'English' ? "Email" : "البريد الإلكتروني"}
-                        value={newProviderEmail}
-                        onChange={(e) => setNewProviderEmail(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  {serviceProviders.length > 0 && (
-                    <div className="border rounded-md overflow-hidden max-h-60 overflow-y-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="bg-muted/50 sticky top-0">
-                            <th className="px-4 py-2 text-left">{translations.name}</th>
-                            <th className="px-4 py-2 text-right">{translations.actions}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {serviceProviders.map((provider: any) => (
-                            <tr key={provider.id} className="hover:bg-muted/25">
-                              <td className="px-4 py-2">{provider.name}</td>
-                              <td className="px-4 py-2 text-right">
-                                <Button
-                                  onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      {language === 'English' ? 'No service providers found' : 'لم يتم العثور على مقدمي خدمة'}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+
         </TabsContent>
 
         {/* Email Settings Tab */}
@@ -1758,3 +1678,5 @@ export default function SystemConfig() {
     </div>
   );
 }
+
+export default SystemConfig;
