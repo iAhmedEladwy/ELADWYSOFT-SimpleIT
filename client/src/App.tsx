@@ -81,7 +81,7 @@ function Router() {
   
   // If system is not initialized and we're not on the setup page, redirect to setup
   useEffect(() => {
-    if (!checkingSystem && systemStatus && !systemStatus.initialized) {
+    if (!checkingSystem && systemStatus && !(systemStatus as any).initialized) {
       const currentPath = window.location.pathname;
       if (currentPath !== '/setup') {
         navigate('/setup');
