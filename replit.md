@@ -99,11 +99,6 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **FIXED**: Comment display issue - Comments now show current user's username instead of "unknown"
 
 ### Current Progress  
-- ✓ **COMPLETED**: Mobile Responsiveness Optimization - Enhanced smartphone compatibility across all system components
-- ✓ **COMPLETED**: System Configuration Rebuild - Completely reconstructed with proper tab structure and working functionality
-- ✓ **COMPLETED**: Department Management - Full CRUD interface in dedicated tab with add/edit/delete capabilities
-- ✓ **COMPLETED**: Import/Export Integration - Properly integrated into General settings tab with color-coded interface
-- ✓ **COMPLETED**: Asset Management Restoration - Complete custom asset fields system with Types, Brands, Statuses, and Service Providers
 - ✓ **COMPLETED**: Role-Based Access Control (RBAC) System - Full ITIL-aligned security implementation with complete UI interface
 - ✓ **COMPLETED**: Time tracking state synchronization - Form updates properly after mutations
 - ✓ **COMPLETED**: Employee Data Mapping Issues - Fixed fundamental API-frontend data inconsistencies

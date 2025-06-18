@@ -298,14 +298,11 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(systemConfig as any)?.departments?.length > 0 ? (
-                          (systemConfig as any)?.departments?.map((dept: string) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>
-                            {language === 'English' ? 'No departments configured' : 'لا توجد أقسام مكونة'}
-                          </SelectItem>
+                        {(systemConfig as any)?.departments?.map((dept: string) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                        {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
+                          <SelectItem value="General">General</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
