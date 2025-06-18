@@ -975,14 +975,283 @@ export default function SystemConfig() {
 
           {/* Asset Management Tab */}
           <TabsContent value="assets">
-            <div className="grid gap-6">
-              <Tabs defaultValue="types" className="w-full">
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="types">{language === 'English' ? 'Types' : 'الأنواع'}</TabsTrigger>
-                  <TabsTrigger value="brands">{language === 'English' ? 'Brands' : 'العلامات'}</TabsTrigger>
-                  <TabsTrigger value="statuses">{language === 'English' ? 'Statuses' : 'الحالات'}</TabsTrigger>
-                  <TabsTrigger value="providers">{language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}</TabsTrigger>
-                </TabsList>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Asset Types Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === 'English' ? 'Manage asset type categories' : 'إدارة فئات أنواع الأصول'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={language === 'English' ? 'Type name' : 'اسم النوع'}
+                        value={newAssetType}
+                        onChange={(e) => setNewAssetType(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddAssetType} disabled={!newAssetType.trim()}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {assetTypes.map((type) => (
+                          <div key={type.id} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex-1">
+                              {editingAssetTypeId === type.id ? (
+                                <Input
+                                  value={editedAssetTypeName}
+                                  onChange={(e) => setEditedAssetTypeName(e.target.value)}
+                                  className="text-sm"
+                                />
+                              ) : (
+                                <span className="text-sm font-medium">{type.name}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              {editingAssetTypeId === type.id ? (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetType(type.id)}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetType(type)}>
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetType(type.id)}>
+                                    <Trash className="h-3 w-3 text-red-500" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Asset Brands Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {language === 'English' ? 'Asset Brands' : 'علامات الأصول'}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === 'English' ? 'Manage asset brand names' : 'إدارة أسماء علامات الأصول'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={language === 'English' ? 'Brand name' : 'اسم العلامة التجارية'}
+                        value={newAssetBrand}
+                        onChange={(e) => setNewAssetBrand(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddAssetBrand} disabled={!newAssetBrand.trim()}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {assetBrands.map((brand) => (
+                          <div key={brand.id} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex-1">
+                              {editingAssetBrandId === brand.id ? (
+                                <Input
+                                  value={editedAssetBrandName}
+                                  onChange={(e) => setEditedAssetBrandName(e.target.value)}
+                                  className="text-sm"
+                                />
+                              ) : (
+                                <span className="text-sm font-medium">{brand.name}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              {editingAssetBrandId === brand.id ? (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetBrand(brand.id)}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetBrand(brand)}>
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetBrand(brand.id)}>
+                                    <Trash className="h-3 w-3 text-red-500" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Asset Statuses Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === 'English' ? 'Manage asset status options' : 'إدارة خيارات حالة الأصول'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={language === 'English' ? 'Status name' : 'اسم الحالة'}
+                        value={newAssetStatus}
+                        onChange={(e) => setNewAssetStatus(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddAssetStatus} disabled={!newAssetStatus.trim()}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {assetStatuses.map((status) => (
+                          <div key={status.id} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex-1">
+                              {editingAssetStatusId === status.id ? (
+                                <Input
+                                  value={editedAssetStatusName}
+                                  onChange={(e) => setEditedAssetStatusName(e.target.value)}
+                                  className="text-sm"
+                                />
+                              ) : (
+                                <span className="text-sm font-medium">{status.name}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              {editingAssetStatusId === status.id ? (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateAssetStatus(status.id)}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => handleEditAssetStatus(status)}>
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteAssetStatus(status.id)}>
+                                    <Trash className="h-3 w-3 text-red-500" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Service Providers Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    {language === 'English' ? 'Service Providers' : 'مقدمو الخدمات'}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === 'English' ? 'Manage service provider information' : 'إدارة معلومات مقدمي الخدمات'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder={language === 'English' ? 'Provider name' : 'اسم مقدم الخدمة'}
+                          value={newServiceProvider}
+                          onChange={(e) => setNewServiceProvider(e.target.value)}
+                        />
+                        <Input
+                          placeholder={language === 'English' ? 'Contact person' : 'الشخص المسؤول'}
+                          value={newServiceProviderContact}
+                          onChange={(e) => setNewServiceProviderContact(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder={language === 'English' ? 'Phone' : 'الهاتف'}
+                          value={newServiceProviderPhone}
+                          onChange={(e) => setNewServiceProviderPhone(e.target.value)}
+                        />
+                        <Input
+                          placeholder={language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+                          value={newServiceProviderEmail}
+                          onChange={(e) => setNewServiceProviderEmail(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={handleAddServiceProvider} disabled={!newServiceProvider.trim()} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {serviceProviders.map((provider) => (
+                          <div key={provider.id} className="p-3 border rounded">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="text-sm font-medium">{provider.name}</div>
+                                {provider.contactPerson && (
+                                  <div className="text-xs text-gray-600">{provider.contactPerson}</div>
+                                )}
+                                <div className="flex gap-2 text-xs text-gray-500 mt-1">
+                                  {provider.phone && <span>{provider.phone}</span>}
+                                  {provider.email && <span>{provider.email}</span>}
+                                </div>
+                              </div>
+                              <Button size="sm" variant="ghost" onClick={() => handleDeleteServiceProvider(provider.id)}>
+                                <Trash className="h-3 w-3 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
                 {/* Asset Types */}
                 <TabsContent value="types">
