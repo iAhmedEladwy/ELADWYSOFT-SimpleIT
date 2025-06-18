@@ -1644,11 +1644,15 @@ export default function SystemConfig() {
                         </tbody>
                       </table>
                     </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {language === 'English' ? 'No service providers found' : 'لم يتم العثور على مقدمي خدمة'}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Email Settings Tab */}
