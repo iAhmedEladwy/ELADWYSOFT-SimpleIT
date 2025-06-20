@@ -3778,6 +3778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: "admin",
         password: hashedPassword,
         email: "admin@simpleit.com",
+        role:"admin",
         accessLevel: "3"
       });
       console.log("Admin user created");
