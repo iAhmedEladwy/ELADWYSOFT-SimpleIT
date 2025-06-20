@@ -181,6 +181,10 @@ function SystemConfig() {
     provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
   );
 
+  const filteredRequestTypes = customRequestTypes.filter((requestType: any) =>
+    requestType.name.toLowerCase().includes(requestTypeSearch.toLowerCase())
+  );
+
   // Update local state when config data is loaded
   useEffect(() => {
     if (config) {
@@ -450,6 +454,67 @@ function SystemConfig() {
         description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مزود الخدمة بنجاح',
       });
     },
+  });
+
+  // Request Type mutations
+  const createRequestTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('POST', '/api/custom-request-types', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      setNewRequestTypeName('');
+      setNewRequestTypeDescription('');
+      setIsRequestTypeDialogOpen(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type created successfully' : 'تم إنشاء نوع الطلب بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to create request type' : 'فشل في إنشاء نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
+      apiRequest('PUT', `/api/custom-request-types/${id}`, { name, description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      setEditingRequestTypeId(null);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update request type' : 'فشل في تحديث نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteRequestTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-request-types/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete request type' : 'فشل في حذف نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
   });
 
   // Clear audit logs mutation
@@ -768,6 +833,52 @@ function SystemConfig() {
 
   const handleRemoveDemoData = () => {
     removeDemoDataMutation.mutate();
+  };
+
+  // Request type handlers
+  const handleAddRequestType = () => {
+    if (!newRequestTypeName.trim()) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Please enter a request type name' : 'يرجى إدخال اسم نوع الطلب',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    createRequestTypeMutation.mutate({
+      name: newRequestTypeName.trim(),
+      description: newRequestTypeDescription.trim() || undefined
+    });
+  };
+
+  const handleEditRequestType = (requestType: any) => {
+    setEditingRequestTypeId(requestType.id);
+    setEditedRequestTypeName(requestType.name);
+    setEditedRequestTypeDescription(requestType.description || '');
+  };
+
+  const handleSaveRequestType = (id: number) => {
+    if (!editedRequestTypeName.trim()) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Please enter a request type name' : 'يرجى إدخال اسم نوع الطلب',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    updateRequestTypeMutation.mutate({
+      id,
+      name: editedRequestTypeName.trim(),
+      description: editedRequestTypeDescription.trim() || undefined
+    });
+  };
+
+  const handleDeleteRequestType = (id: number) => {
+    if (confirm(language === 'English' ? 'Are you sure you want to delete this request type?' : 'هل أنت متأكد من حذف نوع الطلب هذا؟')) {
+      deleteRequestTypeMutation.mutate(id);
+    }
   };
 
   // Asset management handlers
@@ -2434,7 +2545,7 @@ function SystemConfig() {
               </div>
 
               <div className="mt-6 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex justify-start">
                   <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
                     {removeDemoDataMutation.isPending ? (
                       <>
@@ -2448,58 +2559,6 @@ function SystemConfig() {
                       </>
                     )}
                   </Button>
-                  
-                  <Dialog open={clearLogsDialogOpen} onOpenChange={setClearLogsDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {translations.clearAuditLogs}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{translations.clearAuditLogs}</DialogTitle>
-                        <DialogDescription>
-                          {translations.clearLogsDescription}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Clear logs older than' : 'مسح السجلات الأقدم من'}</Label>
-                          <Select value={clearLogsTimeframe} onValueChange={setClearLogsTimeframe}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="week">{language === 'English' ? '1 Week' : 'أسبوع واحد'}</SelectItem>
-                              <SelectItem value="month">{language === 'English' ? '1 Month' : 'شهر واحد'}</SelectItem>
-                              <SelectItem value="year">{language === 'English' ? '1 Year' : 'سنة واحدة'}</SelectItem>
-                              <SelectItem value="all">{language === 'English' ? 'All Logs' : 'جميع السجلات'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setClearLogsDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            onClick={handleClearAuditLogs}
-                            disabled={clearLogsMutation.isPending}
-                          >
-                            {clearLogsMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {language === 'English' ? 'Clearing...' : 'جارٍ المسح...'}
-                              </>
-                            ) : (
-                              translations.clear
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
                 </div>
               </div>
             </CardContent>
