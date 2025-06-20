@@ -769,13 +769,20 @@ function SystemConfig() {
   const handleAddUser = () => {
     if (!newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
     
-    createUserMutation.mutate({
+    const userData = {
       username: newUserUsername.trim(),
       email: newUserEmail.trim(),
+      firstName: newUserFirstName.trim() || null,
+      lastName: newUserLastName.trim() || null,
       role: newUserRole,
-      password: newUserPassword,
+      accessLevel: newUserAccessLevel,
+      employeeId: newUserEmployeeId,
+      managerId: newUserManagerId,
+      password: newUserPassword.trim(),
       isActive: true
-    });
+    };
+    
+    addUserMutation.mutate(userData);
   };
 
   const handleToggleUserStatus = (userId: number, isActive: boolean) => {
@@ -2326,18 +2333,8 @@ function SystemConfig() {
                               <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
                               <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
                               <SelectItem value="1">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
-                              <SelectItem value="admin">{language === 'English' ? 'Admin' : 'مشرف'}</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
-                          <Input 
-                            type="password"
-                            value={newUserPassword} 
-                            onChange={(e) => setNewUserPassword(e.target.value)}
-                            placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
-                          />
                         </div>
                         <div className="flex justify-end space-x-2">
                           <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
@@ -2345,15 +2342,15 @@ function SystemConfig() {
                           </Button>
                           <Button 
                             onClick={handleAddUser}
-                            disabled={createUserMutation.isPending}
+                            disabled={addUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
                           >
-                            {createUserMutation.isPending ? (
+                            {addUserMutation.isPending ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
                               </>
                             ) : (
-                              translations.add
+                              language === 'English' ? 'Add User' : 'إضافة مستخدم'
                             )}
                           </Button>
                         </div>
@@ -2411,15 +2408,20 @@ function SystemConfig() {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => {
-                                  setEditingUserId(user.id);
-                                  setEditedUserUsername(user.username);
-                                  setEditedUserEmail(user.email);
-                                  setEditedUserRole(user.role);
-                                }}
+                                onClick={() => handleEditUser(user)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              {user.id !== 1 && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => deleteUserMutation.mutate(user.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -2427,6 +2429,84 @@ function SystemConfig() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Edit User Dialog */}
+                <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{language === 'English' ? 'Edit User' : 'تعديل المستخدم'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                        <Input 
+                          value={editedUserUsername} 
+                          onChange={(e) => setEditedUserUsername(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                        <Input 
+                          type="email"
+                          value={editedUserEmail} 
+                          onChange={(e) => setEditedUserEmail(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                        <Input 
+                          type="password"
+                          value={editedUserPassword} 
+                          onChange={(e) => setEditedUserPassword(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter new password' : 'أدخل كلمة مرور جديدة'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Leave blank to keep current password' : 'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Access Level' : 'مستوى الوصول'}</Label>
+                        <Select value={editedUserAccessLevel} onValueChange={setEditedUserAccessLevel}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'English' ? 'Select access level' : 'اختر مستوى الوصول'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                            <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                            <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                            <SelectItem value="1">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+                          {language === 'English' ? 'Cancel' : 'إلغاء'}
+                        </Button>
+                        <Button 
+                          onClick={handleUpdateUser}
+                          disabled={updateUserMutation.isPending || !editedUserUsername.trim() || !editedUserEmail.trim()}
+                        >
+                          {updateUserMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {language === 'English' ? 'Updating...' : 'جارٍ التحديث...'}
+                            </>
+                          ) : (
+                            language === 'English' ? 'Update' : 'تحديث'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
