@@ -1064,7 +1064,7 @@ function SystemConfig() {
                     )}
                   </Button>
                 </div>
-                
+
                 <div className="mt-8 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
                   <h3 className="text-lg font-semibold text-destructive mb-2">
                     {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
@@ -1088,137 +1088,139 @@ function SystemConfig() {
                     )}
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Export/Import Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{translations.exportImport}</CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Export and import data for employees and assets.' 
-                  : 'تصدير واستيراد البيانات للموظفين والأصول.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
-                  <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleExport('employees')}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleExport('assets')}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
-                    </Button>
-                  </div>
-                </div>
+                {/* Export/Import Section */}
+                <div className="mt-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{translations.exportImport}</CardTitle>
+                      <CardDescription>
+                        {language === 'English' 
+                          ? 'Export and import data for employees and assets.' 
+                          : 'تصدير واستيراد البيانات للموظفين والأصول.'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
+                          <div className="space-y-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => handleExport('employees')}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => handleExport('assets')}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
+                            </Button>
+                          </div>
+                        </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <Label htmlFor="employee-upload" className="cursor-pointer">
-                        <Button variant="outline" className="w-full justify-start" asChild>
-                          <span>
-                            <Upload className="mr-2 h-4 w-4" />
-                            {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
-                          </span>
-                        </Button>
-                      </Label>
-                      <input
-                        id="employee-upload"
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'employees')}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="asset-upload" className="cursor-pointer">
-                        <Button variant="outline" className="w-full justify-start" asChild>
-                          <span>
-                            <Upload className="mr-2 h-4 w-4" />
-                            {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
-                          </span>
-                        </Button>
-                      </Label>
-                      <input
-                        id="asset-upload"
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'assets')}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {importing && (
-                <div className="mt-6 p-4 border rounded-lg bg-muted/50">
-                  <h4 className="font-medium mb-4">
-                    {language === 'English' ? 'Configure Import Mapping' : 'تكوين خريطة الاستيراد'}
-                  </h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {csvHeaders.map((header, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <Label className="w-1/3 text-sm">{header}</Label>
-                        <Select
-                          value={fieldMapping[header] || ''}
-                          onValueChange={(value) => setFieldMapping(prev => ({ ...prev, [header]: value }))}
-                        >
-                          <SelectTrigger className="w-2/3">
-                            <SelectValue placeholder="Select field" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {importType === 'employees' ? (
-                              <>
-                                <SelectItem value="name">Name</SelectItem>
-                                <SelectItem value="email">Email</SelectItem>
-                                <SelectItem value="phone">Phone</SelectItem>
-                                <SelectItem value="department">Department</SelectItem>
-                                <SelectItem value="position">Position</SelectItem>
-                                <SelectItem value="employeeId">Employee ID</SelectItem>
-                              </>
-                            ) : (
-                              <>
-                                <SelectItem value="assetId">Asset ID</SelectItem>
-                                <SelectItem value="type">Type</SelectItem>
-                                <SelectItem value="brand">Brand</SelectItem>
-                                <SelectItem value="modelName">Model Name</SelectItem>
-                                <SelectItem value="serialNumber">Serial Number</SelectItem>
-                                <SelectItem value="status">Status</SelectItem>
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
+                          <div className="space-y-2">
+                            <div>
+                              <Label htmlFor="employee-upload" className="cursor-pointer">
+                                <Button variant="outline" className="w-full justify-start" asChild>
+                                  <span>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
+                                  </span>
+                                </Button>
+                              </Label>
+                              <input
+                                id="employee-upload"
+                                type="file"
+                                accept=".csv"
+                                className="hidden"
+                                onChange={(e) => handleFileUpload(e, 'employees')}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="asset-upload" className="cursor-pointer">
+                                <Button variant="outline" className="w-full justify-start" asChild>
+                                  <span>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
+                                  </span>
+                                </Button>
+                              </Label>
+                              <input
+                                id="asset-upload"
+                                type="file"
+                                accept=".csv"
+                                className="hidden"
+                                onChange={(e) => handleFileUpload(e, 'assets')}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end space-x-2 mt-4">
-                    <Button variant="outline" onClick={() => setImporting(false)}>
-                      {language === 'English' ? 'Cancel' : 'إلغاء'}
-                    </Button>
-                    <Button onClick={handleImport} disabled={importMutation.isPending}>
-                      {importMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      {language === 'English' ? 'Import' : 'استيراد'}
-                    </Button>
-                  </div>
+
+                      {importing && (
+                        <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                          <h4 className="font-medium mb-4">
+                            {language === 'English' ? 'Configure Import Mapping' : 'تكوين خريطة الاستيراد'}
+                          </h4>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {csvHeaders.map((header, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <Label className="w-1/3 text-sm">{header}</Label>
+                                <Select
+                                  value={fieldMapping[header] || ''}
+                                  onValueChange={(value) => setFieldMapping(prev => ({ ...prev, [header]: value }))}
+                                >
+                                  <SelectTrigger className="w-2/3">
+                                    <SelectValue placeholder="Select field" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {importType === 'employees' ? (
+                                      <>
+                                        <SelectItem value="name">Name</SelectItem>
+                                        <SelectItem value="email">Email</SelectItem>
+                                        <SelectItem value="phone">Phone</SelectItem>
+                                        <SelectItem value="department">Department</SelectItem>
+                                        <SelectItem value="position">Position</SelectItem>
+                                        <SelectItem value="employeeId">Employee ID</SelectItem>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <SelectItem value="assetId">Asset ID</SelectItem>
+                                        <SelectItem value="type">Type</SelectItem>
+                                        <SelectItem value="brand">Brand</SelectItem>
+                                        <SelectItem value="modelName">Model Name</SelectItem>
+                                        <SelectItem value="serialNumber">Serial Number</SelectItem>
+                                        <SelectItem value="status">Status</SelectItem>
+                                      </>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex justify-end space-x-2 mt-4">
+                            <Button variant="outline" onClick={() => setImporting(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={handleImport} disabled={importMutation.isPending}>
+                              {importMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : null}
+                              {language === 'English' ? 'Import' : 'استيراد'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </CardContent>
