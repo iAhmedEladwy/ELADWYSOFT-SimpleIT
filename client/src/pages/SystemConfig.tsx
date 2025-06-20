@@ -2258,24 +2258,3 @@ function SystemConfig() {
 }
 
 export default SystemConfig;
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-export default SystemConfig;

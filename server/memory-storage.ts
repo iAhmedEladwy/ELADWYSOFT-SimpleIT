@@ -154,46 +154,6 @@ export class MemoryStorage implements IStorage {
       }
     ];
   }
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.customRequestTypes++,
-        name: "Software",
-        description: "Software installation, updates, and issues",
-        priority: "Medium",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.customRequestTypes++,
-        name: "Network",
-        description: "Network connectivity and configuration issues",
-        priority: "High",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.customRequestTypes++,
-        name: "Access Request",
-        description: "User access and permission requests",
-        priority: "Medium",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.customRequestTypes++,
-        name: "Other",
-        description: "General IT support requests",
-        priority: "Low",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
 
   private addSampleTickets() {
     // Helper function to calculate priority based on urgency and impact (ITIL best practice)
