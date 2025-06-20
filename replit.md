@@ -21,6 +21,16 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-20
+- **COMPLETED**: Users & Roles CRUD Operations Complete Fix
+  - ✓ Fixed critical API call structure - corrected apiRequest function signature usage
+  - ✓ Resolved all fetch/network errors in user management operations
+  - ✓ Added comprehensive user status toggle functionality (Activate/Deactivate)
+  - ✓ Implemented clickable username for editing user data with hover effects
+  - ✓ Enhanced UI with loading states, confirmation dialogs, and proper error handling
+  - ✓ Fixed access level duplicate values and improved form validation
+  - ✓ Added bilingual confirmation dialogs for user deletion
+  - ✓ All CRUD operations (Create, Read, Update, Delete) now working correctly
+  - ✓ Complete accessibility compliance with proper dialog descriptions
 - **COMPLETED**: System Configuration Consolidation - Unified all SystemConfig files into single comprehensive implementation
   - ✓ Consolidated 3 SystemConfig files (SystemConfig.tsx, SystemConfigNew.tsx, SystemConfigEnhanced.tsx) into one
   - ✓ Implemented 6-tab structure: System Defaults, Employees, Assets, Tickets, Email, Users & Roles
