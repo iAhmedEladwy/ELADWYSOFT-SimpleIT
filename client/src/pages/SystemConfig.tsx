@@ -776,51 +776,7 @@ function SystemConfig() {
     removeDemoDataMutation.mutate();
   };
 
-  // Request type handlers
-  const handleAddRequestType = () => {
-    if (!newRequestTypeName.trim()) {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Please enter a request type name' : 'يرجى إدخال اسم نوع الطلب',
-        variant: 'destructive'
-      });
-      return;
-    }
 
-    createRequestTypeMutation.mutate({
-      name: newRequestTypeName.trim(),
-      description: newRequestTypeDescription.trim() || undefined
-    });
-  };
-
-  const handleEditRequestType = (requestType: any) => {
-    setEditingRequestTypeId(requestType.id);
-    setEditedRequestTypeName(requestType.name);
-    setEditedRequestTypeDescription(requestType.description || '');
-  };
-
-  const handleSaveRequestType = (id: number) => {
-    if (!editedRequestTypeName.trim()) {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Please enter a request type name' : 'يرجى إدخال اسم نوع الطلب',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    updateRequestTypeMutation.mutate({
-      id,
-      name: editedRequestTypeName.trim(),
-      description: editedRequestTypeDescription.trim() || undefined
-    });
-  };
-
-  const handleDeleteRequestType = (id: number) => {
-    if (confirm(language === 'English' ? 'Are you sure you want to delete this request type?' : 'هل أنت متأكد من حذف نوع الطلب هذا؟')) {
-      deleteRequestTypeMutation.mutate(id);
-    }
-  };
 
   // Asset management handlers
   const handleAddAssetType = () => {

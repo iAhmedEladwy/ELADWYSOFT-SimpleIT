@@ -979,12 +979,12 @@ export class MemoryStorage implements IStorage {
   }
 
   // Custom request types management
-  async getAllCustomRequestTypes(): Promise<CustomRequestType[]> {
+  async getAllCustomRequestTypes(): Promise<any[]> {
     return this.customRequestTypes;
   }
 
-  async createCustomRequestType(data: { name: string; description?: string }): Promise<CustomRequestType> {
-    const requestType: CustomRequestType = {
+  async createCustomRequestType(data: { name: string; description?: string }): Promise<any> {
+    const requestType = {
       id: this.idCounters.customRequestTypes++,
       name: data.name,
       description: data.description || '',
@@ -996,7 +996,7 @@ export class MemoryStorage implements IStorage {
     return requestType;
   }
 
-  async updateCustomRequestType(id: number, data: { name: string; description?: string }): Promise<CustomRequestType | null> {
+  async updateCustomRequestType(id: number, data: { name: string; description?: string }): Promise<any> {
     const index = this.customRequestTypes.findIndex(rt => rt.id === id);
     if (index === -1) return null;
 
