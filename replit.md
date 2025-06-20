@@ -20,6 +20,20 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **Real-time**: WebSocket support for notifications
 
 ## Recent Changes
+### 2025-01-20
+- **COMPLETED**: Phase 2 UI/UX Improvements - System Configuration Restructuring
+  - Successfully moved Users & Roles management to System Configuration centralized interface
+  - Renamed "General Settings" to "System Defaults" throughout the application
+  - Removed standalone Users route from navigation - all user management now in System Config
+  - Updated tab structure to 6 tabs: System Defaults, Email Settings, Asset Management, Request Types, Users & Roles, Export/Import
+  - Fixed all import issues and resolved duplicate variable declarations
+  - Enhanced Users & Roles tab with complete user management interface including add/edit/status toggle functionality
+  - Streamlined navigation and centralized administrative functions in System Configuration
+- **RESOLVED**: Clear Audit Logs Function - Fixed API call structure and error handling
+  - Replaced problematic AuditAction enum references with direct string values
+  - Enhanced audit log clearing functionality with proper user feedback
+  - Maintained comprehensive audit trail while allowing administrative cleanup
+
 ### 2025-01-18
 - **COMPLETED**: Comprehensive Multi-Platform Deployment Solution
   - Created Docker deployment script with PostgreSQL 15 and health checks

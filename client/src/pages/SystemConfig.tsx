@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import {
   Tabs,
@@ -492,6 +492,50 @@ function SystemConfig() {
 
 
 
+  // User management mutations
+  const createUserMutation = useMutation({
+    mutationFn: (userData: any) => apiRequest('POST', '/api/users', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsUserDialogOpen(false);
+      setNewUserUsername('');
+      setNewUserEmail('');
+      setNewUserRole('employee');
+      setNewUserPassword('');
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to create user' : 'فشل في إنشاء المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, userData }: { id: number; userData: any }) => 
+      apiRequest('PUT', `/api/users/${id}`, userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setEditingUserId(null);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User updated successfully' : 'تم تحديث المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update user' : 'فشل في تحديث المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Import mutation
   const importMutation = useMutation({
     mutationFn: (data: { type: string; data: any[]; mapping: Record<string, string> }) =>
@@ -512,6 +556,25 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: language === 'English' ? 'Failed to import data' : 'فشل استيراد البيانات',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Remove demo data mutation
+  const removeDemoDataMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/remove-demo-data'),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Demo data removed successfully' : 'تم حذف البيانات التجريبية بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to remove demo data' : 'فشل في حذف البيانات التجريبية'),
         variant: 'destructive'
       });
     }
@@ -719,11 +782,14 @@ function SystemConfig() {
   };
 
   const handleToggleUserStatus = (userId: number, isActive: boolean) => {
-    // Implementation for toggling user status
-    toast({
-      title: language === 'English' ? 'Info' : 'معلومات',
-      description: language === 'English' ? 'User status toggle feature coming soon' : 'ميزة تبديل حالة المستخدم قريباً',
+    updateUserMutation.mutate({
+      id: userId,
+      userData: { isActive }
     });
+  };
+
+  const handleRemoveDemoData = () => {
+    removeDemoDataMutation.mutate();
   };
 
   // Asset management handlers
