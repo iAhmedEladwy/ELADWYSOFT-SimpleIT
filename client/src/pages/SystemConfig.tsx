@@ -514,11 +514,8 @@ function SystemConfig() {
   // User management mutations
   const createUserMutation = useMutation({
     mutationFn: async (userData: any) => {
-      const response = await apiRequest('/api/users', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
-      return response;
+      const response = await apiRequest('POST', '/api/users', userData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -548,11 +545,8 @@ function SystemConfig() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, userData }: { id: number; userData: any }) => {
-      const response = await apiRequest(`/api/users/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(userData),
-      });
-      return response;
+      const response = await apiRequest('PUT', `/api/users/${id}`, userData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -574,10 +568,8 @@ function SystemConfig() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const response = await apiRequest(`/api/users/${userId}`, {
-        method: 'DELETE',
-      });
-      return response;
+      const response = await apiRequest('DELETE', `/api/users/${userId}`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -2476,11 +2468,15 @@ function SystemConfig() {
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleToggleUserStatus(user.id, !user.isActive)}
+                                disabled={updateUserMutation.isPending}
                               >
-                                {user.isActive ? 
-                                  (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
-                                  (language === 'English' ? 'Activate' : 'تفعيل')
-                                }
+                                {updateUserMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  user.isActive ? 
+                                    (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
+                                    (language === 'English' ? 'Activate' : 'تفعيل')
+                                )}
                               </Button>
                               <Button 
                                 variant="outline" 
@@ -2493,10 +2489,19 @@ function SystemConfig() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => deleteUserMutation.mutate(user.id)}
+                                  onClick={() => {
+                                    if (window.confirm(language === 'English' ? `Are you sure you want to delete user "${user.username}"?` : `هل أنت متأكد من حذف المستخدم "${user.username}"؟`)) {
+                                      deleteUserMutation.mutate(user.id);
+                                    }
+                                  }}
                                   className="text-red-600 hover:text-red-700"
+                                  disabled={deleteUserMutation.isPending}
                                 >
-                                  <Trash className="h-4 w-4" />
+                                  {deleteUserMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash className="h-4 w-4" />
+                                  )}
                                 </Button>
                               )}
                             </div>
