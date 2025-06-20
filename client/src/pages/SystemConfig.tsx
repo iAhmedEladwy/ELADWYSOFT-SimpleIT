@@ -1065,7 +1065,7 @@ function SystemConfig() {
                   </Button>
                 </div>
 
-                <div className="mt-8 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
+                <div className="mt-6 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
                   <h3 className="text-lg font-semibold text-destructive mb-2">
                     {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
                   </h3>
@@ -1089,7 +1089,6 @@ function SystemConfig() {
                   </Button>
                 </div>
 
-                {/* Export/Import Section */}
                 <div className="mt-8">
                   <Card>
                     <CardHeader>
