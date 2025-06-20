@@ -105,9 +105,143 @@ export class MemoryStorage implements IStorage {
     };
   }
 
-  // Removed all sample data for clean production deployment
+  // Initialize with sample employee data for testing
+  private initializeSampleEmployees() {
+    this.employees = [
+      {
+        id: this.idCounters.employees++,
+        employeeId: "EMP-0001",
+        name: "Ahmed Hassan",
+        arabicName: "أحمد حسن",
+        department: "Information Technology",
+        position: "Senior System Administrator",
+        idNumber: "12345678901",
+        directManager: null,
+        employmentType: "Full-time",
+        joiningDate: new Date("2020-01-15"),
+        exitDate: null,
+        isActive: true,
+        phone: "+966501234567",
+        workMobile: "+966501234567",
+        email: "ahmed.hassan@simpleit.com",
+        corporateEmail: "a.hassan@simpleit.com",
+        userId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.employees++,
+        employeeId: "EMP-0002", 
+        name: "Sarah Al-Mansoori",
+        arabicName: "سارة المنصوري",
+        department: "Human Resources",
+        position: "HR Manager",
+        idNumber: "12345678902",
+        directManager: 1,
+        employmentType: "Full-time",
+        joiningDate: new Date("2019-03-10"),
+        exitDate: null,
+        isActive: true,
+        phone: "+966501234568",
+        workMobile: "+966501234568", 
+        email: "sarah.almansoori@simpleit.com",
+        corporateEmail: "s.almansoori@simpleit.com",
+        userId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.employees++,
+        employeeId: "EMP-0003",
+        name: "Mohamed Ali",
+        arabicName: "محمد علي",
+        department: "Finance",
+        position: "Financial Analyst",
+        idNumber: "12345678903",
+        directManager: 1,
+        employmentType: "Full-time",
+        joiningDate: new Date("2021-06-01"),
+        exitDate: null,
+        isActive: true,
+        phone: "+966501234569",
+        workMobile: "+966501234569",
+        email: "mohamed.ali@simpleit.com",
+        corporateEmail: "m.ali@simpleit.com",
+        userId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.employees++,
+        employeeId: "EMP-0004",
+        name: "Fatima Al-Zahra",
+        arabicName: "فاطمة الزهراء",
+        department: "Operations",
+        position: "Operations Coordinator",
+        idNumber: "12345678904",
+        directManager: 2,
+        employmentType: "Part-time",
+        joiningDate: new Date("2022-02-14"),
+        exitDate: null,
+        isActive: true,
+        phone: "+966501234570",
+        workMobile: "+966501234570",
+        email: "fatima.alzahra@simpleit.com",
+        corporateEmail: "f.alzahra@simpleit.com",
+        userId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+  }
 
-  // Custom asset data removed for clean production deployment
+  // Initialize sample asset data for testing
+  private initializeSampleAssets() {
+    this.assets = [
+      {
+        id: this.idCounters.assets++,
+        assetId: "AST-0001",
+        name: "Dell Latitude 5520 Laptop",
+        type: "Laptop",
+        brand: "Dell",
+        model: "Latitude 5520",
+        serialNumber: "DL5520001",
+        purchaseDate: new Date("2023-01-15"),
+        purchasePrice: 4500.00,
+        warrantyExpiration: new Date("2026-01-15"),
+        status: "Assigned",
+        assignedToId: 1,
+        location: "IT Department - Floor 2",
+        notes: "Primary work laptop for system administrator",
+        depreciation: 450.00,
+        currentValue: 4050.00,
+        vendor: "Dell Technologies",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.assets++,
+        assetId: "AST-0002",
+        name: "HP EliteDesk 800 Desktop",
+        type: "Desktop",
+        brand: "HP",
+        model: "EliteDesk 800 G6",
+        serialNumber: "HP800002",
+        purchaseDate: new Date("2023-03-10"),
+        purchasePrice: 3200.00,
+        warrantyExpiration: new Date("2026-03-10"),
+        status: "Available",
+        assignedToId: null,
+        location: "Storage Room - Floor 1",
+        notes: "Backup desktop computer",
+        depreciation: 320.00,
+        currentValue: 2880.00,
+        vendor: "HP Inc.",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+  }
 
   private initializeDefaultRequestTypes() {
     // Default request types for tickets
