@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Settings, Save, Globe, Loader2, Trash, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import {
   Tabs,
   TabsContent,
@@ -24,6 +24,9 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
 
 function SystemConfig() {
   const { language, toggleLanguage } = useLanguage();
@@ -156,7 +159,7 @@ function SystemConfig() {
     enabled: hasAccess(3),
   });
 
-  const { data: users = [] } = useQuery<any[]>({
+  const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ['/api/users'],
     enabled: hasAccess(3),
   });
@@ -2266,7 +2269,7 @@ function SystemConfig() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user: any) => (
+                      {allUsers.map((user: any) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.username}</TableCell>
                           <TableCell>{user.email}</TableCell>
