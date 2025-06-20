@@ -1064,6 +1064,30 @@ function SystemConfig() {
                     )}
                   </Button>
                 </div>
+                
+                <div className="mt-8 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
+                  <h3 className="text-lg font-semibold text-destructive mb-2">
+                    {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {language === 'English' 
+                      ? 'Remove all demo data from the system. This action cannot be undone.' 
+                      : 'إزالة جميع البيانات التجريبية من النظام. لا يمكن التراجع عن هذا الإجراء.'}
+                  </p>
+                  <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
+                    {removeDemoDataMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -2228,85 +2252,12 @@ function SystemConfig() {
             </CardContent>
           </Card>
         </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
-        <TabsContent value="exportImport">
-          <Card>
-            <CardHeader>
-              <CardTitle>{translations.exportImport}</CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Export and import data for employees and assets.' 
-                  : 'تصدير واستيراد البيانات للموظفين والأصول.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div className="border-b pb-2">
-                    <h3 className="text-lg font-semibold">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' ? 'Download system data as CSV files' : 'تحميل بيانات النظام كملفات CSV'}
-                    </p>
-                  </div>
-                  <div className="grid gap-3">
-                    <Button 
-                      onClick={() => handleExport('employees')} 
-                      className="w-full justify-start h-12"
-                      variant="outline"
-                    >
-                      <Download className="mr-3 h-4 w-4" />
-                      {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
-                    </Button>
-                    <Button 
-                      onClick={() => handleExport('assets')} 
-                      className="w-full justify-start h-12"
-                      variant="outline"
-                    >
-                      <Download className="mr-3 h-4 w-4" />
-                      {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="border-b pb-2">
-                    <h3 className="text-lg font-semibold">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' ? 'Upload CSV files to add data to the system' : 'رفع ملفات CSV لإضافة البيانات إلى النظام'}
-                    </p>
-                  </div>
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium">
-                        {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
-                      </label>
-                      <Input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => handleFileUpload(e, 'employees')}
-                        className="w-full h-12"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium">
-                        {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
-                      </label>
-                      <Input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => handleFileUpload(e, 'assets')}
-                        className="w-full h-12"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                <div className="flex justify-start">
-                  <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
-                    {removeDemoDataMutation.isPending ? (
-                      <>
+export default SystemConfig;
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
                       </>

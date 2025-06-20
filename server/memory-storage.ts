@@ -59,6 +59,7 @@ export class MemoryStorage implements IStorage {
     // Initialize with admin user only
     this.initializeAdminUser();
     this.initializeSystemConfig();
+    this.initializeDefaultRequestTypes();
   }
 
   private async initializeAdminUser() {
@@ -115,9 +116,44 @@ export class MemoryStorage implements IStorage {
         id: this.idCounters.customRequestTypes++,
         name: "Hardware",
         description: "Hardware-related issues and requests",
-        priority: "Medium",
         isActive: true,
         createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Software", 
+        description: "Software installation and application support",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Network",
+        description: "Network connectivity and infrastructure issues", 
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Access Control",
+        description: "User access and permission requests",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customRequestTypes++,
+        name: "Security",
+        description: "Security incidents and compliance issues",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+  }
         updatedAt: new Date()
       },
       {
