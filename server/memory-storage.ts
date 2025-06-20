@@ -292,6 +292,61 @@ export class MemoryStorage implements IStorage {
     ];
   }
 
+  private initializeCustomData() {
+    // Initialize default asset types
+    this.customAssetTypes = [
+      { id: 1, name: "Laptop", description: "Portable computer", createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: "Desktop", description: "Desktop computer", createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: "Server", description: "Server hardware", createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: "Monitor", description: "Display monitor", createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: "Printer", description: "Printing device", createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, name: "Mobile", description: "Mobile phone", createdAt: new Date(), updatedAt: new Date() },
+      { id: 7, name: "Tablet", description: "Tablet device", createdAt: new Date(), updatedAt: new Date() },
+      { id: 8, name: "Network", description: "Network equipment", createdAt: new Date(), updatedAt: new Date() },
+      { id: 9, name: "Other", description: "Other equipment", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Initialize default asset brands
+    this.customAssetBrands = [
+      { id: 1, name: "Dell", description: "Dell Technologies", createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: "HP", description: "HP Inc.", createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: "Lenovo", description: "Lenovo Group", createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: "Apple", description: "Apple Inc.", createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: "Microsoft", description: "Microsoft Corporation", createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, name: "Cisco", description: "Cisco Systems", createdAt: new Date(), updatedAt: new Date() },
+      { id: 7, name: "Samsung", description: "Samsung Electronics", createdAt: new Date(), updatedAt: new Date() },
+      { id: 8, name: "Canon", description: "Canon Inc.", createdAt: new Date(), updatedAt: new Date() },
+      { id: 9, name: "Epson", description: "Epson Corporation", createdAt: new Date(), updatedAt: new Date() },
+      { id: 10, name: "Generic", description: "Generic brand", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Initialize default asset statuses
+    this.customAssetStatuses = [
+      { id: 1, name: "Available", description: "Ready for assignment", color: "#10b981", createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: "Assigned", description: "Currently assigned to user", color: "#3b82f6", createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: "In Use", description: "Currently being used", color: "#8b5cf6", createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: "Maintenance", description: "Under maintenance", color: "#f59e0b", createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: "Damaged", description: "Needs repair", color: "#ef4444", createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, name: "Retired", description: "No longer in use", color: "#6b7280", createdAt: new Date(), updatedAt: new Date() },
+      { id: 7, name: "Sold", description: "Asset has been sold", color: "#84cc16", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Initialize default service providers
+    this.serviceProviders = [
+      { id: 1, name: "TechCorp Solutions", contactPerson: "John Smith", phone: "+1-555-0101", email: "support@techcorp.com", createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: "IT Services Plus", contactPerson: "Sarah Johnson", phone: "+1-555-0102", email: "info@itservicesplus.com", createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: "Hardware Experts", contactPerson: "Mike Wilson", phone: "+1-555-0103", email: "contact@hardwareexperts.com", createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: "Network Pro", contactPerson: "Lisa Davis", phone: "+1-555-0104", email: "support@networkpro.com", createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: "Security Systems Inc", contactPerson: "David Brown", phone: "+1-555-0105", email: "info@securitysystems.com", createdAt: new Date(), updatedAt: new Date() }
+    ];
+
+    // Update counters
+    this.idCounters.customAssetTypes = this.customAssetTypes.length + 1;
+    this.idCounters.customAssetBrands = this.customAssetBrands.length + 1;
+    this.idCounters.customAssetStatuses = this.customAssetStatuses.length + 1;
+    this.idCounters.serviceProviders = this.serviceProviders.length + 1;
+  }
+
   private addSampleTickets() {
     // Helper function to calculate priority based on urgency and impact (ITIL best practice)
     const calculatePriority = (urgency: string, impact: string): string => {
