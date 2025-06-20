@@ -60,6 +60,9 @@ export class MemoryStorage implements IStorage {
     this.initializeAdminUser();
     this.initializeSystemConfig();
     this.initializeDefaultRequestTypes();
+    this.initializeCustomData();
+    this.initializeSampleEmployees();
+    this.initializeSampleAssets();
   }
 
   private async initializeAdminUser() {
@@ -608,48 +611,73 @@ export class MemoryStorage implements IStorage {
   }
 
   async createEmployee(employee: schema.InsertEmployee): Promise<schema.Employee> {
+    console.log('Creating employee in storage:', employee);
+    
+    // Validate required fields
+    if (!employee.name || !employee.department || !employee.position) {
+      throw new Error('Missing required fields: name, department, position');
+    }
+    
     const newEmployee: schema.Employee = {
       id: this.idCounters.employees++,
+      employeeId: employee.employeeId || `EMP-${(this.idCounters.employees).toString().padStart(4, '0')}`,
       name: employee.name,
-      email: employee.email,
-      phone: employee.phone || '',
+      arabicName: employee.arabicName || null,
       department: employee.department,
       position: employee.position,
-      employeeId: employee.employeeId,
-      isActive: employee.isActive ?? true,
-      // Extended fields
-      empId: employee.employeeId, // Compatibility
-      englishName: employee.name,
-      arabicName: employee.arabicName || null,
       idNumber: employee.idNumber || null,
-      title: employee.position,
       directManager: employee.directManager || null,
       employmentType: employee.employmentType || 'Full-time',
-      joiningDate: employee.joiningDate || null,
+      joiningDate: employee.joiningDate || new Date(),
       exitDate: employee.exitDate || null,
-      status: employee.status || 'Active',
-      personalMobile: employee.phone || null,
+      isActive: employee.isActive !== false,
+      phone: employee.phone || null,
       workMobile: employee.workMobile || null,
-      personalEmail: employee.email,
+      email: employee.email || null,
       corporateEmail: employee.corporateEmail || null,
       userId: employee.userId || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
+    
     this.employees.push(newEmployee);
+    console.log('Employee added to storage. Total employees:', this.employees.length);
     return newEmployee;
   }
 
   async updateEmployee(id: number, employeeData: Partial<schema.InsertEmployee>): Promise<schema.Employee | undefined> {
-    const index = this.employees.findIndex(e => e.id === id);
-    if (index === -1) return undefined;
+    console.log('Updating employee:', id, 'with data:', employeeData);
     
-    this.employees[index] = {
-      ...this.employees[index],
-      ...employeeData,
-      updatedAt: new Date()
-    };
-    return this.employees[index];
+    const index = this.employees.findIndex(e => e.id === id);
+    if (index === -1) {
+      console.log('Employee not found with id:', id);
+      return undefined;
+    }
+    
+    // Validate required fields if they're being updated
+    const updatedEmployee = { ...this.employees[index] };
+    
+    if (employeeData.name !== undefined) updatedEmployee.name = employeeData.name;
+    if (employeeData.arabicName !== undefined) updatedEmployee.arabicName = employeeData.arabicName;
+    if (employeeData.department !== undefined) updatedEmployee.department = employeeData.department;
+    if (employeeData.position !== undefined) updatedEmployee.position = employeeData.position;
+    if (employeeData.idNumber !== undefined) updatedEmployee.idNumber = employeeData.idNumber;
+    if (employeeData.directManager !== undefined) updatedEmployee.directManager = employeeData.directManager;
+    if (employeeData.employmentType !== undefined) updatedEmployee.employmentType = employeeData.employmentType;
+    if (employeeData.joiningDate !== undefined) updatedEmployee.joiningDate = employeeData.joiningDate;
+    if (employeeData.exitDate !== undefined) updatedEmployee.exitDate = employeeData.exitDate;
+    if (employeeData.isActive !== undefined) updatedEmployee.isActive = employeeData.isActive;
+    if (employeeData.phone !== undefined) updatedEmployee.phone = employeeData.phone;
+    if (employeeData.workMobile !== undefined) updatedEmployee.workMobile = employeeData.workMobile;
+    if (employeeData.email !== undefined) updatedEmployee.email = employeeData.email;
+    if (employeeData.corporateEmail !== undefined) updatedEmployee.corporateEmail = employeeData.corporateEmail;
+    if (employeeData.userId !== undefined) updatedEmployee.userId = employeeData.userId;
+    
+    updatedEmployee.updatedAt = new Date();
+    
+    this.employees[index] = updatedEmployee;
+    console.log('Employee updated successfully:', updatedEmployee);
+    return updatedEmployee;
   }
 
   async deleteEmployee(id: number): Promise<boolean> {
@@ -661,6 +689,7 @@ export class MemoryStorage implements IStorage {
   }
 
   async getAllEmployees(): Promise<schema.Employee[]> {
+    console.log('Getting all employees. Total count:', this.employees.length);
     return this.employees;
   }
 
