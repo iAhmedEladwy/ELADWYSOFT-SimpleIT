@@ -954,7 +954,7 @@ function SystemConfig() {
                   <Skeleton className="h-10 w-full" />
                 </div>
               ) : (
-                <div className="grid gap-6">
+                <div className="space-y-6">
                   <div className="grid gap-2">
                     <Label>{translations.language}</Label>
                     <Select value={language} onValueChange={toggleLanguage}>
