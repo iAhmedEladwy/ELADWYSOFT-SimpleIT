@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from './queryClient';
+import { apiRequest, getQueryFn } from './queryClient';
 
 type User = {
   id: number;
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
     queryKey: ['/api/me'],
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     retry: 2,
     retryDelay: 1000,
     staleTime: 1000 * 60 * 5, // 5 minutes

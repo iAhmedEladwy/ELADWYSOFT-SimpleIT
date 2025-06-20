@@ -42,12 +42,15 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     }
   }, [user, isLoading, navigate, isRedirecting]);
 
-  // Show loading state when auth is being checked or during redirect
+  // Show enhanced loading state with better UX
   if (isLoading || isRedirecting) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
         <p className="text-gray-600">{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
+        <div className="mt-4 w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full animate-pulse"></div>
+        </div>
       </div>
     );
   }
