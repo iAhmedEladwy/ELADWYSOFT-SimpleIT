@@ -513,13 +513,24 @@ function SystemConfig() {
 
   // User management mutations
   const createUserMutation = useMutation({
-    mutationFn: (userData: any) => apiRequest('POST', '/api/users', userData),
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      return response;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsUserDialogOpen(false);
       setNewUserUsername('');
       setNewUserEmail('');
+      setNewUserFirstName('');
+      setNewUserLastName('');
       setNewUserRole('employee');
+      setNewUserAccessLevel('1');
+      setNewUserEmployeeId(null);
+      setNewUserManagerId(null);
       setNewUserPassword('');
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
@@ -536,10 +547,16 @@ function SystemConfig() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, userData }: { id: number; userData: any }) => 
-      apiRequest('PUT', `/api/users/${id}`, userData),
+    mutationFn: async ({ id, userData }: { id: number; userData: any }) => {
+      const response = await apiRequest(`/api/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+      return response;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsEditUserDialogOpen(false);
       setEditingUserId(null);
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
@@ -553,6 +570,29 @@ function SystemConfig() {
         variant: 'destructive'
       });
     }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User deleted successfully' : 'تم حذف المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete user' : 'فشل في حذف المستخدم'),
+        variant: 'destructive'
+      });
+    },
   });
 
   // Import mutation
@@ -782,7 +822,39 @@ function SystemConfig() {
       isActive: true
     };
     
-    addUserMutation.mutate(userData);
+    createUserMutation.mutate(userData);
+  };
+
+  const handleEditUser = (user: any) => {
+    setEditingUserId(user.id);
+    setEditedUserUsername(user.username);
+    setEditedUserEmail(user.email || '');
+    setEditedUserFirstName(user.firstName || '');
+    setEditedUserLastName(user.lastName || '');
+    setEditedUserRole(user.role);
+    setEditedUserAccessLevel(user.accessLevel || '1');
+    setEditedUserEmployeeId(user.employeeId);
+    setEditedUserManagerId(user.managerId);
+    setEditedUserPassword('');
+    setIsEditUserDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUserId || !editedUserUsername.trim() || !editedUserEmail.trim()) return;
+    
+    const userData = {
+      username: editedUserUsername.trim(),
+      email: editedUserEmail.trim(),
+      firstName: editedUserFirstName.trim() || null,
+      lastName: editedUserLastName.trim() || null,
+      role: editedUserRole,
+      accessLevel: editedUserAccessLevel,
+      employeeId: editedUserEmployeeId,
+      managerId: editedUserManagerId,
+      ...(editedUserPassword.trim() && { password: editedUserPassword.trim() })
+    };
+    
+    updateUserMutation.mutate({ id: editingUserId, userData });
   };
 
   const handleToggleUserStatus = (userId: number, isActive: boolean) => {
@@ -2331,8 +2403,7 @@ function SystemConfig() {
                             <SelectContent>
                               <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
                               <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                              <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
-                              <SelectItem value="1">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                              <SelectItem value="1">{language === 'English' ? 'Agent/Employee (Basic Access)' : 'وكيل/موظف (وصول أساسي)'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2342,9 +2413,9 @@ function SystemConfig() {
                           </Button>
                           <Button 
                             onClick={handleAddUser}
-                            disabled={addUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
+                            disabled={createUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
                           >
-                            {addUserMutation.isPending ? (
+                            {createUserMutation.isPending ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
