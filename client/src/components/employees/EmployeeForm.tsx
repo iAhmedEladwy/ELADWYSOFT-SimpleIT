@@ -238,7 +238,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-3">
+          <TabsContent value="personal" className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
@@ -467,7 +467,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
             </div>
           </TabsContent>
           
-          <TabsContent value="contact" className="space-y-3">
+          <TabsContent value="work" className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
