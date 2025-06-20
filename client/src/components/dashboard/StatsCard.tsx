@@ -45,7 +45,7 @@ export default function StatsCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-5">
+    <div className="bg-white rounded-lg shadow p-5 hover:shadow-md transition-all duration-200 hover:scale-105 animate-fade-in btn-enhanced">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-500 text-sm">{title}</p>
