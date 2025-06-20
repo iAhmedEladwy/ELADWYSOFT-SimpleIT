@@ -228,10 +228,14 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
-        <Tabs defaultValue="general">
+        <Tabs defaultValue="personal">
           <TabsList className="mb-4 grid w-full md:w-auto grid-cols-2">
-            <TabsTrigger value="general">{translations.generalInfo}</TabsTrigger>
-            <TabsTrigger value="contact">{translations.contactInfo}</TabsTrigger>
+            <TabsTrigger value="personal">
+              {language === 'English' ? 'Personal Information' : 'المعلومات الشخصية'}
+            </TabsTrigger>
+            <TabsTrigger value="work">
+              {language === 'English' ? 'Work Information' : 'معلومات العمل'}
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="general" className="space-y-3">
