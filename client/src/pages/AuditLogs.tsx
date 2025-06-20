@@ -124,11 +124,21 @@ export default function AuditLogs() {
   // Clear logs mutation
   const clearLogsMutation = useMutation({
     mutationFn: async (options: any) => {
-      return apiRequest({
-        url: '/api/audit-logs',
+      const response = await fetch('/api/audit-logs', {
         method: 'DELETE',
-        data: options
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(options),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to clear logs');
+      }
+      
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({

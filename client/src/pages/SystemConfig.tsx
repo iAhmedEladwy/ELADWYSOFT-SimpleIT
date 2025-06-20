@@ -912,7 +912,7 @@ function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-6 lg:max-w-5xl mb-4">
+        <TabsList className="grid grid-cols-5 lg:max-w-4xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.general}
@@ -932,10 +932,6 @@ function SystemConfig() {
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             {language === 'English' ? 'Users & Roles' : 'المستخدمين والأدوار'}
-          </TabsTrigger>
-          <TabsTrigger value="exportImport">
-            <Download className="h-4 w-4 mr-2" />
-            {translations.exportImport}
           </TabsTrigger>
         </TabsList>
 
@@ -1205,152 +1201,7 @@ function SystemConfig() {
           </Card>
         </TabsContent>
 
-        {/* Ticket Settings Tab */}
-        <TabsContent value="tickets">
-          <Card>
-            <CardHeader>
-              <CardTitle>{translations.ticketSettings}</CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Configure ticket types and automation settings' 
-                  : 'تكوين أنواع التذاكر وإعدادات الأتمتة'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">{translations.requestTypes}</h3>
-                  <Dialog open={isRequestTypeDialogOpen} onOpenChange={setIsRequestTypeDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        {translations.addRequestType}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{translations.addRequestType}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="grid gap-2">
-                          <Label>{translations.name}</Label>
-                          <Input
-                            value={newRequestTypeName}
-                            onChange={(e) => setNewRequestTypeName(e.target.value)}
-                            placeholder={language === 'English' ? "Request type name" : "اسم نوع الطلب"}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label>{translations.description}</Label>
-                          <Input
-                            value={newRequestTypeDescription}
-                            onChange={(e) => setNewRequestTypeDescription(e.target.value)}
-                            placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setIsRequestTypeDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
-                          </Button>
-                          <Button onClick={handleAddRequestType} disabled={!newRequestTypeName.trim()}>
-                            {translations.add}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
 
-                {customRequestTypes.length > 0 ? (
-                  <div className="border rounded-md overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-muted/50">
-                          <th className="px-4 py-2 text-left">{translations.name}</th>
-                          <th className="px-4 py-2 text-left">{translations.description}</th>
-                          <th className="px-4 py-2 text-right">{translations.actions}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {customRequestTypes.map((requestType: any) => (
-                          <tr key={requestType.id} className="hover:bg-muted/25">
-                            <td className="px-4 py-2 font-medium">
-                              {editingRequestTypeId === requestType.id ? (
-                                <Input
-                                  value={editedRequestTypeName}
-                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
-                                  className="w-full"
-                                  onBlur={() => {
-                                    if (editedRequestTypeName.trim() && editedRequestTypeName !== requestType.name) {
-                                      updateRequestTypeMutation.mutate({
-                                        id: requestType.id,
-                                        name: editedRequestTypeName,
-                                        description: editedRequestTypeDescription
-                                      });
-                                    }
-                                    setEditingRequestTypeId(null);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.currentTarget.blur();
-                                    }
-                                  }}
-                                  autoFocus
-                                />
-                              ) : (
-                                requestType.name
-                              )}
-                            </td>
-                            <td className="px-4 py-2 text-muted-foreground">
-                              {editingRequestTypeId === requestType.id ? (
-                                <Input
-                                  value={editedRequestTypeDescription}
-                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
-                                  className="w-full"
-                                  placeholder={language === 'English' ? "Description" : "الوصف"}
-                                />
-                              ) : (
-                                requestType.description || '-'
-                              )}
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button
-                                  onClick={() => {
-                                    setEditingRequestTypeId(requestType.id);
-                                    setEditedRequestTypeName(requestType.name);
-                                    setEditedRequestTypeDescription(requestType.description || '');
-                                  }}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Edit className="h-4 w-4 text-blue-600" />
-                                </Button>
-                                <Button
-                                  onClick={() => deleteRequestTypeMutation.mutate(requestType.id)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <Trash className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 border rounded-md bg-muted/10">
-                    {translations.noData}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Employee Settings Tab */}
         <TabsContent value="employees">
