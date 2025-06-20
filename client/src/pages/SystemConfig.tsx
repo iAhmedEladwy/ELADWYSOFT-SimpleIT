@@ -874,7 +874,7 @@ function SystemConfig() {
     requests: language === 'English' ? 'Request Types' : 'أنواع الطلبات',
     generalSettings: language === 'English' ? 'System Defaults' : 'الافتراضيات النظام',
     ticketSettings: language === 'English' ? 'Ticket Settings' : 'إعدادات التذاكر',
-    employeeSettings: language === 'English' ? 'Employee Settings' : 'إعدادات الموظفين',
+    employeeSettings: language === 'English' ? 'Employees' : 'الموظفين',
     assetManagement: language === 'English' ? 'Asset Management' : 'إدارة الأصول',
     emailSettings: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
     language: language === 'English' ? 'Language' : 'اللغة',
@@ -913,22 +913,26 @@ function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-5 lg:max-w-4xl mb-4">
+        <TabsList className="grid grid-cols-6 lg:max-w-6xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.general}
           </TabsTrigger>
-          <TabsTrigger value="email">
-            <Mail className="h-4 w-4 mr-2" />
-            {translations.email}
+          <TabsTrigger value="employees">
+            <Users className="h-4 w-4 mr-2" />
+            {translations.employeeSettings}
           </TabsTrigger>
           <TabsTrigger value="assets">
             <Package className="h-4 w-4 mr-2" />
             {translations.assets}
           </TabsTrigger>
-          <TabsTrigger value="requests">
-            <FileText className="h-4 w-4 mr-2" />
-            {translations.requests}
+          <TabsTrigger value="tickets">
+            <Ticket className="h-4 w-4 mr-2" />
+            {language === 'English' ? 'Tickets' : 'التذاكر'}
+          </TabsTrigger>
+          <TabsTrigger value="email">
+            <Mail className="h-4 w-4 mr-2" />
+            {translations.email}
           </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
@@ -1226,6 +1230,153 @@ function SystemConfig() {
         </TabsContent>
 
 
+
+        {/* Tickets Settings Tab */}
+        <TabsContent value="tickets">
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Ticket Configuration' : 'تكوين التذاكر'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure ticket types and automation settings' 
+                  : 'تكوين أنواع التذاكر وإعدادات الأتمتة'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">{translations.requestTypes}</h3>
+                  <Dialog open={isRequestTypeDialogOpen} onOpenChange={setIsRequestTypeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {translations.addRequestType}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{translations.addRequestType}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid gap-2">
+                          <Label>{translations.name}</Label>
+                          <Input
+                            value={newRequestTypeName}
+                            onChange={(e) => setNewRequestTypeName(e.target.value)}
+                            placeholder={language === 'English' ? "Request type name" : "اسم نوع الطلب"}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>{translations.description}</Label>
+                          <Input
+                            value={newRequestTypeDescription}
+                            onChange={(e) => setNewRequestTypeDescription(e.target.value)}
+                            placeholder={language === 'English' ? "Description (optional)" : "الوصف (اختياري)"}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setIsRequestTypeDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button onClick={handleAddRequestType} disabled={!newRequestTypeName.trim()}>
+                            {translations.add}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {customRequestTypes.length > 0 ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          <th className="px-4 py-2 text-left">{translations.name}</th>
+                          <th className="px-4 py-2 text-left">{translations.description}</th>
+                          <th className="px-4 py-2 text-right">{translations.actions}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredRequestTypes.map((requestType: any) => (
+                          <tr key={requestType.id} className="hover:bg-muted/25">
+                            <td className="px-4 py-2">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeName}
+                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
+                                  className="w-full"
+                                  onBlur={() => {
+                                    if (editedRequestTypeName.trim() && editedRequestTypeName !== requestType.name) {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        name: editedRequestTypeName,
+                                        description: editedRequestTypeDescription
+                                      });
+                                    }
+                                    setEditingRequestTypeId(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="font-medium">{requestType.name}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeDescription}
+                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
+                                  className="w-full"
+                                  placeholder={language === 'English' ? "Description" : "الوصف"}
+                                />
+                              ) : (
+                                requestType.description || '-'
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button
+                                  onClick={() => {
+                                    setEditingRequestTypeId(requestType.id);
+                                    setEditedRequestTypeName(requestType.name);
+                                    setEditedRequestTypeDescription(requestType.description || '');
+                                  }}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Edit className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button
+                                  onClick={() => deleteRequestTypeMutation.mutate(requestType.id)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {translations.noData}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Employee Settings Tab */}
         <TabsContent value="employees">
