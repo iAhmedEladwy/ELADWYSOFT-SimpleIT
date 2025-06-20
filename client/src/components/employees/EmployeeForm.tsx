@@ -113,11 +113,8 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   };
 
   // Convert initial data to form format 
-  // (convert dates to string format and ids to strings)
   const getFormattedInitialData = () => {
     if (!initialData) return undefined;
-    
-    console.log('Initial data received:', initialData);
     
     return {
       empId: initialData.employeeId || '',

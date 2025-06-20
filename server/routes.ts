@@ -73,11 +73,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session with memory store for reliability
   const MemStore = MemoryStore(session);
   
+  // Trust proxy for proper cookie handling
+  app.set('trust proxy', 1);
+  
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
-      resave: false, 
-      saveUninitialized: false,
+      resave: true, 
+      saveUninitialized: true,
       cookie: { 
         httpOnly: true,
         secure: false, // Set to false for development

@@ -13,7 +13,10 @@ export interface AuthUser {
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery<AuthUser>({
     queryKey: ["/api/me"],
-    retry: false,
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   return {

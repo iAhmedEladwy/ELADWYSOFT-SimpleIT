@@ -28,39 +28,33 @@ import { RoleGuard } from "@/components/auth/RoleGuard";
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
-    // If we're not loading and there's no user, redirect to login
-    if (!isLoading && !user) {
-      console.log('PrivateRoute: Not authenticated, redirecting to login page');
+    // Only redirect if we're certain the user is not authenticated
+    if (!isLoading && !user && !isRedirecting) {
       setIsRedirecting(true);
-      
-      // Use a short delay to ensure state updates
+      // Use navigate instead of window.location.href for better SPA behavior
       setTimeout(() => {
-        console.log('PrivateRoute: Executing redirect to login');
-        window.location.href = "/login";
+        navigate("/login");
       }, 100);
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, navigate, isRedirecting]);
 
   // Show loading state when auth is being checked or during redirect
   if (isLoading || isRedirecting) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p>{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
+        <p className="text-gray-600">{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
       </div>
     );
   }
 
   // If user is not authenticated and we haven't started redirecting yet
   if (!user) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-gray-50">
-        <p>Authentication required. Redirecting...</p>
-      </div>
-    );
+    return null;
   }
 
   // User is authenticated, render the protected component

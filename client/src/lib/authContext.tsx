@@ -33,8 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch current user
   const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
     queryKey: ['/api/me'],
-    queryFn: getQueryFn({ on401: 'returnNull' }),
+    retry: 2,
+    retryDelay: 1000,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Login mutation
