@@ -109,6 +109,10 @@ function SystemConfig() {
   const [editingRequestTypeId, setEditingRequestTypeId] = useState<number | null>(null);
   const [editedRequestTypeName, setEditedRequestTypeName] = useState('');
   const [editedRequestTypeDescription, setEditedRequestTypeDescription] = useState('');
+  
+  // Clear audit logs states
+  const [clearLogsDialogOpen, setClearLogsDialogOpen] = useState(false);
+  const [clearLogsTimeframe, setClearLogsTimeframe] = useState('month');
 
   // Queries
   const { data: config } = useQuery<any>({
@@ -429,6 +433,26 @@ function SystemConfig() {
     },
   });
 
+  // Clear audit logs mutation
+  const clearLogsMutation = useMutation({
+    mutationFn: (options: any) => apiRequest('DELETE', '/api/audit-logs', options),
+    onSuccess: (data: any) => {
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: data.message || `Successfully cleared ${data.deletedCount} audit log entries`,
+      });
+      setClearLogsDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/audit-logs'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || 'Failed to clear logs',
+        variant: 'destructive'
+      });
+    }
+  });
+
 
 
 
@@ -570,6 +594,27 @@ function SystemConfig() {
     updateConfigMutation.mutate(configData);
   };
 
+  // Email settings handler
+  const handleSaveEmailSettings = () => {
+    const configData = {
+      language: config?.language || 'en',
+      assetIdPrefix: config?.assetIdPrefix || 'AST-',
+      empIdPrefix: config?.empIdPrefix || 'EMP-',
+      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+      currency: config?.currency || 'USD',
+      departments: config?.departments || [],
+      emailHost: emailHost || null,
+      emailPort: emailPort ? parseInt(emailPort) : null,
+      emailUser: emailUser || null,
+      emailPassword: emailPassword || null,
+      emailFromAddress: emailFromAddress || null,
+      emailFromName: emailFromName || null,
+      emailSecure
+    };
+    
+    updateConfigMutation.mutate(configData);
+  };
+
   // Request type handlers
   const handleAddRequestType = () => {
     if (!newRequestTypeName.trim()) return;
@@ -582,6 +627,24 @@ function SystemConfig() {
 
   const handleDeleteRequestType = (id: number) => {
     deleteRequestTypeMutation.mutate(id);
+  };
+
+  const handleClearAuditLogs = () => {
+    const options: any = {};
+    
+    if (clearLogsTimeframe !== 'all') {
+      let date = new Date();
+      if (clearLogsTimeframe === 'week') {
+        date.setDate(date.getDate() - 7);
+      } else if (clearLogsTimeframe === 'month') {
+        date.setMonth(date.getMonth() - 1);
+      } else if (clearLogsTimeframe === 'year') {
+        date.setFullYear(date.getFullYear() - 1);
+      }
+      options.olderThan = date.toISOString();
+    }
+    
+    clearLogsMutation.mutate(options);
   };
 
   // Asset management handlers
@@ -695,7 +758,13 @@ function SystemConfig() {
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     exportImport: language === 'English' ? 'Export/Import' : 'تصدير/استيراد',
     noData: language === 'English' ? 'No items found' : 'لم يتم العثور على عناصر',
-    addRequestType: language === 'English' ? 'Add Request Type' : 'إضافة نوع طلب'
+    addRequestType: language === 'English' ? 'Add Request Type' : 'إضافة نوع طلب',
+    clearAuditLogs: language === 'English' ? 'Clear Audit Logs' : 'مسح سجلات المراجعة',
+    clearLogsDescription: language === 'English' 
+      ? 'Clear old audit logs to free up storage space. This action cannot be undone.' 
+      : 'مسح سجلات المراجعة القديمة لتوفير مساحة التخزين. لا يمكن التراجع عن هذا الإجراء.',
+    clear: language === 'English' ? 'Clear' : 'مسح',
+    maintenanceSettings: language === 'English' ? 'Maintenance Settings' : 'إعدادات الصيانة'
   };
 
   return (
@@ -1983,7 +2052,7 @@ function SystemConfig() {
                 </div>
               </div>
               
-              <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
+              <Button onClick={handleSaveEmailSettings} disabled={updateConfigMutation.isPending} className="w-full sm:w-auto">
                 {updateConfigMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
