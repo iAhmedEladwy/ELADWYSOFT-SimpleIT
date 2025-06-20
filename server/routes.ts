@@ -1621,18 +1621,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asset Maintenance
+  // Asset Maintenance - Enhanced with status protection
   app.post("/api/assets/:id/maintenance", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
-      
-      // Check if asset exists
       const asset = await storage.getAsset(assetId);
+      
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
       
-      // Handle cost field properly
+      // Prevent creating maintenance if asset is already under maintenance
+      if (asset.status === 'Under Maintenance') {
+        const existingMaintenance = await storage.getMaintenanceForAsset(assetId);
+        const activeMaintenance = existingMaintenance.find(m => 
+          m.maintenanceType !== 'Completed' && m.maintenanceType !== 'Cancelled'
+        );
+        
+        if (activeMaintenance) {
+          return res.status(400).json({ 
+            message: "Asset is already under maintenance. Complete or cancel existing maintenance first.",
+            activeMaintenanceId: activeMaintenance.id
+          });
+        }
+      }
+      
       let requestData = { ...req.body };
       if (requestData.cost === undefined || requestData.cost === null || requestData.cost === '') {
         requestData.cost = 0;
@@ -1640,28 +1653,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
         schema.insertAssetMaintenanceSchema, 
-        { ...requestData, assetId }
+        { ...requestData, assetId, performedBy: (req.user as schema.User).id }
       );
       
       const maintenance = await storage.createAssetMaintenance(maintenanceData);
-      
-      // Update asset status if needed
-      if (asset.status !== "Maintenance") {
-        await storage.updateAsset(assetId, { status: "Maintenance" });
-      }
       
       // Log activity
       if (req.user) {
         await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Maintenance",
-          entityType: "Asset",
-          entityId: assetId,
+          action: "Create",
+          entityType: "Asset Maintenance",
+          entityId: maintenance.id,
           details: { 
-            assetId: asset.assetId, 
-            type: asset.type,
-            maintenanceType: maintenance.type,
-            cost: maintenance.cost
+            assetId: asset.assetId,
+            maintenanceType: maintenance.maintenanceType,
+            description: maintenance.description,
+            statusChanged: asset.status !== 'Under Maintenance'
           }
         });
       }
@@ -1675,16 +1683,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/assets/:id/maintenance", authenticateUser, async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
-      
-      // Check if asset exists
       const asset = await storage.getAsset(assetId);
+      
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
       
-      const maintenanceRecords = await storage.getMaintenanceForAsset(assetId);
+      const maintenance = await storage.getMaintenanceForAsset(assetId);
       
-      res.json(maintenanceRecords);
+      // Enrich maintenance records with performer details
+      const enrichedMaintenance = await Promise.all(
+        maintenance.map(async (record) => {
+          const performer = record.performedBy ? await storage.getUser(record.performedBy) : null;
+          
+          return {
+            ...record,
+            performerName: performer ? performer.username : 'System',
+            canEdit: record.maintenanceType !== 'Completed' && record.maintenanceType !== 'Cancelled'
+          };
+        })
+      );
+      
+      res.json(enrichedMaintenance);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
