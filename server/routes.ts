@@ -856,12 +856,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/employees/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log("Updating employee ID:", id, "with data:", req.body);
+      
+      // Validate required fields
+      const { englishName, department, idNumber, title } = req.body;
+      if (!englishName || !department || !idNumber || !title) {
+        return res.status(400).json({ 
+          message: "Missing required fields: englishName, department, idNumber, title" 
+        });
+      }
+      
       const {
-        englishName,
         arabicName,
-        department,
-        idNumber,
-        title,
         directManager,
         employmentType,
         joiningDate,
@@ -874,16 +880,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId
       } = req.body;
       
-      // Map frontend fields to storage schema
+      // Get existing employee data to preserve fields
+      const existingEmployee = await storage.getEmployee(id);
+      if (!existingEmployee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Map frontend fields to storage schema with proper field preservation
       const employeeData = {
         name: englishName,
-        email: personalEmail || corporateEmail || req.body.email,
-        phone: personalMobile || workMobile || req.body.phone || '',
+        email: personalEmail || corporateEmail || existingEmployee.email,
+        phone: personalMobile || workMobile || existingEmployee.phone || '',
         department: department,
         position: title,
-        employeeId: req.body.employeeId, // Keep existing employeeId
+        employeeId: req.body.empId || existingEmployee.employeeId, // Preserve existing employeeId
         isActive: status === 'Active',
-        // Store additional fields that might be used by other parts of the system
+        // Store additional fields for full compatibility
         englishName,
         arabicName,
         idNumber,

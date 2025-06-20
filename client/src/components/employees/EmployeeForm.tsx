@@ -112,25 +112,25 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
   };
 
-  // Convert initial data to form format 
+  // Convert initial data to form format with proper field mapping
   const getFormattedInitialData = () => {
     if (!initialData) return undefined;
     
     return {
-      empId: initialData.employeeId || '',
-      englishName: initialData.name || '',
+      empId: initialData.employeeId || initialData.empId || '',
+      englishName: initialData.name || initialData.englishName || '',
       arabicName: initialData.arabicName || '',
       department: initialData.department || '',
       idNumber: initialData.idNumber || '',
-      title: initialData.position || '',
+      title: initialData.position || initialData.title || '',
       directManager: initialData.directManager ? initialData.directManager.toString() : '',
       employmentType: initialData.employmentType || 'Full-time',
       joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : '',
       exitDate: initialData.exitDate ? new Date(initialData.exitDate).toISOString().split('T')[0] : '',
-      status: (initialData.isActive !== false ? 'Active' : 'Resigned') as 'Active' | 'Resigned' | 'Terminated' | 'On Leave',
-      personalMobile: initialData.phone || '',
+      status: initialData.status || (initialData.isActive !== false ? 'Active' : 'Resigned'),
+      personalMobile: initialData.phone || initialData.personalMobile || '',
       workMobile: initialData.workMobile || '',
-      personalEmail: initialData.email || '',
+      personalEmail: initialData.email || initialData.personalEmail || '',
       corporateEmail: initialData.corporateEmail || '',
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
