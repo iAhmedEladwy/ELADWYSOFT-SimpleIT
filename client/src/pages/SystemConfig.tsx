@@ -857,25 +857,30 @@ function SystemConfig() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-5 lg:max-w-4xl mb-4">
+        <TabsList className="grid grid-cols-6 lg:max-w-5xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
-            {translations.generalSettings}
-          </TabsTrigger>
-          <TabsTrigger value="tickets">
-            <Ticket className="h-4 w-4 mr-2" />
-            {translations.ticketSettings}
-          </TabsTrigger>
-          <TabsTrigger value="employees">
-            <Users className="h-4 w-4 mr-2" />
-            {translations.employeeSettings}
-          </TabsTrigger>
-          <TabsTrigger value="assets">
-            {translations.assetManagement}
+            {translations.general}
           </TabsTrigger>
           <TabsTrigger value="email">
             <Mail className="h-4 w-4 mr-2" />
-            {translations.emailSettings}
+            {translations.email}
+          </TabsTrigger>
+          <TabsTrigger value="assets">
+            <Package className="h-4 w-4 mr-2" />
+            {translations.assets}
+          </TabsTrigger>
+          <TabsTrigger value="requests">
+            <FileText className="h-4 w-4 mr-2" />
+            {translations.requests}
+          </TabsTrigger>
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 mr-2" />
+            {language === 'English' ? 'Users & Roles' : 'المستخدمين والأدوار'}
+          </TabsTrigger>
+          <TabsTrigger value="exportImport">
+            <Download className="h-4 w-4 mr-2" />
+            {translations.exportImport}
           </TabsTrigger>
         </TabsList>
 
@@ -2145,6 +2150,311 @@ function SystemConfig() {
                   </>
                 )}
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Users & Roles Management' : 'إدارة المستخدمين والأدوار'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage system users and their roles.' 
+                  : 'إدارة مستخدمي النظام وأدوارهم.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' 
+                        ? 'Manage system users and their roles.' 
+                        : 'إدارة مستخدمي النظام وأدوارهم.'}
+                    </p>
+                  </div>
+                  <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add New User' : 'إضافة مستخدم جديد'}</DialogTitle>
+                        <DialogDescription>
+                          {language === 'English' ? 'Create a new system user with specific role and permissions.' : 'إنشاء مستخدم نظام جديد بدور وصلاحيات محددة.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                          <Input 
+                            value={newUserUsername} 
+                            onChange={(e) => setNewUserUsername(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                          <Input 
+                            type="email"
+                            value={newUserEmail} 
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
+                          <Select value={newUserRole} onValueChange={setNewUserRole}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="employee">{language === 'English' ? 'Employee' : 'موظف'}</SelectItem>
+                              <SelectItem value="agent">{language === 'English' ? 'Agent' : 'وكيل'}</SelectItem>
+                              <SelectItem value="manager">{language === 'English' ? 'Manager' : 'مدير'}</SelectItem>
+                              <SelectItem value="admin">{language === 'English' ? 'Admin' : 'مشرف'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
+                          <Input 
+                            type="password"
+                            value={newUserPassword} 
+                            onChange={(e) => setNewUserPassword(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={handleAddUser}
+                            disabled={createUserMutation.isPending}
+                          >
+                            {createUserMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                              </>
+                            ) : (
+                              translations.add
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Users Table */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{language === 'English' ? 'Username' : 'اسم المستخدم'}</TableHead>
+                        <TableHead>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TableHead>
+                        <TableHead>{language === 'English' ? 'Role' : 'الدور'}</TableHead>
+                        <TableHead>{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
+                        <TableHead>{translations.actions}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user: any) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.username}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {language === 'English' ? user.role : (
+                                user.role === 'admin' ? 'مشرف' :
+                                user.role === 'manager' ? 'مدير' :
+                                user.role === 'agent' ? 'وكيل' : 'موظف'
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.isActive ? "default" : "secondary"}>
+                              {user.isActive ? 
+                                (language === 'English' ? 'Active' : 'نشط') : 
+                                (language === 'English' ? 'Inactive' : 'غير نشط')
+                              }
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleToggleUserStatus(user.id, !user.isActive)}
+                              >
+                                {user.isActive ? 
+                                  (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
+                                  (language === 'English' ? 'Activate' : 'تفعيل')
+                                }
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingUserId(user.id);
+                                  setEditedUserUsername(user.username);
+                                  setEditedUserEmail(user.email);
+                                  setEditedUserRole(user.role);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="exportImport">
+          <Card>
+            <CardHeader>
+              <CardTitle>{translations.exportImport}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Export and import data for employees and assets.' 
+                  : 'تصدير واستيراد البيانات للموظفين والأصول.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={() => handleExport('employees')} 
+                      className="w-full justify-start"
+                      variant="outline"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
+                    </Button>
+                    <Button 
+                      onClick={() => handleExport('assets')} 
+                      className="w-full justify-start"
+                      variant="outline"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
+                      </label>
+                      <Input
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => handleFileUpload(e, 'employees')}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
+                      </label>
+                      <Input
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => handleFileUpload(e, 'assets')}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
+                    {removeDemoDataMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية'}
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Dialog open={clearLogsDialogOpen} onOpenChange={setClearLogsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {translations.clearAuditLogs}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{translations.clearAuditLogs}</DialogTitle>
+                        <DialogDescription>
+                          {translations.clearLogsDescription}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Clear logs older than' : 'مسح السجلات الأقدم من'}</Label>
+                          <Select value={clearLogsTimeframe} onValueChange={setClearLogsTimeframe}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="week">{language === 'English' ? '1 Week' : 'أسبوع واحد'}</SelectItem>
+                              <SelectItem value="month">{language === 'English' ? '1 Month' : 'شهر واحد'}</SelectItem>
+                              <SelectItem value="year">{language === 'English' ? '1 Year' : 'سنة واحدة'}</SelectItem>
+                              <SelectItem value="all">{language === 'English' ? 'All Logs' : 'جميع السجلات'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setClearLogsDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleClearAuditLogs}
+                            disabled={clearLogsMutation.isPending}
+                          >
+                            {clearLogsMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {language === 'English' ? 'Clearing...' : 'جارٍ المسح...'}
+                              </>
+                            ) : (
+                              translations.clear
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
