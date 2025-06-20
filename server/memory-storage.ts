@@ -60,9 +60,6 @@ export class MemoryStorage implements IStorage {
     this.initializeAdminUser();
     this.initializeSystemConfig();
     this.initializeDefaultRequestTypes();
-    this.initializeCustomData();
-    this.initializeSampleEmployees();
-    this.initializeSampleAssets();
   }
 
   private async initializeAdminUser() {
@@ -108,143 +105,9 @@ export class MemoryStorage implements IStorage {
     };
   }
 
-  // Initialize with sample employee data for testing
-  private initializeSampleEmployees() {
-    this.employees = [
-      {
-        id: this.idCounters.employees++,
-        employeeId: "EMP-0001",
-        name: "Ahmed Hassan",
-        arabicName: "أحمد حسن",
-        department: "Information Technology",
-        position: "Senior System Administrator",
-        idNumber: "12345678901",
-        directManager: null,
-        employmentType: "Full-time",
-        joiningDate: new Date("2020-01-15"),
-        exitDate: null,
-        isActive: true,
-        phone: "+966501234567",
-        workMobile: "+966501234567",
-        email: "ahmed.hassan@simpleit.com",
-        corporateEmail: "a.hassan@simpleit.com",
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.employees++,
-        employeeId: "EMP-0002", 
-        name: "Sarah Al-Mansoori",
-        arabicName: "سارة المنصوري",
-        department: "Human Resources",
-        position: "HR Manager",
-        idNumber: "12345678902",
-        directManager: 1,
-        employmentType: "Full-time",
-        joiningDate: new Date("2019-03-10"),
-        exitDate: null,
-        isActive: true,
-        phone: "+966501234568",
-        workMobile: "+966501234568", 
-        email: "sarah.almansoori@simpleit.com",
-        corporateEmail: "s.almansoori@simpleit.com",
-        userId: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.employees++,
-        employeeId: "EMP-0003",
-        name: "Mohamed Ali",
-        arabicName: "محمد علي",
-        department: "Finance",
-        position: "Financial Analyst",
-        idNumber: "12345678903",
-        directManager: 1,
-        employmentType: "Full-time",
-        joiningDate: new Date("2021-06-01"),
-        exitDate: null,
-        isActive: true,
-        phone: "+966501234569",
-        workMobile: "+966501234569",
-        email: "mohamed.ali@simpleit.com",
-        corporateEmail: "m.ali@simpleit.com",
-        userId: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.employees++,
-        employeeId: "EMP-0004",
-        name: "Fatima Al-Zahra",
-        arabicName: "فاطمة الزهراء",
-        department: "Operations",
-        position: "Operations Coordinator",
-        idNumber: "12345678904",
-        directManager: 2,
-        employmentType: "Part-time",
-        joiningDate: new Date("2022-02-14"),
-        exitDate: null,
-        isActive: true,
-        phone: "+966501234570",
-        workMobile: "+966501234570",
-        email: "fatima.alzahra@simpleit.com",
-        corporateEmail: "f.alzahra@simpleit.com",
-        userId: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
+  // Removed all sample data for clean production deployment
 
-  // Initialize sample asset data for testing
-  private initializeSampleAssets() {
-    this.assets = [
-      {
-        id: this.idCounters.assets++,
-        assetId: "AST-0001",
-        name: "Dell Latitude 5520 Laptop",
-        type: "Laptop",
-        brand: "Dell",
-        model: "Latitude 5520",
-        serialNumber: "DL5520001",
-        purchaseDate: new Date("2023-01-15"),
-        purchasePrice: 4500.00,
-        warrantyExpiration: new Date("2026-01-15"),
-        status: "Assigned",
-        assignedToId: 1,
-        location: "IT Department - Floor 2",
-        notes: "Primary work laptop for system administrator",
-        depreciation: 450.00,
-        currentValue: 4050.00,
-        vendor: "Dell Technologies",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.assets++,
-        assetId: "AST-0002",
-        name: "HP EliteDesk 800 Desktop",
-        type: "Desktop",
-        brand: "HP",
-        model: "EliteDesk 800 G6",
-        serialNumber: "HP800002",
-        purchaseDate: new Date("2023-03-10"),
-        purchasePrice: 3200.00,
-        warrantyExpiration: new Date("2026-03-10"),
-        status: "Available",
-        assignedToId: null,
-        location: "Storage Room - Floor 1",
-        notes: "Backup desktop computer",
-        depreciation: 320.00,
-        currentValue: 2880.00,
-        vendor: "HP Inc.",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
+  // Custom asset data removed for clean production deployment
 
   private initializeDefaultRequestTypes() {
     // Default request types for tickets
@@ -290,61 +153,6 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
-  }
-
-  private initializeCustomData() {
-    // Initialize default asset types
-    this.customAssetTypes = [
-      { id: 1, name: "Laptop", description: "Portable computer", createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: "Desktop", description: "Desktop computer", createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, name: "Server", description: "Server hardware", createdAt: new Date(), updatedAt: new Date() },
-      { id: 4, name: "Monitor", description: "Display monitor", createdAt: new Date(), updatedAt: new Date() },
-      { id: 5, name: "Printer", description: "Printing device", createdAt: new Date(), updatedAt: new Date() },
-      { id: 6, name: "Mobile", description: "Mobile phone", createdAt: new Date(), updatedAt: new Date() },
-      { id: 7, name: "Tablet", description: "Tablet device", createdAt: new Date(), updatedAt: new Date() },
-      { id: 8, name: "Network", description: "Network equipment", createdAt: new Date(), updatedAt: new Date() },
-      { id: 9, name: "Other", description: "Other equipment", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Initialize default asset brands
-    this.customAssetBrands = [
-      { id: 1, name: "Dell", description: "Dell Technologies", createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: "HP", description: "HP Inc.", createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, name: "Lenovo", description: "Lenovo Group", createdAt: new Date(), updatedAt: new Date() },
-      { id: 4, name: "Apple", description: "Apple Inc.", createdAt: new Date(), updatedAt: new Date() },
-      { id: 5, name: "Microsoft", description: "Microsoft Corporation", createdAt: new Date(), updatedAt: new Date() },
-      { id: 6, name: "Cisco", description: "Cisco Systems", createdAt: new Date(), updatedAt: new Date() },
-      { id: 7, name: "Samsung", description: "Samsung Electronics", createdAt: new Date(), updatedAt: new Date() },
-      { id: 8, name: "Canon", description: "Canon Inc.", createdAt: new Date(), updatedAt: new Date() },
-      { id: 9, name: "Epson", description: "Epson Corporation", createdAt: new Date(), updatedAt: new Date() },
-      { id: 10, name: "Generic", description: "Generic brand", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Initialize default asset statuses
-    this.customAssetStatuses = [
-      { id: 1, name: "Available", description: "Ready for assignment", color: "#10b981", createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: "Assigned", description: "Currently assigned to user", color: "#3b82f6", createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, name: "In Use", description: "Currently being used", color: "#8b5cf6", createdAt: new Date(), updatedAt: new Date() },
-      { id: 4, name: "Maintenance", description: "Under maintenance", color: "#f59e0b", createdAt: new Date(), updatedAt: new Date() },
-      { id: 5, name: "Damaged", description: "Needs repair", color: "#ef4444", createdAt: new Date(), updatedAt: new Date() },
-      { id: 6, name: "Retired", description: "No longer in use", color: "#6b7280", createdAt: new Date(), updatedAt: new Date() },
-      { id: 7, name: "Sold", description: "Asset has been sold", color: "#84cc16", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Initialize default service providers
-    this.serviceProviders = [
-      { id: 1, name: "TechCorp Solutions", contactPerson: "John Smith", phone: "+1-555-0101", email: "support@techcorp.com", createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: "IT Services Plus", contactPerson: "Sarah Johnson", phone: "+1-555-0102", email: "info@itservicesplus.com", createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, name: "Hardware Experts", contactPerson: "Mike Wilson", phone: "+1-555-0103", email: "contact@hardwareexperts.com", createdAt: new Date(), updatedAt: new Date() },
-      { id: 4, name: "Network Pro", contactPerson: "Lisa Davis", phone: "+1-555-0104", email: "support@networkpro.com", createdAt: new Date(), updatedAt: new Date() },
-      { id: 5, name: "Security Systems Inc", contactPerson: "David Brown", phone: "+1-555-0105", email: "info@securitysystems.com", createdAt: new Date(), updatedAt: new Date() }
-    ];
-
-    // Update counters
-    this.idCounters.customAssetTypes = this.customAssetTypes.length + 1;
-    this.idCounters.customAssetBrands = this.customAssetBrands.length + 1;
-    this.idCounters.customAssetStatuses = this.customAssetStatuses.length + 1;
-    this.idCounters.serviceProviders = this.serviceProviders.length + 1;
   }
 
   private addSampleTickets() {
@@ -666,73 +474,48 @@ export class MemoryStorage implements IStorage {
   }
 
   async createEmployee(employee: schema.InsertEmployee): Promise<schema.Employee> {
-    console.log('Creating employee in storage:', employee);
-    
-    // Validate required fields
-    if (!employee.name || !employee.department || !employee.position) {
-      throw new Error('Missing required fields: name, department, position');
-    }
-    
     const newEmployee: schema.Employee = {
       id: this.idCounters.employees++,
-      employeeId: employee.employeeId || `EMP-${(this.idCounters.employees).toString().padStart(4, '0')}`,
       name: employee.name,
-      arabicName: employee.arabicName || null,
+      email: employee.email,
+      phone: employee.phone || '',
       department: employee.department,
       position: employee.position,
+      employeeId: employee.employeeId,
+      isActive: employee.isActive ?? true,
+      // Extended fields
+      empId: employee.employeeId, // Compatibility
+      englishName: employee.name,
+      arabicName: employee.arabicName || null,
       idNumber: employee.idNumber || null,
+      title: employee.position,
       directManager: employee.directManager || null,
       employmentType: employee.employmentType || 'Full-time',
-      joiningDate: employee.joiningDate || new Date(),
+      joiningDate: employee.joiningDate || null,
       exitDate: employee.exitDate || null,
-      isActive: employee.isActive !== false,
-      phone: employee.phone || null,
+      status: employee.status || 'Active',
+      personalMobile: employee.phone || null,
       workMobile: employee.workMobile || null,
-      email: employee.email || null,
+      personalEmail: employee.email,
       corporateEmail: employee.corporateEmail || null,
       userId: employee.userId || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    
     this.employees.push(newEmployee);
-    console.log('Employee added to storage. Total employees:', this.employees.length);
     return newEmployee;
   }
 
   async updateEmployee(id: number, employeeData: Partial<schema.InsertEmployee>): Promise<schema.Employee | undefined> {
-    console.log('Updating employee:', id, 'with data:', employeeData);
-    
     const index = this.employees.findIndex(e => e.id === id);
-    if (index === -1) {
-      console.log('Employee not found with id:', id);
-      return undefined;
-    }
+    if (index === -1) return undefined;
     
-    // Validate required fields if they're being updated
-    const updatedEmployee = { ...this.employees[index] };
-    
-    if (employeeData.name !== undefined) updatedEmployee.name = employeeData.name;
-    if (employeeData.arabicName !== undefined) updatedEmployee.arabicName = employeeData.arabicName;
-    if (employeeData.department !== undefined) updatedEmployee.department = employeeData.department;
-    if (employeeData.position !== undefined) updatedEmployee.position = employeeData.position;
-    if (employeeData.idNumber !== undefined) updatedEmployee.idNumber = employeeData.idNumber;
-    if (employeeData.directManager !== undefined) updatedEmployee.directManager = employeeData.directManager;
-    if (employeeData.employmentType !== undefined) updatedEmployee.employmentType = employeeData.employmentType;
-    if (employeeData.joiningDate !== undefined) updatedEmployee.joiningDate = employeeData.joiningDate;
-    if (employeeData.exitDate !== undefined) updatedEmployee.exitDate = employeeData.exitDate;
-    if (employeeData.isActive !== undefined) updatedEmployee.isActive = employeeData.isActive;
-    if (employeeData.phone !== undefined) updatedEmployee.phone = employeeData.phone;
-    if (employeeData.workMobile !== undefined) updatedEmployee.workMobile = employeeData.workMobile;
-    if (employeeData.email !== undefined) updatedEmployee.email = employeeData.email;
-    if (employeeData.corporateEmail !== undefined) updatedEmployee.corporateEmail = employeeData.corporateEmail;
-    if (employeeData.userId !== undefined) updatedEmployee.userId = employeeData.userId;
-    
-    updatedEmployee.updatedAt = new Date();
-    
-    this.employees[index] = updatedEmployee;
-    console.log('Employee updated successfully:', updatedEmployee);
-    return updatedEmployee;
+    this.employees[index] = {
+      ...this.employees[index],
+      ...employeeData,
+      updatedAt: new Date()
+    };
+    return this.employees[index];
   }
 
   async deleteEmployee(id: number): Promise<boolean> {
@@ -744,7 +527,6 @@ export class MemoryStorage implements IStorage {
   }
 
   async getAllEmployees(): Promise<schema.Employee[]> {
-    console.log('Getting all employees. Total count:', this.employees.length);
     return this.employees;
   }
 

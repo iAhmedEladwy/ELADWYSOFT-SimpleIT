@@ -820,24 +820,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = null
       } = req.body;
       
-      // Create standardized employee data structure
-      const employeeData: schema.InsertEmployee = {
-        employeeId: empId,
+      // Create employee using storage interface
+      const employeeData = {
         name: englishName,
-        arabicName: arabicName || null,
+        email: personalEmail || corporateEmail || `${englishName.toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
+        phone: personalMobile || workMobile || '',
         department: department,
         position: title,
-        idNumber: idNumber || null,
-        directManager: directManager ? parseInt(directManager) : null,
-        employmentType: employmentType || 'Full-time',
-        joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
-        exitDate: exitDate ? new Date(exitDate) : null,
-        isActive: status !== 'Resigned' && status !== 'Terminated',
-        phone: personalMobile || null,
-        workMobile: workMobile || null,
-        email: personalEmail || null,
-        corporateEmail: corporateEmail || null,
-        userId: userId ? parseInt(userId) : null,
+        employeeId: empId,
+        isActive: status === 'Active'
       };
       
       const employee = await storage.createEmployee(employeeData);
