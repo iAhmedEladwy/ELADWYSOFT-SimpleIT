@@ -120,14 +120,26 @@ function SystemConfig() {
   
   // User management states
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [newUserUsername, setNewUserUsername] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserFirstName, setNewUserFirstName] = useState('');
+  const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState('employee');
+  const [newUserAccessLevel, setNewUserAccessLevel] = useState('1');
+  const [newUserEmployeeId, setNewUserEmployeeId] = useState<number | null>(null);
+  const [newUserManagerId, setNewUserManagerId] = useState<number | null>(null);
   const [newUserPassword, setNewUserPassword] = useState('');
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editedUserUsername, setEditedUserUsername] = useState('');
   const [editedUserEmail, setEditedUserEmail] = useState('');
+  const [editedUserFirstName, setEditedUserFirstName] = useState('');
+  const [editedUserLastName, setEditedUserLastName] = useState('');
   const [editedUserRole, setEditedUserRole] = useState('');
+  const [editedUserAccessLevel, setEditedUserAccessLevel] = useState('1');
+  const [editedUserEmployeeId, setEditedUserEmployeeId] = useState<number | null>(null);
+  const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
+  const [editedUserPassword, setEditedUserPassword] = useState('');
 
   // Queries
   const { data: config } = useQuery<any>({
@@ -2278,6 +2290,9 @@ function SystemConfig() {
                             onChange={(e) => setNewUserUsername(e.target.value)}
                             placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
@@ -2287,17 +2302,30 @@ function SystemConfig() {
                             onChange={(e) => setNewUserEmail(e.target.value)}
                             placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
+                          </p>
                         </div>
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                          <Select value={newUserRole} onValueChange={setNewUserRole}>
+                          <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                          <Input 
+                            type="password"
+                            value={newUserPassword} 
+                            onChange={(e) => setNewUserPassword(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Access Level' : 'مستوى الوصول'}</Label>
+                          <Select value={newUserAccessLevel} onValueChange={setNewUserAccessLevel}>
                             <SelectTrigger>
-                              <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
+                              <SelectValue placeholder={language === 'English' ? 'Select access level' : 'اختر مستوى الوصول'} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="employee">{language === 'English' ? 'Employee' : 'موظف'}</SelectItem>
-                              <SelectItem value="agent">{language === 'English' ? 'Agent' : 'وكيل'}</SelectItem>
-                              <SelectItem value="manager">{language === 'English' ? 'Manager' : 'مدير'}</SelectItem>
+                              <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                              <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                              <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                              <SelectItem value="1">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
                               <SelectItem value="admin">{language === 'English' ? 'Admin' : 'مشرف'}</SelectItem>
                             </SelectContent>
                           </Select>

@@ -4274,6 +4274,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User CRUD routes (admin only)
+  app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const userData = req.body;
+      
+      // Hash password if provided
+      if (userData.password) {
+        const bcrypt = require('bcryptjs');
+        userData.password = await bcrypt.hash(userData.password, 10);
+      }
+      
+      const newUser = await storage.createUser(userData);
+      res.status(201).json(newUser);
+    } catch (error: any) {
+      console.error("User creation error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const userData = req.body;
+      
+      // Hash password if provided
+      if (userData.password && userData.password.trim()) {
+        const bcrypt = require('bcryptjs');
+        userData.password = await bcrypt.hash(userData.password, 10);
+      } else {
+        // Remove password field if empty to keep existing password
+        delete userData.password;
+      }
+      
+      const updatedUser = await storage.updateUser(userId, userData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("User update error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const currentUserId = req.user?.id;
+      
+      // Prevent self-deletion
+      if (userId === currentUserId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      const deleted = await storage.deleteUser(userId);
+      if (!deleted) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ message: "User deleted successfully" });
+    } catch (error: any) {
+      console.error("User deletion error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
