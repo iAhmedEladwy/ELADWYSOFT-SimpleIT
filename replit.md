@@ -21,6 +21,15 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-20
+- **COMPLETED**: v1.1 Bug Fixes - System Configuration and UI Improvements
+  - Fixed Request Types tab content display with enhanced UI and proper data loading
+  - Enhanced default request types in memory storage with Hardware, Software, Network, Access Control, and Security categories
+  - Relocated Clear Logs button from Export/Import to Audit Logs module for better organization
+  - Improved Export/Import visual alignment with proper grid layout and enhanced styling
+  - Removed duplicate Clear Logs functionality from System Configuration Export/Import section
+  - Added comprehensive request type CRUD operations with proper validation and error handling
+  - Fixed all Package import errors and resolved component reference issues
+  - Enhanced request type management with improved search, edit, and delete functionality
 - **COMPLETED**: Phase 2 UI/UX Improvements - System Configuration Restructuring
   - Successfully moved Users & Roles management to System Configuration centralized interface
   - Renamed "General Settings" to "System Defaults" throughout the application

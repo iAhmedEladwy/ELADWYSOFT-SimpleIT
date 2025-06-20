@@ -456,66 +456,7 @@ function SystemConfig() {
     },
   });
 
-  // Request Type mutations
-  const createRequestTypeMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('POST', '/api/custom-request-types', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
-      setNewRequestTypeName('');
-      setNewRequestTypeDescription('');
-      setIsRequestTypeDialogOpen(false);
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type created successfully' : 'تم إنشاء نوع الطلب بنجاح',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to create request type' : 'فشل في إنشاء نوع الطلب'),
-        variant: 'destructive'
-      });
-    }
-  });
 
-  const updateRequestTypeMutation = useMutation({
-    mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
-      apiRequest('PUT', `/api/custom-request-types/${id}`, { name, description }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
-      setEditingRequestTypeId(null);
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to update request type' : 'فشل في تحديث نوع الطلب'),
-        variant: 'destructive'
-      });
-    }
-  });
-
-  const deleteRequestTypeMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-request-types/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to delete request type' : 'فشل في حذف نوع الطلب'),
-        variant: 'destructive'
-      });
-    }
-  });
 
   // Clear audit logs mutation
   const clearLogsMutation = useMutation({
@@ -2492,52 +2433,62 @@ function SystemConfig() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
-                  <div className="space-y-2">
+                  <div className="border-b pb-2">
+                    <h3 className="text-lg font-semibold">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' ? 'Download system data as CSV files' : 'تحميل بيانات النظام كملفات CSV'}
+                    </p>
+                  </div>
+                  <div className="grid gap-3">
                     <Button 
                       onClick={() => handleExport('employees')} 
-                      className="w-full justify-start"
+                      className="w-full justify-start h-12"
                       variant="outline"
                     >
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="mr-3 h-4 w-4" />
                       {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
                     </Button>
                     <Button 
                       onClick={() => handleExport('assets')} 
-                      className="w-full justify-start"
+                      className="w-full justify-start h-12"
                       variant="outline"
                     >
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="mr-3 h-4 w-4" />
                       {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
+                  <div className="border-b pb-2">
+                    <h3 className="text-lg font-semibold">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' ? 'Upload CSV files to add data to the system' : 'رفع ملفات CSV لإضافة البيانات إلى النظام'}
+                    </p>
+                  </div>
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">
                         {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
                       </label>
                       <Input
                         type="file"
                         accept=".csv"
                         onChange={(e) => handleFileUpload(e, 'employees')}
-                        className="w-full"
+                        className="w-full h-12"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">
                         {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
                       </label>
                       <Input
                         type="file"
                         accept=".csv"
                         onChange={(e) => handleFileUpload(e, 'assets')}
-                        className="w-full"
+                        className="w-full h-12"
                       />
                     </div>
                   </div>

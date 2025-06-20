@@ -950,6 +950,74 @@ export class MemoryStorage implements IStorage {
     return originalLength - this.activityLogs.length;
   }
 
+  // Clear audit logs
+  async clearAuditLogs(options: { olderThan?: Date; entityType?: string; action?: string }): Promise<{ deletedCount: number }> {
+    const initialCount = this.activityLogs.length;
+    
+    this.activityLogs = this.activityLogs.filter(log => {
+      // Check date filter
+      if (options.olderThan && log.createdAt > options.olderThan) {
+        return true; // Keep this log (it's newer than the cutoff)
+      }
+      
+      // Check entity type filter
+      if (options.entityType && log.entityType !== options.entityType) {
+        return true; // Keep this log (different entity type)
+      }
+      
+      // Check action filter
+      if (options.action && log.action !== options.action) {
+        return true; // Keep this log (different action)
+      }
+      
+      // If we reach here, the log matches all filters and should be deleted
+      return false;
+    });
+    
+    const deletedCount = initialCount - this.activityLogs.length;
+    return { deletedCount };
+  }
+
+  // Custom request types management
+  async getAllCustomRequestTypes(): Promise<CustomRequestType[]> {
+    return this.customRequestTypes;
+  }
+
+  async createCustomRequestType(data: { name: string; description?: string }): Promise<CustomRequestType> {
+    const requestType: CustomRequestType = {
+      id: this.idCounters.customRequestTypes++,
+      name: data.name,
+      description: data.description || '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.customRequestTypes.push(requestType);
+    return requestType;
+  }
+
+  async updateCustomRequestType(id: number, data: { name: string; description?: string }): Promise<CustomRequestType | null> {
+    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+    if (index === -1) return null;
+
+    this.customRequestTypes[index] = {
+      ...this.customRequestTypes[index],
+      name: data.name,
+      description: data.description || '',
+      updatedAt: new Date()
+    };
+
+    return this.customRequestTypes[index];
+  }
+
+  async deleteCustomRequestType(id: number): Promise<boolean> {
+    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+    if (index === -1) return false;
+
+    this.customRequestTypes.splice(index, 1);
+    return true;
+  }
+
   // Changes Log operations
   async getChangesLog(options: any): Promise<any> {
     let filtered = [...this.changesLogs];
