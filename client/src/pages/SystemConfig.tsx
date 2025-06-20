@@ -746,28 +746,6 @@ function SystemConfig() {
   };
 
   // User management handlers
-  const createUserMutation = useMutation({
-    mutationFn: (userData: any) => apiRequest('POST', '/api/users', userData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
-      });
-      setNewUserUsername('');
-      setNewUserEmail('');
-      setNewUserRole('employee');
-      setNewUserPassword('');
-      setIsUserDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || 'Failed to create user',
-        variant: 'destructive'
-      });
-    }
-  });
 
   const handleAddUser = () => {
     if (!newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
