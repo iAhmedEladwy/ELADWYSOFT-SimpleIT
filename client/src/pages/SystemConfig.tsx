@@ -92,6 +92,7 @@ function SystemConfig() {
   const [assetBrandSearch, setAssetBrandSearch] = useState('');
   const [assetStatusSearch, setAssetStatusSearch] = useState('');
   const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+  const [requestTypeSearch, setRequestTypeSearch] = useState('');
 
   // Editing states for asset management
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
