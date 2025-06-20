@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 export default function Employees() {
   const { language } = useLanguage();
   const { toast } = useToast();
-  const { hasAccess } = useAuth();
+  const { hasAccess } = useAuth(); // Enhanced employee data validation and management
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);

@@ -120,28 +120,4 @@ export function useAuth() {
   return context;
 }
 
-// Helper to handle 401 responses differently
-type UnauthorizedBehavior = 'returnNull' | 'throw';
-const getQueryFn =
-  ({ on401 }: { on401: UnauthorizedBehavior }) =>
-  async ({ queryKey }: { queryKey: string[] }) => {
-    try {
-      const res = await fetch(queryKey[0], {
-        credentials: 'include',
-      });
 
-      if (on401 === 'returnNull' && res.status === 401) {
-        return null;
-      }
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status}: ${text || res.statusText}`);
-      }
-
-      return await res.json();
-    } catch (error) {
-      console.error('Query error:', error);
-      throw error;
-    }
-  };
