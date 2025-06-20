@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = null
       } = req.body;
       
-      // Create employee using storage interface
+      // Create employee using storage interface with all required fields
       const employeeData = {
         name: englishName,
         email: personalEmail || corporateEmail || `${englishName.toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
@@ -828,7 +828,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         department: department,
         position: title,
         employeeId: empId,
-        isActive: status === 'Active'
+        isActive: status === 'Active',
+        // Include all additional fields for complete data storage
+        englishName,
+        arabicName: arabicName || null,
+        idNumber: idNumber || null,
+        title,
+        directManager: directManager || null,
+        employmentType: employmentType || 'Full-time',
+        joiningDate: joiningDate || null,
+        exitDate: exitDate || null,
+        status,
+        personalMobile: personalMobile || null,
+        workMobile: workMobile || null,
+        personalEmail: personalEmail || null,
+        corporateEmail: corporateEmail || null,
+        userId: userId || null
       };
       
       const employee = await storage.createEmployee(employeeData);
@@ -897,19 +912,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: status === 'Active',
         // Store additional fields for full compatibility
         englishName,
-        arabicName,
-        idNumber,
+        arabicName: arabicName ?? null,
+        idNumber: idNumber ?? null,
         title,
-        directManager,
-        employmentType,
-        joiningDate,
-        exitDate,
+        directManager: directManager ?? null,
+        employmentType: employmentType || 'Full-time',
+        joiningDate: joiningDate ?? null,
+        exitDate: exitDate ?? null,
         status,
-        personalMobile,
-        workMobile,
-        personalEmail,
-        corporateEmail,
-        userId
+        personalMobile: personalMobile ?? null,
+        workMobile: workMobile ?? null,
+        personalEmail: personalEmail ?? null,
+        corporateEmail: corporateEmail ?? null,
+        userId: userId ?? null
       };
       
       const updatedEmployee = await storage.updateEmployee(id, employeeData);

@@ -116,6 +116,8 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   const getFormattedInitialData = () => {
     if (!initialData) return undefined;
     
+    console.log('Initial data for formatting:', initialData);
+    
     return {
       empId: initialData.employeeId || initialData.empId || '',
       englishName: initialData.name || initialData.englishName || '',
@@ -128,9 +130,9 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : '',
       exitDate: initialData.exitDate ? new Date(initialData.exitDate).toISOString().split('T')[0] : '',
       status: initialData.status || (initialData.isActive !== false ? 'Active' : 'Resigned'),
-      personalMobile: initialData.phone || initialData.personalMobile || '',
+      personalMobile: initialData.personalMobile || initialData.phone || '',
       workMobile: initialData.workMobile || '',
-      personalEmail: initialData.email || initialData.personalEmail || '',
+      personalEmail: initialData.personalEmail || initialData.email || '',
       corporateEmail: initialData.corporateEmail || '',
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
