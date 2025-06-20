@@ -487,11 +487,24 @@ function SystemConfig() {
     setDepartments(updatedDepartments);
     setNewDepartment('');
     
-    // Save to backend
-    updateConfigMutation.mutate({
-      ...config,
-      departments: updatedDepartments
-    });
+    // Save to backend with all current config data
+    const configData = {
+      language: config?.language || 'en',
+      assetIdPrefix: config?.assetIdPrefix || 'AST-',
+      empIdPrefix: config?.empIdPrefix || 'EMP-',
+      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+      currency: config?.currency || 'USD',
+      departments: updatedDepartments,
+      emailHost: config?.emailHost || null,
+      emailPort: config?.emailPort || null,
+      emailUser: config?.emailUser || null,
+      emailPassword: config?.emailPassword || null,
+      emailFromAddress: config?.emailFromAddress || null,
+      emailFromName: config?.emailFromName || null,
+      emailSecure: config?.emailSecure !== false
+    };
+    
+    updateConfigMutation.mutate(configData);
   };
 
   const handleEditDepartment = (index: number) => {
@@ -508,11 +521,24 @@ function SystemConfig() {
     setEditingDeptIndex(null);
     setEditedDeptName('');
     
-    // Save to backend
-    updateConfigMutation.mutate({
-      ...config,
-      departments: updatedDepartments
-    });
+    // Save to backend with all current config data
+    const configData = {
+      language: config?.language || 'en',
+      assetIdPrefix: config?.assetIdPrefix || 'AST-',
+      empIdPrefix: config?.empIdPrefix || 'EMP-',
+      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+      currency: config?.currency || 'USD',
+      departments: updatedDepartments,
+      emailHost: config?.emailHost || null,
+      emailPort: config?.emailPort || null,
+      emailUser: config?.emailUser || null,
+      emailPassword: config?.emailPassword || null,
+      emailFromAddress: config?.emailFromAddress || null,
+      emailFromName: config?.emailFromName || null,
+      emailSecure: config?.emailSecure !== false
+    };
+    
+    updateConfigMutation.mutate(configData);
   };
 
   const handleCancelEditDepartment = () => {
@@ -524,11 +550,24 @@ function SystemConfig() {
     const updatedDepartments = departments.filter((_, i) => i !== index);
     setDepartments(updatedDepartments);
     
-    // Save to backend
-    updateConfigMutation.mutate({
-      ...config,
-      departments: updatedDepartments
-    });
+    // Save to backend with all current config data
+    const configData = {
+      language: config?.language || 'en',
+      assetIdPrefix: config?.assetIdPrefix || 'AST-',
+      empIdPrefix: config?.empIdPrefix || 'EMP-',
+      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+      currency: config?.currency || 'USD',
+      departments: updatedDepartments,
+      emailHost: config?.emailHost || null,
+      emailPort: config?.emailPort || null,
+      emailUser: config?.emailUser || null,
+      emailPassword: config?.emailPassword || null,
+      emailFromAddress: config?.emailFromAddress || null,
+      emailFromName: config?.emailFromName || null,
+      emailSecure: config?.emailSecure !== false
+    };
+    
+    updateConfigMutation.mutate(configData);
   };
 
   // Request type handlers
