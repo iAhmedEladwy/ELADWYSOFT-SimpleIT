@@ -58,6 +58,28 @@ export default function EmployeesTable({
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
   const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
+  
+  // Action handlers for dropdown menu
+  const handleViewDetails = (employee: any) => {
+    // TODO: Implement employee details modal/drawer
+    console.log('View details for employee:', employee.id);
+    // For now, open edit form as details view
+    onEdit(employee);
+  };
+
+  const handleViewAssets = (employee: any) => {
+    // TODO: Navigate to assets page with employee filter
+    console.log('View assets for employee:', employee.id);
+    // Placeholder: Could redirect to /assets?employeeId=X
+    window.open(`/assets?employeeId=${employee.id}`, '_blank');
+  };
+
+  const handleViewTickets = (employee: any) => {
+    // TODO: Navigate to tickets page with employee filter
+    console.log('View tickets for employee:', employee.id);
+    // Placeholder: Could redirect to /tickets?employeeId=X
+    window.open(`/tickets?employeeId=${employee.id}`, '_blank');
+  };
 
   // Handle individual checkbox selection
   const handleEmployeeSelect = (employeeId: number, checked: boolean) => {
@@ -199,7 +221,7 @@ export default function EmployeesTable({
                 <TableCell className="font-medium">{employee.empId || employee.employeeId}</TableCell>
                 <TableCell>
                   <button 
-                    className="text-blue-600 hover:text-blue-800 underline text-left"
+                    className="text-gray-900 hover:bg-gray-100 px-2 py-1 rounded text-left cursor-pointer transition-colors"
                     onClick={() => onEdit(employee)}
                   >
                     {employee.englishName || employee.name}
@@ -224,17 +246,17 @@ export default function EmployeesTable({
                         {translations.edit}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
                         <Eye className="h-4 w-4 mr-2" />
                         {translations.viewDetails}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewAssets(employee)}>
                         <Laptop className="h-4 w-4 mr-2" />
                         {translations.viewAssets}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewTickets(employee)}>
                         <Ticket className="h-4 w-4 mr-2" />
                         {translations.viewTickets}
                       </DropdownMenuItem>

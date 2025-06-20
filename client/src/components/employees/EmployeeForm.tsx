@@ -227,15 +227,15 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2 max-h-[60vh] overflow-y-auto px-1">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <Tabs defaultValue="general">
           <TabsList className="mb-4 grid w-full md:w-auto grid-cols-2">
             <TabsTrigger value="general">{translations.generalInfo}</TabsTrigger>
             <TabsTrigger value="contact">{translations.contactInfo}</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mx-1">
+          <TabsContent value="general" className="space-y-4 max-h-[50vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="empId"
@@ -293,7 +293,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                     <FormLabel>{translations.department}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -463,8 +463,8 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
             </div>
           </TabsContent>
           
-          <TabsContent value="contact" className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mx-1">
+          <TabsContent value="contact" className="space-y-4 max-h-[50vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="personalMobile"
