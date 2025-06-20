@@ -1063,34 +1063,32 @@ function SystemConfig() {
                       </>
                     )}
                   </Button>
-                </div>
+                  
+                  <div className="mt-6 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
+                    <h3 className="text-lg font-semibold text-destructive mb-2">
+                      {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {language === 'English' 
+                        ? 'Remove all demo data from the system. This action cannot be undone.' 
+                        : 'إزالة جميع البيانات التجريبية من النظام. لا يمكن التراجع عن هذا الإجراء.'}
+                    </p>
+                    <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
+                      {removeDemoDataMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
 
-                <div className="mt-6 p-6 border rounded-lg bg-destructive/5 border-destructive/20">
-                  <h3 className="text-lg font-semibold text-destructive mb-2">
-                    {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {language === 'English' 
-                      ? 'Remove all demo data from the system. This action cannot be undone.' 
-                      : 'إزالة جميع البيانات التجريبية من النظام. لا يمكن التراجع عن هذا الإجراء.'}
-                  </p>
-                  <Button onClick={handleRemoveDemoData} variant="destructive" disabled={removeDemoDataMutation.isPending}>
-                    {removeDemoDataMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {language === 'English' ? 'Removing...' : 'جارٍ الإزالة...'}
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {language === 'English' ? 'Remove Demo Data' : 'إزالة البيانات التجريبية'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="mt-8">
-                  <Card>
+                  <Card className="mt-6">
                     <CardHeader>
                       <CardTitle>{translations.exportImport}</CardTitle>
                       <CardDescription>
