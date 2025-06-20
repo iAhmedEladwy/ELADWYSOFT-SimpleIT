@@ -812,7 +812,11 @@ function SystemConfig() {
 
   const translations = {
     systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
-    generalSettings: language === 'English' ? 'General Settings' : 'الإعدادات العامة',
+    general: language === 'English' ? 'System Defaults' : 'الافتراضيات النظام',
+    email: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
+    assets: language === 'English' ? 'Asset Management' : 'إدارة الأصول',
+    requests: language === 'English' ? 'Request Types' : 'أنواع الطلبات',
+    generalSettings: language === 'English' ? 'System Defaults' : 'الافتراضيات النظام',
     ticketSettings: language === 'English' ? 'Ticket Settings' : 'إعدادات التذاكر',
     employeeSettings: language === 'English' ? 'Employee Settings' : 'إعدادات الموظفين',
     assetManagement: language === 'English' ? 'Asset Management' : 'إدارة الأصول',

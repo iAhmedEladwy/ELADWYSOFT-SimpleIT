@@ -109,15 +109,7 @@ function Router() {
             <PrivateRoute component={Dashboard} />
           </Layout>
         </Route>
-        <Route path="/users">
-          <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
-                <Users />
-              </RoleGuard>
-            )} />
-          </Layout>
-        </Route>
+
         <Route path="/employees">
           <Layout>
             <PrivateRoute component={() => (

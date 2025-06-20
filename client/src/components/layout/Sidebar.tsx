@@ -73,14 +73,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/users" className={getLinkClass('/users')}>
-              <Users className="h-5 w-5" />
-              <span>{translations.Users}</span>
-            </Link>
-          </div>
-        </RoleGuard>
+
         
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
           <div className="transform hover:translate-x-1 transition-transform duration-200">
