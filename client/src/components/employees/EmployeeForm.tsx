@@ -245,15 +245,14 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 name="empId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translations.employeeID}</FormLabel>
+                    <FormLabel>{translations.employeeId}</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!!initialData} className={initialData ? 'bg-gray-50' : ''} />
+                      <Input {...field} disabled={isEditMode} />
                     </FormControl>
                     <FormDescription>
-                      {initialData 
-                        ? (language === 'English' ? 'Employee ID cannot be changed' : 'لا يمكن تغيير معرف الموظف')
-                        : translations.idDesc
-                      }
+                      {language === 'English' ? 
+                        'Auto-generated if left empty' : 
+                        'سيتم إنشاؤه تلقائياً إذا تُرك فارغاً'}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -265,7 +264,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 name="englishName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translations.englishName}</FormLabel>
+                    <FormLabel>{translations.englishName} *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -281,9 +280,50 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.arabicName}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input {...field} />
                     </FormControl>
-                    <FormDescription>{translations.arabicNameDesc}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="idNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.idNumber}</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="personalMobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.personalMobile}</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="personalEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.personalEmail}</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -471,13 +511,202 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
-                name="personalMobile"
+                name="department"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translations.personalMobile}</FormLabel>
+                    <FormLabel>{translations.department}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.department} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(systemConfig as any)?.departments?.map((dept: string) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                        {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
+                          <SelectItem value="General">General</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {language === 'English' ? 
+                        'Select from departments defined in System Configuration' : 
+                        'اختر من الأقسام المعرفة في إعدادات النظام'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.title}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="directManager"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.directManager}</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="employmentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.employmentType}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.employmentType} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Full-time">{translations.fullTime}</SelectItem>
+                        <SelectItem value="Part-time">{translations.partTime}</SelectItem>
+                        <SelectItem value="Contract">{translations.contract}</SelectItem>
+                        <SelectItem value="Temporary">{translations.temporary}</SelectItem>
+                        <SelectItem value="Intern">{translations.intern}</SelectItem>
+                        <SelectItem value="Consultant">{translations.consultant}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="workMobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.workMobile}</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="corporateEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.corporateEmail}</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="userId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.userAccount}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.none} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">{translations.none}</SelectItem>
+                        {(users as any[])?.map((user: any) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.username} ({user.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>{translations.userAccountDesc}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="joiningDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.joiningDate}</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="exitDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.exitDate}</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {language === 'English' ? 
+                        'Leave empty for active employees' : 
+                        'اتركه فارغاً للموظفين النشطين'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{translations.status}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.status} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Active">{translations.active}</SelectItem>
+                        <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
+                        <SelectItem value="Resigned">{translations.resigned}</SelectItem>
+                        <SelectItem value="Terminated">{translations.terminated}</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
