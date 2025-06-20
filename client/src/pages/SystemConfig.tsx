@@ -113,6 +113,17 @@ function SystemConfig() {
   // Clear audit logs states
   const [clearLogsDialogOpen, setClearLogsDialogOpen] = useState(false);
   const [clearLogsTimeframe, setClearLogsTimeframe] = useState('month');
+  
+  // User management states
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState('employee');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editedUserUsername, setEditedUserUsername] = useState('');
+  const [editedUserEmail, setEditedUserEmail] = useState('');
+  const [editedUserRole, setEditedUserRole] = useState('');
 
   // Queries
   const { data: config } = useQuery<any>({
@@ -142,6 +153,11 @@ function SystemConfig() {
 
   const { data: serviceProviders = [] } = useQuery<any[]>({
     queryKey: ['/api/service-providers'],
+    enabled: hasAccess(3),
+  });
+
+  const { data: users = [] } = useQuery<any[]>({
+    queryKey: ['/api/users'],
     enabled: hasAccess(3),
   });
 
@@ -435,7 +451,23 @@ function SystemConfig() {
 
   // Clear audit logs mutation
   const clearLogsMutation = useMutation({
-    mutationFn: (options: any) => apiRequest('DELETE', '/api/audit-logs', options),
+    mutationFn: async (options: any) => {
+      const response = await fetch('/api/audit-logs', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(options),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to clear logs');
+      }
+      
+      return response.json();
+    },
     onSuccess: (data: any) => {
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
@@ -645,6 +677,50 @@ function SystemConfig() {
     }
     
     clearLogsMutation.mutate(options);
+  };
+
+  // User management handlers
+  const createUserMutation = useMutation({
+    mutationFn: (userData: any) => apiRequest('POST', '/api/users', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
+      });
+      setNewUserUsername('');
+      setNewUserEmail('');
+      setNewUserRole('employee');
+      setNewUserPassword('');
+      setIsUserDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || 'Failed to create user',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const handleAddUser = () => {
+    if (!newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
+    
+    createUserMutation.mutate({
+      username: newUserUsername.trim(),
+      email: newUserEmail.trim(),
+      role: newUserRole,
+      password: newUserPassword,
+      isActive: true
+    });
+  };
+
+  const handleToggleUserStatus = (userId: number, isActive: boolean) => {
+    // Implementation for toggling user status
+    toast({
+      title: language === 'English' ? 'Info' : 'معلومات',
+      description: language === 'English' ? 'User status toggle feature coming soon' : 'ميزة تبديل حالة المستخدم قريباً',
+    });
   };
 
   // Asset management handlers

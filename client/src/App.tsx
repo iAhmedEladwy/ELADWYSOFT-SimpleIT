@@ -9,7 +9,6 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import FirstTimeSetup from "@/pages/FirstTimeSetup";
 import ForgotPassword from "@/pages/ForgotPassword";
-import Users from "@/pages/Users";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";

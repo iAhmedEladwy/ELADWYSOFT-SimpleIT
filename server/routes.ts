@@ -2520,10 +2520,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log the clear action itself
       if (req.user) {
-        await logActivity({
-          userId: (req.user as any).id,
-          action: AuditAction.DELETE,
-          entityType: EntityType.REPORT,
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Delete",
+          entityType: "Activity Log",
           details: { 
             message: 'Audit logs cleared',
             deletedCount,
