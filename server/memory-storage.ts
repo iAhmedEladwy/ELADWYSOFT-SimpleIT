@@ -473,31 +473,33 @@ export class MemoryStorage implements IStorage {
     return this.employees.find(e => e.id === id);
   }
 
-  async createEmployee(employee: schema.InsertEmployee): Promise<schema.Employee> {
-    const newEmployee: schema.Employee = {
+  async createEmployee(employee: any): Promise<schema.Employee> {
+    const newEmployee: any = {
       id: this.idCounters.employees++,
-      name: employee.name,
-      email: employee.email,
-      phone: employee.phone || '',
+      name: employee.name || employee.englishName,
+      email: employee.email || employee.personalEmail || employee.corporateEmail,
+      phone: employee.phone || employee.personalMobile || employee.workMobile || '',
       department: employee.department,
-      position: employee.position,
+      position: employee.position || employee.title,
       employeeId: employee.employeeId,
       isActive: employee.isActive ?? true,
-      // Extended fields
-      empId: employee.employeeId, // Compatibility
-      englishName: employee.name,
-      arabicName: employee.arabicName || null,
-      idNumber: employee.idNumber || null,
-      title: employee.position,
-      directManager: employee.directManager || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // Extended fields for full compatibility
+      empId: employee.employeeId,
+      englishName: employee.englishName || employee.name,
+      arabicName: employee.arabicName,
+      idNumber: employee.idNumber,
+      title: employee.title || employee.position,
+      directManager: employee.directManager,
       employmentType: employee.employmentType || 'Full-time',
-      joiningDate: employee.joiningDate || null,
-      exitDate: employee.exitDate || null,
+      joiningDate: employee.joiningDate,
+      exitDate: employee.exitDate,
       status: employee.status || 'Active',
-      personalMobile: employee.phone || null,
-      workMobile: employee.workMobile || null,
-      personalEmail: employee.email,
-      corporateEmail: employee.corporateEmail || null,
+      personalMobile: employee.personalMobile,
+      workMobile: employee.workMobile,
+      personalEmail: employee.personalEmail || employee.email,
+      corporateEmail: employee.corporateEmail,
       userId: employee.userId || null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -506,16 +508,40 @@ export class MemoryStorage implements IStorage {
     return newEmployee;
   }
 
-  async updateEmployee(id: number, employeeData: Partial<schema.InsertEmployee>): Promise<schema.Employee | undefined> {
+  async updateEmployee(id: number, employeeData: any): Promise<schema.Employee | undefined> {
     const index = this.employees.findIndex(e => e.id === id);
     if (index === -1) return undefined;
     
-    this.employees[index] = {
-      ...this.employees[index],
-      ...employeeData,
-      updatedAt: new Date()
+    const existing = this.employees[index];
+    const updated = {
+      ...existing,
+      name: employeeData.name || employeeData.englishName || existing.name,
+      email: employeeData.email || employeeData.personalEmail || employeeData.corporateEmail || existing.email,
+      phone: employeeData.phone || employeeData.personalMobile || employeeData.workMobile || existing.phone,
+      department: employeeData.department || existing.department,
+      position: employeeData.position || employeeData.title || existing.position,
+      isActive: employeeData.isActive ?? existing.isActive,
+      updatedAt: new Date(),
+      // Update extended fields
+      englishName: employeeData.englishName || existing.englishName,
+      arabicName: employeeData.arabicName ?? existing.arabicName,
+      idNumber: employeeData.idNumber || existing.idNumber,
+      title: employeeData.title || employeeData.position || existing.title,
+      directManager: employeeData.directManager ?? existing.directManager,
+      employmentType: employeeData.employmentType || existing.employmentType,
+      joiningDate: employeeData.joiningDate || existing.joiningDate,
+      exitDate: employeeData.exitDate ?? existing.exitDate,
+      status: employeeData.status || existing.status,
+      personalMobile: employeeData.personalMobile ?? existing.personalMobile,
+      workMobile: employeeData.workMobile ?? existing.workMobile,
+      personalEmail: employeeData.personalEmail || existing.personalEmail,
+      corporateEmail: employeeData.corporateEmail ?? existing.corporateEmail,
+      userId: employeeData.userId ?? existing.userId,
     };
-    return this.employees[index];
+    
+    this.employees[index] = updated;
+    console.log('Updated employee in storage:', updated);
+    return updated;
   }
 
   async deleteEmployee(id: number): Promise<boolean> {

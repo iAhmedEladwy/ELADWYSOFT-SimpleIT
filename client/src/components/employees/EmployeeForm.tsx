@@ -163,11 +163,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   useEffect(() => {
     if (initialData) {
       const formattedData = getFormattedInitialData();
+      console.log('Formatted data for form reset:', formattedData);
       if (formattedData) {
-        // Use setTimeout to ensure form is ready
-        setTimeout(() => {
-          form.reset(formattedData);
-        }, 0);
+        // Reset form with formatted data
+        form.reset(formattedData);
       }
     } else {
       // Reset to default values for create mode
@@ -190,7 +189,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
         userId: '',
       });
     }
-  }, [initialData]);
+  }, [initialData, form]);
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
@@ -242,9 +241,14 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.employeeID}</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={!!initialData} className={initialData ? 'bg-gray-50' : ''} />
                     </FormControl>
-                    <FormDescription>{translations.idDesc}</FormDescription>
+                    <FormDescription>
+                      {initialData 
+                        ? (language === 'English' ? 'Employee ID cannot be changed' : 'لا يمكن تغيير معرف الموظف')
+                        : translations.idDesc
+                      }
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
