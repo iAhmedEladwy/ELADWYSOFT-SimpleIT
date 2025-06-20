@@ -2358,7 +2358,7 @@ function SystemConfig() {
                       <DialogHeader>
                         <DialogTitle>{language === 'English' ? 'Add New User' : 'إضافة مستخدم جديد'}</DialogTitle>
                         <DialogDescription>
-                          {language === 'English' ? 'Create a new system user with specific role and permissions.' : 'إنشاء مستخدم نظام جديد بدور وصلاحيات محددة.'}
+                          {language === 'English' ? 'Create a new system user with username, email, and access level. Choose the appropriate access level based on the user\'s responsibilities.' : 'إنشاء مستخدم نظام جديد باسم مستخدم وبريد إلكتروني ومستوى وصول. اختر مستوى الوصول المناسب بناءً على مسؤوليات المستخدم.'}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -2403,7 +2403,8 @@ function SystemConfig() {
                             <SelectContent>
                               <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
                               <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                              <SelectItem value="1">{language === 'English' ? 'Agent/Employee (Basic Access)' : 'وكيل/موظف (وصول أساسي)'}</SelectItem>
+                              <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                              <SelectItem value="0">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2445,7 +2446,12 @@ function SystemConfig() {
                     <TableBody>
                       {allUsers.map((user: any) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.username}</TableCell>
+                          <TableCell 
+                            className="font-medium cursor-pointer hover:text-blue-600 hover:underline" 
+                            onClick={() => handleEditUser(user)}
+                          >
+                            {user.username}
+                          </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
