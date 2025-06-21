@@ -88,7 +88,7 @@ class DemoDataGenerator {
         template.username + userSuffix,
         hashedPassword,
         template.email.replace('@', userSuffix + '@'),
-        3 // admin access level
+        Math.floor(Math.random() * 3) + 1 // Random access level 1-3
       ]);
     }
   }
@@ -118,17 +118,24 @@ class DemoDataGenerator {
       const employeeId = `EMP${String(i + 1).padStart(5, '0')}`;
       const email = `${name.toLowerCase().replace(' ', '.')}@eladwysoft.com`;
       
+      // Generate required fields
+      const arabicName = name; // For demo purposes, use same name
+      const idNumber = `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`;
+      const joiningDate = new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000));
+      
       await this.pool.query(`
-        INSERT INTO employees (emp_id, english_name, department, title, employment_type, joining_date, status, personal_mobile, corporate_email, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+        INSERT INTO employees (emp_id, english_name, arabic_name, department, id_number, title, employment_type, joining_date, status, personal_mobile, corporate_email, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
         ON CONFLICT (emp_id) DO NOTHING
       `, [
         employeeId,
         name,
+        arabicName,
         department,
+        idNumber,
         position,
         'Full-time',
-        new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
+        joiningDate,
         'Active',
         `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
         email
@@ -137,26 +144,7 @@ class DemoDataGenerator {
   }
 
   async createRequestTypes() {
-    this.log('Creating request types...');
-    
-    const requestTypes = [
-      { name: 'Hardware Issue', description: 'Hardware malfunctions and repair requests' },
-      { name: 'Software Installation', description: 'Software installation and configuration requests' },
-      { name: 'Network Problem', description: 'Network connectivity and infrastructure issues' },
-      { name: 'Access Request', description: 'User access and permission requests' },
-      { name: 'Security Incident', description: 'Security incidents and compliance issues' },
-      { name: 'Asset Request', description: 'New asset procurement and assignment requests' },
-      { name: 'Maintenance', description: 'Scheduled maintenance and preventive care' },
-      { name: 'Training Request', description: 'Training and documentation requests' }
-    ];
-
-    for (const type of requestTypes) {
-      await this.pool.query(`
-        INSERT INTO custom_request_types (name, description, "isActive", "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (name) DO NOTHING
-      `, [type.name, type.description, true]);
-    }
+    this.log('Skipping request types - managed through application...');
   }
 
   async createAssetData() {
@@ -193,18 +181,18 @@ class DemoDataGenerator {
 
     for (const type of assetTypes) {
       await this.pool.query(`
-        INSERT INTO custom_asset_types (name, description, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
+        INSERT INTO custom_asset_types (name, description, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
         ON CONFLICT (name) DO NOTHING
-      `, [type.name, type.description, true]);
+      `, [type.name, type.description]);
     }
 
     for (const brand of assetBrands) {
       await this.pool.query(`
-        INSERT INTO custom_asset_brands (name, description, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
+        INSERT INTO custom_asset_brands (name, description, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
         ON CONFLICT (name) DO NOTHING
-      `, [brand.name, brand.description, true]);
+      `, [brand.name, brand.description]);
     }
 
     for (const status of assetStatuses) {
