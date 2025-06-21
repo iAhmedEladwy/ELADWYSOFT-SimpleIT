@@ -88,7 +88,7 @@ class DemoDataGenerator {
         template.username + userSuffix,
         hashedPassword,
         template.email.replace('@', userSuffix + '@'),
-        template.role
+        3 // admin access level
       ]);
     }
   }
@@ -127,9 +127,9 @@ class DemoDataGenerator {
         name,
         department,
         position,
-        'full-time',
+        'Full-time',
         new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
-        Math.random() > 0.1 ? 'active' : 'inactive',
+        'active',
         `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
         email
       ]);
