@@ -1341,9 +1341,14 @@ function SystemConfig() {
                         {translations.addRequestType}
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent aria-describedby="request-type-dialog-description">
                       <DialogHeader>
                         <DialogTitle>{translations.addRequestType}</DialogTitle>
+                        <DialogDescription id="request-type-dialog-description">
+                          {language === 'English' 
+                            ? 'Create a new request type for ticket categorization and workflow management'
+                            : 'إنشاء نوع طلب جديد لتصنيف التذاكر وإدارة سير العمل'}
+                        </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="grid gap-2">
@@ -1375,6 +1380,7 @@ function SystemConfig() {
                   </Dialog>
                 </div>
 
+                {/* Request Types Table - Always rendered */}
                 {customRequestTypes.length > 0 ? (
                   <div className="border rounded-md overflow-hidden">
                     <table className="w-full">
@@ -1457,8 +1463,13 @@ function SystemConfig() {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {translations.noData}
+                  <div className="text-center py-8 text-muted-foreground space-y-2">
+                    <p>{translations.noData}</p>
+                    <p className="text-sm">
+                      {language === 'English' 
+                        ? 'Click "Add Request Type" above to create your first request type for ticket categorization.'
+                        : 'انقر على "إضافة نوع طلب" أعلاه لإنشاء نوع الطلب الأول لتصنيف التذاكر.'}
+                    </p>
                   </div>
                 )}
               </div>

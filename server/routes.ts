@@ -4241,7 +4241,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Custom Request Types CRUD routes
   app.get("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
     try {
-      const requestTypes = await storage.getCustomRequestTypes();
+      let requestTypes = await storage.getCustomRequestTypes();
+      
+      // If no request types exist, create default ones
+      if (requestTypes.length === 0) {
+        const defaultTypes = [
+          { name: "Hardware", description: "Hardware-related issues and requests" },
+          { name: "Software", description: "Software installation and application support" },
+          { name: "Network", description: "Network connectivity and infrastructure issues" },
+          { name: "Access Control", description: "User access and permission requests" },
+          { name: "Security", description: "Security incidents and compliance issues" }
+        ];
+        
+        for (const type of defaultTypes) {
+          await storage.createCustomRequestType(type);
+        }
+        
+        requestTypes = await storage.getCustomRequestTypes();
+      }
+      
       res.json(requestTypes);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
