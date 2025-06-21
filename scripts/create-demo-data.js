@@ -227,7 +227,7 @@ class DemoDataGenerator {
       await this.pool.query(`
         INSERT INTO assets (
           asset_id, type, brand, model_name, model_number, serial_number, 
-          status, specs, purchase_date, buy_price, warranty_end_date, 
+          status, specs, purchase_date, buy_price, warranty_expiry_date, 
           assigned_employee_id, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
