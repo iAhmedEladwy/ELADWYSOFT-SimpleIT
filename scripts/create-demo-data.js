@@ -197,10 +197,10 @@ class DemoDataGenerator {
 
     for (const status of assetStatuses) {
       await this.pool.query(`
-        INSERT INTO custom_asset_statuses (name, description, is_active, created_at, updated_at)
+        INSERT INTO custom_asset_statuses (name, description, color, created_at, updated_at)
         VALUES ($1, $2, $3, NOW(), NOW())
         ON CONFLICT (name) DO NOTHING
-      `, [status.name, status.description, true]);
+      `, [status.name, status.description, status.color]);
     }
   }
 

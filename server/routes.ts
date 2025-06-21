@@ -2667,53 +2667,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Demo Data route  
   app.post("/api/create-demo-data", authenticateUser, hasAccess(4), async (req, res) => {
     try {
-      const { spawn } = require('child_process');
-      const path = require('path');
-      
       const { size = 'medium' } = req.body;
-      const scriptPath = path.join(__dirname, '../scripts/create-demo-data.js');
       
-      // Execute demo data script
-      const demoProcess = spawn('node', [scriptPath, `--${size}`, '--quiet'], {
-        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
-        cwd: path.dirname(scriptPath)
-      });
+      // Dynamic import for ES module compatibility
+      const { DemoDataGenerator } = await import('../scripts/create-demo-data.js');
+      const generator = new DemoDataGenerator({ size, verbose: false });
       
-      let output = '';
-      let errorOutput = '';
+      await generator.createDemoData();
       
-      demoProcess.stdout.on('data', (data) => {
-        output += data.toString();
-      });
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "CONFIG_CHANGE",
+          entityType: "SYSTEM_CONFIG",
+          details: { action: `Create Demo Data (${size})` }
+        });
+      }
       
-      demoProcess.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-      
-      demoProcess.on('close', (code) => {
-        if (code === 0) {
-          // Log activity
-          if (req.user) {
-            storage.logActivity({
-              userId: (req.user as schema.User).id,
-              action: "CONFIG_CHANGE",
-              entityType: "SYSTEM_CONFIG",
-              details: { action: `Create Demo Data (${size})`, output }
-            });
-          }
-          
-          res.json({ 
-            success: true, 
-            message: `Demo data (${size} dataset) has been successfully created.`,
-            details: output
-          });
-        } else {
-          res.status(500).json({ 
-            success: false, 
-            message: `Demo data creation failed with exit code ${code}`,
-            error: errorOutput
-          });
-        }
+      res.json({ 
+        success: true, 
+        message: `Demo data (${size} dataset) has been successfully created.`,
+        details: `Generated ${generator.config.users} users, ${generator.config.employees} employees`
       });
       
     } catch (error: any) {
