@@ -1386,7 +1386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRoleLevel = getUserRoleLevel(user);
       
       // If user has level 1 access (Employee), only show assets that aren't being modified
-      if (userAccessLevel === 1) {
+      if (userRoleLevel === 1) { // Employee role
         const assets = await storage.getAllAssets();
         // Filter out assets that are in maintenance, being sold, etc.
         const filteredAssets = assets.filter(asset => 
@@ -1415,7 +1415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRoleLevel = getUserRoleLevel(user);
       
       // If user is access level 1 (Employee role) and asset is not viewable
-      if (userAccessLevel === 1 && 
+      if (userRoleLevel === 1 && 
           asset.status !== 'Available' && 
           asset.status !== 'In Use') {
         return res.status(403).json({ 
@@ -1756,7 +1756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRoleLevel = getUserRoleLevel(user);
       
       // If user has level 1 access (Employee), check if they can see this asset
-      if (userAccessLevel === 1 && 
+      if (userRoleLevel === 1 && 
           asset.status !== 'Available' && 
           asset.status !== 'In Use') {
         return res.status(403).json({ 

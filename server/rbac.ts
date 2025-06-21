@@ -231,7 +231,7 @@ export async function attachUserInfo(req: AuthenticatedRequest, res: Response, n
           id: user.id,
           username: user.username,
           role: user.role || ROLES.EMPLOYEE,
-          accessLevel: user.accessLevel,
+
           employeeId: user.employeeId || undefined,
           managerId: user.managerId || undefined
         };

@@ -109,10 +109,10 @@ export default function TicketForm({
   });
 
   // Filter employees that the current user has access to
-  const userAccessLevel = user ? parseInt(user.accessLevel) : 0;
+  const userRoleLevel = user ? (['admin', 'manager', 'agent'].includes(user.role) ? 2 : 1) : 0;
   
-  // Get user-specific or all employees based on access level
-  const filteredEmployees = userAccessLevel >= 2 
+  // Get user-specific or all employees based on role level
+  const filteredEmployees = userRoleLevel >= 2 
     ? employees 
     : employees.filter(emp => emp.userId === user?.id);
 
