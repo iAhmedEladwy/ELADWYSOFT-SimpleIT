@@ -135,24 +135,24 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
           name="role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{translations.accessLevel}</FormLabel>
+              <FormLabel>{translations.role}</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={translations.accessLevel} />
+                    <SelectValue placeholder={translations.selectRole} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">{translations.admin}</SelectItem>
-                  <SelectItem value="manager">{translations.manager}</SelectItem>
-                  <SelectItem value="agent">{translations.agent}</SelectItem>
-                  <SelectItem value="employee">{translations.employee}</SelectItem>
+                  <SelectItem value="Admin">{translations.admin}</SelectItem>
+                  <SelectItem value="Manager">{translations.manager}</SelectItem>
+                  <SelectItem value="Agent">{translations.agent}</SelectItem>
+                  <SelectItem value="Employee">{translations.employee}</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>{translations.accessLevelDesc}</FormDescription>
+              <FormDescription>{translations.roleDesc}</FormDescription>
               <FormMessage />
             </FormItem>
           )}

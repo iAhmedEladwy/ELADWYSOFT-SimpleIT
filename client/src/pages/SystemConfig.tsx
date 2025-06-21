@@ -256,6 +256,7 @@ function SystemConfig() {
       setNewRequestTypeName('');
       setNewRequestTypeDescription('');
       setIsRequestTypeDialogOpen(false);
+      // Stay on current tab
     },
     onError: (error) => {
       toast({
@@ -277,6 +278,7 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
       });
+      // Stay on current tab
     },
     onError: (error) => {
       toast({
@@ -322,6 +324,7 @@ function SystemConfig() {
       setNewTypeName('');
       setNewTypeDescription('');
       setIsAssetTypeDialogOpen(false);
+      // Stay on current tab
     },
   });
 
@@ -334,6 +337,7 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
       });
+      // Stay on current tab
     },
   });
 

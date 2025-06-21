@@ -20,7 +20,15 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **Real-time**: WebSocket support for notifications
 
 ## Recent Changes
-### 2025-01-20
+### 2025-01-21
+- **COMPLETED**: v1.1.1 Critical Bug Fixes Implementation
+  - ✓ Fixed user permissions consolidation - removed duplicate accessLevel field, unified role-based system
+  - ✓ Enhanced request types empty state handling - Add button always visible regardless of data state
+  - ✓ Implemented SystemConfig tab navigation persistence - tabs maintain state after operations
+  - ✓ Consolidated deployment scripts - created deploy-simpleit-enhanced.sh with improved error detection
+  - ✓ Updated RBAC system - removed accessLevel dependency, pure role-based permission checking
+  - ✓ Fixed UserForm and UsersTable - updated to use role field instead of accessLevel
+  - ✓ Enhanced empty state messaging for request types with clear user guidance
 - **COMPLETED**: Employee Module UI/UX Fixes - Comprehensive improvements to employee management interface
   - ✓ Fixed department field loading issue - replaced defaultValue with value for proper controlled component behavior
   - ✓ Enhanced form scrolling - removed restrictive height constraints and improved responsive layout
