@@ -439,8 +439,9 @@ async function main() {
   }
 }
 
-if (require.main === module) {
-  main();
+// Check if this module is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
 }
 
-module.exports = { DemoDataGenerator };
+export { DemoDataGenerator };
