@@ -129,7 +129,7 @@ class DemoDataGenerator {
         position,
         'Full-time',
         new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
-        'active',
+        'Active',
         `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
         email
       ]);
