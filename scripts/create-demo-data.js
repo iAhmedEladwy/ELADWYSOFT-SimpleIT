@@ -5,8 +5,9 @@
  * Creates comprehensive test data for all system entities
  */
 
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
+import pkg from 'pg';
+const { Pool } = pkg;
+import bcrypt from 'bcryptjs';
 
 class DemoDataGenerator {
   constructor(options = {}) {
