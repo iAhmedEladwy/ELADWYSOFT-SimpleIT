@@ -111,7 +111,12 @@ export default function EnhancedTicketTable({
   // Check access level
   const hasAccess = (level: string) => {
     if (!user) return false;
-    const userLevel = parseInt(user.accessLevel);
+    const userLevel = {
+      'admin': 4,
+      'manager': 3,
+      'agent': 2,
+      'employee': 1
+    }[user.role] || 0;
     return level === 'admin' ? userLevel === 3 : userLevel >= 2;
   };
 

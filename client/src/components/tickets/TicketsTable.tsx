@@ -162,7 +162,7 @@ export default function TicketsTable({
 
   const canUpdateStatus = (ticketStatus: string) => {
     // Only allow status changes in a forward direction
-    if (user && parseInt(user.accessLevel) >= 2) return true; // Admins and managers can change to any status
+    if (user && ['admin', 'manager'].includes(user.role)) return true; // Admins and managers can change to any status
     
     // Non-admin users can only move tickets forward in workflow
     switch (ticketStatus) {
@@ -179,7 +179,7 @@ export default function TicketsTable({
 
   const getAvailableStatuses = (currentStatus: string) => {
     // Full access for admins and managers
-    if (user && parseInt(user.accessLevel) >= 2) {
+    if (user && ['admin', 'manager', 'agent'].includes(user.role)) {
       return ['Open', 'In Progress', 'Resolved', 'Closed'];
     }
     
@@ -262,7 +262,7 @@ export default function TicketsTable({
                       {translations.updateStatus}
                     </DropdownMenuItem>
                     
-                    {user && parseInt(user.accessLevel) >= 2 && (
+                    {user && ['admin', 'manager', 'agent'].includes(user.role) && (
                       <DropdownMenuItem
                         onClick={() => {
                           setSelectedTicket(ticket);

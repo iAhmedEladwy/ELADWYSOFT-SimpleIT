@@ -66,24 +66,31 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
     noUsers: language === 'English' ? 'No users found' : 'لم يتم العثور على مستخدمين',
   };
 
-  // Get access level badge and icon
-  const getAccessLevelBadge = (level: string) => {
-    switch (level) {
-      case '3':
+  // Get role badge and icon
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
         return (
           <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
             <ShieldAlert className="h-3.5 w-3.5 mr-1" />
             {translations.admin}
           </Badge>
         );
-      case '2':
+      case 'manager':
         return (
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />
             {translations.manager}
           </Badge>
         );
-      case '1':
+      case 'agent':
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+            <Shield className="h-3.5 w-3.5 mr-1" />
+            {language === 'English' ? 'Agent' : 'وكيل'}
+          </Badge>
+        );
+      case 'employee':
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             <Shield className="h-3.5 w-3.5 mr-1" />
@@ -120,7 +127,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{getAccessLevelBadge(user.accessLevel)}</TableCell>
+                <TableCell>{getRoleBadge(user.role)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

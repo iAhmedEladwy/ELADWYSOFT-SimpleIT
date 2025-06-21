@@ -76,7 +76,7 @@ export class MemoryStorage implements IStorage {
       employeeId: null,
       managerId: null,
       isActive: true,
-      accessLevel: "3",
+      role: "admin",
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -442,7 +442,7 @@ export class MemoryStorage implements IStorage {
         firstName: userData.firstName || existingUser.firstName,
         lastName: userData.lastName || existingUser.lastName,
         profileImageUrl: userData.profileImageUrl || existingUser.profileImageUrl,
-        accessLevel: userData.accessLevel || existingUser.accessLevel,
+        role: userData.role || existingUser.role,
         updatedAt: new Date()
       };
       
@@ -458,7 +458,7 @@ export class MemoryStorage implements IStorage {
         firstName: userData.firstName,
         lastName: userData.lastName,
         profileImageUrl: userData.profileImageUrl,
-        accessLevel: userData.accessLevel || "1",
+        role: userData.role || "employee",
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -1574,7 +1574,7 @@ export class MemoryStorage implements IStorage {
   // Delete Ticket with admin permission (Feature 4: Delete ticket function - admin only)
   async deleteTicket(id: number, userId: number): Promise<boolean> {
     const user = await this.getUser(userId);
-    if (!user || user.accessLevel !== '1') { // Only admin can delete
+    if (!user || user.role !== 'admin') { // Only admin can delete
       throw new Error("Unauthorized: Only administrators can delete tickets");
     }
     

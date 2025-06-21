@@ -13,7 +13,7 @@ type User = {
   employeeId?: number;
   managerId?: number;
   isActive: boolean;
-  accessLevel: string;
+  role: string;
 };
 
 type AuthContextType = {
@@ -21,7 +21,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasAccess: (minAccessLevel: number) => boolean;
+  hasAccess: (minRoleLevel: number) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,9 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
-  const hasAccess = (minAccessLevel: number) => {
-    if (!user) return false;
-    return parseInt(user.accessLevel) >= minAccessLevel;
+  const hasAccess = (minRoleLevel: number) => {
+    if (!user || !user.role) return false;
+    
+    // Role hierarchy: admin=4, manager=3, agent=2, employee=1
+    const roleLevel = {
+      'admin': 4,
+      'manager': 3,
+      'agent': 2,
+      'employee': 1
+    }[user.role] || 0;
+    
+    return roleLevel >= minRoleLevel;
   };
 
   return (

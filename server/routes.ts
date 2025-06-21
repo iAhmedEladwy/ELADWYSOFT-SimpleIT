@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         password: hashedPassword,
         email: email || null,
-        accessLevel: "3", // Admin level
+        role: "admin", // Admin role
       });
       
       // Get/create system config with defaults if it doesn't exist
@@ -3779,7 +3779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         email: "admin@simpleit.com",
         role:"admin",
-        accessLevel: "3"
+        role: "admin"
       });
       console.log("Admin user created");
     }

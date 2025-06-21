@@ -190,9 +190,10 @@ export default function Users() {
     setOpenDialog(true);
   };
 
-  const admins = users.filter((user: any) => user.accessLevel === '3');
-  const managers = users.filter((user: any) => user.accessLevel === '2');
-  const viewers = users.filter((user: any) => user.accessLevel === '1');
+  const admins = users.filter((user: any) => user.role === 'admin');
+  const managers = users.filter((user: any) => user.role === 'manager');
+  const agents = users.filter((user: any) => user.role === 'agent');
+  const employees = users.filter((user: any) => user.role === 'employee');
 
   return (
     <div className="p-6">

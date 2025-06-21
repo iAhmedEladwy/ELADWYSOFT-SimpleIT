@@ -5,7 +5,7 @@ export interface AuthUser {
   username: string;
   email: string;
   role: string;
-  accessLevel: string;
+  role: string;
   employeeId?: number;
   managerId?: number;
 }

@@ -152,32 +152,32 @@ function SystemConfig() {
 
   const { data: customRequestTypes = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-request-types'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   const { data: customAssetTypes = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-types'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   const { data: customAssetBrands = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-brands'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   const { data: customAssetStatuses = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-statuses'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   const { data: serviceProviders = [] } = useQuery<any[]>({
     queryKey: ['/api/service-providers'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ['/api/users'],
-    enabled: hasAccess(3),
+    enabled: hasAccess(4), // Admin only
   });
 
   // Filtered arrays for search functionality
@@ -532,7 +532,7 @@ function SystemConfig() {
       setNewUserFirstName('');
       setNewUserLastName('');
       setNewUserRole('employee');
-      setNewUserAccessLevel('1');
+      setNewUserAccessLevel('employee');
       setNewUserEmployeeId(null);
       setNewUserManagerId(null);
       setNewUserPassword('');
@@ -814,7 +814,7 @@ function SystemConfig() {
       firstName: newUserFirstName.trim() || null,
       lastName: newUserLastName.trim() || null,
       role: newUserRole,
-      accessLevel: newUserAccessLevel,
+      role: newUserAccessLevel,
       employeeId: newUserEmployeeId,
       managerId: newUserManagerId,
       password: newUserPassword.trim(),
@@ -831,7 +831,7 @@ function SystemConfig() {
     setEditedUserFirstName(user.firstName || '');
     setEditedUserLastName(user.lastName || '');
     setEditedUserRole(user.role);
-    setEditedUserAccessLevel(user.accessLevel || '1');
+    setEditedUserAccessLevel(user.role || 'employee');
     setEditedUserEmployeeId(user.employeeId);
     setEditedUserManagerId(user.managerId);
     setEditedUserPassword('');
@@ -847,7 +847,7 @@ function SystemConfig() {
       firstName: editedUserFirstName.trim() || null,
       lastName: editedUserLastName.trim() || null,
       role: editedUserRole,
-      accessLevel: editedUserAccessLevel,
+      role: editedUserAccessLevel,
       employeeId: editedUserEmployeeId,
       managerId: editedUserManagerId,
       ...(editedUserPassword.trim() && { password: editedUserPassword.trim() })
