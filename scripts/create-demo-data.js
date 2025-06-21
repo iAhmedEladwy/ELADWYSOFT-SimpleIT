@@ -153,7 +153,7 @@ class DemoDataGenerator {
 
     for (const type of requestTypes) {
       await this.pool.query(`
-        INSERT INTO custom_request_types (name, description, is_active, created_at, updated_at)
+        INSERT INTO custom_request_types (name, description, "isActive", "createdAt", "updatedAt")
         VALUES ($1, $2, $3, NOW(), NOW())
         ON CONFLICT (name) DO NOTHING
       `, [type.name, type.description, true]);
