@@ -271,3 +271,25 @@ export async function getSubordinateIds(managerId: number): Promise<number[]> {
     return [];
   }
 }
+
+/**
+ * Get user's role level for hierarchical checks
+ */
+export function getUserRoleLevel(user: any): number {
+  if (!user || !user.role) return 0;
+  
+  switch (user.role) {
+    case 'admin': return 4;
+    case 'manager': return 3;
+    case 'agent': return 2;
+    case 'employee': return 1;
+    default: return 0;
+  }
+}
+
+/**
+ * Check if user has minimum role level (hierarchical check)
+ */
+export function hasMinimumRoleLevel(user: any, minLevel: number): boolean {
+  return getUserRoleLevel(user) >= minLevel;
+}
