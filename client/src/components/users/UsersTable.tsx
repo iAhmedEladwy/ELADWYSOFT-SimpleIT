@@ -50,11 +50,12 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
   const translations = {
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
-    accessLevel: language === 'English' ? 'Access Level' : 'مستوى الوصول',
+    role: language === 'English' ? 'Role' : 'الدور',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     admin: language === 'English' ? 'Admin' : 'مسؤول',
     manager: language === 'English' ? 'Manager' : 'مدير',
-    user: language === 'English' ? 'User' : 'مستخدم',
+    agent: language === 'English' ? 'Agent' : 'وكيل',
+    employee: language === 'English' ? 'Employee' : 'موظف',
     edit: language === 'English' ? 'Edit' : 'تعديل',
     delete: language === 'English' ? 'Delete' : 'حذف',
     confirmDelete: language === 'English' ? 'Confirm Deletion' : 'تأكيد الحذف',
@@ -109,7 +110,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
           <TableRow>
             <TableHead>{translations.username}</TableHead>
             <TableHead>{translations.email}</TableHead>
-            <TableHead>{translations.accessLevel}</TableHead>
+            <TableHead>{translations.role}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
           </TableRow>
         </TableHeader>

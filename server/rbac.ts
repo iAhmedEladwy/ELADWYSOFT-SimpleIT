@@ -6,7 +6,6 @@ export interface AuthenticatedRequest extends Request {
     id: number;
     username: string;
     role: string;
-    accessLevel: string;
     employeeId?: number;
     managerId?: number;
   };
@@ -20,11 +19,12 @@ export const ROLES = {
   EMPLOYEE: 'Employee'
 } as const;
 
-export const ACCESS_LEVELS = {
-  ADMIN: '1',
-  MANAGER: '2',
-  AGENT: '3',
-  EMPLOYEE: '4'
+// Role hierarchy levels (lower number = higher privilege)
+export const ROLE_HIERARCHY = {
+  'Admin': 1,
+  'Manager': 2,
+  'Agent': 3,
+  'Employee': 4
 } as const;
 
 // Permission definitions
