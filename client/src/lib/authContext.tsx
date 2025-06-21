@@ -13,7 +13,6 @@ type User = {
   employeeId?: number;
   managerId?: number;
   isActive: boolean;
-  role: string;
 };
 
 type AuthContextType = {

@@ -76,7 +76,6 @@ export class MemoryStorage implements IStorage {
       employeeId: null,
       managerId: null,
       isActive: true,
-      role: "admin",
       createdAt: new Date(),
       updatedAt: new Date()
     });

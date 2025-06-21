@@ -45,18 +45,19 @@ const authenticateUser = (req: Request, res: Response, next: Function) => {
   next();
 };
 
-// Check if user has appropriate access level
-const hasAccess = (minAccessLevel: number) => {
+// Import RBAC functions
+import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission } from "./rbac";
+
+// Check if user has appropriate role level
+const hasAccess = (minRoleLevel: number) => {
   return (req: Request, res: Response, next: Function) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
     const user = req.user as schema.User;
-    const userAccessLevel = parseInt(user.accessLevel);
-    
-    if (userAccessLevel < minAccessLevel) {
-      return res.status(403).json({ message: "Forbidden: Insufficient access level" });
+    if (!hasMinimumRoleLevel(user, minRoleLevel)) {
+      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
     }
     
     next();
@@ -1382,9 +1383,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/assets", authenticateUser, async (req, res) => {
     try {
       const user = req.user as schema.User;
-      const userAccessLevel = parseInt(user.accessLevel);
+      const userRoleLevel = getUserRoleLevel(user);
       
-      // If user has level 1 access (User), only show assets that aren't being modified
+      // If user has level 1 access (Employee), only show assets that aren't being modified
       if (userAccessLevel === 1) {
         const assets = await storage.getAllAssets();
         // Filter out assets that are in maintenance, being sold, etc.
@@ -1411,9 +1412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = req.user as schema.User;
-      const userAccessLevel = parseInt(user.accessLevel);
+      const userRoleLevel = getUserRoleLevel(user);
       
-      // If user is access level 1 (User role) and asset is not viewable
+      // If user is access level 1 (Employee role) and asset is not viewable
       if (userAccessLevel === 1 && 
           asset.status !== 'Available' && 
           asset.status !== 'In Use') {
@@ -1752,9 +1753,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = req.user as schema.User;
-      const userAccessLevel = parseInt(user.accessLevel);
+      const userRoleLevel = getUserRoleLevel(user);
       
-      // If user has level 1 access (User), check if they can see this asset
+      // If user has level 1 access (Employee), check if they can see this asset
       if (userAccessLevel === 1 && 
           asset.status !== 'Available' && 
           asset.status !== 'In Use') {
@@ -2127,9 +2128,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tickets", authenticateUser, async (req, res) => {
     try {
       const user = req.user as schema.User;
-      const userAccessLevel = parseInt(user.accessLevel);
+      const userRoleLevel = getUserRoleLevel(user);
       
-      // If user has level 1 access (User), only show tickets they're assigned to
+      // If user has level 1 access (Employee), only show tickets they're assigned to
       // or ones they've submitted through an employee profile
       if (userAccessLevel === 1) {
         const allTickets = await storage.getAllTickets();
@@ -2167,9 +2168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = req.user as schema.User;
-      const userAccessLevel = parseInt(user.accessLevel);
+      const userRoleLevel = getUserRoleLevel(user);
       
-      // If user has level 1 access (User), verify they have permission to view this ticket
+      // If user has level 1 access (Employee), verify they have permission to view this ticket
       if (userAccessLevel === 1) {
         // Check if user is assigned to this ticket
         if (ticket.assignedToId === user.id) {
@@ -3778,7 +3779,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: "admin",
         password: hashedPassword,
         email: "admin@simpleit.com",
-        role:"admin",
         role: "admin"
       });
       console.log("Admin user created");
