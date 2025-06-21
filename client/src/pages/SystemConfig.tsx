@@ -34,6 +34,9 @@ function SystemConfig() {
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
   
+  // Tab state management
+  const [activeTab, setActiveTab] = useState('general');
+  
   // Basic configuration states
   const [assetIdPrefix, setAssetIdPrefix] = useState('AST-');
   const [empIdPrefix, setEmpIdPrefix] = useState('EMP-');
@@ -2391,16 +2394,16 @@ function SystemConfig() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Access Level' : 'مستوى الوصول'}</Label>
+                          <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
                           <Select value={newUserAccessLevel} onValueChange={setNewUserAccessLevel}>
                             <SelectTrigger>
-                              <SelectValue placeholder={language === 'English' ? 'Select access level' : 'اختر مستوى الوصول'} />
+                              <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
-                              <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                              <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
-                              <SelectItem value="0">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                              <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                              <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                              <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                              <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2559,16 +2562,16 @@ function SystemConfig() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label>{language === 'English' ? 'Access Level' : 'مستوى الوصول'}</Label>
+                        <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
                         <Select value={editedUserAccessLevel} onValueChange={setEditedUserAccessLevel}>
                           <SelectTrigger>
-                            <SelectValue placeholder={language === 'English' ? 'Select access level' : 'اختر مستوى الوصول'} />
+                            <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="3">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
-                            <SelectItem value="2">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                            <SelectItem value="1">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
-                            <SelectItem value="1">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                            <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                            <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                            <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                            <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
