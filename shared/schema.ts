@@ -18,7 +18,7 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Enums
-export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3']);
+
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
@@ -133,7 +133,7 @@ export const users = pgTable("users", {
   employeeId: integer("employee_id").references(() => employees.id),
   managerId: integer("manager_id").references(() => users.id),
   isActive: boolean("is_active").default(true),
-  accessLevel: accessLevelEnum("access_level").notNull().default('1'),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

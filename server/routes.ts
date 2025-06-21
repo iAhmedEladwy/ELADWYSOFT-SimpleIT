@@ -2132,7 +2132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If user has level 1 access (Employee), only show tickets they're assigned to
       // or ones they've submitted through an employee profile
-      if (userAccessLevel === 1) {
+      if (userRoleLevel === 1) { // Employee role
         const allTickets = await storage.getAllTickets();
         // Get the employee record for this user if exists
         const userEmployee = await storage.getEmployeeByUserId(user.id);
@@ -2171,7 +2171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRoleLevel = getUserRoleLevel(user);
       
       // If user has level 1 access (Employee), verify they have permission to view this ticket
-      if (userAccessLevel === 1) {
+      if (userRoleLevel === 1) { // Employee role
         // Check if user is assigned to this ticket
         if (ticket.assignedToId === user.id) {
           return res.json(ticket);

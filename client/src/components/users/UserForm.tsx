@@ -55,6 +55,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
     manager: language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)',
     agent: language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)',
     employee: language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)',
+    selectRole: language === 'English' ? 'Select role' : 'اختر الدور',
     create: language === 'English' ? 'Create User' : 'إنشاء مستخدم',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
@@ -146,10 +147,10 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Admin">{translations.admin}</SelectItem>
-                  <SelectItem value="Manager">{translations.manager}</SelectItem>
-                  <SelectItem value="Agent">{translations.agent}</SelectItem>
-                  <SelectItem value="Employee">{translations.employee}</SelectItem>
+                  <SelectItem value="admin">{translations.admin}</SelectItem>
+                  <SelectItem value="manager">{translations.manager}</SelectItem>
+                  <SelectItem value="agent">{translations.agent}</SelectItem>
+                  <SelectItem value="employee">{translations.employee}</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>{translations.roleDesc}</FormDescription>
