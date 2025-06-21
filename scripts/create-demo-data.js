@@ -81,17 +81,14 @@ class DemoDataGenerator {
       const userSuffix = i > userTemplates.length - 1 ? `${Math.floor(i / userTemplates.length) + 1}` : '';
       
       await this.pool.query(`
-        INSERT INTO users (username, password, email, first_name, last_name, role, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        INSERT INTO users (username, password, email, access_level, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
         ON CONFLICT (username) DO NOTHING
       `, [
         template.username + userSuffix,
         hashedPassword,
         template.email.replace('@', userSuffix + '@'),
-        template.firstName,
-        template.lastName,
-        template.role,
-        true
+        template.role
       ]);
     }
   }
@@ -122,17 +119,19 @@ class DemoDataGenerator {
       const email = `${name.toLowerCase().replace(' ', '.')}@eladwysoft.com`;
       
       await this.pool.query(`
-        INSERT INTO employees (employee_id, name, email, phone, department, position, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-        ON CONFLICT (employee_id) DO NOTHING
+        INSERT INTO employees (emp_id, english_name, department, title, employment_type, joining_date, status, personal_mobile, corporate_email, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+        ON CONFLICT (emp_id) DO NOTHING
       `, [
         employeeId,
         name,
-        email,
-        `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
         department,
         position,
-        Math.random() > 0.1 // 90% active
+        'full-time',
+        new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)),
+        Math.random() > 0.1 ? 'active' : 'inactive',
+        `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
+        email
       ]);
     }
   }
