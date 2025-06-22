@@ -2009,16 +2009,15 @@ export class DatabaseStorage implements IStorage {
   // Enhanced Ticket operations with time tracking
   async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
     try {
-      const [updatedTicket] = await db
-        .update(tickets)
-        .set({ 
-          isTimeTracking: true,
-          startTime: new Date(),
-          lastActivityAt: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(tickets.id, ticketId))
-        .returning();
+      // Use raw SQL to avoid schema issues
+      const result = await pool.query(`
+        UPDATE tickets 
+        SET is_time_tracking = true, start_time = NOW(), last_activity_at = NOW(), updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [ticketId]);
+      
+      const updatedTicket = result.rows[0];
 
       // Add to history
       if (updatedTicket) {
@@ -2086,7 +2085,7 @@ export class DatabaseStorage implements IStorage {
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
       const result = await pool.query(`
-        SELECT th.*, u.username, u.first_name, u.last_name
+        SELECT th.*, u.username, u.first_name as firstName, u.last_name as lastName
         FROM ticket_history th
         LEFT JOIN users u ON th.user_id = u.id
         WHERE th.ticket_id = $1
@@ -2143,7 +2142,7 @@ export class DatabaseStorage implements IStorage {
   async getTicketComments(ticketId: number): Promise<any[]> {
     try {
       const result = await pool.query(`
-        SELECT tc.*, u.username, u.first_name, u.last_name
+        SELECT tc.*, u.username, u.first_name as firstName, u.last_name as lastName
         FROM ticket_comments tc
         LEFT JOIN users u ON tc.user_id = u.id
         WHERE tc.ticket_id = $1
