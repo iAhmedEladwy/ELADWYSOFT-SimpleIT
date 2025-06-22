@@ -417,7 +417,15 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.username, username));
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password: users.password,
+        access_level: users.accessLevel,
+        created_at: users.createdAt,
+        updated_at: users.updatedAt
+      }).from(users).where(eq(users.username, username));
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
@@ -516,7 +524,15 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const result = await db.select().from(users).orderBy(users.username);
+      const result = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password: users.password,
+        access_level: users.accessLevel,
+        created_at: users.createdAt,
+        updated_at: users.updatedAt
+      }).from(users).orderBy(users.username);
       return result.map(user => this.mapUserFromDb(user));
     } catch (error) {
       console.error('Error fetching users:', error);
