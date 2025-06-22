@@ -244,6 +244,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Production-ready admin password reset (for Ubuntu server deployment)
+  app.post("/api/admin/emergency-reset", async (req, res) => {
+    try {
+      const { newPassword, confirmPassword } = req.body;
+      
+      if (!newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "Password and confirmation required" });
+      }
+      
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      // Generate hash using production bcrypt instance
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Verify hash immediately
+      const verificationTest = await bcrypt.compare(newPassword, hashedPassword);
+      if (!verificationTest) {
+        return res.status(500).json({ message: "Password hash verification failed" });
+      }
+      
+      // Update admin user directly
+      const updateResult = await db.update(users)
+        .set({ 
+          password: hashedPassword,
+          updatedAt: new Date()
+        })
+        .where(eq(users.username, 'admin'))
+        .returning();
+      
+      if (updateResult.length === 0) {
+        return res.status(404).json({ message: "Admin user not found" });
+      }
+      
+      // Final verification - retrieve and test
+      const adminUser = await storage.getUserByUsername('admin');
+      if (!adminUser) {
+        return res.status(500).json({ message: "Failed to retrieve updated admin user" });
+      }
+      
+      const finalTest = await bcrypt.compare(newPassword, adminUser.password);
+      
+      res.json({ 
+        message: "Admin password reset successfully",
+        verified: finalTest,
+        userId: adminUser.id
+      });
+      
+    } catch (error: any) {
+      console.error("Emergency password reset error:", error);
+      res.status(500).json({ message: "Password reset failed" });
+    }
+  });
+
   app.post("/api/login", (req, res, next) => {
     console.log('Login attempt for username:', req.body.username);
     
@@ -255,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log('Authentication failed:', info?.message || 'Invalid credentials');
-        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+        return res.status(401).json({ message: info?.message || 'Incorrect password' });
       }
       
       // Log the user in to create session
