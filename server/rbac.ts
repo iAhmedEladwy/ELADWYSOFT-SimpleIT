@@ -19,12 +19,12 @@ export const ROLES = {
   EMPLOYEE: 'Employee'
 } as const;
 
-// Role hierarchy levels (lower number = higher privilege)
+// Role hierarchy levels (higher number = higher privilege) 
 export const ROLE_HIERARCHY = {
-  'Admin': 1,
-  'Manager': 2,
-  'Agent': 3,
-  'Employee': 4
+  'admin': 4,
+  'manager': 3, 
+  'agent': 2,
+  'employee': 1
 } as const;
 
 // Permission definitions
