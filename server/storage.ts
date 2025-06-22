@@ -422,9 +422,10 @@ export class DatabaseStorage implements IStorage {
         username: users.username,
         email: users.email,
         password: users.password,
-        access_level: users.accessLevel,
-        created_at: users.createdAt,
-        updated_at: users.updatedAt
+        accessLevel: users.accessLevel,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
       }).from(users).where(eq(users.username, username));
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
@@ -461,21 +462,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  private roleToAccessLevel(role: string): number {
+  private roleToAccessLevel(role: string): string {
     switch(role) {
-      case 'admin': return 3;  // Highest level in current database
-      case 'manager': return 2;
-      case 'agent': return 1;
-      case 'employee': return 1;
-      default: return 1;
+      case 'admin': return '4';
+      case 'manager': return '3';
+      case 'agent': return '2';
+      case 'employee': return '1';
+      default: return '1';
     }
   }
 
-  private accessLevelToRole(accessLevel: number): string {
-    switch(accessLevel) {
-      case 3: return 'admin';  // Highest level in current database
-      case 2: return 'manager';
-      case 1: return 'agent';
+  private accessLevelToRole(accessLevel: string | number): string {
+    const level = typeof accessLevel === 'string' ? accessLevel : accessLevel.toString();
+    switch(level) {
+      case '4': return 'admin';
+      case '3': return 'manager';
+      case '2': return 'agent';
+      case '1': return 'employee';
       default: return 'employee';
     }
   }
@@ -486,15 +489,15 @@ export class DatabaseStorage implements IStorage {
       username: dbUser.username,
       email: dbUser.email,
       password: dbUser.password,
-      role: this.accessLevelToRole(dbUser.access_level || dbUser.accessLevel),
+      role: dbUser.role || this.accessLevelToRole(dbUser.accessLevel || dbUser.access_level),
       firstName: null,
       lastName: null,
       profileImageUrl: null,
       employeeId: null,
       managerId: null,
       isActive: true,
-      createdAt: dbUser.created_at || dbUser.createdAt,
-      updatedAt: dbUser.updated_at || dbUser.updatedAt
+      createdAt: dbUser.createdAt || dbUser.created_at,
+      updatedAt: dbUser.updatedAt || dbUser.updated_at
     };
   }
 
