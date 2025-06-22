@@ -40,6 +40,9 @@ const ticketFormSchema = z.object({
   priority: z.string({
     required_error: "Please select a priority",
   }),
+  summary: z.string()
+    .min(5, { message: "Summary must be at least 5 characters" })
+    .max(200, { message: "Summary cannot exceed 200 characters" }),
   description: z.string()
     .min(5, { message: "Description must be at least 5 characters" })
     .max(2000, { message: "Description cannot exceed 2000 characters" }),
@@ -88,6 +91,10 @@ export default function TicketForm({
     low: language === 'English' ? 'Low' : 'منخفض',
     medium: language === 'English' ? 'Medium' : 'متوسط',
     high: language === 'English' ? 'High' : 'مرتفع',
+    summary: language === 'English' ? 'Summary' : 'الملخص',
+    summaryPlaceholder: language === 'English' 
+      ? 'Brief summary of the issue...'
+      : 'ملخص موجز للمشكلة...',
     description: language === 'English' ? 'Description' : 'الوصف',
     descriptionPlaceholder: language === 'English' 
       ? 'Describe the issue in detail...'
@@ -104,6 +111,7 @@ export default function TicketForm({
       relatedAssetId: undefined,
       requestType: undefined,
       priority: undefined,
+      summary: '',
       description: '',
     },
   });
@@ -229,6 +237,24 @@ export default function TicketForm({
                   <SelectItem value="High">{translations.high}</SelectItem>
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="summary"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{translations.summary}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={translations.summaryPlaceholder}
+                  disabled={isSubmitting}
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

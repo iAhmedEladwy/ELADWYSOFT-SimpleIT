@@ -2005,6 +2005,207 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  // Enhanced Ticket operations with time tracking
+  async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
+    try {
+      const [updatedTicket] = await db
+        .update(tickets)
+        .set({ 
+          isTimeTracking: true,
+          startTime: new Date(),
+          lastActivityAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(tickets.id, ticketId))
+        .returning();
+
+      // Add to history
+      if (updatedTicket) {
+        await this.addTicketHistory({
+          ticketId,
+          userId,
+          action: "Started Time Tracking",
+          notes: "Timer started for this ticket"
+        });
+      }
+
+      return updatedTicket;
+    } catch (error) {
+      console.error('Error starting ticket time tracking:', error);
+      return undefined;
+    }
+  }
+
+  async stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
+    try {
+      // Get current ticket to calculate time spent
+      const [currentTicket] = await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, ticketId));
+
+      if (!currentTicket || !currentTicket.startTime) {
+        return undefined;
+      }
+
+      const endTime = new Date();
+      const duration = Math.floor((endTime.getTime() - currentTicket.startTime.getTime()) / 1000 / 60); // minutes
+      const totalTimeSpent = (currentTicket.timeSpent || 0) + duration;
+
+      const [updatedTicket] = await db
+        .update(tickets)
+        .set({ 
+          isTimeTracking: false,
+          completionTime: endTime,
+          timeSpent: totalTimeSpent,
+          lastActivityAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(tickets.id, ticketId))
+        .returning();
+
+      // Add to history
+      if (updatedTicket) {
+        await this.addTicketHistory({
+          ticketId,
+          userId,
+          action: "Stopped Time Tracking",
+          notes: `Timer stopped. Duration: ${duration} minutes. Total time: ${totalTimeSpent} minutes`
+        });
+      }
+
+      return updatedTicket;
+    } catch (error) {
+      console.error('Error stopping ticket time tracking:', error);
+      return undefined;
+    }
+  }
+
+  // Ticket History operations
+  async getTicketHistory(ticketId: number): Promise<any[]> {
+    try {
+      const result = await pool.query(`
+        SELECT th.*, u.username, u.first_name, u.last_name
+        FROM ticket_history th
+        LEFT JOIN users u ON th.user_id = u.id
+        WHERE th.ticket_id = $1
+        ORDER BY th.created_at DESC
+      `, [ticketId]);
+      
+      return result.rows.map(row => ({
+        id: row.id,
+        ticketId: row.ticket_id,
+        userId: row.user_id,
+        action: row.action,
+        fieldChanged: row.field_changed,
+        oldValue: row.old_value,
+        newValue: row.new_value,
+        notes: row.notes,
+        createdAt: row.created_at,
+        user: {
+          id: row.user_id,
+          username: row.username,
+          firstName: row.first_name,
+          lastName: row.last_name
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching ticket history:', error);
+      return [];
+    }
+  }
+
+  async addTicketHistory(historyData: any): Promise<any> {
+    try {
+      const result = await pool.query(`
+        INSERT INTO ticket_history (ticket_id, user_id, action, field_changed, old_value, new_value, notes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      `, [
+        historyData.ticketId,
+        historyData.userId,
+        historyData.action,
+        historyData.fieldChanged || null,
+        historyData.oldValue || null,
+        historyData.newValue || null,
+        historyData.notes || null
+      ]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error adding ticket history:', error);
+      throw error;
+    }
+  }
+
+  // Ticket Comments operations
+  async getTicketComments(ticketId: number): Promise<any[]> {
+    try {
+      const result = await pool.query(`
+        SELECT tc.*, u.username, u.first_name, u.last_name
+        FROM ticket_comments tc
+        LEFT JOIN users u ON tc.user_id = u.id
+        WHERE tc.ticket_id = $1
+        ORDER BY tc.created_at ASC
+      `, [ticketId]);
+      
+      return result.rows.map(row => ({
+        id: row.id,
+        ticketId: row.ticket_id,
+        userId: row.user_id,
+        content: row.content,
+        isPrivate: row.is_private,
+        attachments: row.attachments || [],
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        user: {
+          id: row.user_id,
+          username: row.username,
+          firstName: row.first_name,
+          lastName: row.last_name
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching ticket comments:', error);
+      return [];
+    }
+  }
+
+  async addTicketComment(commentData: any): Promise<any> {
+    try {
+      const result = await pool.query(`
+        INSERT INTO ticket_comments (ticket_id, user_id, content, is_private, attachments)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `, [
+        commentData.ticketId,
+        commentData.userId,
+        commentData.content,
+        commentData.isPrivate || false,
+        commentData.attachments || []
+      ]);
+
+      // Update ticket's last activity
+      await db
+        .update(tickets)
+        .set({ lastActivityAt: new Date(), updatedAt: new Date() })
+        .where(eq(tickets.id, commentData.ticketId));
+
+      // Add to history
+      await this.addTicketHistory({
+        ticketId: commentData.ticketId,
+        userId: commentData.userId,
+        action: "Comment Added",
+        notes: commentData.isPrivate ? "Private comment added" : "Public comment added"
+      });
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error adding ticket comment:', error);
+      throw error;
+    }
+  }
 }
 
 // Use memory storage for development, PostgreSQL for production

@@ -252,7 +252,7 @@ export default function TransactionHistoryTable() {
               <TableBody>
                 {filteredTransactions?.length ? (
                   filteredTransactions.map((transaction: TransactionWithRelations) => (
-                    <TableRow key={`transaction-${transaction.id}`}>
+                    <TableRow key={`transaction-${transaction.id || `temp-${Math.random()}`}`}>
                       <TableCell>{transaction.id}</TableCell>
                       <TableCell className="font-medium">{transaction.asset?.assetId || '-'}</TableCell>
                       <TableCell>{transaction.employee?.englishName || '-'}</TableCell>
