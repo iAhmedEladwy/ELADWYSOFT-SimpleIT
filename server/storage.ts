@@ -657,20 +657,29 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      // Direct PostgreSQL query using pool to get correct enum values
+      // Use direct SQL with explicit status mapping to bypass enum issues
       const result = await pool.query(`
         SELECT 
           id, emp_id, english_name, arabic_name, department, id_number, title,
           direct_manager, employment_type::text, joining_date, exit_date, 
-          status::text as status,
+          CASE 
+            WHEN status = 'Active' THEN 'Active'
+            WHEN status = 'Resigned' THEN 'Resigned' 
+            WHEN status = 'Terminated' THEN 'Terminated'
+            WHEN status = 'On Leave' THEN 'On Leave'
+            ELSE 'Active'
+          END as status,
           personal_mobile, work_mobile, personal_email, corporate_email,
           user_id, created_at, updated_at, name, email, phone, position
         FROM employees 
         ORDER BY emp_id ASC
       `);
       
-      // Transform raw result to expected format
-      return result.rows.map((emp: any) => ({
+      // Transform raw result to expected format with debug logging
+      console.log('Raw PostgreSQL result for first employee:', result.rows[0]);
+      
+      return result.rows.map((emp: any) => {
+        const transformed = {
         id: emp.id,
         empId: emp.emp_id,
         englishName: emp.english_name || emp.name || 'Unknown',
@@ -682,7 +691,7 @@ export class DatabaseStorage implements IStorage {
         employmentType: emp.employment_type || 'Full-time',
         joiningDate: emp.joining_date,
         exitDate: emp.exit_date,
-        status: emp.status, // Direct from PostgreSQL query
+        status: emp.status === 'Active' ? 'Active' : emp.status === 'Resigned' ? 'Resigned' : 'Active',
         personalMobile: emp.personal_mobile,
         workMobile: emp.work_mobile,
         personalEmail: emp.personal_email,
@@ -695,7 +704,19 @@ export class DatabaseStorage implements IStorage {
         email: emp.email || emp.personal_email || emp.corporate_email,
         phone: emp.phone || emp.personal_mobile,
         position: emp.position || emp.title
-      }));
+        };
+        
+        // Debug log for first employee transformation
+        if (emp.id === 3) {
+          console.log('Employee 3 transformation:', {
+            raw_status: emp.status,
+            final_status: transformed.status,
+            raw_emp: emp
+          });
+        }
+        
+        return transformed;
+      });
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
