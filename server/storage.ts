@@ -657,44 +657,45 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      const result = await db.select().from(employees).orderBy(asc(employees.empId));
+      // Use raw SQL to bypass any ORM mapping issues with enum values
+      const result = await db.execute(sql`
+        SELECT 
+          id, emp_id, english_name, arabic_name, department, id_number, title,
+          direct_manager, employment_type, joining_date, exit_date, 
+          status::text as status,
+          personal_mobile, work_mobile, personal_email, corporate_email,
+          user_id, created_at, updated_at, name, email, phone, position
+        FROM employees 
+        ORDER BY emp_id ASC
+      `);
       
-      // Debug: Check what Drizzle is actually returning for status field
-      if (result.length > 0) {
-        const firstEmp = result[0];
-        console.log('Raw DB status value:', firstEmp.status, 'Type:', typeof firstEmp.status);
-        console.log('All status-related fields:', { status: firstEmp.status, isActive: firstEmp.isActive });
-      }
-      
-      // Normalize data for consistent frontend consumption
-      return result.map(emp => {
-        const normalized = {
-          ...emp,
-          // Ensure name fields are consistently populated
-          englishName: emp.englishName || emp.name || 'Unknown',
-          name: emp.name || emp.englishName || 'Unknown',
-          // Preserve database enum status values exactly as stored
-          status: emp.status,
-          // Ensure department is never null
-          department: emp.department || 'Unassigned',
-          // Ensure employment type is set
-          employmentType: emp.employmentType || 'Full-time',
-          // Normalize email fields
-          email: emp.email || emp.personalEmail || emp.corporateEmail,
-          personalEmail: emp.personalEmail || emp.email,
-          corporateEmail: emp.corporateEmail || emp.email,
-          // Normalize phone fields
-          phone: emp.phone || emp.personalMobile,
-          personalMobile: emp.personalMobile || emp.phone
-        };
-        
-        // Debug: Log normalized data for first employee
-        if (emp.id === 3) {
-          console.log('Normalized employee data:', JSON.stringify(normalized, null, 2));
-        }
-        
-        return normalized;
-      });
+      // Transform raw result to expected format
+      return result.rows.map((emp: any) => ({
+        id: emp.id,
+        empId: emp.emp_id,
+        englishName: emp.english_name || emp.name || 'Unknown',
+        arabicName: emp.arabic_name,
+        department: emp.department || 'Unassigned',
+        idNumber: emp.id_number,
+        title: emp.title,
+        directManager: emp.direct_manager,
+        employmentType: emp.employment_type || 'Full-time',
+        joiningDate: emp.joining_date,
+        exitDate: emp.exit_date,
+        status: emp.status, // This now comes directly from database as text
+        personalMobile: emp.personal_mobile,
+        workMobile: emp.work_mobile,
+        personalEmail: emp.personal_email,
+        corporateEmail: emp.corporate_email,
+        userId: emp.user_id,
+        createdAt: emp.created_at,
+        updatedAt: emp.updated_at,
+        // Backward compatibility fields
+        name: emp.name || emp.english_name || 'Unknown',
+        email: emp.email || emp.personal_email || emp.corporate_email,
+        phone: emp.phone || emp.personal_mobile,
+        position: emp.position || emp.title
+      }));
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
