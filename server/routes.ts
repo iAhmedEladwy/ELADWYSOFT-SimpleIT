@@ -893,8 +893,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         department: emp.department,
         title: emp.position,
         employmentType: emp.employmentType || 'Full-time',
-        status: emp.isActive ? 'Active' : 'Inactive',
-        isActive: emp.isActive,
+        status: emp.status || 'Active', // Use actual status from storage layer
+        isActive: emp.isActive !== undefined ? emp.isActive : (emp.status === 'Active'),
         joiningDate: emp.joiningDate || null,
         exitDate: emp.exitDate || null,
         personalEmail: emp.email,

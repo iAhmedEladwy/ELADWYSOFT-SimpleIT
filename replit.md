@@ -21,10 +21,13 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-06-22
-- **COMPLETED**: Employee Status System & Asset History UI - Complete Fix Implementation
-  - ✓ **CRITICAL STATUS BUG**: Fixed storage layer normalization that was converting all employee statuses to 'Inactive'
-  - ✓ **STATUS FILTERING**: Simplified filter logic to use pure enum matching (Active, Resigned, Terminated, On Leave)
-  - ✓ **DATA INTEGRITY**: Preserved database enum values without boolean override logic
+- **COMPLETED**: Employee Status System Critical Fix - Root Cause Resolution
+  - ✓ **ROOT CAUSE IDENTIFIED**: Found hardcoded status transformation in /api/employees route using isActive boolean
+  - ✓ **DATA PIPELINE FIX**: Fixed server/routes.ts line ~965 status mapping to prioritize actual database enum values
+  - ✓ **STORAGE LAYER**: Enhanced getAllEmployees() to return both status enum and computed isActive field
+  - ✓ **STATUS INTEGRITY**: All employees now display correct database status values (Active, Resigned, etc.)
+  - ✓ **FILTERING SYSTEM**: Status filters now work with authentic database enum values
+- **COMPLETED**: Asset History UI & React Warnings Fix
   - ✓ **ASSET HISTORY UI**: Enhanced page structure with proper header and removed duplicate AssetTransactions page
   - ✓ **REACT WARNINGS**: Fixed missing key props in TransactionHistoryTable component
   - ✓ **UI CONSISTENCY**: Improved visual hierarchy and page organization for Asset History
