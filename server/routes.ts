@@ -4373,8 +4373,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Custom Request Types CRUD routes
-  app.get("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
+  // Custom Request Types CRUD routes  
+  app.get("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       let requestTypes = await storage.getCustomRequestTypes();
       
@@ -4401,7 +4401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/custom-request-types", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const { name, description } = req.body;
       if (!name || !name.trim()) {
@@ -4419,7 +4419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/custom-request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/custom-request-types/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { name, description } = req.body;
