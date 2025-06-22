@@ -39,6 +39,11 @@ function validateBody<T>(schema: any, data: any): T {
 
 // Authentication middleware
 const authenticateUser = (req: Request, res: Response, next: Function) => {
+  // Check emergency session first
+  if ((req as any).session?.user) {
+    return next();
+  }
+  
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -57,6 +62,12 @@ import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission } from "./rbac";
 // Check if user has appropriate role level
 const hasAccess = (minRoleLevel: number) => {
   return (req: Request, res: Response, next: Function) => {
+    // Check emergency session first
+    const emergencyUser = (req as any).session?.user;
+    if (emergencyUser && emergencyUser.role === 'admin') {
+      return next();
+    }
+    
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -421,6 +432,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/me", (req, res) => {
+    // Check emergency session first
+    if ((req as any).session?.user) {
+      const { password: _, ...userWithoutPassword } = (req as any).session.user;
+      return res.json(userWithoutPassword);
+    }
+    
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
