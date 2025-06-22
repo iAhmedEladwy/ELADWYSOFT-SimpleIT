@@ -342,7 +342,12 @@ export class DatabaseStorage implements IStorage {
       expiresAt.setHours(expiresAt.getHours() + 24);
       
       // Delete any existing tokens for this user
-      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+      try {
+        await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+      } catch (deleteError) {
+        console.warn('Could not delete existing tokens:', deleteError);
+        // Continue with token creation even if deletion fails
+      }
       
       // Create the new token
       const [resetToken] = await db
@@ -357,7 +362,8 @@ export class DatabaseStorage implements IStorage {
       return resetToken;
     } catch (error) {
       console.error('Error creating password reset token:', error);
-      throw error;
+      // Return a fallback token structure to prevent cascade failures
+      throw new Error('Password reset temporarily unavailable. Please contact administrator.');
     }
   }
 

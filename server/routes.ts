@@ -3870,32 +3870,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "If this email exists, a password reset link has been sent." });
       }
       
-      // Create password reset token
-      const resetToken = await storage.createPasswordResetToken(user.id);
-      
-      // Send email with reset link
-      const emailSent = await emailService.sendPasswordResetEmail(
-        user.email!,
-        resetToken.token,
-        user.username
-      );
-      
-      if (emailSent) {
-        await storage.logActivity({
-          userId: user.id,
-          action: "Password Reset Request",
-          entityType: "User",
-          entityId: user.id,
-          details: { email: user.email }
-        });
+      try {
+        // Create password reset token
+        const resetToken = await storage.createPasswordResetToken(user.id);
         
-        res.json({ message: "Password reset email has been sent." });
-      } else {
-        res.status(500).json({ message: "Failed to send password reset email. Please contact administrator." });
+        // Send email with reset link
+        const emailSent = await emailService.sendPasswordResetEmail(
+          user.email!,
+          resetToken.token,
+          user.username
+        );
+        
+        if (emailSent) {
+          await storage.logActivity({
+            userId: user.id,
+            action: "Password Reset Request",
+            entityType: "User",
+            entityId: user.id,
+            details: { email: user.email }
+          });
+          
+          res.json({ message: "Password reset email has been sent." });
+        } else {
+          res.status(500).json({ message: "Failed to send password reset email. Please contact administrator." });
+        }
+      } catch (tokenError) {
+        console.error('Password reset token creation failed:', tokenError);
+        // Still send success response for security (don't reveal system errors)
+        res.json({ message: "Password reset request received. Please contact administrator if you don't receive an email." });
       }
     } catch (error: any) {
       console.error('Forgot password error:', error);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Password reset temporarily unavailable. Please contact administrator." });
     }
   });
 
