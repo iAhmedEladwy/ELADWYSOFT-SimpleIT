@@ -101,6 +101,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+  // Import and configure passport
+  await import('./passport');
+  
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
@@ -235,8 +238,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.json({ message: "Login successful", user: req.user });
+  app.post("/api/login", (req, res, next) => {
+    console.log('Login attempt for username:', req.body.username);
+    
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('Passport authentication error:', err);
+        return res.status(500).json({ message: 'Authentication server error' });
+      }
+      
+      if (!user) {
+        console.log('Authentication failed:', info?.message || 'Invalid credentials');
+        return res.status(401).json({ message: info?.message || 'Invalid username or password' });
+      }
+      
+      // Log the user in to create session
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error('Session creation error:', err);
+          return res.status(500).json({ message: 'Session creation failed' });
+        }
+        
+        console.log('Login successful for user:', user.username);
+        res.json({ 
+          message: "Login successful", 
+          user: user
+        });
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
