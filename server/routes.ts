@@ -884,22 +884,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employees = await storage.getAllEmployees();
       
-      // Map storage format to frontend format
-      const mappedEmployees = employees.map(emp => ({
+      // Debug first employee from storage
+      if (employees.length > 0) {
+        console.log('STORAGE RETURNED:', employees[0]);
+      }
+      
+      // Map storage format to frontend format - use direct field mapping
+      const mappedEmployees = employees.map(emp => {
+        const mapped = {
         id: emp.id,
-        englishName: emp.name,
+        englishName: emp.englishName || emp.name,
         arabicName: emp.arabicName || null,
-        empId: emp.employeeId,
+        empId: emp.empId || emp.employeeId,
         department: emp.department,
-        title: emp.position,
+        title: emp.title || emp.position,
         employmentType: emp.employmentType || 'Full-time',
-        status: emp.status || 'Active', // Use actual status from storage layer
-        isActive: emp.isActive !== undefined ? emp.isActive : (emp.status === 'Active'),
+        status: emp.status, // Direct status mapping from storage
+        isActive: emp.isActive,
         joiningDate: emp.joiningDate || null,
         exitDate: emp.exitDate || null,
-        personalEmail: emp.email,
+        personalEmail: emp.personalEmail || emp.email,
         corporateEmail: emp.corporateEmail || null,
-        personalMobile: emp.phone,
+        personalMobile: emp.personalMobile || emp.phone,
         workMobile: emp.workMobile || null,
         directManager: emp.directManager || null,
         idNumber: emp.idNumber || null,
@@ -907,12 +913,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: emp.createdAt,
         updatedAt: emp.updatedAt,
         // Legacy fields for compatibility
-        name: emp.name,
-        email: emp.email,
-        phone: emp.phone,
-        position: emp.position,
-        employeeId: emp.employeeId
-      }));
+        name: emp.englishName || emp.name,
+        email: emp.personalEmail || emp.email,
+        phone: emp.personalMobile || emp.phone,
+        position: emp.title || emp.position,
+        employeeId: emp.empId || emp.employeeId
+        };
+        
+        // Debug mapping for first employee
+        if (emp.id === 3) {
+          console.log('ROUTE MAPPING:', {
+            input_status: emp.status,
+            mapped_status: mapped.status,
+            isActive: mapped.isActive
+          });
+        }
+        
+        return mapped;
+      });
       
       res.json(mappedEmployees);
     } catch (error: any) {

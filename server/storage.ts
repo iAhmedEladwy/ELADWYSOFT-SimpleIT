@@ -675,8 +675,14 @@ export class DatabaseStorage implements IStorage {
         ORDER BY emp_id ASC
       `);
       
+      // Debug logging for first employee
+      if (result.rows.length > 0) {
+        console.log('RAW DATABASE RESULT:', result.rows[0]);
+      }
+      
       // Transform raw result to expected format
-      return result.rows.map((emp: any) => ({
+      return result.rows.map((emp: any) => {
+        const transformed = {
         id: emp.id,
         empId: emp.emp_id,
         englishName: emp.english_name || emp.name || 'Unknown',
@@ -702,7 +708,19 @@ export class DatabaseStorage implements IStorage {
         email: emp.email || emp.personal_email || emp.corporate_email,
         phone: emp.phone || emp.personal_mobile,
         position: emp.position || emp.title
-      }));
+        };
+        
+        // Debug log transformation for first employee
+        if (emp.id === 3) {
+          console.log('STORAGE TRANSFORMATION:', {
+            raw_status: emp.status,
+            transformed_status: transformed.status,
+            isActive: transformed.isActive
+          });
+        }
+        
+        return transformed;
+      });
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
