@@ -20,6 +20,18 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **Real-time**: WebSocket support for notifications
 
 ## Recent Changes
+### 2025-06-22
+- **COMPLETED**: Critical Production Fix Implementation - PostgreSQL Storage Selection
+  - ✓ **CRITICAL FIX**: Changed storage selection from NODE_ENV to DATABASE_URL detection
+  - ✓ **BACKEND**: System now uses PostgreSQL when DATABASE_URL exists regardless of NODE_ENV
+  - ✓ **DATABASE**: Added automatic default request types initialization in PostgreSQL
+  - ✓ **API**: Replaced direct PostgreSQL demo data script with storage interface compatible version
+  - ✓ **DEMO DATA**: Fixed enum constraint violations using valid asset types and statuses
+  - ✓ **PERSISTENCE**: Request types and all data now persist correctly in PostgreSQL
+  - ✓ Fixed memory storage fallback issue preventing proper database utilization
+  - ✓ Eliminated "Control plane request failed: endpoint is disabled" errors
+  - ✓ Demo data generation now works through both standalone and API endpoints
+
 ### 2025-01-21
 - **COMPLETED**: v1.1.1 Critical Bug Fixes Implementation - Complete AccessLevel to Role Migration
   - ✓ **CRITICAL FIX**: Removed accessLevel enum and field from schema - eliminated dual permission system

@@ -1589,6 +1589,63 @@ export class DatabaseStorage implements IStorage {
    * Removes all demo data from the database, keeping only the admin user
    * and essential system configuration
    */
+  // Custom request types operations
+  async getCustomRequestTypes(): Promise<CustomRequestType[]> {
+    try {
+      const result = await db.select().from(customRequestTypes);
+      
+      // If no custom request types exist, initialize defaults
+      if (result.length === 0) {
+        await this.initializeDefaultRequestTypes();
+        return await db.select().from(customRequestTypes);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching custom request types:', error);
+      return [];
+    }
+  }
+
+  async createCustomRequestType(data: InsertCustomRequestType): Promise<CustomRequestType> {
+    const [result] = await db.insert(customRequestTypes).values(data).returning();
+    return result;
+  }
+
+  async updateCustomRequestType(id: number, data: Partial<InsertCustomRequestType>): Promise<CustomRequestType | null> {
+    const [result] = await db.update(customRequestTypes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(customRequestTypes.id, id))
+      .returning();
+    return result || null;
+  }
+
+  async deleteCustomRequestType(id: number): Promise<boolean> {
+    const result = await db.delete(customRequestTypes).where(eq(customRequestTypes.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Initialize default request types in database
+  private async initializeDefaultRequestTypes(): Promise<void> {
+    const defaultRequestTypes = [
+      { name: 'Hardware', description: 'Hardware related requests and issues' },
+      { name: 'Software', description: 'Software installation and support requests' },
+      { name: 'Network', description: 'Network connectivity and infrastructure issues' },
+      { name: 'Access Control', description: 'User access and permission requests' },
+      { name: 'Security', description: 'Security incidents and compliance issues' }
+    ];
+
+    try {
+      for (const requestType of defaultRequestTypes) {
+        await db.insert(customRequestTypes)
+          .values(requestType)
+          .onConflictDoNothing();
+      }
+    } catch (error) {
+      console.error('Error initializing default request types:', error);
+    }
+  }
+
   async removeDemoData(): Promise<void> {
     try {
       await db.transaction(async (tx) => {
@@ -1760,6 +1817,6 @@ export class DatabaseStorage implements IStorage {
 
 // Use memory storage for development, PostgreSQL for production
 import { MemoryStorage } from "./memory-storage";
-export const storage = process.env.NODE_ENV === 'production' 
+export const storage = process.env.DATABASE_URL 
   ? new DatabaseStorage() 
   : new MemoryStorage();

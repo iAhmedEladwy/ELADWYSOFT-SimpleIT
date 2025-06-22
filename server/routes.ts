@@ -2669,11 +2669,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { size = 'medium' } = req.body;
       
-      // Dynamic import for ES module compatibility
-      const { DemoDataGenerator } = await import('../scripts/create-demo-data.js');
-      const generator = new DemoDataGenerator({ size, verbose: false });
+      // Define size configurations
+      const configs = {
+        small: { users: 3, employees: 8, assets: 12 },
+        medium: { users: 5, employees: 15, assets: 25 },
+        large: { users: 8, employees: 25, assets: 50 }
+      };
       
-      await generator.createDemoData();
+      const config = configs[size as keyof typeof configs] || configs.medium;
+      
+      // Create demo users
+      const userTemplates = [
+        { username: 'manager1', password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
+        { username: 'agent1', password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
+        { username: 'agent2', password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
+        { username: 'employee1', password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
+        { username: 'employee2', password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
+        { username: 'employee3', password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
+        { username: 'employee4', password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
+        { username: 'employee5', password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
+      ];
+
+      let createdUsers = 0;
+      for (let i = 0; i < config.users && i < userTemplates.length; i++) {
+        try {
+          await storage.createUser({
+            username: userTemplates[i].username,
+            password: userTemplates[i].password,
+            firstName: userTemplates[i].firstName,
+            lastName: userTemplates[i].lastName,
+            role: userTemplates[i].role,
+            email: `${userTemplates[i].username}@simpleit.com`,
+            isActive: true
+          });
+          createdUsers++;
+        } catch (error) {
+          // Skip if user already exists
+        }
+      }
+
+      // Create demo employees
+      const departments = ['IT', 'HR', 'Finance', 'Operations', 'Marketing'];
+      const positions = ['Analyst', 'Specialist', 'Coordinator', 'Manager', 'Assistant'];
+      
+      let createdEmployees = 0;
+      for (let i = 0; i < config.employees; i++) {
+        const names = ['Ahmed Ali', 'Fatma Hassan', 'Mohamed Salem', 'Nour Ibrahim', 'Omar Khaled', 'Aya Mohamed', 'Mahmoud Adel', 'Dina Mostafa'];
+        const name = names[i % names.length];
+        const department = departments[Math.floor(Math.random() * departments.length)];
+        const position = positions[Math.floor(Math.random() * positions.length)];
+        
+        try {
+          await storage.createEmployee({
+            empId: `EMP${String(i + 1).padStart(4, '0')}`,
+            name: name,
+            englishName: name,
+            arabicName: name, // For demo purposes
+            department: department,
+            position: position,
+            email: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            phone: `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
+            isActive: true,
+            idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
+            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
+          });
+          createdEmployees++;
+        } catch (error) {
+          // Skip if employee already exists
+        }
+      }
+
+      // Create demo assets using valid enum values
+      const validAssetTypes = ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other'];
+      const validAssetStatuses = ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
+      const brands = ['Dell', 'HP', 'Lenovo', 'Apple', 'Samsung'];
+      
+      let createdAssets = 0;
+      for (let i = 0; i < config.assets; i++) {
+        const type = validAssetTypes[Math.floor(Math.random() * validAssetTypes.length)];
+        const brand = brands[Math.floor(Math.random() * brands.length)];
+        const status = validAssetStatuses[Math.floor(Math.random() * validAssetStatuses.length)];
+        
+        try {
+          await storage.createAsset({
+            assetId: `SIT-${String(i + 1).padStart(6, '0')}`,
+            name: `${brand} ${type} Model ${i + 1}`,
+            type: type,
+            brand: brand,
+            modelName: `${brand} ${type} Model ${i + 1}`,
+            modelNumber: `${brand.substring(0, 3).toUpperCase()}${String(i + 1).padStart(4, '0')}`,
+            serialNumber: `SN${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
+            status: status,
+            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+            buyPrice: Math.floor(Math.random() * 2000) + 500,
+            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000),
+            specs: JSON.stringify({ 
+              cpu: 'Intel i5', 
+              ram: '8GB', 
+              storage: '256GB SSD' 
+            })
+          });
+          createdAssets++;
+        } catch (error) {
+          // Skip if asset already exists
+        }
+      }
       
       // Log activity
       if (req.user) {
@@ -2681,14 +2781,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: (req.user as schema.User).id,
           action: "CONFIG_CHANGE",
           entityType: "SYSTEM_CONFIG",
-          details: { action: `Create Demo Data (${size})` }
+          details: { action: `Create Demo Data (${size})`, created: { users: createdUsers, employees: createdEmployees, assets: createdAssets } }
         });
       }
       
       res.json({ 
         success: true, 
         message: `Demo data (${size} dataset) has been successfully created.`,
-        details: `Generated ${generator.config.users} users, ${generator.config.employees} employees`
+        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`
       });
       
     } catch (error: any) {
