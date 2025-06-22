@@ -247,7 +247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Production-ready admin password reset (for Ubuntu server deployment)
   app.post("/api/admin/emergency-reset", async (req, res) => {
     try {
-      const { newPassword, confirmPassword } = req.body;
+      const { newPassword, confirmPassword, adminKey } = req.body;
+      
+      // Basic security check - require admin key for production resets
+      if (process.env.NODE_ENV === 'production' && adminKey !== 'simpleit-emergency-2025') {
+        return res.status(403).json({ message: "Invalid admin key" });
+      }
       
       if (!newPassword || !confirmPassword) {
         return res.status(400).json({ message: "Password and confirmation required" });
@@ -261,13 +266,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
       
-      // Generate hash using production bcrypt instance
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Try multiple bcrypt implementations for compatibility
+      let hashedPassword;
+      let hashMethod = 'bcryptjs';
       
-      // Verify hash immediately
-      const verificationTest = await bcrypt.compare(newPassword, hashedPassword);
-      if (!verificationTest) {
-        return res.status(500).json({ message: "Password hash verification failed" });
+      try {
+        // Primary method: bcryptjs
+        hashedPassword = await bcrypt.hash(newPassword, 10);
+        const verificationTest = await bcrypt.compare(newPassword, hashedPassword);
+        if (!verificationTest) {
+          throw new Error('bcryptjs verification failed');
+        }
+      } catch (bcryptjsError) {
+        try {
+          // Fallback method: native bcrypt
+          const altBcrypt = require('bcrypt');
+          hashedPassword = await altBcrypt.hash(newPassword, 10);
+          const verificationTest = await altBcrypt.compare(newPassword, hashedPassword);
+          if (!verificationTest) {
+            throw new Error('bcrypt verification failed');
+          }
+          hashMethod = 'bcrypt';
+        } catch (bcryptError) {
+          return res.status(500).json({ message: "Password hashing failed with both bcrypt implementations" });
+        }
       }
       
       // Update admin user directly
@@ -283,23 +305,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Admin user not found" });
       }
       
-      // Final verification - retrieve and test
-      const adminUser = await storage.getUserByUsername('admin');
-      if (!adminUser) {
-        return res.status(500).json({ message: "Failed to retrieve updated admin user" });
-      }
-      
-      const finalTest = await bcrypt.compare(newPassword, adminUser.password);
-      
       res.json({ 
         message: "Admin password reset successfully",
-        verified: finalTest,
-        userId: adminUser.id
+        hashMethod: hashMethod,
+        userId: updateResult[0].id
       });
       
     } catch (error: any) {
       console.error("Emergency password reset error:", error);
       res.status(500).json({ message: "Password reset failed" });
+    }
+  });
+
+  // Production environment authentication status endpoint
+  app.get("/api/auth/status", async (req, res) => {
+    try {
+      const adminUser = await storage.getUserByUsername('admin');
+      const hasAdmin = !!adminUser;
+      
+      // Test both bcrypt implementations
+      let bcryptjsWorking = false;
+      let bcryptWorking = false;
+      
+      try {
+        const testHash = await bcrypt.hash('test123', 10);
+        bcryptjsWorking = await bcrypt.compare('test123', testHash);
+      } catch (e) {
+        console.log('bcryptjs test failed:', e.message);
+      }
+      
+      try {
+        const altBcrypt = require('bcrypt');
+        const testHash = await altBcrypt.hash('test123', 10);
+        bcryptWorking = await altBcrypt.compare('test123', testHash);
+      } catch (e) {
+        console.log('bcrypt test failed:', e.message);
+      }
+      
+      res.json({
+        hasAdmin,
+        bcryptjsWorking,
+        bcryptWorking,
+        environment: process.env.NODE_ENV || 'development',
+        authenticationMethods: ['password', 'emergency-fallback'],
+        emergencyBypassActive: true
+      });
+    } catch (error: any) {
+      console.error('Auth status check error:', error);
+      res.status(500).json({ message: 'Failed to check authentication status' });
     }
   });
 
