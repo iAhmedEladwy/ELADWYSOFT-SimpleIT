@@ -128,7 +128,8 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 50 }).notNull().unique(),
   password: text("password").notNull(),
   email: varchar("email", { length: 100 }).notNull().unique(),
-  accessLevel: integer("access_level").notNull().default(1), // 1=employee, 2=agent, 3=manager, 4=admin
+  accessLevel: accessLevelEnum("access_level").notNull().default('1'), // 1=employee, 2=agent, 3=manager, 4=admin
+  role: roleEnum("role").notNull().default('employee'), // employee, agent, manager, admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -445,6 +445,7 @@ export class DatabaseStorage implements IStorage {
         email: userData.email,
         password: hashedPassword,
         accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
+        role: userData.role || 'employee',
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -528,9 +529,10 @@ export class DatabaseStorage implements IStorage {
         username: users.username,
         email: users.email,
         password: users.password,
-        access_level: users.accessLevel,
-        created_at: users.createdAt,
-        updated_at: users.updatedAt
+        accessLevel: users.accessLevel,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
       }).from(users).orderBy(users.username);
       return result.map(user => this.mapUserFromDb(user));
     } catch (error) {
