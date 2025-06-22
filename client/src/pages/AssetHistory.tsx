@@ -23,6 +23,15 @@ export default function AssetHistory() {
 
       <Layout>
         <div className="container mx-auto py-6 space-y-6">
+          {/* Page Header */}
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
+              <p className="text-gray-600 mt-1">{translations.metaDescription}</p>
+            </div>
+          </div>
+          
+          {/* Transaction History Table */}
           <TransactionHistoryTable />
         </div>
       </Layout>

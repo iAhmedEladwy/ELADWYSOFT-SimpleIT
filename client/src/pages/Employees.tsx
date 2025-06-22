@@ -362,13 +362,8 @@ export default function Employees() {
         safeEmployee.corporateEmail.toLowerCase().includes(searchString)
       );
       
-      // Status filter - handle both isActive boolean and status string with null safety
-      const matchesStatus = statusFilter === 'All' || 
-        (statusFilter === 'Active' && (safeEmployee.isActive === true || safeEmployee.status === 'Active')) ||
-        (statusFilter === 'Inactive' && (safeEmployee.isActive === false || safeEmployee.status === 'Inactive')) ||
-        (statusFilter === 'Resigned' && safeEmployee.status === 'Resigned') ||
-        (statusFilter === 'Terminated' && safeEmployee.status === 'Terminated') ||
-        (statusFilter === 'On Leave' && safeEmployee.status === 'On Leave');
+      // Status filter - use enum status values only
+      const matchesStatus = statusFilter === 'All' || safeEmployee.status === statusFilter;
       
       // Department filter with null safety
       const matchesDepartment = departmentFilter === 'All' || 

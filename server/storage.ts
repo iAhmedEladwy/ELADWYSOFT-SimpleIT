@@ -689,8 +689,8 @@ export class DatabaseStorage implements IStorage {
         // Ensure name fields are consistently populated
         englishName: emp.englishName || emp.name || 'Unknown',
         name: emp.name || emp.englishName || 'Unknown',
-        // Ensure status consistency (convert boolean to string if needed)
-        status: emp.status || (emp.isActive ? 'Active' : 'Inactive'),
+        // Preserve database enum status values exactly as stored
+        status: emp.status,
         // Ensure department is never null
         department: emp.department || 'Unassigned',
         // Ensure employment type is set
