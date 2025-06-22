@@ -4532,6 +4532,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tickets/:id/start-tracking", authenticateUser, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
       const userId = req.user.id;
       
       const updatedTicket = await storage.startTicketTimeTracking(ticketId, userId);
@@ -4549,6 +4553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tickets/:id/stop-tracking", authenticateUser, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
       const userId = req.user.id;
       
       const updatedTicket = await storage.stopTicketTimeTracking(ticketId, userId);
@@ -4597,6 +4605,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
       const userId = req.user.id;
       const updateData = req.body;
       

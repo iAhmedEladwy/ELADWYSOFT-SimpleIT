@@ -2205,6 +2205,57 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Enhanced ticket update with history tracking
+  async updateTicketWithHistory(id: number, ticketData: Partial<InsertTicket>, userId: number): Promise<Ticket | undefined> {
+    try {
+      // Get current ticket to track changes
+      const [currentTicket] = await db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.id, id));
+
+      if (!currentTicket) return undefined;
+
+      // Track changes
+      const changes: string[] = [];
+      
+      if (ticketData.status && ticketData.status !== currentTicket.status) {
+        changes.push(`Status changed from "${currentTicket.status}" to "${ticketData.status}"`);
+      }
+      if (ticketData.priority && ticketData.priority !== currentTicket.priority) {
+        changes.push(`Priority changed from "${currentTicket.priority}" to "${ticketData.priority}"`);
+      }
+      if (ticketData.assignedToId && ticketData.assignedToId !== currentTicket.assignedToId) {
+        changes.push(`Assignment changed`);
+      }
+      if (ticketData.requestType && ticketData.requestType !== currentTicket.requestType) {
+        changes.push(`Request type changed from "${currentTicket.requestType}" to "${ticketData.requestType}"`);
+      }
+
+      // Update the ticket
+      const [updatedTicket] = await db
+        .update(tickets)
+        .set({ ...ticketData, updatedAt: new Date() })
+        .where(eq(tickets.id, id))
+        .returning();
+
+      // Add history entries for changes
+      if (changes.length > 0) {
+        await this.addTicketHistory({
+          ticketId: id,
+          userId,
+          action: "Updated",
+          notes: changes.join("; ")
+        });
+      }
+
+      return updatedTicket;
+    } catch (error) {
+      console.error('Error updating ticket with history:', error);
+      throw error;
+    }
+  }
 }
 
 // Use memory storage for development, PostgreSQL for production
