@@ -278,7 +278,7 @@ export async function getSubordinateIds(managerId: number): Promise<number[]> {
 export function getUserRoleLevel(user: any): number {
   if (!user || !user.role) return 0;
   
-  switch (user.role) {
+  switch (user.role.toLowerCase()) {
     case 'admin': return 4;
     case 'manager': return 3;
     case 'agent': return 2;
