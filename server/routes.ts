@@ -55,18 +55,15 @@ const hasAccess = (minRoleLevel: number) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    const user = req.user as schema.User;
+    const user = req.user as any;
     
-    // For admin user, bypass all permission checks
-    if (user.role === 'admin') {
+    // Admin users have full access - bypass all permission checks
+    if (user && (user.role === 'admin' || user.accessLevel === 3)) {
       return next();
     }
     
     const userLevel = getUserRoleLevel(user);
-    console.log(`Debug - User: ${user.username}, Role: ${user.role}, Level: ${userLevel}, Required: ${minRoleLevel}`);
-    
     if (!hasMinimumRoleLevel(user, minRoleLevel)) {
-      console.log(`Access denied - User level ${userLevel} < Required ${minRoleLevel}`);
       return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
     }
     
