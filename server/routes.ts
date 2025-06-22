@@ -2933,25 +2933,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const employeeData = {
             empId: uniqueId,
             englishName: name,
-            arabicName: name, // For demo purposes
-            name: name, // Ensure both name fields are populated
+            arabicName: name,
             department: department,
-            title: position, // Use title instead of position for consistency
-            position: position,
-            employmentType: 'Full-time',
-            status: 'Active',
-            personalEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
-            corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
-            email: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
-            personalMobile: `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
-            phone: `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
             idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
+            title: position,
+            employmentType: 'Full-time', // Valid enum value
             joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-            isActive: true
+            status: 'Active', // Valid enum value
+            personalEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`
           };
           
           console.log(`Creating demo employee: ${name} (${uniqueId})`);
-          await storage.createEmployee(employeeData);
+          const newEmployee = await storage.createEmployee(employeeData);
+          console.log(`Successfully created employee: ${newEmployee.id}`);
           createdEmployees++;
         } catch (error: any) {
           console.error(`Failed to create employee ${name}:`, error.message);
