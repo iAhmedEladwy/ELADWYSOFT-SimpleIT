@@ -989,7 +989,8 @@ export class DatabaseStorage implements IStorage {
         impact: tickets.impact,
         rootCause: tickets.rootCause,
         workaround: tickets.workaround,
-        resolution: tickets.resolution
+        resolution: tickets.resolution,
+        tags: tickets.tags
       }).from(tickets).orderBy(desc(tickets.createdAt));
     } catch (error) {
       console.error('Error fetching tickets:', error);
@@ -1022,7 +1023,8 @@ export class DatabaseStorage implements IStorage {
           impact: tickets.impact,
           rootCause: tickets.rootCause,
           workaround: tickets.workaround,
-          resolution: tickets.resolution
+          resolution: tickets.resolution,
+          tags: tickets.tags
         })
         .from(tickets)
         .where(eq(tickets.status, status))
