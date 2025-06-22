@@ -11,7 +11,7 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, serviceProviders, assetServiceProviders,
+  customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
   notifications, type Notification, type InsertNotification,
   changesLog, type ChangeLog, type InsertChangeLog
 } from "@shared/schema";
@@ -633,7 +633,31 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      return await db.select().from(employees).orderBy(asc(employees.empId));
+      return await db.select({
+        id: employees.id,
+        empId: employees.empId,
+        englishName: employees.englishName,
+        arabicName: employees.arabicName,
+        department: employees.department,
+        idNumber: employees.idNumber,
+        title: employees.title,
+        directManager: employees.directManager,
+        employmentType: employees.employmentType,
+        joiningDate: employees.joiningDate,
+        exitDate: employees.exitDate,
+        status: employees.status,
+        personalMobile: employees.personalMobile,
+        workMobile: employees.workMobile,
+        personalEmail: employees.personalEmail,
+        corporateEmail: employees.corporateEmail,
+        userId: employees.userId,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        name: employees.name,
+        email: employees.email,
+        phone: employees.phone,
+        position: employees.position
+      }).from(employees).orderBy(asc(employees.empId));
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
@@ -943,7 +967,30 @@ export class DatabaseStorage implements IStorage {
 
   async getAllTickets(): Promise<Ticket[]> {
     try {
-      return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+      return await db.select({
+        id: tickets.id,
+        ticketId: tickets.ticketId,
+        submittedById: tickets.submittedById,
+        requestType: tickets.requestType,
+        priority: tickets.priority,
+        description: tickets.description,
+        relatedAssetId: tickets.relatedAssetId,
+        status: tickets.status,
+        assignedToId: tickets.assignedToId,
+        resolutionNotes: tickets.resolutionNotes,
+        createdAt: tickets.createdAt,
+        updatedAt: tickets.updatedAt,
+        startTime: tickets.startTime,
+        completionTime: tickets.completionTime,
+        timeSpent: tickets.timeSpent,
+        category: tickets.category,
+        summary: tickets.summary,
+        urgency: tickets.urgency,
+        impact: tickets.impact,
+        rootCause: tickets.rootCause,
+        workaround: tickets.workaround,
+        resolution: tickets.resolution
+      }).from(tickets).orderBy(desc(tickets.createdAt));
     } catch (error) {
       console.error('Error fetching tickets:', error);
       return [];
@@ -953,7 +1000,30 @@ export class DatabaseStorage implements IStorage {
   async getTicketsByStatus(status: string): Promise<Ticket[]> {
     try {
       return await db
-        .select()
+        .select({
+          id: tickets.id,
+          ticketId: tickets.ticketId,
+          submittedById: tickets.submittedById,
+          requestType: tickets.requestType,
+          priority: tickets.priority,
+          description: tickets.description,
+          relatedAssetId: tickets.relatedAssetId,
+          status: tickets.status,
+          assignedToId: tickets.assignedToId,
+          resolutionNotes: tickets.resolutionNotes,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+          startTime: tickets.startTime,
+          completionTime: tickets.completionTime,
+          timeSpent: tickets.timeSpent,
+          category: tickets.category,
+          summary: tickets.summary,
+          urgency: tickets.urgency,
+          impact: tickets.impact,
+          rootCause: tickets.rootCause,
+          workaround: tickets.workaround,
+          resolution: tickets.resolution
+        })
         .from(tickets)
         .where(eq(tickets.status, status))
         .orderBy(desc(tickets.createdAt));

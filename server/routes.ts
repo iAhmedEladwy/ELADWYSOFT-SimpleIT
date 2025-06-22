@@ -2883,9 +2883,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         openTickets,
         userCount
       ] = await Promise.all([
-        storage.getAllEmployees(),
+        storage.getAllEmployees().catch(err => {
+          console.error('Employee fetch error:', err);
+          return [];
+        }),
         storage.getAllAssets(),
-        storage.getTicketsByStatus("Open"),
+        storage.getTicketsByStatus("Open").catch(err => {
+          console.error('Tickets fetch error:', err);
+          return [];
+        }),
         storage.getAllUsers()
       ]);
       
