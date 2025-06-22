@@ -657,52 +657,44 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      const result = await db.select({
-        id: employees.id,
-        empId: employees.empId,
-        englishName: employees.englishName,
-        arabicName: employees.arabicName,
-        department: employees.department,
-        idNumber: employees.idNumber,
-        title: employees.title,
-        directManager: employees.directManager,
-        employmentType: employees.employmentType,
-        joiningDate: employees.joiningDate,
-        exitDate: employees.exitDate,
-        status: employees.status,
-        personalMobile: employees.personalMobile,
-        workMobile: employees.workMobile,
-        personalEmail: employees.personalEmail,
-        corporateEmail: employees.corporateEmail,
-        userId: employees.userId,
-        createdAt: employees.createdAt,
-        updatedAt: employees.updatedAt,
-        name: employees.name,
-        email: employees.email,
-        phone: employees.phone,
-        position: employees.position
-      }).from(employees).orderBy(asc(employees.empId));
+      const result = await db.select().from(employees).orderBy(asc(employees.empId));
+      
+      // Debug: Check what Drizzle is actually returning for status field
+      if (result.length > 0) {
+        const firstEmp = result[0];
+        console.log('Raw DB status value:', firstEmp.status, 'Type:', typeof firstEmp.status);
+        console.log('All status-related fields:', { status: firstEmp.status, isActive: firstEmp.isActive });
+      }
       
       // Normalize data for consistent frontend consumption
-      return result.map(emp => ({
-        ...emp,
-        // Ensure name fields are consistently populated
-        englishName: emp.englishName || emp.name || 'Unknown',
-        name: emp.name || emp.englishName || 'Unknown',
-        // Preserve database enum status values exactly as stored
-        status: emp.status,
-        // Ensure department is never null
-        department: emp.department || 'Unassigned',
-        // Ensure employment type is set
-        employmentType: emp.employmentType || 'Full-time',
-        // Normalize email fields
-        email: emp.email || emp.personalEmail || emp.corporateEmail,
-        personalEmail: emp.personalEmail || emp.email,
-        corporateEmail: emp.corporateEmail || emp.email,
-        // Normalize phone fields
-        phone: emp.phone || emp.personalMobile,
-        personalMobile: emp.personalMobile || emp.phone
-      }));
+      return result.map(emp => {
+        const normalized = {
+          ...emp,
+          // Ensure name fields are consistently populated
+          englishName: emp.englishName || emp.name || 'Unknown',
+          name: emp.name || emp.englishName || 'Unknown',
+          // Preserve database enum status values exactly as stored
+          status: emp.status,
+          // Ensure department is never null
+          department: emp.department || 'Unassigned',
+          // Ensure employment type is set
+          employmentType: emp.employmentType || 'Full-time',
+          // Normalize email fields
+          email: emp.email || emp.personalEmail || emp.corporateEmail,
+          personalEmail: emp.personalEmail || emp.email,
+          corporateEmail: emp.corporateEmail || emp.email,
+          // Normalize phone fields
+          phone: emp.phone || emp.personalMobile,
+          personalMobile: emp.personalMobile || emp.phone
+        };
+        
+        // Debug: Log normalized data for first employee
+        if (emp.id === 3) {
+          console.log('Normalized employee data:', JSON.stringify(normalized, null, 2));
+        }
+        
+        return normalized;
+      });
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
