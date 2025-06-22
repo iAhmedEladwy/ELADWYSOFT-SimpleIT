@@ -1673,9 +1673,6 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-      return [];
-    }
-  }
 
   async createCustomRequestType(data: InsertCustomRequestType): Promise<CustomRequestType> {
     const [result] = await db.insert(customRequestTypes).values(data).returning();
