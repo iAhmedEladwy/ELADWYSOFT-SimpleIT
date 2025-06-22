@@ -884,10 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employees = await storage.getAllEmployees();
       
-      // Debug first employee from storage
-      if (employees.length > 0) {
-        console.log('STORAGE RETURNED:', employees[0]);
-      }
+
       
       // Map storage format to frontend format - use direct field mapping
       const mappedEmployees = employees.map(emp => {
@@ -920,14 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         employeeId: emp.empId || emp.employeeId
         };
         
-        // Debug mapping for first employee
-        if (emp.id === 3) {
-          console.log('ROUTE MAPPING:', {
-            input_status: emp.status,
-            mapped_status: mapped.status,
-            isActive: mapped.isActive
-          });
-        }
+
         
         return mapped;
       });

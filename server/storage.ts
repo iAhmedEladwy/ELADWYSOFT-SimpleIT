@@ -675,10 +675,7 @@ export class DatabaseStorage implements IStorage {
         ORDER BY emp_id ASC
       `);
       
-      // Debug logging for first employee
-      if (result.rows.length > 0) {
-        console.log('RAW DATABASE RESULT:', result.rows[0]);
-      }
+
       
       // Transform raw result to expected format
       return result.rows.map((emp: any) => {
@@ -694,7 +691,7 @@ export class DatabaseStorage implements IStorage {
         employmentType: emp.employment_type || 'Full-time',
         joiningDate: emp.joining_date,
         exitDate: emp.exit_date,
-        status: emp.status, // Use actual database enum status
+        status: emp.status || 'Active', // Use actual database enum status with fallback
         isActive: emp.status === 'Active', // Set isActive based on status
         personalMobile: emp.personal_mobile,
         workMobile: emp.work_mobile,
@@ -710,14 +707,7 @@ export class DatabaseStorage implements IStorage {
         position: emp.position || emp.title
         };
         
-        // Debug log transformation for first employee
-        if (emp.id === 3) {
-          console.log('STORAGE TRANSFORMATION:', {
-            raw_status: emp.status,
-            transformed_status: transformed.status,
-            isActive: transformed.isActive
-          });
-        }
+
         
         return transformed;
       });
