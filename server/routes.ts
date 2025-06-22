@@ -380,6 +380,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Manual session creation for emergency access
           (req as any).session.userId = adminUser.id;
           (req as any).session.user = adminUser;
+          (req as any).session.passport = { user: adminUser.id };
+          
+          // Save session immediately
+          (req as any).session.save((err: any) => {
+            if (err) {
+              console.error('Emergency session save error:', err);
+            } else {
+              console.log('Emergency session saved successfully');
+            }
+          });
           
           console.log('EMERGENCY: Session created for admin user');
           const { password: _, ...userWithoutPassword } = adminUser;
