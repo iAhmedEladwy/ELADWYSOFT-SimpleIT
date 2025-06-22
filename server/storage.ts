@@ -609,31 +609,22 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Transform the data to match database columns exactly
-      const dbEmployee = {
-        empId: employee.empId,
-        englishName: employee.englishName,
-        arabicName: employee.arabicName || null,
-        department: employee.department,
-        idNumber: employee.idNumber,
-        title: employee.title,
-        directManager: employee.directManager || null,
-        employmentType: employee.employmentType,
-        joiningDate: employee.joiningDate,
-        exitDate: employee.exitDate || null,
-        status: employee.status,
-        personalMobile: employee.personalMobile || null,
-        workMobile: employee.workMobile || null,
-        personalEmail: employee.personalEmail || null,
-        corporateEmail: employee.corporateEmail || null,
-        userId: employee.userId || null
-      };
-
-      const [newEmployee] = await db
-        .insert(employees)
-        .values(dbEmployee)
-        .returning();
-      return newEmployee;
+      // Use direct SQL to bypass schema mapping issues
+      const result = await db.execute(sql`
+        INSERT INTO employees (
+          emp_id, english_name, arabic_name, department, id_number, title, 
+          employment_type, joining_date, status, personal_email, corporate_email,
+          created_at, updated_at
+        ) VALUES (
+          ${employee.empId}, ${employee.englishName}, ${employee.arabicName || null}, 
+          ${employee.department}, ${employee.idNumber}, ${employee.title},
+          ${employee.employmentType}, ${employee.joiningDate}, ${employee.status},
+          ${employee.personalEmail || null}, ${employee.corporateEmail || null},
+          NOW(), NOW()
+        ) RETURNING *
+      `);
+      
+      return result.rows[0] as Employee;
     } catch (error) {
       console.error('Error creating employee:', error);
       throw error;
