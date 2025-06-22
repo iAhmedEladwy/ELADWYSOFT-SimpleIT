@@ -417,24 +417,73 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.username, username));
-      return user;
+      return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
       return undefined;
     }
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(userData: any): Promise<User> {
     try {
+      const hashedPassword = userData.password 
+        ? await bcrypt.hash(userData.password, 10)
+        : await bcrypt.hash('defaultPassword123', 10);
+
+      // Map to database schema (snake_case columns)
+      const dbUserData = {
+        username: userData.username,
+        email: userData.email,
+        password: hashedPassword,
+        access_level: this.roleToAccessLevel(userData.role || 'employee'),
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
       const [user] = await db
         .insert(users)
-        .values(insertUser)
+        .values(dbUserData)
         .returning();
-      return user;
+      return this.mapUserFromDb(user);
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
     }
+  }
+
+  private roleToAccessLevel(role: string): number {
+    switch(role) {
+      case 'admin': return 4;
+      case 'manager': return 3;
+      case 'agent': return 2;
+      case 'employee': return 1;
+      default: return 1;
+    }
+  }
+
+  private accessLevelToRole(accessLevel: number): string {
+    switch(accessLevel) {
+      case 4: return 'admin';
+      case 3: return 'manager';
+      case 2: return 'agent';
+      case 1: return 'employee';
+      default: return 'employee';
+    }
+  }
+
+  private mapUserFromDb(dbUser: any): User {
+    return {
+      ...dbUser,
+      role: this.accessLevelToRole(dbUser.access_level),
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
+      employeeId: null,
+      managerId: null,
+      isActive: dbUser.is_active ?? true,
+      createdAt: dbUser.created_at,
+      updatedAt: dbUser.updated_at
+    };
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
@@ -463,7 +512,8 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      return await db.select().from(users);
+      const result = await db.select().from(users).orderBy(users.username);
+      return result.map(user => this.mapUserFromDb(user));
     } catch (error) {
       console.error('Error fetching users:', error);
       return [];
