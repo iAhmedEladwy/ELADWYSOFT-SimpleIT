@@ -2920,28 +2920,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let createdEmployees = 0;
       for (let i = 0; i < config.employees; i++) {
-        const names = ['Ahmed Ali', 'Fatma Hassan', 'Mohamed Salem', 'Nour Ibrahim', 'Omar Khaled', 'Aya Mohamed', 'Mahmoud Adel', 'Dina Mostafa'];
+        const names = ['Ahmed Ali', 'Fatma Hassan', 'Mohamed Salem', 'Nour Ibrahim', 'Omar Khaled', 'Aya Mohamed', 'Mahmoud Adel', 'Dina Mostafa', 'Sarah Ahmed', 'Tarek Mohamed'];
         const name = names[i % names.length];
         const department = departments[Math.floor(Math.random() * departments.length)];
         const position = positions[Math.floor(Math.random() * positions.length)];
         
+        // Generate unique employee ID with timestamp to avoid conflicts
+        const timestamp = Date.now();
+        const uniqueId = `DEMO${String(timestamp + i).slice(-6)}`;
+        
         try {
-          await storage.createEmployee({
-            empId: `EMP${String(i + 1).padStart(4, '0')}`,
-            name: name,
+          const employeeData = {
+            empId: uniqueId,
             englishName: name,
             arabicName: name, // For demo purposes
+            name: name, // Ensure both name fields are populated
             department: department,
+            title: position, // Use title instead of position for consistency
             position: position,
+            employmentType: 'Full-time',
+            status: 'Active',
+            personalEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
             email: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            personalMobile: `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
             phone: `+20${Math.floor(Math.random() * 900000000) + 100000000}`,
-            isActive: true,
             idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
-            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
-          });
+            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+            isActive: true
+          };
+          
+          console.log(`Creating demo employee: ${name} (${uniqueId})`);
+          await storage.createEmployee(employeeData);
           createdEmployees++;
-        } catch (error) {
-          // Skip if employee already exists
+        } catch (error: any) {
+          console.error(`Failed to create employee ${name}:`, error.message);
+          // Continue with next employee
         }
       }
 
@@ -2957,8 +2971,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const status = validAssetStatuses[Math.floor(Math.random() * validAssetStatuses.length)];
         
         try {
+          // Generate unique asset ID with timestamp to avoid conflicts
+          const assetTimestamp = Date.now();
+          const uniqueAssetId = `SIT-${String(assetTimestamp + i).slice(-6)}`;
+          
           await storage.createAsset({
-            assetId: `SIT-${String(i + 1).padStart(6, '0')}`,
+            assetId: uniqueAssetId,
             name: `${brand} ${type} Model ${i + 1}`,
             type: type,
             brand: brand,

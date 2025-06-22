@@ -646,7 +646,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      return await db.select({
+      const result = await db.select({
         id: employees.id,
         empId: employees.empId,
         englishName: employees.englishName,
@@ -671,6 +671,27 @@ export class DatabaseStorage implements IStorage {
         phone: employees.phone,
         position: employees.position
       }).from(employees).orderBy(asc(employees.empId));
+      
+      // Normalize data for consistent frontend consumption
+      return result.map(emp => ({
+        ...emp,
+        // Ensure name fields are consistently populated
+        englishName: emp.englishName || emp.name || 'Unknown',
+        name: emp.name || emp.englishName || 'Unknown',
+        // Ensure status consistency (convert boolean to string if needed)
+        status: emp.status || (emp.isActive ? 'Active' : 'Inactive'),
+        // Ensure department is never null
+        department: emp.department || 'Unassigned',
+        // Ensure employment type is set
+        employmentType: emp.employmentType || 'Full-time',
+        // Normalize email fields
+        email: emp.email || emp.personalEmail || emp.corporateEmail,
+        personalEmail: emp.personalEmail || emp.email,
+        corporateEmail: emp.corporateEmail || emp.email,
+        // Normalize phone fields
+        phone: emp.phone || emp.personalMobile,
+        personalMobile: emp.personalMobile || emp.phone
+      }));
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];

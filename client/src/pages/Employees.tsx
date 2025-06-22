@@ -240,17 +240,25 @@ export default function Employees() {
     importEmployeesMutation.mutate(formData);
   };
 
-  // Get unique departments and employment types for filters
+  // Get unique departments and employment types for filters with null safety
   const departments = useMemo(() => {
     if (!employees || !Array.isArray(employees)) return ['All'];
-    const depts = Array.from(new Set(employees.map((emp: any) => emp.department).filter(Boolean)));
-    return ['All', ...depts];
+    const depts = Array.from(new Set(
+      employees
+        .map((emp: any) => emp?.department)
+        .filter(dept => dept && dept.trim() !== '' && dept !== 'null' && dept !== 'undefined')
+    ));
+    return ['All', ...depts.sort()];
   }, [employees]);
 
   const employmentTypes = useMemo(() => {
     if (!employees || !Array.isArray(employees)) return ['All'];
-    const types = Array.from(new Set(employees.map((emp: any) => emp.employmentType).filter(Boolean)));
-    return ['All', ...types];
+    const types = Array.from(new Set(
+      employees
+        .map((emp: any) => emp?.employmentType)
+        .filter(type => type && type.trim() !== '' && type !== 'null' && type !== 'undefined')
+    ));
+    return ['All', ...types.sort()];
   }, [employees]);
 
   // Bulk operations handlers
@@ -315,42 +323,60 @@ export default function Employees() {
     }
   };
 
-  // Enhanced filtering with multiple criteria
+  // Enhanced filtering with multiple criteria and null safety
   const filteredEmployees = useMemo(() => {
     if (!employees || !Array.isArray(employees)) return [];
     
     return employees.filter((employee: any) => {
-      // Search filter - check all available name and identifier fields
+      // Null safety checks for all employee properties
+      const safeEmployee = {
+        englishName: employee?.englishName || '',
+        name: employee?.name || '',
+        arabicName: employee?.arabicName || '',
+        empId: employee?.empId || '',
+        employeeId: employee?.employeeId || '',
+        department: employee?.department || '',
+        title: employee?.title || '',
+        position: employee?.position || '',
+        personalEmail: employee?.personalEmail || '',
+        email: employee?.email || '',
+        corporateEmail: employee?.corporateEmail || '',
+        status: employee?.status || '',
+        isActive: employee?.isActive,
+        employmentType: employee?.employmentType || ''
+      };
+      
+      // Search filter - check all available name and identifier fields with null safety
       const searchString = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || (
-        employee.englishName?.toLowerCase().includes(searchString) ||
-        employee.name?.toLowerCase().includes(searchString) ||
-        employee.arabicName?.toLowerCase().includes(searchString) ||
-        employee.empId?.toLowerCase().includes(searchString) ||
-        employee.employeeId?.toLowerCase().includes(searchString) ||
-        employee.department?.toLowerCase().includes(searchString) ||
-        employee.title?.toLowerCase().includes(searchString) ||
-        employee.position?.toLowerCase().includes(searchString) ||
-        employee.personalEmail?.toLowerCase().includes(searchString) ||
-        employee.email?.toLowerCase().includes(searchString) ||
-        employee.corporateEmail?.toLowerCase().includes(searchString)
+        safeEmployee.englishName.toLowerCase().includes(searchString) ||
+        safeEmployee.name.toLowerCase().includes(searchString) ||
+        safeEmployee.arabicName.toLowerCase().includes(searchString) ||
+        safeEmployee.empId.toLowerCase().includes(searchString) ||
+        safeEmployee.employeeId.toLowerCase().includes(searchString) ||
+        safeEmployee.department.toLowerCase().includes(searchString) ||
+        safeEmployee.title.toLowerCase().includes(searchString) ||
+        safeEmployee.position.toLowerCase().includes(searchString) ||
+        safeEmployee.personalEmail.toLowerCase().includes(searchString) ||
+        safeEmployee.email.toLowerCase().includes(searchString) ||
+        safeEmployee.corporateEmail.toLowerCase().includes(searchString)
       );
       
-      // Status filter - handle both isActive boolean and status string
+      // Status filter - handle both isActive boolean and status string with null safety
       const matchesStatus = statusFilter === 'All' || 
-        (statusFilter === 'Active' && (employee.isActive === true || employee.status === 'Active')) ||
-        (statusFilter === 'Inactive' && (employee.isActive === false || employee.status === 'Inactive')) ||
-        (statusFilter === 'Resigned' && employee.status === 'Resigned') ||
-        (statusFilter === 'Terminated' && employee.status === 'Terminated') ||
-        (statusFilter === 'On Leave' && employee.status === 'On Leave');
+        (statusFilter === 'Active' && (safeEmployee.isActive === true || safeEmployee.status === 'Active')) ||
+        (statusFilter === 'Inactive' && (safeEmployee.isActive === false || safeEmployee.status === 'Inactive')) ||
+        (statusFilter === 'Resigned' && safeEmployee.status === 'Resigned') ||
+        (statusFilter === 'Terminated' && safeEmployee.status === 'Terminated') ||
+        (statusFilter === 'On Leave' && safeEmployee.status === 'On Leave');
       
-      // Department filter
+      // Department filter with null safety
       const matchesDepartment = departmentFilter === 'All' || 
-        employee.department === departmentFilter;
+        safeEmployee.department === departmentFilter;
       
-      // Employment type filter
+      // Employment type filter with null safety
       const matchesEmploymentType = employmentTypeFilter === 'All' || 
-        employee.employmentType === employmentTypeFilter;
+        safeEmployee.employmentType === employmentTypeFilter;
       
       return matchesSearch && matchesStatus && matchesDepartment && matchesEmploymentType;
     });
