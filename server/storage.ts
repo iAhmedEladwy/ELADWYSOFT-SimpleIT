@@ -1661,12 +1661,18 @@ export class DatabaseStorage implements IStorage {
   // Custom request types operations
   async getCustomRequestTypes(): Promise<CustomRequestType[]> {
     try {
-      const result = await db.select().from(customRequestTypes);
+      const result = await pool.query('SELECT * FROM custom_request_types ORDER BY name');
+      return result.rows;
       
-      // If no custom request types exist, initialize defaults
-      if (result.length === 0) {
-        await this.initializeDefaultRequestTypes();
-        return await db.select().from(customRequestTypes);
+      // If no custom request types exist, return defaults
+      if (result.rows.length === 0) {
+        return [
+          { id: 1, name: "Hardware", description: "Hardware-related requests" },
+          { id: 2, name: "Software", description: "Software-related requests" },
+          { id: 3, name: "Network", description: "Network-related requests" },
+          { id: 4, name: "Access Control", description: "Access and permissions requests" },
+          { id: 5, name: "Security", description: "Security-related requests" }
+        ];
       }
       
       return result;
