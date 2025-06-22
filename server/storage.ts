@@ -1673,12 +1673,6 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-      
-      return result.rows;
-      
-      return result;
-    } catch (error) {
-      console.error('Error fetching custom request types:', error);
       return [];
     }
   }
