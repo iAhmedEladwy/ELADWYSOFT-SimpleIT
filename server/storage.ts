@@ -15,7 +15,7 @@ import {
   notifications, type Notification, type InsertNotification,
   changesLog, type ChangeLog, type InsertChangeLog
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 
@@ -1662,7 +1662,6 @@ export class DatabaseStorage implements IStorage {
   async getCustomRequestTypes(): Promise<CustomRequestType[]> {
     try {
       const result = await pool.query('SELECT * FROM custom_request_types ORDER BY name');
-      return result.rows;
       
       // If no custom request types exist, return defaults
       if (result.rows.length === 0) {
@@ -1674,6 +1673,8 @@ export class DatabaseStorage implements IStorage {
           { id: 5, name: "Security", description: "Security-related requests" }
         ];
       }
+      
+      return result.rows;
       
       return result;
     } catch (error) {
