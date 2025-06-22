@@ -657,11 +657,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     try {
-      // Use raw SQL to bypass any ORM mapping issues with enum values
-      const result = await db.execute(sql`
+      // Direct PostgreSQL query using pool to get correct enum values
+      const result = await pool.query(`
         SELECT 
           id, emp_id, english_name, arabic_name, department, id_number, title,
-          direct_manager, employment_type, joining_date, exit_date, 
+          direct_manager, employment_type::text, joining_date, exit_date, 
           status::text as status,
           personal_mobile, work_mobile, personal_email, corporate_email,
           user_id, created_at, updated_at, name, email, phone, position
@@ -682,7 +682,7 @@ export class DatabaseStorage implements IStorage {
         employmentType: emp.employment_type || 'Full-time',
         joiningDate: emp.joining_date,
         exitDate: emp.exit_date,
-        status: emp.status, // This now comes directly from database as text
+        status: emp.status, // Direct from PostgreSQL query
         personalMobile: emp.personal_mobile,
         workMobile: emp.work_mobile,
         personalEmail: emp.personal_email,
