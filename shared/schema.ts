@@ -120,20 +120,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table with RBAC fields
+// Users table - aligned with actual PostgreSQL schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 50 }).notNull().unique(),
   password: text("password").notNull(),
   email: varchar("email", { length: 100 }).notNull().unique(),
-  firstName: varchar("first_name", { length: 50 }),
-  lastName: varchar("last_name", { length: 50 }),
-  profileImageUrl: varchar("profile_image_url", { length: 255 }),
-  role: varchar("role", { length: 20 }).notNull().default('employee'), // employee, agent, manager, admin
-  employeeId: integer("employee_id").references(() => employees.id),
-  managerId: integer("manager_id").references(() => users.id),
-  isActive: boolean("is_active").default(true),
-
+  accessLevel: integer("access_level").notNull().default(1), // 1=employee, 2=agent, 3=manager, 4=admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
