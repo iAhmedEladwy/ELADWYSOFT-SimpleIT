@@ -462,9 +462,9 @@ export class DatabaseStorage implements IStorage {
 
   private roleToAccessLevel(role: string): number {
     switch(role) {
-      case 'admin': return 4;
-      case 'manager': return 3;
-      case 'agent': return 2;
+      case 'admin': return 3;  // Highest level in current database
+      case 'manager': return 2;
+      case 'agent': return 1;
       case 'employee': return 1;
       default: return 1;
     }
@@ -472,10 +472,9 @@ export class DatabaseStorage implements IStorage {
 
   private accessLevelToRole(accessLevel: number): string {
     switch(accessLevel) {
-      case 4: return 'admin';
-      case 3: return 'manager';
-      case 2: return 'agent';
-      case 1: return 'employee';
+      case 3: return 'admin';  // Highest level in current database
+      case 2: return 'manager';
+      case 1: return 'agent';
       default: return 'employee';
     }
   }

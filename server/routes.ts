@@ -2665,7 +2665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create Demo Data route  
-  app.post("/api/create-demo-data", authenticateUser, hasAccess(4), async (req, res) => {
+  app.post("/api/create-demo-data", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const { size = 'medium' } = req.body;
       
