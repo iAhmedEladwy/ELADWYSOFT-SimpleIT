@@ -42,6 +42,12 @@ const authenticateUser = (req: Request, res: Response, next: Function) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
+  
+  // Additional check to ensure user object exists
+  if (!req.user) {
+    return res.status(401).json({ message: "User session invalid" });
+  }
+  
   next();
 };
 
