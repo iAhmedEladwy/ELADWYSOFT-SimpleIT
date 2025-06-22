@@ -276,15 +276,26 @@ export async function getSubordinateIds(managerId: number): Promise<number[]> {
  * Get user's role level for hierarchical checks
  */
 export function getUserRoleLevel(user: any): number {
-  if (!user || !user.role) return 0;
+  if (!user) return 0;
   
-  switch (user.role.toLowerCase()) {
-    case 'admin': return 4;
-    case 'manager': return 3;
-    case 'agent': return 2;
-    case 'employee': return 1;
-    default: return 0;
+  // Check role first, then fall back to accessLevel
+  if (user.role) {
+    switch (user.role.toLowerCase()) {
+      case 'admin': return 4;
+      case 'manager': return 3;
+      case 'agent': return 2;
+      case 'employee': return 1;
+      default: return 0;
+    }
   }
+  
+  // Fall back to accessLevel if role is not available
+  if (user.accessLevel) {
+    const level = typeof user.accessLevel === 'string' ? parseInt(user.accessLevel) : user.accessLevel;
+    return level || 0;
+  }
+  
+  return 0;
 }
 
 /**
