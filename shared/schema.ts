@@ -153,27 +153,20 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Employees table - Updated to match both frontend expectations and memory storage
+// Employees table - Matches actual database structure
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(), // Primary name field
-  email: varchar("email", { length: 100 }).notNull(), // Primary email field
-  phone: varchar("phone", { length: 20 }).default(''), // Primary phone field
-  department: varchar("department", { length: 100 }).notNull(),
-  position: varchar("position", { length: 100 }).notNull(), // Job title/position
-  employeeId: varchar("employee_id", { length: 20 }).notNull().unique(), // Employee ID
-  isActive: boolean("is_active").notNull().default(true), // Active status
-  // Extended fields for comprehensive employee management
-  empId: varchar("emp_id", { length: 20 }), // Legacy field for compatibility
-  englishName: varchar("english_name", { length: 100 }),
+  empId: varchar("emp_id", { length: 20 }).notNull().unique(), // Primary employee ID
+  englishName: varchar("english_name", { length: 100 }).notNull(),
   arabicName: varchar("arabic_name", { length: 100 }),
-  idNumber: varchar("id_number", { length: 50 }),
-  title: varchar("title", { length: 100 }), // Job title
+  department: varchar("department", { length: 100 }).notNull(),
+  idNumber: varchar("id_number", { length: 50 }).notNull(),
+  title: varchar("title", { length: 100 }).notNull(),
   directManager: integer("direct_manager").references((): any => employees.id),
-  employmentType: employmentTypeEnum("employment_type").default('Full-time'),
-  joiningDate: date("joining_date"),
+  employmentType: employmentTypeEnum("employment_type").notNull().default('Full-time'),
+  joiningDate: date("joining_date").notNull(),
   exitDate: date("exit_date"),
-  status: employeeStatusEnum("status").default('Active'),
+  status: employeeStatusEnum("status").notNull().default('Active'),
   personalMobile: varchar("personal_mobile", { length: 20 }),
   workMobile: varchar("work_mobile", { length: 20 }),
   personalEmail: varchar("personal_email", { length: 100 }),
@@ -181,6 +174,11 @@ export const employees = pgTable("employees", {
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Compatibility fields for backward compatibility
+  name: varchar("name", { length: 100 }),
+  email: varchar("email", { length: 100 }),
+  phone: varchar("phone", { length: 20 }),
+  position: varchar("position", { length: 100 }),
 });
 
 // Assets table
@@ -527,7 +525,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ 
   id: true, 
   createdAt: true, 
-  updatedAt: true 
+  updatedAt: true,
+  name: true,
+  email: true,
+  phone: true,
+  position: true
 });
 export const insertAssetSchema = createInsertSchema(assets)
   .omit({ 

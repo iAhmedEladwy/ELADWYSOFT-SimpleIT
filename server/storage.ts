@@ -609,9 +609,29 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
+      // Transform the data to match database columns exactly
+      const dbEmployee = {
+        empId: employee.empId,
+        englishName: employee.englishName,
+        arabicName: employee.arabicName || null,
+        department: employee.department,
+        idNumber: employee.idNumber,
+        title: employee.title,
+        directManager: employee.directManager || null,
+        employmentType: employee.employmentType,
+        joiningDate: employee.joiningDate,
+        exitDate: employee.exitDate || null,
+        status: employee.status,
+        personalMobile: employee.personalMobile || null,
+        workMobile: employee.workMobile || null,
+        personalEmail: employee.personalEmail || null,
+        corporateEmail: employee.corporateEmail || null,
+        userId: employee.userId || null
+      };
+
       const [newEmployee] = await db
         .insert(employees)
-        .values(employee)
+        .values(dbEmployee)
         .returning();
       return newEmployee;
     } catch (error) {
