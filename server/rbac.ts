@@ -193,10 +193,10 @@ export function requirePermission(permission: string) {
  */
 export function requireRole(minRole: string) {
   const roleHierarchy = {
-    [ROLES.EMPLOYEE]: 4,
-    [ROLES.AGENT]: 3,
-    [ROLES.MANAGER]: 2,
-    [ROLES.ADMIN]: 1
+    [ROLES.EMPLOYEE]: 1,
+    [ROLES.AGENT]: 2,
+    [ROLES.MANAGER]: 3,
+    [ROLES.ADMIN]: 4
   };
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -204,10 +204,10 @@ export function requireRole(minRole: string) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const userLevel = roleHierarchy[req.user.role as keyof typeof roleHierarchy] || 5;
-    const requiredLevel = roleHierarchy[minRole as keyof typeof roleHierarchy] || 1;
+    const userLevel = roleHierarchy[req.user.role as keyof typeof roleHierarchy] || 0;
+    const requiredLevel = roleHierarchy[minRole as keyof typeof roleHierarchy] || 4;
 
-    if (userLevel > requiredLevel) {
+    if (userLevel < requiredLevel) {
       return res.status(403).json({ 
         message: 'Insufficient role level',
         required: minRole,

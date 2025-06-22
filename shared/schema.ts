@@ -19,6 +19,8 @@ import { relations } from "drizzle-orm";
 
 // Enums
 
+export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
+export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);

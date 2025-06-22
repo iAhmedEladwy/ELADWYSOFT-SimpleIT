@@ -58,7 +58,7 @@ const hasAccess = (minRoleLevel: number) => {
     const user = req.user as any;
     
     // Admin users have full access - bypass all permission checks
-    if (user && (user.role === 'admin' || user.accessLevel === 3)) {
+    if (user && (user.role === 'admin' || user.accessLevel === 4)) {
       return next();
     }
     
