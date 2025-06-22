@@ -435,9 +435,9 @@ export class DatabaseStorage implements IStorage {
         username: userData.username,
         email: userData.email,
         password: hashedPassword,
-        access_level: this.roleToAccessLevel(userData.role || 'employee'),
-        created_at: new Date(),
-        updated_at: new Date()
+        accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const [user] = await db
@@ -473,16 +473,19 @@ export class DatabaseStorage implements IStorage {
 
   private mapUserFromDb(dbUser: any): User {
     return {
-      ...dbUser,
-      role: this.accessLevelToRole(dbUser.access_level),
+      id: dbUser.id,
+      username: dbUser.username,
+      email: dbUser.email,
+      password: dbUser.password,
+      role: this.accessLevelToRole(dbUser.access_level || dbUser.accessLevel),
       firstName: null,
       lastName: null,
       profileImageUrl: null,
       employeeId: null,
       managerId: null,
-      isActive: dbUser.is_active ?? true,
-      createdAt: dbUser.created_at,
-      updatedAt: dbUser.updated_at
+      isActive: true,
+      createdAt: dbUser.created_at || dbUser.createdAt,
+      updatedAt: dbUser.updated_at || dbUser.updatedAt
     };
   }
 
