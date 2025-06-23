@@ -133,9 +133,7 @@ export default function InlineEditableField({
             setEditValue(value);
             // Auto-save immediately on selection change
             setTimeout(() => {
-              if (value !== String(value)) {
-                onSave(value).then(() => setIsEditing(false));
-              }
+              onSave(value).then(() => setIsEditing(false)).catch(console.error);
             }, 0);
           }}
         >
@@ -179,14 +177,14 @@ export default function InlineEditableField({
     <div className="w-full">
       <Input
         ref={inputRef}
-        type={type}
+        type={type === 'datetime-local' ? 'datetime-local' : type}
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         className="w-full"
         disabled={isLoading}
-        placeholder="Press Enter or click away to save"
+        placeholder={placeholder || "Press Enter or click away to save"}
       />
       {isLoading && (
         <p className="text-xs text-gray-500 mt-1">Saving...</p>

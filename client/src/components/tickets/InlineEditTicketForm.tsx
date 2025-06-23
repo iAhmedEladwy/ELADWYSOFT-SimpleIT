@@ -110,12 +110,18 @@ export default function InlineEditTicketForm({
     // Process value based on field type
     if (field === 'assignedToId') {
       processedValue = value && value !== 'unassigned' ? parseInt(value) : null;
+    } else if (field === 'submittedById') {
+      processedValue = value ? parseInt(value) : null;
     } else if (field === 'relatedAssetId') {
       processedValue = value && value !== 'none' ? parseInt(value) : null;
     } else if (field === 'timeSpent') {
       processedValue = value ? parseInt(value) : 0;
     } else if (field === 'slaTarget') {
       processedValue = value ? parseInt(value) : null;
+    } else if (field === 'escalationLevel') {
+      processedValue = value ? parseInt(value) : 0;
+    } else if (field === 'dueDate') {
+      processedValue = value ? value : null;
     }
 
     await updateFieldMutation.mutateAsync({ field, value: processedValue });
@@ -127,11 +133,19 @@ export default function InlineEditTicketForm({
     return user ? user.username : 'Unknown';
   };
 
+  const getSubmittedByName = (employeeId?: number) => {
+    if (!employeeId) return 'Unknown';
+    const employee = employees.find(e => e.id === employeeId);
+    return employee ? (employee.englishName || employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim()) : 'Unknown';
+  };
+
   const getAssetName = (assetId?: number) => {
     if (!assetId) return 'None';
     const asset = assets.find(a => a.id === assetId);
-    return asset ? `${asset.name} (${asset.assetId})` : 'Unknown';
+    return asset ? `${asset.name || asset.modelName || 'Asset'} (${asset.assetId})` : 'Unknown';
   };
+
+
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -160,6 +174,21 @@ export default function InlineEditTicketForm({
   const userOptions = [
     { value: 'unassigned', label: 'Unassigned' },
     ...users.map(user => ({ value: user.id.toString(), label: user.username }))
+  ];
+
+  const employeeOptions = [
+    ...employees.map(emp => ({ 
+      value: emp.id.toString(), 
+      label: emp.englishName || emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim()
+    }))
+  ];
+
+  const assetOptions = [
+    { value: 'none', label: 'None' },
+    ...assets.map(asset => ({ 
+      value: asset.id.toString(), 
+      label: `${asset.name || asset.modelName || 'Asset'} (${asset.assetId})`
+    }))
   ];
 
   const requestTypeOptions = requestTypes.map((type: any) => ({
@@ -220,7 +249,7 @@ export default function InlineEditTicketForm({
                 <CardTitle>Basic Information (Click to Edit)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm font-medium text-gray-700 mb-1">Summary</div>
                     <InlineEditableField
@@ -239,12 +268,27 @@ export default function InlineEditTicketForm({
                       options={requestTypeOptions}
                     />
                   </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-1">Category</div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Submitted By</div>
                     <InlineEditableField
-                      value={ticket.category || ''}
-                      onSave={(value) => handleFieldUpdate('category', value)}
-                      placeholder="Click to add category"
+                      value={ticket.submittedById?.toString() || ''}
+                      displayValue={getSubmittedByName(ticket.submittedById)}
+                      onSave={(value) => handleFieldUpdate('submittedById', value)}
+                      type="select"
+                      options={employeeOptions}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Related Asset</div>
+                    <InlineEditableField
+                      value={ticket.relatedAssetId?.toString() || 'none'}
+                      displayValue={getAssetName(ticket.relatedAssetId)}
+                      onSave={(value) => handleFieldUpdate('relatedAssetId', value)}
+                      type="select"
+                      options={assetOptions}
                     />
                   </div>
                 </div>
@@ -363,8 +407,8 @@ export default function InlineEditTicketForm({
                       value={ticket.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : ''}
                       displayValue={ticket.dueDate ? new Date(ticket.dueDate).toLocaleString() : 'No due date'}
                       onSave={(value) => handleFieldUpdate('dueDate', value)}
-                      type="text"
-                      placeholder="YYYY-MM-DD HH:MM"
+                      type="datetime-local"
+                      placeholder="Select date and time"
                     />
                   </div>
                   <div>
