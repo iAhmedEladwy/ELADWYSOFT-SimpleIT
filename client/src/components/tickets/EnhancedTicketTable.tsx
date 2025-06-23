@@ -28,8 +28,6 @@ import {
   CheckCircle, 
   XCircle, 
   Timer,
-  Filter,
-  RotateCcw,
   MessageSquare,
   Paperclip,
   Send,
@@ -96,9 +94,6 @@ export default function EnhancedTicketTable({
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<Ticket | null>(null);
   const [commentText, setCommentText] = useState('');
   const [isPrivateComment, setIsPrivateComment] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [resolvingTicket, setResolvingTicket] = useState<Ticket | null>(null);
   const [resolutionType, setResolutionType] = useState('');
   const [resolutionComment, setResolutionComment] = useState('');
@@ -382,26 +377,8 @@ export default function EnhancedTicketTable({
     );
   }
 
-  // Filter tickets based on search and filters
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    let matchesStatus = true;
-    if (statusFilter === 'all') {
-      matchesStatus = true;
-    } else if (statusFilter === 'active') {
-      matchesStatus = ticket.status === 'Open' || ticket.status === 'In Progress';
-    } else if (statusFilter === 'completed') {
-      matchesStatus = ticket.status === 'Resolved' || ticket.status === 'Closed';
-    } else {
-      matchesStatus = ticket.status === statusFilter;
-    }
-    
-    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+  // Use all tickets since filters have been removed
+  const filteredTickets = tickets;
 
   const handleAddComment = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -421,73 +398,7 @@ export default function EnhancedTicketTable({
 
   return (
     <div className="space-y-4">
-      {/* Advanced Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {language === 'English' ? 'Filter & Search Tickets' : 'تصفية والبحث في التذاكر'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label>{language === 'English' ? 'Search' : 'البحث'}</Label>
-              <Input
-                placeholder={language === 'English' ? 'Search tickets...' : 'البحث في التذاكر...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{language === 'English' ? 'All Statuses' : 'جميع الحالات'}</SelectItem>
-                  <SelectItem value="active">{language === 'English' ? 'Active (Open/In Progress)' : 'النشطة (مفتوحة/قيد التنفيذ)'}</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                  <SelectItem value="completed">{language === 'English' ? 'Completed (Resolved/Closed)' : 'المكتملة (محلولة/مغلقة)'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{language === 'English' ? 'Priority' : 'الأولوية'}</Label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{language === 'English' ? 'All Priorities' : 'جميع الأولويات'}</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setPriorityFilter('all');
-                }}
-                className="w-full"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {language === 'English' ? 'Clear Filters' : 'مسح المرشحات'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
 
       <Table>
         <TableHeader>
