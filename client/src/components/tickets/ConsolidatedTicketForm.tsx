@@ -138,7 +138,7 @@ export default function ConsolidatedTicketForm({
   // Comment mutation
   const commentMutation = useMutation({
     mutationFn: async (commentData: any) => {
-      return await apiRequest('POST', `/api/tickets/comments`, commentData);
+      return await apiRequest(`/api/tickets/comments`, 'POST', commentData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/comments`] });

@@ -130,7 +130,7 @@ export default function EnhancedTicketTable({
   // Manual time update mutation (replaces automatic start/stop)
   const updateTimeSpentMutation = useMutation({
     mutationFn: async ({ ticketId, timeSpent }: { ticketId: number; timeSpent: number }) => {
-      const response = await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, { 
+      const response = await apiRequest(`/api/tickets/${ticketId}/enhanced`, 'PUT', { 
         timeSpent: timeSpent 
       });
       return response.json();
@@ -176,7 +176,7 @@ export default function EnhancedTicketTable({
   // Delete ticket mutation
   const deleteTicketMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest('DELETE', `/api/tickets/${ticketId}`);
+      return await apiRequest(`/api/tickets/${ticketId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -197,7 +197,7 @@ export default function EnhancedTicketTable({
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async (commentData: any) => {
-      return await apiRequest('POST', '/api/tickets/comments', commentData);
+      return await apiRequest('/api/tickets/comments', 'POST', commentData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });

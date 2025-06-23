@@ -88,7 +88,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   // Check-out mutation
   const checkOutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', `/api/assets/${asset.id}/check-out`, {
+      const res = await apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
         employeeId: parseInt(selectedEmployeeId),
         notes: `${checkOutReason}${notes ? ': ' + notes : ''}`.trim(),
         type: 'Check-Out',
@@ -117,7 +117,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', `/api/assets/${asset.id}/check-in`, {
+      const res = await apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
         notes: `${checkInReason}${notes ? ': ' + notes : ''}`.trim(),
         type: 'Check-In',
       });

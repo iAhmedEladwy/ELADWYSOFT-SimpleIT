@@ -86,7 +86,7 @@ export default function TicketUpdateForm({ ticket, users, onSuccess, onCancel }:
 
       // Add comment if provided
       if (data.comment?.trim()) {
-        await apiRequest('POST', '/api/tickets/comments', {
+        await apiRequest('/api/tickets/comments', 'POST', {
           ticketId: ticket.id,
           content: data.comment,
           isPrivate: data.isPrivateComment,
@@ -96,7 +96,7 @@ export default function TicketUpdateForm({ ticket, users, onSuccess, onCancel }:
 
       // Add time entry if provided
       if (data.timeEntry?.hours && data.timeEntry.hours > 0) {
-        await apiRequest('POST', `/api/tickets/${ticket.id}/time`, {
+        await apiRequest(`/api/tickets/${ticket.id}/time`, 'POST', {
           hours: data.timeEntry.hours,
           description: data.timeEntry.description || 'Time entry',
         });
@@ -125,7 +125,7 @@ export default function TicketUpdateForm({ ticket, users, onSuccess, onCancel }:
   // Assign ticket mutation
   const assignTicketMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return apiRequest('POST', `/api/tickets/${ticket.id}/assign`, { userId });
+      return apiRequest(`/api/tickets/${ticket.id}/assign`, 'POST', { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
