@@ -210,7 +210,10 @@ export default function EmployeesTable({
         <TableBody>
           {employees.length > 0 ? (
             employees.map((employee) => (
-              <TableRow key={employee.id}>
+              <TableRow 
+                key={employee.id}
+                className="group hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-purple-500"
+              >
                 {onSelectionChange && (
                   <TableCell className="w-12">
                     <Checkbox

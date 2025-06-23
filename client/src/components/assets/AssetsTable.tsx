@@ -281,7 +281,10 @@ export default function AssetsTable({
         <TableBody>
           {assets && assets.length > 0 ? (
             assets.map((asset) => (
-              <TableRow key={asset.id}>
+              <TableRow 
+                key={asset.id}
+                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500"
+              >
                 {hasAccess(3) && (
                   <TableCell>
                     <Checkbox 
@@ -305,11 +308,11 @@ export default function AssetsTable({
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                     <AssetActionButtons asset={asset} employees={employees} />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:scale-110 transition-all duration-200">
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
