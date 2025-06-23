@@ -375,7 +375,7 @@ export default function Tickets() {
         </div>
       </div>
 
-      {/* Filters Section */}
+      {/* Filter & Search Tickets Section */}
       <div className="mb-6">
         <TicketFilters
           filters={filters}
