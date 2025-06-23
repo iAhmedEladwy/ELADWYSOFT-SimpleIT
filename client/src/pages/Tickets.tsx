@@ -34,7 +34,7 @@ export default function Tickets() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [useInlineEditing, setUseInlineEditing] = useState(true);
+
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -384,33 +384,18 @@ export default function Tickets() {
         onTicketSelect={setSelectedTicket}
       />
 
-      {/* Ticket Detail Forms */}
+      {/* Inline Ticket Editor */}
       {selectedTicket && (
-        useInlineEditing ? (
-          <InlineEditTicketForm
-            ticket={selectedTicket}
-            onClose={() => setSelectedTicket(null)}
-            employees={employees || []}
-            assets={assets || []}
-            users={users || []}
-            onTicketUpdate={(updatedTicket) => {
-              queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-              setSelectedTicket(null);
-            }}
-          />
-        ) : (
-          <ConsolidatedTicketForm
-            ticket={selectedTicket}
-            onClose={() => setSelectedTicket(null)}
-            employees={employees || []}
-            assets={assets || []}
-            users={users || []}
-            onTicketUpdate={(updatedTicket) => {
-              queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-              setSelectedTicket(null);
-            }}
-          />
-        )
+        <InlineEditTicketForm
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          employees={employees || []}
+          assets={assets || []}
+          users={users || []}
+          onTicketUpdate={(updatedTicket) => {
+            queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+          }}
+        />
       )}
 
       {/* Create Ticket Dialog */}
