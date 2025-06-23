@@ -34,7 +34,7 @@ export default function Tickets() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [useInlineEditing, setUseInlineEditing] = useState(true); // Enable inline editing by default
+  const [useInlineEditing, setUseInlineEditing] = useState(true);
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -359,18 +359,8 @@ export default function Tickets() {
         
         <div>
           <label className="block text-sm font-medium mb-2">
-            {language === 'English' ? 'Interface Mode' : 'وضع الواجهة'}
+            {language === 'English' ? 'Quick Actions' : 'إجراءات سريعة'}
           </label>
-          <Button
-            variant={useInlineEditing ? "default" : "outline"}
-            onClick={() => setUseInlineEditing(!useInlineEditing)}
-            className="w-full mb-2"
-          >
-            {useInlineEditing 
-              ? (language === 'English' ? 'Inline Editing ON' : 'التحرير المباشر مفعل')
-              : (language === 'English' ? 'Standard Form' : 'النموذج القياسي')
-            }
-          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -391,7 +381,6 @@ export default function Tickets() {
         assets={assets}
         users={users}
         isLoading={isLoading}
-        useInlineEditing={useInlineEditing}
         onTicketSelect={setSelectedTicket}
       />
 

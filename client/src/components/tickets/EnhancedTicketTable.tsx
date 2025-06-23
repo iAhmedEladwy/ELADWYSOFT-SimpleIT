@@ -73,7 +73,6 @@ interface EnhancedTicketTableProps {
   assets: any[];
   users: any[];
   isLoading: boolean;
-  useInlineEditing?: boolean;
   onTicketSelect?: (ticket: Ticket) => void;
 }
 
@@ -83,7 +82,6 @@ export default function EnhancedTicketTable({
   assets, 
   users, 
   isLoading,
-  useInlineEditing = false,
   onTicketSelect
 }: EnhancedTicketTableProps) {
   const { user } = useAuth();

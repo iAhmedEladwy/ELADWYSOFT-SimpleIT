@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -62,7 +62,7 @@ export default function InlineEditTicketForm({
 }: InlineEditTicketFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('details');
+
 
   // Update mutation for individual fields
   const updateFieldMutation = useMutation({
@@ -72,12 +72,9 @@ export default function InlineEditTicketForm({
     },
     onSuccess: (updatedTicket, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      if (onTicketUpdate) {
-        onTicketUpdate(updatedTicket);
-      }
       toast({
         title: 'Field updated',
-        description: `${variables.field} has been updated successfully`,
+        description: `Field updated successfully`,
       });
     },
     onError: (error) => {
@@ -89,19 +86,9 @@ export default function InlineEditTicketForm({
     },
   });
 
-  // Fetch related data
+  // Fetch request types
   const { data: requestTypes = [] } = useQuery({
     queryKey: ['/api/custom-request-types'],
-  });
-
-  const { data: ticketHistory = [] } = useQuery({
-    queryKey: [`/api/tickets/${ticket?.id}/history`],
-    enabled: !!ticket?.id
-  });
-
-  const { data: ticketComments = [] } = useQuery({
-    queryKey: [`/api/tickets/${ticket?.id}/comments`],
-    enabled: !!ticket?.id
   });
 
   const handleFieldUpdate = async (field: string, value: string) => {
@@ -201,7 +188,7 @@ export default function InlineEditTicketForm({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Ticket {ticket.ticketId} - Inline Editing</span>
+            <span>Ticket {ticket.ticketId}</span>
             <div className="flex items-center gap-2">
               <Badge variant={
                 ticket.priority === 'High' ? 'destructive' : 
@@ -211,19 +198,15 @@ export default function InlineEditTicketForm({
                 {ticket.priority}
               </Badge>
               <Badge variant="outline">{ticket.status}</Badge>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </DialogTitle>
           <DialogDescription>
-            Click any field to edit it directly. Changes are saved automatically.
+            Click any field to edit it. Changes save automatically.
           </DialogDescription>
         </DialogHeader>
-
-        {/* Close Button */}
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -246,7 +229,7 @@ export default function InlineEditTicketForm({
             {/* Basic Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Basic Information (Click to Edit)</CardTitle>
+                <CardTitle>Basic Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -308,7 +291,7 @@ export default function InlineEditTicketForm({
             {/* Priority & Assignment */}
             <Card>
               <CardHeader>
-                <CardTitle>Priority & Assignment (Click to Edit)</CardTitle>
+                <CardTitle>Priority & Assignment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
@@ -387,7 +370,7 @@ export default function InlineEditTicketForm({
             {/* Time & Scheduling */}
             <Card>
               <CardHeader>
-                <CardTitle>Time & Scheduling (Click to Edit)</CardTitle>
+                <CardTitle>Time & Scheduling</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
@@ -427,7 +410,7 @@ export default function InlineEditTicketForm({
             {/* ITIL Solutions */}
             <Card>
               <CardHeader>
-                <CardTitle>ITIL Solutions (Click to Edit)</CardTitle>
+                <CardTitle>ITIL Solutions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
