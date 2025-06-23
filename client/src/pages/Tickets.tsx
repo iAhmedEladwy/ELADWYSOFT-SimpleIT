@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
+import InlineEditTicketForm from '@/components/tickets/InlineEditTicketForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
@@ -354,8 +355,18 @@ export default function Tickets() {
         
         <div>
           <label className="block text-sm font-medium mb-2">
-            {language === 'English' ? 'Quick Actions' : 'إجراءات سريعة'}
+            {language === 'English' ? 'Interface Mode' : 'وضع الواجهة'}
           </label>
+          <Button
+            variant={useInlineEditing ? "default" : "outline"}
+            onClick={() => setUseInlineEditing(!useInlineEditing)}
+            className="w-full mb-2"
+          >
+            {useInlineEditing 
+              ? (language === 'English' ? 'Inline Editing ON' : 'التحرير المباشر مفعل')
+              : (language === 'English' ? 'Standard Form' : 'النموذج القياسي')
+            }
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -365,7 +376,7 @@ export default function Tickets() {
             }}
             className="w-full"
           >
-            {language === 'English' ? 'Clear All Filters' : 'مسح جميع المرشحات'}
+            {language === 'English' ? 'Clear Filters' : 'مسح المرشحات'}
           </Button>
         </div>
       </div>
@@ -376,6 +387,8 @@ export default function Tickets() {
         assets={assets}
         users={users}
         isLoading={isLoading}
+        useInlineEditing={useInlineEditing}
+        onTicketSelect={setSelectedTicket}
       />
     </div>
   );
