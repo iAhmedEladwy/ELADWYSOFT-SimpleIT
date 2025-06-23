@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import type { UserResponse, AssetResponse } from '@shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';

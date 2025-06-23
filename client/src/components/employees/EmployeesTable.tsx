@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from 'wouter';
+import type { EmployeeResponse } from '@shared/types';
 import { 
   Table, 
   TableBody, 
@@ -39,10 +41,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/authContext';
+import EmployeeDetailsDialog from './EmployeeDetailsDialog';
 
 interface EmployeesTableProps {
-  employees: any[];
-  onEdit: (employee: any) => void;
+  employees: EmployeeResponse[];
+  onEdit: (employee: EmployeeResponse) => void;
   onDelete: (employeeId: number) => void;
   selectedEmployees?: number[];
   onSelectionChange?: (selectedIds: number[]) => void;
@@ -60,7 +63,7 @@ export default function EmployeesTable({
   const [, navigate] = useLocation();
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
+  const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeResponse | null>(null);
   
   // Action handlers for dropdown menu
   const handleViewDetails = (employee: EmployeeResponse) => {

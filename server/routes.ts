@@ -197,9 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         initialized: hasUsers,
         config: !!systemConfig
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error checking system status:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -254,9 +254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Setup completed successfully",
         initialized: true
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during setup:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -327,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: updateResult[0].id
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Emergency password reset error:", error);
       res.status(500).json({ message: "Password reset failed" });
     }
@@ -366,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authenticationMethods: ['password', 'emergency-fallback'],
         emergencyBypassActive: true
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth status check error:', error);
       res.status(500).json({ message: 'Failed to check authentication status' });
     }
@@ -479,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       
       res.json(defaultQuestions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching default security questions:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
@@ -537,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Security questions saved successfully",
         questions: savedQuestions
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving security questions:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
@@ -594,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: user.id,
         hasSecurityQuestions
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in find user for password reset:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
@@ -621,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       res.json({ questions: sanitizedQuestions });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         token: resetToken.token
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error verifying security answers:', error);
       res.status(500).json({ message: error.message || 'Error verifying security answers' });
     }
@@ -707,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: 'Password has been reset successfully'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error resetting password:', error);
       res.status(500).json({ message: error.message || 'Error resetting password' });
     }
@@ -762,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questionsCount: createdQuestions.length,
         questions: createdQuestions
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error setting up security questions:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
@@ -773,8 +773,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -786,8 +786,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json(user);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -815,8 +815,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(user);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -847,8 +847,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedUser);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -879,8 +879,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "User deleted successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -928,8 +928,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(mappedEmployees);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -983,9 +983,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       
       res.send(csvRows.join('\n'));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Employee export error:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -997,8 +997,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
       res.json(employee);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1082,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(employee);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Employee creation error:", error);
       res.status(400).json({ message: error.message || "Failed to create employee" });
     }
@@ -1164,8 +1164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedEmployee);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1196,8 +1196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Employee deleted successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1243,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
             
             results.push(employeeData);
-          } catch (error: any) {
+          } catch (error: unknown) {
             errors.push({ row: counter, error: error.message });
           }
         })
@@ -1266,7 +1266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   details: { name: newEmployee.englishName, empId: newEmployee.empId }
                 });
               }
-            } catch (error: any) {
+            } catch (error: unknown) {
               errors.push({ employee: employee.englishName, error: error.message });
             }
           }
@@ -1277,8 +1277,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errors: errors.length > 0 ? errors : null
           });
         });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1352,9 +1352,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.send(content);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error generating template:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   // Standardized CSV Import/Export routes
@@ -1592,9 +1592,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error exporting assets to CSV:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1617,8 +1617,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const assets = await storage.getAllAssets();
         res.json(assets);
       }
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1643,8 +1643,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(asset);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1712,8 +1712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(asset);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1739,8 +1739,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedAsset);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1771,8 +1771,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Asset deleted successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1821,8 +1821,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedAsset);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1866,8 +1866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedAsset);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1925,8 +1925,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(maintenance);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -1955,8 +1955,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       res.json(enrichedMaintenance);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -1985,8 +1985,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const transactions = await storage.getAssetTransactions(assetId);
       res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2019,8 +2019,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2036,8 +2036,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const transactions = await storage.getEmployeeTransactions(employeeId);
       res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2084,9 +2084,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(transaction);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error checking out asset:", error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2122,9 +2122,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(transaction);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error checking in asset:", error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2187,8 +2187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json({ sale, assetsSold: assets.length });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2196,8 +2196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sales = await storage.getAssetSales();
       res.json(sales);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2267,7 +2267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
             
             results.push(assetData);
-          } catch (error: any) {
+          } catch (error: unknown) {
             errors.push({ row: counter, error: error.message });
           }
         })
@@ -2290,7 +2290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   details: { assetId: newAsset.assetId, type: newAsset.type, brand: newAsset.brand }
                 });
               }
-            } catch (error: any) {
+            } catch (error: unknown) {
               errors.push({ asset: asset.assetId, error: error.message });
             }
           }
@@ -2301,8 +2301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errors: errors.length > 0 ? errors : null
           });
         });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2344,8 +2344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.send(csv);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2379,8 +2379,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tickets = await storage.getAllTickets();
         res.json(tickets);
       }
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2416,8 +2416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Admin/Manager can view any ticket
       res.json(ticket);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2475,9 +2475,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(newTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Ticket creation error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2534,7 +2534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Ticket created successfully",
         ticket: newTicket
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Ticket creation failed:", error);
       res.status(500).json({ message: "Failed to create ticket: " + error.message });
     }
@@ -2566,8 +2566,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2616,8 +2616,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2660,8 +2660,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2678,8 +2678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tickets = await storage.getTicketsForEmployee(employeeId);
       res.json(tickets);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2696,8 +2696,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const assets = await storage.getAssetsForEmployee(employeeId);
       res.json(assets);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2706,8 +2706,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = await storage.getSystemConfig();
       res.json(config || { language: "English", assetIdPrefix: "BOLT-" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -2754,8 +2754,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: enhancedLogs,
         pagination: logs.pagination
       });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2793,7 +2793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deletedCount,
         message: `Successfully cleared ${deletedCount} audit log entries` 
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error clearing audit logs:", error);
       res.status(500).json({ message: error.message || "Failed to clear audit logs" });
     }
@@ -2863,8 +2863,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Disposition', `attachment; filename=audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
       res.setHeader('Content-Type', 'text/csv');
       res.send(csvContent);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2884,8 +2884,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedConfig);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -2967,7 +2967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newEmployee = await storage.createEmployee(employeeData);
           console.log(`Successfully created employee: ${newEmployee.id}`);
           createdEmployees++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`Failed to create employee ${name}:`, error.message);
           // Continue with next employee
         }
@@ -3029,7 +3029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       res.status(500).json({ 
         success: false, 
         message: error.message 
@@ -3057,7 +3057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         message: "All demo data has been successfully removed." 
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       res.status(500).json({ 
         success: false, 
         message: error.message 
@@ -3071,8 +3071,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 100;
       const activities = await storage.getRecentActivity(limit);
       res.json(activities);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3150,8 +3150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recentTickets,
         recentActivity
       });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3170,9 +3170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(transactions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching asset transactions:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3217,8 +3217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         employmentTypes,
         upcomingExits
       });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3292,8 +3292,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPurchaseCost,
         assetLifespanUtilization
       });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3348,8 +3348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recentTicketsCount: recentTickets.length,
         averageResolutionTime: averageResolutionTime.toFixed(2) + " hours"
       });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3358,9 +3358,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const types = await storage.getCustomAssetTypes();
       res.json(types);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching custom asset types:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3371,9 +3371,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: req.body.description
       });
       res.status(201).json(newType);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating custom asset type:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3389,9 +3389,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset type not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating custom asset type:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3404,9 +3404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset type not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting custom asset type:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3415,9 +3415,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const brands = await storage.getCustomAssetBrands();
       res.json(brands);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching custom asset brands:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3428,9 +3428,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: req.body.description
       });
       res.status(201).json(newBrand);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating custom asset brand:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3446,9 +3446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset brand not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating custom asset brand:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3461,9 +3461,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset brand not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting custom asset brand:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3472,9 +3472,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const statuses = await storage.getCustomAssetStatuses();
       res.json(statuses);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching custom asset statuses:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3486,9 +3486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         color: req.body.color
       });
       res.status(201).json(newStatus);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating custom asset status:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3505,9 +3505,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset status not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating custom asset status:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3520,9 +3520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Custom asset status not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting custom asset status:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3531,9 +3531,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const providers = await storage.getServiceProviders();
       res.json(providers);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching service providers:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3546,9 +3546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: req.body.email
       });
       res.status(201).json(newProvider);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating service provider:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3566,9 +3566,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Service provider not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating service provider:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3581,9 +3581,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ message: 'Service provider not found' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting service provider:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
@@ -3611,7 +3611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: user.id,
         hasSecurityQuestions
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error finding user:', error);
       res.status(500).json({ message: error.message || 'Error finding user' });
     }
@@ -3633,7 +3633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ questions });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
@@ -3645,7 +3645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For default questions, pass no userId - use 0 as a flag for default questions
       const questions = await storage.getSecurityQuestions(0);
       res.json(questions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
@@ -3683,7 +3683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         token: resetToken.token
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error verifying security answers:', error);
       res.status(500).json({ message: error.message || 'Error verifying security answers' });
     }
@@ -3737,7 +3737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: 'Password has been reset successfully'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error resetting password:', error);
       res.status(500).json({ message: error.message || 'Error resetting password' });
     }
@@ -3785,9 +3785,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: logsWithUserDetails,
         pagination: result.pagination
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching audit logs:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3805,9 +3805,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching changes log:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3830,9 +3830,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(changeLog);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating change log:', error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3860,9 +3860,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(changeLog);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating change log:', error);
-      res.status(400).json({ message: error.message });
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3889,9 +3889,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting change log:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3921,8 +3921,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ].join('\n');
       
       res.send(csv);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3954,8 +3954,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ].join('\n');
       
       res.send(csv);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -3984,8 +3984,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ].join('\n');
       
       res.send(csv);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4018,8 +4018,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imported: importedEmployees.length,
         employees: importedEmployees
       });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4054,8 +4054,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imported: importedAssets.length,
         assets: importedAssets
       });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4106,7 +4106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Still send success response for security (don't reveal system errors)
         res.json({ message: "Password reset request received. Please contact administrator if you don't receive an email." });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: "Password reset temporarily unavailable. Please contact administrator." });
     }
@@ -4154,7 +4154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({ message: "Password has been successfully reset. You can now log in with your new password." });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reset password error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
@@ -4184,8 +4184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const requestTypes = await storage.getCustomRequestTypes();
       res.json(requestTypes);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4193,8 +4193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const requestTypes = await storage.getAllCustomRequestTypes();
       res.json(requestTypes);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4202,8 +4202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const requestType = await storage.createCustomRequestType(req.body);
       res.status(201).json(requestType);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4215,8 +4215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request type not found" });
       }
       res.json(requestType);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4228,8 +4228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request type not found" });
       }
       res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4245,8 +4245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(ticket);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4261,8 +4261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(ticket);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4272,8 +4272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ticketId = parseInt(req.params.id);
       const history = await storage.getTicketHistory(ticketId);
       res.json(history);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4283,8 +4283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ticketId = parseInt(req.params.id);
       const comments = await storage.getTicketComments(ticketId);
       res.json(comments);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4300,11 +4300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ success: true, message: "Ticket deleted successfully" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.message.includes("Unauthorized")) {
-        return res.status(403).json({ message: error.message });
+        return res.status(403).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
       }
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4320,8 +4320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(ticket);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4348,9 +4348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(updatedTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Update ticket error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4369,9 +4369,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(comment);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Add comment error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4385,9 +4385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timeEntry = await storage.addTimeEntry(ticketId, hours, description, userId);
       
       res.json(timeEntry);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Add time entry error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4412,9 +4412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json(updatedTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Assign ticket error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4461,7 +4461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Enhanced ticket creation successful:", newTicket);
       res.status(201).json(newTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Enhanced ticket creation error:", error.message, error.stack);
       res.status(500).json({ message: `Failed to create ticket: ${error.message}` });
     }
@@ -4472,7 +4472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tickets = await storage.getEnhancedTickets();
       res.json(tickets);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching enhanced tickets:", error);
       res.status(500).json({ message: "Failed to fetch enhanced tickets" });
     }
@@ -4483,7 +4483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categories = await storage.getTicketCategories();
       res.json(categories);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching ticket categories:", error);
       res.status(500).json({ message: "Failed to fetch ticket categories" });
     }
@@ -4495,7 +4495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryData = req.body;
       const category = await storage.createTicketCategory(categoryData);
       res.status(201).json(category);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating ticket category:", error);
       res.status(500).json({ message: "Failed to create ticket category" });
     }
@@ -4511,7 +4511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.addTicketComment(commentData);
       
       res.status(201).json(comment);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding ticket comment:", error);
       res.status(500).json({ message: "Failed to add ticket comment" });
     }
@@ -4526,7 +4526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.addTimeEntry(ticketId, hours, description, req.user.id);
       
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding time entry:", error);
       res.status(500).json({ message: "Failed to add time entry" });
     }
@@ -4539,7 +4539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.mergeTickets(primaryTicketId, secondaryTicketIds, req.user.id);
       
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error merging tickets:", error);
       res.status(500).json({ message: "Failed to merge tickets" });
     }
@@ -4561,9 +4561,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Start time tracking error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4582,9 +4582,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Stop time tracking error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4594,9 +4594,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ticketId = parseInt(req.params.id);
       const history = await storage.getTicketHistory(ticketId);
       res.json(history);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Get ticket history error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4612,9 +4612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Ticket deleted successfully" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete ticket error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4640,9 +4640,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedTicket);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Enhanced ticket update error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4669,8 +4669,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(requestTypes);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4687,8 +4687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(requestType);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4711,8 +4711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(requestType);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4726,8 +4726,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Request type deleted successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4736,8 +4736,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4753,9 +4753,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newUser = await storage.createUser(userData);
       res.status(201).json(newUser);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("User creation error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4778,9 +4778,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json(updatedUser);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("User update error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
@@ -4799,11 +4799,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json({ message: "User deleted successfully" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("User deletion error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
+
+  // Add global error handler at the end
+  app.use(errorHandler({ 
+    showStackTrace: process.env.NODE_ENV === 'development',
+    logErrors: true 
+  }));
 
   const httpServer = createServer(app);
   return httpServer;
