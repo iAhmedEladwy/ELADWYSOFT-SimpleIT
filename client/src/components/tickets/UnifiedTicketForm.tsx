@@ -101,20 +101,7 @@ export default function UnifiedTicketForm({
     staleTime: 1000 * 60 * 5,
   });
 
-  // Filter assets based on selected employee (submitter)
-  const filteredAssets = useMemo(() => {
-    const submittedById = form.watch('submittedById');
-    
-    if (!assets || !submittedById) {
-      return assets || [];
-    }
-    
-    // Show only assets assigned to the selected employee (submitter)
-    return assets.filter((asset: any) => {
-      // Check if asset is assigned to the selected employee
-      return asset.assignedEmployeeId && asset.assignedEmployeeId.toString() === submittedById;
-    });
-  }, [assets, form.watch('submittedById')]);
+
 
   // Translations
   const translations = {
@@ -177,6 +164,20 @@ export default function UnifiedTicketForm({
       rootCause: ticket?.rootCause || '',
     },
   });
+
+  // Filter assets based on selected employee (submitter)
+  const submittedById = form.watch('submittedById');
+  const filteredAssets = useMemo(() => {
+    if (!assets || !submittedById) {
+      return assets || [];
+    }
+    
+    // Show only assets assigned to the selected employee (submitter)
+    return assets.filter((asset: any) => {
+      // Check if asset is assigned to the selected employee
+      return asset.assignedEmployeeId && asset.assignedEmployeeId.toString() === submittedById;
+    });
+  }, [assets, submittedById]);
 
   const handleSubmit = (data: UnifiedTicketFormData) => {
     onSubmit(data);
@@ -248,17 +249,17 @@ export default function UnifiedTicketForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{translations.relatedAsset}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={translations.selectAsset} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="none">{translations.none}</SelectItem>
-                    {assets.map((asset: AssetResponse) => (
+                    <SelectItem value="">{translations.none}</SelectItem>
+                    {filteredAssets.map((asset: any) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
-                        {asset.name} ({asset.assetId})
+                        {asset.assetId} - {asset.type} ({asset.brand})
                       </SelectItem>
                     ))}
                   </SelectContent>
