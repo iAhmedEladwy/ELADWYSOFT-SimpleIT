@@ -386,19 +386,41 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-  // Filter assets based on search query
+  // Filter state for dropdowns
+  const [filters, setFilters] = useState({
+    type: 'all',
+    brand: 'all',
+    modelName: 'all',
+    status: 'all'
+  });
+
+  // Get unique values for filters
+  const uniqueTypes = [...new Set(assets.map((asset: any) => asset.type).filter(Boolean))];
+  const uniqueBrands = [...new Set(assets.map((asset: any) => asset.brand).filter(Boolean))];
+  const uniqueModelNames = [...new Set(assets.map((asset: any) => asset.modelName).filter(Boolean))];
+
+  // Filter assets based on search query and dropdown filters
   const filteredAssets = assets.filter((asset: any) => {
+    // Text search filter
     const searchString = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = !searchQuery || (
       asset.assetId?.toLowerCase().includes(searchString) ||
       asset.type?.toLowerCase().includes(searchString) ||
       asset.brand?.toLowerCase().includes(searchString) ||
       asset.modelName?.toLowerCase().includes(searchString) ||
       asset.serialNumber?.toLowerCase().includes(searchString)
     );
+
+    // Dropdown filters
+    const matchesType = filters.type === 'all' || asset.type === filters.type;
+    const matchesBrand = filters.brand === 'all' || asset.brand === filters.brand;
+    const matchesModelName = filters.modelName === 'all' || asset.modelName === filters.modelName;
+    const matchesStatus = filters.status === 'all' || asset.status === filters.status;
+
+    return matchesSearch && matchesType && matchesBrand && matchesModelName && matchesStatus;
   });
 
-  // Filter assets by status
+  // Filter assets by status for tab display
   const availableAssets = filteredAssets.filter((asset: any) => asset.status === 'Available');
   const inUseAssets = filteredAssets.filter((asset: any) => asset.status === 'In Use');
   const maintenanceAssets = filteredAssets.filter((asset: any) => asset.status === 'Maintenance');

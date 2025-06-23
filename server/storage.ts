@@ -1868,43 +1868,57 @@ export class DatabaseStorage implements IStorage {
   async removeDemoData(): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        // Remove all asset transactions
-        await tx.delete(assetTransactions);
-        console.log('Asset transactions removed');
+        console.log('Starting demo data removal with proper foreign key handling...');
         
-        // Remove all asset maintenance records
-        await tx.delete(assetMaintenance);
-        console.log('Asset maintenance records removed');
+        // Step 1: Remove dependent records first (proper cascade order)
         
-        // Remove all assets
-        await tx.delete(assets);
-        console.log('Assets removed');
-        
-        // Remove all tickets
-        await tx.delete(tickets);
-        console.log('Tickets removed');
-        
-        // Remove employees except for admin-linked ones
-        await tx.delete(employees);
-        console.log('Employees removed');
-        
-        // Remove all sales and sale items
+        // Remove asset sale items first (depends on asset sales)
         await tx.delete(assetSaleItems);
+        console.log('Asset sale items removed');
+        
+        // Remove asset sales
         await tx.delete(assetSales);
         console.log('Asset sales removed');
         
-        // Clear custom data
+        // Remove asset transactions (depends on assets and employees)
+        await tx.delete(assetTransactions);
+        console.log('Asset transactions removed');
+        
+        // Remove asset maintenance records (depends on assets)
+        await tx.delete(assetMaintenance);
+        console.log('Asset maintenance records removed');
+        
+        // Remove ticket comments and history first (depends on tickets)
+        await tx.delete(ticketComments);
+        console.log('Ticket comments removed');
+        
+        await tx.delete(ticketHistory);
+        console.log('Ticket history removed');
+        
+        // Remove tickets (depends on employees for assignment)
+        await tx.delete(tickets);
+        console.log('Tickets removed');
+        
+        // Remove assets (depends on employees for assignment)
+        await tx.delete(assets);
+        console.log('Assets removed');
+        
+        // Remove employees (no dependencies)
+        await tx.delete(employees);
+        console.log('Employees removed');
+        
+        // Remove activity logs (no critical dependencies)
+        await tx.delete(activityLog);
+        console.log('Activity logs removed');
+        
+        // Remove custom data (no dependencies)
         await tx.delete(customAssetTypes);
         await tx.delete(customAssetBrands);
         await tx.delete(customAssetStatuses);
         await tx.delete(serviceProviders);
         console.log('Custom data removed');
         
-        // Remove activity logs
-        await tx.delete(activityLog);
-        console.log('Activity logs removed');
-        
-        // Remove all users except admin
+        // Remove all users except admin (no dependencies)
         await tx.delete(users).where(
           sql`${users.id} > 1`
         );
