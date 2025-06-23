@@ -438,7 +438,7 @@ export const assetTransactionExportColumns = [
 /**
  * Get validation rules for entity type
  */
-export export function getValidationRules(entityType: string): CSVValidationRule[] {
+export function getValidationRules(entityType: string): CSVValidationRule[] {
   const ruleMap: Record<string, CSVValidationRule[]> = {
     'assets': assetValidationRules,
     'employees': employeeValidationRules,
@@ -454,7 +454,7 @@ export export function getValidationRules(entityType: string): CSVValidationRule
 /**
  * Get export columns for entity type
  */
-export export function getExportColumns(entityType: string): string[] {
+export function getExportColumns(entityType: string): string[] {
   const columnMap: Record<string, string[]> = {
     'assets': assetExportColumns,
     'employees': employeeExportColumns,
