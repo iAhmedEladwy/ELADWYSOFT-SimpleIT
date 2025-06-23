@@ -538,30 +538,41 @@ export default function EnhancedTicketTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={ticket.priority || "Medium"}
-                    onValueChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { priority: value } 
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-20 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">
-                        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">Low</Badge>
-                      </SelectItem>
-                      <SelectItem value="Medium">
-                        <Badge variant="default" className="text-xs">Medium</Badge>
-                      </SelectItem>
-                      <SelectItem value="High">
-                        <Badge variant="destructive" className="text-xs">High</Badge>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {editingField?.ticketId === ticket.id && editingField?.field === 'priority' ? (
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        setEditValue(value);
+                        updateTicketMutation.mutate({ 
+                          id: ticket.id, 
+                          updates: { priority: value } 
+                        });
+                        setEditingField(null);
+                        setEditValue('');
+                      }}
+                    >
+                      <SelectTrigger className="w-20 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge 
+                      variant="outline" 
+                      className={`cursor-pointer hover:opacity-80 transition-opacity ${
+                        ticket.priority === 'High' ? 'bg-red-100 text-red-800 border-red-200' :
+                        ticket.priority === 'Low' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                        'bg-blue-100 text-blue-800 border-blue-200'
+                      }`}
+                      onClick={() => startEditing(ticket.id, 'priority', ticket.priority || 'Medium')}
+                    >
+                      {ticket.priority || "Medium"}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Select

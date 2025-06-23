@@ -82,10 +82,17 @@ export default function ConsolidatedTicketForm({
     status: 'Open',
     assignedToId: '',
     requestType: '',
+    category: 'Incident',
     slaTarget: '',
     dueDate: '',
     workaround: '',
     rootCause: '',
+    resolution: '',
+    resolutionNotes: '',
+    escalationLevel: '0',
+    privateNotes: '',
+    customerRating: '',
+    customerFeedback: '',
     timeSpent: ''
   });
 
@@ -101,10 +108,17 @@ export default function ConsolidatedTicketForm({
         status: ticket.status || 'Open',
         assignedToId: ticket.assignedToId?.toString() || '',
         requestType: ticket.requestType || '',
+        category: ticket.category || 'Incident',
         slaTarget: ticket.slaTarget?.toString() || '',
         dueDate: ticket.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '',
         workaround: ticket.workaround || '',
         rootCause: ticket.rootCause || '',
+        resolution: ticket.resolution || '',
+        resolutionNotes: ticket.resolutionNotes || '',
+        escalationLevel: ticket.escalationLevel?.toString() || '0',
+        privateNotes: ticket.privateNotes || '',
+        customerRating: ticket.customerRating?.toString() || '',
+        customerFeedback: ticket.customerFeedback || '',
         timeSpent: ticket.timeSpent?.toString() || ''
       });
     }
@@ -189,6 +203,7 @@ export default function ConsolidatedTicketForm({
       updates.assignedToId = formData.assignedToId ? parseInt(formData.assignedToId) : null;
     }
     if (formData.requestType !== ticket.requestType) updates.requestType = formData.requestType;
+    if (formData.category !== ticket.category) updates.category = formData.category;
     if (formData.slaTarget !== ticket.slaTarget?.toString()) {
       updates.slaTarget = formData.slaTarget ? parseInt(formData.slaTarget) : null;
     }
@@ -197,6 +212,16 @@ export default function ConsolidatedTicketForm({
     }
     if (formData.workaround !== ticket.workaround) updates.workaround = formData.workaround;
     if (formData.rootCause !== ticket.rootCause) updates.rootCause = formData.rootCause;
+    if (formData.resolution !== ticket.resolution) updates.resolution = formData.resolution;
+    if (formData.resolutionNotes !== ticket.resolutionNotes) updates.resolutionNotes = formData.resolutionNotes;
+    if (formData.escalationLevel !== ticket.escalationLevel?.toString()) {
+      updates.escalationLevel = formData.escalationLevel ? parseInt(formData.escalationLevel) : 0;
+    }
+    if (formData.privateNotes !== ticket.privateNotes) updates.privateNotes = formData.privateNotes;
+    if (formData.customerRating !== ticket.customerRating?.toString()) {
+      updates.customerRating = formData.customerRating ? parseInt(formData.customerRating) : null;
+    }
+    if (formData.customerFeedback !== ticket.customerFeedback) updates.customerFeedback = formData.customerFeedback;
     if (formData.timeSpent !== ticket.timeSpent?.toString()) {
       updates.timeSpent = formData.timeSpent ? parseInt(formData.timeSpent) : 0;
     }
@@ -309,7 +334,7 @@ export default function ConsolidatedTicketForm({
                 <CardTitle>Basic Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label>Summary</Label>
                     {isEditMode ? (
@@ -339,6 +364,24 @@ export default function ConsolidatedTicketForm({
                       </Select>
                     ) : (
                       <p className="text-sm">{ticket.requestType}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Category</Label>
+                    {isEditMode ? (
+                      <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Incident">Incident</SelectItem>
+                          <SelectItem value="Service Request">Service Request</SelectItem>
+                          <SelectItem value="Problem">Problem</SelectItem>
+                          <SelectItem value="Change">Change</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm">{ticket.category || 'Incident'}</p>
                     )}
                   </div>
                 </div>
@@ -384,6 +427,44 @@ export default function ConsolidatedTicketForm({
                     )}
                   </div>
                   <div>
+                    <Label>Urgency</Label>
+                    {isEditMode ? (
+                      <Select value={formData.urgency} onValueChange={(value) => setFormData(prev => ({ ...prev, urgency: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Critical">Critical</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm">{ticket.urgency || 'Medium'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Impact</Label>
+                    {isEditMode ? (
+                      <Select value={formData.impact} onValueChange={(value) => setFormData(prev => ({ ...prev, impact: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Critical">Critical</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm">{ticket.impact || 'Medium'}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
                     <Label>Status</Label>
                     {isEditMode ? (
                       <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
@@ -423,6 +504,191 @@ export default function ConsolidatedTicketForm({
                       <p className="text-sm">{getAssignedUserName(ticket.assignedToId)}</p>
                     )}
                   </div>
+                  <div>
+                    <Label>Escalation Level</Label>
+                    {isEditMode ? (
+                      <Select value={formData.escalationLevel} onValueChange={(value) => setFormData(prev => ({ ...prev, escalationLevel: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0 - Initial</SelectItem>
+                          <SelectItem value="1">1 - Level 1</SelectItem>
+                          <SelectItem value="2">2 - Level 2</SelectItem>
+                          <SelectItem value="3">3 - Level 3</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm">Level {ticket.escalationLevel || 0}</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SLA & Scheduling */}
+            <Card>
+              <CardHeader>
+                <CardTitle>SLA & Scheduling</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>SLA Target (hours)</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        value={formData.slaTarget}
+                        onChange={(e) => setFormData(prev => ({ ...prev, slaTarget: e.target.value }))}
+                        placeholder="Enter SLA hours"
+                        min="0"
+                      />
+                    ) : (
+                      <p className="text-sm">{ticket.slaTarget ? `${ticket.slaTarget} hours` : 'Not set'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Due Date</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="datetime-local"
+                        value={formData.dueDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                      />
+                    ) : (
+                      <p className="text-sm">
+                        {ticket.dueDate ? new Date(ticket.dueDate).toLocaleString() : 'Not set'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Problem Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Problem Management</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Root Cause</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={formData.rootCause}
+                      onChange={(e) => setFormData(prev => ({ ...prev, rootCause: e.target.value }))}
+                      rows={3}
+                      placeholder="Describe the root cause of the issue"
+                    />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{ticket.rootCause || 'Not identified'}</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Workaround</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={formData.workaround}
+                      onChange={(e) => setFormData(prev => ({ ...prev, workaround: e.target.value }))}
+                      rows={3}
+                      placeholder="Describe any temporary workaround"
+                    />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{ticket.workaround || 'None available'}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resolution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Resolution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Resolution</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={formData.resolution}
+                      onChange={(e) => setFormData(prev => ({ ...prev, resolution: e.target.value }))}
+                      rows={3}
+                      placeholder="Describe the resolution"
+                    />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{ticket.resolution || 'Not resolved'}</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Resolution Notes</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={formData.resolutionNotes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, resolutionNotes: e.target.value }))}
+                      rows={2}
+                      placeholder="Additional resolution notes"
+                    />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{ticket.resolutionNotes || 'No additional notes'}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Feedback */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Feedback</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Customer Rating</Label>
+                    {isEditMode ? (
+                      <Select value={formData.customerRating} onValueChange={(value) => setFormData(prev => ({ ...prev, customerRating: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select rating" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 - Poor</SelectItem>
+                          <SelectItem value="2">2 - Fair</SelectItem>
+                          <SelectItem value="3">3 - Good</SelectItem>
+                          <SelectItem value="4">4 - Very Good</SelectItem>
+                          <SelectItem value="5">5 - Excellent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm">
+                        {ticket.customerRating ? `${ticket.customerRating}/5` : 'Not rated'}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Private Notes</Label>
+                    {isEditMode ? (
+                      <Textarea
+                        value={formData.privateNotes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, privateNotes: e.target.value }))}
+                        rows={2}
+                        placeholder="Internal staff notes"
+                      />
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{ticket.privateNotes || 'No private notes'}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label>Customer Feedback</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={formData.customerFeedback}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customerFeedback: e.target.value }))}
+                      rows={3}
+                      placeholder="Customer feedback and comments"
+                    />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{ticket.customerFeedback || 'No feedback provided'}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
