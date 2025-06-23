@@ -2070,7 +2070,7 @@ export class DatabaseStorage implements IStorage {
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
       const result = await pool.query(`
-        SELECT th.*, u.username, u.first_name, u.last_name
+        SELECT th.*, u.username, u."firstName", u."lastName"
         FROM ticket_history th
         LEFT JOIN users u ON th.user_id = u.id
         WHERE th.ticket_id = $1
@@ -2090,8 +2090,8 @@ export class DatabaseStorage implements IStorage {
         user: {
           id: row.user_id,
           username: row.username,
-          firstName: row.first_name,
-          lastName: row.last_name
+          firstName: row.firstName,
+          lastName: row.lastName
         }
       }));
     } catch (error) {
