@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
 import InlineEditTicketForm from '@/components/tickets/InlineEditTicketForm';
 import ConsolidatedTicketForm from '@/components/tickets/ConsolidatedTicketForm';
+import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import type { TicketFilters as TicketFiltersType } from '@shared/types';
 
 export default function Tickets() {
   const { language } = useLanguage();
@@ -29,9 +31,7 @@ export default function Tickets() {
   const { user, hasAccess } = useAuth();
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [userFilter, setUserFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [filters, setFilters] = useState<TicketFiltersType>({});
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 

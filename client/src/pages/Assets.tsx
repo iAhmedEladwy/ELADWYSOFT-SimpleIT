@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import AssetsTable from '@/components/assets/AssetsTable';
 import AssetForm from '@/components/assets/AssetForm';
+import AssetFilters from '@/components/assets/AssetFilters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Download, Upload, DollarSign, FileUp } from 'lucide-react';
@@ -26,6 +27,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import type { AssetFilters as AssetFiltersType } from '@shared/types';
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -34,7 +36,7 @@ export default function Assets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<AssetFiltersType>({});
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
