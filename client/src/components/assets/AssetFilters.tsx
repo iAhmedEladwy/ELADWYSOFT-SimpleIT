@@ -175,8 +175,29 @@ export default function AssetFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allBrands}</SelectItem>
-                {assetBrands.map((brand: string) => (
+                {filteredBrands.map((brand: string) => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Model Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Model
+            </label>
+            <Select
+              value={filters.model || 'all'}
+              onValueChange={(value) => updateFilter('model', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Models" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Models</SelectItem>
+                {filteredModels.map((model) => (
+                  <SelectItem key={model} value={model}>{model}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
