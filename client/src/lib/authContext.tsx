@@ -90,6 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     } catch (error) {
       console.error("Login error:", error);
+      // Add more detailed error logging for debugging
+      if (error instanceof Error) {
+        console.error("Login error details:", error.message, error.stack);
+      }
       setIsLoading(false);
       throw error;
     }

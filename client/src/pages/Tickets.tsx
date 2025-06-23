@@ -229,7 +229,105 @@ export default function Tickets() {
     assignTicketMutation.mutate({ id: ticketId, userId });
   };
 
+  // Filter tickets based on filters
+  const filteredTickets = useMemo(() => {
+    if (!tickets) return [];
+    
+    return tickets.filter(ticket => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const searchFields = [
+          ticket.ticketId,
+          ticket.summary,
+          ticket.description,
+          ticket.requestType,
+          ticket.priority,
+          ticket.status
+        ].filter(Boolean);
+        
+        if (!searchFields.some(field => 
+          field?.toLowerCase().includes(searchLower)
+        )) {
+          return false;
+        }
+      }
+      
+      // Status filter
+      if (filters.status && ticket.status !== filters.status) {
+        return false;
+      }
+      
+      // Priority filter
+      if (filters.priority && ticket.priority !== filters.priority) {
+        return false;
+      }
+      
+      // Type filter
+      if (filters.type && ticket.requestType !== filters.type) {
+        return false;
+      }
+      
+      // Assigned filter
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          if (ticket.assignedToId) return false;
+        } else if (filters.assignedTo === 'me') {
+          if (ticket.assignedToId !== user?.id) return false;
+        } else {
+          if (ticket.assignedToId?.toString() !== filters.assignedTo) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [tickets, filters, user]);
 
+  // Enhanced export mutation with all fields
+  const exportMutation = useMutation({
+    mutationFn: async (format: 'csv' | 'json') => {
+      const response = await apiRequest('GET', `/api/tickets/export?format=${format}`, null, {
+        headers: { 'Accept': format === 'csv' ? 'text/csv' : 'application/json' }
+      });
+      
+      const filename = `tickets_export_${new Date().toISOString().split('T')[0]}.${format}`;
+      
+      if (format === 'csv') {
+        const blob = new Blob([response], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Tickets exported successfully with all fields' : 'تم تصدير التذاكر بنجاح مع جميع الحقول',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to export tickets' : 'فشل في تصدير التذاكر',
+        variant: 'destructive'
+      });
+    }
+  });
 
   return (
     <div className="p-6">
