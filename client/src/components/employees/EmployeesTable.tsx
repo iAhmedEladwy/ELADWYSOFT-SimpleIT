@@ -57,6 +57,9 @@ export default function EmployeesTable({
 }: EmployeesTableProps) {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
+  const [, navigate] = useLocation();
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
   
   // Action handlers for dropdown menu

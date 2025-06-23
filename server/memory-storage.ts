@@ -19,16 +19,16 @@ export class MemoryStorage implements IStorage {
   private systemConfig: schema.SystemConfig | undefined;
   
   // Custom asset management data
-  private customAssetTypes: any[] = [];
-  private customAssetBrands: any[] = [];
-  private customAssetStatuses: any[] = [];
-  private serviceProviders: any[] = [];
+  private customAssetTypes: schema.CustomAssetType[] = [];
+  private customAssetBrands: schema.CustomAssetBrand[] = [];
+  private customAssetStatuses: schema.CustomAssetStatus[] = [];
+  private serviceProviders: schema.ServiceProvider[] = [];
   private customRequestTypes: schema.CustomRequestType[] = [];
   private ticketHistory: schema.TicketHistory[] = [];
-  private ticketCategories: any[] = [];
-  private ticketComments: any[] = [];
-  private timeEntries: any[] = [];
-  private comments: any[] = [];
+  private ticketCategories: schema.TicketCategory[] = [];
+  private ticketComments: schema.TicketComment[] = [];
+  private timeEntries: schema.TimeEntry[] = [];
+  private comments: schema.TicketComment[] = [];
   
   private idCounters = {
     users: 1,

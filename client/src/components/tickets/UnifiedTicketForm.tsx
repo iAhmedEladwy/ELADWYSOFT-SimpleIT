@@ -211,7 +211,7 @@ export default function UnifiedTicketForm({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
-                    {users.map((user: any) => (
+                    {users.map((user: UserResponse) => (
                       <SelectItem key={user.id} value={user.id.toString()}>
                         {user.firstName && user.lastName 
                           ? `${user.firstName} ${user.lastName}` 
@@ -240,7 +240,7 @@ export default function UnifiedTicketForm({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="none">{translations.none}</SelectItem>
-                    {assets.map((asset: any) => (
+                    {assets.map((asset: AssetResponse) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
                         {asset.name} ({asset.assetId})
                       </SelectItem>

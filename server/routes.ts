@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import * as schema from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { ValidationError, NotFoundError, UnauthorizedError, createErrorResponse } from "@shared/errors";
+import type { UserResponse, EmployeeResponse, AssetResponse, TicketResponse } from "@shared/types";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
@@ -26,26 +28,26 @@ const generateId = (prefix: string, num: number) => {
 };
 
 // Helper function to validate request body against schema
-function validateBody<T>(schema: any, data: any): T {
+function validateBody<T>(schema: schema.ZodSchema<T>, data: unknown): T {
   try {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new Error(fromZodError(error).message);
+      throw new ValidationError(fromZodError(error).message);
     }
     throw error;
   }
 }
 
 // Authentication middleware
-const authenticateUser = (req: Request, res: Response, next: Function) => {
+const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   // Check emergency session first
-  if ((req as any).session?.user) {
+  if (req.session && 'user' in req.session) {
     return next();
   }
   
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json(createErrorResponse(new UnauthorizedError()));
   }
   
   // Additional check to ensure user object exists
