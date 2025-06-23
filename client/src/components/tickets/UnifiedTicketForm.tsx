@@ -249,7 +249,7 @@ export default function UnifiedTicketForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{translations.relatedAsset}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || "none"}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={translations.selectAsset} />
