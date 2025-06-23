@@ -52,7 +52,7 @@ const assetFormSchema = z.object({
       { message: "Invalid date format" }
     ),
   lifeSpan: z.string().optional(),
-  outOfBoxOs: z.string().optional().transform(value => value === "" ? undefined : value),
+  outOfBoxOs: z.string().optional(),
   assignedEmployeeId: z.string().optional(),
 });
 
@@ -149,6 +149,7 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       warrantyExpiryDate: initialData.warrantyExpiryDate ? new Date(initialData.warrantyExpiryDate).toISOString().split('T')[0] : '',
       buyPrice: initialData.buyPrice ? initialData.buyPrice.toString() : '',
       lifeSpan: initialData.lifeSpan ? initialData.lifeSpan.toString() : '',
+      outOfBoxOs: initialData.outOfBoxOs || '',
       assignedEmployeeId: initialData.assignedEmployeeId ? initialData.assignedEmployeeId.toString() : '',
     };
   };
