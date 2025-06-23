@@ -837,7 +837,7 @@ export default function EnhancedTicketTable({
                 Ticket Details - {selectedTicketForDetail.ticketId}
               </DialogTitle>
             </DialogHeader>
-            <TicketDetailForm
+            <ConsolidatedTicketForm
               ticket={selectedTicketForDetail}
               onClose={() => {
                 setShowTicketDetail(false);
