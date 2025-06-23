@@ -13,7 +13,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, Search, User } from 'lucide-react';
+import { X, Filter, Search, User, Download } from 'lucide-react';
 import type { TicketFilters } from '@shared/types';
 
 interface TicketFiltersProps {
@@ -21,13 +21,15 @@ interface TicketFiltersProps {
   onFiltersChange: (filters: TicketFilters) => void;
   totalCount: number;
   filteredCount: number;
+  onExport?: () => void;
 }
 
 export default function TicketFilters({ 
   filters, 
   onFiltersChange, 
   totalCount, 
-  filteredCount 
+  filteredCount,
+  onExport
 }: TicketFiltersProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -107,6 +109,17 @@ export default function TicketFilters({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+                className="gap-1"
+              >
+                <Download className="h-3 w-3" />
+                {language === 'Arabic' ? 'تصدير' : 'Export'}
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm" 

@@ -12,7 +12,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, Search } from 'lucide-react';
+import { X, Filter, Search, Download } from 'lucide-react';
 import type { AssetFilters } from '@shared/types';
 
 interface AssetFiltersProps {
@@ -20,13 +20,15 @@ interface AssetFiltersProps {
   onFiltersChange: (filters: AssetFilters) => void;
   totalCount: number;
   filteredCount: number;
+  onExport?: () => void;
 }
 
 export default function AssetFilters({ 
   filters, 
   onFiltersChange, 
   totalCount, 
-  filteredCount 
+  filteredCount,
+  onExport
 }: AssetFiltersProps) {
   const { language } = useLanguage();
   const [searchInput, setSearchInput] = useState(filters.search || '');
@@ -100,8 +102,21 @@ export default function AssetFilters({
               <Badge variant="secondary">{activeFiltersCount}</Badge>
             )}
           </div>
-          <div className="text-sm text-muted-foreground">
-            {translations.results}
+          <div className="flex items-center gap-4">
+            {onExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+                className="gap-1"
+              >
+                <Download className="h-3 w-3" />
+                {language === 'Arabic' ? 'تصدير' : 'Export'}
+              </Button>
+            )}
+            <div className="text-sm text-muted-foreground">
+              {translations.results}
+            </div>
           </div>
         </div>
       </CardHeader>
