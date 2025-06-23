@@ -105,6 +105,10 @@ export default function EnhancedTicketTable({
     resolution: '',
     resolutionNotes: ''
   });
+  
+  // Inline editing states
+  const [editingField, setEditingField] = useState<{ticketId: number, field: string} | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
 
   // Check access level
   const hasAccess = (level: string) => {
@@ -426,30 +430,41 @@ export default function EnhancedTicketTable({
                 className="hover:bg-gray-50"
               >
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
-                <TableCell 
-                  className="max-w-xs truncate font-medium cursor-pointer text-blue-600 hover:text-blue-800"
-                  onClick={() => {
-                    if (onTicketSelect) {
-                      onTicketSelect(ticket);
-                    } else {
-                      setSelectedTicketForDetail(ticket);
-                      setShowTicketDetail(true);
-                    }
-                  }}
-                >
-                  {ticket.summary || ticket.description.substring(0, 50) + '...'}
-                  {ticket.relatedAssetId && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      Asset: 
+                <TableCell className="max-w-xs">
+                  {editingField?.ticketId === ticket.id && editingField?.field === 'summary' ? (
+                    <Input
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={saveInlineEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveInlineEdit();
+                        if (e.key === 'Escape') cancelInlineEdit();
+                      }}
+                      className="h-8 text-xs"
+                      autoFocus
+                    />
+                  ) : (
+                    <div>
                       <span 
-                        className="cursor-pointer hover:text-blue-600 hover:underline ml-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
-                        }}
+                        className="cursor-pointer hover:text-blue-600 hover:underline font-medium"
+                        onClick={() => startEditing(ticket.id, 'summary', ticket.summary || ticket.description)}
                       >
-                        {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
+                        {ticket.summary || ticket.description.substring(0, 50) + '...'}
                       </span>
+                      {ticket.relatedAssetId && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Asset: 
+                          <span 
+                            className="cursor-pointer hover:text-blue-600 hover:underline ml-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
+                            }}
+                          >
+                            {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </TableCell>
