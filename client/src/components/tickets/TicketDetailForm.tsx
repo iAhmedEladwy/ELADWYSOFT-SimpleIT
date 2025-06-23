@@ -597,28 +597,47 @@ export default function TicketDetailForm({
           </TabsContent>
 
           <TabsContent value="history" className="space-y-3">
-            {ticketHistory.map((history: any) => (
-              <Card key={history.id}>
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">{getEmployeeName(history.changedBy)}</span>
+            {ticketHistory && ticketHistory.length > 0 ? (
+              ticketHistory.map((history: any) => (
+                <Card key={history.id}>
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">
+                          {history.user?.firstName && history.user?.lastName 
+                            ? `${history.user.firstName} ${history.user.lastName}`
+                            : history.user?.username || 'Unknown User'
+                          }
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(history.createdAt).toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(history.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">{history.changeType}</p>
-                  <p className="text-sm text-gray-600">{history.changeDescription}</p>
-                  {history.oldValue && history.newValue && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      <span className="line-through">{history.oldValue}</span> → <span>{history.newValue}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-sm font-medium">{history.action}</p>
+                    {history.notes && (
+                      <p className="text-sm text-gray-600">{history.notes}</p>
+                    )}
+                    {history.fieldChanged && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className="font-medium">{history.fieldChanged}:</span>
+                        {history.oldValue && history.newValue && (
+                          <>
+                            <span className="line-through ml-1">{history.oldValue}</span> → <span>{history.newValue}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p>No history available for this ticket</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="attachments" className="space-y-4">

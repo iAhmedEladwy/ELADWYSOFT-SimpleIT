@@ -474,11 +474,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="outOfBoxOs"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translations.outOfBoxOs}</FormLabel>
+                    <FormLabel>{language === 'English' ? 'Installed OS' : 'نظام التشغيل المثبت'}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} />
                     </FormControl>
-                    <FormDescription>{translations.outOfBoxOsDesc}</FormDescription>
+                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset' : 'نظام التشغيل المثبت حالياً على الأصل'}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
