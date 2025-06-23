@@ -291,7 +291,14 @@ export default function AssetsTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">{asset.assetId}</TableCell>
+                <TableCell className="font-medium">
+                  <button
+                    onClick={() => onEdit(asset)}
+                    className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors"
+                  >
+                    {asset.assetId}
+                  </button>
+                </TableCell>
                 <TableCell>{asset.type}</TableCell>
                 <TableCell>{asset.brand}</TableCell>
                 <TableCell>{asset.modelName || '-'}</TableCell>

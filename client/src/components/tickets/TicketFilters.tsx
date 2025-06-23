@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { useAuth } from '@/lib/authContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { 
   Select, 
   SelectContent, 
@@ -12,7 +13,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { X, Filter, Search, User, Download } from 'lucide-react';
 import type { TicketFilters } from '@shared/types';
 
@@ -24,78 +24,81 @@ interface TicketFiltersProps {
   onExport?: () => void;
 }
 
-export default function TicketFilters({ 
-  filters, 
-  onFiltersChange, 
-  totalCount, 
+export default function TicketFilters({
+  filters,
+  onFiltersChange,
+  totalCount,
   filteredCount,
   onExport
 }: TicketFiltersProps) {
   const { language } = useLanguage();
-  const { user } = useAuth();
-  const [searchInput, setSearchInput] = useState(filters.search || '');
+  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+
+  // Fetch data for filter options
+  const { data: users } = useQuery({
+    queryKey: ['/api/users'],
+  });
+
+  const { data: systemConfig } = useQuery({
+    queryKey: ['/api/system-config'],
+  });
 
   const translations = {
     filters: language === 'Arabic' ? 'الفلاتر' : 'Filters',
-    search: language === 'Arabic' ? 'البحث' : 'Search',
+    search: language === 'Arabic' ? 'بحث' : 'Search',
+    searchPlaceholder: language === 'Arabic' ? 'البحث في التذاكر...' : 'Search tickets...',
     status: language === 'Arabic' ? 'الحالة' : 'Status',
     priority: language === 'Arabic' ? 'الأولوية' : 'Priority',
-    assignedTo: language === 'Arabic' ? 'مخصص لـ' : 'Assigned To',
     category: language === 'Arabic' ? 'الفئة' : 'Category',
-    clearAll: language === 'Arabic' ? 'مسح الكل' : 'Clear All',
-    searchPlaceholder: language === 'Arabic' ? 'البحث في التذاكر...' : 'Search tickets...',
+    requestType: language === 'Arabic' ? 'نوع الطلب' : 'Request Type',
+    assignedTo: language === 'Arabic' ? 'مُسند إلى' : 'Assigned To',
+    creator: language === 'Arabic' ? 'المنشئ' : 'Creator',
+    clearFilters: language === 'Arabic' ? 'مسح الفلاتر' : 'Clear Filters',
+    export: language === 'Arabic' ? 'تصدير' : 'Export',
     allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
     allPriorities: language === 'Arabic' ? 'جميع الأولويات' : 'All Priorities',
     allCategories: language === 'Arabic' ? 'جميع الفئات' : 'All Categories',
-    unassigned: language === 'Arabic' ? 'غير مخصص' : 'Unassigned',
-    myTickets: language === 'Arabic' ? 'تذاكري' : 'My Tickets',
-    currentUser: language === 'Arabic' ? '(الحالي)' : '(Current)',
-    results: language === 'Arabic' ? 
-      `عرض ${filteredCount} من ${totalCount} تذكرة` : 
-      `Showing ${filteredCount} of ${totalCount} tickets`,
+    allRequestTypes: language === 'Arabic' ? 'جميع أنواع الطلبات' : 'All Request Types',
+    allUsers: language === 'Arabic' ? 'جميع المستخدمين' : 'All Users',
+    unassigned: language === 'Arabic' ? 'غير مُسند' : 'Unassigned',
+    showingResults: language === 'Arabic' ? 'عرض النتائج' : 'Showing results'
   };
 
-  // Fetch users for assignment filter
-  const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
-    select: (data: any[]) => data.map((user: any) => ({
-      id: user.id,
-      name: user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user.username
-    }))
-  });
+  // Filter options
+  const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
+  const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
+  const ticketCategories = ['Hardware', 'Software', 'Network', 'Security', 'Access Control', 'General'];
+  const requestTypes = systemConfig?.customRequestTypes || [];
 
-  // Fetch custom request types
-  const { data: requestTypes = [] } = useQuery({
-    queryKey: ['/api/custom-request-types'],
-    select: (data: any[]) => data.map(type => type.name)
-  });
+  // Count active filters
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => 
+    value !== undefined && value !== '' && key !== 'search'
+  ).length;
 
+  // Update filter
+  const updateFilter = (key: keyof TicketFilters, value: string | undefined) => {
+    onFiltersChange({
+      ...filters,
+      [key]: value
+    });
+  };
+
+  // Handle search
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onFiltersChange({ ...filters, search: searchInput });
+    updateFilter('search', searchTerm || undefined);
   };
 
-  const updateFilter = (key: keyof TicketFilters, value: string | undefined) => {
-    onFiltersChange({ ...filters, [key]: value || undefined });
-  };
-
+  // Clear all filters
   const clearAllFilters = () => {
-    setSearchInput('');
+    setSearchTerm('');
     onFiltersChange({});
   };
 
-  const setMyTicketsFilter = () => {
-    if (user) {
-      onFiltersChange({ ...filters, assignedTo: user.id.toString() });
-    }
-  };
-
-  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
-
-  const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
-  const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
+  // Update search term when filters change
+  useEffect(() => {
+    setSearchTerm(filters.search || '');
+  }, [filters.search]);
 
   return (
     <Card>
@@ -109,57 +112,48 @@ export default function TicketFilters({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {translations.showingResults}: {filteredCount} / {totalCount}
+            </span>
             {onExport && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                className="gap-1"
-              >
-                <Download className="h-3 w-3" />
-                {language === 'Arabic' ? 'تصدير' : 'Export'}
+              <Button variant="outline" size="sm" onClick={onExport}>
+                <Download className="h-4 w-4 mr-2" />
+                {translations.export}
               </Button>
             )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={setMyTicketsFilter}
-              className="gap-1"
-            >
-              <User className="h-3 w-3" />
-              {translations.myTickets}
-            </Button>
-            <div className="text-sm text-muted-foreground">
-              {translations.results}
-            </div>
+            {activeFiltersCount > 0 && (
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                <X className="h-4 w-4 mr-2" />
+                {translations.clearFilters}
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
-      
       <CardContent className="space-y-4">
-        {/* Search */}
+        {/* Search Bar */}
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex-1">
             <Input
               placeholder={translations.searchPlaceholder}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
             />
           </div>
           <Button type="submit" variant="outline">
+            <Search className="h-4 w-4 mr-2" />
             {translations.search}
           </Button>
         </form>
 
         {/* Filter Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <Label className="text-sm font-medium mb-2 block">
               {translations.status}
-            </label>
+            </Label>
             <Select
               value={filters.status || 'all'}
               onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}
@@ -178,9 +172,9 @@ export default function TicketFilters({
 
           {/* Priority Filter */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <Label className="text-sm font-medium mb-2 block">
               {translations.priority}
-            </label>
+            </Label>
             <Select
               value={filters.priority || 'all'}
               onValueChange={(value) => updateFilter('priority', value === 'all' ? undefined : value)}
@@ -199,9 +193,9 @@ export default function TicketFilters({
 
           {/* Category Filter */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <Label className="text-sm font-medium mb-2 block">
               {translations.category}
-            </label>
+            </Label>
             <Select
               value={filters.category || 'all'}
               onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}
@@ -211,8 +205,29 @@ export default function TicketFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allCategories}</SelectItem>
-                {requestTypes.map((type: string) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                {ticketCategories.map((category: string) => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Request Type Filter */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">
+              {translations.requestType}
+            </Label>
+            <Select
+              value={filters.requestType || 'all'}
+              onValueChange={(value) => updateFilter('requestType', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={translations.allRequestTypes} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{translations.allRequestTypes}</SelectItem>
+                {requestTypes.map((type: any) => (
+                  <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -220,99 +235,51 @@ export default function TicketFilters({
 
           {/* Assigned To Filter */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <Label className="text-sm font-medium mb-2 block">
               {translations.assignedTo}
-            </label>
+            </Label>
             <Select
               value={filters.assignedTo || 'all'}
               onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={translations.allStatuses} />
+                <SelectValue placeholder={translations.allUsers} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allStatuses}</SelectItem>
+                <SelectItem value="all">{translations.allUsers}</SelectItem>
                 <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
-                {users.map((usr: any) => (
-                  <SelectItem key={usr.id} value={usr.id.toString()}>
-                    {usr.name}
-                    {user && usr.id === user.id && (
-                      <span className="text-muted-foreground ml-1">
-                        {translations.currentUser}
-                      </span>
-                    )}
+                {(users || []).map((user: any) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Creator Filter */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">
+              {translations.creator}
+            </Label>
+            <Select
+              value={filters.createdBy || 'all'}
+              onValueChange={(value) => updateFilter('createdBy', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={translations.allUsers} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{translations.allUsers}</SelectItem>
+                {(users || []).map((user: any) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.username}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-
-        {/* Active Filters */}
-        {activeFiltersCount > 0 && (
-          <div className="flex flex-wrap gap-2 pt-2 border-t">
-            {filters.search && (
-              <Badge variant="outline" className="gap-1">
-                {translations.search}: {filters.search}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => {
-                    setSearchInput('');
-                    updateFilter('search', undefined);
-                  }}
-                />
-              </Badge>
-            )}
-            {filters.status && (
-              <Badge variant="outline" className="gap-1">
-                {translations.status}: {filters.status}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('status', undefined)}
-                />
-              </Badge>
-            )}
-            {filters.priority && (
-              <Badge variant="outline" className="gap-1">
-                {translations.priority}: {filters.priority}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('priority', undefined)}
-                />
-              </Badge>
-            )}
-            {filters.category && (
-              <Badge variant="outline" className="gap-1">
-                {translations.category}: {filters.category}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('category', undefined)}
-                />
-              </Badge>
-            )}
-            {filters.assignedTo && (
-              <Badge variant="outline" className="gap-1">
-                {translations.assignedTo}: {
-                  filters.assignedTo === 'unassigned' 
-                    ? translations.unassigned 
-                    : users.find((u: any) => u.id.toString() === filters.assignedTo)?.name
-                }
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('assignedTo', undefined)}
-                />
-              </Badge>
-            )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearAllFilters}
-              className="h-6 px-2 text-xs"
-            >
-              {translations.clearAll}
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

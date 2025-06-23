@@ -578,14 +578,16 @@ export default function Assets() {
         <AssetsTable 
           assets={filteredAssets}
           employees={employees}
-          onEdit={setEditingAsset}
+          selectedAssets={selectedAssets}
+          setSelectedAssets={setSelectedAssets}
+          onEdit={(asset) => {
+            setEditingAsset(asset);
+            setOpenDialog(true);
+          }}
           onDelete={(id) => deleteAssetMutation.mutate(id)}
           onAssign={handleAssignAsset}
           onUnassign={handleUnassignAsset}
           onAddMaintenance={handleAddMaintenance}
-          onSelect={setSelectedAssets}
-          selectedAssets={selectedAssets}
-          onOpenDialog={() => setOpenDialog(true)}
         />
       )}
     </div>
