@@ -233,7 +233,8 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
-      // Tab state preserved - no navigation change
+      // Prevent tab switching - stays on current tab
+      return false;
     },
     onError: (error) => {
       console.error("Config update error:", error);
@@ -705,11 +706,7 @@ function SystemConfig() {
       emailSecure: config?.emailSecure !== false
     };
     
-    updateConfigMutation.mutate(configData, {
-      onSuccess: () => {
-        // Stay on employees tab after adding department
-      }
-    });
+    updateConfigMutation.mutate(configData);
   };
 
   const handleEditDepartment = (index: number) => {

@@ -56,14 +56,12 @@ export default function Header({ toggleSidebar, hideSidebar = false }: HeaderPro
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10 h-[57px]">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          {!hideSidebar && (
-            <button 
-              onClick={toggleSidebar}
-              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-          )}
+          <button 
+            onClick={toggleSidebar}
+            className="lg:hidden p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
           <div className="flex flex-col">
             <div className="flex items-center">
               <span className="text-blue-600 font-bold text-xl mr-1">SimpleIT</span>
