@@ -109,6 +109,11 @@ export class MemoryStorage implements IStorage {
   // Custom asset data removed for clean production deployment
 
   private initializeDefaultRequestTypes() {
+    // Check for existing request types to prevent duplicates
+    if (this.customRequestTypes.length > 0) {
+      return;
+    }
+    
     // Default request types for tickets
     this.customRequestTypes = [
       {
@@ -449,6 +454,14 @@ export class MemoryStorage implements IStorage {
       this.users[index] = updatedUser;
       return updatedUser;
     } else {
+      // Check for duplicate usernames or emails before creating
+      const duplicateUsername = this.users.find(u => u.username === (userData.email || `user_${userData.id}`));
+      const duplicateEmail = userData.email ? this.users.find(u => u.email === userData.email) : null;
+      
+      if (duplicateUsername || duplicateEmail) {
+        throw new Error('User with this username or email already exists');
+      }
+      
       const newUser: schema.User = {
         id: parseInt(userData.id),
         username: userData.email || `user_${userData.id}`,
@@ -473,10 +486,23 @@ export class MemoryStorage implements IStorage {
   }
 
   async createEmployee(employee: any): Promise<schema.Employee> {
+    // Check for duplicate employee IDs or emails
+    const duplicateEmployeeId = this.employees.find(e => e.employeeId === employee.employeeId);
+    const employeeEmail = employee.email || employee.personalEmail || employee.corporateEmail || `${(employee.englishName || 'employee').toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`;
+    const duplicateEmail = this.employees.find(e => e.email === employeeEmail);
+    
+    if (duplicateEmployeeId) {
+      throw new Error(`Employee with ID ${employee.employeeId} already exists`);
+    }
+    
+    if (duplicateEmail) {
+      throw new Error(`Employee with email ${employeeEmail} already exists`);
+    }
+    
     const newEmployee: any = {
       id: this.idCounters.employees++,
       name: employee.name || employee.englishName,
-      email: employee.email || employee.personalEmail || employee.corporateEmail || `${(employee.englishName || 'employee').toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
+      email: employeeEmail,
       phone: employee.phone || employee.personalMobile || employee.workMobile || '',
       department: employee.department,
       position: employee.position || employee.title,
@@ -497,7 +523,7 @@ export class MemoryStorage implements IStorage {
       status: employee.status || 'Active',
       personalMobile: employee.personalMobile || null,
       workMobile: employee.workMobile || null,
-      personalEmail: employee.personalEmail || employee.email || `${(employee.englishName || 'employee').toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
+      personalEmail: employee.personalEmail || employee.email || employeeEmail,
       corporateEmail: employee.corporateEmail || null,
       userId: employee.userId || null,
       createdAt: new Date(),
