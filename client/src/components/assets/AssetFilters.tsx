@@ -124,17 +124,6 @@ export default function AssetFilters({
             )}
           </div>
           <div className="flex items-center gap-4">
-            {onExport && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                className="gap-1"
-              >
-                <Download className="h-3 w-3" />
-                {language === 'Arabic' ? 'تصدير' : 'Export'}
-              </Button>
-            )}
             <div className="text-sm text-muted-foreground">
               {translations.results}
             </div>
@@ -325,14 +314,27 @@ export default function AssetFilters({
                 />
               </Badge>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearAllFilters}
-              className="h-6 px-2 text-xs"
-            >
-              {translations.clearAll}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearAllFilters}
+                className="h-6 px-2 text-xs"
+              >
+                {translations.clearAll}
+              </Button>
+              {onExport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onExport}
+                  className="gap-1 h-6 px-2 text-xs"
+                >
+                  <Download className="h-3 w-3" />
+                  {language === 'Arabic' ? 'تصدير' : 'Export'}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
