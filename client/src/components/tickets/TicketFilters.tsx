@@ -103,7 +103,7 @@ export default function TicketFilters({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
-            <CardTitle className="text-lg">Filter & Search Tickets</CardTitle>
+            <CardTitle className="text-lg">Filtration</CardTitle>
             {activeFiltersCount > 0 && (
               <Badge variant="secondary">{activeFiltersCount}</Badge>
             )}
