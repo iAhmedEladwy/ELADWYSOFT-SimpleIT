@@ -224,13 +224,15 @@ export default function EmployeesTable({
                     className="text-gray-900 hover:bg-gray-100 px-2 py-1 rounded text-left cursor-pointer transition-colors"
                     onClick={() => onEdit(employee)}
                   >
-                    {employee.englishName || employee.name}
+                    {employee.englishName || employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'N/A'}
                   </button>
                 </TableCell>
                 <TableCell>{employee.department}</TableCell>
                 <TableCell>{employee.title || employee.position}</TableCell>
                 <TableCell>{employee.employmentType || 'Full-time'}</TableCell>
-                <TableCell>{getStatusBadge(employee.status || (employee.isActive ? 'Active' : 'Inactive'))}</TableCell>
+                <TableCell>
+                  {getStatusBadge(employee.status || (employee.isActive !== false ? 'Active' : 'Resigned'))}
+                </TableCell>
                 <TableCell>{formatDate(employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
