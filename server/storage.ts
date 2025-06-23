@@ -1051,37 +1051,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getTicketsByStatus(status: string): Promise<Ticket[]> {
+  async getTicketsByStatus(status: string | string[]): Promise<Ticket[]> {
     try {
-      return await db
-        .select({
-          id: tickets.id,
-          ticketId: tickets.ticketId,
-          submittedById: tickets.submittedById,
-          requestType: tickets.requestType,
-          priority: tickets.priority,
-          description: tickets.description,
-          relatedAssetId: tickets.relatedAssetId,
-          status: tickets.status,
-          assignedToId: tickets.assignedToId,
-          resolutionNotes: tickets.resolutionNotes,
-          createdAt: tickets.createdAt,
-          updatedAt: tickets.updatedAt,
-          startTime: tickets.startTime,
-          completionTime: tickets.completionTime,
-          timeSpent: tickets.timeSpent,
-          category: tickets.category,
-          summary: tickets.summary,
-          urgency: tickets.urgency,
-          impact: tickets.impact,
-          rootCause: tickets.rootCause,
-          workaround: tickets.workaround,
-          resolution: tickets.resolution,
-          tags: tickets.tags
-        })
-        .from(tickets)
-        .where(eq(tickets.status, status))
-        .orderBy(desc(tickets.createdAt));
+      if (Array.isArray(status)) {
+        // Handle multiple statuses for active tickets count
+        return await db
+          .select()
+          .from(tickets)
+          .where(sql`${tickets.status} = ANY(${status})`)
+          .orderBy(desc(tickets.createdAt));
+      } else {
+        return await db
+          .select()
+          .from(tickets)
+          .where(eq(tickets.status, status))
+          .orderBy(desc(tickets.createdAt));
+      }
     } catch (error) {
       console.error(`Error fetching tickets with status ${status}:`, error);
       return [];

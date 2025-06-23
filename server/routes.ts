@@ -3079,7 +3079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return [];
         }),
         storage.getAllAssets(),
-        storage.getTicketsByStatus("Open").catch(err => {
+        storage.getTicketsByStatus(["Open", "In Progress"]).catch(err => {
           console.error('Tickets fetch error:', err);
           return [];
         }),
