@@ -67,18 +67,18 @@ interface TicketHistory {
 
 interface EnhancedTicketTableProps {
   tickets: Ticket[];
-  employees: any[];
-  assets: any[];
-  users: any[];
+  employees?: any[];
+  assets?: any[];
+  users?: any[];
   isLoading: boolean;
   onTicketSelect?: (ticket: Ticket) => void;
 }
 
 export default function EnhancedTicketTable({ 
   tickets, 
-  employees, 
-  assets, 
-  users, 
+  employees = [], 
+  assets = [], 
+  users = [], 
   isLoading,
   onTicketSelect
 }: EnhancedTicketTableProps) {
@@ -417,8 +417,8 @@ export default function EnhancedTicketTable({
         </TableHeader>
         <TableBody>
           {filteredTickets.map((ticket) => {
-            const assignedUser = users.find(u => u.id === ticket.assignedToId);
-            const submittedByEmployee = employees.find(e => e.id === ticket.submittedById);
+            const assignedUser = users?.find?.(u => u.id === ticket.assignedToId);
+            const submittedByEmployee = employees?.find?.(e => e.id === ticket.submittedById);
             
             return (
               <TableRow 
@@ -438,8 +438,34 @@ export default function EnhancedTicketTable({
                   }}
                 >
                   {ticket.summary || ticket.description.substring(0, 50) + '...'}
+                  {ticket.relatedAssetId && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Asset: 
+                      <span 
+                        className="cursor-pointer hover:text-blue-600 hover:underline ml-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
+                        }}
+                      >
+                        {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
+                      </span>
+                    </div>
+                  )}
                 </TableCell>
-                <TableCell>{submittedByEmployee?.name || 'Unknown'}</TableCell>
+                <TableCell>
+                  <span 
+                    className="cursor-pointer hover:text-blue-600 hover:underline"
+                    onClick={() => {
+                      if (submittedByEmployee) {
+                        // Open employee edit dialog or navigate to employee page
+                        window.open(`/employees?edit=${submittedByEmployee.id}`, '_blank');
+                      }
+                    }}
+                  >
+                    {submittedByEmployee?.englishName || submittedByEmployee?.name || 'Unknown'}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Select
                     value={ticket.requestType || "Hardware"}
