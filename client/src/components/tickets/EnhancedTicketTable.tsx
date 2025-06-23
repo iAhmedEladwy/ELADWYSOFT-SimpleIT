@@ -110,7 +110,39 @@ export default function EnhancedTicketTable({
   const [editingField, setEditingField] = useState<{ticketId: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
-
+  // Inline editing functions
+  const startEditing = (ticketId: number, field: string, currentValue: string) => {
+    setEditingField({ ticketId, field });
+    setEditValue(currentValue || '');
+  };
+  
+  const saveInlineEdit = async () => {
+    if (!editingField || !editValue.trim()) {
+      cancelInlineEdit();
+      return;
+    }
+    
+    try {
+      await updateTicketMutation.mutateAsync({
+        id: editingField.ticketId,
+        updates: { [editingField.field]: editValue.trim() }
+      });
+      setEditingField(null);
+      setEditValue('');
+    } catch (error) {
+      console.error('Failed to update ticket:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update ticket' : 'فشل في تحديث التذكرة',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const cancelInlineEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
 
   // Check access level
   const hasAccess = (level: string) => {
@@ -437,12 +469,21 @@ export default function EnhancedTicketTable({
                     <Input
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={saveInlineEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveInlineEdit();
-                        if (e.key === 'Escape') cancelInlineEdit();
+                      onBlur={() => {
+                        // Small delay to allow Enter key to process first
+                        setTimeout(saveInlineEdit, 100);
                       }}
-                      className="h-8 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveInlineEdit();
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          cancelInlineEdit();
+                        }
+                      }}
+                      className="h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500"
                       autoFocus
                     />
                   ) : (
