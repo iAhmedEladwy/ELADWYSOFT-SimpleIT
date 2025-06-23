@@ -301,87 +301,22 @@ export default function Tickets() {
         </div>
       </div>
 
+      {/* Filters Section */}
       <div className="mb-6">
-        <Input
-          placeholder={translations.search}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
+        <TicketFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalCount={tickets?.length || 0}
+          filteredCount={filteredTickets.length}
+          onExport={() => exportMutation.mutate('csv')}
         />
       </div>
 
-      {/* User Filter and Status Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {language === 'English' ? 'Filter by User' : 'تصفية حسب المستخدم'}
-          </label>
-          <Select value={userFilter} onValueChange={setUserFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder={language === 'English' ? 'All Users' : 'جميع المستخدمين'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === 'English' ? 'All Users' : 'جميع المستخدمين'}</SelectItem>
-              {users?.map(u => (
-                <SelectItem key={u.id} value={u.id.toString()}>
-                  {u.firstName && u.lastName 
-                    ? `${u.firstName} ${u.lastName}` 
-                    : u.username}
-                  {u.id === user?.id && (
-                    <span className="ml-2 text-xs text-blue-600 font-medium">
-                      ({language === 'English' ? 'Current' : 'الحالي'})
-                    </span>
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة'}
-          </label>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder={language === 'English' ? 'All Statuses' : 'جميع الحالات'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === 'English' ? 'All Statuses' : 'جميع الحالات'}</SelectItem>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="Resolved">Resolved</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-              <SelectItem value="active">{language === 'English' ? 'Active (Open/In Progress)' : 'النشطة (مفتوحة/قيد التنفيذ)'}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {language === 'English' ? 'Quick Actions' : 'إجراءات سريعة'}
-          </label>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setUserFilter('all');
-              setStatusFilter('all');
-              setSearchQuery('');
-            }}
-            className="w-full"
-          >
-            {language === 'English' ? 'Clear Filters' : 'مسح المرشحات'}
-          </Button>
-        </div>
-      </div>
-
+      {/* Main Tickets Table */}
       <EnhancedTicketTable 
-        tickets={finalFilteredTickets}
-        employees={employees}
-        assets={assets}
-        users={users}
-        isLoading={isLoading}
-        onTicketSelect={setSelectedTicket}
+        tickets={filteredTickets} 
+        onEditTicket={setSelectedTicket}
+        onRefresh={refetch}
       />
 
       {/* Inline Ticket Editor */}
@@ -397,27 +332,6 @@ export default function Tickets() {
           }}
         />
       )}
-
-      {/* Create Ticket Dialog */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{translations.createTicket}</DialogTitle>
-            <DialogDescription>
-              {language === 'English' 
-                ? 'Create a new support ticket'
-                : 'إنشاء تذكرة دعم جديدة'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          <UnifiedTicketForm
-            mode="create"
-            onSubmit={handleCreateTicket}
-            onCancel={() => setOpenDialog(false)}
-            isSubmitting={createTicketMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

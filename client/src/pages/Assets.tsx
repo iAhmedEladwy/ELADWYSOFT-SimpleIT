@@ -388,47 +388,11 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-  // Filter state for dropdowns
-  const [filters, setFilters] = useState({
-    type: 'all',
-    brand: 'all',
-    modelName: 'all',
-    status: 'all'
-  });
 
-  // Get unique values for filters
-  const uniqueTypes = [...new Set(assets.map((asset: any) => asset.type).filter(Boolean))];
-  const uniqueBrands = [...new Set(assets.map((asset: any) => asset.brand).filter(Boolean))];
-  const uniqueModelNames = [...new Set(assets.map((asset: any) => asset.modelName).filter(Boolean))];
 
-  // Filter assets based on search query and dropdown filters
-  const filteredAssets = assets.filter((asset: any) => {
-    // Text search filter
-    const searchString = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery || (
-      asset.assetId?.toLowerCase().includes(searchString) ||
-      asset.type?.toLowerCase().includes(searchString) ||
-      asset.brand?.toLowerCase().includes(searchString) ||
-      asset.modelName?.toLowerCase().includes(searchString) ||
-      asset.serialNumber?.toLowerCase().includes(searchString)
-    );
 
-    // Dropdown filters
-    const matchesType = filters.type === 'all' || asset.type === filters.type;
-    const matchesBrand = filters.brand === 'all' || asset.brand === filters.brand;
-    const matchesModelName = filters.modelName === 'all' || asset.modelName === filters.modelName;
-    const matchesStatus = filters.status === 'all' || asset.status === filters.status;
 
-    return matchesSearch && matchesType && matchesBrand && matchesModelName && matchesStatus;
-  });
 
-  // Filter assets by status for tab display
-  const availableAssets = filteredAssets.filter((asset: any) => asset.status === 'Available');
-  const inUseAssets = filteredAssets.filter((asset: any) => asset.status === 'In Use');
-  const maintenanceAssets = filteredAssets.filter((asset: any) => asset.status === 'Maintenance');
-  const soldAssets = filteredAssets.filter((asset: any) => asset.status === 'Sold');
-  const damagedAssets = filteredAssets.filter((asset: any) => asset.status === 'Damaged');
-  const retiredAssets = filteredAssets.filter((asset: any) => asset.status === 'Retired');
 
   return (
     <div className="p-6">
@@ -437,62 +401,7 @@ export default function Assets() {
           <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
           <p className="text-gray-600">{translations.description}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Input
-            placeholder={translations.search}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
-          />
-          
-          {/* Filter Dropdowns */}
-          <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Filter by Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {uniqueTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.brand} onValueChange={(value) => setFilters(prev => ({ ...prev, brand: value }))}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Filter by Brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {uniqueBrands.map((brand) => (
-                <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.modelName} onValueChange={(value) => setFilters(prev => ({ ...prev, modelName: value }))}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Filter by Model" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Models</SelectItem>
-              {uniqueModelNames.map((model) => (
-                <SelectItem key={model} value={model}>{model}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button 
-            onClick={() => {
-              setFilters({ type: 'all', brand: 'all', modelName: 'all', status: 'all' });
-              setSearchQuery('');
-            }} 
-            variant="outline" 
-            size="sm"
-          >
-            Clear Filters
-          </Button>
-
+        <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -624,143 +533,34 @@ export default function Assets() {
 
 
 
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">{translations.allAssets}</TabsTrigger>
-          <TabsTrigger value="available">{translations.available}</TabsTrigger>
-          <TabsTrigger value="inuse">{translations.inUse}</TabsTrigger>
-          <TabsTrigger value="maintenance">{translations.maintenance}</TabsTrigger>
-          <TabsTrigger value="sold">{translations.sold}</TabsTrigger>
-          <TabsTrigger value="damaged">{translations.damaged}</TabsTrigger>
-          <TabsTrigger value="retired">{translations.retired}</TabsTrigger>
-        </TabsList>
+      {/* Filters Section */}
+      <div className="mb-6">
+        <AssetFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalCount={assets?.length || 0}
+          filteredCount={filteredAssets.length}
+          onExport={() => exportMutation.mutate('csv')}
+        />
+      </div>
 
-        <TabsContent value="all">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={filteredAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="available">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={availableAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="inuse">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={inUseAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="maintenance">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={maintenanceAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="sold">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={soldAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="damaged">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={damagedAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="retired">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={retiredAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      {/* Assets Table */}
+      {isLoading ? (
+        <Skeleton className="h-[400px] w-full" />
+      ) : (
+        <AssetsTable 
+          assets={filteredAssets}
+          employees={employees}
+          onEdit={setEditingAsset}
+          onDelete={(id) => deleteAssetMutation.mutate(id)}
+          onAssign={handleAssignAsset}
+          onUnassign={handleUnassignAsset}
+          onAddMaintenance={handleAddMaintenance}
+          onSelect={setSelectedAssets}
+          selectedAssets={selectedAssets}
+          onOpenDialog={() => setOpenDialog(true)}
+        />
+      )}
     </div>
   );
 }
