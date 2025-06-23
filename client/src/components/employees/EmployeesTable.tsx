@@ -161,7 +161,11 @@ export default function EmployeesTable({
           </Badge>
         );
       default:
-        return null;
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+            {status || 'N/A'}
+          </Badge>
+        );
     }
   };
 

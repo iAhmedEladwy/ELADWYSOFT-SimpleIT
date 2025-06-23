@@ -1054,21 +1054,22 @@ export class DatabaseStorage implements IStorage {
   async getTicketsByStatus(status: string | string[]): Promise<Ticket[]> {
     try {
       if (Array.isArray(status)) {
-        // Handle multiple statuses for active tickets count
-        return await db
-          .select()
-          .from(tickets)
-          .where(sql`${tickets.status} = ANY(${status})`)
-          .orderBy(desc(tickets.createdAt));
+        const result = await pool.query(`
+          SELECT * FROM tickets 
+          WHERE status = ANY($1::text[])
+          ORDER BY created_at DESC
+        `, [status]);
+        return result.rows;
       } else {
-        return await db
-          .select()
-          .from(tickets)
-          .where(eq(tickets.status, status))
-          .orderBy(desc(tickets.createdAt));
+        const result = await pool.query(`
+          SELECT * FROM tickets 
+          WHERE status = $1
+          ORDER BY created_at DESC
+        `, [status]);
+        return result.rows;
       }
     } catch (error) {
-      console.error(`Error fetching tickets with status ${status}:`, error);
+      console.error('Error fetching tickets by status:', error);
       return [];
     }
   }
