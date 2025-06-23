@@ -305,79 +305,78 @@ export default function Tickets() {
         />
       </div>
 
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">{translations.allTickets}</TabsTrigger>
-          <TabsTrigger value="open">{translations.open}</TabsTrigger>
-          <TabsTrigger value="inprogress">{translations.inProgress}</TabsTrigger>
-          <TabsTrigger value="resolved">{translations.resolved}</TabsTrigger>
-          <TabsTrigger value="closed">{translations.closed}</TabsTrigger>
-          <TabsTrigger value="mytickets">{translations.myTickets}</TabsTrigger>
+      {/* User Filter and Status Filter */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {language === 'English' ? 'Filter by User' : 'تصفية حسب المستخدم'}
+          </label>
+          <Select value={userFilter} onValueChange={setUserFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder={language === 'English' ? 'All Users' : 'جميع المستخدمين'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'English' ? 'All Users' : 'جميع المستخدمين'}</SelectItem>
+              {users?.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName && u.lastName 
+                    ? `${u.firstName} ${u.lastName}` 
+                    : u.username}
+                  {u.id === user?.id && (
+                    <span className="ml-2 text-xs text-blue-600 font-medium">
+                      ({language === 'English' ? 'Current' : 'الحالي'})
+                    </span>
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة'}
+          </label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder={language === 'English' ? 'All Statuses' : 'جميع الحالات'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'English' ? 'All Statuses' : 'جميع الحالات'}</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Resolved">Resolved</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
+              <SelectItem value="active">{language === 'English' ? 'Active (Open/In Progress)' : 'النشطة (مفتوحة/قيد التنفيذ)'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {language === 'English' ? 'Quick Actions' : 'إجراءات سريعة'}
+          </label>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setUserFilter('all');
+              setStatusFilter('all');
+              setSearchQuery('');
+            }}
+            className="w-full"
+          >
+            {language === 'English' ? 'Clear All Filters' : 'مسح جميع المرشحات'}
+          </Button>
+        </div>
+      </div>
 
-        </TabsList>
-
-        <TabsContent value="all">
-          <EnhancedTicketTable 
-            tickets={filteredTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="open">
-          <EnhancedTicketTable 
-            tickets={openTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="inprogress">
-          <EnhancedTicketTable 
-            tickets={inProgressTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="resolved">
-          <EnhancedTicketTable 
-            tickets={resolvedTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="closed">
-          <EnhancedTicketTable 
-            tickets={closedTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="mytickets">
-          <EnhancedTicketTable 
-            tickets={myTickets}
-            employees={employees}
-            assets={assets}
-            users={users}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-
-      </Tabs>
+      <EnhancedTicketTable 
+        tickets={finalFilteredTickets}
+        employees={employees}
+        assets={assets}
+        users={users}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

@@ -51,6 +51,8 @@ export default function TransactionHistoryTable() {
     assetId: 'all',
     employeeId: 'all',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // Translations
   const translations = {
@@ -115,6 +117,7 @@ export default function TransactionHistoryTable() {
       assetId: 'all',
       employeeId: 'all',
     });
+    setCurrentPage(1);
   };
   
   // Download transaction history as CSV
@@ -250,8 +253,8 @@ export default function TransactionHistoryTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions?.length ? (
-                  filteredTransactions.map((transaction: TransactionWithRelations) => (
+                {paginatedTransactions?.length ? (
+                  paginatedTransactions.map((transaction: TransactionWithRelations) => (
                     <TableRow key={`transaction-${transaction.id || `temp-${Math.random()}`}`}>
                       <TableCell>{transaction.id}</TableCell>
                       <TableCell className="font-medium">{transaction.asset?.assetId || '-'}</TableCell>
@@ -279,6 +282,63 @@ export default function TransactionHistoryTable() {
                 )}
               </TableBody>
             </Table>
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {totalItems > 0 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="page-size">{language === 'English' ? 'Items per page:' : 'عناصر لكل صفحة:'}</Label>
+              <Select value={String(pageSize)} onValueChange={(value) => {
+                setPageSize(Number(value));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger id="page-size" className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {language === 'English' 
+                  ? `${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems} items`
+                  : `${startIndex + 1}-${Math.min(endIndex, totalItems)} من ${totalItems} عنصر`}
+              </span>
+              
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  {language === 'English' ? 'Previous' : 'السابق'}
+                </Button>
+                
+                <span className="px-3 py-1 text-sm">
+                  {language === 'English' 
+                    ? `Page ${currentPage} of ${totalPages}`
+                    : `صفحة ${currentPage} من ${totalPages}`}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  {language === 'English' ? 'Next' : 'التالي'}
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

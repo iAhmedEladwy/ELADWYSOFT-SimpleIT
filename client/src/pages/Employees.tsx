@@ -471,33 +471,45 @@ export default function Employees() {
       </div>
 
       {/* Advanced Search and Filter Controls */}
-      <div className="mb-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Input
-              placeholder={translations.search}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-sm"
-            />
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            {language === 'English' ? 'Employee Filters' : 'مرشحات الموظفين'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">{translations.search}</Label>
+              <Input
+                placeholder={translations.search}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder={translations.filterByStatus} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">{translations.all}</SelectItem>
-                <SelectItem value="Active">{translations.active}</SelectItem>
-                <SelectItem value="Resigned">{translations.resigned}</SelectItem>
-                <SelectItem value="Terminated">{translations.terminated}</SelectItem>
-                <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">{language === 'English' ? 'Status' : 'الحالة'}</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={translations.filterByStatus} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">{translations.all}</SelectItem>
+                  <SelectItem value="Active">{translations.active}</SelectItem>
+                  <SelectItem value="Resigned">{translations.resigned}</SelectItem>
+                  <SelectItem value="Terminated">{translations.terminated}</SelectItem>
+                  <SelectItem value="On Leave">{translations.onLeave}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">{translations.department}</Label>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">{translations.department}</Label>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter by Department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -509,10 +521,10 @@ export default function Employees() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">{translations.employmentType}</Label>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">{translations.employmentType}</Label>
               <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter by Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,21 +535,42 @@ export default function Employees() {
                 </SelectContent>
               </Select>
             </div>
-
-            {(departmentFilter !== 'All' || employmentTypeFilter !== 'All') && (
+          </div>
+          
+          {(departmentFilter !== 'All' || employmentTypeFilter !== 'All' || statusFilter !== 'Active' || searchQuery) && (
+            <div className="mt-4 flex justify-end">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setDepartmentFilter('All');
                   setEmploymentTypeFilter('All');
+                  setStatusFilter('Active');
+                  setSearchQuery('');
                 }}
               >
                 <X className="h-4 w-4 mr-2" />
                 {translations.clearFilters}
               </Button>
-            )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Filter Summary */}
+      {activeFilterCount > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-blue-700">
+              {language === 'English' 
+                ? `${activeFilterCount} filter(s) active - Showing ${filteredEmployees.length} of ${employees?.length || 0} employees`
+                : `${activeFilterCount} مرشح نشط - عرض ${filteredEmployees.length} من ${employees?.length || 0} موظف`}
+            </span>
           </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
 
           {selectedEmployees.length > 0 && (
             <div className="flex items-center space-x-2">
