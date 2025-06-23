@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -448,11 +449,14 @@ export default function Employees() {
                     {translations.addEmployee}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto" aria-describedby="employee-form-description">
                   <DialogHeader>
                     <DialogTitle>
                       {editingEmployee ? translations.editEmployee : translations.addEmployee}
                     </DialogTitle>
+                    <DialogDescription id="employee-form-description">
+                      {editingEmployee ? 'Edit employee information and details' : 'Add a new employee to the system'}
+                    </DialogDescription>
                   </DialogHeader>
                   <EmployeeForm
                     onSubmit={editingEmployee ? handleUpdateEmployee : handleAddEmployee}

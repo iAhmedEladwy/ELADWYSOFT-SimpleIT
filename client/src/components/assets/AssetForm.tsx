@@ -52,7 +52,7 @@ const assetFormSchema = z.object({
       { message: "Invalid date format" }
     ),
   lifeSpan: z.string().optional(),
-  outOfBoxOs: z.string().optional(),
+  outOfBoxOs: z.string().optional().transform(value => value === "" ? undefined : value),
   assignedEmployeeId: z.string().optional(),
 });
 
