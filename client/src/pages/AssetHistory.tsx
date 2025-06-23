@@ -1,6 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/hooks/use-language';
-import Layout from '@/components/layout/Layout';
 import TransactionHistoryTable from '@/components/assets/TransactionHistoryTable';
 
 export default function AssetHistory() {
@@ -24,19 +23,17 @@ export default function AssetHistory() {
         <meta name="description" content={translations.metaDescription} />
       </Helmet>
 
-      <Layout>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
-              <p className="text-gray-600">{translations.description}</p>
-            </div>
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
+            <p className="text-gray-600">{translations.description}</p>
           </div>
-          
-          {/* Transaction History Table */}
-          <TransactionHistoryTable />
         </div>
-      </Layout>
+        
+        {/* Transaction History Table */}
+        <TransactionHistoryTable />
+      </div>
     </>
   );
 }

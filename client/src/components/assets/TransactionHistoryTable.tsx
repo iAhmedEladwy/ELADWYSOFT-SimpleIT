@@ -150,12 +150,13 @@ export default function TransactionHistoryTable() {
   };
   
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">{translations.title}</h2>
-        <p className="text-gray-600 text-sm mb-4">{translations.description}</p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{translations.title}</h2>
+          <p className="text-gray-600 text-sm mb-4">{translations.description}</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="type-filter">{translations.filterType}</Label>
             <Select 
@@ -328,6 +329,7 @@ export default function TransactionHistoryTable() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
