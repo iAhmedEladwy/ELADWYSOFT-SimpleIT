@@ -233,6 +233,7 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
+      // Tab state preserved - no navigation change
     },
     onError: (error) => {
       console.error("Config update error:", error);
@@ -303,6 +304,7 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
       });
+      // Stay on current tab (tickets)
     },
     onError: (error) => {
       toast({

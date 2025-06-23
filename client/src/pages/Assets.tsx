@@ -435,7 +435,62 @@ export default function Assets() {
           <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
           <p className="text-gray-600">{translations.description}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Input
+            placeholder={translations.search}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          
+          {/* Filter Dropdowns */}
+          <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter by Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {uniqueTypes.map((type) => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.brand} onValueChange={(value) => setFilters(prev => ({ ...prev, brand: value }))}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter by Brand" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {uniqueBrands.map((brand) => (
+                <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.modelName} onValueChange={(value) => setFilters(prev => ({ ...prev, modelName: value }))}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter by Model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Models</SelectItem>
+              {uniqueModelNames.map((model) => (
+                <SelectItem key={model} value={model}>{model}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button 
+            onClick={() => {
+              setFilters({ type: 'all', brand: 'all', modelName: 'all', status: 'all' });
+              setSearchQuery('');
+            }} 
+            variant="outline" 
+            size="sm"
+          >
+            Clear Filters
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -565,14 +620,7 @@ export default function Assets() {
         </div>
       </div>
 
-      <div className="mb-6">
-        <Input
-          placeholder={translations.search}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
-      </div>
+
 
       <Tabs defaultValue="all" className="mb-6">
         <TabsList>

@@ -28,7 +28,7 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header toggleSidebar={toggleSidebar} />
+      <Header toggleSidebar={toggleSidebar} hideSidebar={hideSidebar} />
       
       <div className="flex flex-1 pt-[57px]">
         {!hideSidebar && <Sidebar isSidebarOpen={isSidebarOpen} />}
