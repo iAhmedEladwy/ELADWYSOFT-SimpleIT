@@ -208,24 +208,7 @@ export default function InlineEditTicketForm({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="comments">
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Comments
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-1" />
-              History
-            </TabsTrigger>
-            <TabsTrigger value="attachments">
-              <Paperclip className="h-4 w-4 mr-1" />
-              Attachments
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-6 mt-6">
+        <div className="space-y-6 mt-6">
             {/* Basic Information */}
             <Card>
               <CardHeader>
@@ -476,55 +459,7 @@ export default function InlineEditTicketForm({
                 <p>{new Date(ticket.updatedAt).toLocaleString()}</p>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="comments" className="space-y-4">
-            <div className="space-y-3">
-              {ticketComments.length > 0 ? (
-                ticketComments.map((comment: any) => (
-                  <Card key={comment.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex justify-between text-sm text-gray-500 mb-2">
-                        <span>{getAssignedUserName(comment.userId)}</span>
-                        <span>{new Date(comment.createdAt).toLocaleString()}</span>
-                      </div>
-                      <p className="text-sm">{comment.content}</p>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-center text-gray-500">No comments yet</p>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            <div className="space-y-3">
-              {ticketHistory.length > 0 ? (
-                ticketHistory.map((entry: any) => (
-                  <Card key={entry.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex justify-between text-sm text-gray-500 mb-2">
-                        <span>{getAssignedUserName(entry.userId)} - {entry.action}</span>
-                        <span>{new Date(entry.createdAt).toLocaleString()}</span>
-                      </div>
-                      <p className="text-sm">{entry.notes}</p>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-center text-gray-500">No history available</p>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="attachments" className="space-y-4">
-            <div className="space-y-2">
-              <h4 className="font-medium">File Attachments</h4>
-              <p className="text-sm text-gray-500">Attachment functionality coming soon</p>
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
