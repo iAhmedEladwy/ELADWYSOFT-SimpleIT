@@ -8,7 +8,7 @@ import EmployeesTable from '@/components/employees/EmployeesTable';
 import EmployeeForm from '@/components/employees/EmployeeForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck } from 'lucide-react';
+import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -571,7 +571,7 @@ export default function Employees() {
       )}
 
       <div className="flex justify-between items-center mb-4">
-
+        <div>
           {selectedEmployees.length > 0 && (
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
@@ -587,66 +587,64 @@ export default function Employees() {
             </div>
           )}
         </div>
+      </div>
 
+      {/* Bulk Operations */}
+      {showBulkActions && selectedEmployees.length > 0 && (
+        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAll}
+          >
+            {selectedEmployees.length === filteredEmployees.length ? (
+              <Square className="h-4 w-4 mr-2" />
+            ) : (
+              <CheckSquare className="h-4 w-4 mr-2" />
+            )}
+            {selectedEmployees.length === filteredEmployees.length ? 
+              translations.deselectAll : translations.selectAll}
+          </Button>
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleBulkStatusChange('Active')}
+          >
+            <UserCheck className="h-4 w-4 mr-2" />
+            Activate Selected
+          </Button>
 
-        {/* Bulk Operations */}
-        {showBulkActions && selectedEmployees.length > 0 && (
-          <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAll}
-            >
-              {selectedEmployees.length === filteredEmployees.length ? (
-                <Square className="h-4 w-4 mr-2" />
-              ) : (
-                <CheckSquare className="h-4 w-4 mr-2" />
-              )}
-              {selectedEmployees.length === filteredEmployees.length ? 
-                translations.deselectAll : translations.selectAll}
-            </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleBulkStatusChange('Resigned')}
+          >
+            <Edit3 className="h-4 w-4 mr-2" />
+            Mark as Resigned
+          </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleBulkStatusChange('Active')}
-            >
-              <UserCheck className="h-4 w-4 mr-2" />
-              Activate Selected
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleBulkStatusChange('Resigned')}
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Mark as Resigned
-            </Button>
-
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {translations.deleteSelected}
-            </Button>
-          </div>
-        )}
-
-        {/* Results Summary */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
-            Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {employees?.length || 0} employees
-          </span>
-          {activeFilterCount > 0 && (
-            <span className="text-blue-600">
-              Filters applied
-            </span>
-          )}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {translations.deleteSelected}
+          </Button>
         </div>
+      )}
+
+      {/* Results Summary */}
+      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+        <span>
+          Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {employees?.length || 0} employees
+        </span>
+        {activeFilterCount > 0 && (
+          <span className="text-blue-600">
+            Filters applied
+          </span>
+        )}
       </div>
 
       {isLoading ? (

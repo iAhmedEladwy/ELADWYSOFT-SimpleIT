@@ -109,6 +109,13 @@ export default function TransactionHistoryTable() {
     if (filter.employeeId !== 'all' && transaction.employee?.id !== parseInt(filter.employeeId)) return false;
     return true;
   });
+
+  // Pagination calculations
+  const totalItems = filteredTransactions?.length || 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedTransactions = filteredTransactions?.slice(startIndex, endIndex);
   
   // Clear all filters
   const clearFilters = () => {
