@@ -476,9 +476,14 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{language === 'English' ? 'Installed OS' : 'نظام التشغيل المثبت'}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} />
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        onChange={(e) => field.onChange(e.target.value)}
+                        placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} 
+                      />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset' : 'نظام التشغيل المثبت حالياً على الأصل'}</FormDescription>
+                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset (optional)' : 'نظام التشغيل المثبت حالياً على الأصل (اختياري)'}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
