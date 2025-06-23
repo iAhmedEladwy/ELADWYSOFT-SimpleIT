@@ -229,31 +229,7 @@ export default function Tickets() {
     assignTicketMutation.mutate({ id: ticketId, userId });
   };
 
-  // Filter tickets based on search query, user filter, and status filter
-  const finalFilteredTickets = tickets.filter((ticket: any) => {
-    // Search filter
-    const searchString = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery || (
-      ticket.ticketId?.toLowerCase().includes(searchString) ||
-      ticket.description?.toLowerCase().includes(searchString) ||
-      ticket.summary?.toLowerCase().includes(searchString) ||
-      ticket.requestType?.toLowerCase().includes(searchString) ||
-      ticket.priority?.toLowerCase().includes(searchString) ||
-      ticket.status?.toLowerCase().includes(searchString)
-    );
 
-    // User filter
-    const matchesUser = userFilter === 'all' || 
-      ticket.assignedToId === parseInt(userFilter) || 
-      (ticket.submittedById && employees.find((emp: any) => emp.id === ticket.submittedById)?.userId === parseInt(userFilter));
-
-    // Status filter
-    const matchesStatus = statusFilter === 'all' || 
-      ticket.status === statusFilter ||
-      (statusFilter === 'active' && (ticket.status === 'Open' || ticket.status === 'In Progress'));
-
-    return matchesSearch && matchesUser && matchesStatus;
-  });
 
   return (
     <div className="p-6">
