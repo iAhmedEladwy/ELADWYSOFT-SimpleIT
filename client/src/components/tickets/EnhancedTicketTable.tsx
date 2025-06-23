@@ -106,12 +106,14 @@ export default function EnhancedTicketTable({
     resolutionNotes: ''
   });
   
-  // Inline editing states
+  // Inline editing states (excluding summary and ID)
   const [editingField, setEditingField] = useState<{ticketId: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
   // Inline editing functions
   const startEditing = (ticketId: number, field: string, currentValue: string) => {
+    // Exclude summary and ticketId from inline editing
+    if (field === 'summary' || field === 'ticketId') return;
     setEditingField({ ticketId, field });
     setEditValue(currentValue || '');
   };
@@ -465,51 +467,25 @@ export default function EnhancedTicketTable({
               >
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
                 <TableCell className="max-w-xs">
-                  {editingField?.ticketId === ticket.id && editingField?.field === 'summary' ? (
-                    <Input
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => {
-                        // Small delay to allow Enter key to process first
-                        setTimeout(saveInlineEdit, 100);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          saveInlineEdit();
-                        }
-                        if (e.key === 'Escape') {
-                          e.preventDefault();
-                          cancelInlineEdit();
-                        }
-                      }}
-                      className="h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500"
-                      autoFocus
-                    />
-                  ) : (
-                    <div>
-                      <span 
-                        className="cursor-pointer hover:text-blue-600 hover:underline font-medium"
-                        onClick={() => startEditing(ticket.id, 'summary', ticket.summary || ticket.description)}
-                      >
-                        {ticket.summary || ticket.description.substring(0, 50) + '...'}
-                      </span>
-                      {ticket.relatedAssetId && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Asset: 
-                          <span 
-                            className="cursor-pointer hover:text-blue-600 hover:underline ml-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
-                            }}
-                          >
-                            {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div>
+                    <span className="font-medium">
+                      {ticket.summary || ticket.description.substring(0, 50) + '...'}
+                    </span>
+                    {ticket.relatedAssetId && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Asset: 
+                        <span 
+                          className="cursor-pointer hover:text-blue-600 hover:underline ml-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
+                          }}
+                        >
+                          {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <span 
@@ -525,26 +501,38 @@ export default function EnhancedTicketTable({
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={ticket.requestType || "Hardware"}
-                    onValueChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { requestType: value } 
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-24 h-8 text-xs border-none bg-transparent hover:bg-gray-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Hardware">Hardware</SelectItem>
-                      <SelectItem value="Software">Software</SelectItem>
-                      <SelectItem value="Network">Network</SelectItem>
-                      <SelectItem value="Access Control">Access Control</SelectItem>
-                      <SelectItem value="Security">Security</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        setEditValue(value);
+                        updateTicketMutation.mutate({ 
+                          id: ticket.id, 
+                          updates: { requestType: value } 
+                        });
+                        setEditingField(null);
+                        setEditValue('');
+                      }}
+                    >
+                      <SelectTrigger className="w-24 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hardware">Hardware</SelectItem>
+                        <SelectItem value="Software">Software</SelectItem>
+                        <SelectItem value="Network">Network</SelectItem>
+                        <SelectItem value="Access Control">Access Control</SelectItem>
+                        <SelectItem value="Security">Security</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                      onClick={() => startEditing(ticket.id, 'requestType', ticket.requestType || 'Hardware')}
+                    >
+                      {ticket.requestType || "Hardware"}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Select
