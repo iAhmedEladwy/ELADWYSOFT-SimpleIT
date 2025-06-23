@@ -329,7 +329,7 @@ export default function TransactionHistoryTable() {
             </div>
           </div>
         )}
-      </div>
+        </div>
       </div>
     </div>
   );
