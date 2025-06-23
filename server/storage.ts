@@ -2088,7 +2088,8 @@ export class DatabaseStorage implements IStorage {
 
       const startTime = new Date(timeResult.rows[0].start_time);
       const endTime = new Date();
-      const sessionMinutes = Math.max(0, Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60)));
+      const timeDiffMs = endTime.getTime() - startTime.getTime();
+      const sessionMinutes = Math.max(1, Math.round(timeDiffMs / (1000 * 60))); // At least 1 minute for any session
       const previousTimeSpent = timeResult.rows[0].time_spent || 0;
       const totalTimeSpent = previousTimeSpent + sessionMinutes;
 

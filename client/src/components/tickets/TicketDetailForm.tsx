@@ -262,7 +262,7 @@ export default function TicketDetailForm({
 
   return (
     <Dialog open={!!ticket} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="ticket-detail-description">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Ticket {ticket.ticketId}</span>
@@ -275,6 +275,9 @@ export default function TicketDetailForm({
               </Badge>
             </div>
           </DialogTitle>
+          <DialogDescription id="ticket-detail-description">
+            View and manage ticket details, comments, history, and attachments
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
