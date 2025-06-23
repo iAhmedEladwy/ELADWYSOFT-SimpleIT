@@ -203,6 +203,7 @@ export interface EmployeeFilters {
 export interface AssetFilters {
   type?: string;
   brand?: string;
+  model?: string;
   status?: string;
   assignedTo?: string;
   search?: string;

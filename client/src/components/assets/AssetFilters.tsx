@@ -52,6 +52,15 @@ export default function AssetFilters({
   };
 
   // Fetch available filter options
+  const { data: assets } = useQuery({ queryKey: ['/api/assets'] });
+  const { data: employees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+    select: (data: any[]) => data.map((emp: any) => ({
+      id: emp.id,
+      name: emp.englishName || emp.name
+    }))
+  });
+
   const { data: assetTypes = [] } = useQuery({
     queryKey: ['/api/custom-asset-types'],
     select: (data: any[]) => data.map(type => type.name)
@@ -67,13 +76,25 @@ export default function AssetFilters({
     select: (data: any[]) => data.map(status => status.name)
   });
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ['/api/employees'],
-    select: (data: any[]) => data.map((emp: any) => ({
-      id: emp.id,
-      name: emp.englishName || emp.name
-    }))
-  });
+  // Filter brands based on selected type
+  const filteredBrands = filters.type 
+    ? [...new Set(assets?.filter((a: any) => a.type === filters.type).map((a: any) => a.brand).filter(Boolean))]
+    : assetBrands;
+  
+  // Filter models based on selected type and brand
+  const filteredModels = (() => {
+    let filteredAssets = assets || [];
+    
+    if (filters.type) {
+      filteredAssets = filteredAssets.filter((a: any) => a.type === filters.type);
+    }
+    
+    if (filters.brand) {
+      filteredAssets = filteredAssets.filter((a: any) => a.brand === filters.brand);
+    }
+    
+    return [...new Set(filteredAssets.map((a: any) => a.modelName).filter(Boolean))];
+  })();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
