@@ -31,6 +31,18 @@ export interface UpsertUser {
   accessLevel?: string;
 }
 
+// Import proper types
+import type { 
+  UserResponse, 
+  EmployeeResponse, 
+  AssetResponse, 
+  TicketResponse,
+  CustomAssetType,
+  CustomAssetBrand,
+  CustomAssetStatus,
+  ServiceProvider
+} from '@shared/types';
+
 export interface IStorage {
   // Security Questions operations
   getSecurityQuestions(userId?: number): Promise<SecurityQuestion[]>;

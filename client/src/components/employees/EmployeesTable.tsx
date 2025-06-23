@@ -63,25 +63,17 @@ export default function EmployeesTable({
   const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
   
   // Action handlers for dropdown menu
-  const handleViewDetails = (employee: any) => {
-    // TODO: Implement employee details modal/drawer
-    console.log('View details for employee:', employee.id);
-    // For now, open edit form as details view
-    onEdit(employee);
+  const handleViewDetails = (employee: EmployeeResponse) => {
+    setSelectedEmployee(employee);
+    setShowDetailsDialog(true);
   };
 
-  const handleViewAssets = (employee: any) => {
-    // TODO: Navigate to assets page with employee filter
-    console.log('View assets for employee:', employee.id);
-    // Placeholder: Could redirect to /assets?employeeId=X
-    window.open(`/assets?employeeId=${employee.id}`, '_blank');
+  const handleViewAssets = (employee: EmployeeResponse) => {
+    navigate(`/assets?assignedTo=${employee.id}`);
   };
 
-  const handleViewTickets = (employee: any) => {
-    // TODO: Navigate to tickets page with employee filter
-    console.log('View tickets for employee:', employee.id);
-    // Placeholder: Could redirect to /tickets?employeeId=X
-    window.open(`/tickets?employeeId=${employee.id}`, '_blank');
+  const handleViewTickets = (employee: EmployeeResponse) => {
+    navigate(`/tickets?assignedTo=${employee.id}`);
   };
 
   // Handle individual checkbox selection

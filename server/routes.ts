@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { getStorage } from "./storage-factory";
+
+const storage = getStorage();
 import * as schema from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -13,6 +15,7 @@ import { compare, hash } from "bcryptjs";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
+import { errorHandler, asyncHandler } from "./middleware/error-handler";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
 import { stringify as csvStringify } from "csv-stringify";
