@@ -132,7 +132,8 @@ export default function EnhancedTicketTable({
   // Time tracking mutations
   const startTimeTrackingMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest('POST', `/api/tickets/${ticketId}/start-tracking`);
+      const response = await apiRequest('POST', `/api/tickets/${ticketId}/start-tracking`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -152,7 +153,8 @@ export default function EnhancedTicketTable({
 
   const stopTimeTrackingMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest('POST', `/api/tickets/${ticketId}/stop-tracking`);
+      const response = await apiRequest('POST', `/api/tickets/${ticketId}/stop-tracking`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
