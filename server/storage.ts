@@ -2069,33 +2069,29 @@ export class DatabaseStorage implements IStorage {
   // Ticket History operations
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
-      const result = await db
-        .select({
-          id: ticketHistory.id,
-          ticketId: ticketHistory.ticketId,
-          userId: ticketHistory.userId,
-          action: ticketHistory.action,
-          fieldChanged: ticketHistory.fieldChanged,
-          oldValue: ticketHistory.oldValue,
-          newValue: ticketHistory.newValue,
-          notes: ticketHistory.notes,
-          createdAt: ticketHistory.createdAt,
-          username: users.username,
-          firstName: users.firstName,
-          lastName: users.lastName
-        })
-        .from(ticketHistory)
-        .leftJoin(users, eq(ticketHistory.userId, users.id))
-        .where(eq(ticketHistory.ticketId, ticketId))
-        .orderBy(desc(ticketHistory.createdAt));
+      const result = await pool.query(`
+        SELECT th.*, u.username, u.first_name, u.last_name
+        FROM ticket_history th
+        LEFT JOIN users u ON th.user_id = u.id
+        WHERE th.ticket_id = $1
+        ORDER BY th.created_at DESC
+      `, [ticketId]);
       
-      return result.map(row => ({
-        ...row,
+      return result.rows.map(row => ({
+        id: row.id,
+        ticketId: row.ticket_id,
+        userId: row.user_id,
+        action: row.action,
+        fieldChanged: row.field_changed,
+        oldValue: row.old_value,
+        newValue: row.new_value,
+        notes: row.notes,
+        createdAt: row.created_at,
         user: {
-          id: row.userId,
+          id: row.user_id,
           username: row.username,
-          firstName: row.firstName,
-          lastName: row.lastName
+          firstName: row.first_name,
+          lastName: row.last_name
         }
       }));
     } catch (error) {
@@ -2106,21 +2102,21 @@ export class DatabaseStorage implements IStorage {
 
   async addTicketHistory(historyData: any): Promise<any> {
     try {
-      const result = await db
-        .insert(ticketHistory)
-        .values({
-          ticketId: historyData.ticketId,
-          userId: historyData.userId,
-          action: historyData.action,
-          fieldChanged: historyData.fieldChanged || null,
-          oldValue: historyData.oldValue || null,
-          newValue: historyData.newValue || null,
-          notes: historyData.notes || null,
-          createdAt: new Date()
-        })
-        .returning();
+      const result = await pool.query(`
+        INSERT INTO ticket_history (ticket_id, user_id, action, field_changed, old_value, new_value, notes, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        RETURNING *
+      `, [
+        historyData.ticketId,
+        historyData.userId,
+        historyData.action,
+        historyData.fieldChanged || null,
+        historyData.oldValue || null,
+        historyData.newValue || null,
+        historyData.notes || null
+      ]);
       
-      return result[0];
+      return result.rows[0];
     } catch (error) {
       console.error('Error adding ticket history:', error);
       throw error;
