@@ -5,6 +5,7 @@ import * as z from "zod";
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import { hasAccess } from '@/lib/authContext';
 import { Button } from '@/components/ui/button';
 import {
   Form,
