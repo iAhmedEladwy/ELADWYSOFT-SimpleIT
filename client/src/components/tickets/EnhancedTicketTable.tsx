@@ -429,7 +429,7 @@ export default function EnhancedTicketTable({
             return (
               <TableRow 
                 key={ticket.id} 
-                className="hover:bg-gray-50"
+                className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 hover:shadow-md hover:-translate-y-1 relative"
               >
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
                 <TableCell className="max-w-xs">
