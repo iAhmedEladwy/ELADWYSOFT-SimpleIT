@@ -22,7 +22,8 @@ import {
   Save,
   Play,
   Pause,
-  X
+  X,
+  Edit
 } from 'lucide-react';
 
 interface Ticket {
@@ -75,6 +76,20 @@ export default function TicketDetailForm({
   const [commentText, setCommentText] = useState('');
   const [isPrivateComment, setIsPrivateComment] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [editForm, setEditForm] = useState({
+    summary: ticket?.summary || '',
+    description: ticket?.description || '',
+    priority: ticket?.priority || 'Medium',
+    urgency: ticket?.urgency || 'Medium',
+    impact: ticket?.impact || 'Medium',
+    status: ticket?.status || 'Open',
+    assignedToId: ticket?.assignedToId?.toString() || '',
+    requestType: ticket?.requestType || '',
+    slaTarget: ticket?.slaTarget?.toString() || '',
+    dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '',
+    workaround: ticket?.workaround || '',
+    rootCause: ticket?.rootCause || ''
+  });
 
   // Fetch ticket history
   const { data: ticketHistory = [] } = useQuery({
