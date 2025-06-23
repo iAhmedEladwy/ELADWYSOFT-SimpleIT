@@ -31,6 +31,9 @@ export default function Tickets() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [useInlineEditing, setUseInlineEditing] = useState(true); // Enable inline editing by default
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -390,6 +393,56 @@ export default function Tickets() {
         useInlineEditing={useInlineEditing}
         onTicketSelect={setSelectedTicket}
       />
+
+      {/* Ticket Detail Forms */}
+      {selectedTicket && (
+        useInlineEditing ? (
+          <InlineEditTicketForm
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+            employees={employees || []}
+            assets={assets || []}
+            users={users || []}
+            onTicketUpdate={(updatedTicket) => {
+              queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+              setSelectedTicket(null);
+            }}
+          />
+        ) : (
+          <ConsolidatedTicketForm
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+            employees={employees || []}
+            assets={assets || []}
+            users={users || []}
+            onTicketUpdate={(updatedTicket) => {
+              queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+              setSelectedTicket(null);
+            }}
+          />
+        )
+      )}
+
+      {/* Create Ticket Dialog */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{translations.createTicket}</DialogTitle>
+            <DialogDescription>
+              {language === 'English' 
+                ? 'Create a new support ticket'
+                : 'إنشاء تذكرة دعم جديدة'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <UnifiedTicketForm
+            mode="create"
+            onSubmit={handleCreateTicket}
+            onCancel={() => setOpenDialog(false)}
+            isSubmitting={createTicketMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
