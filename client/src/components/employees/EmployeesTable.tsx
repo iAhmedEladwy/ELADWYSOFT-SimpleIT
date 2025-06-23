@@ -308,6 +308,13 @@ export default function EmployeesTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Employee Details Dialog */}
+      <EmployeeDetailsDialog
+        employee={selectedEmployee}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+      />
     </div>
   );
 }

@@ -50,7 +50,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   }
   
   if (!req.isAuthenticated()) {
-    return res.status(401).json(createErrorResponse(new UnauthorizedError()));
+    return res.status(401).json({ message: "Not authenticated" });
   }
   
   // Additional check to ensure user object exists

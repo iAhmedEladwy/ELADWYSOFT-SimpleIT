@@ -293,7 +293,7 @@ export function createCSVDownloadHeaders(filename: string): Record<string, strin
 /**
  * Standardized CSV export function
  */
-export async function exportToCSV(
+export export async function exportToCSV(
   data: any[],
   filename: string,
   options: CSVStringifyOptions = {}
@@ -307,7 +307,7 @@ export async function exportToCSV(
 /**
  * Standardized CSV import function with validation
  */
-export async function importFromCSV(
+export export async function importFromCSV(
   data: string | Buffer,
   rules: CSVValidationRule[],
   options: CSVParseOptions = {}
