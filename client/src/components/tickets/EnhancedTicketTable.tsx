@@ -33,7 +33,8 @@ import {
   MessageSquare,
   Paperclip,
   Send,
-  RefreshCw
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 
 interface Ticket {
@@ -678,42 +679,18 @@ export default function EnhancedTicketTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
-                    {/* Time Tracking Controls */}
-                    {ticket.isTimeTracking ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          console.log('Stopping time tracking for ticket:', ticket.id);
-                          stopTimeTrackingMutation.mutate(ticket.id);
-                        }}
-                        disabled={stopTimeTrackingMutation.isPending}
-                        className="bg-red-50 hover:bg-red-100 border-red-200"
-                      >
-                        <Pause className="h-4 w-4 text-red-600" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          console.log('Starting time tracking for ticket:', ticket.id);
-                          startTimeTrackingMutation.mutate(ticket.id);
-                        }}
-                        disabled={startTimeTrackingMutation.isPending}
-                        className="bg-green-50 hover:bg-green-100 border-green-200"
-                      >
-                        <Play className="h-4 w-4 text-green-600" />
-                      </Button>
-                    )}
-
-
-
-
-
-
-
-
+                    {/* Detail Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTicketForDetail(ticket);
+                        setShowTicketDetail(true);
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
 
                     {/* Mark as Done Button */}
                     {ticket.status !== 'Closed' && ticket.status !== 'Resolved' && (
