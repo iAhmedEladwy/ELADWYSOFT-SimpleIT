@@ -73,10 +73,10 @@ interface AssetsTableProps {
 }
 
 export default function AssetsTable({ 
-  assets, 
-  employees,
-  selectedAssets,
-  setSelectedAssets,
+  assets = [], 
+  employees = [],
+  selectedAssets = [],
+  setSelectedAssets = () => {},
   onEdit, 
   onDelete,
   onAssign,
@@ -200,7 +200,7 @@ export default function AssetsTable({
   // Handle asset selection for multi-select operations
   const handleSelectAsset = (assetId: number) => {
     if (selectedAssets.includes(assetId)) {
-      setSelectedAssets(selectedAssets.filter(id => id !== assetId));
+      setSelectedAssets(selectedAssets?.filter(id => id !== assetId) || []);
     } else {
       setSelectedAssets([...selectedAssets, assetId]);
     }
@@ -208,6 +208,7 @@ export default function AssetsTable({
 
   // Handle select all assets
   const handleSelectAll = () => {
+    if (!assets || assets.length === 0) return;
     if (selectedAssets.length === assets.length) {
       setSelectedAssets([]);
     } else {
@@ -262,7 +263,7 @@ export default function AssetsTable({
             {hasAccess(3) && (
               <TableHead className="w-[50px]">
                 <Checkbox 
-                  checked={assets.length > 0 && selectedAssets.length === assets.length}
+                  checked={assets && assets.length > 0 && selectedAssets.length === assets.length}
                   onCheckedChange={handleSelectAll}
                   aria-label="Select all assets"
                 />
@@ -278,7 +279,7 @@ export default function AssetsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {assets.length > 0 ? (
+          {assets && assets.length > 0 ? (
             assets.map((asset) => (
               <TableRow key={asset.id}>
                 {hasAccess(3) && (
@@ -396,8 +397,8 @@ export default function AssetsTable({
                     <SelectValue placeholder={translations.selectEmployee} />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees
-                      .filter((employee: any) => employee.status === 'Active')
+                    {(employees || [])
+                      .filter((employee: any) => employee?.status === 'Active')
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id.toString()}>
                           {employee.englishName} ({employee.empId})
