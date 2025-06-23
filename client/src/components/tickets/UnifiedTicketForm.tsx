@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -100,6 +100,21 @@ export default function UnifiedTicketForm({
     queryKey: ['/api/custom-request-types'],
     staleTime: 1000 * 60 * 5,
   });
+
+  // Filter assets based on selected employee (submitter)
+  const filteredAssets = useMemo(() => {
+    const submittedById = form.watch('submittedById');
+    
+    if (!assets || !submittedById) {
+      return assets || [];
+    }
+    
+    // Show only assets assigned to the selected employee (submitter)
+    return assets.filter((asset: any) => {
+      // Check if asset is assigned to the selected employee
+      return asset.assignedEmployeeId && asset.assignedEmployeeId.toString() === submittedById;
+    });
+  }, [assets, form.watch('submittedById')]);
 
   // Translations
   const translations = {

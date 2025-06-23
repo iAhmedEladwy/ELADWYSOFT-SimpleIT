@@ -139,8 +139,8 @@ export default function Tickets() {
       };
       
       console.log('Formatted ticket data:', formattedData);
-      const response = await apiRequest('POST', '/api/tickets', formattedData);
-      return response.json();
+      const response = await apiRequest('/api/tickets', 'POST', formattedData);
+      return response;
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
