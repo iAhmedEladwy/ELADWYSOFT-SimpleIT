@@ -2069,29 +2069,33 @@ export class DatabaseStorage implements IStorage {
   // Ticket History operations
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
-      const result = await pool.query(`
-        SELECT th.*, u.username
-        FROM ticket_history th
-        LEFT JOIN users u ON th.user_id = u.id
-        WHERE th.ticket_id = $1
-        ORDER BY th.created_at DESC
-      `, [ticketId]);
+      const result = await db
+        .select({
+          id: ticketHistory.id,
+          ticketId: ticketHistory.ticketId,
+          userId: ticketHistory.userId,
+          action: ticketHistory.action,
+          fieldChanged: ticketHistory.fieldChanged,
+          oldValue: ticketHistory.oldValue,
+          newValue: ticketHistory.newValue,
+          notes: ticketHistory.notes,
+          createdAt: ticketHistory.createdAt,
+          username: users.username,
+          firstName: users.firstName,
+          lastName: users.lastName
+        })
+        .from(ticketHistory)
+        .leftJoin(users, eq(ticketHistory.userId, users.id))
+        .where(eq(ticketHistory.ticketId, ticketId))
+        .orderBy(desc(ticketHistory.createdAt));
       
-      return result.rows.map(row => ({
-        id: row.id,
-        ticketId: row.ticket_id,
-        userId: row.user_id,
-        action: row.action,
-        fieldChanged: row.field_changed,
-        oldValue: row.old_value,
-        newValue: row.new_value,
-        notes: row.notes,
-        createdAt: row.created_at,
+      return result.map(row => ({
+        ...row,
         user: {
-          id: row.user_id,
+          id: row.userId,
           username: row.username,
-          firstName: null,
-          lastName: null
+          firstName: row.firstName,
+          lastName: row.lastName
         }
       }));
     } catch (error) {
@@ -2102,21 +2106,21 @@ export class DatabaseStorage implements IStorage {
 
   async addTicketHistory(historyData: any): Promise<any> {
     try {
-      const result = await pool.query(`
-        INSERT INTO ticket_history (ticket_id, user_id, action, field_changed, old_value, new_value, notes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `, [
-        historyData.ticketId,
-        historyData.userId,
-        historyData.action,
-        historyData.fieldChanged || null,
-        historyData.oldValue || null,
-        historyData.newValue || null,
-        historyData.notes || null
-      ]);
+      const result = await db
+        .insert(ticketHistory)
+        .values({
+          ticketId: historyData.ticketId,
+          userId: historyData.userId,
+          action: historyData.action,
+          fieldChanged: historyData.fieldChanged || null,
+          oldValue: historyData.oldValue || null,
+          newValue: historyData.newValue || null,
+          notes: historyData.notes || null,
+          createdAt: new Date()
+        })
+        .returning();
       
-      return result.rows[0];
+      return result[0];
     } catch (error) {
       console.error('Error adding ticket history:', error);
       throw error;

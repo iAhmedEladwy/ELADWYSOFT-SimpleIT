@@ -4309,14 +4309,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Comprehensive ticket update endpoint
+  // Comprehensive ticket update endpoint with history tracking
   app.patch("/api/tickets/:id", authenticateUser, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
       const updateData = req.body;
       const userId = req.user.id;
       
-      const updatedTicket = await storage.updateTicket(ticketId, updateData);
+      // Use updateTicketWithHistory to ensure proper tracking
+      const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
       if (!updatedTicket) {
         return res.status(404).json({ message: "Ticket not found" });
       }

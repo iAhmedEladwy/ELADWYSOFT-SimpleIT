@@ -22,12 +22,31 @@ export default function AssetsByType({ assetsByType, isLoading }: AssetsByTypePr
   // Calculate percentages if data exists
   const totalAssets = Object.values(assetsByType).reduce((sum, count) => sum + count, 0) || 1;
   
-  // Prepare data in a structured way
-  const assetTypes = [
-    { key: 'Laptop', name: translations.laptops, className: 'bg-primary bg-opacity-10 text-primary', color: 'bg-primary' },
-    { key: 'Desktop', name: translations.desktops, className: 'bg-secondary bg-opacity-10 text-secondary', color: 'bg-secondary' },
-    { key: 'Mobile', name: translations.mobileDevices, className: 'bg-accent bg-opacity-10 text-accent', color: 'bg-accent' },
-    { key: 'Other', name: translations.otherHardware, className: 'bg-warning bg-opacity-10 text-warning', color: 'bg-warning' },
+  // Map all available asset types from actual data
+  const assetTypeKeys = Object.keys(assetsByType);
+  const assetTypes = assetTypeKeys.length > 0 ? assetTypeKeys.map((key, index) => {
+    const colors = [
+      { className: 'bg-blue-100 text-blue-800', color: 'bg-blue-500' },
+      { className: 'bg-green-100 text-green-800', color: 'bg-green-500' },
+      { className: 'bg-purple-100 text-purple-800', color: 'bg-purple-500' },
+      { className: 'bg-orange-100 text-orange-800', color: 'bg-orange-500' },
+      { className: 'bg-pink-100 text-pink-800', color: 'bg-pink-500' },
+      { className: 'bg-indigo-100 text-indigo-800', color: 'bg-indigo-500' },
+      { className: 'bg-red-100 text-red-800', color: 'bg-red-500' },
+      { className: 'bg-yellow-100 text-yellow-800', color: 'bg-yellow-500' },
+      { className: 'bg-teal-100 text-teal-800', color: 'bg-teal-500' }
+    ];
+    return {
+      key,
+      name: key,
+      className: colors[index % colors.length].className,
+      color: colors[index % colors.length].color
+    };
+  }) : [
+    { key: 'Laptop', name: translations.laptops, className: 'bg-blue-100 text-blue-800', color: 'bg-blue-500' },
+    { key: 'Desktop', name: translations.desktops, className: 'bg-green-100 text-green-800', color: 'bg-green-500' },
+    { key: 'Mobile', name: translations.mobileDevices, className: 'bg-purple-100 text-purple-800', color: 'bg-purple-500' },
+    { key: 'Other', name: translations.otherHardware, className: 'bg-orange-100 text-orange-800', color: 'bg-orange-500' },
   ];
 
   // Get percentage for each type - if the type doesn't exist, default to 0
