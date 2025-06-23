@@ -1035,7 +1035,7 @@ function SystemConfig() {
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-6 lg:max-w-6xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />

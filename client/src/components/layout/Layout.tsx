@@ -12,18 +12,18 @@ interface LayoutProps {
 
 export default function Layout({ children, hideSidebar = false }: LayoutProps) {
   const isMobile = useMobile();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile && !hideSidebar);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { user } = useAuth();
 
-  // Update sidebar state when mobile state changes or hideSidebar prop changes
+  // Update sidebar state when mobile state changes
   useEffect(() => {
-    setIsSidebarOpen(!isMobile && !hideSidebar);
+    if (!hideSidebar) {
+      setIsSidebarOpen(!isMobile);
+    }
   }, [isMobile, hideSidebar]);
 
   const toggleSidebar = () => {
-    if (!hideSidebar) {
-      setIsSidebarOpen(!isSidebarOpen);
-    }
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
   return (
