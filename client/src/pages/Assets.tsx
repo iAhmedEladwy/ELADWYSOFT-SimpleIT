@@ -13,6 +13,7 @@ import { Plus, RefreshCw, Download, Upload, DollarSign, FileUp } from 'lucide-re
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,13 +21,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 
 export default function Assets() {
@@ -70,103 +66,67 @@ export default function Assets() {
   // Sell assets form state
   const [sellForm, setSellForm] = useState({
     buyer: '',
-    date: new Date().toISOString().split('T')[0],
+    saleDate: new Date().toISOString().split('T')[0],
     totalAmount: '',
     notes: ''
   });
 
-  // Translations
   const translations = {
-    title: language === 'English' ? 'Assets Management' : 'إدارة الأصول',
-    description: language === 'English' 
-      ? 'Track and manage all company IT assets' 
-      : 'تتبع وإدارة جميع أصول تكنولوجيا المعلومات للشركة',
-    allAssets: language === 'English' ? 'All Assets' : 'جميع الأصول',
-    available: language === 'English' ? 'Available' : 'متاح',
-    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
-    maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
-    sold: language === 'English' ? 'Sold' : 'تم بيعه',
-    damaged: language === 'English' ? 'Damaged' : 'تالف',
-    retired: language === 'English' ? 'Retired' : 'متقاعد',
-    addAsset: language === 'English' ? 'Add Asset' : 'إضافة أصل',
-    editAsset: language === 'English' ? 'Edit Asset' : 'تعديل الأصل',
-    refresh: language === 'English' ? 'Refresh' : 'تحديث',
-    search: language === 'English' ? 'Search...' : 'بحث...',
-    import: language === 'English' ? 'Import' : 'استيراد',
-    export: language === 'English' ? 'Export' : 'تصدير',
-    sellAssets: language === 'English' ? 'Sell Assets' : 'بيع الأصول',
-    selectFile: language === 'English' ? 'Select File' : 'اختر ملف',
-    assetAdded: language === 'English' ? 'Asset added successfully' : 'تمت إضافة الأصل بنجاح',
-    assetUpdated: language === 'English' ? 'Asset updated successfully' : 'تم تحديث الأصل بنجاح',
-    assetDeleted: language === 'English' ? 'Asset deleted successfully' : 'تم حذف الأصل بنجاح',
-    importSuccess: language === 'English' ? 'Assets imported successfully' : 'تم استيراد الأصول بنجاح',
-    sellSuccess: language === 'English' ? 'Assets sold successfully' : 'تم بيع الأصول بنجاح',
-    buyer: language === 'English' ? 'Buyer' : 'المشتري',
-    date: language === 'English' ? 'Date' : 'التاريخ',
-    totalAmount: language === 'English' ? 'Total Amount' : 'المبلغ الإجمالي',
-    notes: language === 'English' ? 'Notes' : 'ملاحظات',
-    sell: language === 'English' ? 'Sell' : 'بيع',
-    error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
-    noAssetsSelected: language === 'English' ? 'No assets selected' : 'لم يتم تحديد أي أصول',
-    assetAssigned: language === 'English' ? 'Asset assigned successfully' : 'تم تعيين الأصل بنجاح',
-    assetUnassigned: language === 'English' ? 'Asset unassigned successfully' : 'تم إلغاء تعيين الأصل بنجاح',
-    maintenanceSuccess: language === 'English' ? 'Maintenance record added successfully' : 'تمت إضافة سجل الصيانة بنجاح',
+    title: language === 'Arabic' ? 'إدارة الأصول' : 'Assets Management',
+    description: language === 'Arabic' ? 'إدارة وتتبع جميع أصول الشركة' : 'Manage and track all company assets',
+    addAsset: language === 'Arabic' ? 'إضافة أصل' : 'Add Asset',
+    editAsset: language === 'Arabic' ? 'تعديل الأصل' : 'Edit Asset',
+    deleteAsset: language === 'Arabic' ? 'حذف الأصل' : 'Delete Asset',
+    assignAsset: language === 'Arabic' ? 'تخصيص الأصل' : 'Assign Asset',
+    unassignAsset: language === 'Arabic' ? 'إلغاء تخصيص الأصل' : 'Unassign Asset',
+    export: language === 'Arabic' ? 'تصدير' : 'Export',
+    import: language === 'Arabic' ? 'استيراد' : 'Import',
+    refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
+    sell: language === 'Arabic' ? 'بيع الأصول' : 'Sell Assets',
+    sellSelected: language === 'Arabic' ? 'بيع المحدد' : 'Sell Selected',
+    buyer: language === 'Arabic' ? 'المشتري' : 'Buyer',
+    saleDate: language === 'Arabic' ? 'تاريخ البيع' : 'Sale Date',
+    totalAmount: language === 'Arabic' ? 'المبلغ الإجمالي' : 'Total Amount',
+    notes: language === 'Arabic' ? 'ملاحظات' : 'Notes',
+    cancel: language === 'Arabic' ? 'إلغاء' : 'Cancel',
+    selectFile: language === 'Arabic' ? 'اختر ملف' : 'Select File',
+    uploadFile: language === 'Arabic' ? 'رفع الملف' : 'Upload File',
+    importing: language === 'Arabic' ? 'جاري الاستيراد...' : 'Importing...',
+    success: language === 'Arabic' ? 'نجح' : 'Success',
+    error: language === 'Arabic' ? 'خطأ' : 'Error',
+    assetAdded: language === 'Arabic' ? 'تم إضافة الأصل بنجاح' : 'Asset added successfully',
+    assetUpdated: language === 'Arabic' ? 'تم تحديث الأصل بنجاح' : 'Asset updated successfully',
+    assetDeleted: language === 'Arabic' ? 'تم حذف الأصل بنجاح' : 'Asset deleted successfully',
+    assetAssigned: language === 'Arabic' ? 'تم تخصيص الأصل بنجاح' : 'Asset assigned successfully',
+    assetUnassigned: language === 'Arabic' ? 'تم إلغاء تخصيص الأصل بنجاح' : 'Asset unassigned successfully',
+    assetsSold: language === 'Arabic' ? 'تم بيع الأصول بنجاح' : 'Assets sold successfully',
+    assetsImported: language === 'Arabic' ? 'تم استيراد الأصول بنجاح' : 'Assets imported successfully',
+    deleteConfirm: language === 'Arabic' ? 'هل أنت متأكد من حذف هذا الأصل؟' : 'Are you sure you want to delete this asset?',
+    sellConfirm: language === 'Arabic' ? 'هل أنت متأكد من بيع الأصول المحددة؟' : 'Are you sure you want to sell the selected assets?',
+    noAssetsSelected: language === 'Arabic' ? 'لم يتم تحديد أصول للبيع' : 'No assets selected for sale',
+    invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file'
   };
 
-  // Fetch assets
-  const { 
-    data: assets = [], 
-    isLoading,
-    refetch 
-  } = useQuery({
+  // Fetch data
+  const { data: assets, isLoading, refetch } = useQuery({
     queryKey: ['/api/assets'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Fetch employees for assignment dropdown
-  const { 
-    data: employees = [], 
-    isLoading: employeesLoading
-  } = useQuery({
+  const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  // Add asset mutation
+  // Mutations
   const addAssetMutation = useMutation({
-    mutationFn: async (assetData: any) => {
-      const res = await apiRequest('POST', '/api/assets', assetData);
-      return res.json();
-    },
+    mutationFn: (assetData: any) => apiRequest('/api/assets', 'POST', assetData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.assetAdded,
-      });
-      setOpenDialog(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Update asset mutation
-  const updateAssetMutation = useMutation({
-    mutationFn: async ({ id, assetData }: { id: number; assetData: any }) => {
-      const res = await apiRequest('PUT', `/api/assets/${id}`, assetData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.assetUpdated,
-      });
       setOpenDialog(false);
       setEditingAsset(null);
+      toast({
+        title: translations.success,
+        description: translations.assetAdded,
+      });
     },
     onError: (error: any) => {
       toast({
@@ -174,19 +134,36 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Delete asset mutation
+  const updateAssetMutation = useMutation({
+    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets/${id}`, 'PUT', assetData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenDialog(false);
+      setEditingAsset(null);
+      toast({
+        title: translations.success,
+        description: translations.assetUpdated,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+
   const deleteAssetMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/assets/${id}`, {});
-      return res.json();
-    },
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetDeleted,
+        title: translations.success,
+        description: translations.assetDeleted,
       });
     },
     onError: (error: any) => {
@@ -195,19 +172,17 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Assign asset mutation
   const assignAssetMutation = useMutation({
-    mutationFn: async ({ id, employeeId }: { id: number; employeeId: number }) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/assign`, { employeeId });
-      return res.json();
-    },
+    mutationFn: ({ assetId, employeeId }: { assetId: number; employeeId: number }) =>
+      apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetAssigned,
+        title: translations.success,
+        description: translations.assetAssigned,
       });
     },
     onError: (error: any) => {
@@ -216,19 +191,16 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Unassign asset mutation
   const unassignAssetMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/unassign`, {});
-      return res.json();
-    },
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}/unassign`, 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetUnassigned,
+        title: translations.success,
+        description: translations.assetUnassigned,
       });
     },
     onError: (error: any) => {
@@ -237,83 +209,24 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Add maintenance record mutation
-  const addMaintenanceMutation = useMutation({
-    mutationFn: async ({ id, maintenanceData }: { id: number; maintenanceData: any }) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/maintenance`, maintenanceData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.maintenanceSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Import assets mutation
-  const importAssetsMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await fetch('/api/assets/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.importSuccess,
-        description: `${data.imported} assets imported.`,
-      });
-      setImportFile(null);
-      setIsImporting(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-      setIsImporting(false);
-    },
-  });
-
-  // Sell assets mutation
   const sellAssetsMutation = useMutation({
-    mutationFn: async (saleData: any) => {
-      const res = await apiRequest('POST', '/api/asset-sales', saleData);
-      return res.json();
-    },
+    mutationFn: (saleData: any) => apiRequest('/api/assets/sell', 'POST', saleData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.sellSuccess,
-      });
       setOpenSellDialog(false);
       setSelectedAssets([]);
       setSellForm({
         buyer: '',
-        date: new Date().toISOString().split('T')[0],
+        saleDate: new Date().toISOString().split('T')[0],
         totalAmount: '',
         notes: ''
+      });
+      toast({
+        title: translations.success,
+        description: translations.assetsSold,
       });
     },
     onError: (error: any) => {
@@ -322,51 +235,104 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
+  const importMutation = useMutation({
+    mutationFn: (formData: FormData) => {
+      return fetch('/api/assets/import', {
+        method: 'POST',
+        body: formData,
+      }).then(res => {
+        if (!res.ok) throw new Error('Import failed');
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setImportFile(null);
+      setIsImporting(false);
+      toast({
+        title: translations.success,
+        description: translations.assetsImported,
+      });
+    },
+    onError: (error: any) => {
+      setIsImporting(false);
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => {
+      return fetch('/api/assets/export').then(res => {
+        if (!res.ok) throw new Error('Export failed');
+        return res.blob();
+      });
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `assets-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Event handlers
   const handleAddAsset = (assetData: any) => {
     addAssetMutation.mutate(assetData);
   };
 
   const handleUpdateAsset = (assetData: any) => {
-    if (editingAsset && editingAsset.id) {
-      updateAssetMutation.mutate({ id: editingAsset.id, assetData });
-    }
-  };
-
-  const handleDeleteAsset = (assetId: number) => {
-    deleteAssetMutation.mutate(assetId);
-  };
-
-  const handleEditAsset = (asset: any) => {
-    setEditingAsset(asset);
-    setOpenDialog(true);
+    updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
   };
 
   const handleAssignAsset = (assetId: number, employeeId: number) => {
-    assignAssetMutation.mutate({ id: assetId, employeeId });
+    assignAssetMutation.mutate({ assetId, employeeId });
   };
 
   const handleUnassignAsset = (assetId: number) => {
     unassignAssetMutation.mutate(assetId);
   };
 
-  const handleAddMaintenance = (assetId: number, maintenanceData: any) => {
-    addMaintenanceMutation.mutate({ id: assetId, maintenanceData });
+  const handleAddMaintenance = (assetId: number) => {
+    // Navigate to maintenance page or open maintenance dialog
+    console.log('Add maintenance for asset:', assetId);
   };
 
   const handleExport = () => {
-    window.open('/api/assets/export', '_blank');
+    exportMutation.mutate();
   };
 
   const handleImport = () => {
-    if (!importFile) return;
-    
-    setIsImporting(true);
+    if (!importFile) {
+      toast({
+        title: translations.error,
+        description: translations.invalidFile,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', importFile);
-    importAssetsMutation.mutate(formData);
+    setIsImporting(true);
+    importMutation.mutate(formData);
   };
 
   const handleSellAssets = () => {
@@ -388,11 +354,62 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-
-
-
-
-
+  // Filter assets based on filters
+  const filteredAssets = useMemo(() => {
+    if (!assets) return [];
+    
+    return assets.filter(asset => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const searchFields = [
+          asset.assetId,
+          asset.type,
+          asset.brand,
+          asset.modelName,
+          asset.serialNumber,
+          asset.location
+        ].filter(Boolean);
+        
+        if (!searchFields.some(field => 
+          field?.toLowerCase().includes(searchLower)
+        )) {
+          return false;
+        }
+      }
+      
+      // Type filter
+      if (filters.type && asset.type !== filters.type) {
+        return false;
+      }
+      
+      // Brand filter
+      if (filters.brand && asset.brand !== filters.brand) {
+        return false;
+      }
+      
+      // Model filter
+      if (filters.model && asset.modelName !== filters.model) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status && asset.status !== filters.status) {
+        return false;
+      }
+      
+      // Assignment filter
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          if (asset.assignedToId) return false;
+        } else {
+          if (asset.assignedToId?.toString() !== filters.assignedTo) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [assets, filters]);
 
   return (
     <div className="p-6">
@@ -429,38 +446,49 @@ export default function Assets() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{translations.import}</DialogTitle>
+                    <DialogDescription>
+                      Upload a CSV file to import assets
+                    </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <Input
-                      type="file"
-                      accept=".csv,.xlsx"
-                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="import-file">{translations.selectFile}</Label>
+                      <Input
+                        id="import-file"
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
                     <Button 
                       onClick={handleImport} 
                       disabled={!importFile || isImporting}
                       className="w-full"
                     >
-                      {isImporting ? 'Importing...' : translations.import}
+                      <FileUp className="h-4 w-4 mr-2" />
+                      {isImporting ? translations.importing : translations.uploadFile}
                     </Button>
                   </div>
                 </DialogContent>
               </Dialog>
-              
-              {selectedAssets.length > 0 && hasAccess(3) && (
+
+              {selectedAssets.length > 0 && (
                 <Dialog open={openSellDialog} onOpenChange={setOpenSellDialog}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <DollarSign className="h-4 w-4 mr-2" />
-                      {translations.sellAssets} ({selectedAssets.length})
+                      {translations.sellSelected} ({selectedAssets.length})
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>{translations.sellAssets}</DialogTitle>
+                      <DialogTitle>{translations.sell}</DialogTitle>
+                      <DialogDescription>
+                        Sell {selectedAssets.length} selected assets
+                      </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
+                    <div className="space-y-4">
+                      <div>
                         <Label htmlFor="buyer">{translations.buyer}</Label>
                         <Input
                           id="buyer"
@@ -468,27 +496,28 @@ export default function Assets() {
                           onChange={(e) => setSellForm({ ...sellForm, buyer: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="date">{translations.date}</Label>
+                      <div>
+                        <Label htmlFor="saleDate">{translations.saleDate}</Label>
                         <Input
-                          id="date"
+                          id="saleDate"
                           type="date"
-                          value={sellForm.date}
-                          onChange={(e) => setSellForm({ ...sellForm, date: e.target.value })}
+                          value={sellForm.saleDate}
+                          onChange={(e) => setSellForm({ ...sellForm, saleDate: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div>
                         <Label htmlFor="totalAmount">{translations.totalAmount}</Label>
                         <Input
                           id="totalAmount"
                           type="number"
+                          step="0.01"
                           value={sellForm.totalAmount}
                           onChange={(e) => setSellForm({ ...sellForm, totalAmount: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div>
                         <Label htmlFor="notes">{translations.notes}</Label>
-                        <Input
+                        <Textarea
                           id="notes"
                           value={sellForm.notes}
                           onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })}
@@ -496,7 +525,7 @@ export default function Assets() {
                       </div>
                       <Button 
                         onClick={handleSellAssets} 
-                        disabled={!sellForm.buyer || !sellForm.date || !sellForm.totalAmount || sellAssetsMutation.isPending}
+                        disabled={sellAssetsMutation.isPending}
                         className="w-full"
                       >
                         {sellAssetsMutation.isPending ? 'Processing...' : translations.sell}
@@ -530,8 +559,6 @@ export default function Assets() {
           )}
         </div>
       </div>
-
-
 
       {/* Filters Section */}
       <div className="mb-6">
