@@ -32,10 +32,13 @@ export default function AssetsByType({ assetsByType, isLoading }: AssetsByTypePr
 
   // Get percentage for each type - if the type doesn't exist, default to 0
   const getAssetPercentage = (key: string): number => {
-    const count = Object.entries(assetsByType)
-      .filter(([type]) => type.includes(key))
-      .reduce((sum, [, count]) => sum + count, 0);
+    const count = assetsByType[key] || 0;
     return Math.round((count / totalAssets) * 100);
+  };
+
+  // Get actual count for display
+  const getAssetCount = (key: string): number => {
+    return assetsByType[key] || 0;
   };
 
   return (
@@ -64,7 +67,7 @@ export default function AssetsByType({ assetsByType, isLoading }: AssetsByTypePr
                       </div>
                       <div className="text-right">
                         <span className={`text-xs font-semibold inline-block ${type.className}`}>
-                          {percentage}%
+                          {getAssetCount(type.key)} ({percentage}%)
                         </span>
                       </div>
                     </div>
