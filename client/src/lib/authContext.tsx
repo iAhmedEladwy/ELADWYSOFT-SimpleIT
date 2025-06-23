@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await apiRequest('/api/login', 'POST', { username, password });
-      return res.json();
+      const result = await apiRequest('/api/login', 'POST', { username, password });
+      return result;
     },
     onSuccess: async () => {
       // Force a refetch of the user data immediately instead of just invalidating
