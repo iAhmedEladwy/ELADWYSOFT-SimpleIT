@@ -27,7 +27,7 @@ export class MemoryStorage implements IStorage {
   private ticketHistory: schema.TicketHistory[] = [];
   private ticketCategories: schema.TicketCategory[] = [];
   private ticketComments: schema.TicketComment[] = [];
-  private timeEntries: schema.TimeEntry[] = [];
+  private timeEntries: any[] = [];
   private comments: schema.TicketComment[] = [];
   
   private idCounters = {
