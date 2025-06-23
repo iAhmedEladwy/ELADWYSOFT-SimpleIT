@@ -6,6 +6,7 @@ import {
   assetSales, type AssetSale, type InsertAssetSale,
   assetSaleItems, type AssetSaleItem, type InsertAssetSaleItem,
   tickets, type Ticket, type InsertTicket,
+  ticketComments, ticketHistory,
   systemConfig, type SystemConfig, type InsertSystemConfig,
   activityLog, type ActivityLog, type InsertActivityLog,
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,

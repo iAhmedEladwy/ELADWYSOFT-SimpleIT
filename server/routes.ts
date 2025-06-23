@@ -1996,19 +1996,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all transactions
       let transactions = await storage.getAllAssetTransactions();
       
-      // Filter out system-generated transactions and focus on meaningful user actions
+      // Keep all transactions with proper asset information
       transactions = transactions.filter(t => {
-        // Keep only transactions with valid asset and employee information
-        if (!t.asset || !t.assetId) return false;
-        
-        // Keep Check-In and Check-Out transactions
-        if (t.type === 'Check-In' || t.type === 'Check-Out') return true;
-        
-        // Keep transactions with employee involvement
-        if (t.employeeId && t.employee) return true;
-        
-        // Filter out empty or system-generated transactions
-        return false;
+        // Keep transactions with valid asset information
+        return t.asset && t.assetId;
       });
       
       // Apply additional filters if provided

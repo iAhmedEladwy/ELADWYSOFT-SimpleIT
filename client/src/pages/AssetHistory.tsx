@@ -21,7 +21,7 @@ export default function AssetHistory() {
         <meta name="description" content={translations.metaDescription} />
       </Helmet>
 
-      <Layout hideSidebar={true}>
+      <Layout>
         <div className="container mx-auto py-6 space-y-6">
           {/* Page Header */}
           <div className="flex justify-between items-start">

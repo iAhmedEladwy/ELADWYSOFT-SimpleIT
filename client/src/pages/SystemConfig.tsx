@@ -705,7 +705,11 @@ function SystemConfig() {
       emailSecure: config?.emailSecure !== false
     };
     
-    updateConfigMutation.mutate(configData);
+    updateConfigMutation.mutate(configData, {
+      onSuccess: () => {
+        // Stay on employees tab after adding department
+      }
+    });
   };
 
   const handleEditDepartment = (index: number) => {

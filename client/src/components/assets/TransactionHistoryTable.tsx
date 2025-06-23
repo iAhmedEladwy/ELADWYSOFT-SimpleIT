@@ -79,18 +79,9 @@ export default function TransactionHistoryTable() {
   };
   
   // Fetch asset transactions
-  const { data: transactionResponse, isLoading } = useQuery<TransactionResponse[]>({
+  const { data: transactions, isLoading } = useQuery<TransactionWithRelations[]>({
     queryKey: ['/api/asset-transactions'],
   });
-  
-  // Transform the response to more usable format
-  const transactions = transactionResponse?.map(item => {
-    return {
-      ...item.asset_transactions,
-      asset: item.assets,
-      employee: item.employees
-    } as TransactionWithRelations;
-  }) || [];
   
   // Assets data for the filter
   const { data: assets } = useQuery<Asset[]>({
@@ -103,7 +94,7 @@ export default function TransactionHistoryTable() {
   });
   
   // Filter transactions
-  const filteredTransactions = transactions?.filter((transaction: TransactionWithRelations) => {
+  const filteredTransactions = (transactions || [])?.filter((transaction: TransactionWithRelations) => {
     if (filter.type !== 'all' && transaction.type !== filter.type) return false;
     if (filter.assetId !== 'all' && transaction.asset?.id !== parseInt(filter.assetId)) return false;
     if (filter.employeeId !== 'all' && transaction.employee?.id !== parseInt(filter.employeeId)) return false;
