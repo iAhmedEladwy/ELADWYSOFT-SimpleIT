@@ -6,8 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import TicketForm from '@/components/tickets/TicketForm';
-import TicketUpdateForm from '@/components/tickets/TicketUpdateForm';
+import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
@@ -117,7 +116,23 @@ export default function Tickets() {
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
       console.log('Creating ticket with data:', ticketData);
-      const response = await apiRequest('POST', '/api/tickets', ticketData);
+      
+      // Ensure data format is correct for backend
+      const formattedData = {
+        submittedById: Number(ticketData.submittedById),
+        assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null,
+        relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
+        requestType: String(ticketData.requestType), // Ensure it's a string, not enum
+        priority: String(ticketData.priority),
+        status: 'Open', // Always start as Open for new tickets
+        summary: String(ticketData.summary),
+        description: String(ticketData.description),
+        dueDate: ticketData.dueDate ? new Date(ticketData.dueDate).toISOString() : null,
+        slaTarget: ticketData.slaTarget ? Number(ticketData.slaTarget) : null,
+      };
+      
+      console.log('Formatted ticket data:', formattedData);
+      const response = await apiRequest('POST', '/api/tickets', formattedData);
       return response.json();
     },
     onSuccess: (data) => {

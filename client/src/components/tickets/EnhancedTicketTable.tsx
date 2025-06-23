@@ -129,38 +129,19 @@ export default function EnhancedTicketTable({
     enabled: !!selectedTicket,
   });
 
-  // Time tracking mutations
-  const startTimeTrackingMutation = useMutation({
-    mutationFn: async (ticketId: number) => {
-      const response = await apiRequest('POST', `/api/tickets/${ticketId}/start-tracking`);
+  // Manual time update mutation (replaces automatic start/stop)
+  const updateTimeSpentMutation = useMutation({
+    mutationFn: async ({ ticketId, timeSpent }: { ticketId: number; timeSpent: number }) => {
+      const response = await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, { 
+        timeSpent: timeSpent 
+      });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
-        title: language === 'English' ? 'Time tracking started' : 'بدء تتبع الوقت',
-        description: language === 'English' ? 'Time tracking has been started for this ticket' : 'تم بدء تتبع الوقت لهذه التذكرة',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const stopTimeTrackingMutation = useMutation({
-    mutationFn: async (ticketId: number) => {
-      const response = await apiRequest('POST', `/api/tickets/${ticketId}/stop-tracking`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Time tracking stopped' : 'توقف تتبع الوقت',
-        description: language === 'English' ? 'Time tracking has been stopped for this ticket' : 'تم إيقاف تتبع الوقت لهذه التذكرة',
+        title: language === 'English' ? 'Time updated' : 'تم تحديث الوقت',
+        description: language === 'English' ? 'Time spent has been updated' : 'تم تحديث الوقت المستغرق',
       });
     },
     onError: (error) => {

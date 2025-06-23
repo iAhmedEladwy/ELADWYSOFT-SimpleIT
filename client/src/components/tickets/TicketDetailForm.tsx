@@ -100,42 +100,7 @@ export default function TicketDetailForm({
     enabled: !!ticket?.id
   });
 
-  // Update ticket mutation
-  const updateTicketMutation = useMutation({
-    mutationFn: async (updates: any) => {
-      return await apiRequest('PUT', `/api/tickets/${ticket?.id}/enhanced`, updates);
-    },
-    onSuccess: (updatedTicket) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/history`] });
-      // Update local form state with the updated ticket data
-      if (updatedTicket) {
-        setEditForm({
-          summary: updatedTicket.summary || '',
-          description: updatedTicket.description || '',
-          priority: updatedTicket.priority || 'Medium',
-          status: updatedTicket.status || 'Open',
-          assignedToId: updatedTicket.assignedToId?.toString() || '',
-          requestType: updatedTicket.requestType || 'Support',
-          slaTarget: updatedTicket.slaTarget?.toString() || '',
-          dueDate: updatedTicket.dueDate ? new Date(updatedTicket.dueDate).toISOString().slice(0, 16) : '',
-          workaround: updatedTicket.workaround || '',
-          rootCause: updatedTicket.rootCause || '',
-        });
-      }
-      toast({
-        title: 'Ticket updated',
-        description: 'Ticket has been updated successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+
 
   // Add comment mutation
   const addCommentMutation = useMutation({
@@ -161,30 +126,7 @@ export default function TicketDetailForm({
     },
   });
 
-  // Time tracking mutation
-  const timeTrackingMutation = useMutation({
-    mutationFn: async (action: 'start' | 'stop') => {
-      return await apiRequest('POST', `/api/tickets/${ticket?.id}/${action}-tracking`);
-    },
-    onSuccess: (updatedTicket) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      // Update the parent component's ticket state
-      if (updatedTicket && onTicketUpdate) {
-        onTicketUpdate(updatedTicket);
-      }
-      toast({
-        title: updatedTicket?.isTimeTracking ? 'Time tracking started' : 'Time tracking stopped',
-        description: updatedTicket?.isTimeTracking ? 'Time tracking has been started' : 'Time tracking has been stopped',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+
 
   const handleSaveChanges = () => {
     const updates: any = {};
@@ -280,22 +222,48 @@ export default function TicketDetailForm({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="comments">
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Comments
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-1" />
-              History
-            </TabsTrigger>
-            <TabsTrigger value="attachments">
-              <Paperclip className="h-4 w-4 mr-1" />
-              Attachments
-            </TabsTrigger>
-          </TabsList>
+        {showEditForm ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Edit Ticket {ticket.ticketId}</h3>
+              <Button variant="outline" onClick={() => setShowEditForm(false)}>
+                Cancel
+              </Button>
+            </div>
+            <UnifiedTicketForm
+              ticket={ticket}
+              mode="edit"
+              onSubmit={(data) => updateTicketMutation.mutate(data)}
+              onCancel={() => setShowEditForm(false)}
+              isSubmitting={updateTicketMutation.isPending}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Action Bar */}
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => setShowEditForm(true)} variant="outline">
+                <Edit className="h-4 w-4 mr-1" />
+                Edit Ticket
+              </Button>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="comments">
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  Comments
+                </TabsTrigger>
+                <TabsTrigger value="history">
+                  <History className="h-4 w-4 mr-1" />
+                  History
+                </TabsTrigger>
+                <TabsTrigger value="attachments">
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  Attachments
+                </TabsTrigger>
+              </TabsList>
 
           <TabsContent value="details" className="space-y-4">
             {/* ITIL Classification Section */}
@@ -665,7 +633,9 @@ export default function TicketDetailForm({
               <p className="text-sm text-gray-500">No attachments found</p>
             </div>
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

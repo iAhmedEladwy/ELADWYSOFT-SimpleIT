@@ -2260,13 +2260,18 @@ export class DatabaseStorage implements IStorage {
   // Enhanced ticket update with history tracking
   async updateTicketWithHistory(id: number, ticketData: Partial<InsertTicket>, userId: number): Promise<Ticket | undefined> {
     try {
+      console.log('Updating ticket with data:', { id, ticketData, userId });
+      
       // Get current ticket to track changes
       const [currentTicket] = await db
         .select()
         .from(tickets)
         .where(eq(tickets.id, id));
 
-      if (!currentTicket) return undefined;
+      if (!currentTicket) {
+        console.log('Ticket not found:', id);
+        return undefined;
+      }
 
       // Track changes
       const changes: string[] = [];

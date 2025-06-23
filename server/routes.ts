@@ -4618,6 +4618,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const updateData = req.body;
       
+      // Ensure requestType is valid text (not enum validation)
+      if (updateData.requestType && typeof updateData.requestType !== 'string') {
+        return res.status(400).json({ message: "Invalid request type format" });
+      }
+      
       const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
       if (!updatedTicket) {
         return res.status(404).json({ message: "Ticket not found" });
