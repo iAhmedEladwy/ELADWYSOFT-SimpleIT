@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import UnifiedTicketForm from './UnifiedTicketForm';
 import { 
   Clock, 
   User, 
@@ -118,6 +119,32 @@ export default function TicketDetailForm({
       toast({
         title: 'Comment added',
         description: 'Comment has been added successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update ticket mutation
+  const updateTicketMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      return await apiRequest('PATCH', `/api/tickets/${ticket?.id}`, updates);
+    },
+    onSuccess: (updatedTicket) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/history`] });
+      if (onTicketUpdate) {
+        onTicketUpdate(updatedTicket);
+      }
+      setShowEditForm(false);
+      toast({
+        title: 'Ticket updated',
+        description: 'Ticket has been updated successfully',
       });
     },
     onError: (error) => {
