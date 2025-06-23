@@ -34,9 +34,38 @@ function SystemConfig() {
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
   
-  // Tab state management
-  const [activeTab, setActiveTab] = useState('general');
+  // Tab state management with localStorage persistence
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('systemConfigActiveTab') || 'general';
+    } catch {
+      return 'general';
+    }
+  });
   const [preservedTab, setPreservedTab] = useState<string | null>(null);
+
+  // Handle tab changes with persistence
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    try {
+      localStorage.setItem('systemConfigActiveTab', value);
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+
+  // Restore preserved tab after mutations
+  useEffect(() => {
+    if (preservedTab) {
+      setActiveTab(preservedTab);
+      try {
+        localStorage.setItem('systemConfigActiveTab', preservedTab);
+      } catch {
+        // Ignore localStorage errors
+      }
+      setPreservedTab(null);
+    }
+  }, [preservedTab]);
   
   // Basic configuration states
   const [assetIdPrefix, setAssetIdPrefix] = useState('AST-');
@@ -1035,7 +1064,7 @@ function SystemConfig() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-6 lg:max-w-6xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />

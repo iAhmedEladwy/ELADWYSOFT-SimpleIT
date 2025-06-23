@@ -17,13 +17,13 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
 
   // Update sidebar state when mobile state changes
   useEffect(() => {
-    if (!hideSidebar) {
-      setIsSidebarOpen(!isMobile);
-    }
+    setIsSidebarOpen(!isMobile && !hideSidebar);
   }, [isMobile, hideSidebar]);
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    if (!hideSidebar) {
+      setIsSidebarOpen(!isSidebarOpen);
+    }
   };
 
   return (
