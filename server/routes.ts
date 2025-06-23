@@ -3079,8 +3079,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return [];
         }),
         storage.getAllAssets(),
-        storage.getTicketsByStatus(["Open", "In Progress"]).catch(err => {
-          console.error('Tickets fetch error:', err);
+        Promise.all([
+          storage.getTicketsByStatus("Open"),
+          storage.getTicketsByStatus("In Progress")
+        ]).then(([openTickets, inProgressTickets]) => 
+          [...openTickets, ...inProgressTickets]
+        ).catch(err => {
+          console.error('Active tickets fetch error:', err);
           return [];
         }),
         storage.getAllUsers()

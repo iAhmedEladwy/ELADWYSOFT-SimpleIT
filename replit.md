@@ -20,6 +20,16 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **Real-time**: WebSocket support for notifications
 
 ## Recent Changes
+### 2025-06-23
+- **COMPLETED**: v1.2 Bug Fixes Implementation - Dashboard Active Tickets & UI Improvements
+  - ✓ **DASHBOARD ACTIVE TICKETS FIX**: Fixed active tickets count showing 0 by correcting array parameter handling in getTicketsByStatus method
+  - ✓ **DATABASE QUERY OPTIMIZATION**: Replaced problematic Drizzle ORM array syntax with direct PostgreSQL queries for better compatibility
+  - ✓ **EMPLOYEE STATUS DISPLAY**: Enhanced employee status badges with proper fallback handling for unknown statuses
+  - ✓ **TICKET ASSIGNMENT SYSTEM**: Updated ticket forms to use users instead of employees for assignment dropdowns (RBAC compliance)
+  - ✓ **UI/UX IMPROVEMENTS**: Enhanced employee name styling with proper hover effects and clickable buttons
+  - ✓ **CHART ENHANCEMENTS**: Improved AssetsByType chart with better animations and tooltip styling
+  - ✓ **PRODUCTION READY**: All v1.2 medium-priority fixes implemented and tested successfully
+
 ### 2025-06-22
 - **COMPLETED**: Comprehensive Ticket System Error Resolution - Complete Production Fix
   - ✓ **DATABASE SCHEMA FIX**: Added missing columns (due_date, is_time_tracking, last_activity_at) to tickets table
