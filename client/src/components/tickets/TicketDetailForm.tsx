@@ -129,6 +129,31 @@ export default function TicketDetailForm({
     },
   });
 
+  // Time tracking mutation
+  const timeTrackingMutation = useMutation({
+    mutationFn: async (action: string) => {
+      const endpoint = action === 'start' 
+        ? `/api/tickets/${ticket?.id}/time-tracking/start`
+        : `/api/tickets/${ticket?.id}/time-tracking/stop`;
+      return await apiRequest('POST', endpoint);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/history`] });
+      toast({
+        title: 'Time tracking updated',
+        description: 'Time tracking has been updated successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
 
 
   const handleSaveChanges = () => {
