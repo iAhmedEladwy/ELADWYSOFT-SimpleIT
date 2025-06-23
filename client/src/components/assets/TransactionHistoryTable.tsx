@@ -117,6 +117,9 @@ export default function TransactionHistoryTable() {
   const endIndex = startIndex + pageSize;
   const paginatedTransactions = filteredTransactions?.slice(startIndex, endIndex);
   
+  // Page size options
+  const pageSizeOptions = [5, 10, 25, 50];
+  
   // Clear all filters
   const clearFilters = () => {
     setFilter({
