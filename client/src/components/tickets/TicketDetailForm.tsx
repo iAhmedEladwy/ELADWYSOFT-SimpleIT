@@ -89,7 +89,8 @@ export default function TicketDetailForm({
     slaTarget: ticket?.slaTarget?.toString() || '',
     dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '',
     workaround: ticket?.workaround || '',
-    rootCause: ticket?.rootCause || ''
+    rootCause: ticket?.rootCause || '',
+    timeSpent: ticket?.timeSpent?.toString() || ''
   });
 
   // Fetch ticket history
@@ -156,30 +157,13 @@ export default function TicketDetailForm({
     },
   });
 
-  // Time tracking mutation
-  const timeTrackingMutation = useMutation({
-    mutationFn: async (action: string) => {
-      const endpoint = action === 'start' 
-        ? `/api/tickets/${ticket?.id}/time-tracking/start`
-        : `/api/tickets/${ticket?.id}/time-tracking/stop`;
-      return await apiRequest('POST', endpoint);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/history`] });
-      toast({
-        title: 'Time tracking updated',
-        description: 'Time tracking has been updated successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  // Manual time entry handler
+  const handleTimeEntry = () => {
+    const minutes = prompt('Enter time spent (in minutes):');
+    if (minutes && !isNaN(Number(minutes))) {
+      setEditForm(prev => ({ ...prev, timeSpent: minutes }));
+    }
+  };
 
 
 
@@ -208,13 +192,16 @@ export default function TicketDetailForm({
       updates.slaTarget = editForm.slaTarget ? parseInt(editForm.slaTarget) : null;
     }
     if (editForm.dueDate !== (ticket?.dueDate ? new Date(ticket.dueDate).toISOString().slice(0, 16) : '')) {
-      updates.dueDate = editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null;
+      updates.dueDate = editForm.dueDate || null;
     }
     if (editForm.workaround !== ticket?.workaround) {
       updates.workaround = editForm.workaround;
     }
     if (editForm.rootCause !== ticket?.rootCause) {
       updates.rootCause = editForm.rootCause;
+    }
+    if (editForm.timeSpent !== ticket?.timeSpent?.toString()) {
+      updates.timeSpent = editForm.timeSpent ? parseInt(editForm.timeSpent) : 0;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -277,33 +264,32 @@ export default function TicketDetailForm({
           </DialogDescription>
         </DialogHeader>
 
-        {showEditForm ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Edit Ticket {ticket.ticketId}</h3>
-              <Button variant="outline" onClick={() => setShowEditForm(false)}>
-                Cancel
-              </Button>
-            </div>
-            <UnifiedTicketForm
-              ticket={ticket}
-              mode="edit"
-              onSubmit={(data) => updateTicketMutation.mutate(data)}
-              onCancel={() => setShowEditForm(false)}
-              isSubmitting={updateTicketMutation.isPending}
-            />
-          </div>
-        ) : (
-          <>
-            {/* Action Bar */}
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => setShowEditForm(true)} variant="outline">
+        <div className="space-y-6">
+          {/* Action Bar */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => setShowEditForm(!showEditForm)} 
+                variant={showEditForm ? "outline" : "default"}
+                size="sm"
+              >
                 <Edit className="h-4 w-4 mr-1" />
-                Edit Ticket
+                {showEditForm ? 'View Mode' : 'Edit Mode'}
               </Button>
+              {showEditForm && (
+                <Button 
+                  onClick={handleSaveChanges} 
+                  disabled={updateTicketMutation.isPending}
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Save Changes
+                </Button>
+              )}
             </div>
+          </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="comments">
@@ -491,38 +477,34 @@ export default function TicketDetailForm({
               </CardContent>
             </Card>
 
-            {/* Time Tracking Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Time Tracking</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant={ticket?.isTimeTracking ? "destructive" : "default"}
-                    size="sm"
-                    onClick={() => timeTrackingMutation.mutate(ticket?.isTimeTracking ? 'stop' : 'start')}
-                    disabled={timeTrackingMutation.isPending}
-                  >
-                    {ticket?.isTimeTracking ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-                    {ticket?.isTimeTracking ? 'Stop Tracking' : 'Start Tracking'}
-                  </Button>
-                  <div className="text-sm">
-                    <span className="font-medium">Time Spent: </span>
-                    <span className={ticket?.isTimeTracking ? "text-green-600 font-medium" : ""}>
-                      {formatTime(ticket?.timeSpent || 0)}
-                      {ticket?.isTimeTracking && " (Active)"}
-                    </span>
-                  </div>
-                  {ticket.slaTarget && (
-                    <div className="text-sm">
-                      <span className="font-medium">SLA Target: </span>
-                      <span>{new Date(ticket.slaTarget).toLocaleString()}</span>
+            {/* Manual Time Entry Section */}
+            {showEditForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Manual Time Entry</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Time Spent (minutes)</Label>
+                      <Input
+                        type="number"
+                        value={editForm.timeSpent || ''}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, timeSpent: e.target.value }))}
+                        placeholder="Enter minutes spent"
+                        min="0"
+                      />
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="flex items-end">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">Current Time: </span>
+                        <span>{formatTime(ticket?.timeSpent || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div>
               <Label>Description</Label>
@@ -553,18 +535,20 @@ export default function TicketDetailForm({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSaveChanges}
-                disabled={updateTicketMutation.isPending}
-              >
-                <Save className="h-4 w-4 mr-1" />
-                Save Changes
-              </Button>
-            </div>
+            {showEditForm && (
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditForm(false)}>
+                  Cancel Edit
+                </Button>
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={updateTicketMutation.isPending}
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Save Changes
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="comments" className="space-y-4">
@@ -688,9 +672,8 @@ export default function TicketDetailForm({
               <p className="text-sm text-gray-500">No attachments found</p>
             </div>
           </TabsContent>
-            </Tabs>
-          </>
-        )}
+        </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
