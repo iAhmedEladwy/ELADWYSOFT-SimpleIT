@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import FloatingActionButton from '../common/FloatingActionButton';
 import { useMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/authContext';
 
@@ -38,8 +37,7 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
         </main>
       </div>
       
-      {/* Only show FAB if user is authenticated */}
-      {user && <FloatingActionButton />}
+
     </div>
   );
 }

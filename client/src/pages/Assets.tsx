@@ -38,30 +38,7 @@ export default function Assets() {
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   
-  // Listen for the FAB add asset event
-  useEffect(() => {
-    const handleFabAddAsset = () => {
-      // Clear editing state and open dialog for new asset
-      setEditingAsset(null);
-      setOpenDialog(true);
-    };
-    
-    // Register event listener
-    window.addEventListener('fab:add-asset', handleFabAddAsset);
-    
-    // Check if URL has action=new parameter
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'new') {
-      handleFabAddAsset();
-      // Clean up the URL to prevent dialog from reopening on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('fab:add-asset', handleFabAddAsset);
-    };
-  }, []);
+
   
   // Sell assets form state
   const [sellForm, setSellForm] = useState({

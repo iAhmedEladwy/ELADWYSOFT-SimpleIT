@@ -638,7 +638,7 @@ export default function EnhancedTicketTable({
                   {new Date(ticket.createdAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                     {/* Detail Button */}
                     <Button
                       variant="ghost"
@@ -647,7 +647,7 @@ export default function EnhancedTicketTable({
                         setSelectedTicketForDetail(ticket);
                         setShowTicketDetail(true);
                       }}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
