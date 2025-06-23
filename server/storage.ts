@@ -2036,7 +2036,9 @@ export class DatabaseStorage implements IStorage {
   // Enhanced Ticket operations with time tracking
   async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
     try {
-      // Use raw SQL to avoid schema issues
+      console.log('Starting time tracking for ticket:', ticketId);
+      
+      // Use raw SQL to avoid schema issues and get reliable results
       const result = await pool.query(`
         UPDATE tickets 
         SET is_time_tracking = true, start_time = NOW(), last_activity_at = NOW(), updated_at = NOW()
@@ -2045,9 +2047,15 @@ export class DatabaseStorage implements IStorage {
       `, [ticketId]);
       
       const updatedTicket = result.rows[0];
-
-      // Add to history
+      
       if (updatedTicket) {
+        console.log('Time tracking started:', {
+          id: updatedTicket.id,
+          is_time_tracking: updatedTicket.is_time_tracking,
+          start_time: updatedTicket.start_time
+        });
+
+        // Add to history
         await this.addTicketHistory({
           ticketId,
           userId,
@@ -2065,39 +2073,54 @@ export class DatabaseStorage implements IStorage {
 
   async stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
     try {
-      // Get current ticket to calculate time spent
-      const [currentTicket] = await db
-        .select()
-        .from(tickets)
-        .where(eq(tickets.id, ticketId));
-
-      if (!currentTicket || !currentTicket.startTime) {
+      console.log('Stopping time tracking for ticket:', ticketId);
+      
+      // Use raw SQL to get accurate time data
+      const timeResult = await pool.query(
+        'SELECT start_time, time_spent FROM tickets WHERE id = $1',
+        [ticketId]
+      );
+      
+      if (!timeResult.rows[0]?.start_time) {
+        console.log('No start time found for ticket:', ticketId);
         return undefined;
       }
 
+      const startTime = new Date(timeResult.rows[0].start_time);
       const endTime = new Date();
-      const duration = Math.floor((endTime.getTime() - currentTicket.startTime.getTime()) / 1000 / 60); // minutes
-      const totalTimeSpent = (currentTicket.timeSpent || 0) + duration;
+      const sessionMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      const previousTimeSpent = timeResult.rows[0].time_spent || 0;
+      const totalTimeSpent = Math.max(0, previousTimeSpent + sessionMinutes);
 
-      const [updatedTicket] = await db
-        .update(tickets)
-        .set({ 
-          isTimeTracking: false,
-          completionTime: endTime,
-          timeSpent: totalTimeSpent,
-          lastActivityAt: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(tickets.id, ticketId))
-        .returning();
+      console.log('Time calculation:', {
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        sessionMinutes,
+        previousTimeSpent,
+        totalTimeSpent
+      });
 
-      // Add to history
+      // Update using raw SQL for reliability
+      const result = await pool.query(
+        'UPDATE tickets SET is_time_tracking = false, completion_time = NOW(), time_spent = $2, last_activity_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
+        [ticketId, totalTimeSpent]
+      );
+
+      const updatedTicket = result.rows[0];
+      
       if (updatedTicket) {
+        console.log('Updated ticket state:', {
+          id: updatedTicket.id,
+          is_time_tracking: updatedTicket.is_time_tracking,
+          time_spent: updatedTicket.time_spent
+        });
+
+        // Add to history
         await this.addTicketHistory({
           ticketId,
           userId,
-          action: "Stopped Time Tracking",
-          notes: `Timer stopped. Duration: ${duration} minutes. Total time: ${totalTimeSpent} minutes`
+          action: "Stopped Time Tracking", 
+          notes: `Timer stopped. Session: ${sessionMinutes} minutes. Total time: ${totalTimeSpent} minutes`
         });
       }
 
