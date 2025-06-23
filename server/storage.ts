@@ -633,12 +633,53 @@ export class DatabaseStorage implements IStorage {
 
   async updateEmployee(id: number, employeeData: Partial<InsertEmployee>): Promise<Employee | undefined> {
     try {
-      const [updatedEmployee] = await db
-        .update(employees)
-        .set({ ...employeeData, updatedAt: new Date() })
-        .where(eq(employees.id, id))
-        .returning();
-      return updatedEmployee;
+      // Remove generated columns from update data
+      const { name, email, phone, ...updateData } = employeeData as any;
+      
+      // Use raw SQL to avoid generated column conflicts
+      const result = await pool.query(`
+        UPDATE employees 
+        SET 
+          english_name = COALESCE($2, english_name),
+          arabic_name = COALESCE($3, arabic_name),
+          department = COALESCE($4, department),
+          id_number = COALESCE($5, id_number),
+          title = COALESCE($6, title),
+          employment_type = COALESCE($7, employment_type),
+          status = COALESCE($8, status),
+          joining_date = COALESCE($9, joining_date),
+          emp_id = COALESCE($10, emp_id),
+          direct_manager = $11,
+          exit_date = $12,
+          personal_mobile = COALESCE($13, personal_mobile),
+          work_mobile = COALESCE($14, work_mobile),
+          personal_email = COALESCE($15, personal_email),
+          corporate_email = COALESCE($16, corporate_email),
+          user_id = $17,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [
+        id,
+        updateData.englishName,
+        updateData.arabicName,
+        updateData.department,
+        updateData.idNumber,
+        updateData.title,
+        updateData.employmentType,
+        updateData.status,
+        updateData.joiningDate,
+        updateData.empId,
+        updateData.directManager,
+        updateData.exitDate,
+        updateData.personalMobile,
+        updateData.workMobile,
+        updateData.personalEmail,
+        updateData.corporateEmail,
+        updateData.userId
+      ]);
+      
+      return result.rows[0];
     } catch (error) {
       console.error('Error updating employee:', error);
       return undefined;
