@@ -74,19 +74,7 @@ export default function TicketDetailForm({
   const [activeTab, setActiveTab] = useState('details');
   const [commentText, setCommentText] = useState('');
   const [isPrivateComment, setIsPrivateComment] = useState(false);
-  const [editForm, setEditForm] = useState({
-    summary: ticket?.summary || '',
-    description: ticket?.description || '',
-    category: ticket?.category || 'Incident',
-    priority: ticket?.priority || 'Medium' as 'Low' | 'Medium' | 'High',
-    urgency: ticket?.urgency || 'Medium' as 'Critical' | 'High' | 'Medium' | 'Low',
-    impact: ticket?.impact || 'Medium' as 'Critical' | 'High' | 'Medium' | 'Low',
-    status: ticket?.status || 'New' as 'New' | 'Open' | 'In Progress' | 'Pending' | 'Resolved' | 'Closed',
-    assignedToId: ticket?.assignedToId?.toString() || '',
-    requestType: ticket?.requestType || 'Hardware',
-    rootCause: ticket?.rootCause || '',
-    workaround: ticket?.workaround || ''
-  });
+  const [showEditForm, setShowEditForm] = useState(false);
 
   // Fetch ticket history
   const { data: ticketHistory = [] } = useQuery({

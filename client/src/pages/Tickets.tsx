@@ -271,18 +271,21 @@ export default function Tickets() {
                 {translations.createTicket}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="ticket-form-description">
               <DialogHeader>
                 <DialogTitle>{translations.createTicket}</DialogTitle>
-                <DialogDescription>
-                  Fill in the details below to create a new support ticket.
+                <DialogDescription id="ticket-form-description">
+                  {language === 'English' 
+                    ? 'Fill out the form below to create a new support ticket'
+                    : 'املأ النموذج أدناه لإنشاء تذكرة دعم جديدة'}
                 </DialogDescription>
               </DialogHeader>
-              <TicketForm
+              
+              <UnifiedTicketForm
+                mode="create"
                 onSubmit={handleCreateTicket}
+                onCancel={() => setOpenDialog(false)}
                 isSubmitting={createTicketMutation.isPending}
-                employees={employees}
-                assets={assets}
               />
             </DialogContent>
           </Dialog>

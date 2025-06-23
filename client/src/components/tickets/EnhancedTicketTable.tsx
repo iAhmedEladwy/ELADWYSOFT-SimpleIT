@@ -539,7 +539,8 @@ export default function EnhancedTicketTable({
                       <SelectItem value="Hardware">Hardware</SelectItem>
                       <SelectItem value="Software">Software</SelectItem>
                       <SelectItem value="Network">Network</SelectItem>
-                      <SelectItem value="Support">Support</SelectItem>
+                      <SelectItem value="Access Control">Access Control</SelectItem>
+                      <SelectItem value="Security">Security</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -632,26 +633,44 @@ export default function EnhancedTicketTable({
                       </SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.id} value={user.id.toString()}>
-                          <span className="text-xs">{user.username}</span>
+                          <span className="text-xs">
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName} ${user.lastName}` 
+                              : user.username}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium">
-                      {ticket.timeSpent ? formatTime(ticket.timeSpent) : '0h 0m'}
-                    </span>
-                    {ticket.isTimeTracking && (
-                      <div className="flex items-center space-x-1">
-                        <Timer className="h-3 w-3 text-green-500 animate-pulse" />
-                        <span className="text-xs text-green-600 font-medium">
-                          {language === 'English' ? 'Active' : 'نشط'}
-                        </span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm">
+                      {formatTime(ticket.timeSpent || 0)}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const timeSpent = prompt(
+                          language === 'English' 
+                            ? `Enter time spent in minutes for ticket ${ticket.ticketId}:` 
+                            : `أدخل الوقت المستغرق بالدقائق للتذكرة ${ticket.ticketId}:`,
+                          ticket.timeSpent?.toString() || '0'
+                        );
+                        if (timeSpent !== null && !isNaN(Number(timeSpent))) {
+                          updateTimeSpentMutation.mutate({ 
+                            ticketId: ticket.id, 
+                            timeSpent: Number(timeSpent) 
+                          });
+                        }
+                      }}
+                      disabled={updateTimeSpentMutation.isPending}
+                      className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+                      title={language === 'English' ? 'Update time spent' : 'تحديث الوقت المستغرق'}
+                    >
+                      <Clock className="h-4 w-4 text-blue-600" />
+                    </Button>
                   </div>
                 </TableCell>
                 <TableCell>
