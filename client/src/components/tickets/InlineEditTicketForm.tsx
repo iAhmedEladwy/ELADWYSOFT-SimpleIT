@@ -220,7 +220,7 @@ export default function InlineEditTicketForm({
                 <CardTitle>Basic Information (Click to Edit)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="text-sm font-medium text-gray-700 mb-1">Summary</div>
                     <InlineEditableField
@@ -237,6 +237,14 @@ export default function InlineEditTicketForm({
                       onSave={(value) => handleFieldUpdate('requestType', value)}
                       type="select"
                       options={requestTypeOptions}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Category</div>
+                    <InlineEditableField
+                      value={ticket.category || ''}
+                      onSave={(value) => handleFieldUpdate('category', value)}
+                      placeholder="Click to add category"
                     />
                   </div>
                 </div>
@@ -289,6 +297,46 @@ export default function InlineEditTicketForm({
                     />
                   </div>
                 </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Urgency</div>
+                    <InlineEditableField
+                      value={ticket.urgency || 'Medium'}
+                      onSave={(value) => handleFieldUpdate('urgency', value)}
+                      type="select"
+                      options={[
+                        { value: 'Critical', label: 'Critical' },
+                        { value: 'High', label: 'High' },
+                        { value: 'Medium', label: 'Medium' },
+                        { value: 'Low', label: 'Low' }
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Impact</div>
+                    <InlineEditableField
+                      value={ticket.impact || 'Medium'}
+                      onSave={(value) => handleFieldUpdate('impact', value)}
+                      type="select"
+                      options={[
+                        { value: 'Critical', label: 'Critical' },
+                        { value: 'High', label: 'High' },
+                        { value: 'Medium', label: 'Medium' },
+                        { value: 'Low', label: 'Low' }
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Escalation Level</div>
+                    <InlineEditableField
+                      value={ticket.escalationLevel?.toString() || '0'}
+                      onSave={(value) => handleFieldUpdate('escalationLevel', value)}
+                      type="number"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -298,7 +346,7 @@ export default function InlineEditTicketForm({
                 <CardTitle>Time & Scheduling (Click to Edit)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="text-sm font-medium text-gray-700 mb-1">Time Spent (minutes)</div>
                     <InlineEditableField
@@ -316,7 +364,16 @@ export default function InlineEditTicketForm({
                       displayValue={ticket.dueDate ? new Date(ticket.dueDate).toLocaleString() : 'No due date'}
                       onSave={(value) => handleFieldUpdate('dueDate', value)}
                       type="text"
-                      placeholder="Click to set due date"
+                      placeholder="YYYY-MM-DD HH:MM"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">SLA Target (hours)</div>
+                    <InlineEditableField
+                      value={ticket.slaTarget?.toString() || ''}
+                      onSave={(value) => handleFieldUpdate('slaTarget', value)}
+                      type="number"
+                      placeholder="Hours until deadline"
                     />
                   </div>
                 </div>
@@ -329,23 +386,46 @@ export default function InlineEditTicketForm({
                 <CardTitle>ITIL Solutions (Click to Edit)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Workaround</div>
-                  <InlineEditableField
-                    value={ticket.workaround || ''}
-                    onSave={(value) => handleFieldUpdate('workaround', value)}
-                    type="textarea"
-                    placeholder="Click to add temporary solution"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Workaround</div>
+                    <InlineEditableField
+                      value={ticket.workaround || ''}
+                      onSave={(value) => handleFieldUpdate('workaround', value)}
+                      type="textarea"
+                      placeholder="Click to add temporary solution"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Root Cause</div>
+                    <InlineEditableField
+                      value={ticket.rootCause || ''}
+                      onSave={(value) => handleFieldUpdate('rootCause', value)}
+                      type="textarea"
+                      placeholder="Click to add root cause analysis"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Root Cause</div>
-                  <InlineEditableField
-                    value={ticket.rootCause || ''}
-                    onSave={(value) => handleFieldUpdate('rootCause', value)}
-                    type="textarea"
-                    placeholder="Click to add root cause analysis"
-                  />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Resolution</div>
+                    <InlineEditableField
+                      value={ticket.resolution || ''}
+                      onSave={(value) => handleFieldUpdate('resolution', value)}
+                      type="textarea"
+                      placeholder="Click to add final resolution"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Resolution Notes</div>
+                    <InlineEditableField
+                      value={ticket.resolutionNotes || ''}
+                      onSave={(value) => handleFieldUpdate('resolutionNotes', value)}
+                      type="textarea"
+                      placeholder="Click to add resolution notes"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

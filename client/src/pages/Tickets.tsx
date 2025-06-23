@@ -8,6 +8,7 @@ import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
 import InlineEditTicketForm from '@/components/tickets/InlineEditTicketForm';
+import ConsolidatedTicketForm from '@/components/tickets/ConsolidatedTicketForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';

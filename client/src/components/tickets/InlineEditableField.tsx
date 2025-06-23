@@ -69,6 +69,15 @@ export default function InlineEditableField({
     }
   };
 
+  // Auto-save on blur
+  const handleBlur = () => {
+    if (editValue !== String(value)) {
+      handleSave();
+    } else {
+      setIsEditing(false);
+    }
+  };
+
   const handleCancel = () => {
     setEditValue(String(value || ''));
     setIsEditing(false);
@@ -117,8 +126,19 @@ export default function InlineEditableField({
 
   if (type === 'select') {
     return (
-      <div className="flex items-center gap-2">
-        <Select value={editValue} onValueChange={setEditValue}>
+      <div className="w-full">
+        <Select 
+          value={editValue} 
+          onValueChange={(value) => {
+            setEditValue(value);
+            // Auto-save immediately on selection change
+            setTimeout(() => {
+              if (value !== String(value)) {
+                onSave(value).then(() => setIsEditing(false));
+              }
+            }, 0);
+          }}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -130,99 +150,47 @@ export default function InlineEditableField({
             ))}
           </SelectContent>
         </Select>
-        <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleSave}
-            disabled={isLoading}
-            className="h-8 w-8 p-0"
-          >
-            <Check className="h-4 w-4 text-green-600" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleCancel}
-            disabled={isLoading}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4 text-red-600" />
-          </Button>
-        </div>
       </div>
     );
   }
 
   if (type === 'textarea') {
     return (
-      <div className="space-y-2">
+      <div className="w-full">
         <Textarea
           ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           className="w-full"
           rows={3}
           disabled={isLoading}
+          placeholder="Click away to save, Escape to cancel"
         />
-        <div className="flex gap-2 justify-end">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
-            <X className="h-4 w-4 mr-1" />
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isLoading}
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Save
-          </Button>
-        </div>
-        <p className="text-xs text-gray-500">
-          Press Ctrl+Enter to save, Escape to cancel
-        </p>
+        {isLoading && (
+          <p className="text-xs text-gray-500 mt-1">Saving...</p>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="w-full">
       <Input
         ref={inputRef}
         type={type}
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1"
+        onBlur={handleBlur}
+        className="w-full"
         disabled={isLoading}
+        placeholder="Press Enter or click away to save"
       />
-      <div className="flex gap-1">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleSave}
-          disabled={isLoading}
-          className="h-8 w-8 p-0"
-        >
-          <Check className="h-4 w-4 text-green-600" />
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleCancel}
-          disabled={isLoading}
-          className="h-8 w-8 p-0"
-        >
-          <X className="h-4 w-4 text-red-600" />
-        </Button>
-      </div>
+      {isLoading && (
+        <p className="text-xs text-gray-500 mt-1">Saving...</p>
+      )}
     </div>
   );
 }
