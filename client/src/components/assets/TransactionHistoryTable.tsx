@@ -150,7 +150,7 @@ export default function TransactionHistoryTable() {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div>
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-2">{translations.title}</h2>
         <p className="text-gray-600 text-sm mb-4">{translations.description}</p>
