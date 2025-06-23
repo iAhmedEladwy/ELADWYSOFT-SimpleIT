@@ -520,8 +520,12 @@ export default function EnhancedTicketTable({
                 <TableCell 
                   className="max-w-xs truncate font-medium cursor-pointer text-blue-600 hover:text-blue-800"
                   onClick={() => {
-                    setSelectedTicketForDetail(ticket);
-                    setShowTicketDetail(true);
+                    if (onTicketSelect) {
+                      onTicketSelect(ticket);
+                    } else {
+                      setSelectedTicketForDetail(ticket);
+                      setShowTicketDetail(true);
+                    }
                   }}
                 >
                   {ticket.summary || ticket.description.substring(0, 50) + '...'}
