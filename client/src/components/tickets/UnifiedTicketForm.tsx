@@ -256,7 +256,7 @@ export default function UnifiedTicketForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">{translations.none}</SelectItem>
+                    <SelectItem value="none">{translations.none}</SelectItem>
                     {filteredAssets.map((asset: any) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
                         {asset.assetId} - {asset.type} ({asset.brand})
