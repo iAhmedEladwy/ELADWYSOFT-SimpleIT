@@ -129,9 +129,10 @@ export default function Assets() {
       });
     },
     onError: (error: any) => {
+      console.error('Add asset error:', error);
       toast({
         title: translations.error,
-        description: error.message,
+        description: error.message || 'Failed to add asset',
         variant: 'destructive',
       });
     }
@@ -149,9 +150,10 @@ export default function Assets() {
       });
     },
     onError: (error: any) => {
+      console.error('Update asset error:', error);
       toast({
         title: translations.error,
-        description: error.message,
+        description: error.message || 'Failed to update asset',
         variant: 'destructive',
       });
     }
@@ -239,14 +241,19 @@ export default function Assets() {
   });
 
   const importMutation = useMutation({
-    mutationFn: (formData: FormData) => {
-      return fetch('/api/assets/import', {
-        method: 'POST',
-        body: formData,
-      }).then(res => {
+    mutationFn: async (formData: FormData) => {
+      try {
+        const res = await fetch('/api/assets/import', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
         if (!res.ok) throw new Error('Import failed');
         return res.json();
-      });
+      } catch (error) {
+        console.error('Import error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -268,11 +275,17 @@ export default function Assets() {
   });
 
   const exportMutation = useMutation({
-    mutationFn: () => {
-      return fetch('/api/assets/export').then(res => {
+    mutationFn: async () => {
+      try {
+        const res = await fetch('/api/assets/export', {
+          credentials: 'include'
+        });
         if (!res.ok) throw new Error('Export failed');
         return res.blob();
-      });
+      } catch (error) {
+        console.error('Export error:', error);
+        throw error;
+      }
     },
     onSuccess: (blob) => {
       const url = window.URL.createObjectURL(blob);
@@ -567,7 +580,7 @@ export default function Assets() {
           onFiltersChange={setFilters}
           totalCount={assets?.length || 0}
           filteredCount={filteredAssets.length}
-          onExport={() => exportMutation.mutate('csv')}
+          onExport={() => exportMutation.mutate()}
         />
       </div>
 

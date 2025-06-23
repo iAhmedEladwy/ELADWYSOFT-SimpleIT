@@ -176,15 +176,20 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof assetFormSchema>) => {
-    // Convert string values to appropriate types for submission
-    const formattedData = {
-      ...values,
-      buyPrice: values.buyPrice ? parseFloat(values.buyPrice) : null,
-      lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
-      assignedEmployeeId: values.assignedEmployeeId ? parseInt(values.assignedEmployeeId) : null,
-    };
-    
-    onSubmit(formattedData);
+    try {
+      // Convert string values to appropriate types for submission
+      const formattedData = {
+        ...values,
+        buyPrice: values.buyPrice ? parseFloat(values.buyPrice) : null,
+        lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
+        assignedEmployeeId: values.assignedEmployeeId && values.assignedEmployeeId !== 'none' ? parseInt(values.assignedEmployeeId) : null,
+        outOfBoxOs: values.outOfBoxOs || null, // Handle empty string
+      };
+      
+      onSubmit(formattedData);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    }
   };
 
   return (
