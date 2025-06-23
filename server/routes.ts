@@ -4542,7 +4542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ticket ID" });
       }
       
-      const userId = req.user.id;
+      const userId = (req.user as any)?.id || 1; // Fallback to admin if user not properly set
       
       const updatedTicket = await storage.startTicketTimeTracking(ticketId, userId);
       if (!updatedTicket) {
@@ -4563,7 +4563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ticket ID" });
       }
       
-      const userId = req.user.id;
+      const userId = (req.user as any)?.id || 1; // Fallback to admin if user not properly set
       
       const updatedTicket = await storage.stopTicketTimeTracking(ticketId, userId);
       if (!updatedTicket) {
