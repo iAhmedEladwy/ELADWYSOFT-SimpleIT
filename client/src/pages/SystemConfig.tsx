@@ -36,7 +36,7 @@ function SystemConfig() {
   
   // Tab state management
   const [activeTab, setActiveTab] = useState('general');
-  const [maintainTab, setMaintainTab] = useState(false);
+  const [preservedTab, setPreservedTab] = useState<string | null>(null);
   
   // Basic configuration states
   const [assetIdPrefix, setAssetIdPrefix] = useState('AST-');
@@ -234,9 +234,10 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
-      // Maintain current tab when updating from department operations
-      if (maintainTab) {
-        setMaintainTab(false);
+      // Restore preserved tab after department operations
+      if (preservedTab) {
+        setActiveTab(preservedTab);
+        setPreservedTab(null);
       }
     },
     onError: (error) => {
@@ -692,8 +693,8 @@ function SystemConfig() {
     setDepartments(updatedDepartments);
     setNewDepartment('');
     
-    // Set flag to maintain tab after mutation
-    setMaintainTab(true);
+    // Preserve current tab for restoration after mutation
+    setPreservedTab(activeTab);
     
     // Save to backend with all current config data
     const configData = {
@@ -729,8 +730,8 @@ function SystemConfig() {
     setEditingDeptIndex(null);
     setEditedDeptName('');
     
-    // Set flag to maintain tab after mutation
-    setMaintainTab(true);
+    // Preserve current tab for restoration after mutation
+    setPreservedTab(activeTab);
     
     // Save to backend with all current config data
     const configData = {
@@ -761,8 +762,8 @@ function SystemConfig() {
     const updatedDepartments = departments.filter((_, i) => i !== index);
     setDepartments(updatedDepartments);
     
-    // Set flag to maintain tab after mutation
-    setMaintainTab(true);
+    // Preserve current tab for restoration after mutation
+    setPreservedTab(activeTab);
     
     // Save to backend with all current config data
     const configData = {

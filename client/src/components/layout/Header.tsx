@@ -58,7 +58,7 @@ export default function Header({ toggleSidebar, hideSidebar = false }: HeaderPro
         <div className="flex items-center gap-2">
           <button 
             onClick={toggleSidebar}
-            className="lg:hidden p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
+            className="p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
           >
             <Menu className="h-6 w-6" />
           </button>
