@@ -32,9 +32,7 @@ export default function AssetHistory() {
           </div>
           
           {/* Transaction History Table */}
-          <div className="bg-white rounded-lg shadow">
-            <TransactionHistoryTable />
-          </div>
+          <TransactionHistoryTable />
         </div>
       </Layout>
     </>

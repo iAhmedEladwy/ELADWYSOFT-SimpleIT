@@ -36,6 +36,7 @@ function SystemConfig() {
   
   // Tab state management
   const [activeTab, setActiveTab] = useState('general');
+  const [maintainTab, setMaintainTab] = useState(false);
   
   // Basic configuration states
   const [assetIdPrefix, setAssetIdPrefix] = useState('AST-');
@@ -233,8 +234,10 @@ function SystemConfig() {
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
-      // Prevent tab switching - stays on current tab
-      return false;
+      // Maintain current tab when updating from department operations
+      if (maintainTab) {
+        setMaintainTab(false);
+      }
     },
     onError: (error) => {
       console.error("Config update error:", error);
@@ -688,6 +691,9 @@ function SystemConfig() {
     const updatedDepartments = [...departments, newDepartment.trim()];
     setDepartments(updatedDepartments);
     setNewDepartment('');
+    
+    // Set flag to maintain tab after mutation
+    setMaintainTab(true);
     
     // Save to backend with all current config data
     const configData = {

@@ -159,10 +159,10 @@ export default function TransactionHistoryTable() {
   };
   
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>{translations.title}</CardTitle>
-        <CardDescription>{translations.description}</CardDescription>
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">{translations.title}</h2>
+        <p className="text-gray-600 text-sm mb-4">{translations.description}</p>
         
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="flex flex-col gap-2">
@@ -342,7 +342,7 @@ export default function TransactionHistoryTable() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
