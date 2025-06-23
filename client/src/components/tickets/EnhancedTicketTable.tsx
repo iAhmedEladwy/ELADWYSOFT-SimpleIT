@@ -468,7 +468,10 @@ export default function EnhancedTicketTable({
                 <TableCell className="font-medium">{ticket.ticketId}</TableCell>
                 <TableCell className="max-w-xs">
                   <div>
-                    <span className="font-medium">
+                    <span 
+                      className="font-medium cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                      onClick={() => setSelectedTicket(ticket)}
+                    >
                       {ticket.summary || ticket.description.substring(0, 50) + '...'}
                     </span>
                     {ticket.relatedAssetId && (
