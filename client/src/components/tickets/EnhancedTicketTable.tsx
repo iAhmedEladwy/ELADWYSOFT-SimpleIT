@@ -525,7 +525,7 @@ export default function EnhancedTicketTable({
                 <TableCell>{submittedByEmployee?.name || 'Unknown'}</TableCell>
                 <TableCell>
                   <Select
-                    value={ticket.requestType}
+                    value={ticket.requestType || "Hardware"}
                     onValueChange={(value) => {
                       updateTicketMutation.mutate({ 
                         id: ticket.id, 
@@ -547,7 +547,7 @@ export default function EnhancedTicketTable({
                 </TableCell>
                 <TableCell>
                   <Select
-                    value={ticket.priority}
+                    value={ticket.priority || "Medium"}
                     onValueChange={(value) => {
                       updateTicketMutation.mutate({ 
                         id: ticket.id, 
@@ -573,7 +573,7 @@ export default function EnhancedTicketTable({
                 </TableCell>
                 <TableCell>
                   <Select
-                    value={ticket.status}
+                    value={ticket.status || "Open"}
                     onValueChange={(value) => {
                       updateTicketMutation.mutate({ 
                         id: ticket.id, 

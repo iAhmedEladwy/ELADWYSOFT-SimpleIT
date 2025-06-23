@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
 import {
@@ -28,6 +28,8 @@ export default function Tickets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userFilter, setUserFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -222,29 +224,31 @@ export default function Tickets() {
     assignTicketMutation.mutate({ id: ticketId, userId });
   };
 
-  // Filter tickets based on search query
-  const filteredTickets = tickets.filter((ticket: any) => {
+  // Filter tickets based on search query, user filter, and status filter
+  const finalFilteredTickets = tickets.filter((ticket: any) => {
+    // Search filter
     const searchString = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = !searchQuery || (
       ticket.ticketId?.toLowerCase().includes(searchString) ||
       ticket.description?.toLowerCase().includes(searchString) ||
-      ticket.category?.toLowerCase().includes(searchString) ||
+      ticket.summary?.toLowerCase().includes(searchString) ||
+      ticket.requestType?.toLowerCase().includes(searchString) ||
       ticket.priority?.toLowerCase().includes(searchString) ||
       ticket.status?.toLowerCase().includes(searchString)
     );
-  });
 
-  // Filter tickets by status
-  const openTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Open');
-  const inProgressTickets = filteredTickets.filter((ticket: any) => ticket.status === 'In Progress');
-  const resolvedTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Resolved');
-  const closedTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Closed');
-  
-  // Filter tickets assigned to current user
-  const myTickets = filteredTickets.filter((ticket: any) => 
-    ticket.assignedToId === user?.id || 
-    (ticket.submittedById && employees.find((emp: any) => emp.id === ticket.submittedById)?.userId === user?.id)
-  );
+    // User filter
+    const matchesUser = userFilter === 'all' || 
+      ticket.assignedToId === parseInt(userFilter) || 
+      (ticket.submittedById && employees.find((emp: any) => emp.id === ticket.submittedById)?.userId === parseInt(userFilter));
+
+    // Status filter
+    const matchesStatus = statusFilter === 'all' || 
+      ticket.status === statusFilter ||
+      (statusFilter === 'active' && (ticket.status === 'Open' || ticket.status === 'In Progress'));
+
+    return matchesSearch && matchesUser && matchesStatus;
+  });
 
   return (
     <div className="p-6">
