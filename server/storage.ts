@@ -2289,10 +2289,18 @@ export class DatabaseStorage implements IStorage {
         changes.push(`Request type changed from "${currentTicket.requestType}" to "${ticketData.requestType}"`);
       }
 
+      // Prepare update data with proper date handling
+      const updateData = { ...ticketData };
+      
+      // Handle date fields properly
+      if (updateData.dueDate) {
+        updateData.dueDate = new Date(updateData.dueDate);
+      }
+      
       // Update the ticket
       const [updatedTicket] = await db
         .update(tickets)
-        .set({ ...ticketData, updatedAt: new Date() })
+        .set({ ...updateData, updatedAt: new Date() })
         .where(eq(tickets.id, id))
         .returning();
 

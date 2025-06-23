@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import TicketDetailForm from './TicketDetailForm';
+import ConsolidatedTicketForm from './ConsolidatedTicketForm';
 import { 
   Play, 
   Pause, 
