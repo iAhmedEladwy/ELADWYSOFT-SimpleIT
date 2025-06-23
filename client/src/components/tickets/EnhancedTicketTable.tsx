@@ -109,6 +109,8 @@ export default function EnhancedTicketTable({
   // Inline editing states
   const [editingField, setEditingField] = useState<{ticketId: number, field: string} | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  
+
 
   // Check access level
   const hasAccess = (level: string) => {
@@ -158,7 +160,7 @@ export default function EnhancedTicketTable({
   // Update ticket mutation
   const updateTicketMutation = useMutation({
     mutationFn: async (data: { id: number; updates: any }) => {
-      return await apiRequest('PATCH', `/api/tickets/${data.id}`, data.updates);
+      return await apiRequest(`/api/tickets/${data.id}`, 'PATCH', data.updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
