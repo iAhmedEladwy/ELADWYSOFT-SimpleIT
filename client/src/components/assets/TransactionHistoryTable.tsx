@@ -11,35 +11,40 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, FileDown } from 'lucide-react';
-import { AssetTransaction, Asset, Employee } from '@shared/schema';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { FileDown, Loader2 } from 'lucide-react';
 
-// Define the transaction response structure with joined entities
-interface TransactionResponse {
-  asset_transactions: AssetTransaction;
-  assets?: Asset;
-  employees?: Employee;
+interface Asset {
+  id: number;
+  assetId: string;
+  type: string;
+  brand?: string;
+  modelName?: string;
 }
 
-// Combine them for easier usage in component
-interface TransactionWithRelations extends AssetTransaction {
+interface Employee {
+  id: number;
+  englishName?: string;
+  arabicName?: string;
+}
+
+interface TransactionWithRelations {
+  id: number;
+  assetId: number;
+  employeeId?: number;
+  type: string;
+  date?: string;
+  transactionDate?: string;
+  notes?: string;
+  conditionNotes?: string;
   asset?: Asset;
   employee?: Employee;
 }
@@ -72,7 +77,6 @@ export default function TransactionHistoryTable() {
     filterType: language === 'English' ? 'Filter by Type' : 'تصفية حسب النوع',
     filterAsset: language === 'English' ? 'Filter by Asset' : 'تصفية حسب الأصل',
     filterEmployee: language === 'English' ? 'Filter by Employee' : 'تصفية حسب الموظف',
-    clearFilters: language === 'English' ? 'Clear Filters' : 'مسح التصفية',
     downloadCSV: language === 'English' ? 'Download CSV' : 'تحميل CSV',
     loading: language === 'English' ? 'Loading transactions...' : 'جاري تحميل المعاملات...',
     noTransactions: language === 'English' ? 'No transactions found' : 'لم يتم العثور على معاملات',
@@ -110,32 +114,20 @@ export default function TransactionHistoryTable() {
   
   // Page size options
   const pageSizeOptions = [5, 10, 25, 50];
-  
-  // Clear all filters
-  const clearFilters = () => {
-    setFilter({
-      type: 'all',
-      assetId: 'all',
-      employeeId: 'all',
-    });
-    setCurrentPage(1);
-  };
-  
-  // Download transaction history as CSV
+
+  // CSV download function
   const downloadCSV = () => {
-    if (!transactions || !filteredTransactions) return;
+    if (!filteredTransactions || filteredTransactions.length === 0) return;
     
-    // Prepare CSV data
-    const headers = ['ID', 'Asset', 'Employee', 'Type', 'Date', 'Notes'];
-    const csvRows = [headers.join(',')];
+    const csvRows = [
+      'ID,Asset,Employee,Type,Date,Notes' // Header
+    ];
     
-    // Add null check to ensure filteredTransactions is defined
-    if (filteredTransactions) {
-      for (const transaction of filteredTransactions) {
-      const assetName = transaction.asset?.assetId || '';
-      const employeeName = transaction.employee?.englishName || '';
-      const date = transaction.transactionDate ? format(new Date(transaction.transactionDate), 'yyyy-MM-dd HH:mm') : '';
-      const notes = transaction.conditionNotes ? `"${transaction.conditionNotes.replace(/"/g, '""')}"` : '';
+    for (const transaction of filteredTransactions) {
+      const assetName = transaction.asset ? `${transaction.asset.assetId} - ${transaction.asset.type}` : 'N/A';
+      const employeeName = transaction.employee ? (transaction.employee.englishName || transaction.employee.arabicName) : 'N/A';
+      const date = transaction.date ? format(new Date(transaction.date), 'yyyy-MM-dd') : (transaction.transactionDate ? format(new Date(transaction.transactionDate), 'yyyy-MM-dd') : 'N/A');
+      const notes = transaction.notes || transaction.conditionNotes || '';
       
       csvRows.push([
         transaction.id,
@@ -145,7 +137,6 @@ export default function TransactionHistoryTable() {
         date,
         notes,
       ].join(','));
-      }
     }
     
     // Create a downloadable CSV
@@ -181,7 +172,7 @@ export default function TransactionHistoryTable() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="asset-filter">{translations.filterAsset}</Label>
             <Select 
@@ -193,15 +184,15 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {assets?.map((asset: Asset) => (
-                  <SelectItem key={asset.id} value={String(asset.id)}>
-                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown'}
+                {assets?.map((asset) => (
+                  <SelectItem key={asset.id} value={asset.id.toString()}>
+                    {asset.assetId} - {asset.type}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="employee-filter">{translations.filterEmployee}</Label>
             <Select 
@@ -213,28 +204,25 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {employees?.map((employee: Employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.englishName || employee.empId || 'Unknown Employee'}
+                {employees?.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id.toString()}>
+                    {employee.englishName || employee.arabicName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="flex items-end gap-2 mt-auto">
-            <Button variant="outline" onClick={clearFilters}>
-              {translations.clearFilters}
-            </Button>
+
+          <div className="flex flex-col justify-end">
             <Button variant="outline" onClick={downloadCSV}>
               <FileDown className="h-4 w-4 mr-2" />
               {translations.downloadCSV}
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent>
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -254,9 +242,15 @@ export default function TransactionHistoryTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedTransactions?.length ? (
-                  paginatedTransactions.map((transaction: TransactionWithRelations) => (
-                    <TableRow key={`transaction-${transaction.id || `temp-${Math.random()}`}`}>
+                {paginatedTransactions?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6">
+                      {translations.noTransactions}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedTransactions?.map((transaction) => (
+                    <TableRow key={transaction.id}>
                       <TableCell>{transaction.id}</TableCell>
                       <TableCell className="font-medium">{transaction.asset?.assetId || '-'}</TableCell>
                       <TableCell>{transaction.employee?.englishName || '-'}</TableCell>
@@ -274,71 +268,63 @@ export default function TransactionHistoryTable() {
                       </TableCell>
                     </TableRow>
                   ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6">
-                      {translations.noTransactions}
-                    </TableCell>
-                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
         )}
-        
-        {/* Pagination Controls */}
-        {totalItems > 0 && (
+
+        {/* Pagination */}
+        {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-2">
-              <Label htmlFor="page-size">{language === 'English' ? 'Items per page:' : 'عناصر لكل صفحة:'}</Label>
-              <Select value={String(pageSize)} onValueChange={(value) => {
-                setPageSize(Number(value));
-                setCurrentPage(1);
-              }}>
-                <SelectTrigger id="page-size" className="w-20">
+              <span className="text-sm text-gray-500">
+                {language === 'English' ? 'Items per page:' : 'عناصر لكل صفحة:'}
+              </span>
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(value) => {
+                  setPageSize(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                {language === 'English' ? 'Previous' : 'السابق'}
+              </Button>
+              
+              <span className="px-3 py-1 text-sm">
                 {language === 'English' 
-                  ? `${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems} items`
-                  : `${startIndex + 1}-${Math.min(endIndex, totalItems)} من ${totalItems} عنصر`}
+                  ? `Page ${currentPage} of ${totalPages}`
+                  : `صفحة ${currentPage} من ${totalPages}`}
               </span>
               
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  {language === 'English' ? 'Previous' : 'السابق'}
-                </Button>
-                
-                <span className="px-3 py-1 text-sm">
-                  {language === 'English' 
-                    ? `Page ${currentPage} of ${totalPages}`
-                    : `صفحة ${currentPage} من ${totalPages}`}
-                </span>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  {language === 'English' ? 'Next' : 'التالي'}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                {language === 'English' ? 'Next' : 'التالي'}
+              </Button>
             </div>
           </div>
         )}

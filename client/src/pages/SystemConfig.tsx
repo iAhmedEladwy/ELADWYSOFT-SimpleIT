@@ -729,6 +729,9 @@ function SystemConfig() {
     setEditingDeptIndex(null);
     setEditedDeptName('');
     
+    // Set flag to maintain tab after mutation
+    setMaintainTab(true);
+    
     // Save to backend with all current config data
     const configData = {
       language: config?.language || 'en',
@@ -757,6 +760,9 @@ function SystemConfig() {
   const handleDeleteDepartment = (index: number) => {
     const updatedDepartments = departments.filter((_, i) => i !== index);
     setDepartments(updatedDepartments);
+    
+    // Set flag to maintain tab after mutation
+    setMaintainTab(true);
     
     // Save to backend with all current config data
     const configData = {
