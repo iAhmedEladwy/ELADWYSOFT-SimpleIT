@@ -203,14 +203,14 @@ export default function UnifiedTicketForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{translations.assignedTo}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select onValueChange={field.onChange} value={field.value || 'unassigned'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={translations.selectUser} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">{translations.unassigned}</SelectItem>
+                    <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
                     {users.map((user: any) => (
                       <SelectItem key={user.id} value={user.id.toString()}>
                         {user.firstName && user.lastName 
@@ -232,14 +232,14 @@ export default function UnifiedTicketForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{translations.relatedAsset}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select onValueChange={field.onChange} value={field.value || 'none'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={translations.selectAsset} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">{translations.none}</SelectItem>
+                    <SelectItem value="none">{translations.none}</SelectItem>
                     {assets.map((asset: any) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
                         {asset.name} ({asset.assetId})
