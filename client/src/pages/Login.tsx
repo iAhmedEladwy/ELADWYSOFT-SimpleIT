@@ -197,7 +197,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="text-sm text-center text-gray-500">
           <p className="w-full">
-            Default login: admin / admin123
+            Copy right reserved ELADWYSOFT 2025
           </p>
         </CardFooter>
       </Card>
