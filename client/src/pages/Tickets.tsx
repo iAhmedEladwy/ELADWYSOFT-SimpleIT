@@ -24,8 +24,8 @@ export default function Tickets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [filters, setFilters] = useState<TicketFiltersType>({});
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editTicket, setEditTicket] = useState<any>(null);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   
   // Listen for the FAB create ticket event
@@ -375,34 +375,29 @@ export default function Tickets() {
         assets={Array.isArray(assets) ? assets : []}
         users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
-        onTicketSelect={(ticket) => {
-          console.log('Ticket selected:', ticket);
-          setSelectedTicket(ticket);
+        onTicketEdit={(ticket) => {
+          console.log('Edit ticket:', ticket);
+          setEditTicket(ticket);
+          setOpenEditDialog(true);
         }}
       />
 
 
 
-      {/* Ticket Editor - DEBUG: Always show this section */}
-      <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-gray-50">
-        <div className="text-sm text-gray-600 mb-2">
-          DEBUG: selectedTicket = {selectedTicket ? selectedTicket.ticketId : 'null'}
-        </div>
-      </div>
-
-      {/* Ticket Editor */}
-      {selectedTicket && (
-        <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
-          <div className="mb-2 text-sm font-medium text-blue-700">
-            Editing Ticket: {selectedTicket.ticketId}
-          </div>
+      {/* Edit Ticket Dialog */}
+      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
           <TicketForm
-            ticket={selectedTicket}
+            ticket={editTicket}
             mode="edit"
-            onCancel={() => setSelectedTicket(null)}
+            onCancel={() => {
+              setOpenEditDialog(false);
+              setEditTicket(null);
+            }}
+
           />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

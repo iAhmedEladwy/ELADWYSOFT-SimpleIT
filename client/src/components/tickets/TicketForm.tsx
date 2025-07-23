@@ -76,6 +76,7 @@ interface TicketFormProps {
   mode: 'create' | 'edit';
   onSubmit?: (data: TicketFormData) => void;
   onCancel?: () => void;
+  onSuccess?: () => void;
   isSubmitting?: boolean;
   onTicketUpdate?: (ticket: any) => void;
 }
@@ -99,6 +100,7 @@ export default function TicketForm({
   mode,
   onSubmit,
   onCancel,
+  onSuccess,
   isSubmitting = false,
   onTicketUpdate
 }: TicketFormProps) {
