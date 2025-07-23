@@ -31,7 +31,7 @@ export default function Tickets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [filters, setFilters] = useState<TicketFiltersType>({});
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   
@@ -230,7 +230,7 @@ export default function Tickets() {
 
   // Filter tickets based on filters
   const filteredTickets = useMemo(() => {
-    if (!tickets) return [];
+    if (!Array.isArray(tickets)) return [];
     
     return tickets.filter((ticket: any) => {
       // Search filter
@@ -376,13 +376,13 @@ export default function Tickets() {
 
       {/* Main Tickets Table */}
       <EnhancedTicketTable 
-        tickets={filteredTickets} 
-        employees={employees || []}
-        assets={assets || []}
-        users={users || []}
+        tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
+        employees={Array.isArray(employees) ? employees : []}
+        assets={Array.isArray(assets) ? assets : []}
+        users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
         onRefresh={refetch}
-        onTicketSelect={setSelectedTicket}
+        onTicketSelect={(ticket) => setSelectedTicket(ticket)}
       />
 
       {/* Ticket Editor */}
