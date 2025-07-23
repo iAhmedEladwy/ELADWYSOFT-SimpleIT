@@ -2316,13 +2316,20 @@ export class DatabaseStorage implements IStorage {
         changes.push(`Request type changed from "${currentTicket.requestType}" to "${ticketData.requestType}"`);
       }
 
-      // Prepare update data with proper date handling
+      // Prepare update data with proper field type handling
       const updateData = { ...ticketData };
       
-      // Handle date fields properly
-      if (updateData.dueDate) {
+      // Handle date fields properly - only convert actual date fields
+      if (updateData.dueDate && typeof updateData.dueDate === 'string') {
         updateData.dueDate = new Date(updateData.dueDate);
       }
+      
+      // Remove any undefined values that could cause type errors
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
       
       // Update the ticket
       const [updatedTicket] = await db

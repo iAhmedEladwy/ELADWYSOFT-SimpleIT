@@ -114,8 +114,11 @@ export default function TicketForm({
   // Fetch data
   const { data: users = [] } = useQuery<UserResponse[]>({ queryKey: ['/api/users'] });
   const { data: employees = [] } = useQuery<any[]>({ queryKey: ['/api/employees'] });
-  const { data: assets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
+  const { data: allAssets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
   const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
+  
+  // Filter assets to only show those assigned to employees
+  const assets = allAssets.filter(asset => asset.assignedEmployeeId != null && asset.assignedEmployeeId !== undefined);
   
   // Fetch comments and history for edit mode
   const { data: comments = [] } = useQuery<CommentData[]>({
