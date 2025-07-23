@@ -348,9 +348,11 @@ export default function Tickets() {
 
               <TicketForm
                 mode="create"
-                onSubmit={handleCreateTicket}
                 onCancel={() => setOpenDialog(false)}
-                isSubmitting={createTicketMutation.isPending}
+                onSuccess={() => {
+                  setOpenDialog(false);
+                  refetch();
+                }}
               />
             </DialogContent>
           </Dialog>
@@ -394,7 +396,11 @@ export default function Tickets() {
               setOpenEditDialog(false);
               setEditTicket(null);
             }}
-
+            onSuccess={() => {
+              setOpenEditDialog(false);
+              setEditTicket(null);
+              refetch();
+            }}
           />
         </DialogContent>
       </Dialog>
