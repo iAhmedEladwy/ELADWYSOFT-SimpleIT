@@ -11,8 +11,8 @@ import TicketForm from '@/components/tickets/TicketForm';
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, RefreshCw, Settings, Zap, Edit3 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import type { TicketFilters as TicketFiltersType } from '@shared/types';
@@ -374,21 +374,30 @@ export default function Tickets() {
         assets={Array.isArray(assets) ? assets : []}
         users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
-        onRefresh={refetch}
         onTicketSelect={(ticket) => setSelectedTicket(ticket)}
       />
 
 
 
-      {/* Ticket Editor */}
+      {/* Edit Ticket Dialog */}
       {selectedTicket && (
-        <div className="mb-6">
-          <TicketForm
-            ticket={selectedTicket}
-            mode="edit"
-            onCancel={() => setSelectedTicket(null)}
-          />
-        </div>
+        <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
+          <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-6 pb-2 border-b">
+              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                <Edit3 className="h-5 w-5 text-green-500" />
+                Edit Ticket #{selectedTicket?.ticketId}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]">
+              <TicketForm
+                ticket={selectedTicket}
+                mode="edit"
+                onCancel={() => setSelectedTicket(null)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

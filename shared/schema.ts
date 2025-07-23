@@ -577,17 +577,26 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
   lastActivityAt: true
 });
 
-// Enhanced ticket schemas
+// Enhanced ticket schemas  
+export const insertTicketHistorySchema = createInsertSchema(ticketHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
   id: true,
   createdAt: true,
-  updatedAt: true
 });
 
 export const insertTicketCategorySchema = createInsertSchema(ticketCategories).omit({
   id: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+});
+
+export const insertTicketNotificationSchema = createInsertSchema(ticketNotifications).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ 
@@ -746,6 +755,4 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type CustomRequestType = typeof customRequestTypes.$inferSelect;
 export type InsertCustomRequestType = z.infer<typeof insertCustomRequestTypeSchema>;
 
-// Ticket history types
-export type TicketHistory = typeof ticketHistory.$inferSelect;
-export type InsertTicketHistory = z.infer<typeof insertTicketHistorySchema>;
+// Ticket history types (declared above - removing duplicate)

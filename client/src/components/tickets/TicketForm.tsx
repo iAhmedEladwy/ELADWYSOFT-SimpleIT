@@ -281,29 +281,25 @@ export default function TicketForm({
   };
 
   return (
-    <div className={isCreateMode ? "overflow-y-auto max-h-[75vh]" : "max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg"}>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          {isCreateMode ? (
-            <>
-              <AlertCircle className="h-5 w-5 text-blue-500" />
-              <h2 className="text-2xl font-bold">{language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}</h2>
-            </>
-          ) : (
-            <>
-              <Edit3 className="h-5 w-5 text-green-500" />
-              <h2 className="text-2xl font-bold">{language === 'English' ? `Edit Ticket #${ticket?.ticketId}` : `تعديل التذكرة #${ticket?.ticketId}`}</h2>
-            </>
-          )}
-          {autoSaving && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+    <div className={isCreateMode ? "overflow-y-auto max-h-[75vh]" : "pt-4"}>
+      {isCreateMode && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="h-5 w-5 text-blue-500" />
+            <h2 className="text-2xl font-bold">{language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}</h2>
+          </div>
+          <p className="text-gray-600">
+            {language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة'}
+          </p>
         </div>
-        <p className="text-gray-600">
-          {isCreateMode
-            ? (language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة')
-            : (language === 'English' ? 'Edit ticket details. Changes are saved automatically' : 'تعديل تفاصيل التذكرة. التغييرات محفوظة تلقائياً')
-          }
-        </p>
-      </div>
+      )}
+      
+      {isEditMode && autoSaving && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {language === 'English' ? 'Auto-saving changes...' : 'حفظ التغييرات تلقائياً...'}
+        </div>
+      )}
 
         {isCreateMode ? (
           // Create Mode: Single comprehensive view
