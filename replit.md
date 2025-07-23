@@ -21,6 +21,14 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-23
+- **COMPLETED**: v1.3.3 Release - Complete Field Integration & Auto-Save Enhancement
+  - ✓ **CRITICAL DATABASE FIXES**: Resolved `invalid input syntax for type timestamp: "3"` errors with proper field type validation
+  - ✓ **UNIFIED EMPLOYEE SELECTION**: Both create and edit forms now use employee data for "Submitted By" field (matching database schema)
+  - ✓ **ENHANCED ASSET FILTERING**: Related Asset field shows only employee-assigned assets in both create and edit modes
+  - ✓ **TIME SPENT FIELD COMPLETE**: Added Time Spent (Minutes) field to both create and edit forms with proper validation
+  - ✓ **AUTO-SAVE UI IMPROVEMENT**: Moved auto-save indicator to ticket header area to prevent form resizing and movement
+  - ✓ **DATA TYPE CONVERSION**: Enhanced storage layer with proper undefined value cleanup and date field handling
+  - ✓ **COMPLETE FIELD PARITY**: Create and edit forms now have identical 20+ ITIL-compliant fields with consistent behavior
 - **COMPLETED**: v1.3.2 Release - Unified Popup Edit Form Implementation
   - ✓ **CRITICAL FIX**: Implemented missing edit form fields in popup dialog - replaced placeholder comment with complete 20+ ITIL field implementation
   - ✓ **UNIFIED FIELD MAPPING**: Both create and edit modes now use identical comprehensive field schema with auto-save integration

@@ -350,12 +350,7 @@ export default function TicketForm({
         </div>
       )}
       
-      {isEditMode && autoSaving && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {language === 'English' ? 'Auto-saving changes...' : 'حفظ التغييرات تلقائياً...'}
-        </div>
-      )}
+
 
         {isCreateMode ? (
           // Create Mode: Single comprehensive view
@@ -383,9 +378,9 @@ export default function TicketForm({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {users.map((user) => (
-                                <SelectItem key={user.id} value={user.id.toString()}>
-                                  {user.username}
+                              {employees.map((employee) => (
+                                <SelectItem key={employee.id} value={employee.id.toString()}>
+                                  {employee.englishName || employee.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
