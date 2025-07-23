@@ -31,7 +31,8 @@ import {
   MessageSquare,
   Paperclip,
   Send,
-  RefreshCw
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 
 interface Ticket {
@@ -71,7 +72,7 @@ interface EnhancedTicketTableProps {
   assets?: any[];
   users?: any[];
   isLoading: boolean;
-  onTicketEdit?: (ticket: Ticket) => void;
+  onTicketSelect?: (ticket: Ticket) => void;
 }
 
 export default function EnhancedTicketTable({ 
@@ -80,7 +81,7 @@ export default function EnhancedTicketTable({
   assets = [], 
   users = [], 
   isLoading,
-  onTicketEdit
+  onTicketSelect
 }: EnhancedTicketTableProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -422,9 +423,9 @@ export default function EnhancedTicketTable({
   const filteredTickets = tickets;
 
   const handleAddComment = (ticket: Ticket) => {
-    // Use parent component's ticket edit instead
-    if (onTicketEdit) {
-      onTicketEdit(ticket);
+    // Use parent component's ticket selection instead
+    if (onTicketSelect) {
+      onTicketSelect(ticket);
     }
     setShowAddComment(true);
   };
@@ -466,8 +467,8 @@ export default function EnhancedTicketTable({
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                     onClick={() => {
-                      if (onTicketEdit) {
-                        onTicketEdit(ticket);
+                      if (onTicketSelect) {
+                        onTicketSelect(ticket);
                       }
                     }}
                   >
@@ -479,8 +480,8 @@ export default function EnhancedTicketTable({
                     <span 
                       className="font-medium cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                       onClick={() => {
-                        if (onTicketEdit) {
-                          onTicketEdit(ticket);
+                        if (onTicketSelect) {
+                          onTicketSelect(ticket);
                         }
                       }}
                     >
@@ -509,8 +510,8 @@ export default function EnhancedTicketTable({
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                     onClick={() => {
-                      if (onTicketEdit) {
-                        onTicketEdit(ticket);
+                      if (onTicketSelect) {
+                        onTicketSelect(ticket);
                       }
                     }}
                   >
@@ -696,19 +697,18 @@ export default function EnhancedTicketTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                    {/* Edit Button */}
+                    {/* Detail Button */}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (onTicketEdit) {
-                          onTicketEdit(ticket);
+                        if (onTicketSelect) {
+                          onTicketSelect(ticket);
                         }
                       }}
                       className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
-                      title={language === 'English' ? 'Edit ticket' : 'تعديل التذكرة'}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
                     </Button>
 
                     {/* Mark as Done Button */}

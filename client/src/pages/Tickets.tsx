@@ -24,8 +24,8 @@ export default function Tickets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [filters, setFilters] = useState<TicketFiltersType>({});
-  const [editTicket, setEditTicket] = useState<any>(null);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   
   // Listen for the FAB create ticket event
@@ -345,14 +345,11 @@ export default function Tickets() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
-
               <TicketForm
                 mode="create"
+                onSubmit={handleCreateTicket}
                 onCancel={() => setOpenDialog(false)}
-                onSuccess={() => {
-                  setOpenDialog(false);
-                  refetch();
-                }}
+                isSubmitting={createTicketMutation.isPending}
               />
             </DialogContent>
           </Dialog>
@@ -377,33 +374,22 @@ export default function Tickets() {
         assets={Array.isArray(assets) ? assets : []}
         users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
-        onTicketEdit={(ticket) => {
-          console.log('Edit ticket:', ticket);
-          setEditTicket(ticket);
-          setOpenEditDialog(true);
-        }}
+        onRefresh={refetch}
+        onTicketSelect={(ticket) => setSelectedTicket(ticket)}
       />
 
 
 
-      {/* Edit Ticket Dialog */}
-      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
+      {/* Ticket Editor */}
+      {selectedTicket && (
+        <div className="mb-6">
           <TicketForm
-            ticket={editTicket}
+            ticket={selectedTicket}
             mode="edit"
-            onCancel={() => {
-              setOpenEditDialog(false);
-              setEditTicket(null);
-            }}
-            onSuccess={() => {
-              setOpenEditDialog(false);
-              setEditTicket(null);
-              refetch();
-            }}
+            onCancel={() => setSelectedTicket(null)}
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

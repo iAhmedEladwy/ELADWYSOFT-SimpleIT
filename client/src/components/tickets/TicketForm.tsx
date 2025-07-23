@@ -76,7 +76,6 @@ interface TicketFormProps {
   mode: 'create' | 'edit';
   onSubmit?: (data: TicketFormData) => void;
   onCancel?: () => void;
-  onSuccess?: () => void;
   isSubmitting?: boolean;
   onTicketUpdate?: (ticket: any) => void;
 }
@@ -100,7 +99,6 @@ export default function TicketForm({
   mode,
   onSubmit,
   onCancel,
-  onSuccess,
   isSubmitting = false,
   onTicketUpdate
 }: TicketFormProps) {
@@ -307,9 +305,10 @@ export default function TicketForm({
         </p>
       </div>
 
-      {/* Both create and edit modes show the same comprehensive form */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        {isCreateMode ? (
+          // Create Mode: Single comprehensive view
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
                 {/* Basic Information Card */}
                 <Card>
                   <CardHeader>
@@ -826,14 +825,13 @@ export default function TicketForm({
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <Save className="h-4 w-4 mr-2" />
-                    {isCreateMode 
-                      ? (language === 'English' ? 'Create Ticket' : 'إنشاء التذكرة')
-                      : (language === 'English' ? 'Update Ticket' : 'تحديث التذكرة')
-                    }
+                    {language === 'English' ? 'Create Ticket' : 'إنشاء التذكرة'}
                   </Button>
                 </div>
-        </form>
-      </Form>
+              </form>
+            </Form>
+        ) : (
+          // Edit Mode: Tabbed detailed view
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details" className="flex items-center gap-2">
@@ -991,8 +989,7 @@ export default function TicketForm({
               </TabsContent>
             </div>
           </Tabs>
-          )}
-        </Form>
+        )}
     </div>
   );
 }
