@@ -142,7 +142,10 @@ export default function AssetHistory() {
   });
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({
+      ...prev,
+      [key]: value === 'all' ? '' : value
+    }));
     setCurrentPage(1);
   };
 
@@ -216,12 +219,12 @@ export default function AssetHistory() {
               {/* Transaction Type */}
               <div className="space-y-2">
                 <Label>{translations.transactionType}</Label>
-                <Select value={filters.type} onValueChange={(value) => handleFilterChange('type', value)}>
+                <Select value={filters.type || 'all'} onValueChange={(value) => handleFilterChange('type', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder={translations.all} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{translations.all}</SelectItem>
+                    <SelectItem value="all">{translations.all}</SelectItem>
                     <SelectItem value="Check In">{translations.checkIn}</SelectItem>
                     <SelectItem value="Check Out">{translations.checkOut}</SelectItem>
                     <SelectItem value="Assignment">{translations.assignment}</SelectItem>
@@ -233,12 +236,12 @@ export default function AssetHistory() {
               {/* Asset Filter */}
               <div className="space-y-2">
                 <Label>{translations.asset}</Label>
-                <Select value={filters.assetId} onValueChange={(value) => handleFilterChange('assetId', value)}>
+                <Select value={filters.assetId || 'all'} onValueChange={(value) => handleFilterChange('assetId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder={translations.all} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{translations.all}</SelectItem>
+                    <SelectItem value="all">{translations.all}</SelectItem>
                     {assets?.map((asset: Asset) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
                         {asset.assetId} - {asset.type}
@@ -251,12 +254,12 @@ export default function AssetHistory() {
               {/* Employee Filter */}
               <div className="space-y-2">
                 <Label>{translations.employee}</Label>
-                <Select value={filters.employeeId} onValueChange={(value) => handleFilterChange('employeeId', value)}>
+                <Select value={filters.employeeId || 'all'} onValueChange={(value) => handleFilterChange('employeeId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder={translations.all} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{translations.all}</SelectItem>
+                    <SelectItem value="all">{translations.all}</SelectItem>
                     {employees?.map((employee: Employee) => (
                       <SelectItem key={employee.id} value={employee.id.toString()}>
                         {employee.englishName || employee.arabicName}
