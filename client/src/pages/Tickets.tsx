@@ -345,6 +345,7 @@ export default function Tickets() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
+
               <TicketForm
                 mode="create"
                 onSubmit={handleCreateTicket}
@@ -375,14 +376,20 @@ export default function Tickets() {
         users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
         onRefresh={refetch}
-        onTicketSelect={(ticket) => setSelectedTicket(ticket)}
+        onTicketSelect={(ticket) => {
+          console.log('Ticket selected:', ticket);
+          setSelectedTicket(ticket);
+        }}
       />
 
 
 
       {/* Ticket Editor */}
       {selectedTicket && (
-        <div className="mb-6">
+        <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+          <div className="mb-2 text-sm font-medium text-blue-700">
+            Editing Ticket: {selectedTicket.ticketId}
+          </div>
           <TicketForm
             ticket={selectedTicket}
             mode="edit"
