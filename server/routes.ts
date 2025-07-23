@@ -2484,7 +2484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Create the ticket
-      const newTicket = await storage.createTicket(ticketData);
+      const newTicket = await storage.createTicket(ticketData as any);
       
       // Log activity
       if (req.user) {
@@ -2566,7 +2566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Create the ticket using storage interface
-      const newTicket = await storage.createTicket(ticketData);
+      const newTicket = await storage.createTicket(ticketData as any);
       
       console.log("Ticket creation successful:", newTicket);
       

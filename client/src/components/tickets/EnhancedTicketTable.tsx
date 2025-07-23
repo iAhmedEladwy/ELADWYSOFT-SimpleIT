@@ -172,10 +172,9 @@ export default function EnhancedTicketTable({
   // Manual time update mutation (replaces automatic start/stop)
   const updateTimeSpentMutation = useMutation({
     mutationFn: async ({ ticketId, timeSpent }: { ticketId: number; timeSpent: number }) => {
-      const response = await apiRequest(`/api/tickets/${ticketId}/enhanced`, 'PUT', { 
+      return await apiRequest(`/api/tickets/${ticketId}/enhanced`, 'PUT', { 
         timeSpent: timeSpent 
       });
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
