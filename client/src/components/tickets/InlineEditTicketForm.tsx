@@ -68,7 +68,7 @@ export default function InlineEditTicketForm({
   const updateFieldMutation = useMutation({
     mutationFn: async ({ field, value }: { field: string; value: any }) => {
       const updateData = { [field]: value };
-      return await apiRequest('PATCH', `/api/tickets/${ticket?.id}`, updateData);
+      return await apiRequest(`/api/tickets/${ticket?.id}`, 'PATCH', updateData);
     },
     onSuccess: (updatedTicket, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });

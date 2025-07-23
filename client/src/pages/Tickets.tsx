@@ -6,9 +6,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import UnifiedTicketForm from '@/components/tickets/UnifiedTicketForm';
-import InlineEditTicketForm from '@/components/tickets/InlineEditTicketForm';
-import ConsolidatedTicketForm from '@/components/tickets/ConsolidatedTicketForm';
+import ComprehensiveTicketForm from '@/components/tickets/ComprehensiveTicketForm';
+
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -364,7 +363,7 @@ export default function Tickets() {
                 </DialogDescription>
               </DialogHeader>
               
-              <UnifiedTicketForm
+              <ComprehensiveTicketForm
                 mode="create"
                 onSubmit={handleCreateTicket}
                 onCancel={() => setOpenDialog(false)}
@@ -396,17 +395,14 @@ export default function Tickets() {
         onRefresh={refetch}
       />
 
-      {/* Inline Ticket Editor */}
+      {/* Comprehensive Ticket Editor */}
       {selectedTicket && (
-        <InlineEditTicketForm
+        <ComprehensiveTicketForm
           ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-          employees={employees || []}
-          assets={assets || []}
-          users={users || []}
-          onTicketUpdate={(updatedTicket) => {
-            queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-          }}
+          mode="edit"
+          onCancel={() => setSelectedTicket(null)}
+          open={!!selectedTicket}
+          onOpenChange={(open) => !open && setSelectedTicket(null)}
         />
       )}
     </div>
