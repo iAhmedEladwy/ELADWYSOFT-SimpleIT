@@ -45,41 +45,16 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Comprehensive ticket schema for both create and edit modes
+// Ticket form schema
 const ticketFormSchema = z.object({
-  submittedById: z.string()
-    .min(1, { message: "Please select who is submitting this ticket" })
-    .transform(val => Number(val)),
-  assignedToId: z.string()
-    .optional()
-    .transform(val => val && val !== '' && val !== 'unassigned' ? Number(val) : undefined),
-  relatedAssetId: z.string()
-    .optional()
-    .transform(val => val && val !== '' && val !== 'none' ? Number(val) : undefined),
-  requestType: z.string({
-    required_error: "Please select a request type",
-  }),
-  priority: z.string({
-    required_error: "Please select a priority",
-  }),
+  submittedById: z.string().min(1, "Please select who is submitting this ticket"),
+  assignedToId: z.string().optional(),
+  relatedAssetId: z.string().optional(),
+  requestType: z.string().min(1, "Please select a request type"),
+  priority: z.string().min(1, "Please select a priority"),
   status: z.string().default('Open'),
-  summary: z.string()
-    .min(5, { message: "Summary must be at least 5 characters" })
-    .max(200, { message: "Summary cannot exceed 200 characters" }),
-  description: z.string()
-    .min(5, { message: "Description must be at least 5 characters" })
-    .max(2000, { message: "Description cannot exceed 2000 characters" }),
-  category: z.string().optional(),
-  urgency: z.string().optional(),
-  impact: z.string().optional(),
-  dueDate: z.string().optional(),
-  slaTarget: z.string().optional(),
-  timeSpent: z.string().optional().transform(val => val ? Number(val) : 0),
-  workaround: z.string().optional(),
-  rootCause: z.string().optional(),
-  resolution: z.string().optional(),
-  resolutionNotes: z.string().optional(),
-  escalationLevel: z.string().optional().transform(val => val ? Number(val) : 0),
+  summary: z.string().min(5, "Summary must be at least 5 characters").max(200, "Summary cannot exceed 200 characters"),
+  description: z.string().min(5, "Description must be at least 5 characters").max(2000, "Description cannot exceed 2000 characters"),
 });
 
 type TicketFormData = z.infer<typeof ticketFormSchema>;
@@ -93,6 +68,20 @@ interface TicketFormProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onTicketUpdate?: (ticket: any) => void;
+}
+
+interface CommentData {
+  id: number;
+  content: string;
+  username: string;
+  createdAt: string;
+}
+
+interface HistoryData {
+  id: number;
+  changeType: string;
+  changeDescription: string;
+  createdAt: string;
 }
 
 export default function TicketForm({
@@ -120,12 +109,12 @@ export default function TicketForm({
   const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
   
   // Fetch comments and history for edit mode
-  const { data: comments = [] } = useQuery({
+  const { data: comments = [] } = useQuery<CommentData[]>({
     queryKey: [`/api/tickets/${ticket?.id}/comments`],
     enabled: mode === 'edit' && !!ticket?.id,
   });
 
-  const { data: history = [] } = useQuery({
+  const { data: history = [] } = useQuery<HistoryData[]>({
     queryKey: [`/api/tickets/${ticket?.id}/history`],
     enabled: mode === 'edit' && !!ticket?.id,
   });
@@ -189,17 +178,6 @@ export default function TicketForm({
       status: ticket?.status || 'Open',
       summary: ticket?.summary || '',
       description: ticket?.description || '',
-      category: ticket?.category || '',
-      urgency: ticket?.urgency || '',
-      impact: ticket?.impact || '',
-      dueDate: ticket?.dueDate || '',
-      slaTarget: ticket?.slaTarget?.toString() || '',
-      timeSpent: ticket?.timeSpent?.toString() || '0',
-      workaround: ticket?.workaround || '',
-      rootCause: ticket?.rootCause || '',
-      resolution: ticket?.resolution || '',
-      resolutionNotes: ticket?.resolutionNotes || '',
-      escalationLevel: ticket?.escalationLevel?.toString() || '0',
     },
   });
 
@@ -207,14 +185,26 @@ export default function TicketForm({
   const handleAutoSave = async (field: string, value: any) => {
     if (mode === 'edit' && ticket) {
       setAutoSaving(true);
-      autoSaveMutation.mutate({ [field]: value });
+      // Convert string values back to appropriate types for API
+      let processedValue = value;
+      if (field === 'submittedById' || field === 'assignedToId' || field === 'relatedAssetId') {
+        processedValue = value && value !== '' && value !== 'unassigned' && value !== 'none' ? parseInt(value) : null;
+      }
+      autoSaveMutation.mutate({ [field]: processedValue });
     }
   };
 
   // Form submission for create mode
   const handleFormSubmit = (data: TicketFormData) => {
     if (onSubmit) {
-      onSubmit(data);
+      // Convert string IDs back to numbers for submission
+      const processedData = {
+        ...data,
+        submittedById: parseInt(data.submittedById),
+        assignedToId: data.assignedToId && data.assignedToId !== 'unassigned' ? parseInt(data.assignedToId) : undefined,
+        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : undefined,
+      };
+      onSubmit(processedData as any);
     }
   };
 
@@ -312,7 +302,7 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
@@ -338,14 +328,14 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Assigned To' : 'مسند إلى'}</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مسند'} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
+                              <SelectItem value="">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
                               {users.map((user) => (
                                 <SelectItem key={user.id} value={user.id.toString()}>
                                   {user.username}
@@ -365,14 +355,14 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'No asset' : 'لا يوجد أصل'} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
+                              <SelectItem value="">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
                               {assets.map((asset) => (
                                 <SelectItem key={asset.id} value={asset.id.toString()}>
                                   {asset.assetId} - {asset.name}
@@ -392,7 +382,7 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Request Type' : 'نوع الطلب'} *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'Select request type' : 'اختر نوع الطلب'} />
@@ -475,7 +465,7 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Priority' : 'الأولوية'} *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'Select priority' : 'اختر الأولوية'} />
@@ -499,7 +489,7 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Status' : 'الحالة'}</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -587,22 +577,19 @@ export default function TicketForm({
                       </div>
                     </div>
 
-                    {/* Editable Fields - Same structure as create mode but with auto-save */}
+                    {/* Editable Fields */}
                     <div className="space-y-6">
-                      {/* Basic Information Card */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-lg">
-                            {language === 'English' ? 'Basic Information' : 'المعلومات الأساسية'}
+                            {language === 'English' ? 'Ticket Information' : 'معلومات التذكرة'}
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* All fields from create mode with auto-save */}
-                          <div className="col-span-2">
-                            <p className="text-sm text-gray-600">
-                              {language === 'English' ? 'Fields automatically save when you change them' : 'الحقول تحفظ تلقائياً عند تغييرها'}
-                            </p>
+                        <CardContent className="space-y-4">
+                          <div className="text-sm text-gray-600">
+                            {language === 'English' ? 'Click any field to edit. Changes save automatically.' : 'انقر على أي حقل للتعديل. التغييرات تحفظ تلقائياً.'}
                           </div>
+                          {/* All form fields would go here with auto-save */}
                         </CardContent>
                       </Card>
                     </div>
@@ -613,7 +600,7 @@ export default function TicketForm({
               <TabsContent value="comments" className="space-y-4">
                 {/* Comment display and input */}
                 <div className="space-y-4">
-                  {comments.map((comment: any) => (
+                  {comments.map((comment) => (
                     <Card key={comment.id}>
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-3">
@@ -660,7 +647,7 @@ export default function TicketForm({
               <TabsContent value="history" className="space-y-4">
                 {/* History display */}
                 <div className="space-y-3">
-                  {history.map((entry: any) => (
+                  {history.map((entry) => (
                     <Card key={entry.id}>
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-3">
@@ -678,6 +665,15 @@ export default function TicketForm({
                       </CardContent>
                     </Card>
                   ))}
+                  
+                  {history.length === 0 && (
+                    <Card>
+                      <CardContent className="pt-4 text-center text-gray-500">
+                        <History className="h-8 w-8 mx-auto mb-2" />
+                        <p>{language === 'English' ? 'No history yet' : 'لا يوجد تاريخ بعد'}</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </TabsContent>
 
