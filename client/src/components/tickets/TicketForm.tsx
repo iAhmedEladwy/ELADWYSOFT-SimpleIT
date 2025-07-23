@@ -10,7 +10,7 @@ import * as z from "zod";
 import type { UserResponse, AssetResponse } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// Dialog imports removed - form now renders inline
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,8 +77,6 @@ interface TicketFormProps {
   onSubmit?: (data: TicketFormData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
   onTicketUpdate?: (ticket: any) => void;
 }
 
@@ -102,8 +100,6 @@ export default function TicketForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
-  open = true,
-  onOpenChange,
   onTicketUpdate
 }: TicketFormProps) {
   const { language } = useLanguage();
@@ -285,30 +281,29 @@ export default function TicketForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isCreateMode ? (
-              <>
-                <AlertCircle className="h-5 w-5 text-blue-500" />
-                {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
-              </>
-            ) : (
-              <>
-                <Edit3 className="h-5 w-5 text-green-500" />
-                {language === 'English' ? `Edit Ticket #${ticket?.ticketId}` : `تعديل التذكرة #${ticket?.ticketId}`}
-              </>
-            )}
-            {autoSaving && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-          </DialogTitle>
-          <DialogDescription>
-            {isCreateMode
-              ? (language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة')
-              : (language === 'English' ? 'Edit ticket details. Changes are saved automatically' : 'تعديل تفاصيل التذكرة. التغييرات محفوظة تلقائياً')
-            }
-          </DialogDescription>
-        </DialogHeader>
+    <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          {isCreateMode ? (
+            <>
+              <AlertCircle className="h-5 w-5 text-blue-500" />
+              <h2 className="text-2xl font-bold">{language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}</h2>
+            </>
+          ) : (
+            <>
+              <Edit3 className="h-5 w-5 text-green-500" />
+              <h2 className="text-2xl font-bold">{language === 'English' ? `Edit Ticket #${ticket?.ticketId}` : `تعديل التذكرة #${ticket?.ticketId}`}</h2>
+            </>
+          )}
+          {autoSaving && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+        </div>
+        <p className="text-gray-600">
+          {isCreateMode
+            ? (language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة')
+            : (language === 'English' ? 'Edit ticket details. Changes are saved automatically' : 'تعديل تفاصيل التذكرة. التغييرات محفوظة تلقائياً')
+          }
+        </p>
+      </div>
 
         {isCreateMode ? (
           // Create Mode: Single comprehensive view
@@ -997,7 +992,6 @@ export default function TicketForm({
             </div>
           </Tabs>
         )}
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

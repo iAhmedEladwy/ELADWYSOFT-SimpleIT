@@ -391,8 +391,6 @@ export default function Tickets() {
           ticket={selectedTicket}
           mode="edit"
           onCancel={() => setSelectedTicket(null)}
-          open={!!selectedTicket}
-          onOpenChange={(open) => !open && setSelectedTicket(null)}
         />
       )}
     </div>
