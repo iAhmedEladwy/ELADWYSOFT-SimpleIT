@@ -1042,23 +1042,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create employee using storage interface with all required fields
       const employeeData = {
-        name: englishName,
-        email: personalEmail || corporateEmail || `${englishName.toLowerCase().replace(/\s+/g, '.')}@eladwysoft.com`,
-        phone: personalMobile || workMobile || '',
-        department: department,
-        position: title,
-        employeeId: empId,
-        isActive: status === 'Active',
-        // Include all additional fields for complete data storage
+        empId,
         englishName,
         arabicName: arabicName || null,
-        idNumber: idNumber || null,
+        department,
+        idNumber,
         title,
         directManager: directManager || null,
         employmentType: employmentType || 'Full-time',
-        joiningDate: joiningDate || null,
+        joiningDate,
         exitDate: exitDate || null,
-        status,
+        status: status || 'Active',
         personalMobile: personalMobile || null,
         workMobile: workMobile || null,
         personalEmail: personalEmail || null,

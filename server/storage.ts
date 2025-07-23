@@ -622,20 +622,35 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Use direct SQL to bypass schema mapping issues
-      const result = await db.execute(sql`
+      // Use successful direct SQL approach that works with the database
+      const query = `
         INSERT INTO employees (
           emp_id, english_name, arabic_name, department, id_number, title, 
           employment_type, joining_date, status, personal_email, corporate_email,
           created_at, updated_at
         ) VALUES (
-          ${employee.empId}, ${employee.englishName}, ${employee.arabicName || null}, 
-          ${employee.department}, ${employee.idNumber}, ${employee.title},
-          ${employee.employmentType}, ${employee.joiningDate}, ${employee.status},
-          ${employee.personalEmail || null}, ${employee.corporateEmail || null},
-          NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
         ) RETURNING *
-      `);
+      `;
+      
+      const values = [
+        employee.empId,
+        employee.englishName,
+        employee.arabicName || null,
+        employee.department,
+        employee.idNumber,
+        employee.title,
+        employee.employmentType || 'Full-time',
+        employee.joiningDate,
+        employee.status || 'Active',
+        employee.personalEmail || null,
+        employee.corporateEmail || null
+      ];
+      
+      console.log('Creating employee with query:', query);
+      console.log('Values:', values);
+      
+      const result = await pool.query(query, values);
       
       return result.rows[0] as Employee;
     } catch (error) {
