@@ -8,7 +8,7 @@ import {
   tickets, type Ticket, type InsertTicket,
   ticketComments, ticketHistory,
   systemConfig, type SystemConfig, type InsertSystemConfig,
-  activityLog, type ActivityLog, type InsertActivityLog,
+
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
@@ -118,9 +118,7 @@ export interface IStorage {
   updateSystemConfig(config: Partial<InsertSystemConfig>): Promise<SystemConfig | undefined>;
   
   // Activity Log operations
-  logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivity(limit: number): Promise<ActivityLog[]>;
-  getActivityLogs(options: {
     filter?: string;
     action?: string;
     entityType?: string;
@@ -138,7 +136,6 @@ export interface IStorage {
       pageSize: number;
     }
   }>;
-  getActivityLogsCount(options: {
     filter?: string;
     action?: string;
     entityType?: string;
@@ -146,7 +143,6 @@ export interface IStorage {
     startDate?: Date;
     endDate?: Date;
   }): Promise<number>;
-  clearActivityLogs(options?: {
     olderThan?: Date;
     entityType?: string;
     action?: string;
@@ -1228,7 +1224,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activity Log operations
-  async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
     try {
       const [newActivity] = await db
         .insert(activityLog)
@@ -1254,7 +1249,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getActivityLogs(options: {
     page?: number;
     limit?: number;
     filter?: string;
@@ -1393,11 +1387,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   /**
-   * Clear audit logs based on filter criteria
    * @param options Optional filter criteria
-   * @returns Number of deleted audit log entries
    */
-  async clearActivityLogs(options?: {
     olderThan?: Date;
     entityType?: string;
     action?: string;
@@ -1437,7 +1428,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getActivityLogsCount(options: {
     filter?: string;
     action?: string;
     entityType?: string;

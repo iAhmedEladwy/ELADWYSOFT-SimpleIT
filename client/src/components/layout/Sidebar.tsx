@@ -34,7 +34,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
-    AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
+
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
   };
@@ -125,14 +125,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </div>
         </RoleGuard>
         
-        <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
-              <FileText className="h-5 w-5" />
-              <span>{translations.AuditLogs}</span>
-            </Link>
-          </div>
-        </RoleGuard>
+
 
         <div className="transform hover:translate-x-1 transition-transform duration-200">
           <Link href="/profile" className={getLinkClass('/profile')}>

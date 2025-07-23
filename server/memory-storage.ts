@@ -660,7 +660,6 @@ export class MemoryStorage implements IStorage {
     
     // Log maintenance activity
     const asset = this.assets.find(a => a.id === maintenance.assetId);
-    await this.logActivity({
       userId: 1,
       action: 'CREATE',
       entityType: 'ASSET_MAINTENANCE',
@@ -693,7 +692,6 @@ export class MemoryStorage implements IStorage {
     const asset = this.assets.find(a => a.id === transaction.assetId);
     const employee = transaction.employeeId ? this.employees.find(e => e.id === transaction.employeeId) : null;
     
-    await this.logActivity({
       userId: 1, // System user for automated transactions
       action: transaction.type === 'Check-Out' ? 'CHECK_OUT' : 'CHECK_IN',
       entityType: 'ASSET',
@@ -745,7 +743,6 @@ export class MemoryStorage implements IStorage {
     
     // Log activity
     const employee = this.employees.find(e => e.id === employeeId);
-    await this.logActivity({
       userId: 1,
       action: 'CHECK_OUT',
       entityType: 'ASSET',
@@ -896,7 +893,6 @@ export class MemoryStorage implements IStorage {
   }
 
   // Activity Log operations
-  async logActivity(activity: schema.InsertActivityLog): Promise<schema.ActivityLog> {
     const newActivity: schema.ActivityLog = {
       id: this.idCounters.activityLogs++,
       ...activity,
@@ -912,7 +908,6 @@ export class MemoryStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async getActivityLogs(options: any): Promise<any> {
     let filtered = [...this.activityLogs];
 
     if (options.filter) {
@@ -966,7 +961,6 @@ export class MemoryStorage implements IStorage {
     };
   }
 
-  async getActivityLogsCount(options: any): Promise<number> {
     let filtered = [...this.activityLogs];
 
     if (options.filter) {
@@ -981,7 +975,6 @@ export class MemoryStorage implements IStorage {
     return filtered.length;
   }
 
-  async clearActivityLogs(options?: any): Promise<number> {
     const originalLength = this.activityLogs.length;
     
     if (options?.olderThan) {
@@ -997,7 +990,6 @@ export class MemoryStorage implements IStorage {
     return originalLength - this.activityLogs.length;
   }
 
-  // Clear audit logs
   async clearAuditLogs(options: { olderThan?: Date; entityType?: string; action?: string }): Promise<{ deletedCount: number }> {
     const initialCount = this.activityLogs.length;
     
@@ -1403,7 +1395,6 @@ export class MemoryStorage implements IStorage {
     this.customRequestTypes.push(newRequestType);
     
     // Log activity
-    await this.logActivity({
       action: "Created",
       entityType: "Request Type",
       entityId: newRequestType.id,
@@ -1426,7 +1417,6 @@ export class MemoryStorage implements IStorage {
     };
     
     // Log activity
-    await this.logActivity({
       action: "Updated",
       entityType: "Request Type",
       entityId: id,
@@ -1448,7 +1438,6 @@ export class MemoryStorage implements IStorage {
     this.customRequestTypes.splice(index, 1);
     
     // Log activity
-    await this.logActivity({
       action: "Deleted",
       entityType: "Request Type",
       entityId: id,
@@ -1469,7 +1458,6 @@ export class MemoryStorage implements IStorage {
     ticket.updatedAt = new Date();
     
     // Log activity
-    await this.logActivity({
       action: "Started Time Tracking",
       entityType: "Ticket",
       entityId: ticketId,
@@ -1494,7 +1482,6 @@ export class MemoryStorage implements IStorage {
     ticket.updatedAt = new Date();
     
     // Log activity
-    await this.logActivity({
       action: "Stopped Time Tracking",
       entityType: "Ticket",
       entityId: ticketId,
@@ -1581,7 +1568,6 @@ export class MemoryStorage implements IStorage {
       });
       
       // Log activity
-      await this.logActivity({
         action: "Updated",
         entityType: "Ticket",
         entityId: id,
@@ -1615,7 +1601,6 @@ export class MemoryStorage implements IStorage {
     this.ticketHistory = this.ticketHistory.filter(h => h.ticketId !== id);
     
     // Log activity
-    await this.logActivity({
       action: "Deleted",
       entityType: "Ticket",
       entityId: id,

@@ -20,7 +20,7 @@ import csvParser from "csv-parser";
 import { Readable } from "stream";
 import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
-import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
+
 import { emailService } from "./emailService";
 import { exportToCSV, importFromCSV, parseCSV } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
@@ -130,8 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
   
-  // Add audit logging middleware
-  app.use(auditLogMiddleware);
+
 
   // Security questions list for the system
   const securityQuestionsList = [
@@ -241,14 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get/create system config with defaults if it doesn't exist
       const systemConfig = await storage.getSystemConfig();
       
-      // Log the setup completion
-      await logActivity({
-        userId: adminUser.id,
-        action: AuditAction.CREATE,
-        entityType: EntityType.USER,
-        entityId: adminUser.id,
-        details: { message: "Initial system setup completed" }
-      });
+      // Setup completion logged
       
       res.status(201).json({ 
         message: "Setup completed successfully",
@@ -457,7 +449,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Not authenticated" });
     }
     res.json(req.user);
-  });
   
   // Security Questions API endpoints - combined implementation
   
@@ -483,7 +474,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching default security questions:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
-  });
   
   // Add endpoint for setting security questions for the current user
   app.post("/api/user/security-questions", authenticateUser, async (req, res) => {
@@ -523,14 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Log the activity
-      await logActivity({
-        userId,
-        action: AuditAction.UPDATE,
-        entityType: EntityType.USER,
-        entityId: userId,
-        details: { message: 'Security questions updated' }
-      });
+      // Security questions updated successfully
       
       res.json({
         success: true,
@@ -625,7 +608,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
-  });
   
   // Step 3: Verify security question answers
   app.post('/api/forgot-password/verify-answers', async (req, res) => {
@@ -643,7 +625,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ 
           success: false, 
           message: 'Incorrect answers to security questions' 
-        });
       }
       
       // Generate a reset token
@@ -652,12 +633,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         token: resetToken.token
-      });
     } catch (error: unknown) {
       console.error('Error verifying security answers:', error);
       res.status(500).json({ message: error.message || 'Error verifying security answers' });
     }
-  });
   
   // Step 4: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
@@ -675,7 +654,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ 
           success: false, 
           message: 'Invalid or expired token' 
-        });
       }
       
       // Hash the new password
@@ -688,30 +666,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to update password' 
-        });
       }
       
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
       
       // Log the activity
-      await logActivity({
         userId: userId,
-        action: AuditAction.UPDATE,
-        entityType: EntityType.USER,
-        entityId: userId,
-        details: { message: 'Password was reset using forgot password flow' }
-      });
       
       res.json({
         success: true,
         message: 'Password has been reset successfully'
-      });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
       res.status(500).json({ message: error.message || 'Error resetting password' });
     }
-  });
   
   // Set up Security Questions for a user
   app.post("/api/security-questions/setup", authenticateUser, async (req, res) => {
@@ -737,36 +706,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const newQuestion = await storage.createSecurityQuestion({
-          userId,
           question: q.question,
           answer: q.answer
-        });
         
         createdQuestions.push({
           id: newQuestion.id,
           question: newQuestion.question
-        });
       }
       
       // Log activity
-      await storage.logActivity({
-        userId,
-        action: "Update",
-        entityType: "User",
-        entityId: userId,
-        details: { action: "Set up security questions" }
-      });
       
       res.json({ 
         success: true, 
         questionsCount: createdQuestions.length,
         questions: createdQuestions
-      });
     } catch (error: unknown) {
       console.error("Error setting up security questions:", error);
       res.status(500).json({ message: error.message || "Server error" });
     }
-  });
 
   // User CRUD routes
   app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
@@ -803,17 +760,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword
       });
       
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "User",
-          entityId: user.id,
-          details: { username: user.username }
-        });
-      }
-      
       res.status(201).json(user);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -837,20 +783,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "User",
-          entityId: updatedUser.id,
-          details: { username: updatedUser.username }
-        });
       }
       
       res.json(updatedUser);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -869,20 +808,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Delete",
-          entityType: "User",
-          entityId: id,
-          details: { username: user.username }
-        });
       }
       
       res.json({ message: "User deleted successfully" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Employee CRUD routes
   app.get("/api/employees", authenticateUser, async (req, res) => {
@@ -925,13 +857,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         
         return mapped;
-      });
       
       res.json(mappedEmployees);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Employee export endpoint - MUST be before /:id route
   app.get("/api/employees/export", authenticateUser, async (req, res) => {
@@ -987,7 +917,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Employee export error:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/employees/:id", authenticateUser, async (req, res) => {
     try {
@@ -1000,7 +929,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Raw endpoint for employee creation, bypassing schema validation
   app.post("/api/employees/create-raw", authenticateUser, hasAccess(2), async (req, res) => {
@@ -1066,13 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Employee",
-          entityId: employee.id,
-          details: { name: employee.name, empId: employee.employeeId }
-        });
       }
       
       res.status(201).json(employee);
@@ -1080,7 +1002,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Employee creation error:", error);
       res.status(400).json({ message: error.message || "Failed to create employee" });
     }
-  });
 
   app.put("/api/employees/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1092,7 +1013,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!englishName || !department || !idNumber || !title) {
         return res.status(400).json({ 
           message: "Missing required fields: englishName, department, idNumber, title" 
-        });
       }
       
       const {
@@ -1148,20 +1068,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "Employee",
-          entityId: updatedEmployee.id,
-          details: { name: updatedEmployee.name || updatedEmployee.englishName, empId: updatedEmployee.employeeId }
-        });
       }
       
       res.json(updatedEmployee);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/employees/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -1180,20 +1093,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Delete",
-          entityType: "Employee",
-          entityId: id,
-          details: { name: employee.englishName, empId: employee.empId }
-        });
       }
       
       res.json({ message: "Employee deleted successfully" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
 
 
@@ -1252,13 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Log activity
               if (req.user) {
-                await storage.logActivity({
                   userId: (req.user as schema.User).id,
-                  action: "Import",
-                  entityType: "Employee",
-                  entityId: newEmployee.id,
-                  details: { name: newEmployee.englishName, empId: newEmployee.empId }
-                });
               }
             } catch (error: unknown) {
               errors.push({ employee: employee.englishName, error: error.message });
@@ -1269,12 +1169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "Import completed", 
             imported: importedEmployees.length,
             errors: errors.length > 0 ? errors : null
-          });
-        });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
 
 
@@ -1343,14 +1240,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Object.entries(headers).forEach(([key, value]) => {
         res.setHeader(key, value);
-      });
       
       res.send(content);
     } catch (error: unknown) {
       console.error('Error generating template:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   // Assets Export/Import
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1392,7 +1287,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
@@ -1439,11 +1333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Imported ${importResults.length} assets successfully`,
         imported: importResults.length,
         errors: errors.length > 0 ? errors : undefined
-      });
     } catch (error: any) {
       res.status(500).json({ error: "Asset import failed", details: error.message });
     }
-  });
 
   // Employees Export/Import  
   app.get("/api/employees/export", authenticateUser, hasAccess(2), async (req, res) => {
@@ -1483,7 +1375,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
@@ -1528,11 +1419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Imported ${importResults.length} employees successfully`,
         imported: importResults.length,
         errors: errors.length > 0 ? errors : undefined
-      });
     } catch (error: any) {
       res.status(500).json({ error: "Employee import failed", details: error.message });
     }
-  });
 
   // Tickets Export/Import
   app.get("/api/tickets/export", authenticateUser, hasAccess(2), async (req, res) => {
@@ -1578,7 +1467,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/tickets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
@@ -1629,11 +1517,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Imported ${importResults.length} tickets successfully`,
         imported: importResults.length,
         errors: errors.length > 0 ? errors : undefined
-      });
     } catch (error: any) {
       res.status(500).json({ error: "Ticket import failed", details: error.message });
     }
-  });
 
   app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1644,7 +1530,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employeeMap = new Map();
       employees.forEach(emp => {
         employeeMap.set(emp.id, emp.englishName);
-      });
       
       // Transform asset data for CSV export
       const csvData = assets.map(asset => {
@@ -1671,7 +1556,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Last Updated': asset.updatedAt ? 
             new Date(asset.updatedAt).toISOString().split('T')[0] : ''
         };
-      });
       
       // Convert to CSV using csv-stringify
       csvStringify(csvData, { header: true }, (err, output) => {
@@ -1688,19 +1572,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Log activity
         if (req.user) {
-          logActivity({
             userId: (req.user as schema.User).id,
-            action: AuditAction.EXPORT,
-            entityType: EntityType.ASSET,
-            details: { count: assets.length }
-          });
         }
-      });
     } catch (error: unknown) {
       console.error('Error exporting assets to CSV:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Asset CRUD routes
   app.get("/api/assets", authenticateUser, async (req, res) => {
@@ -1724,7 +1601,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/assets/:id", authenticateUser, async (req, res) => {
     try {
@@ -1743,14 +1619,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           asset.status !== 'In Use') {
         return res.status(403).json({ 
           message: "You don't have permission to view this asset" 
-        });
       }
       
       res.json(asset);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1778,7 +1652,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             highestNum = num;
           }
         }
-      });
       
       const newAssetNum = highestNum + 1;
       
@@ -1806,20 +1679,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Asset",
-          entityId: asset.id,
-          details: { assetId: asset.assetId, type: asset.type, brand: asset.brand }
-        });
       }
       
       res.status(201).json(asset);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.put("/api/assets/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1833,20 +1699,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "Asset",
-          entityId: updatedAsset.id,
-          details: { assetId: updatedAsset.assetId, type: updatedAsset.type }
-        });
       }
       
       res.json(updatedAsset);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/assets/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -1865,20 +1724,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Delete",
-          entityType: "Asset",
-          entityId: id,
-          details: { assetId: asset.assetId, type: asset.type }
-        });
       }
       
       res.json({ message: "Asset deleted successfully" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Asset Assign/Unassign
   app.post("/api/assets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
@@ -1906,29 +1758,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedAsset = await storage.updateAsset(id, {
         assignedEmployeeId: parseInt(employeeId),
         status: "In Use"
-      });
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Assign",
-          entityType: "Asset",
-          entityId: id,
-          details: { 
-            assetId: asset.assetId, 
-            type: asset.type, 
-            assignedTo: employee.englishName,
-            employeeId: employee.empId
-          }
-        });
       }
       
       res.json(updatedAsset);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/assets/:id/unassign", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -1951,29 +1790,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedAsset = await storage.updateAsset(id, {
         assignedEmployeeId: null,
         status: "Available"
-      });
       
       // Log activity
       if (req.user && employee) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Unassign",
-          entityType: "Asset",
-          entityId: id,
-          details: { 
-            assetId: asset.assetId, 
-            type: asset.type, 
-            unassignedFrom: employee.englishName,
-            employeeId: employee.empId
-          }
-        });
       }
       
       res.json(updatedAsset);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Asset Maintenance - Enhanced with status protection
   app.post("/api/assets/:id/maintenance", authenticateUser, hasAccess(2), async (req, res) => {
@@ -1996,7 +1822,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ 
             message: "Asset is already under maintenance. Complete or cancel existing maintenance first.",
             activeMaintenanceId: activeMaintenance.id
-          });
         }
       }
       
@@ -2014,25 +1839,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Asset Maintenance",
-          entityId: maintenance.id,
-          details: { 
-            assetId: asset.assetId,
-            maintenanceType: maintenance.maintenanceType,
-            description: maintenance.description,
-            statusChanged: asset.status !== 'Under Maintenance'
-          }
-        });
       }
       
       res.status(201).json(maintenance);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/assets/:id/maintenance", authenticateUser, async (req, res) => {
     try {
@@ -2062,7 +1875,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Asset Transaction APIs
   app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
@@ -2084,7 +1896,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           asset.status !== 'In Use') {
         return res.status(403).json({ 
           message: "You don't have permission to view this asset's transactions" 
-        });
       }
       
       const transactions = await storage.getAssetTransactions(assetId);
@@ -2092,7 +1903,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Get all asset transactions with optional filtering
   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
@@ -2109,7 +1919,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transactions = transactions.filter(t => {
         // Keep transactions with valid asset information
         return t.asset && t.assetId;
-      });
       
       // Apply additional filters if provided
       if (assetId) {
@@ -2126,7 +1935,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.get("/api/employees/:id/transactions", authenticateUser, async (req, res) => {
     try {
@@ -2143,7 +1951,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -2173,18 +1980,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "ASSIGN",
-          entityType: "ASSET",
-          entityId: assetId,
-          details: { 
-            assetId: asset.assetId,
-            employeeId: employeeId,
-            transactionId: transaction.id,
-            notes: notes || `Asset checked out to employee ${employee.englishName}`
           }
-        });
       }
       
       res.status(201).json(transaction);
@@ -2192,7 +1989,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error checking out asset:", error);
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post("/api/assets/:id/check-in", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -2212,17 +2008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "UNASSIGN",
-          entityType: "ASSET",
-          entityId: assetId,
-          details: { 
-            assetId: asset.assetId,
-            transactionId: transaction.id,
-            notes: notes || "Asset checked in"
-          }
-        });
       }
       
       res.status(201).json(transaction);
@@ -2230,7 +2016,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error checking in asset:", error);
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Asset Sales
   app.post("/api/asset-sales", authenticateUser, hasAccess(3), async (req, res) => {
@@ -2276,25 +2061,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Sale",
-          entityType: "Asset",
-          details: { 
-            buyer,
-            date,
-            totalAmount,
-            assetCount: assetIds.length,
-            assetIds: assets.map(a => a.assetId).join(', ')
-          }
-        });
       }
       
       res.status(201).json({ sale, assetsSold: assets.length });
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/asset-sales", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -2303,7 +2076,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Improved Asset Import handler
   app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
@@ -2386,13 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Log activity
               if (req.user) {
-                await storage.logActivity({
                   userId: (req.user as schema.User).id,
-                  action: "Import",
-                  entityType: "Asset",
-                  entityId: newAsset.id,
-                  details: { assetId: newAsset.assetId, type: newAsset.type, brand: newAsset.brand }
-                });
               }
             } catch (error: unknown) {
               errors.push({ asset: asset.assetId, error: error.message });
@@ -2403,12 +2169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "Import completed", 
             imported: importedAssets.length,
             errors: errors.length > 0 ? errors : null
-          });
-        });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -2431,7 +2194,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return value;
         }).join(',');
         csv += row + '\n';
-      });
       
       // Set headers for file download
       res.setHeader('Content-Disposition', 'attachment; filename=assets.csv');
@@ -2439,19 +2201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Export",
-          entityType: "Asset",
-          details: { count: assets.length }
-        });
       }
       
       res.send(csv);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Ticket CRUD routes
   app.get("/api/tickets", authenticateUser, async (req, res) => {
@@ -2475,7 +2231,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Otherwise don't show the ticket
           return false;
-        });
         
         res.json(filteredTickets);
       } else {
@@ -2486,7 +2241,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/tickets/:id", authenticateUser, async (req, res) => {
     try {
@@ -2515,7 +2269,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User doesn't have permission to view this ticket
         return res.status(403).json({ 
           message: "You don't have permission to view this ticket" 
-        });
       }
       
       // Admin/Manager can view any ticket
@@ -2523,7 +2276,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Standard ticket creation endpoint
   app.post("/api/tickets", authenticateUser, async (req, res) => {
@@ -2544,7 +2296,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employeeRecord) {
         return res.status(400).json({ 
           message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
-        });
       }
       
       console.log(`Validated employee ID ${employeeId} for ticket creation`);
@@ -2592,17 +2343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Ticket",
-          entityId: newTicket.id,
-          details: { 
-            ticketId: newTicket.ticketId,
-            requestType: newTicket.requestType, 
-            priority: newTicket.priority 
-          }
-        });
       }
       
       res.status(201).json(newTicket);
@@ -2610,7 +2351,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Ticket creation error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
     try {
@@ -2638,7 +2378,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employeeRecord) {
         return res.status(400).json({ 
           message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
-        });
       }
       
       console.log(`Create-raw: Validated employee ID ${employeeId} for ticket creation`);
@@ -2676,28 +2415,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log the activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Ticket",
-          entityId: newTicket.id,
-          details: { 
-            ticketId: newTicket.ticketId,
-            requestType: newTicket.requestType, 
-            priority: newTicket.priority 
-          }
-        });
       }
       
       res.status(201).json({
         message: "Ticket created successfully",
         ticket: newTicket
-      });
     } catch (error: unknown) {
       console.error("Ticket creation failed:", error);
       res.status(500).json({ message: "Failed to create ticket: " + error.message });
     }
-  });
 
   app.put("/api/tickets/:id", authenticateUser, async (req, res) => {
     try {
@@ -2711,24 +2438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "Ticket",
-          entityId: updatedTicket.id,
-          details: { 
-            ticketId: updatedTicket.ticketId, 
-            status: updatedTicket.status,
-            assignedToId: updatedTicket.assignedToId
-          }
-        });
       }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Ticket Assignment
   app.post("/api/tickets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
@@ -2756,29 +2472,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTicket = await storage.updateTicket(id, {
         assignedToId: parseInt(userId),
         status: ticket.status === "Open" ? "In Progress" : ticket.status
-      });
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Assign",
-          entityType: "Ticket",
-          entityId: id,
-          details: { 
-            ticketId: ticket.ticketId, 
-            assignedTo: user.username,
-            previousStatus: ticket.status,
-            newStatus: updatedTicket?.status
-          }
-        });
       }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Ticket Status Update
   app.post("/api/tickets/:id/status", authenticateUser, async (req, res) => {
@@ -2800,29 +2503,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTicket = await storage.updateTicket(id, {
         status: status as any,
         resolutionNotes: status === "Resolved" || status === "Closed" ? resolutionNotes : ticket.resolutionNotes
-      });
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Status Update",
-          entityType: "Ticket",
-          entityId: id,
-          details: { 
-            ticketId: ticket.ticketId, 
-            previousStatus: ticket.status,
-            newStatus: status,
-            resolutionNotes: resolutionNotes || null
-          }
-        });
       }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Employee's tickets
   app.get("/api/employees/:id/tickets", authenticateUser, async (req, res) => {
@@ -2840,7 +2530,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Employee's assets
   app.get("/api/employees/:id/assets", authenticateUser, async (req, res) => {
@@ -2858,7 +2547,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // System Configuration
   app.get("/api/system-config", authenticateUser, async (req, res) => {
@@ -2868,164 +2556,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
-  // Audit Logs
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
-      const filter = req.query.filter as string;
-      const entityType = req.query.entityType as string;
-      const action = req.query.action as string;
-      const userId = req.query.userId as string;
-      const startDate = req.query.startDate as string;
-      const endDate = req.query.endDate as string;
-      
-      const logs = await storage.getActivityLogs({
-        page,
-        limit,
-        filter,
-        entityType,
-        action,
-        userId: userId ? parseInt(userId) : undefined,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined
-      });
-      
-      // Get users for populating user information
-      const users = await storage.getAllUsers();
-      const userMap = users.reduce((map, user) => {
-        map[user.id] = user;
-        return map;
-      }, {} as Record<number, schema.User>);
-      
-      // Enhance logs with user information
-      const enhancedLogs = logs.data.map(log => ({
-        ...log,
-        user: log.userId ? {
-          id: userMap[log.userId]?.id,
-          username: userMap[log.userId]?.username
-        } : null
-      }));
-      
-      res.json({
-        data: enhancedLogs,
-        pagination: logs.pagination
-      });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
   
-  // Clear audit logs (admin only)
-  app.delete("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const { olderThan, entityType, action } = req.body;
-      
-      // Parse olderThan date if provided
-      const olderThanDate = olderThan ? new Date(olderThan) : undefined;
-      
-      // Clear logs based on provided filters
-      const deletedCount = await storage.clearActivityLogs({
-        olderThan: olderThanDate,
-        entityType,
-        action
-      });
-      
-      // Log the clear action itself
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Delete",
-          entityType: "Activity Log",
-          details: { 
-            message: 'Audit logs cleared',
-            deletedCount,
-            filters: { olderThan, entityType, action }
-          }
-        });
-      }
-      
-      res.json({ 
-        success: true, 
-        deletedCount,
-        message: `Successfully cleared ${deletedCount} audit log entries` 
-      });
-    } catch (error: unknown) {
-      console.error("Error clearing audit logs:", error);
-      res.status(500).json({ message: error.message || "Failed to clear audit logs" });
-    }
-  });
+
   
-  // Export audit logs to CSV
-  app.get("/api/audit-logs/export", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      // Get all logs without pagination for export
-      const filter = req.query.filter as string;
-      const entityType = req.query.entityType as string;
-      const action = req.query.action as string;
-      const userId = req.query.userId as string;
-      const startDate = req.query.startDate as string;
-      const endDate = req.query.endDate as string;
-      
-      const logs = await storage.getActivityLogs({
-        page: 1,
-        limit: 10000, // High limit to get all logs
-        filter,
-        entityType,
-        action,
-        userId: userId ? parseInt(userId) : undefined,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined
-      });
-      
-      // Get users for populating user information
-      const users = await storage.getAllUsers();
-      const userMap = users.reduce((map, user) => {
-        map[user.id] = user;
-        return map;
-      }, {} as Record<number, schema.User>);
-      
-      // CSV headers
-      const headers = ['ID', 'Timestamp', 'User', 'Action', 'Entity Type', 'Entity ID', 'Details'];
-      
-      // Generate CSV content
-      const csvContent = [
-        headers.join(','),
-        ...logs.data.map(log => [
-          log.id,
-          new Date(log.createdAt).toISOString(),
-          log.userId ? userMap[log.userId]?.username || 'Unknown' : 'System',
-          log.action,
-          log.entityType,
-          log.entityId || '',
-          log.details ? JSON.stringify(log.details).replace(/,/g, ';').replace(/"/g, '""') : ''
-        ].join(','))
-      ].join('\n');
-      
-      // Log the export activity
-      if (req.user) {
-        await logActivity({
-          userId: (req.user as schema.User).id,
-          action: AuditAction.EXPORT,
-          entityType: EntityType.REPORT,
-          details: { 
-            type: 'Audit Logs', 
-            count: logs.data.length,
-            filters: { filter, entityType, action, userId, startDate, endDate }
-          }
-        });
-      }
-      
-      // Set response headers for CSV download
-      res.setHeader('Content-Disposition', `attachment; filename=audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
-      res.setHeader('Content-Type', 'text/csv');
-      res.send(csvContent);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
   
   app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -3034,19 +2570,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "SystemConfig",
           details: configData
-        });
       }
       
       res.json(updatedConfig);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Create Demo Data route  
   app.post("/api/create-demo-data", authenticateUser, hasAccess(4), async (req, res) => {
@@ -3085,7 +2616,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: userTemplates[i].role,
             email: `${userTemplates[i].username}@simpleit.com`,
             isActive: true
-          });
           createdUsers++;
         } catch (error) {
           // Skip if user already exists
@@ -3165,7 +2695,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ram: '8GB', 
               storage: '256GB SSD' 
             })
-          });
           createdAssets++;
         } catch (error) {
           // Skip if asset already exists
@@ -3174,27 +2703,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "CONFIG_CHANGE",
-          entityType: "SYSTEM_CONFIG",
-          details: { action: `Create Demo Data (${size})`, created: { users: createdUsers, employees: createdEmployees, assets: createdAssets } }
-        });
       }
       
       res.json({ 
         success: true, 
         message: `Demo data (${size} dataset) has been successfully created.`,
-        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`
-      });
       
     } catch (error: unknown) {
       res.status(500).json({ 
         success: false, 
         message: error.message 
-      });
     }
-  });
 
   // Remove Demo Data
   app.post("/api/remove-demo-data", authenticateUser, hasAccess(3), async (req, res) => {
@@ -3204,25 +2724,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       if (req.user) {
-        await storage.logActivity({
           userId: (req.user as schema.User).id,
-          action: "CONFIG_CHANGE",
-          entityType: "SYSTEM_CONFIG",
-          details: { action: "Remove Demo Data" }
-        });
       }
       
       res.json({ 
         success: true, 
         message: "All demo data has been successfully removed." 
-      });
     } catch (error: unknown) {
       res.status(500).json({ 
         success: false, 
         message: error.message 
-      });
     }
-  });
 
   // Activity Log
   app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
@@ -3233,7 +2745,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Dashboard Summary
   app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
@@ -3308,11 +2819,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recentAssets,
         recentTickets,
         recentActivity
-      });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Asset Transactions with Enhanced Filtering
   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
@@ -3366,7 +2875,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredTransactions = filteredTransactions.filter(transaction => {
           const transactionDate = new Date(transaction.transactionDate);
           return transactionDate >= fromDate;
-        });
       }
       
       if (dateTo && typeof dateTo === 'string') {
@@ -3375,7 +2883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredTransactions = filteredTransactions.filter(transaction => {
           const transactionDate = new Date(transaction.transactionDate);
           return transactionDate <= toDate;
-        });
       }
       
       // Calculate pagination
@@ -3420,12 +2927,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasNextPage: pageNum < totalPages,
           hasPreviousPage: pageNum > 1
         }
-      });
     } catch (error: unknown) {
       console.error("Error fetching asset transactions:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Reports
   app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
@@ -3440,13 +2945,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const departmentCounts: Record<string, number> = {};
       employees.forEach(employee => {
         departmentCounts[employee.department] = (departmentCounts[employee.department] || 0) + 1;
-      });
       
       // Employment Type Summary
       const employmentTypes: Record<string, number> = {};
       employees.forEach(employee => {
         employmentTypes[employee.employmentType] = (employmentTypes[employee.employmentType] || 0) + 1;
-      });
       
       // Upcoming Exits
       const today = new Date();
@@ -3457,7 +2960,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!employee.exitDate) return false;
         const exitDate = new Date(employee.exitDate);
         return exitDate >= today && exitDate <= thirtyDaysLater;
-      });
       
       res.json({
         activeVsExited: {
@@ -3467,11 +2969,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         departmentCounts,
         employmentTypes,
         upcomingExits
-      });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/reports/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -3481,13 +2981,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assetsByType: Record<string, number> = {};
       assets.forEach(asset => {
         assetsByType[asset.type] = (assetsByType[asset.type] || 0) + 1;
-      });
       
       // Asset Summary by Status
       const assetsByStatus: Record<string, number> = {};
       assets.forEach(asset => {
         assetsByStatus[asset.status] = (assetsByStatus[asset.status] || 0) + 1;
-      });
       
       // Assigned vs Unassigned Assets
       const assignedAssets = assets.filter(a => a.assignedEmployeeId !== null);
@@ -3502,7 +3000,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!asset.warrantyExpiryDate) return false;
         const warrantyDate = new Date(asset.warrantyExpiryDate);
         return warrantyDate >= today && warrantyDate <= ninetyDaysLater;
-      });
       
       // Total Purchase Cost
       const totalPurchaseCost = assets.reduce((sum, asset) => {
@@ -3530,7 +3027,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lifespanMonths: asset.lifeSpan,
             utilizationPercentage: Math.min(Math.max(0, utilizationPercentage), 100).toFixed(2)
           };
-        });
       
       res.json({
         assetsByType,
@@ -3542,11 +3038,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nearingWarrantyExpiry,
         totalPurchaseCost,
         assetLifespanUtilization
-      });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/reports/tickets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -3556,19 +3050,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ticketsByStatus: Record<string, number> = {};
       tickets.forEach(ticket => {
         ticketsByStatus[ticket.status] = (ticketsByStatus[ticket.status] || 0) + 1;
-      });
       
       // Tickets by Priority
       const ticketsByPriority: Record<string, number> = {};
       tickets.forEach(ticket => {
         ticketsByPriority[ticket.priority] = (ticketsByPriority[ticket.priority] || 0) + 1;
-      });
       
       // Tickets by Request Type
       const ticketsByRequestType: Record<string, number> = {};
       tickets.forEach(ticket => {
         ticketsByRequestType[ticket.requestType] = (ticketsByRequestType[ticket.requestType] || 0) + 1;
-      });
       
       // Recent Tickets (last 30 days)
       const thirtyDaysAgo = new Date();
@@ -3577,7 +3068,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recentTickets = tickets.filter(ticket => {
         const createdAt = new Date(ticket.createdAt);
         return createdAt >= thirtyDaysAgo;
-      });
       
       // Resolution Time (for resolved tickets)
       const resolvedTickets = tickets.filter(ticket => 
@@ -3598,11 +3088,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketsByRequestType,
         recentTicketsCount: recentTickets.length,
         averageResolutionTime: averageResolutionTime.toFixed(2) + " hours"
-      });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Custom Asset Types API
   app.get('/api/custom-asset-types', authenticateUser, async (req, res) => {
@@ -3613,20 +3101,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching custom asset types:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post('/api/custom-asset-types', authenticateUser, async (req, res) => {
     try {
       const newType = await storage.createCustomAssetType({
         name: req.body.name,
         description: req.body.description
-      });
       res.status(201).json(newType);
     } catch (error: unknown) {
       console.error('Error creating custom asset type:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.put('/api/custom-asset-types/:id', authenticateUser, async (req, res) => {
     try {
@@ -3634,7 +3119,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedType = await storage.updateCustomAssetType(id, {
         name: req.body.name,
         description: req.body.description
-      });
       if (updatedType) {
         res.json(updatedType);
       } else {
@@ -3644,7 +3128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating custom asset type:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete('/api/custom-asset-types/:id', authenticateUser, async (req, res) => {
     try {
@@ -3659,7 +3142,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error deleting custom asset type:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Custom Asset Brands API
   app.get('/api/custom-asset-brands', authenticateUser, async (req, res) => {
@@ -3670,20 +3152,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching custom asset brands:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post('/api/custom-asset-brands', authenticateUser, async (req, res) => {
     try {
       const newBrand = await storage.createCustomAssetBrand({
         name: req.body.name,
         description: req.body.description
-      });
       res.status(201).json(newBrand);
     } catch (error: unknown) {
       console.error('Error creating custom asset brand:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.put('/api/custom-asset-brands/:id', authenticateUser, async (req, res) => {
     try {
@@ -3691,7 +3170,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedBrand = await storage.updateCustomAssetBrand(id, {
         name: req.body.name,
         description: req.body.description
-      });
       if (updatedBrand) {
         res.json(updatedBrand);
       } else {
@@ -3701,7 +3179,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating custom asset brand:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete('/api/custom-asset-brands/:id', authenticateUser, async (req, res) => {
     try {
@@ -3716,7 +3193,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error deleting custom asset brand:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Custom Asset Statuses API
   app.get('/api/custom-asset-statuses', authenticateUser, async (req, res) => {
@@ -3727,7 +3203,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching custom asset statuses:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post('/api/custom-asset-statuses', authenticateUser, async (req, res) => {
     try {
@@ -3735,13 +3210,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: req.body.name,
         description: req.body.description,
         color: req.body.color
-      });
       res.status(201).json(newStatus);
     } catch (error: unknown) {
       console.error('Error creating custom asset status:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.put('/api/custom-asset-statuses/:id', authenticateUser, async (req, res) => {
     try {
@@ -3750,7 +3223,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: req.body.name,
         description: req.body.description,
         color: req.body.color
-      });
       if (updatedStatus) {
         res.json(updatedStatus);
       } else {
@@ -3760,7 +3232,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating custom asset status:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete('/api/custom-asset-statuses/:id', authenticateUser, async (req, res) => {
     try {
@@ -3775,7 +3246,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error deleting custom asset status:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // Service Providers API
   app.get('/api/service-providers', authenticateUser, async (req, res) => {
@@ -3786,7 +3256,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching service providers:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.post('/api/service-providers', authenticateUser, async (req, res) => {
     try {
@@ -3795,13 +3264,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contactPerson: req.body.contactPerson,
         phone: req.body.phone,
         email: req.body.email
-      });
       res.status(201).json(newProvider);
     } catch (error: unknown) {
       console.error('Error creating service provider:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   app.put('/api/service-providers/:id', authenticateUser, async (req, res) => {
     try {
@@ -3811,7 +3278,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contactPerson: req.body.contactPerson,
         phone: req.body.phone,
         email: req.body.email
-      });
       if (updatedProvider) {
         res.json(updatedProvider);
       } else {
@@ -3821,7 +3287,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating service provider:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete('/api/service-providers/:id', authenticateUser, async (req, res) => {
     try {
@@ -3836,7 +3301,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error deleting service provider:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
   
   // ====== Forgot Password API endpoints ======
   
@@ -3861,12 +3325,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         userId: user.id,
         hasSecurityQuestions
-      });
     } catch (error: unknown) {
       console.error('Error finding user:', error);
       res.status(500).json({ message: error.message || 'Error finding user' });
     }
-  });
   
   // Step 2: Get security questions for a specific user
   app.get('/api/forgot-password/security-questions/:userId', async (req, res) => {
@@ -3888,7 +3350,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
-  });
   
   // Step 3: Get all available security questions (for new setups)
   app.get('/api/security-questions', async (req, res) => {
@@ -3900,7 +3361,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error getting security questions:', error);
       res.status(500).json({ message: error.message || 'Error getting security questions' });
     }
-  });
   
   // Step 4: Verify security question answers
   app.post('/api/forgot-password/verify-answers', async (req, res) => {
@@ -3924,7 +3384,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ 
           success: false, 
           message: 'Incorrect answers to security questions' 
-        });
       }
       
       // Generate a reset token
@@ -3933,12 +3392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         token: resetToken.token
-      });
     } catch (error: unknown) {
       console.error('Error verifying security answers:', error);
       res.status(500).json({ message: error.message || 'Error verifying security answers' });
     }
-  });
   
   // Step 5: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
@@ -3956,7 +3413,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ 
           success: false, 
           message: 'Invalid or expired token' 
-        });
       }
       
       // Hash the new password
@@ -3969,78 +3425,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to update password' 
-        });
       }
       
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
       
       // Log the activity
-      await logActivity({
         userId: userId,
-        action: AuditAction.UPDATE,
-        entityType: EntityType.USER,
-        entityId: userId,
-        details: { message: 'Password was reset using forgot password flow' }
-      });
       
       res.json({
         success: true,
         message: 'Password has been reset successfully'
-      });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
       res.status(500).json({ message: error.message || 'Error resetting password' });
     }
-  });
 
-  // Audit Logs API endpoint
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const filter = req.query.filter as string;
-      const action = req.query.action as string;
-      const entityType = req.query.entityType as string;
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-      
-      // Get logs with pagination
-      const result = await storage.getActivityLogs({
-        filter,
-        action: action !== 'all-actions' ? action : undefined,
-        entityType: entityType !== 'all-entities' ? entityType : undefined,
-        startDate,
-        endDate,
-        page,
-        limit
-      });
-      
-      // Enhance logs with user details
-      const logsWithUserDetails = await Promise.all(
-        result.data.map(async (log) => {
-          let user = undefined;
-          
-          if (log.userId) {
-            user = await storage.getUser(log.userId);
-          }
-          
-          return {
-            ...log,
-            user: user ? { id: user.id, username: user.username } : undefined
-          };
-        })
-      );
-      
-      res.json({
-        data: logsWithUserDetails,
-        pagination: result.pagination
-      });
-    } catch (error: unknown) {
-      console.error("Error fetching audit logs:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
 
   // Changes Log Management Routes
   app.get('/api/changes-log', authenticateUser, async (req, res) => {
@@ -4053,39 +3454,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: status as string,
         page: parseInt(page as string),
         limit: parseInt(limit as string)
-      });
       
       res.json(result);
     } catch (error: unknown) {
       console.error('Error fetching changes log:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post('/api/changes-log', authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const changeLogData = validateBody(schema.insertChangesLogSchema, {
         ...req.body,
         userId: req.user?.id
-      });
       
       const changeLog = await storage.createChangeLog(changeLogData);
       
       // Log the activity
-      await logActivity({
         userId: req.user?.id,
-        action: AuditAction.CREATE,
-        entityType: EntityType.SYSTEM_CONFIG,
-        entityId: changeLog.id,
-        details: { changeType: changeLog.changeType, title: changeLog.title }
-      });
       
       res.status(201).json(changeLog);
     } catch (error: unknown) {
       console.error('Error creating change log:', error);
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.put('/api/changes-log/:id', authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4102,20 +3493,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Log the activity
-      await logActivity({
         userId: req.user?.id,
-        action: AuditAction.UPDATE,
-        entityType: EntityType.SYSTEM_CONFIG,
-        entityId: changeLog.id,
-        details: { title: changeLog.title }
-      });
       
       res.json(changeLog);
     } catch (error: unknown) {
       console.error('Error updating change log:', error);
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete('/api/changes-log/:id', authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4131,20 +3515,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Log the activity
-      await logActivity({
         userId: req.user?.id,
-        action: AuditAction.DELETE,
-        entityType: EntityType.SYSTEM_CONFIG,
-        entityId: id,
-        details: { action: 'Change log deleted' }
-      });
       
       res.json({ success: true });
     } catch (error: unknown) {
       console.error('Error deleting change log:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Export API endpoints
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
@@ -4175,7 +3552,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -4208,7 +3584,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -4238,7 +3613,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Import API endpoints
   app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4268,11 +3642,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         imported: importedEmployees.length,
         employees: importedEmployees
-      });
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4304,11 +3676,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         imported: importedAssets.length,
         assets: importedAssets
-      });
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Password Reset API
   app.post("/api/forgot-password", async (req, res) => {
@@ -4340,13 +3710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (emailSent) {
-          await storage.logActivity({
             userId: user.id,
-            action: "Password Reset Request",
-            entityType: "User",
-            entityId: user.id,
-            details: { email: user.email }
-          });
           
           res.json({ message: "Password reset email has been sent." });
         } else {
@@ -4361,7 +3725,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: "Password reset temporarily unavailable. Please contact administrator." });
     }
-  });
 
   app.post("/api/reset-password", async (req, res) => {
     try {
@@ -4396,20 +3759,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.invalidatePasswordResetToken(token);
       
       // Log activity
-      await storage.logActivity({
         userId: userId,
-        action: "Password Reset Completed",
-        entityType: "User",
-        entityId: userId,
-        details: { username: updatedUser.username }
-      });
       
       res.json({ message: "Password has been successfully reset. You can now log in with your new password." });
     } catch (error: unknown) {
       console.error('Reset password error:', error);
       res.status(500).json({ message: "Internal server error" });
     }
-  });
 
   // Initialize admin user if none exists
   try {
@@ -4421,7 +3777,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         email: "admin@simpleit.com",
         role: "admin"
-      });
       console.log("Admin user created");
     }
   } catch (error) {
@@ -4438,7 +3793,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.get("/api/request-types/all", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -4447,7 +3801,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/request-types", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4456,7 +3809,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.put("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4469,7 +3821,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4482,7 +3833,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Feature 2: Time Tracking operations
   app.post("/api/tickets/:id/start-time", authenticateUser, async (req, res) => {
@@ -4499,7 +3849,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/tickets/:id/stop-time", authenticateUser, async (req, res) => {
     try {
@@ -4515,7 +3864,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Feature 3: Ticket History operations
   app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
@@ -4526,7 +3874,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Get ticket comments
   app.get("/api/tickets/:id/comments", authenticateUser, async (req, res) => {
@@ -4537,7 +3884,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Feature 4: Delete Ticket (admin only)
   app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4557,7 +3903,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Feature 5: Enhanced Ticket Update with history tracking
   app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
@@ -4574,7 +3919,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Comprehensive ticket update endpoint with history tracking
   app.patch("/api/tickets/:id", authenticateUser, async (req, res) => {
@@ -4590,20 +3934,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Log the update activity
-      await storage.logActivity({
-        action: "Updated",
-        entityType: "Ticket",
-        entityId: ticketId,
-        userId,
         details: updateData
-      });
       
       res.json(updatedTicket);
     } catch (error: unknown) {
       console.error("Update ticket error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Add comment to ticket
   app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
@@ -4614,17 +3951,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.addTicketComment({
         ticketId,
         content,
-        userId,
         isPrivate: isPrivate || false,
         attachments: attachments || []
-      });
       
       res.json(comment);
     } catch (error: unknown) {
       console.error("Add comment error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Add time entry to ticket
   app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
@@ -4640,7 +3974,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Add time entry error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Assign ticket to user
   app.post("/api/tickets/:id/assign", authenticateUser, async (req, res) => {
@@ -4654,20 +3987,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Log assignment activity
-      await storage.logActivity({
-        action: "Assigned",
-        entityType: "Ticket",
-        entityId: ticketId,
         userId: req.user.id,
-        details: { assignedToId: assignedUserId }
-      });
       
       res.json(updatedTicket);
     } catch (error: unknown) {
       console.error("Assign ticket error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Enhanced ticket creation with history
   app.post("/api/tickets/enhanced", authenticateUser, async (req, res) => {
@@ -4716,7 +4042,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Enhanced ticket creation error:", error.message, error.stack);
       res.status(500).json({ message: `Failed to create ticket: ${error.message}` });
     }
-  });
 
   // Enhanced tickets endpoint with detailed information
   app.get("/api/tickets/enhanced", authenticateUser, async (req, res) => {
@@ -4727,7 +4052,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching enhanced tickets:", error);
       res.status(500).json({ message: "Failed to fetch enhanced tickets" });
     }
-  });
 
   // Get ticket categories
   app.get("/api/tickets/categories", authenticateUser, async (req, res) => {
@@ -4738,7 +4062,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching ticket categories:", error);
       res.status(500).json({ message: "Failed to fetch ticket categories" });
     }
-  });
 
   // Create ticket category
   app.post("/api/tickets/categories", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4750,7 +4073,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error creating ticket category:", error);
       res.status(500).json({ message: "Failed to create ticket category" });
     }
-  });
 
   // Add ticket comment
   app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
@@ -4766,7 +4088,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error adding ticket comment:", error);
       res.status(500).json({ message: "Failed to add ticket comment" });
     }
-  });
 
   // Add time entry to ticket
   app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
@@ -4781,7 +4102,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error adding time entry:", error);
       res.status(500).json({ message: "Failed to add time entry" });
     }
-  });
 
   // Merge tickets
   app.post("/api/tickets/merge", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4794,7 +4114,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error merging tickets:", error);
       res.status(500).json({ message: "Failed to merge tickets" });
     }
-  });
 
   // Time tracking endpoints
   app.post("/api/tickets/:id/start-tracking", authenticateUser, async (req, res) => {
@@ -4816,7 +4135,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Start time tracking error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/tickets/:id/stop-tracking", authenticateUser, async (req, res) => {
     try {
@@ -4837,7 +4155,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Stop time tracking error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Ticket history endpoint
   app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
@@ -4849,7 +4166,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Get ticket history error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Admin delete ticket endpoint
   app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4867,7 +4183,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Delete ticket error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Enhanced ticket update endpoint
   app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
@@ -4895,7 +4210,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Enhanced ticket update error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Custom Request Types CRUD routes  
   app.get("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
@@ -4923,7 +4237,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -4935,13 +4248,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestType = await storage.createCustomRequestType({
         name: name.trim(),
         description: description?.trim() || null
-      });
       
       res.status(201).json(requestType);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.put("/api/custom-request-types/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -4955,7 +4266,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestType = await storage.updateCustomRequestType(id, {
         name: name.trim(),
         description: description?.trim() || null
-      });
       
       if (!requestType) {
         return res.status(404).json({ message: "Request type not found" });
@@ -4965,7 +4275,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/custom-request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -4980,7 +4289,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // User CRUD routes (admin only)
   app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4990,7 +4298,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -5008,7 +4315,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("User creation error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -5033,7 +4339,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("User update error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
@@ -5054,7 +4359,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("User deletion error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
 
   // Add global error handler at the end
   app.use(errorHandler({ 
