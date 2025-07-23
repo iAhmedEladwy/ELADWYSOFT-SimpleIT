@@ -191,6 +191,9 @@ export const assets = pgTable("assets", {
   modelName: varchar("model_name", { length: 100 }),
   serialNumber: varchar("serial_number", { length: 100 }).notNull(),
   specs: text("specs"),
+  cpu: varchar("cpu", { length: 200 }), // Processor/CPU specification
+  ram: varchar("ram", { length: 100 }), // RAM specification
+  storage: varchar("storage", { length: 200 }), // Storage specification
   status: varchar("status", { length: 100 }).notNull().default('Available'),
   purchaseDate: date("purchase_date"),
   buyPrice: decimal("buy_price", { precision: 10, scale: 2 }),
