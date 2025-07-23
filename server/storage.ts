@@ -1651,9 +1651,34 @@ export class DatabaseStorage implements IStorage {
   // Asset Transaction operations
   async createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction> {
     try {
+      // If deviceSpecs not provided, capture current asset specifications
+      let transactionWithSpecs = transaction;
+      if (!transaction.deviceSpecs && transaction.assetId) {
+        const asset = await this.getAsset(transaction.assetId);
+        if (asset) {
+          transactionWithSpecs = {
+            ...transaction,
+            deviceSpecs: {
+              serialNumber: asset.serialNumber,
+              condition: asset.status,
+              operatingSystem: asset.outOfBoxOs,
+              processor: asset.specs?.includes('Processor:') ? 
+                asset.specs.split('Processor:')[1]?.split('\n')[0]?.trim() : undefined,
+              ram: asset.specs?.includes('RAM:') ? 
+                asset.specs.split('RAM:')[1]?.split('\n')[0]?.trim() : undefined,
+              storage: asset.specs?.includes('Storage:') ? 
+                asset.specs.split('Storage:')[1]?.split('\n')[0]?.trim() : undefined,
+              location: asset.specs?.includes('Location:') ? 
+                asset.specs.split('Location:')[1]?.split('\n')[0]?.trim() : undefined,
+              status: asset.status
+            }
+          };
+        }
+      }
+
       const [newTransaction] = await db
         .insert(assetTransactions)
-        .values(transaction)
+        .values(transactionWithSpecs)
         .returning();
       return newTransaction;
     } catch (error) {
@@ -1727,17 +1752,14 @@ export class DatabaseStorage implements IStorage {
         status: 'In Use'
       });
       
-      // Create transaction record
-      const [transaction] = await db
-        .insert(assetTransactions)
-        .values({
-          type,
-          assetId,
-          employeeId,
-          transactionDate: new Date(),
-          conditionNotes: notes || null
-        })
-        .returning();
+      // Create transaction record with device specs
+      const transaction = await this.createAssetTransaction({
+        type: type as any,
+        assetId,
+        employeeId,
+        transactionDate: new Date(),
+        conditionNotes: notes || null
+      });
         
       return transaction;
     } catch (error) {
@@ -1762,18 +1784,15 @@ export class DatabaseStorage implements IStorage {
         status: 'Available'
       });
       
-      // Create transaction record
-      const [transaction] = await db
-        .insert(assetTransactions)
-        .values({
-          type,
-          assetId,
-          employeeId, // Keep track of who returned it
-          transactionDate: new Date(),
-          actualReturnDate: new Date(),
-          conditionNotes: notes || null
-        })
-        .returning();
+      // Create transaction record with device specs
+      const transaction = await this.createAssetTransaction({
+        type: type as any,
+        assetId,
+        employeeId, // Keep track of who returned it
+        transactionDate: new Date(),
+        actualReturnDate: new Date(),
+        conditionNotes: notes || null
+      });
         
       return transaction;
     } catch (error) {

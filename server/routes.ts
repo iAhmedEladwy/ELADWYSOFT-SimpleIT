@@ -3204,10 +3204,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asset Transactions
+  // Asset Transactions with Enhanced Filtering
   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
     try {
-      const { assetId, employeeId } = req.query;
+      const { 
+        assetId, 
+        employeeId, 
+        search, 
+        type, 
+        dateFrom, 
+        dateTo, 
+        page = '1', 
+        limit = '10',
+        include 
+      } = req.query;
       
       let transactions;
       if (assetId) {
@@ -3218,7 +3228,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transactions = await storage.getAllAssetTransactions();
       }
       
-      res.json(transactions);
+      // Apply filters
+      let filteredTransactions = transactions;
+      
+      // Search filter
+      if (search && typeof search === 'string') {
+        const searchLower = search.toLowerCase();
+        filteredTransactions = filteredTransactions.filter(transaction => 
+          transaction.id.toString().includes(searchLower) ||
+          transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
+          transaction.asset?.type?.toLowerCase().includes(searchLower) ||
+          transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
+          transaction.conditionNotes?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Type filter
+      if (type && typeof type === 'string' && type !== '') {
+        filteredTransactions = filteredTransactions.filter(transaction => 
+          transaction.type === type
+        );
+      }
+      
+      // Date range filter
+      if (dateFrom && typeof dateFrom === 'string') {
+        const fromDate = new Date(dateFrom);
+        filteredTransactions = filteredTransactions.filter(transaction => {
+          const transactionDate = new Date(transaction.transactionDate);
+          return transactionDate >= fromDate;
+        });
+      }
+      
+      if (dateTo && typeof dateTo === 'string') {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        filteredTransactions = filteredTransactions.filter(transaction => {
+          const transactionDate = new Date(transaction.transactionDate);
+          return transactionDate <= toDate;
+        });
+      }
+      
+      // Calculate pagination
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const startIndex = (pageNum - 1) * limitNum;
+      const endIndex = startIndex + limitNum;
+      
+      const totalItems = filteredTransactions.length;
+      const totalPages = Math.ceil(totalItems / limitNum);
+      
+      // Apply pagination
+      const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+      
+      // Enhance with related data if requested
+      let enhancedTransactions = paginatedTransactions;
+      if (include && typeof include === 'string') {
+        const includes = include.split(',');
+        
+        enhancedTransactions = await Promise.all(paginatedTransactions.map(async (transaction) => {
+          let enhanced = { ...transaction };
+          
+          if (includes.includes('asset') && transaction.assetId && !transaction.asset) {
+            enhanced.asset = await storage.getAsset(transaction.assetId);
+          }
+          
+          if (includes.includes('employee') && transaction.employeeId && !transaction.employee) {
+            enhanced.employee = await storage.getEmployee(transaction.employeeId);
+          }
+          
+          return enhanced;
+        }));
+      }
+      
+      res.json({
+        data: enhancedTransactions,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems,
+          itemsPerPage: limitNum,
+          hasNextPage: pageNum < totalPages,
+          hasPreviousPage: pageNum > 1
+        }
+      });
     } catch (error: unknown) {
       console.error("Error fetching asset transactions:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));

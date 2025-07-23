@@ -436,6 +436,7 @@ export const assetTransactions = pgTable("asset_transactions", {
   expectedReturnDate: timestamp("expected_return_date"),
   actualReturnDate: timestamp("actual_return_date"),
   conditionNotes: text("condition_notes"),
+  deviceSpecs: json("device_specs"), // Record device specifications at time of change
   handledById: integer("handled_by_id").references(() => users.id),
   attachments: text("attachments").array(),
   createdAt: timestamp("created_at").defaultNow(),
