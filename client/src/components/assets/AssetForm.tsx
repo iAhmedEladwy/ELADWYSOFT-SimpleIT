@@ -68,23 +68,23 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const isEditMode = !!initialData;
 
   // Fetch employees list for assignment dropdown
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
   // Fetch custom asset types, brands, and statuses
-  const { data: customAssetTypes = [] } = useQuery({
+  const { data: customAssetTypes = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-types'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  const { data: customAssetBrands = [] } = useQuery({
+  const { data: customAssetBrands = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-brands'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  const { data: customAssetStatuses = [] } = useQuery({
+  const { data: customAssetStatuses = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-statuses'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -512,9 +512,9 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">{translations.none}</SelectItem>
-                        {employees.map((employee: any) => (
+                        {employees && employees.length > 0 && employees.map((employee: any) => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.englishName} ({employee.empId})
+                            {employee.englishName || employee.name} ({employee.empId})
                           </SelectItem>
                         ))}
                       </SelectContent>
