@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import ComprehensiveTicketForm from '@/components/tickets/ComprehensiveTicketForm';
+import TicketForm from '@/components/tickets/TicketForm';
 
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -353,23 +353,14 @@ export default function Tickets() {
                 {translations.createTicket}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="ticket-form-description">
-              <DialogHeader>
-                <DialogTitle>{translations.createTicket}</DialogTitle>
-                <DialogDescription id="ticket-form-description">
-                  {language === 'English' 
-                    ? 'Fill out the form below to create a new support ticket'
-                    : 'املأ النموذج أدناه لإنشاء تذكرة دعم جديدة'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <ComprehensiveTicketForm
-                mode="create"
-                onSubmit={handleCreateTicket}
-                onCancel={() => setOpenDialog(false)}
-                isSubmitting={createTicketMutation.isPending}
-              />
-            </DialogContent>
+            <TicketForm
+              mode="create"
+              onSubmit={handleCreateTicket}
+              onCancel={() => setOpenDialog(false)}
+              isSubmitting={createTicketMutation.isPending}
+              open={openDialog}
+              onOpenChange={setOpenDialog}
+            />
           </Dialog>
         </div>
       </div>
@@ -395,9 +386,9 @@ export default function Tickets() {
         onRefresh={refetch}
       />
 
-      {/* Comprehensive Ticket Editor */}
+      {/* Ticket Editor */}
       {selectedTicket && (
-        <ComprehensiveTicketForm
+        <TicketForm
           ticket={selectedTicket}
           mode="edit"
           onCancel={() => setSelectedTicket(null)}

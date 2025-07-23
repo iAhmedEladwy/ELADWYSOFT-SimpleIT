@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import ConsolidatedTicketForm from './ConsolidatedTicketForm';
+import TicketForm from './TicketForm';
 import { 
   Play, 
   Pause, 
@@ -852,15 +852,15 @@ export default function EnhancedTicketTable({
                 Ticket Details - {selectedTicketForDetail.ticketId}
               </DialogTitle>
             </DialogHeader>
-            <ConsolidatedTicketForm
+            <TicketForm
               ticket={selectedTicketForDetail}
-              onClose={() => {
+              mode="edit"
+              onCancel={() => {
                 setShowTicketDetail(false);
                 setSelectedTicketForDetail(null);
               }}
-              employees={employees}
-              assets={assets}
-              users={users}
+              open={showTicketDetail}
+              onOpenChange={setShowTicketDetail}
               onTicketUpdate={(updatedTicket) => {
                 setSelectedTicketForDetail(updatedTicket);
                 queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
