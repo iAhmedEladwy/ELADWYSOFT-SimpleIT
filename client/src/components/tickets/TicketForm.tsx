@@ -101,8 +101,8 @@ export default function TicketForm({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
       submittedById: ticket?.submittedById?.toString() || user?.employeeId?.toString() || '',
-      assignedToId: ticket?.assignedToId?.toString() || '',
-      relatedAssetId: ticket?.relatedAssetId?.toString() || '',
+      assignedToId: ticket?.assignedToId?.toString() || 'unassigned',
+      relatedAssetId: ticket?.relatedAssetId?.toString() || 'none',
       requestType: ticket?.requestType || '',
       category: ticket?.category || 'Incident',
       priority: ticket?.priority || 'Medium',
@@ -125,7 +125,15 @@ export default function TicketForm({
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data: TicketFormData) => apiRequest(`/api/tickets`, 'POST', data),
+    mutationFn: (data: TicketFormData) => {
+      // Convert special values back to empty strings for API
+      const apiData = {
+        ...data,
+        assignedToId: data.assignedToId === 'unassigned' ? '' : data.assignedToId,
+        relatedAssetId: data.relatedAssetId === 'none' ? '' : data.relatedAssetId,
+      };
+      return apiRequest(`/api/tickets`, 'POST', apiData);
+    },
     onSuccess: (result) => {
       toast({
         title: language === 'English' ? 'Success' : 'نجح',
@@ -144,7 +152,15 @@ export default function TicketForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: TicketFormData) => apiRequest(`/api/tickets/${ticket?.id}`, 'PUT', data),
+    mutationFn: (data: TicketFormData) => {
+      // Convert special values back to empty strings for API
+      const apiData = {
+        ...data,
+        assignedToId: data.assignedToId === 'unassigned' ? '' : data.assignedToId,
+        relatedAssetId: data.relatedAssetId === 'none' ? '' : data.relatedAssetId,
+      };
+      return apiRequest(`/api/tickets/${ticket?.id}`, 'PUT', apiData);
+    },
     onSuccess: (result) => {
       toast({
         title: language === 'English' ? 'Success' : 'نجح',
@@ -247,7 +263,7 @@ export default function TicketForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
+                        <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username}
@@ -274,7 +290,7 @@ export default function TicketForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
+                        <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
                         {assets.map((asset) => (
                           <SelectItem key={asset.id} value={asset.id.toString()}>
                             {asset.assetId} - {asset.type} ({asset.brand} {asset.model})
