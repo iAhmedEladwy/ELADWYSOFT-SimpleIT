@@ -201,6 +201,34 @@ export default function TicketForm({
     },
   });
 
+  // Reset form when ticket changes (for edit mode)
+  useEffect(() => {
+    if (ticket && mode === 'edit') {
+      form.reset({
+        submittedById: ticket.submittedById?.toString() || '',
+        assignedToId: ticket.assignedToId?.toString() || 'unassigned',
+        relatedAssetId: ticket.relatedAssetId?.toString() || 'none',
+        requestType: ticket.requestType || '',
+        category: ticket.category || 'Incident',
+        priority: ticket.priority || '',
+        urgency: ticket.urgency || 'Medium',
+        impact: ticket.impact || 'Medium',
+        status: ticket.status || 'Open',
+        summary: ticket.summary || '',
+        description: ticket.description || '',
+        rootCause: ticket.rootCause || '',
+        workaround: ticket.workaround || '',
+        resolution: ticket.resolution || '',
+        resolutionNotes: ticket.resolutionNotes || '',
+        dueDate: ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
+        slaTarget: ticket.slaTarget?.toString() || '',
+        escalationLevel: ticket.escalationLevel?.toString() || '0',
+        tags: ticket.tags?.join(', ') || '',
+        privateNotes: ticket.privateNotes || '',
+      });
+    }
+  }, [ticket, mode, form]);
+
   // Auto-save handler for edit mode
   const handleAutoSave = async (field: string, value: any) => {
     if (mode === 'edit' && ticket) {
@@ -883,10 +911,470 @@ export default function TicketForm({
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-gray-600 mb-4">
                             {language === 'English' ? 'Click any field to edit. Changes save automatically.' : 'انقر على أي حقل للتعديل. التغييرات تحفظ تلقائياً.'}
                           </div>
-                          {/* All form fields would go here with auto-save */}
+
+                          {/* Basic Information Fields */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Submitted By */}
+                            <FormField
+                              control={form.control}
+                              name="submittedById"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('submittedById', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                          {user.username}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Assigned To */}
+                            <FormField
+                              control={form.control}
+                              name="assignedToId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Assigned To' : 'مسند إلى'}</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('assignedToId', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مسند'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
+                                      {users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                          {user.username}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Related Asset */}
+                            <FormField
+                              control={form.control}
+                              name="relatedAssetId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('relatedAssetId', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'No asset' : 'لا يوجد أصل'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="none">{language === 'English' ? 'No Asset' : 'لا يوجد أصل'}</SelectItem>
+                                      {assets.map((asset) => (
+                                        <SelectItem key={asset.id} value={asset.id.toString()}>
+                                          {asset.assetId} - {asset.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Request Type */}
+                            <FormField
+                              control={form.control}
+                              name="requestType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Request Type' : 'نوع الطلب'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('requestType', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select type' : 'اختر النوع'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {requestTypes.map((type) => (
+                                        <SelectItem key={type.id} value={type.name}>
+                                          {type.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Category */}
+                            <FormField
+                              control={form.control}
+                              name="category"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Category' : 'الفئة'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('category', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select category' : 'اختر الفئة'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
+                                      <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
+                                      <SelectItem value="Change Request">{language === 'English' ? 'Change Request' : 'طلب تغيير'}</SelectItem>
+                                      <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Priority */}
+                            <FormField
+                              control={form.control}
+                              name="priority"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Priority' : 'الأولوية'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('priority', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select priority' : 'اختر الأولوية'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
+                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
+                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
+                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Urgency */}
+                            <FormField
+                              control={form.control}
+                              name="urgency"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Urgency' : 'الإلحاح'}</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('urgency', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select urgency' : 'اختر الإلحاح'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
+                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
+                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
+                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Impact */}
+                            <FormField
+                              control={form.control}
+                              name="impact"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Impact' : 'التأثير'}</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('impact', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select impact' : 'اختر التأثير'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
+                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
+                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
+                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Status */}
+                            <FormField
+                              control={form.control}
+                              name="status"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Status' : 'الحالة'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('status', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Open">{language === 'English' ? 'Open' : 'مفتوح'}</SelectItem>
+                                      <SelectItem value="In Progress">{language === 'English' ? 'In Progress' : 'قيد التنفيذ'}</SelectItem>
+                                      <SelectItem value="Pending">{language === 'English' ? 'Pending' : 'معلق'}</SelectItem>
+                                      <SelectItem value="Resolved">{language === 'English' ? 'Resolved' : 'محلول'}</SelectItem>
+                                      <SelectItem value="Closed">{language === 'English' ? 'Closed' : 'مغلق'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Due Date */}
+                            <FormField
+                              control={form.control}
+                              name="dueDate"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('dueDate', e.target.value); }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* SLA Target (Hours) */}
+                            <FormField
+                              control={form.control}
+                              name="slaTarget"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'SLA Target (Hours)' : 'هدف اتفاقية الخدمة (ساعات)'}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('slaTarget', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Hours' : 'ساعات'}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          {/* Description Fields */}
+                          <div className="space-y-4 mt-6">
+                            {/* Summary */}
+                            <FormField
+                              control={form.control}
+                              name="summary"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Summary' : 'الملخص'} *</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('summary', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Brief summary of the issue' : 'ملخص موجز للمشكلة'}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Description */}
+                            <FormField
+                              control={form.control}
+                              name="description"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Description' : 'الوصف'} *</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('description', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Detailed description of the issue' : 'وصف مفصل للمشكلة'}
+                                      rows={4}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Root Cause */}
+                            <FormField
+                              control={form.control}
+                              name="rootCause"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Root Cause' : 'السبب الجذري'}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('rootCause', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Root cause analysis' : 'تحليل السبب الجذري'}
+                                      rows={3}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Workaround */}
+                            <FormField
+                              control={form.control}
+                              name="workaround"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Workaround' : 'الحل المؤقت'}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('workaround', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Temporary workaround if available' : 'حل مؤقت إن أمكن'}
+                                      rows={3}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Resolution */}
+                            <FormField
+                              control={form.control}
+                              name="resolution"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Resolution' : 'الحل'}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('resolution', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Final resolution details' : 'تفاصيل الحل النهائي'}
+                                      rows={3}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Resolution Notes */}
+                            <FormField
+                              control={form.control}
+                              name="resolutionNotes"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل'}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('resolutionNotes', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Additional notes about the resolution' : 'ملاحظات إضافية حول الحل'}
+                                      rows={3}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Escalation Level */}
+                            <FormField
+                              control={form.control}
+                              name="escalationLevel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Escalation Level' : 'مستوى التصعيد'}</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('escalationLevel', value); }} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={language === 'English' ? 'Select level' : 'اختر المستوى'} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="0">{language === 'English' ? 'Level 0 - No Escalation' : 'المستوى 0 - بدون تصعيد'}</SelectItem>
+                                      <SelectItem value="1">{language === 'English' ? 'Level 1 - Supervisor' : 'المستوى 1 - المشرف'}</SelectItem>
+                                      <SelectItem value="2">{language === 'English' ? 'Level 2 - Manager' : 'المستوى 2 - المدير'}</SelectItem>
+                                      <SelectItem value="3">{language === 'English' ? 'Level 3 - Director' : 'المستوى 3 - المدير العام'}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Tags */}
+                            <FormField
+                              control={form.control}
+                              name="tags"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Tags' : 'العلامات'}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('tags', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Comma-separated tags (e.g., urgent, hardware, network)' : 'علامات مفصولة بفواصل (مثل: عاجل، أجهزة، شبكة)'}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Private Notes */}
+                            <FormField
+                              control={form.control}
+                              name="privateNotes"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Private Notes (Staff Only)' : 'ملاحظات خاصة (للموظفين فقط)'}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('privateNotes', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Internal notes visible only to staff members' : 'ملاحظات داخلية مرئية للموظفين فقط'}
+                                      rows={3}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
