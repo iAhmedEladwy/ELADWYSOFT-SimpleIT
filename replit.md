@@ -21,6 +21,20 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-23
+- **COMPLETED**: v1.3.5 Release - ITIL-Compliant Assets Page Consolidation
+  - ✓ **COMPLETE CONSOLIDATION**: Rebuilt Assets page with unified interface removing duplicate filters and components
+  - ✓ **ITIL COMPLIANCE**: Aligned all asset management processes with ITIL best practices for lifecycle tracking
+  - ✓ **HARDWARE SPECIFICATIONS**: Added CPU, RAM, Storage columns with dedicated icons and proper display formatting
+  - ✓ **ENHANCED TABLE**: Shows Serial Number and Purchase Date columns as requested with proper formatting
+  - ✓ **CLICKABLE ROW EDITING**: Asset ID cells are clickable to open edit dialog with proper hover effects
+  - ✓ **STATUS DROPDOWN**: Converted status tabs to unified dropdown filter for streamlined interface
+  - ✓ **CONSOLIDATED FILTERING**: Single filter card with comprehensive search, type, status, brand, and assignment filters
+  - ✓ **DATABASE SCHEMA COMPLETE**: Successfully added CPU, RAM, Storage, and device_specs columns to database
+  - ✓ **SELECTITEM ERRORS FIXED**: Resolved all empty value errors in AssetHistory page affecting system stability
+  - ✓ **COMPREHENSIVE ASSET MANAGEMENT**: Full ITIL asset lifecycle with change history, specifications tracking, and proper documentation
+  - ✓ **PRODUCTION READY**: All asset management features consolidated into single comprehensive interface following ITIL standards
+
+### 2025-01-23
 - **COMPLETED**: v1.3.4 Release - Employee Creation SQL Error Resolution
   - ✓ **CRITICAL SQL FIX**: Resolved persistent "syntax error at or near ','" in employee creation by restructuring parameterized queries
   - ✓ **DATABASE VALIDATION**: Confirmed table structure compatibility with proper column mapping (emp_id, english_name, department, etc.)

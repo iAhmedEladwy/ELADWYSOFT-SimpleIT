@@ -20,8 +20,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
+import { AssetFilters } from '@/components/assets/AssetFilters';
+import AssetForm from '@/components/assets/AssetForm';
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -31,6 +33,7 @@ export default function Assets() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
   const [filters, setFilters] = useState<AssetFiltersType>({});
+  const [searchInput, setSearchInput] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
@@ -48,7 +51,7 @@ export default function Assets() {
 
   const translations = {
     title: language === 'Arabic' ? 'إدارة الأصول' : 'Assets Management',
-    description: language === 'Arabic' ? 'إدارة وتتبع جميع أصول الشركة' : 'Manage and track all company assets',
+    description: language === 'Arabic' ? 'إدارة شاملة للأصول مع التتبع الذكي ومعايير ITIL' : 'Comprehensive ITIL-compliant asset management with intelligent tracking',
     addAsset: language === 'Arabic' ? 'إضافة أصل' : 'Add Asset',
     editAsset: language === 'Arabic' ? 'تعديل الأصل' : 'Edit Asset',
     deleteAsset: language === 'Arabic' ? 'حذف الأصل' : 'Delete Asset',
@@ -400,12 +403,18 @@ export default function Assets() {
   }, [assets, filters]);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
-          <p className="text-gray-600">{translations.description}</p>
-        </div>
+    <>
+      <Helmet>
+        <title>{translations.title} | SimpleIT v1.3</title>
+        <meta name="description" content={translations.description} />
+      </Helmet>
+      
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
+            <p className="text-gray-600">{translations.description}</p>
+          </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -548,36 +557,335 @@ export default function Assets() {
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="mb-6">
-        <AssetFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          totalCount={assets?.length || 0}
-          filteredCount={filteredAssets.length}
-          onExport={() => exportMutation.mutate()}
-        />
-      </div>
+      {/* ITIL-Compliant Filter & Search Card */}
+      <Card className="mb-6">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+              {Object.values(filters).filter(Boolean).length > 0 && (
+                <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {filteredAssets.length} of {assets?.length || 0} assets
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setFilters({ ...filters, search: searchInput });
+          }} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by Asset ID, Type, Brand, Model, Serial Number..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button type="submit" variant="outline">
+              Search
+            </Button>
+          </form>
 
-      {/* Assets Table */}
-      {isLoading ? (
-        <Skeleton className="h-[400px] w-full" />
-      ) : (
-        <AssetsTable 
-          assets={filteredAssets}
-          employees={employees}
-          selectedAssets={selectedAssets}
-          setSelectedAssets={setSelectedAssets}
-          onEdit={(asset) => {
-            setEditingAsset(asset);
-            setOpenDialog(true);
-          }}
-          onDelete={(id) => deleteAssetMutation.mutate(id)}
-          onAssign={handleAssignAsset}
-          onUnassign={handleUnassignAsset}
-          onAddMaintenance={handleAddMaintenance}
-        />
-      )}
-    </div>
+          {/* Filter Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Type Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Type</label>
+              <Select
+                value={filters.type || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {[...new Set(assets?.map((a: any) => a.type).filter(Boolean))].map((type: string) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select
+                value={filters.status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Available">Available</SelectItem>
+                  <SelectItem value="In Use">In Use</SelectItem>
+                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+                  <SelectItem value="Damaged">Damaged</SelectItem>
+                  <SelectItem value="Retired">Retired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Brand Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <Select
+                value={filters.brand || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Brands" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {[...new Set(assets?.map((a: any) => a.brand).filter(Boolean))].map((brand: string) => (
+                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Assignment Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Assignment</label>
+              <Select
+                value={filters.assignedTo || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, assignedTo: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Assignments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Assignments</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {employees?.map((employee: any) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.englishName || employee.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="flex gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setFilters({});
+                setSearchInput('');
+              }}
+              disabled={Object.values(filters).every(v => !v) && !searchInput}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ITIL-Compliant Assets Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Asset Inventory ({filteredAssets.length})
+          </CardTitle>
+          <CardDescription>
+            Complete ITIL-compliant asset management with lifecycle tracking, hardware specifications, and change history
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAssets(filteredAssets.map((a: any) => a.id));
+                          } else {
+                            setSelectedAssets([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead>Asset ID</TableHead>
+                    <TableHead>Type & Brand</TableHead>
+                    <TableHead>Serial Number</TableHead>
+                    <TableHead>Purchase Date</TableHead>
+                    <TableHead>Hardware Specs</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAssets.map((asset: any) => (
+                    <TableRow key={asset.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedAssets.includes(asset.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAssets([...selectedAssets, asset.id]);
+                            } else {
+                              setSelectedAssets(selectedAssets.filter(id => id !== asset.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div 
+                          className="font-medium text-blue-600 cursor-pointer hover:text-blue-800"
+                          onClick={() => {
+                            setEditingAsset(asset);
+                            setOpenDialog(true);
+                          }}
+                        >
+                          {asset.assetId}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{asset.type}</div>
+                          <div className="text-sm text-gray-500">{asset.brand} {asset.modelName && `- ${asset.modelName}`}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-mono text-sm">{asset.serialNumber}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          {asset.purchaseDate ? format(new Date(asset.purchaseDate), 'MMM dd, yyyy') : '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 text-sm">
+                          {asset.cpu && (
+                            <div className="flex items-center gap-1">
+                              <Cpu className="h-3 w-3 text-gray-400" />
+                              <span className="truncate max-w-[100px]" title={asset.cpu}>{asset.cpu}</span>
+                            </div>
+                          )}
+                          {asset.ram && (
+                            <div className="flex items-center gap-1">
+                              <MemoryStick className="h-3 w-3 text-gray-400" />
+                              <span>{asset.ram}</span>
+                            </div>
+                          )}
+                          {asset.storage && (
+                            <div className="flex items-center gap-1">
+                              <HardDrive className="h-3 w-3 text-gray-400" />
+                              <span className="truncate max-w-[100px]" title={asset.storage}>{asset.storage}</span>
+                            </div>
+                          )}
+                          {!asset.cpu && !asset.ram && !asset.storage && (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={
+                            asset.status === 'Available' ? 'bg-green-100 text-green-800' :
+                            asset.status === 'In Use' ? 'bg-blue-100 text-blue-800' :
+                            asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                            asset.status === 'Damaged' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }
+                        >
+                          {asset.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {asset.assignedToId ? (
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm">
+                              {employees?.find((e: any) => e.id === asset.assignedToId)?.englishName || 
+                               employees?.find((e: any) => e.id === asset.assignedToId)?.name || 
+                               'Unknown'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setEditingAsset(asset);
+                              setOpenDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(`/assets-history?assetId=${asset.id}`, '_blank')}
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          {hasAccess(3) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => deleteAssetMutation.mutate(asset.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredAssets.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                        No assets found matching the current filters
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      </div>
+    </>
   );
 }
