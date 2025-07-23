@@ -117,36 +117,9 @@ export interface IStorage {
   getSystemConfig(): Promise<SystemConfig | undefined>;
   updateSystemConfig(config: Partial<InsertSystemConfig>): Promise<SystemConfig | undefined>;
   
-  // Activity Log operations
-  getRecentActivity(limit: number): Promise<ActivityLog[]>;
-    filter?: string;
-    action?: string;
-    entityType?: string;
-    userId?: number;
-    startDate?: Date;
-    endDate?: Date;
-    page?: number;
-    limit?: number;
-  }): Promise<{
-    data: ActivityLog[];
-    pagination: {
-      totalItems: number;
-      totalPages: number;
-      currentPage: number;
-      pageSize: number;
-    }
-  }>;
-    filter?: string;
-    action?: string;
-    entityType?: string;
-    userId?: number;
-    startDate?: Date;
-    endDate?: Date;
-  }): Promise<number>;
-    olderThan?: Date;
-    entityType?: string;
-    action?: string;
-  }): Promise<number>; // Returns number of deleted logs
+  // Notification operations
+  getNotifications(userId: number): Promise<Notification[]>;
+  markNotificationAsRead(id: number): Promise<void>;
   
   // Changes Log operations
   getChangesLog(options?: {
@@ -158,6 +131,12 @@ export interface IStorage {
   }): Promise<{
     data: ChangeLog[];
     pagination: {
+      totalItems: number;
+      totalPages: number;
+      currentPage: number;
+      pageSize: number;
+    }
+  }>;
       totalItems: number;
       totalPages: number;
       currentPage: number;

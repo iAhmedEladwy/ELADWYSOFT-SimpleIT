@@ -660,17 +660,6 @@ export class MemoryStorage implements IStorage {
     
     // Log maintenance activity
     const asset = this.assets.find(a => a.id === maintenance.assetId);
-      userId: 1,
-      action: 'CREATE',
-      entityType: 'ASSET_MAINTENANCE',
-      entityId: maintenance.assetId,
-      details: {
-        assetId: asset?.assetId,
-        maintenanceType: maintenance.type,
-        description: maintenance.description,
-        cost: maintenance.cost
-      }
-    });
     
     return newMaintenance;
   }
@@ -691,17 +680,6 @@ export class MemoryStorage implements IStorage {
     // Log the transaction activity
     const asset = this.assets.find(a => a.id === transaction.assetId);
     const employee = transaction.employeeId ? this.employees.find(e => e.id === transaction.employeeId) : null;
-    
-      userId: 1, // System user for automated transactions
-      action: transaction.type === 'Check-Out' ? 'CHECK_OUT' : 'CHECK_IN',
-      entityType: 'ASSET',
-      entityId: transaction.assetId,
-      details: {
-        assetId: asset?.assetId,
-        employeeName: employee?.name,
-        notes: transaction.notes
-      }
-    });
     
     return newTransaction;
   }
