@@ -113,6 +113,7 @@ export default function TicketForm({
 
   // Fetch data
   const { data: users = [] } = useQuery<UserResponse[]>({ queryKey: ['/api/users'] });
+  const { data: employees = [] } = useQuery<any[]>({ queryKey: ['/api/employees'] });
   const { data: assets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
   const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
   
@@ -178,7 +179,7 @@ export default function TicketForm({
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
-      submittedById: ticket?.submittedById?.toString() || user?.id?.toString() || '',
+      submittedById: ticket?.submittedById?.toString() || '',
       assignedToId: ticket?.assignedToId?.toString() || 'unassigned',
       relatedAssetId: ticket?.relatedAssetId?.toString() || 'none',
       requestType: ticket?.requestType || '',
@@ -235,9 +236,30 @@ export default function TicketForm({
       setAutoSaving(true);
       // Convert string values back to appropriate types for API
       let processedValue = value;
-      if (field === 'submittedById' || field === 'assignedToId' || field === 'relatedAssetId') {
-        processedValue = value && value !== '' && value !== 'unassigned' && value !== 'none' ? parseInt(value) : null;
+      
+      // Handle numeric ID fields  
+      if (field === 'submittedById' || field === 'relatedAssetId') {
+        processedValue = value && value !== '' && value !== 'none' ? parseInt(value) : null;
       }
+      // Handle assignedToId - users table reference
+      else if (field === 'assignedToId') {
+        processedValue = value && value !== '' && value !== 'unassigned' ? parseInt(value) : null;
+      }
+      // Handle numeric fields
+      else if (field === 'slaTarget' || field === 'escalationLevel') {
+        processedValue = value && value !== '' ? parseInt(value) : null;
+      }
+      // Handle tags field - convert comma-separated string to array
+      else if (field === 'tags') {
+        processedValue = value && value.trim() !== '' 
+          ? value.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+          : [];
+      }
+      // Handle date fields
+      else if (field === 'dueDate') {
+        processedValue = value && value !== '' ? new Date(value).toISOString() : null;
+      }
+      
       autoSaveMutation.mutate({ [field]: processedValue });
     }
   };
@@ -931,9 +953,9 @@ export default function TicketForm({
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {users.map((user) => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                          {user.username}
+                                      {employees.map((employee) => (
+                                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                                          {employee.englishName || employee.name}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
