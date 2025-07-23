@@ -263,8 +263,8 @@ export default function Tickets() {
         return false;
       }
       
-      // Type filter
-      if (filters.type && ticket.requestType !== filters.type) {
+      // Request type filter  
+      if (filters.requestType && ticket.requestType !== filters.requestType) {
         return false;
       }
       
@@ -389,7 +389,10 @@ export default function Tickets() {
       {/* Main Tickets Table */}
       <EnhancedTicketTable 
         tickets={filteredTickets} 
-        onEditTicket={setSelectedTicket}
+        employees={employees || []}
+        assets={assets || []}
+        users={users || []}
+        isLoading={isLoading}
         onRefresh={refetch}
       />
 

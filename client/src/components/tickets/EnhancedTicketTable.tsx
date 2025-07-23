@@ -38,6 +38,7 @@ import {
 interface Ticket {
   id: number;
   ticketId: string;
+  summary?: string;
   description: string;
   requestType: string;
   priority: 'Low' | 'Medium' | 'High';
