@@ -12,7 +12,7 @@ import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
-// Dialog imports removed - forms now render inline
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import type { TicketFilters as TicketFiltersType } from '@shared/types';
@@ -337,10 +337,22 @@ export default function Tickets() {
             {translations.refresh}
           </Button>
           
-          <Button size="sm" onClick={() => setOpenDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {translations.createTicket}
-          </Button>
+          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                {translations.createTicket}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
+              <TicketForm
+                mode="create"
+                onSubmit={handleCreateTicket}
+                onCancel={() => setOpenDialog(false)}
+                isSubmitting={createTicketMutation.isPending}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -366,17 +378,7 @@ export default function Tickets() {
         onTicketSelect={(ticket) => setSelectedTicket(ticket)}
       />
 
-      {/* Create New Ticket Form */}
-      {openDialog && (
-        <div className="mb-6">
-          <TicketForm
-            mode="create"
-            onSubmit={handleCreateTicket}
-            onCancel={() => setOpenDialog(false)}
-            isSubmitting={createTicketMutation.isPending}
-          />
-        </div>
-      )}
+
 
       {/* Ticket Editor */}
       {selectedTicket && (

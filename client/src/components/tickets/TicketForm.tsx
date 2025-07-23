@@ -281,7 +281,7 @@ export default function TicketForm({
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+    <div className={isCreateMode ? "overflow-y-auto max-h-[75vh]" : "max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg"}>
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           {isCreateMode ? (
@@ -307,7 +307,6 @@ export default function TicketForm({
 
         {isCreateMode ? (
           // Create Mode: Single comprehensive view
-          <div className="overflow-y-auto max-h-[75vh]">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
                 {/* Basic Information Card */}
@@ -831,7 +830,6 @@ export default function TicketForm({
                 </div>
               </form>
             </Form>
-          </div>
         ) : (
           // Edit Mode: Tabbed detailed view
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
