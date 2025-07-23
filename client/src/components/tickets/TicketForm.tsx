@@ -67,6 +67,7 @@ const ticketFormSchema = z.object({
   escalationLevel: z.string().default('0'),
   tags: z.string().optional(),
   privateNotes: z.string().optional(),
+  timeSpent: z.string().optional(),
 });
 
 type TicketFormData = z.infer<typeof ticketFormSchema>;
@@ -117,8 +118,8 @@ export default function TicketForm({
   const { data: allAssets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
   const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
   
-  // Filter assets to only show those assigned to employees
-  const assets = allAssets.filter(asset => asset.assignedEmployeeId != null && asset.assignedEmployeeId !== undefined);
+  // Filter assets to only show those assigned to employees  
+  const assets = allAssets.filter(asset => asset.assignedEmployee != null);
   
   // Fetch comments and history for edit mode
   const { data: comments = [] } = useQuery<CommentData[]>({
@@ -202,6 +203,7 @@ export default function TicketForm({
       escalationLevel: ticket?.escalationLevel?.toString() || '0',
       tags: ticket?.tags?.join(', ') || '',
       privateNotes: ticket?.privateNotes || '',
+      timeSpent: ticket?.timeSpent?.toString() || '',
     },
   });
 
@@ -229,6 +231,7 @@ export default function TicketForm({
         escalationLevel: ticket.escalationLevel?.toString() || '0',
         tags: ticket.tags?.join(', ') || '',
         privateNotes: ticket.privateNotes || '',
+        timeSpent: ticket.timeSpent?.toString() || '',
       });
     }
   }, [ticket, mode, form]);
@@ -249,7 +252,7 @@ export default function TicketForm({
         processedValue = value && value !== '' && value !== 'unassigned' ? parseInt(value) : null;
       }
       // Handle numeric fields
-      else if (field === 'slaTarget' || field === 'escalationLevel') {
+      else if (field === 'slaTarget' || field === 'escalationLevel' || field === 'timeSpent') {
         processedValue = value && value !== '' ? parseInt(value) : null;
       }
       // Handle tags field - convert comma-separated string to array
@@ -812,6 +815,26 @@ export default function TicketForm({
                         </FormItem>
                       )}
                     />
+
+                    {/* Time Spent (Minutes) */}
+                    <FormField
+                      control={form.control}
+                      name="timeSpent"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Time Spent (Minutes)' : 'الوقت المستغرق (دقائق)'}</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              {...field}
+                              placeholder={language === 'English' ? 'Time spent in minutes' : 'الوقت بالدقائق'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
 
@@ -1207,6 +1230,27 @@ export default function TicketForm({
                                       {...field}
                                       onChange={(e) => { field.onChange(e.target.value); handleAutoSave('slaTarget', e.target.value); }}
                                       placeholder={language === 'English' ? 'Hours' : 'ساعات'}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Time Spent (Minutes) */}
+                            <FormField
+                              control={form.control}
+                              name="timeSpent"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{language === 'English' ? 'Time Spent (Minutes)' : 'الوقت المستغرق (دقائق)'}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      {...field}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('timeSpent', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Minutes' : 'دقائق'}
                                     />
                                   </FormControl>
                                   <FormMessage />
