@@ -65,7 +65,7 @@ export const PERMISSIONS = {
   // System permissions
   SYSTEM_CONFIG: 'system:config',
   REPORTS_VIEW: 'reports:view',
-  NOTIFICATIONS: 'notifications:view'
+  AUDIT_LOGS: 'audit:logs'
 } as const;
 
 // Role-based permission mapping

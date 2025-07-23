@@ -16,7 +16,7 @@ import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
-
+import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
 import ChangesLog from "@/pages/ChangesLog";
 import Layout from "@/components/layout/Layout";
@@ -162,7 +162,15 @@ function Router() {
             )} />
           </Layout>
         </Route>
-
+        <Route path="/audit-logs">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <AuditLogs />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
         <Route path="/profile">
           <Layout>
             <PrivateRoute component={UserProfile} />

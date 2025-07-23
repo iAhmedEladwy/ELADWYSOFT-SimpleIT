@@ -8,7 +8,7 @@ import {
   tickets, type Ticket, type InsertTicket,
   ticketComments, ticketHistory,
   systemConfig, type SystemConfig, type InsertSystemConfig,
-
+  activityLog, type ActivityLog, type InsertActivityLog,
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
@@ -117,9 +117,40 @@ export interface IStorage {
   getSystemConfig(): Promise<SystemConfig | undefined>;
   updateSystemConfig(config: Partial<InsertSystemConfig>): Promise<SystemConfig | undefined>;
   
-  // Notification operations
-  getNotifications(userId: number): Promise<Notification[]>;
-  markNotificationAsRead(id: number): Promise<void>;
+  // Activity Log operations
+  logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
+  getRecentActivity(limit: number): Promise<ActivityLog[]>;
+  getActivityLogs(options: {
+    filter?: string;
+    action?: string;
+    entityType?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: ActivityLog[];
+    pagination: {
+      totalItems: number;
+      totalPages: number;
+      currentPage: number;
+      pageSize: number;
+    }
+  }>;
+  getActivityLogsCount(options: {
+    filter?: string;
+    action?: string;
+    entityType?: string;
+    userId?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<number>;
+  clearActivityLogs(options?: {
+    olderThan?: Date;
+    entityType?: string;
+    action?: string;
+  }): Promise<number>; // Returns number of deleted logs
   
   // Changes Log operations
   getChangesLog(options?: {
@@ -131,12 +162,6 @@ export interface IStorage {
   }): Promise<{
     data: ChangeLog[];
     pagination: {
-      totalItems: number;
-      totalPages: number;
-      currentPage: number;
-      pageSize: number;
-    }
-  }>;
       totalItems: number;
       totalPages: number;
       currentPage: number;
@@ -1203,6 +1228,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activity Log operations
+  async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
     try {
       const [newActivity] = await db
         .insert(activityLog)
@@ -1228,6 +1254,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getActivityLogs(options: {
     page?: number;
     limit?: number;
     filter?: string;
@@ -1366,8 +1393,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   /**
+   * Clear audit logs based on filter criteria
    * @param options Optional filter criteria
+   * @returns Number of deleted audit log entries
    */
+  async clearActivityLogs(options?: {
     olderThan?: Date;
     entityType?: string;
     action?: string;
@@ -1407,6 +1437,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getActivityLogsCount(options: {
     filter?: string;
     action?: string;
     entityType?: string;

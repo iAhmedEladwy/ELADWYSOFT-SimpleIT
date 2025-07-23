@@ -350,13 +350,14 @@ export const systemConfig = pgTable("system_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Notification table for system alerts
-export const notifications = pgTable("notifications", {
+// Activity Log table
+export const activityLog = pgTable("activity_log", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  type: varchar("type", { length: 50 }).notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("is_read").default(false),
+  action: varchar("action", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: integer("entity_id"),
+  details: json("details"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -489,9 +490,9 @@ export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
   }),
 }));
 
-export const notificationRelations = relations(notifications, ({ one }) => ({
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
   user: one(users, {
-    fields: [notifications.userId],
+    fields: [activityLog.userId],
     references: [users.id],
   }),
 }));
@@ -607,7 +608,7 @@ export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   createdAt: true, 
   updatedAt: true 
 });
-export const insertNotificationSchema = createInsertSchema(notifications).omit({ 
+export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ 
   id: true, 
   createdAt: true
 });
@@ -691,8 +692,8 @@ export type InsertTicketNotification = z.infer<typeof insertTicketNotificationSc
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 
 export type ChangeLog = typeof changesLog.$inferSelect;
 export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
