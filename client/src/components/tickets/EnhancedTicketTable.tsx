@@ -475,7 +475,13 @@ export default function EnhancedTicketTable({
                 <TableCell className="font-medium">
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
-                    onClick={() => setSelectedTicket(ticket)}
+                    onClick={() => {
+                      if (onTicketSelect) {
+                        onTicketSelect(ticket);
+                      } else {
+                        setSelectedTicket(ticket);
+                      }
+                    }}
                   >
                     {ticket.ticketId}
                   </span>
@@ -484,7 +490,13 @@ export default function EnhancedTicketTable({
                   <div>
                     <span 
                       className="font-medium cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
-                      onClick={() => setSelectedTicket(ticket)}
+                      onClick={() => {
+                        if (onTicketSelect) {
+                          onTicketSelect(ticket);
+                        } else {
+                          setSelectedTicket(ticket);
+                        }
+                      }}
                     >
                       {ticket.summary || ticket.description.substring(0, 50) + '...'}
                     </span>
@@ -510,7 +522,13 @@ export default function EnhancedTicketTable({
                 <TableCell>
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
-                    onClick={() => setSelectedTicket(ticket)}
+                    onClick={() => {
+                      if (onTicketSelect) {
+                        onTicketSelect(ticket);
+                      } else {
+                        setSelectedTicket(ticket);
+                      }
+                    }}
                   >
                     {submittedByEmployee?.englishName || submittedByEmployee?.name || 'Unknown'}
                   </span>
@@ -699,8 +717,12 @@ export default function EnhancedTicketTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedTicketForDetail(ticket);
-                        setShowTicketDetail(true);
+                        if (onTicketSelect) {
+                          onTicketSelect(ticket);
+                        } else {
+                          setSelectedTicketForDetail(ticket);
+                          setShowTicketDetail(true);
+                        }
                       }}
                       className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
                     >

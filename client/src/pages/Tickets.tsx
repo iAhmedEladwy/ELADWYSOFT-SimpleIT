@@ -232,7 +232,7 @@ export default function Tickets() {
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     
-    return tickets.filter(ticket => {
+    return tickets.filter((ticket: any) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -382,6 +382,7 @@ export default function Tickets() {
         users={users || []}
         isLoading={isLoading}
         onRefresh={refetch}
+        onTicketSelect={setSelectedTicket}
       />
 
       {/* Ticket Editor */}
