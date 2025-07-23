@@ -21,6 +21,18 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-23
+- **COMPLETED**: Export/Import Functionality Fix - Fixed field mapping inconsistencies
+  - ✓ **CORRECTED ROUTES**: Replaced generic import/export routes with specific implementations for Assets, Employees, and Tickets
+  - ✓ **FIELD MAPPING FIX**: Resolved CSV format consistency issues between export and import operations
+  - ✓ **HARDWARE SPECIFICATIONS**: Added proper CPU, RAM, Storage field mapping for Assets
+  - ✓ **ERROR HANDLING**: Enhanced import with detailed error messages for failed row processing
+  - ✓ **CSV PARSING**: Fixed parseCSV function implementation with proper field transformation
+- **COMPLETED**: Dashboard UI Cleanup - Removed Recent Activity Tab
+  - ✓ **TAB REMOVAL**: Removed "Recent Activity" tab from Dashboard as requested
+  - ✓ **CODE CLEANUP**: Removed unused RecentActivity component import and related translations
+  - ✓ **UI STREAMLINING**: Simplified Dashboard navigation to Overview and Notifications only
+
+### 2025-01-23
 - **COMPLETED**: v1.3.5 Release - ITIL-Compliant Assets Page Consolidation
   - ✓ **COMPLETE CONSOLIDATION**: Rebuilt Assets page with unified interface removing duplicate filters and components
   - ✓ **ITIL COMPLIANCE**: Aligned all asset management processes with ITIL best practices for lifecycle tracking

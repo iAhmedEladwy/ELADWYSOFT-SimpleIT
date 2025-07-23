@@ -7,7 +7,7 @@ import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
 import AssetsByType from '@/components/dashboard/AssetsByType';
 import DepartmentDistribution from '@/components/dashboard/DepartmentDistribution';
-import RecentActivity from '@/components/dashboard/RecentActivity';
+
 import Notifications from '@/components/dashboard/Notifications';
 import { 
   Tabs, 
@@ -35,7 +35,7 @@ export default function Dashboard() {
       ? 'Welcome to SimpleIT - IT Asset Management System' 
       : 'مرحبًا بك في SimpleIT - نظام إدارة أصول تكنولوجيا المعلومات',
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
-    recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
+
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
     totalEmployees: language === 'English' ? 'Total Employees' : 'إجمالي الموظفين',
     totalAssets: language === 'English' ? 'Total Assets' : 'إجمالي الأصول',
@@ -63,7 +63,6 @@ export default function Dashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="overview">{translations.overview}</TabsTrigger>
-          <TabsTrigger value="recent-activity">{translations.recentActivity}</TabsTrigger>
           <TabsTrigger value="notifications">{translations.notifications}</TabsTrigger>
         </TabsList>
 
@@ -136,9 +135,7 @@ export default function Dashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="recent-activity">
-          <RecentActivity activities={dashboardData?.recentActivity || []} isLoading={isLoading} />
-        </TabsContent>
+
 
         <TabsContent value="notifications">
           <Notifications />
