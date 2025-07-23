@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import TicketForm from './TicketForm';
+// Removed TicketForm import - using parent component's form
 import { 
   Play, 
   Pause, 
@@ -86,7 +86,7 @@ export default function EnhancedTicketTable({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  // Removed internal selectedTicket state - using parent component's state
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -117,7 +117,7 @@ export default function EnhancedTicketTable({
     if (field === 'summary' || field === 'ticketId' || field === 'submittedBy') {
       // These fields open the edit form dialog
       const ticket = tickets.find(t => t.id === ticketId);
-      if (ticket) setSelectedTicket(ticket);
+      // Using parent component's ticket selection
       return;
     }
     setEditingField({ ticketId, field });
@@ -167,11 +167,7 @@ export default function EnhancedTicketTable({
   // Get system language
   const language = 'English'; // Default to English
 
-  // Fetch ticket history
-  const { data: ticketHistory = [], isLoading: historyLoading } = useQuery({
-    queryKey: [`/api/tickets/${selectedTicket?.id}/history`],
-    enabled: !!selectedTicket,
-  });
+  // Ticket history moved to parent component
 
   // Manual time update mutation (replaces automatic start/stop)
   const updateTimeSpentMutation = useMutation({
@@ -247,7 +243,7 @@ export default function EnhancedTicketTable({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${selectedTicket?.id}/history`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       setCommentText('');
       setIsPrivateComment(false);
       setShowAddComment(false);
@@ -427,19 +423,15 @@ export default function EnhancedTicketTable({
   const filteredTickets = tickets;
 
   const handleAddComment = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
+    // Use parent component's ticket selection instead
+    if (onTicketSelect) {
+      onTicketSelect(ticket);
+    }
     setShowAddComment(true);
   };
 
   const handleSubmitComment = () => {
-    if (!selectedTicket || !commentText.trim()) return;
-    
-    addCommentMutation.mutate({
-      ticketId: selectedTicket.id,
-      content: commentText,
-      isPrivate: isPrivateComment,
-      authorId: user?.id
-    });
+    // Comment submission moved to parent component
   };
 
   return (
