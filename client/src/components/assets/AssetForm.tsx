@@ -54,6 +54,9 @@ const assetFormSchema = z.object({
   lifeSpan: z.string().optional(),
   outOfBoxOs: z.string().optional(),
   assignedEmployeeId: z.string().optional(),
+  cpu: z.string().optional(),
+  ram: z.string().optional(),
+  storage: z.string().optional(),
 });
 
 interface AssetFormProps {
@@ -376,6 +379,52 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </ScrollArea>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Hardware Specifications */}
+              <FormField
+                control={form.control}
+                name="cpu"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'CPU' : 'المعالج'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ram"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'RAM' : 'الذاكرة'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="storage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'Storage' : 'التخزين'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه'}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

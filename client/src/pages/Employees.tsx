@@ -422,7 +422,13 @@ export default function Employees() {
               
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setEditingEmployee(null); // Clear editing state for new employee
+                      setOpenDialog(true);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     {translations.addEmployee}
                   </Button>

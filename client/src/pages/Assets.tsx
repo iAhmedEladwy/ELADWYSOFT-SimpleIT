@@ -22,7 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
-import { AssetFilters } from '@/components/assets/AssetFilters';
+import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 
 export default function Assets() {
@@ -347,9 +347,9 @@ export default function Assets() {
 
   // Filter assets based on filters
   const filteredAssets = useMemo(() => {
-    if (!assets) return [];
+    if (!assets || !Array.isArray(assets)) return [];
     
-    return assets.filter(asset => {
+    return assets.filter((asset: any) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -534,7 +534,13 @@ export default function Assets() {
               
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setEditingAsset(null); // Clear editing state for new asset
+                      setOpenDialog(true);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     {translations.addAsset}
                   </Button>
@@ -570,7 +576,7 @@ export default function Assets() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-sm text-muted-foreground">
-                {filteredAssets.length} of {assets?.length || 0} assets
+                {filteredAssets.length} of {assets && Array.isArray(assets) ? assets.length : 0} assets
               </div>
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <FileDown className="h-4 w-4 mr-2" />
@@ -614,9 +620,9 @@ export default function Assets() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {[...new Set(assets?.map((a: any) => a.type).filter(Boolean))].map((type: string) => (
+                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -654,9 +660,9 @@ export default function Assets() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Brands</SelectItem>
-                  {[...new Set(assets?.map((a: any) => a.brand).filter(Boolean))].map((brand: string) => (
+                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
                     <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -674,11 +680,11 @@ export default function Assets() {
                 <SelectContent>
                   <SelectItem value="all">All Assignments</SelectItem>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {employees?.map((employee: any) => (
+                  {employees && Array.isArray(employees) ? employees.map((employee: any) => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
                       {employee.englishName || employee.name}
                     </SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -789,27 +795,30 @@ export default function Assets() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1 text-sm">
-                          {asset.cpu && (
-                            <div className="flex items-center gap-1">
-                              <Cpu className="h-3 w-3 text-gray-400" />
-                              <span className="truncate max-w-[100px]" title={asset.cpu}>{asset.cpu}</span>
-                            </div>
-                          )}
-                          {asset.ram && (
-                            <div className="flex items-center gap-1">
-                              <MemoryStick className="h-3 w-3 text-gray-400" />
-                              <span>{asset.ram}</span>
-                            </div>
-                          )}
-                          {asset.storage && (
-                            <div className="flex items-center gap-1">
-                              <HardDrive className="h-3 w-3 text-gray-400" />
-                              <span className="truncate max-w-[100px]" title={asset.storage}>{asset.storage}</span>
-                            </div>
-                          )}
-                          {!asset.cpu && !asset.ram && !asset.storage && (
-                            <span className="text-gray-400">-</span>
+                        <div className="space-y-1 text-xs">
+                          {(asset.cpu || asset.ram || asset.storage) ? (
+                            <>
+                              {asset.cpu && (
+                                <div className="flex items-center gap-1">
+                                  <Cpu className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate max-w-[120px]" title={asset.cpu}>{asset.cpu}</span>
+                                </div>
+                              )}
+                              {asset.ram && (
+                                <div className="flex items-center gap-1">
+                                  <MemoryStick className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate max-w-[80px]" title={asset.ram}>{asset.ram}</span>
+                                </div>
+                              )}
+                              {asset.storage && (
+                                <div className="flex items-center gap-1">
+                                  <HardDrive className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate max-w-[100px]" title={asset.storage}>{asset.storage}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No specs</span>
                           )}
                         </div>
                       </TableCell>
@@ -831,9 +840,10 @@ export default function Assets() {
                           <div className="flex items-center gap-1">
                             <User className="h-4 w-4 text-gray-400" />
                             <span className="text-sm">
-                              {employees?.find((e: any) => e.id === asset.assignedToId)?.englishName || 
-                               employees?.find((e: any) => e.id === asset.assignedToId)?.name || 
-                               'Unknown'}
+                              {employees && Array.isArray(employees) ? 
+                                (employees.find((e: any) => e.id === asset.assignedToId)?.englishName || 
+                                 employees.find((e: any) => e.id === asset.assignedToId)?.name || 
+                                 'Unknown') : 'Unknown'}
                             </span>
                           </div>
                         ) : (
