@@ -240,6 +240,17 @@ export default function TicketForm({
   const handleAutoSave = async (field: string, value: any) => {
     if (mode === 'edit' && ticket) {
       setAutoSaving(true);
+      
+      // Update dialog title with autosave indicator
+      const indicator = document.getElementById('autosave-indicator');
+      if (indicator) {
+        indicator.innerHTML = `
+          <div class="flex items-center gap-1 text-sm text-muted-foreground">
+            <div class="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full"></div>
+            ${language === 'English' ? 'Auto-saving...' : 'حفظ تلقائي...'}
+          </div>
+        `;
+      }
       // Convert string values back to appropriate types for API
       let processedValue = value;
       
@@ -269,6 +280,16 @@ export default function TicketForm({
       autoSaveMutation.mutate({ [field]: processedValue });
     }
   };
+
+  // Clear autosave indicator when saving is complete
+  useEffect(() => {
+    if (!autoSaving) {
+      const indicator = document.getElementById('autosave-indicator');
+      if (indicator) {
+        indicator.innerHTML = '';
+      }
+    }
+  }, [autoSaving]);
 
   // Form submission for create mode
   const handleFormSubmit = (data: TicketFormData) => {
@@ -936,12 +957,7 @@ export default function TicketForm({
                         <Badge variant={getStatusColor(ticket?.status)}>
                           {ticket?.status}
                         </Badge>
-                        {autoSaving && (
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            {language === 'English' ? 'Saving...' : 'جاري الحفظ...'}
-                          </div>
-                        )}
+
                       </div>
                     </div>
 

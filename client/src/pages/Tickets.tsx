@@ -387,6 +387,7 @@ export default function Tickets() {
               <DialogTitle className="text-xl font-semibold flex items-center gap-2">
                 <Edit3 className="h-5 w-5 text-green-500" />
                 Edit Ticket #{selectedTicket?.ticketId}
+                <div id="autosave-indicator" className="ml-auto"></div>
               </DialogTitle>
             </DialogHeader>
             <div className="px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]">
