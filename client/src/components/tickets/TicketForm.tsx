@@ -45,16 +45,28 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Ticket form schema
+// Ticket form schema with all ITIL-compliant fields
 const ticketFormSchema = z.object({
   submittedById: z.string().min(1, "Please select who is submitting this ticket"),
   assignedToId: z.string().optional(),
   relatedAssetId: z.string().optional(),
   requestType: z.string().min(1, "Please select a request type"),
+  category: z.string().default('Incident'),
   priority: z.string().min(1, "Please select a priority"),
+  urgency: z.string().default('Medium'),
+  impact: z.string().default('Medium'),
   status: z.string().default('Open'),
   summary: z.string().min(5, "Summary must be at least 5 characters").max(200, "Summary cannot exceed 200 characters"),
   description: z.string().min(5, "Description must be at least 5 characters").max(2000, "Description cannot exceed 2000 characters"),
+  rootCause: z.string().optional(),
+  workaround: z.string().optional(),
+  resolution: z.string().optional(),
+  resolutionNotes: z.string().optional(),
+  dueDate: z.string().optional(),
+  slaTarget: z.string().optional(),
+  escalationLevel: z.string().default('0'),
+  tags: z.string().optional(),
+  privateNotes: z.string().optional(),
 });
 
 type TicketFormData = z.infer<typeof ticketFormSchema>;
@@ -171,13 +183,25 @@ export default function TicketForm({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
       submittedById: ticket?.submittedById?.toString() || user?.id?.toString() || '',
-      assignedToId: ticket?.assignedToId?.toString() || '',
-      relatedAssetId: ticket?.relatedAssetId?.toString() || '',
+      assignedToId: ticket?.assignedToId?.toString() || 'unassigned',
+      relatedAssetId: ticket?.relatedAssetId?.toString() || 'none',
       requestType: ticket?.requestType || '',
+      category: ticket?.category || 'Incident',
       priority: ticket?.priority || '',
+      urgency: ticket?.urgency || 'Medium',
+      impact: ticket?.impact || 'Medium',
       status: ticket?.status || 'Open',
       summary: ticket?.summary || '',
       description: ticket?.description || '',
+      rootCause: ticket?.rootCause || '',
+      workaround: ticket?.workaround || '',
+      resolution: ticket?.resolution || '',
+      resolutionNotes: ticket?.resolutionNotes || '',
+      dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
+      slaTarget: ticket?.slaTarget?.toString() || '',
+      escalationLevel: ticket?.escalationLevel?.toString() || '0',
+      tags: ticket?.tags?.join(', ') || '',
+      privateNotes: ticket?.privateNotes || '',
     },
   });
 
@@ -201,8 +225,12 @@ export default function TicketForm({
       const processedData = {
         ...data,
         submittedById: parseInt(data.submittedById),
-        assignedToId: data.assignedToId && data.assignedToId !== 'unassigned' ? parseInt(data.assignedToId) : undefined,
-        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : undefined,
+        assignedToId: data.assignedToId && data.assignedToId !== 'unassigned' ? parseInt(data.assignedToId) : null,
+        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
+        slaTarget: data.slaTarget ? parseInt(data.slaTarget) : null,
+        escalationLevel: parseInt(data.escalationLevel || '0'),
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
       };
       onSubmit(processedData as any);
     }
@@ -335,7 +363,7 @@ export default function TicketForm({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
+                              <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
                               {users.map((user) => (
                                 <SelectItem key={user.id} value={user.id.toString()}>
                                   {user.username}
@@ -362,10 +390,10 @@ export default function TicketForm({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
+                              <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
                               {assets.map((asset) => (
                                 <SelectItem key={asset.id} value={asset.id.toString()}>
-                                  {asset.assetId} - {asset.name}
+                                  {asset.assetId} - {asset.name || 'Unknown'}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -457,7 +485,7 @@ export default function TicketForm({
                       {language === 'English' ? 'Priority & Classification' : 'الأولوية والتصنيف'}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Priority */}
                     <FormField
                       control={form.control}
@@ -475,6 +503,82 @@ export default function TicketForm({
                               <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفضة'}</SelectItem>
                               <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسطة'}</SelectItem>
                               <SelectItem value="High">{language === 'English' ? 'High' : 'عالية'}</SelectItem>
+                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرجة'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Urgency */}
+                    <FormField
+                      control={form.control}
+                      name="urgency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Urgency' : 'الإلحاح'}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
+                              <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
+                              <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
+                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Impact */}
+                    <FormField
+                      control={form.control}
+                      name="impact"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Impact' : 'التأثير'}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
+                              <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
+                              <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
+                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Category */}
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Category' : 'الفئة'}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
+                              <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
+                              <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
+                              <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -504,6 +608,210 @@ export default function TicketForm({
                               <SelectItem value="Closed">Closed</SelectItem>
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Escalation Level */}
+                    <FormField
+                      control={form.control}
+                      name="escalationLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Escalation Level' : 'مستوى التصعيد'}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">{language === 'English' ? 'None' : 'لا يوجد'}</SelectItem>
+                              <SelectItem value="1">{language === 'English' ? 'Level 1' : 'المستوى 1'}</SelectItem>
+                              <SelectItem value="2">{language === 'English' ? 'Level 2' : 'المستوى 2'}</SelectItem>
+                              <SelectItem value="3">{language === 'English' ? 'Level 3' : 'المستوى 3'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* ITIL Management Fields Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {language === 'English' ? 'ITIL Management & Resolution' : 'إدارة ITIL والحلول'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Root Cause */}
+                    <FormField
+                      control={form.control}
+                      name="rootCause"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Root Cause' : 'السبب الجذري'}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={language === 'English' ? 'Root cause analysis (ITIL Problem Management)' : 'تحليل السبب الجذري (إدارة المشاكل ITIL)'}
+                              rows={2}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Workaround */}
+                    <FormField
+                      control={form.control}
+                      name="workaround"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Workaround' : 'الحل المؤقت'}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={language === 'English' ? 'Temporary workaround solution (ITIL Incident Management)' : 'الحل المؤقت (إدارة الحوادث ITIL)'}
+                              rows={2}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Resolution */}
+                    <FormField
+                      control={form.control}
+                      name="resolution"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Resolution' : 'الحل'}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={language === 'English' ? 'Final resolution details' : 'تفاصيل الحل النهائي'}
+                              rows={2}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Resolution Notes */}
+                    <FormField
+                      control={form.control}
+                      name="resolutionNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل'}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={language === 'English' ? 'Additional notes about the resolution' : 'ملاحظات إضافية حول الحل'}
+                              rows={2}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* SLA & Scheduling Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {language === 'English' ? 'SLA & Scheduling' : 'اتفاقية مستوى الخدمة والجدولة'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Due Date */}
+                    <FormField
+                      control={form.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* SLA Target (hours) */}
+                    <FormField
+                      control={form.control}
+                      name="slaTarget"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'SLA Target (hours)' : 'هدف اتفاقية مستوى الخدمة (ساعات)'}</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="720"
+                              {...field}
+                              placeholder={language === 'English' ? 'SLA target in hours' : 'الهدف بالساعات'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Additional Information Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {language === 'English' ? 'Additional Information' : 'معلومات إضافية'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Tags */}
+                    <FormField
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Tags' : 'العلامات'}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder={language === 'English' ? 'Comma-separated tags (e.g., urgent, hardware, network)' : 'علامات مفصولة بفواصل (مثل: عاجل، أجهزة، شبكة)'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Private Notes */}
+                    <FormField
+                      control={form.control}
+                      name="privateNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Private Notes (Staff Only)' : 'ملاحظات خاصة (للموظفين فقط)'}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={language === 'English' ? 'Internal notes visible only to staff members' : 'ملاحظات داخلية مرئية للموظفين فقط'}
+                              rows={3}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -600,7 +908,7 @@ export default function TicketForm({
               <TabsContent value="comments" className="space-y-4">
                 {/* Comment display and input */}
                 <div className="space-y-4">
-                  {comments.map((comment) => (
+                  {Array.isArray(comments) && comments.map((comment: any) => (
                     <Card key={comment.id}>
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-3">
@@ -647,26 +955,26 @@ export default function TicketForm({
               <TabsContent value="history" className="space-y-4">
                 {/* History display */}
                 <div className="space-y-3">
-                  {history.map((entry) => (
+                  {Array.isArray(history) && history.map((entry: any) => (
                     <Card key={entry.id}>
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-3">
                           <History className="h-5 w-5 mt-1 text-gray-400" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">{entry.changeType}</span>
+                              <span className="text-sm font-medium">{entry.changeType || entry.action}</span>
                               <span className="text-xs text-gray-500">
                                 {new Date(entry.createdAt).toLocaleString()}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-700">{entry.changeDescription}</p>
+                            <p className="text-sm text-gray-700">{entry.changeDescription || entry.notes}</p>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                   
-                  {history.length === 0 && (
+                  {(!Array.isArray(history) || history.length === 0) && (
                     <Card>
                       <CardContent className="pt-4 text-center text-gray-500">
                         <History className="h-8 w-8 mx-auto mb-2" />

@@ -285,9 +285,7 @@ export default function Tickets() {
   // Enhanced export mutation with all fields
   const exportMutation = useMutation({
     mutationFn: async (format: 'csv' | 'json') => {
-      const response = await apiRequest('GET', `/api/tickets/export?format=${format}`, null, {
-        headers: { 'Accept': format === 'csv' ? 'text/csv' : 'application/json' }
-      });
+      const response = await apiRequest(`/api/tickets/export?format=${format}`, 'GET');
       
       const filename = `tickets_export_${new Date().toISOString().split('T')[0]}.${format}`;
       
@@ -370,8 +368,8 @@ export default function Tickets() {
         <TicketFilters
           filters={filters}
           onFiltersChange={setFilters}
-          totalCount={tickets?.length || 0}
-          filteredCount={filteredTickets.length}
+          totalCount={Array.isArray(tickets) ? tickets.length : 0}
+          filteredCount={Array.isArray(filteredTickets) ? filteredTickets.length : 0}
           onExport={() => exportMutation.mutate('csv')}
         />
       </div>
