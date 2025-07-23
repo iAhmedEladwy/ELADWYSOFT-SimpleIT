@@ -91,8 +91,7 @@ export default function EnhancedTicketTable({
   const [showHistory, setShowHistory] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
-  const [showTicketDetail, setShowTicketDetail] = useState(false);
-  const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<Ticket | null>(null);
+
   const [commentText, setCommentText] = useState('');
   const [isPrivateComment, setIsPrivateComment] = useState(false);
   const [resolvingTicket, setResolvingTicket] = useState<Ticket | null>(null);
@@ -720,8 +719,7 @@ export default function EnhancedTicketTable({
                         if (onTicketSelect) {
                           onTicketSelect(ticket);
                         } else {
-                          setSelectedTicketForDetail(ticket);
-                          setShowTicketDetail(true);
+                          setSelectedTicket(ticket);
                         }
                       }}
                       className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
@@ -865,32 +863,7 @@ export default function EnhancedTicketTable({
         </TableBody>
       </Table>
 
-      {/* Ticket Detail Form Dialog */}
-      {showTicketDetail && selectedTicketForDetail && (
-        <Dialog open={showTicketDetail} onOpenChange={setShowTicketDetail}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Ticket Details - {selectedTicketForDetail.ticketId}
-              </DialogTitle>
-            </DialogHeader>
-            <TicketForm
-              ticket={selectedTicketForDetail}
-              mode="edit"
-              onCancel={() => {
-                setShowTicketDetail(false);
-                setSelectedTicketForDetail(null);
-              }}
-              open={showTicketDetail}
-              onOpenChange={setShowTicketDetail}
-              onTicketUpdate={(updatedTicket) => {
-                setSelectedTicketForDetail(updatedTicket);
-                queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+
     </div>
   );
 }
