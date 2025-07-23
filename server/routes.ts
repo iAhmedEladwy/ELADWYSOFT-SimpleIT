@@ -2432,6 +2432,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
+      // Map user ID to employee ID (CRITICAL FIX)
+      const userId = parseInt(submittedById.toString());
+      const employees = await storage.getAllEmployees();
+      const employeeRecord = employees.find(emp => emp.userId === userId);
+      
+      if (!employeeRecord) {
+        return res.status(400).json({ 
+          message: `No employee record found for user ID ${userId}. Please contact administrator.` 
+        });
+      }
+      
+      console.log(`Mapped user ID ${userId} to employee ID ${employeeRecord.id}`);
+      
       // Get system config for ticket ID prefix
       const sysConfig = await storage.getSystemConfig();
       let ticketIdPrefix = "TKT-";
@@ -2444,10 +2457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextId = allTickets.length + 1;
       const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
-      // Create ticket data
+      // Create ticket data with EMPLOYEE ID (not user ID)
       const ticketData = {
         ticketId,
-        submittedById: parseInt(submittedById.toString()),
+        submittedById: employeeRecord.id, // Use employee ID, not user ID
         requestType,
         priority,
         description,
