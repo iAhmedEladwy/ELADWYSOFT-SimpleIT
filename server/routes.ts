@@ -2512,10 +2512,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Generated ticket ID: ${ticketId}`);
       
-      // Create ticket data
+      // Map user ID to employee ID (CRITICAL FIX for create-raw endpoint)
+      const userId = parseInt(req.body.submittedById.toString());
+      const employees = await storage.getAllEmployees();
+      const employeeRecord = employees.find(emp => emp.userId === userId);
+      
+      if (!employeeRecord) {
+        return res.status(400).json({ 
+          message: `No employee record found for user ID ${userId}. Please contact administrator.` 
+        });
+      }
+      
+      console.log(`Create-raw: Mapped user ID ${userId} to employee ID ${employeeRecord.id}`);
+      
+      // Create ticket data with EMPLOYEE ID (not user ID)
       const ticketData = {
         ticketId,
-        submittedById: parseInt(req.body.submittedById.toString()),
+        submittedById: employeeRecord.id, // Use employee ID, not user ID
         requestType: req.body.requestType || req.body.category,
         priority: req.body.priority,
         description: req.body.description,

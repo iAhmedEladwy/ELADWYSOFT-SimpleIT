@@ -135,7 +135,7 @@ export default function TicketForm({
   const autoSaveMutation = useMutation({
     mutationFn: async (updateData: Partial<TicketFormData>) => {
       if (mode === 'edit' && ticket) {
-        return await apiRequest(`/api/tickets/${ticket.id}`, 'PATCH', updateData);
+        return await apiRequest(`/api/tickets/${ticket.id}/enhanced`, 'PUT', updateData);
       }
       throw new Error('Auto-save only available in edit mode');
     },
