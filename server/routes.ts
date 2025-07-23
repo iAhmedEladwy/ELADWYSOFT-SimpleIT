@@ -2457,16 +2457,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextId = allTickets.length + 1;
       const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
-      // Create ticket data with validated employee ID
+      // Create ticket data with validated employee ID and all ITIL fields
       const ticketData = {
         ticketId,
         submittedById: employeeId, // Use the employee ID from form
         requestType,
+        category: req.body.category || 'Incident',
         priority,
+        urgency: req.body.urgency || 'Medium',
+        impact: req.body.impact || 'Medium', 
+        summary: req.body.summary || '',
         description,
         status: 'Open' as const,
         relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : undefined,
-        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined,
+        rootCause: req.body.rootCause || '',
+        workaround: req.body.workaround || '',
+        resolution: req.body.resolution || '',
+        resolutionNotes: req.body.resolutionNotes || '',
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate).toISOString() : undefined,
+        slaTarget: req.body.slaTarget ? parseInt(req.body.slaTarget.toString()) : undefined,
+        escalationLevel: req.body.escalationLevel ? parseInt(req.body.escalationLevel.toString()) : 0,
+        tags: req.body.tags || [],
+        privateNotes: req.body.privateNotes || '',
+        timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent.toString()) : undefined
       };
       
       // Create the ticket
@@ -2525,15 +2539,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Create-raw: Validated employee ID ${employeeId} for ticket creation`);
       
-      // Create ticket data with validated employee ID
+      // Create ticket data with validated employee ID and all ITIL fields
       const ticketData = {
         ticketId,
         submittedById: employeeId, // Use the employee ID from form
         requestType: req.body.requestType || req.body.category,
+        category: req.body.category || 'Incident',
         priority: req.body.priority,
+        urgency: req.body.urgency || 'Medium',
+        impact: req.body.impact || 'Medium',
+        summary: req.body.summary || '',
         description: req.body.description,
         status: 'Open' as const,
         relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
+        rootCause: req.body.rootCause || '',
+        workaround: req.body.workaround || '',
+        resolution: req.body.resolution || '',
+        resolutionNotes: req.body.resolutionNotes || '',
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate).toISOString() : null,
+        slaTarget: req.body.slaTarget ? parseInt(req.body.slaTarget.toString()) : null,
+        escalationLevel: req.body.escalationLevel ? parseInt(req.body.escalationLevel.toString()) : 0,
+        tags: req.body.tags || [],
+        privateNotes: req.body.privateNotes || '',
+        timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent.toString()) : null
       };
       
       // Create the ticket using storage interface
