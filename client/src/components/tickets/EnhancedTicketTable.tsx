@@ -469,8 +469,6 @@ export default function EnhancedTicketTable({
                     onClick={() => {
                       if (onTicketSelect) {
                         onTicketSelect(ticket);
-                      } else {
-                        setSelectedTicket(ticket);
                       }
                     }}
                   >
@@ -484,8 +482,6 @@ export default function EnhancedTicketTable({
                       onClick={() => {
                         if (onTicketSelect) {
                           onTicketSelect(ticket);
-                        } else {
-                          setSelectedTicket(ticket);
                         }
                       }}
                     >
@@ -516,8 +512,6 @@ export default function EnhancedTicketTable({
                     onClick={() => {
                       if (onTicketSelect) {
                         onTicketSelect(ticket);
-                      } else {
-                        setSelectedTicket(ticket);
                       }
                     }}
                   >
@@ -710,8 +704,6 @@ export default function EnhancedTicketTable({
                       onClick={() => {
                         if (onTicketSelect) {
                           onTicketSelect(ticket);
-                        } else {
-                          setSelectedTicket(ticket);
                         }
                       }}
                       className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
