@@ -375,7 +375,6 @@ export default function Tickets() {
         assets={Array.isArray(assets) ? assets : []}
         users={Array.isArray(users) ? users : []}
         isLoading={isLoading}
-        onRefresh={refetch}
         onTicketSelect={(ticket) => {
           console.log('Ticket selected:', ticket);
           setSelectedTicket(ticket);
@@ -383,6 +382,13 @@ export default function Tickets() {
       />
 
 
+
+      {/* Ticket Editor - DEBUG: Always show this section */}
+      <div className="mb-6 p-4 border border-gray-300 rounded-lg bg-gray-50">
+        <div className="text-sm text-gray-600 mb-2">
+          DEBUG: selectedTicket = {selectedTicket ? selectedTicket.ticketId : 'null'}
+        </div>
+      </div>
 
       {/* Ticket Editor */}
       {selectedTicket && (
