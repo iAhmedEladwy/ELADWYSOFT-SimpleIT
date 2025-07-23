@@ -12,14 +12,7 @@ import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Settings, Zap } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+// Dialog imports removed - forms now render inline
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import type { TicketFilters as TicketFiltersType } from '@shared/types';
@@ -344,22 +337,10 @@ export default function Tickets() {
             {translations.refresh}
           </Button>
           
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {translations.createTicket}
-              </Button>
-            </DialogTrigger>
-            <TicketForm
-              mode="create"
-              onSubmit={handleCreateTicket}
-              onCancel={() => setOpenDialog(false)}
-              isSubmitting={createTicketMutation.isPending}
-              open={openDialog}
-              onOpenChange={setOpenDialog}
-            />
-          </Dialog>
+          <Button size="sm" onClick={() => setOpenDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {translations.createTicket}
+          </Button>
         </div>
       </div>
 
@@ -385,13 +366,27 @@ export default function Tickets() {
         onTicketSelect={(ticket) => setSelectedTicket(ticket)}
       />
 
+      {/* Create New Ticket Form */}
+      {openDialog && (
+        <div className="mb-6">
+          <TicketForm
+            mode="create"
+            onSubmit={handleCreateTicket}
+            onCancel={() => setOpenDialog(false)}
+            isSubmitting={createTicketMutation.isPending}
+          />
+        </div>
+      )}
+
       {/* Ticket Editor */}
       {selectedTicket && (
-        <TicketForm
-          ticket={selectedTicket}
-          mode="edit"
-          onCancel={() => setSelectedTicket(null)}
-        />
+        <div className="mb-6">
+          <TicketForm
+            ticket={selectedTicket}
+            mode="edit"
+            onCancel={() => setSelectedTicket(null)}
+          />
+        </div>
       )}
     </div>
   );
