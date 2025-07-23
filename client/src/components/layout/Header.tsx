@@ -18,8 +18,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Menu, Globe } from 'lucide-react';
+import { Menu, Globe, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -30,6 +31,7 @@ export default function Header({ toggleSidebar, hideSidebar = false }: HeaderPro
   const { user, logout } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const handleLogout = async () => {
     try {
@@ -85,6 +87,11 @@ export default function Header({ toggleSidebar, hideSidebar = false }: HeaderPro
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.username || 'User'}</DropdownMenuLabel>
               <DropdownMenuLabel className="text-xs text-gray-500">{user?.email || ''}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation('/changes-log')}>
+                <FileText className="mr-2 h-4 w-4" />
+                {language === 'English' ? 'Changes Log' : 'سجل التغييرات'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>

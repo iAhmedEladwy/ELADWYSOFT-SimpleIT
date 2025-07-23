@@ -21,6 +21,10 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-23
+- **COMPLETED**: UI Updates - Version & Navigation Enhancement
+  - ✓ **VERSION UPDATE**: Updated SimpleIT version display from v1.0 to v1.3 in sidebar footer
+  - ✓ **CHANGES LOG ACCESS**: Added "Changes Log" menu item to user dropdown in header - clicking user avatar now provides access to changes log
+  - ✓ **IMPROVED NAVIGATION**: Enhanced user experience with direct access to system changes from user profile dropdown
 - **COMPLETED**: v1.3.1 Release - Single Unified TicketForm Implementation
   - ✓ **SINGLE TICKET FORM**: Unified all 5 different ticket form components into one comprehensive `TicketForm.tsx`
   - ✓ **DUAL MODE OPERATION**: Create mode shows single comprehensive view, Edit mode shows tabbed detailed interface
