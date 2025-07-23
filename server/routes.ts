@@ -2432,18 +2432,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
-      // Map user ID to employee ID (CRITICAL FIX)
-      const userId = parseInt(submittedById.toString());
+      // Validate employee ID exists (submittedById is already an employee ID from the form)
+      const employeeId = parseInt(submittedById.toString());
       const employees = await storage.getAllEmployees();
-      const employeeRecord = employees.find(emp => emp.userId === userId);
+      const employeeRecord = employees.find(emp => emp.id === employeeId);
       
       if (!employeeRecord) {
         return res.status(400).json({ 
-          message: `No employee record found for user ID ${userId}. Please contact administrator.` 
+          message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
         });
       }
       
-      console.log(`Mapped user ID ${userId} to employee ID ${employeeRecord.id}`);
+      console.log(`Validated employee ID ${employeeId} for ticket creation`);
       
       // Get system config for ticket ID prefix
       const sysConfig = await storage.getSystemConfig();
@@ -2457,10 +2457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextId = allTickets.length + 1;
       const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
       
-      // Create ticket data with EMPLOYEE ID (not user ID)
+      // Create ticket data with validated employee ID
       const ticketData = {
         ticketId,
-        submittedById: employeeRecord.id, // Use employee ID, not user ID
+        submittedById: employeeId, // Use the employee ID from form
         requestType,
         priority,
         description,
@@ -2512,23 +2512,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Generated ticket ID: ${ticketId}`);
       
-      // Map user ID to employee ID (CRITICAL FIX for create-raw endpoint)
-      const userId = parseInt(req.body.submittedById.toString());
+      // Validate employee ID exists for create-raw endpoint
+      const employeeId = parseInt(req.body.submittedById.toString());
       const employees = await storage.getAllEmployees();
-      const employeeRecord = employees.find(emp => emp.userId === userId);
+      const employeeRecord = employees.find(emp => emp.id === employeeId);
       
       if (!employeeRecord) {
         return res.status(400).json({ 
-          message: `No employee record found for user ID ${userId}. Please contact administrator.` 
+          message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
         });
       }
       
-      console.log(`Create-raw: Mapped user ID ${userId} to employee ID ${employeeRecord.id}`);
+      console.log(`Create-raw: Validated employee ID ${employeeId} for ticket creation`);
       
-      // Create ticket data with EMPLOYEE ID (not user ID)
+      // Create ticket data with validated employee ID
       const ticketData = {
         ticketId,
-        submittedById: employeeRecord.id, // Use employee ID, not user ID
+        submittedById: employeeId, // Use the employee ID from form
         requestType: req.body.requestType || req.body.category,
         priority: req.body.priority,
         description: req.body.description,
