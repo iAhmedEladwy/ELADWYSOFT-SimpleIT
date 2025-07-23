@@ -112,8 +112,14 @@ export default function EnhancedTicketTable({
   
   // Inline editing functions
   const startEditing = (ticketId: number, field: string, currentValue: string) => {
-    // Exclude summary and ticketId from inline editing
-    if (field === 'summary' || field === 'ticketId') return;
+    // All fields now use the edit form dialog instead of inline editing for consistency
+    // Keeping this for fields that still use inline editing (Type, Priority, Status, Assigned To)
+    if (field === 'summary' || field === 'ticketId' || field === 'submittedBy') {
+      // These fields open the edit form dialog
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket) setSelectedTicket(ticket);
+      return;
+    }
     setEditingField({ ticketId, field });
     setEditValue(currentValue || '');
   };
@@ -465,11 +471,18 @@ export default function EnhancedTicketTable({
                 key={ticket.id} 
                 className="group hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 hover:shadow-md hover:-translate-y-1 relative"
               >
-                <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                <TableCell className="font-medium">
+                  <span 
+                    className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
+                    {ticket.ticketId}
+                  </span>
+                </TableCell>
                 <TableCell className="max-w-xs">
                   <div>
                     <span 
-                      className="font-medium cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                      className="font-medium cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                       onClick={() => setSelectedTicket(ticket)}
                     >
                       {ticket.summary || ticket.description.substring(0, 50) + '...'}
@@ -484,7 +497,10 @@ export default function EnhancedTicketTable({
                             window.open(`/assets?edit=${ticket.relatedAssetId}`, '_blank');
                           }}
                         >
-                          {assets?.find?.(a => a.id === ticket.relatedAssetId)?.assetId || `ID: ${ticket.relatedAssetId}`}
+                          {(() => {
+                            const asset = assets?.find?.(a => a.id === ticket.relatedAssetId);
+                            return asset ? `${asset.assetId} - ${asset.name || asset.title || 'Unnamed'}` : `ID: ${ticket.relatedAssetId}`;
+                          })()}
                         </span>
                       </div>
                     )}
@@ -492,13 +508,8 @@ export default function EnhancedTicketTable({
                 </TableCell>
                 <TableCell>
                   <span 
-                    className="cursor-pointer hover:text-blue-600 hover:underline"
-                    onClick={() => {
-                      if (submittedByEmployee) {
-                        // Open employee edit dialog or navigate to employee page
-                        window.open(`/employees?edit=${submittedByEmployee.id}`, '_blank');
-                      }
-                    }}
+                    className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                    onClick={() => setSelectedTicket(ticket)}
                   >
                     {submittedByEmployee?.englishName || submittedByEmployee?.name || 'Unknown'}
                   </span>

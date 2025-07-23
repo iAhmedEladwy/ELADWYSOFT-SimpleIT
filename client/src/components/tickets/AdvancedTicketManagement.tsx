@@ -106,6 +106,7 @@ export default function AdvancedTicketManagement() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isPrivateComment, setIsPrivateComment] = useState(false);
+  // TODO: Consolidate with main TicketFilters component to remove duplication
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
