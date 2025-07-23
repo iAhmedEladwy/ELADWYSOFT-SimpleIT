@@ -22,7 +22,7 @@ import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 import { emailService } from "./emailService";
-import { exportToCSV, importFromCSV } from "@shared/csvUtils";
+import { exportToCSV, importFromCSV, parseCSV } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
 // Helper function to generate IDs
@@ -1351,177 +1351,287 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-  // Standardized CSV Import/Export routes
-  app.post("/api/:entity/import", authenticateUser, hasAccess(3), upload.single("file"), async (req, res) => {
+  // Assets Export/Import
+  app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const { entity } = req.params;
-      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
+      const assets = await storage.getAllAssets();
       
-      if (!validEntities.includes(entity)) {
-        return res.status(400).json({ error: "Invalid entity type" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      // Get validation rules for entity type
-      const validationRules = getValidationRules(entity);
+      // Transform asset data for export with proper field mapping
+      const csvData = assets.map(asset => ({
+        'ID': asset.id,
+        'Asset ID': asset.assetId,
+        'Type': asset.type,
+        'Brand': asset.brand,
+        'Model Number': asset.modelNumber || '',
+        'Model Name': asset.modelName || '',
+        'Serial Number': asset.serialNumber,
+        'Specifications': asset.specs || '',
+        'CPU': asset.cpu || '',
+        'RAM': asset.ram || '',
+        'Storage': asset.storage || '',
+        'Status': asset.status,
+        'Purchase Date': asset.purchaseDate || '',
+        'Buy Price': asset.buyPrice || '',
+        'Warranty Expiry Date': asset.warrantyExpiryDate || '',
+        'Life Span': asset.lifeSpan || '',
+        'Out of Box OS': asset.outOfBoxOs || '',
+        'Assigned To ID': asset.assignedToId || '',
+        'Created At': asset.createdAt ? new Date(asset.createdAt).toISOString() : '',
+        'Updated At': asset.updatedAt ? new Date(asset.updatedAt).toISOString() : ''
+      }));
       
-      // Import and validate CSV data
-      const { data, validation, transformedData } = await importFromCSV(
-        req.file.buffer,
-        validationRules,
-        { headers: true }
-      );
-
-      if (!validation.isValid) {
-        return res.status(400).json({
-          error: "Validation failed",
-          errors: validation.errors,
-          warnings: validation.warnings
-        });
-      }
-
-      // Process the transformed data based on entity type
-      const importResults = [];
-      const errors: string[] = [];
-
-      for (const row of transformedData) {
-        try {
-          let result;
-          switch (entity) {
-            case 'assets':
-              // Generate asset ID if not provided
-              if (!row.assetId) {
-                const config = await storage.getSystemConfig();
-                const prefix = config?.assetIdPrefix || 'AST';
-                row.assetId = generateId(prefix, Date.now() % 100000);
-              }
-              result = await storage.createAsset(row);
-              break;
-            case 'employees':
-              if (!row.empId) {
-                const config = await storage.getSystemConfig();
-                const prefix = config?.empIdPrefix || 'EMP';
-                row.empId = generateId(prefix, Date.now() % 100000);
-              }
-              result = await storage.createEmployee(row);
-              break;
-            case 'tickets':
-              if (!row.ticketId) {
-                const config = await storage.getSystemConfig();
-                const prefix = config?.ticketIdPrefix || 'TKT';
-                row.ticketId = generateId(prefix, Date.now() % 100000);
-              }
-              result = await storage.createTicket(row);
-              break;
-            case 'users':
-              // Hash password if provided
-              if (row.password) {
-                row.password = await hash(row.password, 12);
-              }
-              result = await storage.createUser(row);
-              break;
-            case 'asset-maintenance':
-              result = await storage.createAssetMaintenance(row);
-              break;
-            case 'asset-transactions':
-              result = await storage.createAssetTransaction(row);
-              break;
-            default:
-              throw new Error("Unsupported entity type");
-          }
-          
-          importResults.push(result);
-          
-          // Log the import activity
-          await logActivity({
-            userId: req.user?.id,
-            action: AuditAction.IMPORT,
-            entityType: entity.toUpperCase().replace('-', '_') as EntityType,
-            entityId: result.id,
-            details: { importedData: row }
-          });
-        } catch (error) {
-          errors.push(`Row error: ${error instanceof Error ? error.message : "Unknown error"}`);
-        }
-      }
-
-      res.json({
-        message: `Imported ${importResults.length} ${entity} successfully`,
-        imported: importResults.length,
-        errors: errors.length > 0 ? errors : undefined,
-        warnings: validation.warnings.length > 0 ? validation.warnings : undefined
-      });
-    } catch (error) {
-      console.error("Import error:", error);
-      res.status(500).json({ error: "Import failed" });
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assets.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.get("/api/:entity/export", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
-      const { entity } = req.params;
-      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
-      
-      if (!validEntities.includes(entity)) {
-        return res.status(400).json({ error: "Invalid entity type" });
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
       }
-
-      // Get data based on entity type
-      let data;
-      switch (entity) {
-        case 'assets':
-          data = await storage.getAllAssets();
-          break;
-        case 'employees':
-          data = await storage.getAllEmployees();
-          break;
-        case 'tickets':
-          data = await storage.getAllTickets();
-          break;
-        case 'users':
-          data = await storage.getAllUsers();
-          // Remove password from export
-          data = data.map(user => ({ ...user, password: undefined }));
-          break;
-        case 'asset-maintenance':
-          data = await storage.getAllAssetMaintenances();
-          break;
-        case 'asset-transactions':
-          data = await storage.getAllAssetTransactions();
-          break;
-        default:
-          throw new Error("Unsupported entity type");
-      }
-
-      // Get export columns for entity type
-      const columns = getExportColumns(entity);
       
-      // Export to CSV
-      const { content, headers } = await exportToCSV(data, entity, { 
-        headers: true,
-        columns 
+      const csvString = req.file.buffer.toString('utf-8');
+      const parsedData = await parseCSV(csvString);
+      
+      const importResults = [];
+      const errors: string[] = [];
+      
+      for (const row of parsedData) {
+        try {
+          const assetData: any = {
+            assetId: row['Asset ID'] || row.assetId,
+            type: row['Type'] || row.type,
+            brand: row['Brand'] || row.brand,
+            modelNumber: row['Model Number'] || row.modelNumber || null,
+            modelName: row['Model Name'] || row.modelName || null,
+            serialNumber: row['Serial Number'] || row.serialNumber,
+            specs: row['Specifications'] || row.specs || null,
+            cpu: row['CPU'] || row.cpu || null,
+            ram: row['RAM'] || row.ram || null,
+            storage: row['Storage'] || row.storage || null,
+            status: row['Status'] || row.status || 'Available',
+            purchaseDate: row['Purchase Date'] || row.purchaseDate || null,
+            buyPrice: row['Buy Price'] || row.buyPrice || null,
+            warrantyExpiryDate: row['Warranty Expiry Date'] || row.warrantyExpiryDate || null,
+            lifeSpan: row['Life Span'] || row.lifeSpan || null,
+            outOfBoxOs: row['Out of Box OS'] || row.outOfBoxOs || null,
+            assignedToId: row['Assigned To ID'] || row.assignedToId || null
+          };
+          
+          const result = await storage.createAsset(assetData);
+          importResults.push(result);
+        } catch (error: any) {
+          errors.push(`Row ${parsedData.indexOf(row) + 1}: ${error.message}`);
+        }
+      }
+      
+      res.json({
+        message: `Imported ${importResults.length} assets successfully`,
+        imported: importResults.length,
+        errors: errors.length > 0 ? errors : undefined
       });
+    } catch (error: any) {
+      res.status(500).json({ error: "Asset import failed", details: error.message });
+    }
+  });
 
-      // Set response headers
-      Object.entries(headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
+  // Employees Export/Import  
+  app.get("/api/employees/export", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      
+      const csvData = employees.map(emp => ({
+        'ID': emp.id,
+        'Employee ID': emp.empId,
+        'English Name': emp.englishName,
+        'Arabic Name': emp.arabicName || '',
+        'Email': emp.email,
+        'Phone': emp.phone || '',
+        'Department': emp.department || '',
+        'Position': emp.position || '',
+        'Employment Type': emp.employmentType || '',
+        'Start Date': emp.startDate || '',
+        'Salary': emp.salary || '',
+        'Status': emp.status,
+        'Address': emp.address || '',
+        'Emergency Contact': emp.emergencyContact || '',
+        'National ID': emp.nationalId || '',
+        'Manager ID': emp.managerId || '',
+        'Created At': emp.createdAt ? new Date(emp.createdAt).toISOString() : '',
+        'Updated At': emp.updatedAt ? new Date(emp.updatedAt).toISOString() : ''
+      }));
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const csvString = req.file.buffer.toString('utf-8');
+      const parsedData = await parseCSV(csvString);
+      
+      const importResults = [];
+      const errors: string[] = [];
+      
+      for (const row of parsedData) {
+        try {
+          const employeeData: any = {
+            empId: row['Employee ID'] || row.empId,
+            englishName: row['English Name'] || row.englishName,
+            arabicName: row['Arabic Name'] || row.arabicName || null,
+            email: row['Email'] || row.email,
+            phone: row['Phone'] || row.phone || null,
+            department: row['Department'] || row.department || null,
+            position: row['Position'] || row.position || null,
+            employmentType: row['Employment Type'] || row.employmentType || 'Full-time',
+            startDate: row['Start Date'] || row.startDate || null,
+            salary: row['Salary'] || row.salary || null,
+            status: row['Status'] || row.status || 'Active',
+            address: row['Address'] || row.address || null,
+            emergencyContact: row['Emergency Contact'] || row.emergencyContact || null,
+            nationalId: row['National ID'] || row.nationalId || null,
+            managerId: row['Manager ID'] || row.managerId || null
+          };
+          
+          const result = await storage.createEmployee(employeeData);
+          importResults.push(result);
+        } catch (error: any) {
+          errors.push(`Row ${parsedData.indexOf(row) + 1}: ${error.message}`);
+        }
+      }
+      
+      res.json({
+        message: `Imported ${importResults.length} employees successfully`,
+        imported: importResults.length,
+        errors: errors.length > 0 ? errors : undefined
       });
+    } catch (error: any) {
+      res.status(500).json({ error: "Employee import failed", details: error.message });
+    }
+  });
 
-      // Log the export activity
-      await logActivity({
-        userId: req.user?.id,
-        action: AuditAction.EXPORT,
-        entityType: entity.toUpperCase().replace('-', '_') as EntityType,
-        details: { exportCount: data.length }
+  // Tickets Export/Import
+  app.get("/api/tickets/export", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const tickets = await storage.getAllTickets();
+      
+      const csvData = tickets.map(ticket => ({
+        'ID': ticket.id,
+        'Ticket ID': ticket.ticketId,
+        'Summary': ticket.summary || '',
+        'Description': ticket.description || '',
+        'Category': ticket.category || '',
+        'Request Type': ticket.requestType || '',
+        'Urgency': ticket.urgency || '',
+        'Impact': ticket.impact || '',
+        'Priority': ticket.priority || '',
+        'Status': ticket.status,
+        'Submitted By ID': ticket.submittedById || '',
+        'Assigned To ID': ticket.assignedToId || '',
+        'Related Asset ID': ticket.relatedAssetId || '',
+        'Due Date': ticket.dueDate || '',
+        'SLA Target': ticket.slaTarget || '',
+        'Escalation Level': ticket.escalationLevel || '',
+        'Tags': ticket.tags || '',
+        'Root Cause': ticket.rootCause || '',
+        'Workaround': ticket.workaround || '',
+        'Resolution': ticket.resolution || '',
+        'Resolution Notes': ticket.resolutionNotes || '',
+        'Private Notes': ticket.privateNotes || '',
+        'Created At': ticket.createdAt ? new Date(ticket.createdAt).toISOString() : '',
+        'Updated At': ticket.updatedAt ? new Date(ticket.updatedAt).toISOString() : ''
+      }));
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="tickets.csv"');
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.post("/api/tickets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const csvString = req.file.buffer.toString('utf-8');
+      const parsedData = await parseCSV(csvString);
+      
+      const importResults = [];
+      const errors: string[] = [];
+      
+      for (const row of parsedData) {
+        try {
+          const ticketData: any = {
+            ticketId: row['Ticket ID'] || row.ticketId,
+            summary: row['Summary'] || row.summary || '',
+            description: row['Description'] || row.description || '',
+            category: row['Category'] || row.category || '',
+            requestType: row['Request Type'] || row.requestType || 'Other',
+            urgency: row['Urgency'] || row.urgency || 'Medium',
+            impact: row['Impact'] || row.impact || 'Medium',
+            priority: row['Priority'] || row.priority || 'Medium',
+            status: row['Status'] || row.status || 'Open',
+            submittedById: row['Submitted By ID'] || row.submittedById || null,
+            assignedToId: row['Assigned To ID'] || row.assignedToId || null,
+            relatedAssetId: row['Related Asset ID'] || row.relatedAssetId || null,
+            dueDate: row['Due Date'] || row.dueDate || null,
+            slaTarget: row['SLA Target'] || row.slaTarget || null,
+            escalationLevel: row['Escalation Level'] || row.escalationLevel || null,
+            tags: row['Tags'] || row.tags || null,
+            rootCause: row['Root Cause'] || row.rootCause || null,
+            workaround: row['Workaround'] || row.workaround || null,
+            resolution: row['Resolution'] || row.resolution || null,
+            resolutionNotes: row['Resolution Notes'] || row.resolutionNotes || null,
+            privateNotes: row['Private Notes'] || row.privateNotes || null
+          };
+          
+          const result = await storage.createTicket(ticketData);
+          importResults.push(result);
+        } catch (error: any) {
+          errors.push(`Row ${parsedData.indexOf(row) + 1}: ${error.message}`);
+        }
+      }
+      
+      res.json({
+        message: `Imported ${importResults.length} tickets successfully`,
+        imported: importResults.length,
+        errors: errors.length > 0 ? errors : undefined
       });
-
-      res.send(content);
-    } catch (error) {
-      console.error("Export error:", error);
-      res.status(500).json({ error: "Export failed" });
+    } catch (error: any) {
+      res.status(500).json({ error: "Ticket import failed", details: error.message });
     }
   });
 

@@ -547,8 +547,8 @@ export default function Employees() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-blue-700">
               {language === 'English' 
-                ? `${activeFilterCount} filter(s) active - Showing ${filteredEmployees.length} of ${employees?.length || 0} employees`
-                : `${activeFilterCount} مرشح نشط - عرض ${filteredEmployees.length} من ${employees?.length || 0} موظف`}
+                ? `${activeFilterCount} filter(s) active - Showing ${filteredEmployees.length} of ${employees && Array.isArray(employees) ? employees.length : 0} employees`
+                : `${activeFilterCount} مرشح نشط - عرض ${filteredEmployees.length} من ${employees && Array.isArray(employees) ? employees.length : 0} موظف`}
             </span>
           </div>
         </div>
@@ -581,12 +581,12 @@ export default function Employees() {
             size="sm"
             onClick={handleSelectAll}
           >
-            {selectedEmployees.length === filteredEmployees.length ? (
+            {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? (
               <Square className="h-4 w-4 mr-2" />
             ) : (
               <CheckSquare className="h-4 w-4 mr-2" />
             )}
-            {selectedEmployees.length === filteredEmployees.length ? 
+            {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? 
               translations.deselectAll : translations.selectAll}
           </Button>
 

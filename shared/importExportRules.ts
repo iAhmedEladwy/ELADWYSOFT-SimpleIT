@@ -68,10 +68,41 @@ export const assetValidationRules: CSVValidationRule[] = [
     transform: (value) => value ? parseFloat(value).toFixed(2) : null
   },
   {
-    field: 'warrantyEndDate',
+    field: 'warrantyExpiryDate',
     required: false,
     type: 'date',
     transform: (value) => value ? new Date(value).toISOString().split('T')[0] : null
+  },
+  {
+    field: 'cpu',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'ram',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'storage',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'lifeSpan',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'outOfBoxOs',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'assignedToId',
+    required: false,
+    type: 'string',
+    transform: (value) => value ? String(value) : null
   },
   {
     field: 'assignedEmployeeId',
@@ -86,17 +117,22 @@ export const assetValidationRules: CSVValidationRule[] = [
  */
 export const employeeValidationRules: CSVValidationRule[] = [
   {
-    field: 'employeeId',
+    field: 'empId',
     required: true,
     type: 'string',
     pattern: /^[A-Z0-9-]+$/,
     validate: (value) => value.length >= 3 || 'Employee ID must be at least 3 characters'
   },
   {
-    field: 'name',
+    field: 'englishName',
     required: true,
     type: 'string',
-    validate: (value) => value.length >= 2 || 'Name must be at least 2 characters'
+    validate: (value) => value.length >= 2 || 'English name must be at least 2 characters'
+  },
+  {
+    field: 'arabicName',
+    required: false,
+    type: 'string'
   },
   {
     field: 'email',
@@ -120,7 +156,53 @@ export const employeeValidationRules: CSVValidationRule[] = [
     pattern: /^[\+]?[1-9][\d]{0,15}$/
   },
   {
-    field: 'location',
+    field: 'address',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'emergencyContact',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'nationalId',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'startDate',
+    required: false,
+    type: 'date',
+    transform: (value) => value ? new Date(value).toISOString().split('T')[0] : null
+  },
+  {
+    field: 'salary',
+    required: false,
+    type: 'string',
+    pattern: /^\d+(\.\d{2})?$/,
+    transform: (value) => value ? parseFloat(value).toFixed(2) : null
+  },
+  {
+    field: 'employmentType',
+    required: false,
+    type: 'string',
+    validate: (value) => {
+      const validTypes = ['Full-time', 'Part-time', 'Contract', 'Intern'];
+      return !value || validTypes.includes(value) || `Employment type must be one of: ${validTypes.join(', ')}`;
+    }
+  },
+  {
+    field: 'status',
+    required: false,
+    type: 'string',
+    validate: (value) => {
+      const validStatuses = ['Active', 'Resigned', 'Terminated', 'On Leave'];
+      return !value || validStatuses.includes(value) || `Status must be one of: ${validStatuses.join(', ')}`;
+    }
+  },
+  {
+    field: 'managerId',
     required: false,
     type: 'string'
   },
@@ -402,21 +484,25 @@ export const assetTransactionValidationRules: CSVValidationRule[] = [
  * Export column mappings for each entity type
  */
 export const assetExportColumns = [
-  'id', 'type', 'brand', 'assetId', 'serialNumber', 'status', 
-  'modelNumber', 'modelName', 'specs', 'purchaseDate', 'buyPrice', 
-  'warrantyEndDate', 'assignedEmployeeId', 'createdAt', 'updatedAt'
+  'id', 'assetId', 'type', 'brand', 'modelNumber', 'modelName', 'serialNumber', 
+  'specs', 'cpu', 'ram', 'storage', 'status', 'purchaseDate', 'buyPrice', 
+  'warrantyExpiryDate', 'lifeSpan', 'outOfBoxOs', 'assignedToId', 
+  'createdAt', 'updatedAt'
 ];
 
 export const employeeExportColumns = [
-  'id', 'employeeId', 'name', 'email', 'department', 'position', 
-  'phone', 'location', 'managerId', 'startDate', 'salary', 'status', 
+  'id', 'empId', 'englishName', 'arabicName', 'email', 'phone', 
+  'department', 'position', 'employmentType', 'startDate', 'salary', 
+  'status', 'address', 'emergencyContact', 'nationalId', 'managerId',
   'createdAt', 'updatedAt'
 ];
 
 export const ticketExportColumns = [
   'id', 'ticketId', 'summary', 'description', 'category', 'requestType', 
   'urgency', 'impact', 'priority', 'status', 'submittedById', 'assignedToId', 
-  'dueDate', 'resolutionTime', 'createdAt', 'updatedAt'
+  'relatedAssetId', 'dueDate', 'slaTarget', 'escalationLevel', 'tags',
+  'rootCause', 'workaround', 'resolution', 'resolutionNotes', 'privateNotes',
+  'createdAt', 'updatedAt'
 ];
 
 export const userExportColumns = [
