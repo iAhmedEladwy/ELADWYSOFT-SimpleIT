@@ -365,7 +365,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   });
 
   const getEmployeeName = (employeeId: number) => {
-    const employee = employees.find((e: any) => e.id === employeeId);
+    const employee = (employees as any[]).find((e: any) => e.id === employeeId);
     return employee ? employee.englishName || employee.name : 'Unknown';
   };
 
