@@ -26,7 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Define schema for form validation with proper transformations
 const employeeFormSchema = z.object({
-  empId: z.string().optional(),
   englishName: z.string().min(2, 'Name must be at least 2 characters'),
   arabicName: z.string().optional().or(z.literal('')),
   department: z.string().min(1, 'Department is required'),
@@ -119,7 +118,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     console.log('Initial data for formatting:', initialData);
     
     return {
-      empId: initialData.employeeId || initialData.empId || '',
       englishName: initialData.name || initialData.englishName || '',
       arabicName: initialData.arabicName || '',
       department: initialData.department || '',
@@ -142,7 +140,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
-      empId: '',
       englishName: '',
       arabicName: '',
       department: '',
@@ -173,7 +170,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     } else {
       // Reset to default values for create mode
       form.reset({
-        empId: '',
         englishName: '',
         arabicName: '',
         department: '',
@@ -211,7 +207,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       joiningDate: values.joiningDate || new Date().toISOString().split('T')[0],
       
       // Optional fields with proper null handling
-      empId: values.empId || (initialData ? initialData.empId : undefined),
+      empId: (initialData ? initialData.empId : undefined), // Keep existing empId for updates, let backend auto-generate for new employees
       arabicName: values.arabicName || null,
       directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
       exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,
@@ -236,26 +232,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
           
           <TabsContent value="general" className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="empId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.employeeID}</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={!!initialData} className={initialData ? 'bg-gray-50' : ''} />
-                    </FormControl>
-                    <FormDescription>
-                      {initialData 
-                        ? (language === 'English' ? 'Employee ID cannot be changed' : 'لا يمكن تغيير معرف الموظف')
-                        : translations.idDesc
-                      }
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="englishName"
