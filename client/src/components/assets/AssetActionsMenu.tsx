@@ -71,7 +71,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
       employeeId: parseInt(selectedEmployeeId),
       notes: notes || reason,
-      type: reason
+      type: 'Check-Out'
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: 'Asset checked out successfully' });
@@ -88,7 +88,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   const checkInMutation = useMutation({
     mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
       notes: notes || reason,
-      type: reason
+      type: 'Check-In'
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: 'Asset checked in successfully' });
@@ -528,7 +528,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {record.cost ? `$${record.cost.toFixed(2)}` : '-'}
+                            {record.cost ? `$${Number(record.cost).toFixed(2)}` : '-'}
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
