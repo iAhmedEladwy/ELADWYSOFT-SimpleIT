@@ -48,9 +48,18 @@ interface MaintenanceFormProps {
   isSubmitting: boolean;
   assetId: number;
   assetName?: string;
+  initialData?: {
+    date?: string;
+    type?: string;
+    description?: string;
+    cost?: string;
+    providerType?: string;
+    providerName?: string;
+    status?: string;
+  };
 }
 
-export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, assetName }: MaintenanceFormProps) {
+export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, assetName, initialData }: MaintenanceFormProps) {
   const { language } = useLanguage();
   const { symbol } = useCurrency();
 
@@ -93,13 +102,13 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
   const form = useForm<z.infer<typeof maintenanceFormSchema>>({
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      type: 'Preventive',
-      description: '',
-      cost: '0',
-      providerType: 'Internal',
-      providerName: 'IT Department',
-      status: 'Completed'
+      date: initialData?.date || new Date().toISOString().split('T')[0],
+      type: initialData?.type || 'Preventive',
+      description: initialData?.description || '',
+      cost: initialData?.cost || '0',
+      providerType: initialData?.providerType || 'Internal',
+      providerName: initialData?.providerName || 'IT Department',
+      status: initialData?.status || 'Completed'
     },
   });
 

@@ -2076,6 +2076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get maintenance records for an asset
   app.get("/api/assets/:id/maintenance", authenticateUser, async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
@@ -2095,7 +2096,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...record,
             performerName: performer ? performer.username : 'System',
-            canEdit: record.maintenanceType !== 'Completed' && record.maintenanceType !== 'Cancelled'
+            canEdit: record.type !== 'Completed' && record.type !== 'Cancelled'
+          };
+        })
+      );
+      
+      res.json(enrichedMaintenance);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  // Update maintenance record
+  app.put("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const maintenanceId = parseInt(req.params.id);
+      
+      // Get existing maintenance record (need to add this method to storage)
+      const existingMaintenance = await storage.getAssetMaintenanceById(maintenanceId);
+      if (!existingMaintenance) {
+        return res.status(404).json({ message: "Maintenance record not found" });
+      }
+      
+      // Validate request data
+      let requestData = { ...req.body };
+      if (requestData.cost === undefined || requestData.cost === null || requestData.cost === '') {
+        requestData.cost = existingMaintenance.cost;
+      }
+      
+      const maintenanceData = validateBody<Partial<schema.InsertAssetMaintenance>>(
+        schema.insertAssetMaintenanceSchema.partial(), 
+        requestData
+      );
+      
+      const updatedMaintenance = await storage.updateAssetMaintenance(maintenanceId, maintenanceData);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Update",
+          entityType: "Asset Maintenance",
+          entityId: maintenanceId,
+          details: { 
+            maintenanceId,
+            changes: requestData,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
+      res.json(updatedMaintenance);
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  // Get all maintenance records (for maintenance management page)
+  app.get("/api/maintenance", authenticateUser, async (req, res) => {
+    try {
+      const maintenance = await storage.getAllMaintenanceRecords();
+      
+      // Enrich with asset and performer details
+      const enrichedMaintenance = await Promise.all(
+        maintenance.map(async (record) => {
+          const asset = await storage.getAsset(record.assetId);
+          const performer = record.performedBy ? await storage.getUser(record.performedBy) : null;
+          
+          return {
+            ...record,
+            assetInfo: asset ? {
+              assetId: asset.assetId,
+              type: asset.type,
+              brand: asset.brand,
+              modelName: asset.modelName
+            } : null,
+            performerName: performer ? performer.username : 'System',
+            canEdit: record.type !== 'Completed' && record.type !== 'Cancelled'
           };
         })
       );

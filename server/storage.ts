@@ -88,6 +88,9 @@ export interface IStorage {
   // Asset Maintenance operations
   createAssetMaintenance(maintenance: InsertAssetMaintenance): Promise<AssetMaintenance>;
   getMaintenanceForAsset(assetId: number): Promise<AssetMaintenance[]>;
+  getAssetMaintenanceById(id: number): Promise<AssetMaintenance | undefined>;
+  updateAssetMaintenance(id: number, maintenance: Partial<InsertAssetMaintenance>): Promise<AssetMaintenance | undefined>;
+  getAllMaintenanceRecords(): Promise<AssetMaintenance[]>;
 
   // Asset Transaction operations
   createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction>;
@@ -963,6 +966,44 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(assetMaintenance.date));
     } catch (error) {
       console.error(`Error fetching maintenance records for asset ${assetId}:`, error);
+      return [];
+    }
+  }
+
+  async getAssetMaintenanceById(id: number): Promise<AssetMaintenance | undefined> {
+    try {
+      const result = await db.select().from(assetMaintenance)
+        .where(eq(assetMaintenance.id, id))
+        .limit(1);
+      return result[0];
+    } catch (error) {
+      console.error(`Error fetching maintenance record ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async updateAssetMaintenance(id: number, maintenanceData: Partial<InsertAssetMaintenance>): Promise<AssetMaintenance | undefined> {
+    try {
+      const result = await db.update(assetMaintenance)
+        .set({
+          ...maintenanceData,
+          updatedAt: new Date()
+        })
+        .where(eq(assetMaintenance.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error(`Error updating maintenance record ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async getAllMaintenanceRecords(): Promise<AssetMaintenance[]> {
+    try {
+      return await db.select().from(assetMaintenance)
+        .orderBy(desc(assetMaintenance.date));
+    } catch (error) {
+      console.error('Error fetching all maintenance records:', error);
       return [];
     }
   }

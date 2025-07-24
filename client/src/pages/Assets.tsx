@@ -292,13 +292,17 @@ export default function Assets() {
   const addMaintenanceMutation = useMutation({
     mutationFn: async (maintenanceData: any) => {
       try {
-        const res = await fetch('/api/maintenance', {
+        const { assetId, ...data } = maintenanceData;
+        const res = await fetch(`/api/assets/${assetId}/maintenance`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(maintenanceData)
+          body: JSON.stringify(data)
         });
-        if (!res.ok) throw new Error('Failed to add maintenance record');
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to add maintenance record');
+        }
         return res.json();
       } catch (error) {
         console.error('Maintenance error:', error);
