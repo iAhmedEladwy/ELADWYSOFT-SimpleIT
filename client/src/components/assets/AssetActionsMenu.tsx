@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit, Calendar, User, Settings, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { format } from 'date-fns';
 import MaintenanceForm from './MaintenanceForm';
 import { UpgradeForm } from './UpgradeForm';
 
@@ -36,6 +41,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
   const [showCheckInDialog, setShowCheckInDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
@@ -110,7 +116,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   };
 
   const handleViewHistory = () => {
-    setLocation(`/asset-history?assetId=${asset.id}`);
+    setShowHistoryDialog(true);
   };
 
   const handleEdit = () => {
@@ -321,6 +327,236 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Asset History Dialog */}
+      <AssetHistoryDialog 
+        open={showHistoryDialog} 
+        onOpenChange={setShowHistoryDialog}
+        asset={asset}
+      />
     </>
+  );
+}
+
+// Asset History Dialog Component
+function AssetHistoryDialog({ open, onOpenChange, asset }: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  asset: any; 
+}) {
+  // Fetch asset transactions
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['/api/asset-transactions', asset.id],
+    queryFn: () => apiRequest(`/api/asset-transactions?assetId=${asset.id}`),
+    enabled: open
+  });
+
+  // Fetch asset maintenance records
+  const { data: maintenanceRecords = [] } = useQuery({
+    queryKey: ['/api/assets', asset.id, 'maintenance'],
+    queryFn: () => apiRequest(`/api/assets/${asset.id}/maintenance`),
+    enabled: open
+  });
+
+  // Fetch employees for name lookup
+  const { data: employees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+    enabled: open
+  });
+
+  const getEmployeeName = (employeeId: number) => {
+    const employee = employees.find((e: any) => e.id === employeeId);
+    return employee ? employee.englishName || employee.name : 'Unknown';
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'Check Out': return <LogOut className="h-4 w-4 text-blue-500" />;
+      case 'Check In': return <LogIn className="h-4 w-4 text-green-500" />;
+      case 'Assignment': return <User className="h-4 w-4 text-purple-500" />;
+      case 'Maintenance': return <Wrench className="h-4 w-4 text-orange-500" />;
+      case 'Upgrade': return <ArrowUp className="h-4 w-4 text-indigo-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getMaintenanceIcon = (status: string) => {
+    switch (status) {
+      case 'Completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'In Progress': return <Settings className="h-4 w-4 text-blue-500" />;
+      case 'Scheduled': return <Calendar className="h-4 w-4 text-orange-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Asset History - {asset.assetId}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* Asset Information */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="font-medium text-gray-600">Type:</span>
+                <div>{asset.type}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Brand:</span>
+                <div>{asset.brand}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Model:</span>
+                <div>{asset.modelName || '-'}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Status:</span>
+                <Badge className={
+                  asset.status === 'Available' ? 'bg-green-100 text-green-800' :
+                  asset.status === 'In Use' ? 'bg-blue-100 text-blue-800' :
+                  asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }>
+                  {asset.status}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultValue="transactions" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="transactions">
+                Check-In/Out History ({transactions.length})
+              </TabsTrigger>
+              <TabsTrigger value="maintenance">
+                Maintenance Records ({maintenanceRecords.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="transactions" className="space-y-4">
+              <ScrollArea className="h-[400px]">
+                {transactions.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction: any) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getTransactionIcon(transaction.type)}
+                              <span className="font-medium">{transaction.type}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              {getEmployeeName(transaction.employeeId)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-gray-600">
+                              {transaction.notes || '-'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                    <FileText className="h-8 w-8 mb-2" />
+                    <p>No transaction history found</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+            
+            <TabsContent value="maintenance" className="space-y-4">
+              <ScrollArea className="h-[400px]">
+                {maintenanceRecords.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Cost</TableHead>
+                        <TableHead>Provider</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {maintenanceRecords.map((record: any) => (
+                        <TableRow key={record.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getMaintenanceIcon(record.status)}
+                              <span className="font-medium">{record.status}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{record.type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs truncate" title={record.description}>
+                              {record.description}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {record.cost ? `$${record.cost.toFixed(2)}` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div className="font-medium">{record.providerName || 'N/A'}</div>
+                              <div className="text-gray-500">{record.providerType}</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                    <Wrench className="h-8 w-8 mb-2" />
+                    <p>No maintenance records found</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
