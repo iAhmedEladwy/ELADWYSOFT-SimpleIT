@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard, Settings, ArrowUp } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
