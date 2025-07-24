@@ -240,6 +240,88 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ITIL-Compliant Asset Upgrade Management
+export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
+export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High', 'Medium', 'Low']);
+export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
+
+export const assetUpgrades = pgTable("asset_upgrades", {
+  id: serial("id").primaryKey(),
+  upgradeId: varchar("upgrade_id", { length: 20 }).notNull().unique(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  requestedById: integer("requested_by_id").notNull().references(() => users.id),
+  approvedById: integer("approved_by_id").references(() => users.id),
+  implementedById: integer("implemented_by_id").references(() => users.id),
+  
+  // ITIL Change Management Fields
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  businessJustification: text("business_justification").notNull(),
+  upgradeType: varchar("upgrade_type", { length: 100 }).notNull(), // Hardware, Software, Firmware, Configuration
+  priority: upgradePriorityEnum("priority").notNull().default('Medium'),
+  risk: upgradeRiskEnum("risk").notNull().default('Medium'),
+  status: upgradeStatusEnum("status").notNull().default('Planned'),
+  
+  // Current vs New Configuration
+  currentConfiguration: json("current_configuration"), // Current asset specs/config
+  newConfiguration: json("new_configuration"), // Planned new specs/config
+  
+  // Implementation Details
+  plannedStartDate: timestamp("planned_start_date"),
+  plannedEndDate: timestamp("planned_end_date"),
+  actualStartDate: timestamp("actual_start_date"),
+  actualEndDate: timestamp("actual_end_date"),
+  implementationNotes: text("implementation_notes"),
+  
+  // Testing & Verification
+  testingRequired: boolean("testing_required").default(true),
+  testingNotes: text("testing_notes"),
+  backoutPlan: text("backout_plan").notNull(), // ITIL Requirement
+  
+  // Cost Management
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).default('0'),
+  actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default('0'),
+  costJustification: text("cost_justification"),
+  
+  // Impact Assessment
+  impactAssessment: text("impact_assessment").notNull(),
+  dependentAssets: text("dependent_assets").array(), // Asset IDs that depend on this
+  affectedUsers: text("affected_users").array(), // User IDs affected by upgrade
+  downtimeRequired: boolean("downtime_required").default(false),
+  estimatedDowntime: integer("estimated_downtime"), // Minutes
+  
+  // Approval Workflow
+  requiresApproval: boolean("requires_approval").default(true),
+  approvalDate: timestamp("approval_date"),
+  approvalNotes: text("approval_notes"),
+  
+  // Success Criteria
+  successCriteria: text("success_criteria").notNull(),
+  verificationSteps: text("verification_steps").array(),
+  postUpgradeValidation: text("post_upgrade_validation"),
+  
+  // Rollback Information
+  rollbackRequired: boolean("rollback_required").default(false),
+  rollbackDate: timestamp("rollback_date"),
+  rollbackReason: text("rollback_reason"),
+  rollbackNotes: text("rollback_notes"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Upgrade History/Audit Trail
+export const upgradeHistory = pgTable("upgrade_history", {
+  id: serial("id").primaryKey(),
+  upgradeId: integer("upgrade_id").notNull().references(() => assetUpgrades.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(), // Status Change, Comment Added, Configuration Updated, etc.
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  notes: text("notes"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 // Tickets table with enhanced features and ITIL compliance
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
