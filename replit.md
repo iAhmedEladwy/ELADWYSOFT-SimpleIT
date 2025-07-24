@@ -31,6 +31,11 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
   - ✓ **TAB REMOVAL**: Removed "Recent Activity" tab from Dashboard as requested
   - ✓ **CODE CLEANUP**: Removed unused RecentActivity component import and related translations
   - ✓ **UI STREAMLINING**: Simplified Dashboard navigation to Overview and Notifications only
+- **COMPLETED**: Employee Creation API Fix - Corrected Parameter Order
+  - ✓ **API PARAMETER FIX**: Fixed apiRequest function parameter order in employee mutations (URL first, then method, then data)
+  - ✓ **CREATE MUTATION**: Corrected addEmployeeMutation to use proper apiRequest('/api/employees/create-raw', 'POST', data) format
+  - ✓ **UPDATE MUTATION**: Fixed updateEmployeeMutation parameter order for consistent API calls
+  - ✓ **DELETE MUTATION**: Corrected deleteEmployeeMutation parameter order to prevent HTTP method errors
 
 ### 2025-01-23
 - **COMPLETED**: v1.3.5 Release - ITIL-Compliant Assets Page Consolidation
