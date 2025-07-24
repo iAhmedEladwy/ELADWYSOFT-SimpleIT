@@ -21,6 +21,17 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-24
+- **COMPLETED**: v1.3.8 Maintenance Form Enhancement - Professional Popup Form Implementation
+  - ✓ **MAINTENANCE FORM COMPONENT**: Created dedicated MaintenanceForm.tsx with comprehensive fields (description, date, cost, provider)
+  - ✓ **POPUP DIALOG INTEGRATION**: Replaced prompt-based maintenance with professional popup form interface
+  - ✓ **FIELD VALIDATION**: Added Zod schema validation for maintenance type, description, cost, and provider information
+  - ✓ **PROVIDER MANAGEMENT**: Added provider type selection (Internal/External) with customizable provider names
+  - ✓ **COST TRACKING**: Integrated currency-aware cost input with proper validation and formatting
+  - ✓ **MAINTENANCE TYPES**: Added comprehensive maintenance type options (Preventive, Corrective, Upgrade, Repair, Inspection, Cleaning, Replacement)
+  - ✓ **BILINGUAL SUPPORT**: Complete Arabic and English translation support for all form fields
+  - ✓ **ASSET CONTEXT**: Shows asset ID and name in form for clear maintenance record association
+  - ✓ **STATUS TRACKING**: Added maintenance status options (Completed, In Progress, Scheduled)
+  - ✓ **API INTEGRATION**: Connected to existing /api/maintenance endpoint with proper error handling
 - **COMPLETED**: v1.3.7 Asset Form Simplification - Additional Information Tab Removal
   - ✓ **ADDITIONAL INFO TAB REMOVAL**: Completely removed "Additional Information" tab from Asset form interface as requested
   - ✓ **TAB STRUCTURE SIMPLIFIED**: Asset form now has only 2 tabs - Basic Information and Purchase Information

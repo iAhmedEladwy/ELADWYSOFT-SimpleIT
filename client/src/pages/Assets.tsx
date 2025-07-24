@@ -24,6 +24,7 @@ import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, Fil
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
+import MaintenanceForm from '@/components/assets/MaintenanceForm';
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -38,6 +39,8 @@ export default function Assets() {
   const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
+  const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
+  const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
   
 
   
@@ -284,6 +287,40 @@ export default function Assets() {
     }
   });
 
+  const addMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceData: any) => {
+      try {
+        const res = await fetch('/api/maintenance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(maintenanceData)
+        });
+        if (!res.ok) throw new Error('Failed to add maintenance record');
+        return res.json();
+      } catch (error) {
+        console.error('Maintenance error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenMaintenanceDialog(false);
+      setMaintenanceAsset(null);
+      toast({
+        title: translations.success,
+        description: language === 'Arabic' ? 'تم إضافة سجل الصيانة بنجاح' : 'Maintenance record added successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'Arabic' ? 'فشل في إضافة سجل الصيانة' : 'Failed to add maintenance record'),
+        variant: 'destructive',
+      });
+    }
+  });
+
   // Event handlers
   const handleAddAsset = (assetData: any) => {
     addAssetMutation.mutate(assetData);
@@ -302,37 +339,13 @@ export default function Assets() {
   };
 
   const handleAddMaintenance = (assetId: number) => {
-    // Create maintenance record for asset
-    const maintenanceData = {
-      assetId: assetId,
-      date: new Date().toISOString().split('T')[0],
-      type: 'Preventive', 
-      description: prompt('Enter maintenance description:') || 'Routine maintenance',
-      cost: 0,
-      providerType: 'Internal',
-      providerName: 'IT Department',
-      status: 'Completed'
-    };
-    
-    // Call API to create maintenance record
-    fetch('/api/maintenance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(maintenanceData)
-    }).then(() => {
-      toast({
-        title: 'Success',
-        description: 'Maintenance record added successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-    }).catch(() => {
-      toast({
-        title: 'Error',
-        description: 'Failed to add maintenance record',
-        variant: 'destructive',
-      });
-    });
+    const asset = assets?.find(a => a.id === assetId);
+    setMaintenanceAsset(asset);
+    setOpenMaintenanceDialog(true);
+  };
+
+  const handleMaintenanceSubmit = (maintenanceData: any) => {
+    addMaintenanceMutation.mutate(maintenanceData);
   };
 
   const handleUpgradeAsset = (assetId: number) => {
@@ -979,6 +992,54 @@ export default function Assets() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add/Edit Asset Dialog */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAsset ? translations.editAsset : translations.addAsset}
+            </DialogTitle>
+            <DialogDescription>
+              {editingAsset 
+                ? 'Update the asset information below' 
+                : 'Fill in the details to add a new asset'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <AssetForm
+            onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
+            initialData={editingAsset}
+            isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance Form Dialog */}
+      <Dialog open={openMaintenanceDialog} onOpenChange={setOpenMaintenanceDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              {language === 'Arabic' ? 'إضافة سجل صيانة' : 'Add Maintenance Record'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'Arabic' 
+                ? 'أضف سجل صيانة مفصل لتتبع أعمال الصيانة والإصلاحات' 
+                : 'Add a detailed maintenance record to track service work and repairs'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {maintenanceAsset && (
+            <MaintenanceForm
+              onSubmit={handleMaintenanceSubmit}
+              isSubmitting={addMaintenanceMutation.isPending}
+              assetId={maintenanceAsset.id}
+              assetName={`${maintenanceAsset.type} - ${maintenanceAsset.brand} ${maintenanceAsset.modelName || ''}`.trim()}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
     </>
   );
