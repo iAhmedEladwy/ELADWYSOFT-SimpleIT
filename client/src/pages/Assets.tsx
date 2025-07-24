@@ -12,20 +12,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard, Settings, ArrowUp } from 'lucide-react';
+
+import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
-import AssetActionButtons from '@/components/assets/AssetActionButtons';
+import AssetsTable from '@/components/assets/AssetsTable';
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -813,196 +810,28 @@ export default function Assets() {
               ))}
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">
-                      <input
-                        type="checkbox"
-                        checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedAssets(filteredAssets.map((a: any) => a.id));
-                          } else {
-                            setSelectedAssets([]);
-                          }
-                        }}
-                      />
-                    </TableHead>
-                    <TableHead>Asset ID</TableHead>
-                    <TableHead>Type & Brand</TableHead>
-                    <TableHead>Serial Number</TableHead>
-                    <TableHead>Purchase Date</TableHead>
-                    <TableHead>Hardware Specs</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAssets.map((asset: any) => (
-                    <TableRow key={asset.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedAssets.includes(asset.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedAssets([...selectedAssets, asset.id]);
-                            } else {
-                              setSelectedAssets(selectedAssets.filter(id => id !== asset.id));
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div 
-                          className="font-medium text-blue-600 cursor-pointer hover:text-blue-800"
-                          onClick={() => {
-                            setEditingAsset(asset);
-                            setOpenDialog(true);
-                          }}
-                        >
-                          {asset.assetId}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{asset.type}</div>
-                          <div className="text-sm text-gray-500">{asset.brand} {asset.modelName && `- ${asset.modelName}`}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-mono text-sm">{asset.serialNumber}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          {asset.purchaseDate ? format(new Date(asset.purchaseDate), 'MMM dd, yyyy') : '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 text-xs">
-                          {(asset.cpu || asset.ram || asset.storage) ? (
-                            <>
-                              {asset.cpu && (
-                                <div className="flex items-center gap-1">
-                                  <Cpu className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate max-w-[120px]" title={asset.cpu}>{asset.cpu}</span>
-                                </div>
-                              )}
-                              {asset.ram && (
-                                <div className="flex items-center gap-1">
-                                  <MemoryStick className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate max-w-[80px]" title={asset.ram}>{asset.ram}</span>
-                                </div>
-                              )}
-                              {asset.storage && (
-                                <div className="flex items-center gap-1">
-                                  <HardDrive className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate max-w-[100px]" title={asset.storage}>{asset.storage}</span>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-gray-400 text-sm">No specs</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={
-                            asset.status === 'Available' ? 'bg-green-100 text-green-800' :
-                            asset.status === 'In Use' ? 'bg-blue-100 text-blue-800' :
-                            asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                            asset.status === 'Damaged' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }
-                        >
-                          {asset.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {asset.assignedToId ? (
-                          <div className="flex items-center gap-1">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm">
-                              {employees && Array.isArray(employees) ? 
-                                (employees.find((e: any) => e.id === asset.assignedToId)?.englishName || 
-                                 employees.find((e: any) => e.id === asset.assignedToId)?.name || 
-                                 'Unknown') : 'Unknown'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">Unassigned</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setEditingAsset(asset);
-                              setOpenDialog(true);
-                            }}
-                            title="Edit Asset"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          
-                          {/* Use existing AssetActionButtons component for check-in/check-out */}
-                          <AssetActionButtons asset={asset} employees={employees || []} />
-                          
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => window.open(`/asset-history?assetId=${asset.id}`, '_blank')}
-                            title="View Asset History"
-                          >
-                            <History className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleAddMaintenance(asset.id)}
-                            title="Add Maintenance Record"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleUpgradeAsset(asset.id)}
-                            title="Record Upgrade"
-                          >
-                            <ArrowUp className="h-4 w-4" />
-                          </Button>
-                          {hasAccess(3) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => deleteAssetMutation.mutate(asset.id)}
-                              title="Delete Asset"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredAssets.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                        No assets found matching the current filters
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <AssetsTable 
+              assets={filteredAssets}
+              employees={employees || []}
+              selectedAssets={selectedAssets}
+              setSelectedAssets={setSelectedAssets}
+              onEdit={(asset) => {
+                setEditingAsset(asset);
+                setOpenDialog(true);
+              }}
+              onDelete={(assetId) => deleteAssetMutation.mutate(assetId)}
+              onAssign={(assetId, employeeId) => {
+                // Handle asset assignment
+                console.log('Assign asset', assetId, 'to employee', employeeId);
+              }}
+              onUnassign={(assetId) => {
+                // Handle asset unassignment
+                console.log('Unassign asset', assetId);
+              }}
+              onAddMaintenance={(assetId, maintenanceData) => {
+                handleAddMaintenance(assetId);
+              }}
+            />
           )}
         </CardContent>
       </Card>
