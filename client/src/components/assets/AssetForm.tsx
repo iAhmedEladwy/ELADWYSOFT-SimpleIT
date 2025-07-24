@@ -432,6 +432,26 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
 
               <FormField
                 control={form.control}
+                name="outOfBoxOs"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'Installed OS' : 'نظام التشغيل المثبت'}</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        onChange={(e) => field.onChange(e.target.value)}
+                        placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} 
+                      />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset (optional)' : 'نظام التشغيل المثبت حالياً على الأصل (اختياري)'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="specs"
                 render={({ field }) => (
                   <FormItem className="col-span-1 sm:col-span-2">
@@ -524,55 +544,17 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
           
           <TabsContent value="additional" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="outOfBoxOs"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{language === 'English' ? 'Installed OS' : 'نظام التشغيل المثبت'}</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ''} 
-                        onChange={(e) => field.onChange(e.target.value)}
-                        placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} 
-                      />
-                    </FormControl>
-                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset (optional)' : 'نظام التشغيل المثبت حالياً على الأصل (اختياري)'}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              {/* Assigned To field is hidden as requested - but kept in form for backend compatibility */}
+              <input 
+                type="hidden" 
+                {...form.register('assignedEmployeeId')} 
+                value={form.watch('assignedEmployeeId') || ''} 
               />
-
-              <FormField
-                control={form.control}
-                name="assignedEmployeeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.assignedTo}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={translations.none} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">{translations.none}</SelectItem>
-                        {employees && employees.length > 0 && employees.map((employee: any) => (
-                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.englishName || employee.name} ({employee.empId})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>{translations.assignedToDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              {/* Additional fields can be added here in future */}
+              <div className="col-span-1 sm:col-span-2 text-center text-muted-foreground py-8">
+                {language === 'English' ? 'Additional asset information can be managed after creation.' : 'يمكن إدارة معلومات إضافية للأصل بعد الإنشاء.'}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

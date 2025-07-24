@@ -302,8 +302,73 @@ export default function Assets() {
   };
 
   const handleAddMaintenance = (assetId: number) => {
-    // Navigate to maintenance page or open maintenance dialog
-    console.log('Add maintenance for asset:', assetId);
+    // Create maintenance record for asset
+    const maintenanceData = {
+      assetId: assetId,
+      date: new Date().toISOString().split('T')[0],
+      type: 'Preventive', 
+      description: prompt('Enter maintenance description:') || 'Routine maintenance',
+      cost: 0,
+      providerType: 'Internal',
+      providerName: 'IT Department',
+      status: 'Completed'
+    };
+    
+    // Call API to create maintenance record
+    fetch('/api/maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(maintenanceData)
+    }).then(() => {
+      toast({
+        title: 'Success',
+        description: 'Maintenance record added successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+    }).catch(() => {
+      toast({
+        title: 'Error',
+        description: 'Failed to add maintenance record',
+        variant: 'destructive',
+      });
+    });
+  };
+
+  const handleUpgradeAsset = (assetId: number) => {
+    // Record asset upgrade
+    const upgradeDescription = prompt('Enter upgrade details (e.g., RAM upgrade, Storage upgrade):');
+    if (!upgradeDescription) return;
+    
+    const upgradeData = {
+      assetId: assetId,
+      date: new Date().toISOString().split('T')[0],
+      type: 'Upgrade',
+      description: upgradeDescription,
+      cost: parseFloat(prompt('Enter upgrade cost (optional):') || '0'),
+      providerType: 'Internal',
+      providerName: 'IT Department'
+    };
+    
+    // Call API to record upgrade
+    fetch('/api/maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(upgradeData)
+    }).then(() => {
+      toast({
+        title: 'Success',
+        description: 'Asset upgrade recorded successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+    }).catch(() => {
+      toast({
+        title: 'Error',
+        description: 'Failed to record asset upgrade',
+        variant: 'destructive',
+      });
+    });
   };
 
   const handleExport = () => {
@@ -859,21 +924,40 @@ export default function Assets() {
                               setEditingAsset(asset);
                               setOpenDialog(true);
                             }}
+                            title="Edit Asset"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => window.open(`/assets-history?assetId=${asset.id}`, '_blank')}
+                            onClick={() => window.open(`/asset-history?assetId=${asset.id}`, '_blank')}
+                            title="View Asset History"
                           >
                             <History className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleAddMaintenance(asset.id)}
+                            title="Add Maintenance Record"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleUpgradeAsset(asset.id)}
+                            title="Record Upgrade"
+                          >
+                            <ArrowUp className="h-4 w-4" />
                           </Button>
                           {hasAccess(3) && (
                             <Button 
                               variant="ghost" 
                               size="sm"
                               onClick={() => deleteAssetMutation.mutate(asset.id)}
+                              title="Delete Asset"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
