@@ -21,6 +21,17 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 
 ## Recent Changes
 ### 2025-01-24
+- **COMPLETED**: v1.3.9 Asset Check-In/Check-Out System - ITIL-Compliant Asset Assignment Tracking
+  - ✓ **CHECK-OUT FUNCTIONALITY**: Added check-out system for assigning assets to employees with date tracking
+  - ✓ **CHECK-IN FUNCTIONALITY**: Added check-in system for returning assets and unassigning from employees
+  - ✓ **DYNAMIC BUTTONS**: Check-in/check-out buttons appear based on asset assignment status (green check-in for assigned, blue check-out for unassigned)
+  - ✓ **EMPLOYEE SELECTION**: Integrated employee dropdown for asset check-out with real employee data
+  - ✓ **RETURN NOTES**: Added optional notes field for asset condition tracking during check-in
+  - ✓ **API INTEGRATION**: Connected to /api/assets/checkout and /api/assets/checkin endpoints
+  - ✓ **STATUS TRACKING**: Automatic status updates and assignment tracking with date/time stamps
+  - ✓ **BILINGUAL SUPPORT**: Complete Arabic and English translation support for all check-in/check-out interfaces
+  - ✓ **ASSET CONTEXT**: Shows asset ID, type, brand, and current assignment status in dialogs
+  - ✓ **HISTORY TRACKING**: All check-in/check-out activities logged for asset history and audit trails
 - **COMPLETED**: v1.3.8 Maintenance Form Enhancement - Professional Popup Form Implementation
   - ✓ **MAINTENANCE FORM COMPONENT**: Created dedicated MaintenanceForm.tsx with comprehensive fields (description, date, cost, provider)
   - ✓ **POPUP DIALOG INTEGRATION**: Replaced prompt-based maintenance with professional popup form interface

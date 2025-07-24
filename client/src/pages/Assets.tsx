@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard, Settings, ArrowUp } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Edit, Trash2, Eye, History, FileDown, Package, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, FileUp, DollarSign, Calendar, User, Tag, Building, Wrench, CheckCircle, AlertCircle, Clipboard, Settings, ArrowUp, LogIn, LogOut, UserCheck } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
@@ -41,6 +41,9 @@ export default function Assets() {
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
   const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
+  const [openCheckInDialog, setOpenCheckInDialog] = useState(false);
+  const [openCheckOutDialog, setOpenCheckOutDialog] = useState(false);
+  const [checkAsset, setCheckAsset] = useState<any>(null);
   
 
   
@@ -70,6 +73,14 @@ export default function Assets() {
     totalAmount: language === 'Arabic' ? 'المبلغ الإجمالي' : 'Total Amount',
     notes: language === 'Arabic' ? 'ملاحظات' : 'Notes',
     cancel: language === 'Arabic' ? 'إلغاء' : 'Cancel',
+    checkIn: language === 'Arabic' ? 'تسجيل دخول' : 'Check In',
+    checkOut: language === 'Arabic' ? 'تسجيل خروج' : 'Check Out',
+    checkInAsset: language === 'Arabic' ? 'تسجيل دخول الأصل' : 'Check In Asset',
+    checkOutAsset: language === 'Arabic' ? 'تسجيل خروج الأصل' : 'Check Out Asset',
+    assignTo: language === 'Arabic' ? 'تخصيص إلى' : 'Assign To',
+    selectEmployee: language === 'Arabic' ? 'اختر موظف' : 'Select Employee',
+    returnNotes: language === 'Arabic' ? 'ملاحظات الإرجاع' : 'Return Notes',
+    checkInNotes: language === 'Arabic' ? 'ملاحظات تسجيل الدخول' : 'Check-in Notes',
     selectFile: language === 'Arabic' ? 'اختر ملف' : 'Select File',
     uploadFile: language === 'Arabic' ? 'رفع الملف' : 'Upload File',
     importing: language === 'Arabic' ? 'جاري الاستيراد...' : 'Importing...',
@@ -321,6 +332,50 @@ export default function Assets() {
     }
   });
 
+  const checkOutAssetMutation = useMutation({
+    mutationFn: async (checkOutData: any) => {
+      return apiRequest('/api/assets/checkout', 'POST', checkOutData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenCheckOutDialog(false);
+      setCheckAsset(null);
+      toast({
+        title: translations.success,
+        description: language === 'Arabic' ? 'تم تسجيل خروج الأصل بنجاح' : 'Asset checked out successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'Arabic' ? 'فشل في تسجيل خروج الأصل' : 'Failed to check out asset'),
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const checkInAssetMutation = useMutation({
+    mutationFn: async (checkInData: any) => {
+      return apiRequest('/api/assets/checkin', 'POST', checkInData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenCheckInDialog(false);
+      setCheckAsset(null);
+      toast({
+        title: translations.success,
+        description: language === 'Arabic' ? 'تم تسجيل دخول الأصل بنجاح' : 'Asset checked in successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'Arabic' ? 'فشل في تسجيل دخول الأصل' : 'Failed to check in asset'),
+        variant: 'destructive',
+      });
+    }
+  });
+
   // Event handlers
   const handleAddAsset = (assetData: any) => {
     addAssetMutation.mutate(assetData);
@@ -346,6 +401,18 @@ export default function Assets() {
 
   const handleMaintenanceSubmit = (maintenanceData: any) => {
     addMaintenanceMutation.mutate(maintenanceData);
+  };
+
+  const handleCheckOut = (assetId: number) => {
+    const asset = assets?.find(a => a.id === assetId);
+    setCheckAsset(asset);
+    setOpenCheckOutDialog(true);
+  };
+
+  const handleCheckIn = (assetId: number) => {
+    const asset = assets?.find(a => a.id === assetId);
+    setCheckAsset(asset);
+    setOpenCheckInDialog(true);
   };
 
   const handleUpgradeAsset = (assetId: number) => {
@@ -941,6 +1008,30 @@ export default function Assets() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
+                          
+                          {/* Check-in/Check-out buttons based on assignment status */}
+                          {asset.assignedEmployeeId ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleCheckIn(asset.id)}
+                              title={translations.checkIn}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <LogIn className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleCheckOut(asset.id)}
+                              title={translations.checkOut}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <LogOut className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -1037,6 +1128,142 @@ export default function Assets() {
               assetId={maintenanceAsset.id}
               assetName={`${maintenanceAsset.type} - ${maintenanceAsset.brand} ${maintenanceAsset.modelName || ''}`.trim()}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Check Out Asset Dialog */}
+      <Dialog open={openCheckOutDialog} onOpenChange={setOpenCheckOutDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-blue-600" />
+              {translations.checkOutAsset}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'Arabic' 
+                ? 'تخصيص الأصل لموظف وتسجيل خروجه' 
+                : 'Assign asset to an employee and check it out'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {checkAsset && (
+            <div className="space-y-4">
+              {/* Asset Information */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">{language === 'Arabic' ? 'معلومات الأصل' : 'Asset Information'}</h4>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">{language === 'Arabic' ? 'معرف الأصل' : 'Asset ID'}:</span> {checkAsset.assetId}
+                  <br />
+                  <span className="font-medium">{language === 'Arabic' ? 'النوع' : 'Type'}:</span> {checkAsset.type} - {checkAsset.brand}
+                </p>
+              </div>
+
+              {/* Employee Selection */}
+              <div>
+                <Label htmlFor="employeeSelect">{translations.assignTo}</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    const employeeId = parseInt(value);
+                    const employeeName = employees?.find(e => e.id === employeeId)?.englishName || employees?.find(e => e.id === employeeId)?.name;
+                    
+                    checkOutAssetMutation.mutate({
+                      assetId: checkAsset.id,
+                      employeeId: employeeId,
+                      notes: `Asset checked out to ${employeeName}`,
+                      checkOutDate: new Date().toISOString()
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={translations.selectEmployee} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees?.map((employee: any) => (
+                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                        {employee.englishName || employee.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Check In Asset Dialog */}
+      <Dialog open={openCheckInDialog} onOpenChange={setOpenCheckInDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5 text-green-600" />
+              {translations.checkInAsset}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'Arabic' 
+                ? 'إرجاع الأصل وإلغاء تخصيصه' 
+                : 'Return asset and unassign from employee'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {checkAsset && (
+            <div className="space-y-4">
+              {/* Asset Information */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">{language === 'Arabic' ? 'معلومات الأصل' : 'Asset Information'}</h4>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">{language === 'Arabic' ? 'معرف الأصل' : 'Asset ID'}:</span> {checkAsset.assetId}
+                  <br />
+                  <span className="font-medium">{language === 'Arabic' ? 'النوع' : 'Type'}:</span> {checkAsset.type} - {checkAsset.brand}
+                  <br />
+                  <span className="font-medium">{language === 'Arabic' ? 'مخصص حالياً لـ' : 'Currently assigned to'}:</span> {
+                    employees?.find(e => e.id === checkAsset.assignedEmployeeId)?.englishName || 
+                    employees?.find(e => e.id === checkAsset.assignedEmployeeId)?.name || 
+                    'Unknown Employee'
+                  }
+                </p>
+              </div>
+
+              {/* Return Notes */}
+              <div>
+                <Label htmlFor="returnNotes">{translations.returnNotes}</Label>
+                <Textarea 
+                  id="returnNotes"
+                  placeholder={language === 'Arabic' ? 'ملاحظات حول حالة الأصل عند الإرجاع (اختياري)' : 'Notes about asset condition on return (optional)'}
+                  onChange={(e) => {
+                    // Store notes in a temporary state or handle directly
+                  }}
+                />
+              </div>
+
+              {/* Check In Button */}
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setOpenCheckInDialog(false)}
+                  className="flex-1"
+                >
+                  {translations.cancel}
+                </Button>
+                <Button 
+                  onClick={() => {
+                    const returnNotes = (document.getElementById('returnNotes') as HTMLTextAreaElement)?.value || '';
+                    const currentEmployee = employees?.find(e => e.id === checkAsset.assignedEmployeeId);
+                    
+                    checkInAssetMutation.mutate({
+                      assetId: checkAsset.id,
+                      notes: returnNotes || `Asset returned by ${currentEmployee?.englishName || currentEmployee?.name || 'Employee'}`,
+                      checkInDate: new Date().toISOString()
+                    });
+                  }}
+                  disabled={checkInAssetMutation.isPending}
+                  className="flex-1"
+                >
+                  {checkInAssetMutation.isPending ? (language === 'Arabic' ? 'جاري التسجيل...' : 'Checking In...') : translations.checkIn}
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
