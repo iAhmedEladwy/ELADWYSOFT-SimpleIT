@@ -319,14 +319,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      {translations.jobTitle}
-                      {initialData && (
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({translations.employeeID}: {initialData.empId || initialData.employeeId})
-                        </span>
-                      )}
-                    </FormLabel>
+                    <FormLabel>{translations.jobTitle}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

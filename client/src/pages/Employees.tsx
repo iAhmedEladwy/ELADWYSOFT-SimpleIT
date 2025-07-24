@@ -437,6 +437,11 @@ export default function Employees() {
                   <DialogHeader>
                     <DialogTitle>
                       {editingEmployee ? translations.editEmployee : translations.addEmployee}
+                      {editingEmployee && (
+                        <span className="text-sm text-gray-500 ml-2 font-normal">
+                          ({editingEmployee.empId || editingEmployee.employeeId})
+                        </span>
+                      )}
                     </DialogTitle>
                     <DialogDescription id="employee-form-description">
                       {editingEmployee ? 'Edit employee information and details' : 'Add a new employee to the system'}
