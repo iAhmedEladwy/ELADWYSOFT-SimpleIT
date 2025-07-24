@@ -256,7 +256,7 @@ function SystemConfig() {
   // Configuration update mutation
   const updateConfigMutation = useMutation({
     mutationFn: (data: any) => 
-      apiRequest('PUT', '/api/system-config', data),
+      apiRequest('/api/system-config', 'PUT', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
@@ -284,7 +284,7 @@ function SystemConfig() {
   // Create custom request type mutation
   const createRequestTypeMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('POST', '/api/custom-request-types', data),
+      apiRequest('/api/custom-request-types', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
       toast({
@@ -309,7 +309,7 @@ function SystemConfig() {
   // Update custom request type mutation
   const updateRequestTypeMutation = useMutation({
     mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
-      apiRequest('PUT', `/api/custom-request-types/${id}`, { name, description }),
+      apiRequest(`/api/custom-request-types/${id}`, 'PUT', { name, description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
       toast({
@@ -331,7 +331,7 @@ function SystemConfig() {
   // Delete custom request type mutation
   const deleteRequestTypeMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest('DELETE', `/api/custom-request-types/${id}`),
+      apiRequest(`/api/custom-request-types/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
       toast({
@@ -353,7 +353,7 @@ function SystemConfig() {
   // Asset management mutations
   const createAssetTypeMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('POST', '/api/custom-asset-types', data),
+      apiRequest('/api/custom-asset-types', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
@@ -369,7 +369,7 @@ function SystemConfig() {
 
   const updateAssetTypeMutation = useMutation({
     mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
-      apiRequest('PUT', `/api/custom-asset-types/${id}`, { name, description }),
+      apiRequest(`/api/custom-asset-types/${id}`, 'PUT', { name, description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
@@ -381,7 +381,7 @@ function SystemConfig() {
   });
 
   const deleteAssetTypeMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-types/${id}`),
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-types/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
@@ -395,7 +395,7 @@ function SystemConfig() {
 
   const createAssetBrandMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('POST', '/api/custom-asset-brands', data),
+      apiRequest('/api/custom-asset-brands', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
@@ -410,7 +410,7 @@ function SystemConfig() {
 
   const updateAssetBrandMutation = useMutation({
     mutationFn: ({ id, name, description }: { id: number; name: string; description?: string }) => 
-      apiRequest('PUT', `/api/custom-asset-brands/${id}`, { name, description }),
+      apiRequest(`/api/custom-asset-brands/${id}`, 'PUT', { name, description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
@@ -421,7 +421,7 @@ function SystemConfig() {
   });
 
   const deleteAssetBrandMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-brands/${id}`),
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-brands/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
@@ -433,7 +433,7 @@ function SystemConfig() {
 
   const createAssetStatusMutation = useMutation({
     mutationFn: (data: { name: string; description?: string; color?: string }) => 
-      apiRequest('POST', '/api/custom-asset-statuses', data),
+      apiRequest('/api/custom-asset-statuses', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
@@ -449,7 +449,7 @@ function SystemConfig() {
 
   const updateAssetStatusMutation = useMutation({
     mutationFn: ({ id, name, description, color }: { id: number; name: string; description?: string; color?: string }) => 
-      apiRequest('PUT', `/api/custom-asset-statuses/${id}`, { name, description, color }),
+      apiRequest(`/api/custom-asset-statuses/${id}`, 'PUT', { name, description, color }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
@@ -460,7 +460,7 @@ function SystemConfig() {
   });
 
   const deleteAssetStatusMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/custom-asset-statuses/${id}`),
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-statuses/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
@@ -474,7 +474,7 @@ function SystemConfig() {
 
   const createServiceProviderMutation = useMutation({
     mutationFn: (data: { name: string; contactPerson?: string; phone?: string; email?: string }) => 
-      apiRequest('POST', '/api/service-providers', data),
+      apiRequest('/api/service-providers', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
@@ -491,7 +491,7 @@ function SystemConfig() {
 
   const updateServiceProviderMutation = useMutation({
     mutationFn: ({ id, name, contactPerson, phone, email }: { id: number; name: string; contactPerson?: string; phone?: string; email?: string }) => 
-      apiRequest('PUT', `/api/service-providers/${id}`, { name, contactPerson, phone, email }),
+      apiRequest(`/api/service-providers/${id}`, 'PUT', { name, contactPerson, phone, email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
@@ -502,7 +502,7 @@ function SystemConfig() {
   });
 
   const deleteServiceProviderMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/service-providers/${id}`),
+    mutationFn: (id: number) => apiRequest(`/api/service-providers/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
       toast({
@@ -557,8 +557,8 @@ function SystemConfig() {
   // User management mutations
   const createUserMutation = useMutation({
     mutationFn: async (userData: any) => {
-      const response = await apiRequest('POST', '/api/users', userData);
-      return response.json();
+      const response = await apiRequest('/api/users', 'POST', userData);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -588,8 +588,8 @@ function SystemConfig() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, userData }: { id: number; userData: any }) => {
-      const response = await apiRequest('PUT', `/api/users/${id}`, userData);
-      return response.json();
+      const response = await apiRequest(`/api/users/${id}`, 'PUT', userData);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -611,8 +611,8 @@ function SystemConfig() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      const response = await apiRequest('DELETE', `/api/users/${userId}`);
-      return response.json();
+      const response = await apiRequest(`/api/users/${userId}`, 'DELETE');
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -633,7 +633,7 @@ function SystemConfig() {
   // Import mutation
   const importMutation = useMutation({
     mutationFn: (data: { type: string; data: any[]; mapping: Record<string, string> }) =>
-      apiRequest('POST', `/api/import/${data.type}`, { data: data.data, mapping: data.mapping }),
+      apiRequest(`/api/import/${data.type}`, 'POST', { data: data.data, mapping: data.mapping }),
     onSuccess: (result: any) => {
       queryClient.invalidateQueries();
       setImporting(false);
@@ -657,7 +657,7 @@ function SystemConfig() {
 
   // Remove demo data mutation
   const removeDemoDataMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/remove-demo-data'),
+    mutationFn: () => apiRequest('/api/remove-demo-data', 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries();
       toast({
