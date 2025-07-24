@@ -96,7 +96,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const translations = {
     basicInfo: language === 'English' ? 'Basic Information' : 'معلومات أساسية',
     purchaseInfo: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
-    additionalInfo: language === 'English' ? 'Additional Information' : 'معلومات إضافية',
     assetID: language === 'English' ? 'Asset ID' : 'معرف الأصل',
     idDesc: language === 'English' ? 'Auto-generated if left blank' : 'يتم إنشاؤه تلقائيًا إذا تُرك فارغًا',
     type: language === 'English' ? 'Type' : 'النوع',
@@ -202,7 +201,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
           <TabsList className="mb-4">
             <TabsTrigger value="basic">{translations.basicInfo}</TabsTrigger>
             <TabsTrigger value="purchase">{translations.purchaseInfo}</TabsTrigger>
-            <TabsTrigger value="additional">{translations.additionalInfo}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="basic" className="space-y-4">
@@ -542,22 +540,15 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
             </div>
           </TabsContent>
           
-          <TabsContent value="additional" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Assigned To field is hidden as requested - but kept in form for backend compatibility */}
-              <input 
-                type="hidden" 
-                {...form.register('assignedEmployeeId')} 
-                value={form.watch('assignedEmployeeId') || ''} 
-              />
-              
-              {/* Additional fields can be added here in future */}
-              <div className="col-span-1 sm:col-span-2 text-center text-muted-foreground py-8">
-                {language === 'English' ? 'Additional asset information can be managed after creation.' : 'يمكن إدارة معلومات إضافية للأصل بعد الإنشاء.'}
-              </div>
-            </div>
-          </TabsContent>
+
         </Tabs>
+
+        {/* Hidden field for assignedEmployeeId to maintain backend compatibility */}
+        <input 
+          type="hidden" 
+          {...form.register('assignedEmployeeId')} 
+          value={form.watch('assignedEmployeeId') || ''} 
+        />
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? translations.submitting : isEditMode ? translations.save : translations.create}

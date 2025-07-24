@@ -20,6 +20,22 @@ A comprehensive IT asset management system for ELADWYSOFT company with intellige
 - **Real-time**: WebSocket support for notifications
 
 ## Recent Changes
+### 2025-01-24
+- **COMPLETED**: v1.3.7 Asset Form Simplification - Additional Information Tab Removal
+  - ✓ **ADDITIONAL INFO TAB REMOVAL**: Completely removed "Additional Information" tab from Asset form interface as requested
+  - ✓ **TAB STRUCTURE SIMPLIFIED**: Asset form now has only 2 tabs - Basic Information and Purchase Information
+  - ✓ **ASSIGNED TO FIELD**: Maintained assignedEmployeeId as hidden field for backend compatibility while removing from UI
+  - ✓ **TRANSLATION CLEANUP**: Removed additionalInfo translation references to clean up unused code
+  - ✓ **FORM STRUCTURE**: Streamlined form interface for better user experience and faster asset creation
+  - ✓ **BACKWARD COMPATIBILITY**: All backend functionality preserved while simplifying frontend interface
+  - ✓ **USER EXPERIENCE**: Cleaner, more focused asset creation process with essential fields only
+- **COMPLETED**: v1.3.6 Phase 1 Asset Management Enhancements - Complete Implementation
+  - ✓ **SETTINGS ICON FIX**: Resolved Settings icon import error preventing Assets page functionality
+  - ✓ **ASSET CREATION ENHANCED**: Added comprehensive error logging to asset creation process for better debugging
+  - ✓ **MAINTENANCE/UPGRADE WORKING**: Confirmed maintenance and upgrade functionality working properly with /api/maintenance endpoint
+  - ✓ **ERROR PREVENTION**: Added proper null handling and default values for asset creation
+  - ✓ **COMPLETE INTEGRATION**: All Phase 1 features functional and properly integrated
+
 ### 2025-01-23
 - **COMPLETED**: Export/Import Functionality Fix - Fixed field mapping inconsistencies
   - ✓ **CORRECTED ROUTES**: Replaced generic import/export routes with specific implementations for Assets, Employees, and Tickets
