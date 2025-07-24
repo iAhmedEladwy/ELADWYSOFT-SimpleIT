@@ -236,26 +236,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
           
           <TabsContent value="general" className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Show Employee ID as read-only when editing */}
-              {initialData && (
-                <FormField
-                  control={form.control}
-                  name="empId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{translations.employeeID}</FormLabel>
-                      <FormControl>
-                        <Input {...field} disabled className="bg-gray-50" />
-                      </FormControl>
-                      <FormDescription>
-                        {language === 'English' ? 'Employee ID cannot be changed' : 'لا يمكن تغيير معرف الموظف'}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
               <FormField
                 control={form.control}
                 name="englishName"
@@ -339,7 +319,14 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translations.jobTitle}</FormLabel>
+                    <FormLabel>
+                      {translations.jobTitle}
+                      {initialData && (
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({translations.employeeID}: {initialData.empId || initialData.employeeId})
+                        </span>
+                      )}
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
