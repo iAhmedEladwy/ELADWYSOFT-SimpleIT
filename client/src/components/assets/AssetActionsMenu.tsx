@@ -64,8 +64,8 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   const checkOutMutation = useMutation({
     mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
       employeeId: parseInt(selectedEmployeeId),
-      reason,
-      notes
+      notes: notes || reason,
+      type: reason
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: 'Asset checked out successfully' });
@@ -81,8 +81,8 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
-      reason,
-      notes
+      notes: notes || reason,
+      type: reason
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: 'Asset checked in successfully' });

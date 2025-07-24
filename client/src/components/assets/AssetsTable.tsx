@@ -309,7 +309,7 @@ export default function AssetsTable({
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+                  <div className="flex items-center justify-end">
                     <AssetActionsMenu 
                       asset={asset} 
                       employees={employees}
