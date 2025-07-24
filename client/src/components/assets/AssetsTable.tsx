@@ -310,52 +310,11 @@ export default function AssetsTable({
                 <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                    <AssetActionButtons asset={asset} employees={employees} />
-                    <AssetActionsMenu asset={asset} />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:scale-110 transition-all duration-200">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(asset)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          {translations.edit}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => setAssetToMaintenance(asset)}>
-                          <Drill className="h-4 w-4 mr-2" />
-                          {translations.addMaintenanceShort}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => {
-                          setAssetToView(asset.id);
-                          setShowDetailView(true);
-                        }}>
-                          <Info className="h-4 w-4 mr-2" />
-                          {translations.details}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <DropdownMenuItem>
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {translations.qrCode}
-                        </DropdownMenuItem>
-                        
-                        {hasAccess(3) && (
-                          <DropdownMenuItem 
-                            onClick={() => setAssetToDelete(asset)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {translations.delete}
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <AssetActionsMenu 
+                      asset={asset} 
+                      employees={employees}
+                      onEdit={onEdit}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
