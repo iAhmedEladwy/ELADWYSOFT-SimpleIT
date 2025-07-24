@@ -2429,6 +2429,235 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // ITIL-Compliant Asset Upgrade Management Methods
+  async createAssetUpgrade(upgradeData: any): Promise<any> {
+    try {
+      const upgradeId = `UPG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      const query = `
+        INSERT INTO asset_upgrades (
+          upgrade_id, asset_id, requested_by_id, title, description, 
+          business_justification, upgrade_type, priority, risk, 
+          current_configuration, new_configuration, impact_assessment, 
+          backout_plan, success_criteria, estimated_cost, 
+          planned_start_date, planned_end_date, downtime_required, 
+          estimated_downtime
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        RETURNING *
+      `;
+      
+      const values = [
+        upgradeId,
+        upgradeData.assetId,
+        upgradeData.requestedById,
+        upgradeData.title,
+        upgradeData.description,
+        upgradeData.businessJustification,
+        upgradeData.upgradeType,
+        upgradeData.priority || 'Medium',
+        upgradeData.risk || 'Medium',
+        JSON.stringify(upgradeData.currentConfiguration || {}),
+        JSON.stringify(upgradeData.newConfiguration || {}),
+        upgradeData.impactAssessment,
+        upgradeData.backoutPlan,
+        upgradeData.successCriteria,
+        upgradeData.estimatedCost || 0,
+        upgradeData.plannedStartDate || null,
+        upgradeData.plannedEndDate || null,
+        upgradeData.downtimeRequired || false,
+        upgradeData.estimatedDowntime || null
+      ];
+      
+      const result = await this.pool.query(query, values);
+      
+      // Log the upgrade creation in history
+      await this.addUpgradeHistory(result.rows[0].id, upgradeData.requestedById, 'Upgrade Created', null, 'Upgrade request submitted');
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating asset upgrade:', error);
+      throw error;
+    }
+  }
+
+  async getAssetUpgrade(upgradeId: number): Promise<any> {
+    try {
+      const query = `
+        SELECT 
+          au.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial,
+          req.username as requested_by_name,
+          app.username as approved_by_name,
+          imp.username as implemented_by_name
+        FROM asset_upgrades au
+        LEFT JOIN assets a ON au.asset_id = a.id
+        LEFT JOIN users req ON au.requested_by_id = req.id
+        LEFT JOIN users app ON au.approved_by_id = app.id
+        LEFT JOIN users imp ON au.implemented_by_id = imp.id
+        WHERE au.id = $1
+      `;
+      
+      const result = await this.pool.query(query, [upgradeId]);
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      const row = result.rows[0];
+      return {
+        ...row,
+        currentConfiguration: row.current_configuration,
+        newConfiguration: row.new_configuration,
+        assetInfo: {
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial
+        },
+        requestedByName: row.requested_by_name,
+        approvedByName: row.approved_by_name,
+        implementedByName: row.implemented_by_name
+      };
+    } catch (error) {
+      console.error('Error fetching asset upgrade:', error);
+      throw error;
+    }
+  }
+
+  async updateAssetUpgrade(upgradeId: number, updateData: any, userId: number): Promise<any> {
+    try {
+      // Get current upgrade for history tracking
+      const currentUpgrade = await this.getAssetUpgrade(upgradeId);
+      
+      const fields = [];
+      const values = [];
+      let paramCount = 1;
+      
+      Object.keys(updateData).forEach(key => {
+        if (key !== 'id' && updateData[key] !== undefined) {
+          let dbKey = key;
+          // Convert camelCase to snake_case for database
+          dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          
+          fields.push(`${dbKey} = $${paramCount}`);
+          values.push(key.includes('onfiguration') ? JSON.stringify(updateData[key]) : updateData[key]);
+          paramCount++;
+        }
+      });
+      
+      if (fields.length === 0) {
+        return currentUpgrade;
+      }
+      
+      fields.push(`updated_at = NOW()`);
+      values.push(upgradeId);
+      
+      const query = `
+        UPDATE asset_upgrades 
+        SET ${fields.join(', ')}
+        WHERE id = $${paramCount}
+        RETURNING *
+      `;
+      
+      const result = await this.pool.query(query, values);
+      
+      // Log status changes in history
+      if (updateData.status && updateData.status !== currentUpgrade.status) {
+        await this.addUpgradeHistory(upgradeId, userId, 'Status Changed', currentUpgrade.status, updateData.status);
+      }
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating asset upgrade:', error);
+      throw error;
+    }
+  }
+
+  async getAllAssetUpgrades(): Promise<any[]> {
+    try {
+      const query = `
+        SELECT 
+          au.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          req.username as requested_by_name,
+          app.username as approved_by_name
+        FROM asset_upgrades au
+        LEFT JOIN assets a ON au.asset_id = a.id
+        LEFT JOIN users req ON au.requested_by_id = req.id
+        LEFT JOIN users app ON au.approved_by_id = app.id
+        ORDER BY au.created_at DESC
+      `;
+      
+      const result = await this.pool.query(query);
+      
+      return result.rows.map(row => ({
+        ...row,
+        currentConfiguration: row.current_configuration,
+        newConfiguration: row.new_configuration,
+        assetInfo: {
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name
+        },
+        requestedByName: row.requested_by_name,
+        approvedByName: row.approved_by_name
+      }));
+    } catch (error) {
+      console.error('Error fetching all asset upgrades:', error);
+      throw error;
+    }
+  }
+
+  async addUpgradeHistory(upgradeId: number, userId: number, action: string, previousValue: string | null, newValue: string | null = null): Promise<void> {
+    try {
+      const query = `
+        INSERT INTO upgrade_history (upgrade_id, user_id, action, previous_value, new_value)
+        VALUES ($1, $2, $3, $4, $5)
+      `;
+      
+      await this.pool.query(query, [upgradeId, userId, action, previousValue, newValue]);
+    } catch (error) {
+      console.error('Error adding upgrade history:', error);
+      throw error;
+    }
+  }
+
+  async getUpgradeHistory(upgradeId: number): Promise<any[]> {
+    try {
+      const query = `
+        SELECT 
+          uh.*,
+          u.username,
+          u.first_name,
+          u.last_name
+        FROM upgrade_history uh
+        LEFT JOIN users u ON uh.user_id = u.id
+        WHERE uh.upgrade_id = $1
+        ORDER BY uh.timestamp DESC
+      `;
+      
+      const result = await this.pool.query(query, [upgradeId]);
+      
+      return result.rows.map(row => ({
+        ...row,
+        userName: row.username,
+        userFullName: `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.username
+      }));
+    } catch (error) {
+      console.error('Error fetching upgrade history:', error);
+      throw error;
+    }
+  }
 }
 
 // Use memory storage for development, PostgreSQL for production

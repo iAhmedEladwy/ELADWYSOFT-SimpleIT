@@ -2182,6 +2182,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
+
+  // ITIL-Compliant Asset Upgrade Management API Routes
+  app.post('/api/assets/:id/upgrade', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      
+      const upgradeData = {
+        ...req.body,
+        assetId,
+        requestedById: user.id
+      };
+      
+      const upgrade = await storage.createAssetUpgrade(upgradeData);
+      res.json(upgrade);
+    } catch (error: unknown) {
+      console.error('Error creating asset upgrade:', error);
+      res.status(500).json({ message: 'Error creating upgrade request' });
+    }
+  });
+
+  app.get('/api/upgrades', authenticateUser, async (req, res) => {
+    try {
+      const upgrades = await storage.getAllAssetUpgrades();
+      res.json(upgrades);
+    } catch (error: unknown) {
+      console.error('Error fetching asset upgrades:', error);
+      res.status(500).json({ message: 'Error fetching upgrade requests' });
+    }
+  });
+
+  app.get('/api/upgrades/:id', authenticateUser, async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const upgrade = await storage.getAssetUpgrade(upgradeId);
+      
+      if (!upgrade) {
+        return res.status(404).json({ message: 'Upgrade request not found' });
+      }
+      
+      res.json(upgrade);
+    } catch (error: unknown) {
+      console.error('Error fetching upgrade request:', error);
+      res.status(500).json({ message: 'Error fetching upgrade request' });
+    }
+  });
+
+  app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      const updateData = req.body;
+      
+      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
+      
+      if (!updatedUpgrade) {
+        return res.status(404).json({ message: 'Upgrade request not found' });
+      }
+      
+      res.json(updatedUpgrade);
+    } catch (error: unknown) {
+      console.error('Error updating upgrade request:', error);
+      res.status(500).json({ message: 'Error updating upgrade request' });
+    }
+  });
+
+  app.get('/api/upgrades/:id/history', authenticateUser, async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const history = await storage.getUpgradeHistory(upgradeId);
+      res.json(history);
+    } catch (error: unknown) {
+      console.error('Error fetching upgrade history:', error);
+      res.status(500).json({ message: 'Error fetching upgrade history' });
+    }
+  });
+
+  // Upgrade approval workflow
+  app.post('/api/upgrades/:id/approve', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      const { approvalNotes } = req.body;
+      
+      const updateData = {
+        status: 'Approved',
+        approvedById: user.id,
+        approvalDate: new Date().toISOString(),
+        approvalNotes
+      };
+      
+      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
+      res.json(updatedUpgrade);
+    } catch (error: unknown) {
+      console.error('Error approving upgrade:', error);
+      res.status(500).json({ message: 'Error approving upgrade request' });
+    }
+  });
+
+  app.post('/api/upgrades/:id/reject', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      const { rejectionReason } = req.body;
+      
+      const updateData = {
+        status: 'Cancelled',
+        approvalNotes: `REJECTED: ${rejectionReason}`
+      };
+      
+      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
+      res.json(updatedUpgrade);
+    } catch (error: unknown) {
+      console.error('Error rejecting upgrade:', error);
+      res.status(500).json({ message: 'Error rejecting upgrade request' });
+    }
+  });
+
+  app.post('/api/upgrades/:id/start-implementation', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      
+      const updateData = {
+        status: 'In Progress',
+        implementedById: user.id,
+        actualStartDate: new Date().toISOString()
+      };
+      
+      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
+      res.json(updatedUpgrade);
+    } catch (error: unknown) {
+      console.error('Error starting upgrade implementation:', error);
+      res.status(500).json({ message: 'Error starting upgrade implementation' });
+    }
+  });
+
+  app.post('/api/upgrades/:id/complete', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const upgradeId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      const { implementationNotes, actualCost, postUpgradeValidation } = req.body;
+      
+      const updateData = {
+        status: 'Completed',
+        actualEndDate: new Date().toISOString(),
+        implementationNotes,
+        actualCost,
+        postUpgradeValidation
+      };
+      
+      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
+      res.json(updatedUpgrade);
+    } catch (error: unknown) {
+      console.error('Error completing upgrade:', error);
+      res.status(500).json({ message: 'Error completing upgrade' });
+    }
+  });
   
   // Asset Transaction APIs
   app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {

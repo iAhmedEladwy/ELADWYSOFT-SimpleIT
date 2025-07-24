@@ -3,6 +3,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
 import AssetDetailView from '@/components/assets/AssetDetailView';
+import { AssetActionsMenu } from '@/components/assets/AssetActionsMenu';
 import { 
   Table, 
   TableBody, 
@@ -310,6 +311,7 @@ export default function AssetsTable({
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                     <AssetActionButtons asset={asset} employees={employees} />
+                    <AssetActionsMenu asset={asset} />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:scale-110 transition-all duration-200">
