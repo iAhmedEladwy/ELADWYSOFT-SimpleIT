@@ -880,7 +880,7 @@ function SystemConfig() {
       email: newUserEmail.trim(),
       firstName: newUserFirstName.trim() || null,
       lastName: newUserLastName.trim() || null,
-      role: newUserAccessLevel,
+      role: newUserRole,
       employeeId: newUserEmployeeId,
       managerId: newUserManagerId,
       password: newUserPassword.trim(),
@@ -896,8 +896,7 @@ function SystemConfig() {
     setEditedUserEmail(user.email || '');
     setEditedUserFirstName(user.firstName || '');
     setEditedUserLastName(user.lastName || '');
-    setEditedUserRole(user.role);
-    setEditedUserAccessLevel(user.role || 'employee');
+    setEditedUserRole(user.role || 'employee');
     setEditedUserEmployeeId(user.employeeId);
     setEditedUserManagerId(user.managerId);
     setEditedUserPassword('');
@@ -912,7 +911,7 @@ function SystemConfig() {
       email: editedUserEmail.trim(),
       firstName: editedUserFirstName.trim() || null,
       lastName: editedUserLastName.trim() || null,
-      role: editedUserAccessLevel,
+      role: editedUserRole,
       employeeId: editedUserEmployeeId,
       managerId: editedUserManagerId,
       ...(editedUserPassword.trim() && { password: editedUserPassword.trim() })
@@ -2733,6 +2732,27 @@ function SystemConfig() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {selectedUserId !== 1 && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const user = allUsers.find(u => u.id === selectedUserId);
+                              if (user && window.confirm(language === 'English' ? `Are you sure you want to delete user "${user.username}"?` : `هل أنت متأكد من حذف المستخدم "${user.username}"؟`)) {
+                                deleteUserMutation.mutate(user.id);
+                                setSelectedUserId(null);
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                            disabled={deleteUserMutation.isPending}
+                          >
+                            {deleteUserMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </>
                     )}
                     <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
@@ -2784,7 +2804,7 @@ function SystemConfig() {
                         </div>
                         <div className="space-y-2">
                           <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                          <Select value={newUserAccessLevel} onValueChange={setNewUserAccessLevel}>
+                          <Select value={newUserRole} onValueChange={setNewUserRole}>
                             <SelectTrigger>
                               <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
                             </SelectTrigger>
@@ -2908,7 +2928,7 @@ function SystemConfig() {
                       </div>
                       <div className="space-y-2">
                         <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                        <Select value={editedUserAccessLevel} onValueChange={setEditedUserAccessLevel}>
+                        <Select value={editedUserRole} onValueChange={setEditedUserRole}>
                           <SelectTrigger>
                             <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
                           </SelectTrigger>
