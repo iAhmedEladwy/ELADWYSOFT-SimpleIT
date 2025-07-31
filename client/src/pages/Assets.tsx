@@ -495,7 +495,11 @@ export default function Assets() {
           asset.brand,
           asset.modelName,
           asset.serialNumber,
-          asset.location
+          asset.location,
+          asset.specs,
+          asset.cpu,
+          asset.ram,
+          asset.storage
         ].filter(Boolean);
         
         if (!searchFields.some(field => 
@@ -625,7 +629,7 @@ export default function Assets() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by Asset ID, Type, Brand, Model, Serial Number..."
+                placeholder="Search by Asset ID, Type, Brand, Model, Serial Number, Specs, CPU, RAM, Storage..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-9"
