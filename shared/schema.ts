@@ -338,10 +338,7 @@ export const tickets = pgTable("tickets", {
   relatedAssetId: integer("related_asset_id").references(() => assets.id),
   status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
-  rootCause: text("root_cause"), // ITIL Problem Management
-  workaround: text("workaround"), // ITIL Incident Management
   resolution: text("resolution"),
-  resolutionNotes: text("resolution_notes"),
   tags: text("tags").array(),
   dueDate: timestamp("due_date"),
   slaTarget: integer("sla_target"), // SLA target in hours

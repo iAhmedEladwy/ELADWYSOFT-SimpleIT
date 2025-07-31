@@ -58,10 +58,7 @@ const ticketFormSchema = z.object({
   status: z.string().default('Open'),
   summary: z.string().min(5, "Summary must be at least 5 characters").max(200, "Summary cannot exceed 200 characters"),
   description: z.string().min(5, "Description must be at least 5 characters").max(2000, "Description cannot exceed 2000 characters"),
-  rootCause: z.string().optional(),
-  workaround: z.string().optional(),
   resolution: z.string().optional(),
-  resolutionNotes: z.string().optional(),
   dueDate: z.string().optional(),
   slaTarget: z.string().optional(),
   escalationLevel: z.string().default('0'),
@@ -194,10 +191,7 @@ export default function TicketForm({
       status: ticket?.status || 'Open',
       summary: ticket?.summary || '',
       description: ticket?.description || '',
-      rootCause: ticket?.rootCause || '',
-      workaround: ticket?.workaround || '',
       resolution: ticket?.resolution || '',
-      resolutionNotes: ticket?.resolutionNotes || '',
       dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
       slaTarget: ticket?.slaTarget?.toString() || '',
       escalationLevel: ticket?.escalationLevel?.toString() || '0',
@@ -222,10 +216,7 @@ export default function TicketForm({
         status: ticket.status || 'Open',
         summary: ticket.summary || '',
         description: ticket.description || '',
-        rootCause: ticket.rootCause || '',
-        workaround: ticket.workaround || '',
         resolution: ticket.resolution || '',
-        resolutionNotes: ticket.resolutionNotes || '',
         dueDate: ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
         slaTarget: ticket.slaTarget?.toString() || '',
         escalationLevel: ticket.escalationLevel?.toString() || '0',
@@ -702,52 +693,14 @@ export default function TicketForm({
                   </CardContent>
                 </Card>
 
-                {/* ITIL Management Fields Card */}
+                {/* Resolution Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      {language === 'English' ? 'ITIL Management & Resolution' : 'إدارة ITIL والحلول'}
+                      {language === 'English' ? 'Resolution' : 'الحل'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Root Cause */}
-                    <FormField
-                      control={form.control}
-                      name="rootCause"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Root Cause' : 'السبب الجذري'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Root cause analysis (ITIL Problem Management)' : 'تحليل السبب الجذري (إدارة المشاكل ITIL)'}
-                              rows={2}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Workaround */}
-                    <FormField
-                      control={form.control}
-                      name="workaround"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Workaround' : 'الحل المؤقت'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Temporary workaround solution (ITIL Incident Management)' : 'الحل المؤقت (إدارة الحوادث ITIL)'}
-                              rows={2}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
                     {/* Resolution */}
                     <FormField
                       control={form.control}
@@ -759,26 +712,7 @@ export default function TicketForm({
                             <Textarea
                               {...field}
                               placeholder={language === 'English' ? 'Final resolution details' : 'تفاصيل الحل النهائي'}
-                              rows={2}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Resolution Notes */}
-                    <FormField
-                      control={form.control}
-                      name="resolutionNotes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Additional notes about the resolution' : 'ملاحظات إضافية حول الحل'}
-                              rows={2}
+                              rows={3}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1311,45 +1245,7 @@ export default function TicketForm({
                               )}
                             />
 
-                            {/* Root Cause */}
-                            <FormField
-                              control={form.control}
-                              name="rootCause"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Root Cause' : 'السبب الجذري'}</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('rootCause', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Root cause analysis' : 'تحليل السبب الجذري'}
-                                      rows={3}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
 
-                            {/* Workaround */}
-                            <FormField
-                              control={form.control}
-                              name="workaround"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Workaround' : 'الحل المؤقت'}</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('workaround', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Temporary workaround if available' : 'حل مؤقت إن أمكن'}
-                                      rows={3}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
 
                             {/* Resolution */}
                             <FormField
@@ -1371,25 +1267,7 @@ export default function TicketForm({
                               )}
                             />
 
-                            {/* Resolution Notes */}
-                            <FormField
-                              control={form.control}
-                              name="resolutionNotes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل'}</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('resolutionNotes', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Additional notes about the resolution' : 'ملاحظات إضافية حول الحل'}
-                                      rows={3}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+
 
                             {/* Escalation Level */}
                             <FormField

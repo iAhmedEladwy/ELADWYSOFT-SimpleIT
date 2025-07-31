@@ -13,7 +13,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { X, Filter, Search, User, Download } from 'lucide-react';
+import { X, Filter, Search, User } from 'lucide-react';
 import type { TicketFilters } from '@shared/types';
 
 interface TicketFiltersProps {
@@ -21,15 +21,13 @@ interface TicketFiltersProps {
   onFiltersChange: (filters: TicketFilters) => void;
   totalCount: number;
   filteredCount: number;
-  onExport?: () => void;
 }
 
 export default function TicketFilters({
   filters,
   onFiltersChange,
   totalCount,
-  filteredCount,
-  onExport
+  filteredCount
 }: TicketFiltersProps) {
   const { language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -54,7 +52,7 @@ export default function TicketFilters({
     assignedTo: language === 'Arabic' ? 'مُسند إلى' : 'Assigned To',
     creator: language === 'Arabic' ? 'المنشئ' : 'Creator',
     clearFilters: language === 'Arabic' ? 'مسح الفلاتر' : 'Clear Filters',
-    export: language === 'Arabic' ? 'تصدير' : 'Export',
+
     allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
     allPriorities: language === 'Arabic' ? 'جميع الأولويات' : 'All Priorities',
     allCategories: language === 'Arabic' ? 'جميع الفئات' : 'All Categories',
@@ -115,12 +113,7 @@ export default function TicketFilters({
             <span className="text-sm text-muted-foreground">
               {translations.showingResults}: {filteredCount} / {totalCount}
             </span>
-            {onExport && (
-              <Button variant="outline" size="sm" onClick={onExport}>
-                <Download className="h-4 w-4 mr-2" />
-                {translations.export}
-              </Button>
-            )}
+
             {activeFiltersCount > 0 && (
               <Button variant="outline" size="sm" onClick={clearAllFilters}>
                 <X className="h-4 w-4 mr-2" />

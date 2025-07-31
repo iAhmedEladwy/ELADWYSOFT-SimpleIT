@@ -11,7 +11,7 @@ import TicketForm from '@/components/tickets/TicketForm';
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Settings, Zap, Edit3 } from 'lucide-react';
+import { Plus, RefreshCw, Settings, Zap, Edit3, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -330,11 +330,11 @@ export default function Tickets() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
+            onClick={() => exportMutation.mutate('csv')}
+            disabled={exportMutation.isPending}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {translations.refresh}
+            <Download className="h-4 w-4 mr-2" />
+            {language === 'English' ? 'Export' : 'تصدير'}
           </Button>
           
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -363,7 +363,6 @@ export default function Tickets() {
           onFiltersChange={setFilters}
           totalCount={Array.isArray(tickets) ? tickets.length : 0}
           filteredCount={Array.isArray(filteredTickets) ? filteredTickets.length : 0}
-          onExport={() => exportMutation.mutate('csv')}
         />
       </div>
 
