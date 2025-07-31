@@ -2690,19 +2690,103 @@ function SystemConfig() {
             <CardContent>
               <div className="space-y-6">
                 {/* Header Section */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
-                    <p className="text-sm text-gray-600">
-                      {language === 'English' 
-                        ? 'Click on a user row to select, then use action buttons to manage users' 
-                        : 'انقر على صف مستخدم لتحديده، ثم استخدم أزرار الإجراءات لإدارة المستخدمين'}
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-medium">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {language === 'English' 
+                          ? 'Manage system users and their roles.' 
+                          : 'إدارة مستخدمي النظام وأدوارهم.'}
+                      </p>
+                    </div>
+                    <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="mr-2 h-4 w-4" />
+                          {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add New User' : 'إضافة مستخدم جديد'}</DialogTitle>
+                          <DialogDescription>
+                            {language === 'English' ? 'Create a new system user with username, email, and access level. Choose the appropriate access level based on the user\'s responsibilities.' : 'إنشاء مستخدم نظام جديد باسم مستخدم وبريد إلكتروني ومستوى وصول. اختر مستوى الوصول المناسب بناءً على مسؤوليات المستخدم.'}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                            <Input 
+                              value={newUserUsername} 
+                              onChange={(e) => setNewUserUsername(e.target.value)}
+                              placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                            <Input 
+                              type="email"
+                              value={newUserEmail} 
+                              onChange={(e) => setNewUserEmail(e.target.value)}
+                              placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                            <Input 
+                              type="password"
+                              value={newUserPassword} 
+                              onChange={(e) => setNewUserPassword(e.target.value)}
+                              placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
+                            <Select value={newUserRole} onValueChange={setNewUserRole}>
+                              <SelectTrigger>
+                                <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                                <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                                <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                                <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button 
+                              onClick={handleAddUser}
+                              disabled={createUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
+                            >
+                              {createUserMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                </>
+                              ) : (
+                                language === 'English' ? 'Add User' : 'إضافة مستخدم'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* User Action Buttons */}
-                    {selectedUserId && (
-                      <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  
+                  {/* Action Buttons for Selected User */}
+                  {selectedUserId && (
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
                         <span className="text-xs text-blue-700 font-medium">
                           {language === 'English' ? 'Selected User Actions:' : 'إجراءات المستخدم المحدد:'}
                         </span>
@@ -2765,88 +2849,7 @@ function SystemConfig() {
                         )}
                       </div>
                     )}
-                    <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                          <Plus className="mr-2 h-4 w-4" />
-                          {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
-                        </Button>
-                      </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>{language === 'English' ? 'Add New User' : 'إضافة مستخدم جديد'}</DialogTitle>
-                        <DialogDescription>
-                          {language === 'English' ? 'Create a new system user with username, email, and access level. Choose the appropriate access level based on the user\'s responsibilities.' : 'إنشاء مستخدم نظام جديد باسم مستخدم وبريد إلكتروني ومستوى وصول. اختر مستوى الوصول المناسب بناءً على مسؤوليات المستخدم.'}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
-                          <Input 
-                            value={newUserUsername} 
-                            onChange={(e) => setNewUserUsername(e.target.value)}
-                            placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
-                          <Input 
-                            type="email"
-                            value={newUserEmail} 
-                            onChange={(e) => setNewUserEmail(e.target.value)}
-                            placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
-                          <Input 
-                            type="password"
-                            value={newUserPassword} 
-                            onChange={(e) => setNewUserPassword(e.target.value)}
-                            placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                          <Select value={newUserRole} onValueChange={setNewUserRole}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
-                              <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                              <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
-                              <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
-                          </Button>
-                          <Button 
-                            onClick={handleAddUser}
-                            disabled={createUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
-                          >
-                            {createUserMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
-                              </>
-                            ) : (
-                              language === 'English' ? 'Add User' : 'إضافة مستخدم'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  )}
                 </div>
 
                 {/* Users Table */}
