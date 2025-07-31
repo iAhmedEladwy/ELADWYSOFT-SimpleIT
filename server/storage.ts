@@ -1968,6 +1968,29 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  private async initializeDefaultAssetStatuses(): Promise<void> {
+    const defaultAssetStatuses = [
+      { name: 'Available', description: 'Asset is ready for assignment', color: '#22c55e' },
+      { name: 'In Use', description: 'Asset is currently assigned and active', color: '#3b82f6' },
+      { name: 'Under Maintenance', description: 'Asset is being serviced or repaired', color: '#f59e0b' },
+      { name: 'Damaged', description: 'Asset requires repair or replacement', color: '#ef4444' },
+      { name: 'Retired', description: 'Asset is at end of life, no longer in use', color: '#6b7280' },
+      { name: 'Lost', description: 'Asset cannot be located', color: '#dc2626' },
+      { name: 'Sold', description: 'Asset has been sold', color: '#8b5cf6' }
+    ];
+
+    try {
+      for (const assetStatus of defaultAssetStatuses) {
+        await db.insert(customAssetStatuses)
+          .values(assetStatus)
+          .onConflictDoNothing();
+      }
+      console.log('Default asset statuses initialized successfully');
+    } catch (error) {
+      console.error('Error initializing default asset statuses:', error);
+    }
+  }
+
   async removeDemoData(): Promise<void> {
     try {
       await db.transaction(async (tx) => {

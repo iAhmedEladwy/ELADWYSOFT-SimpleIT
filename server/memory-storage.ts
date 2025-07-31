@@ -60,6 +60,7 @@ export class MemoryStorage implements IStorage {
     this.initializeAdminUser();
     this.initializeSystemConfig();
     this.initializeDefaultRequestTypes();
+    this.initializeDefaultAssetStatuses();
   }
 
   private async initializeAdminUser() {
@@ -153,6 +154,73 @@ export class MemoryStorage implements IStorage {
         name: "Security",
         description: "Security incidents and compliance issues",
         isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+  }
+
+  private initializeDefaultAssetStatuses() {
+    // Check for existing asset statuses to prevent duplicates
+    if (this.customAssetStatuses.length > 0) {
+      return;
+    }
+    
+    // Standard asset statuses with color coding
+    this.customAssetStatuses = [
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Available",
+        description: "Asset is ready for assignment",
+        color: "#22c55e", // Green
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "In Use",
+        description: "Asset is currently assigned and active",
+        color: "#3b82f6", // Blue
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Under Maintenance",
+        description: "Asset is being serviced or repaired",
+        color: "#f59e0b", // Amber
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Damaged",
+        description: "Asset requires repair or replacement",
+        color: "#ef4444", // Red
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Retired",
+        description: "Asset is at end of life, no longer in use",
+        color: "#6b7280", // Gray
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Lost",
+        description: "Asset cannot be located",
+        color: "#dc2626", // Dark Red
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: this.idCounters.customAssetStatuses++,
+        name: "Sold",
+        description: "Asset has been sold",
+        color: "#8b5cf6", // Purple
         createdAt: new Date(),
         updatedAt: new Date()
       }
