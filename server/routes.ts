@@ -5351,31 +5351,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      const userData = req.body;
-      
-      // Hash password if provided
-      if (userData.password && userData.password.trim()) {
-        const bcrypt = require('bcryptjs');
-        userData.password = await bcrypt.hash(userData.password, 10);
-      } else {
-        // Remove password field if empty to keep existing password
-        delete userData.password;
-      }
-      
-      const updatedUser = await storage.updateUser(userId, userData);
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(updatedUser);
-    } catch (error: unknown) {
-      console.error("User update error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
   app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
