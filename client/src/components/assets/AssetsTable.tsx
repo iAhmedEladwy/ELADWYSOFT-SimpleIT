@@ -345,29 +345,6 @@ export default function AssetsTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {/* Check-in/Check-out buttons beside 3-dots menu */}
-                    {asset.status === 'Available' && (
-                      <Button
-                        variant="ghost" 
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => onCheckOut && onCheckOut(asset.id)}
-                        title="Check Out Asset"
-                      >
-                        <LogOut className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {asset.status === 'In Use' && (
-                      <Button
-                        variant="ghost" 
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => onCheckIn && onCheckIn(asset.id)}
-                        title="Check In Asset"
-                      >
-                        <LogIn className="h-4 w-4" />
-                      </Button>
-                    )}
                     <AssetActionsMenu 
                       asset={asset} 
                       employees={employees}
