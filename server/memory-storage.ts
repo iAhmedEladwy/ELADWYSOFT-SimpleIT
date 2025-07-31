@@ -785,7 +785,7 @@ export class MemoryStorage implements IStorage {
     // Update asset status and assignment
     await this.updateAsset(assetId, {
       status: 'In Use',
-      employeeId: employeeId
+      assignedEmployeeId: employeeId
     });
 
     // Create transaction with proper ID generation
@@ -822,12 +822,12 @@ export class MemoryStorage implements IStorage {
     const asset = await this.getAsset(assetId);
     if (!asset) throw new Error('Asset not found');
 
-    const employeeId = asset.employeeId;
+    const employeeId = asset.assignedEmployeeId;
 
     // Update asset status and remove assignment
     await this.updateAsset(assetId, {
       status: 'Available',
-      employeeId: null
+      assignedEmployeeId: null
     });
 
     // Create transaction

@@ -1800,7 +1800,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // First update the asset to set employeeId
       await this.updateAsset(assetId, { 
-        assignedTo: employeeId,
+        assignedEmployeeId: employeeId,
         status: 'In Use'
       });
       
@@ -1828,11 +1828,11 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Asset not found');
       }
       
-      const employeeId = asset.assignedTo;
+      const employeeId = asset.assignedEmployeeId;
       
       // Update asset to remove employee and set status to Available
       await this.updateAsset(assetId, { 
-        assignedTo: null,
+        assignedEmployeeId: null,
         status: 'Available'
       });
       
