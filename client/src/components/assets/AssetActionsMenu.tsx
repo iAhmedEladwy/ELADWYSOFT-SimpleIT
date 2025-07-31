@@ -171,11 +171,6 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             Schedule Maintenance
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={handleUpgrade}>
-            <ArrowUp className="mr-2 h-4 w-4" />
-            Request ITIL Upgrade
-          </DropdownMenuItem>
-          
           <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={handleViewHistory}>

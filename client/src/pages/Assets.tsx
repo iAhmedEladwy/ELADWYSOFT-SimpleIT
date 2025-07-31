@@ -395,6 +395,55 @@ export default function Assets() {
     exportMutation.mutate();
   };
 
+  // Enhanced export function for filtered data
+  const handleExportFilteredAssets = () => {
+    if (filteredAssets.length === 0) {
+      toast({
+        title: translations.error,
+        description: 'No assets to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Create CSV content from filtered assets
+    const headers = ['Asset ID', 'Type', 'Brand', 'Model', 'Serial Number', 'CPU', 'RAM', 'Storage', 'Status', 'Assigned To'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredAssets.map((asset: any) => {
+        const assignedEmployee = employees?.find((e: any) => e.id === asset.assignedEmployeeId);
+        return [
+          asset.assetId || '',
+          asset.type || '',
+          asset.brand || '',
+          asset.modelName || '',
+          asset.serialNumber || '',
+          asset.cpu || '',
+          asset.ram || '',
+          asset.storage || '',
+          asset.status || '',
+          assignedEmployee ? assignedEmployee.englishName : ''
+        ].map(field => `"${field}"`).join(',');
+      })
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `filtered-assets-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: translations.success,
+      description: `Exported ${filteredAssets.length} assets successfully`,
+    });
+  };
+
   const handleImport = () => {
     if (!importFile) {
       toast({
@@ -474,12 +523,12 @@ export default function Assets() {
         return false;
       }
       
-      // Assignment filter
+      // Assignment filter - Fixed to use proper field mapping
       if (filters.assignedTo) {
         if (filters.assignedTo === 'unassigned') {
-          if (asset.assignedToId) return false;
+          if (asset.assignedEmployeeId) return false;
         } else {
-          if (asset.assignedToId?.toString() !== filters.assignedTo) return false;
+          if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
         }
       }
       
@@ -512,112 +561,7 @@ export default function Assets() {
           </Button>
           
           {hasAccess(2) && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                {translations.export}
-              </Button>
-              
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {translations.import}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{translations.import}</DialogTitle>
-                    <DialogDescription>
-                      Upload a CSV file to import assets
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="import-file">{translations.selectFile}</Label>
-                      <Input
-                        id="import-file"
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleImport} 
-                      disabled={!importFile || isImporting}
-                      className="w-full"
-                    >
-                      <FileUp className="h-4 w-4 mr-2" />
-                      {isImporting ? translations.importing : translations.uploadFile}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {selectedAssets.length > 0 && (
-                <Dialog open={openSellDialog} onOpenChange={setOpenSellDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      {translations.sellSelected} ({selectedAssets.length})
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{translations.sell}</DialogTitle>
-                      <DialogDescription>
-                        Sell {selectedAssets.length} selected assets
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="buyer">{translations.buyer}</Label>
-                        <Input
-                          id="buyer"
-                          value={sellForm.buyer}
-                          onChange={(e) => setSellForm({ ...sellForm, buyer: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="saleDate">{translations.saleDate}</Label>
-                        <Input
-                          id="saleDate"
-                          type="date"
-                          value={sellForm.saleDate}
-                          onChange={(e) => setSellForm({ ...sellForm, saleDate: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="totalAmount">{translations.totalAmount}</Label>
-                        <Input
-                          id="totalAmount"
-                          type="number"
-                          step="0.01"
-                          value={sellForm.totalAmount}
-                          onChange={(e) => setSellForm({ ...sellForm, totalAmount: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="notes">{translations.notes}</Label>
-                        <Textarea
-                          id="notes"
-                          value={sellForm.notes}
-                          onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })}
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSellAssets} 
-                        disabled={sellAssetsMutation.isPending}
-                        className="w-full"
-                      >
-                        {sellAssetsMutation.isPending ? 'Processing...' : translations.sell}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              
-              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
                   <Button 
                     size="sm"
@@ -643,10 +587,9 @@ export default function Assets() {
                   />
                 </DialogContent>
               </Dialog>
-            </>
           )}
         </div>
-      </div>
+        </div>
 
       {/* ITIL-Compliant Filter & Search Card */}
       <Card className="mb-6">
@@ -775,7 +718,7 @@ export default function Assets() {
             </div>
           </div>
 
-          {/* Clear Filters */}
+          {/* Clear Filters and Export CSV */}
           <div className="flex gap-2 pt-4">
             <Button 
               variant="outline" 
@@ -787,6 +730,16 @@ export default function Assets() {
             >
               Clear Filters
             </Button>
+            {hasAccess(2) && (
+              <Button 
+                variant="outline"
+                onClick={handleExportFilteredAssets}
+                disabled={filteredAssets.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV ({filteredAssets.length})
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -820,14 +773,8 @@ export default function Assets() {
                 setOpenDialog(true);
               }}
               onDelete={(assetId) => deleteAssetMutation.mutate(assetId)}
-              onAssign={(assetId, employeeId) => {
-                // Handle asset assignment
-                console.log('Assign asset', assetId, 'to employee', employeeId);
-              }}
-              onUnassign={(assetId) => {
-                // Handle asset unassignment
-                console.log('Unassign asset', assetId);
-              }}
+              onAssign={(assetId, employeeId) => assignAssetMutation.mutate({ assetId, employeeId })}
+              onUnassign={(assetId) => unassignAssetMutation.mutate(assetId)}
               onAddMaintenance={(assetId, maintenanceData) => {
                 handleAddMaintenance(assetId);
               }}

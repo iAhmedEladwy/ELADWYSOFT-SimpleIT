@@ -58,7 +58,9 @@ import {
   UserMinus,
   Drill,
   Info,
-  QrCode
+  QrCode,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
 interface AssetsTableProps {
@@ -191,11 +193,11 @@ export default function AssetsTable({
     }
   };
 
-  // Find assigned employee name
+  // Find assigned employee name - Updated to handle proper field mapping
   const getAssignedEmployeeName = (employeeId: number | null) => {
     if (!employeeId) return '-';
     const employee = employees.find((e: any) => e.id === employeeId);
-    return employee ? employee.englishName : '-';
+    return employee ? (employee.englishName || employee.name) : '-';
   };
 
   // Handle asset selection for multi-select operations
@@ -274,6 +276,8 @@ export default function AssetsTable({
             <TableHead>{translations.type}</TableHead>
             <TableHead>{translations.brand}</TableHead>
             <TableHead>{translations.modelName}</TableHead>
+            <TableHead>{translations.serialNumber}</TableHead>
+            <TableHead>Specs</TableHead>
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -306,10 +310,66 @@ export default function AssetsTable({
                 <TableCell>{asset.type}</TableCell>
                 <TableCell>{asset.brand}</TableCell>
                 <TableCell>{asset.modelName || '-'}</TableCell>
+                <TableCell>{asset.serialNumber || '-'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs">
+                    {asset.cpu && (
+                      <span className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                        CPU: {asset.cpu}
+                      </span>
+                    )}
+                    {asset.ram && (
+                      <span className="bg-green-100 text-green-800 px-1 py-0.5 rounded">
+                        RAM: {asset.ram}
+                      </span>
+                    )}
+                    {asset.storage && (
+                      <span className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                        Storage: {asset.storage}
+                      </span>
+                    )}
+                    {!asset.cpu && !asset.ram && !asset.storage && '-'}
+                  </div>
+                </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
+                <TableCell>
+                  {(() => {
+                    if (!asset.assignedEmployeeId) return '-';
+                    const employee = employees.find((e: any) => e.id === asset.assignedEmployeeId);
+                    return employee ? employee.englishName : '-';
+                  })()}
+                </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end gap-1">
+                    {/* Check-in/Check-out buttons beside 3-dots menu */}
+                    {asset.status === 'Available' && (
+                      <Button
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          // Handle check-out functionality
+                          console.log('Check out asset:', asset.id);
+                        }}
+                        title="Check Out"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {asset.status === 'In Use' && (
+                      <Button
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          // Handle check-in functionality
+                          console.log('Check in asset:', asset.id);
+                        }}
+                        title="Check In"
+                      >
+                        <LogIn className="h-4 w-4" />
+                      </Button>
+                    )}
                     <AssetActionsMenu 
                       asset={asset} 
                       employees={employees}
@@ -321,7 +381,7 @@ export default function AssetsTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={hasAccess(3) ? 8 : 7} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={hasAccess(3) ? 9 : 8} className="text-center h-24 text-muted-foreground">
                 {translations.noAssets}
               </TableCell>
             </TableRow>

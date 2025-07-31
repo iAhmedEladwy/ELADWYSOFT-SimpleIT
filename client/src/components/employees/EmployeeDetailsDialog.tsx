@@ -133,7 +133,7 @@ export default function EmployeeDetailsDialog({
                     {translations.hireDate}
                   </label>
                   <p className="font-medium">
-                    {new Date(employee.hireDate).toLocaleDateString()}
+                    {employee.hireDate ? new Date(employee.hireDate).toLocaleDateString() : '-'}
                   </p>
                 </div>
                 {employee.salary && (
