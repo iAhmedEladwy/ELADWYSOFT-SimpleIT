@@ -11,12 +11,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit, Calendar, User, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit, Calendar, User, Settings, CheckCircle, AlertCircle, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import MaintenanceForm from './MaintenanceForm';
 import { UpgradeForm } from './UpgradeForm';
+import AssetDetailView from './AssetDetailView';
 
 interface AssetActionsMenuProps {
   asset: {
@@ -42,6 +43,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
   const [showCheckInDialog, setShowCheckInDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
@@ -133,6 +135,10 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setShowCheckInDialog(true);
   };
 
+  const handleViewDetails = () => {
+    setShowDetailsDialog(true);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -146,6 +152,11 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           <DropdownMenuItem onClick={handleEdit}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Asset
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={handleViewDetails}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
@@ -322,6 +333,13 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Asset Detail View dialog */}
+      <AssetDetailDialog
+        asset={asset}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+      />
 
       {/* Asset History Dialog */}
       <AssetHistoryDialog 
@@ -568,5 +586,24 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Asset Detail View Dialog Component
+function AssetDetailDialog({ 
+  asset, 
+  open, 
+  onOpenChange 
+}: { 
+  asset: any; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+}) {
+  return (
+    <AssetDetailView
+      assetId={asset?.id || null}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
   );
 }
