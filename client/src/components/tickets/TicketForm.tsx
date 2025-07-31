@@ -479,7 +479,7 @@ export default function TicketForm({
                               <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
                               {assets.map((asset: any) => (
                                 <SelectItem key={asset.id} value={asset.id.toString()}>
-                                  {asset.assetId} - {asset.name || 'Unknown'}
+                                  {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1013,7 +1013,7 @@ export default function TicketForm({
                                       <SelectItem value="none">{language === 'English' ? 'No Asset' : 'لا يوجد أصل'}</SelectItem>
                                       {assets.map((asset: any) => (
                                         <SelectItem key={asset.id} value={asset.id.toString()}>
-                                          {asset.assetId} - {asset.name}
+                                          {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
