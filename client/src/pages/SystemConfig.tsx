@@ -2680,7 +2680,6 @@ function SystemConfig() {
         <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>{language === 'English' ? 'Users & Roles Management' : 'إدارة المستخدمين والأدوار'}</CardTitle>
               <CardDescription>
                 {language === 'English' 
                   ? 'Manage system users and their roles.' 
