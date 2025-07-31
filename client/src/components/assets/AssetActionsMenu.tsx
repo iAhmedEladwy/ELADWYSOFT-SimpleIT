@@ -247,7 +247,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
                 <SelectContent>
                   {employees.map(employee => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName} ({employee.empId})
+                      {employee.empId} - {employee.englishName || employee.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

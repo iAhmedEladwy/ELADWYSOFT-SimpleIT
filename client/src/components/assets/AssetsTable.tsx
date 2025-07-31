@@ -337,7 +337,7 @@ export default function AssetsTable({
                   {(() => {
                     if (!asset.assignedEmployeeId) return '-';
                     const employee = employees.find((e: any) => e.id === asset.assignedEmployeeId);
-                    return employee ? employee.englishName : '-';
+                    return employee ? `${employee.empId} - ${employee.englishName || employee.name}` : '-';
                   })()}
                 </TableCell>
                 <TableCell className="text-right">

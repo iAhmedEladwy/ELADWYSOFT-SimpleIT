@@ -28,38 +28,35 @@ interface AssetActionButtonsProps {
   employees: any[];
 }
 
-// Check-out reason options
+// Check-out reason options - matching AssetActionsMenu
 const CHECK_OUT_REASONS = [
   'Assigned for work use',
   'Temporary loan',
   'Replacement for faulty asset',
   'Project-based use',
   'Remote work setup',
-  'New employee onboarding',
-  'External use (with approval)',
+  'New employee onboarding'
 ];
 
-// Check-in reason options
+// Check-in reason options - matching AssetActionsMenu
 const CHECK_IN_REASONS = [
   'End of assignment',
   'Employee exit',
   'Asset not needed anymore',
   'Asset upgrade/replacement',
   'Faulty/Needs repair',
-  'Warranty return',
-  'Loan period ended',
+  'Loan period ended'
 ];
 
 export default function AssetActionButtons({ asset, employees }: AssetActionButtonsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [openCheckOutDialog, setOpenCheckOutDialog] = useState(false);
-  const [openCheckInDialog, setOpenCheckInDialog] = useState(false);
+  const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
+  const [showCheckInDialog, setShowCheckInDialog] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [notes, setNotes] = useState('');
-  const [checkOutReason, setCheckOutReason] = useState<string>('');
-  const [checkInReason, setCheckInReason] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
 
   // Translations
   const translations = {
@@ -85,81 +82,65 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
     checkInSuccess: language === 'English' ? 'Asset checked in successfully' : 'تم استلام الأصل بنجاح',
   };
 
-  // Check-out mutation
+  // Check-out mutation - matching AssetActionsMenu exactly
   const checkOutMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
-        employeeId: parseInt(selectedEmployeeId),
-        notes: `${checkOutReason}${notes ? ': ' + notes : ''}`.trim(),
-        type: 'Check-Out',
-      });
-      return res.json();
-    },
+    mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
+      employeeId: parseInt(selectedEmployeeId),
+      notes: notes || reason,
+      type: 'Check-Out'
+    }),
     onSuccess: () => {
+      toast({ title: 'Success', description: 'Asset checked out successfully' });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.checkOutSuccess,
-      });
-      setOpenCheckOutDialog(false);
-      setSelectedEmployeeId('');
-      setCheckOutReason('');
-      setNotes('');
+      setShowCheckOutDialog(false);
+      resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: translations.checkOut,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
+      toast({ title: 'Error', description: error?.message || 'Failed to check out asset', variant: 'destructive' });
+    }
   });
 
-  // Check-in mutation
+  // Check-in mutation - matching AssetActionsMenu exactly
   const checkInMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
-        notes: `${checkInReason}${notes ? ': ' + notes : ''}`.trim(),
-        type: 'Check-In',
-      });
-      return res.json();
-    },
+    mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
+      notes: notes || reason,
+      type: 'Check-In'
+    }),
     onSuccess: () => {
+      toast({ title: 'Success', description: 'Asset checked in successfully' });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.checkInSuccess,
-      });
-      setOpenCheckInDialog(false);
-      setCheckInReason('');
-      setNotes('');
+      setShowCheckInDialog(false);
+      resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: translations.checkIn,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
+      toast({ title: 'Error', description: error?.message || 'Failed to check in asset', variant: 'destructive' });
+    }
   });
+
+  const resetForm = () => {
+    setSelectedEmployeeId('');
+    setNotes('');
+    setReason('');
+  };
 
   // Handle check-out button click
   const handleCheckOut = () => {
-    setOpenCheckOutDialog(true);
+    setShowCheckOutDialog(true);
   };
 
   // Handle check-in button click
   const handleCheckIn = () => {
-    setOpenCheckInDialog(true);
+    setShowCheckInDialog(true);
   };
 
   // Handle check-out form submit
   const handleCheckOutSubmit = () => {
-    if (!selectedEmployeeId || !checkOutReason) return;
+    if (!selectedEmployeeId) return;
     checkOutMutation.mutate();
   };
 
   // Handle check-in form submit
   const handleCheckInSubmit = () => {
-    if (!checkInReason) return;
     checkInMutation.mutate();
   };
 
@@ -191,7 +172,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       )}
 
       {/* Check-out dialog */}
-      <Dialog open={openCheckOutDialog} onOpenChange={setOpenCheckOutDialog}>
+      <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{translations.checkOutTitle}</DialogTitle>
@@ -210,7 +191,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
                 <SelectContent>
                   {employees.map(employee => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName}
+                      {employee.empId} - {employee.englishName || employee.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -219,8 +200,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             <div className="grid gap-2">
               <Label htmlFor="check-out-reason">{translations.reasonLabel}</Label>
               <Select 
-                value={checkOutReason} 
-                onValueChange={setCheckOutReason}
+                value={reason} 
+                onValueChange={setReason}
               >
                 <SelectTrigger id="check-out-reason">
                   <SelectValue placeholder={translations.selectReason} />
@@ -245,12 +226,12 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenCheckOutDialog(false)}>
+            <Button variant="outline" onClick={() => setShowCheckOutDialog(false)}>
               {translations.cancel}
             </Button>
             <Button 
               onClick={handleCheckOutSubmit} 
-              disabled={checkOutMutation.isPending || !selectedEmployeeId || !checkOutReason}
+              disabled={checkOutMutation.isPending || !selectedEmployeeId}
             >
               {checkOutMutation.isPending ? (
                 <>
@@ -266,7 +247,7 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       </Dialog>
 
       {/* Check-in dialog */}
-      <Dialog open={openCheckInDialog} onOpenChange={setOpenCheckInDialog}>
+      <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{translations.checkInTitle}</DialogTitle>
@@ -276,8 +257,8 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             <div className="grid gap-2">
               <Label htmlFor="check-in-reason">{translations.reasonLabel}</Label>
               <Select 
-                value={checkInReason} 
-                onValueChange={setCheckInReason}
+                value={reason} 
+                onValueChange={setReason}
               >
                 <SelectTrigger id="check-in-reason">
                   <SelectValue placeholder={translations.selectReason} />
@@ -302,12 +283,12 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenCheckInDialog(false)}>
+            <Button variant="outline" onClick={() => setShowCheckInDialog(false)}>
               {translations.cancel}
             </Button>
             <Button 
               onClick={handleCheckInSubmit} 
-              disabled={checkInMutation.isPending || !checkInReason}
+              disabled={checkInMutation.isPending}
             >
               {checkInMutation.isPending ? (
                 <>
