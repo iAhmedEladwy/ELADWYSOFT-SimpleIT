@@ -566,27 +566,19 @@ export default function Assets() {
             {translations.refresh}
           </Button>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setFilters({});
-              setSearchInput('');
-            }}
-            disabled={Object.values(filters).filter(Boolean).length === 0 && !searchInput}
-          >
-            <X className="h-4 w-4 mr-2" />
-            Clear Filters
-          </Button>
+
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          {hasAccess(2) && (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleExportFilteredAssets}
+              disabled={filteredAssets.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV ({filteredAssets.length})
+            </Button>
+          )}
           
           {hasAccess(2) && (
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -740,29 +732,7 @@ export default function Assets() {
             </div>
           </div>
 
-          {/* Clear Filters and Export CSV */}
-          <div className="flex gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setFilters({});
-                setSearchInput('');
-              }}
-              disabled={Object.values(filters).every(v => !v) && !searchInput}
-            >
-              Clear Filters
-            </Button>
-            {hasAccess(2) && (
-              <Button 
-                variant="outline"
-                onClick={handleExportFilteredAssets}
-                disabled={filteredAssets.length === 0}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV ({filteredAssets.length})
-              </Button>
-            )}
-          </div>
+
         </CardContent>
       </Card>
 
