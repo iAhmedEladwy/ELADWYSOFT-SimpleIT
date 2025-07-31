@@ -676,12 +676,12 @@ function SystemConfig() {
 
   // Create demo data mutation
   const createDemoDataMutation = useMutation({
-    mutationFn: (size: string) => apiRequest('POST', '/api/create-demo-data', { size }),
-    onSuccess: () => {
+    mutationFn: (size: 'small' | 'medium' | 'large') => apiRequest('/api/create-demo-data', 'POST', { size }),
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries();
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Demo data created successfully' : 'تم إنشاء البيانات التجريبية بنجاح',
+        description: data.message || (language === 'English' ? 'Demo data created successfully' : 'تم إنشاء البيانات التجريبية بنجاح'),
       });
     },
     onError: (error: any) => {
@@ -692,6 +692,8 @@ function SystemConfig() {
       });
     }
   });
+
+
 
   // Configuration handlers
   const handleSaveConfig = () => {
