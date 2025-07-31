@@ -2689,19 +2689,23 @@ function SystemConfig() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-medium">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
-                    <p className="text-sm text-muted-foreground">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
+                    <p className="text-sm text-gray-600">
                       {language === 'English' 
-                        ? 'Manage system users and their roles.' 
-                        : 'إدارة مستخدمي النظام وأدوارهم.'}
+                        ? 'Click on a user row to select, then use action buttons to manage users' 
+                        : 'انقر على صف مستخدم لتحديده، ثم استخدم أزرار الإجراءات لإدارة المستخدمين'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* Quick Action Buttons for Selected User */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* User Action Buttons */}
                     {selectedUserId && (
-                      <>
+                      <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                        <span className="text-xs text-blue-700 font-medium">
+                          {language === 'English' ? 'Selected User Actions:' : 'إجراءات المستخدم المحدد:'}
+                        </span>
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -2710,9 +2714,10 @@ function SystemConfig() {
                             if (user) handleToggleUserStatus(user.id, !user.isActive);
                           }}
                           disabled={updateUserMutation.isPending}
+                          className="h-8"
                         >
                           {updateUserMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             (() => {
                               const user = allUsers.find(u => u.id === selectedUserId);
@@ -2729,8 +2734,10 @@ function SystemConfig() {
                             const user = allUsers.find(u => u.id === selectedUserId);
                             if (user) handleEditUser(user);
                           }}
+                          className="h-8"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3 mr-1" />
+                          {language === 'English' ? 'Edit' : 'تعديل'}
                         </Button>
                         {selectedUserId !== 1 && (
                           <Button 
@@ -2743,21 +2750,24 @@ function SystemConfig() {
                                 setSelectedUserId(null);
                               }
                             }}
-                            className="text-red-600 hover:text-red-700"
+                            className="h-8 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
                             disabled={deleteUserMutation.isPending}
                           >
                             {deleteUserMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <Trash className="h-4 w-4" />
+                              <>
+                                <Trash className="h-3 w-3 mr-1" />
+                                {language === 'English' ? 'Delete' : 'حذف'}
+                              </>
                             )}
                           </Button>
                         )}
-                      </>
+                      </div>
                     )}
                     <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700">
                           <Plus className="mr-2 h-4 w-4" />
                           {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
                         </Button>
@@ -2840,48 +2850,89 @@ function SystemConfig() {
                 </div>
 
                 {/* Users Table */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{language === 'English' ? 'Username' : 'اسم المستخدم'}</TableHead>
-                        <TableHead>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TableHead>
-                        <TableHead>{language === 'English' ? 'Role' : 'الدور'}</TableHead>
-                        <TableHead>{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allUsers.map((user: any) => (
-                        <TableRow 
-                          key={user.id} 
-                          className={`cursor-pointer ${selectedUserId === user.id ? 'bg-muted' : ''} hover:bg-muted/50`}
-                          onClick={() => setSelectedUserId(user.id === selectedUserId ? null : user.id)}
-                        >
-                          <TableCell className="font-medium">
-                            {user.username}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {language === 'English' ? user.role : (
-                                user.role === 'admin' ? 'مشرف' :
-                                user.role === 'manager' ? 'مدير' :
-                                user.role === 'agent' ? 'وكيل' : 'موظف'
-                              )}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.isActive ? "default" : "secondary"}>
-                              {user.isActive ? 
-                                (language === 'English' ? 'Active' : 'نشط') : 
-                                (language === 'English' ? 'Inactive' : 'غير نشط')
-                              }
-                            </Badge>
-                          </TableCell>
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!allUsers?.length ? (
+                    <div className="p-8 text-center">
+                      <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {language === 'English' ? 'No Users Found' : 'لم يتم العثور على مستخدمين'}
+                      </h3>
+                      <p className="text-gray-600">
+                        {language === 'English' ? 'Get started by adding your first user.' : 'ابدأ بإضافة أول مستخدم.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Username' : 'اسم المستخدم'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Role' : 'الدور'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {allUsers.map((user: any) => (
+                          <TableRow 
+                            key={user.id} 
+                            className={`cursor-pointer transition-colors ${
+                              selectedUserId === user.id 
+                                ? 'bg-blue-50 border-l-4 border-l-blue-500' 
+                                : 'hover:bg-gray-50'
+                            }`}
+                            onClick={() => setSelectedUserId(user.id === selectedUserId ? null : user.id)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {selectedUserId === user.id && (
+                                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                )}
+                                {user.username}
+                                {user.id === 1 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {language === 'English' ? 'System Admin' : 'مشرف النظام'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-gray-600">{user.email}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant="outline" 
+                                className={`${
+                                  user.role === 'admin' ? 'border-red-200 text-red-700 bg-red-50' :
+                                  user.role === 'manager' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                                  user.role === 'agent' ? 'border-green-200 text-green-700 bg-green-50' :
+                                  'border-gray-200 text-gray-700 bg-gray-50'
+                                }`}
+                              >
+                                {language === 'English' ? user.role : (
+                                  user.role === 'admin' ? 'مشرف' :
+                                  user.role === 'manager' ? 'مدير' :
+                                  user.role === 'agent' ? 'وكيل' : 'موظف'
+                                )}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={user.isActive ? "default" : "secondary"}
+                                className={`${
+                                  user.isActive 
+                                    ? 'bg-green-100 text-green-800 border-green-200' 
+                                    : 'bg-gray-100 text-gray-600 border-gray-200'
+                                }`}
+                              >
+                                {user.isActive ? 
+                                  (language === 'English' ? 'Active' : 'نشط') : 
+                                  (language === 'English' ? 'Inactive' : 'غير نشط')
+                                }
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </div>
 
                 {/* Edit User Dialog */}
@@ -2889,6 +2940,9 @@ function SystemConfig() {
                   <DialogContent className="max-w-md">
                     <DialogHeader>
                       <DialogTitle>{language === 'English' ? 'Edit User' : 'تعديل المستخدم'}</DialogTitle>
+                      <DialogDescription>
+                        {language === 'English' ? 'Update user information and settings. Leave password field blank to keep current password.' : 'تحديث معلومات المستخدم والإعدادات. اترك حقل كلمة المرور فارغاً للاحتفاظ بكلمة المرور الحالية.'}
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
