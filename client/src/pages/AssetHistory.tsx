@@ -141,13 +141,29 @@ export default function AssetHistory() {
   // Fetch assets for filter dropdown
   const { data: assets } = useQuery({
     queryKey: ['/api/assets'],
-    queryFn: () => fetch('/api/assets').then(res => res.json())
+    queryFn: async () => {
+      const response = await fetch('/api/assets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch assets');
+      }
+      return response.json();
+    }
   });
 
   // Fetch employees for filter dropdown
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
-    queryFn: () => fetch('/api/employees').then(res => res.json())
+    queryFn: async () => {
+      const response = await fetch('/api/employees', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+      return response.json();
+    }
   });
 
   const handleFilterChange = (key: string, value: string) => {

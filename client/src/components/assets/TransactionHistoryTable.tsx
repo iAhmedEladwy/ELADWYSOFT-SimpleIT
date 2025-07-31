@@ -87,16 +87,43 @@ export default function TransactionHistoryTable() {
   // Fetch asset transactions
   const { data: transactions, isLoading } = useQuery<TransactionWithRelations[]>({
     queryKey: ['/api/asset-transactions'],
+    queryFn: async () => {
+      const response = await fetch('/api/asset-transactions', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+      return response.json();
+    }
   });
   
   // Assets data for the filter
   const { data: assets } = useQuery<Asset[]>({
     queryKey: ['/api/assets'],
+    queryFn: async () => {
+      const response = await fetch('/api/assets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch assets');
+      }
+      return response.json();
+    }
   });
   
   // Employees data for the filter
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
+    queryFn: async () => {
+      const response = await fetch('/api/employees', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+      return response.json();
+    }
   });
   
   // Filter transactions
