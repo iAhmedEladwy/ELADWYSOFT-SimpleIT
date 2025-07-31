@@ -589,11 +589,16 @@ function SystemConfig() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, userData }: { id: number; userData: any }) => {
+      console.log(`Updating user ${id} with data:`, userData);
       const response = await apiRequest(`/api/users/${id}`, 'PUT', userData);
+      console.log(`Update response for user ${id}:`, response);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log(`Successfully updated user ${variables.id}:`, data);
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      // Force refetch the users data
+      queryClient.refetchQueries({ queryKey: ['/api/users'] });
       setIsEditUserDialogOpen(false);
       setEditingUserId(null);
       toast({
@@ -602,6 +607,7 @@ function SystemConfig() {
       });
     },
     onError: (error: any) => {
+      console.error('User update error:', error);
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: error.message || (language === 'English' ? 'Failed to update user' : 'فشل في تحديث المستخدم'),
@@ -921,6 +927,7 @@ function SystemConfig() {
   };
 
   const handleToggleUserStatus = (userId: number, isActive: boolean) => {
+    console.log(`Toggling user ${userId} status to:`, isActive);
     updateUserMutation.mutate({
       id: userId,
       userData: { isActive }
