@@ -1779,19 +1779,20 @@ function SystemConfig() {
                                     value={editedTypeName}
                                     onChange={(e) => setEditedTypeName(e.target.value)}
                                     className="w-full"
-                                    onBlur={() => {
-                                      if (editedTypeName.trim() && editedTypeName !== type.name) {
-                                        updateAssetTypeMutation.mutate({
-                                          id: type.id,
-                                          name: editedTypeName,
-                                          description: editedTypeDescription
-                                        });
-                                      }
-                                      setEditingTypeId(null);
-                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
+                                        if (editedTypeName.trim() && (editedTypeName !== type.name || editedTypeDescription !== (type.description || ''))) {
+                                          updateAssetTypeMutation.mutate({
+                                            id: type.id,
+                                            name: editedTypeName,
+                                            description: editedTypeDescription
+                                          });
+                                        }
+                                        setEditingTypeId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingTypeId(null);
+                                        setEditedTypeName(type.name);
+                                        setEditedTypeDescription(type.description || '');
                                       }
                                     }}
                                     autoFocus
@@ -1807,6 +1808,22 @@ function SystemConfig() {
                                     onChange={(e) => setEditedTypeDescription(e.target.value)}
                                     className="w-full"
                                     placeholder={language === 'English' ? "Description" : "الوصف"}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        if (editedTypeName.trim() && (editedTypeName !== type.name || editedTypeDescription !== (type.description || ''))) {
+                                          updateAssetTypeMutation.mutate({
+                                            id: type.id,
+                                            name: editedTypeName,
+                                            description: editedTypeDescription
+                                          });
+                                        }
+                                        setEditingTypeId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingTypeId(null);
+                                        setEditedTypeName(type.name);
+                                        setEditedTypeDescription(type.description || '');
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   type.description || '-'
@@ -1814,26 +1831,63 @@ function SystemConfig() {
                               </td>
                               <td className="px-4 py-2 text-right">
                                 <div className="flex gap-1 justify-end">
-                                  <Button
-                                    onClick={() => {
-                                      setEditingTypeId(type.id);
-                                      setEditedTypeName(type.name);
-                                      setEditedTypeDescription(type.description || '');
-                                    }}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => deleteAssetTypeMutation.mutate(type.id)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash className="h-4 w-4 text-red-600" />
-                                  </Button>
+                                  {editingTypeId === type.id ? (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          if (editedTypeName.trim() && (editedTypeName !== type.name || editedTypeDescription !== (type.description || ''))) {
+                                            updateAssetTypeMutation.mutate({
+                                              id: type.id,
+                                              name: editedTypeName,
+                                              description: editedTypeDescription
+                                            });
+                                          }
+                                          setEditingTypeId(null);
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        disabled={!editedTypeName.trim()}
+                                      >
+                                        <Check className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingTypeId(null);
+                                          setEditedTypeName(type.name);
+                                          setEditedTypeDescription(type.description || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingTypeId(type.id);
+                                          setEditedTypeName(type.name);
+                                          setEditedTypeDescription(type.description || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteAssetTypeMutation.mutate(type.id)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -1917,19 +1971,20 @@ function SystemConfig() {
                                     value={editedBrandName}
                                     onChange={(e) => setEditedBrandName(e.target.value)}
                                     className="w-full"
-                                    onBlur={() => {
-                                      if (editedBrandName.trim() && editedBrandName !== brand.name) {
-                                        updateAssetBrandMutation.mutate({
-                                          id: brand.id,
-                                          name: editedBrandName,
-                                          description: editedBrandDescription
-                                        });
-                                      }
-                                      setEditingBrandId(null);
-                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
+                                        if (editedBrandName.trim() && (editedBrandName !== brand.name || editedBrandDescription !== (brand.description || ''))) {
+                                          updateAssetBrandMutation.mutate({
+                                            id: brand.id,
+                                            name: editedBrandName,
+                                            description: editedBrandDescription
+                                          });
+                                        }
+                                        setEditingBrandId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingBrandId(null);
+                                        setEditedBrandName(brand.name);
+                                        setEditedBrandDescription(brand.description || '');
                                       }
                                     }}
                                     autoFocus
@@ -1945,6 +2000,22 @@ function SystemConfig() {
                                     onChange={(e) => setEditedBrandDescription(e.target.value)}
                                     className="w-full"
                                     placeholder={language === 'English' ? "Description" : "الوصف"}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        if (editedBrandName.trim() && (editedBrandName !== brand.name || editedBrandDescription !== (brand.description || ''))) {
+                                          updateAssetBrandMutation.mutate({
+                                            id: brand.id,
+                                            name: editedBrandName,
+                                            description: editedBrandDescription
+                                          });
+                                        }
+                                        setEditingBrandId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingBrandId(null);
+                                        setEditedBrandName(brand.name);
+                                        setEditedBrandDescription(brand.description || '');
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   brand.description || '-'
@@ -1952,26 +2023,63 @@ function SystemConfig() {
                               </td>
                               <td className="px-4 py-2 text-right">
                                 <div className="flex gap-1 justify-end">
-                                  <Button
-                                    onClick={() => {
-                                      setEditingBrandId(brand.id);
-                                      setEditedBrandName(brand.name);
-                                      setEditedBrandDescription(brand.description || '');
-                                    }}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash className="h-4 w-4 text-red-600" />
-                                  </Button>
+                                  {editingBrandId === brand.id ? (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          if (editedBrandName.trim() && (editedBrandName !== brand.name || editedBrandDescription !== (brand.description || ''))) {
+                                            updateAssetBrandMutation.mutate({
+                                              id: brand.id,
+                                              name: editedBrandName,
+                                              description: editedBrandDescription
+                                            });
+                                          }
+                                          setEditingBrandId(null);
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        disabled={!editedBrandName.trim()}
+                                      >
+                                        <Check className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingBrandId(null);
+                                          setEditedBrandName(brand.name);
+                                          setEditedBrandDescription(brand.description || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingBrandId(brand.id);
+                                          setEditedBrandName(brand.name);
+                                          setEditedBrandDescription(brand.description || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteAssetBrandMutation.mutate(brand.id)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -2068,20 +2176,22 @@ function SystemConfig() {
                                     value={editedStatusName}
                                     onChange={(e) => setEditedStatusName(e.target.value)}
                                     className="w-full"
-                                    onBlur={() => {
-                                      if (editedStatusName.trim() && editedStatusName !== status.name) {
-                                        updateAssetStatusMutation.mutate({
-                                          id: status.id,
-                                          name: editedStatusName,
-                                          description: editedStatusDescription,
-                                          color: editedStatusColor
-                                        });
-                                      }
-                                      setEditingStatusId(null);
-                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
+                                        if (editedStatusName.trim() && (editedStatusName !== status.name || editedStatusDescription !== (status.description || '') || editedStatusColor !== status.color)) {
+                                          updateAssetStatusMutation.mutate({
+                                            id: status.id,
+                                            name: editedStatusName,
+                                            description: editedStatusDescription,
+                                            color: editedStatusColor
+                                          });
+                                        }
+                                        setEditingStatusId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingStatusId(null);
+                                        setEditedStatusName(status.name);
+                                        setEditedStatusDescription(status.description || '');
+                                        setEditedStatusColor(status.color || '#3B82F6');
                                       }
                                     }}
                                     autoFocus
@@ -2098,6 +2208,24 @@ function SystemConfig() {
                                       onChange={(e) => setEditedStatusDescription(e.target.value)}
                                       className="flex-1"
                                       placeholder={language === 'English' ? "Description" : "الوصف"}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          if (editedStatusName.trim() && (editedStatusName !== status.name || editedStatusDescription !== (status.description || '') || editedStatusColor !== status.color)) {
+                                            updateAssetStatusMutation.mutate({
+                                              id: status.id,
+                                              name: editedStatusName,
+                                              description: editedStatusDescription,
+                                              color: editedStatusColor
+                                            });
+                                          }
+                                          setEditingStatusId(null);
+                                        } else if (e.key === 'Escape') {
+                                          setEditingStatusId(null);
+                                          setEditedStatusName(status.name);
+                                          setEditedStatusDescription(status.description || '');
+                                          setEditedStatusColor(status.color || '#3B82F6');
+                                        }
+                                      }}
                                     />
                                     <input
                                       type="color"
@@ -2112,27 +2240,66 @@ function SystemConfig() {
                               </td>
                               <td className="px-4 py-2 text-right">
                                 <div className="flex gap-1 justify-end">
-                                  <Button
-                                    onClick={() => {
-                                      setEditingStatusId(status.id);
-                                      setEditedStatusName(status.name);
-                                      setEditedStatusDescription(status.description || '');
-                                      setEditedStatusColor(status.color || '#3B82F6');
-                                    }}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => deleteAssetStatusMutation.mutate(status.id)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash className="h-4 w-4 text-red-600" />
-                                  </Button>
+                                  {editingStatusId === status.id ? (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          if (editedStatusName.trim() && (editedStatusName !== status.name || editedStatusDescription !== (status.description || '') || editedStatusColor !== status.color)) {
+                                            updateAssetStatusMutation.mutate({
+                                              id: status.id,
+                                              name: editedStatusName,
+                                              description: editedStatusDescription,
+                                              color: editedStatusColor
+                                            });
+                                          }
+                                          setEditingStatusId(null);
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        disabled={!editedStatusName.trim()}
+                                      >
+                                        <Check className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingStatusId(null);
+                                          setEditedStatusName(status.name);
+                                          setEditedStatusDescription(status.description || '');
+                                          setEditedStatusColor(status.color || '#3B82F6');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingStatusId(status.id);
+                                          setEditedStatusName(status.name);
+                                          setEditedStatusDescription(status.description || '');
+                                          setEditedStatusColor(status.color || '#3B82F6');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteAssetStatusMutation.mutate(status.id)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -2235,21 +2402,24 @@ function SystemConfig() {
                                     value={editedProviderName}
                                     onChange={(e) => setEditedProviderName(e.target.value)}
                                     className="w-full"
-                                    onBlur={() => {
-                                      if (editedProviderName.trim() && editedProviderName !== provider.name) {
-                                        updateServiceProviderMutation.mutate({
-                                          id: provider.id,
-                                          name: editedProviderName,
-                                          contactPerson: editedProviderContact,
-                                          phone: editedProviderPhone,
-                                          email: editedProviderEmail
-                                        });
-                                      }
-                                      setEditingProviderId(null);
-                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
+                                        if (editedProviderName.trim() && (editedProviderName !== provider.name || editedProviderContact !== (provider.contactPerson || '') || editedProviderPhone !== (provider.phone || '') || editedProviderEmail !== (provider.email || ''))) {
+                                          updateServiceProviderMutation.mutate({
+                                            id: provider.id,
+                                            name: editedProviderName,
+                                            contactPerson: editedProviderContact,
+                                            phone: editedProviderPhone,
+                                            email: editedProviderEmail
+                                          });
+                                        }
+                                        setEditingProviderId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingProviderId(null);
+                                        setEditedProviderName(provider.name);
+                                        setEditedProviderContact(provider.contactPerson || '');
+                                        setEditedProviderPhone(provider.phone || '');
+                                        setEditedProviderEmail(provider.email || '');
                                       }
                                     }}
                                     autoFocus
@@ -2265,6 +2435,26 @@ function SystemConfig() {
                                     onChange={(e) => setEditedProviderContact(e.target.value)}
                                     className="w-full"
                                     placeholder={language === 'English' ? "Contact person" : "جهة الاتصال"}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        if (editedProviderName.trim() && (editedProviderName !== provider.name || editedProviderContact !== (provider.contactPerson || '') || editedProviderPhone !== (provider.phone || '') || editedProviderEmail !== (provider.email || ''))) {
+                                          updateServiceProviderMutation.mutate({
+                                            id: provider.id,
+                                            name: editedProviderName,
+                                            contactPerson: editedProviderContact,
+                                            phone: editedProviderPhone,
+                                            email: editedProviderEmail
+                                          });
+                                        }
+                                        setEditingProviderId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingProviderId(null);
+                                        setEditedProviderName(provider.name);
+                                        setEditedProviderContact(provider.contactPerson || '');
+                                        setEditedProviderPhone(provider.phone || '');
+                                        setEditedProviderEmail(provider.email || '');
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   provider.contactPerson || '-'
@@ -2277,6 +2467,26 @@ function SystemConfig() {
                                     onChange={(e) => setEditedProviderPhone(e.target.value)}
                                     className="w-full"
                                     placeholder={language === 'English' ? "Phone" : "الهاتف"}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        if (editedProviderName.trim() && (editedProviderName !== provider.name || editedProviderContact !== (provider.contactPerson || '') || editedProviderPhone !== (provider.phone || '') || editedProviderEmail !== (provider.email || ''))) {
+                                          updateServiceProviderMutation.mutate({
+                                            id: provider.id,
+                                            name: editedProviderName,
+                                            contactPerson: editedProviderContact,
+                                            phone: editedProviderPhone,
+                                            email: editedProviderEmail
+                                          });
+                                        }
+                                        setEditingProviderId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingProviderId(null);
+                                        setEditedProviderName(provider.name);
+                                        setEditedProviderContact(provider.contactPerson || '');
+                                        setEditedProviderPhone(provider.phone || '');
+                                        setEditedProviderEmail(provider.email || '');
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   provider.phone || '-'
@@ -2284,28 +2494,69 @@ function SystemConfig() {
                               </td>
                               <td className="px-4 py-2 text-right">
                                 <div className="flex gap-1 justify-end">
-                                  <Button
-                                    onClick={() => {
-                                      setEditingProviderId(provider.id);
-                                      setEditedProviderName(provider.name);
-                                      setEditedProviderContact(provider.contactPerson || '');
-                                      setEditedProviderPhone(provider.phone || '');
-                                      setEditedProviderEmail(provider.email || '');
-                                    }}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash className="h-4 w-4 text-red-600" />
-                                  </Button>
+                                  {editingProviderId === provider.id ? (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          if (editedProviderName.trim() && (editedProviderName !== provider.name || editedProviderContact !== (provider.contactPerson || '') || editedProviderPhone !== (provider.phone || '') || editedProviderEmail !== (provider.email || ''))) {
+                                            updateServiceProviderMutation.mutate({
+                                              id: provider.id,
+                                              name: editedProviderName,
+                                              contactPerson: editedProviderContact,
+                                              phone: editedProviderPhone,
+                                              email: editedProviderEmail
+                                            });
+                                          }
+                                          setEditingProviderId(null);
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        disabled={!editedProviderName.trim()}
+                                      >
+                                        <Check className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingProviderId(null);
+                                          setEditedProviderName(provider.name);
+                                          setEditedProviderContact(provider.contactPerson || '');
+                                          setEditedProviderPhone(provider.phone || '');
+                                          setEditedProviderEmail(provider.email || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <X className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => {
+                                          setEditingProviderId(provider.id);
+                                          setEditedProviderName(provider.name);
+                                          setEditedProviderContact(provider.contactPerson || '');
+                                          setEditedProviderPhone(provider.phone || '');
+                                          setEditedProviderEmail(provider.email || '');
+                                        }}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => deleteServiceProviderMutation.mutate(provider.id)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <Trash className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
