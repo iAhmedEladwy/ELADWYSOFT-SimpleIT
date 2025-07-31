@@ -55,6 +55,21 @@ export const assetValidationRules: CSVValidationRule[] = [
     type: 'string'
   },
   {
+    field: 'cpu',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'ram',
+    required: false,
+    type: 'string'
+  },
+  {
+    field: 'storage',
+    required: false,
+    type: 'string'
+  },
+  {
     field: 'purchaseDate',
     required: false,
     type: 'date',
@@ -486,15 +501,15 @@ export const assetTransactionValidationRules: CSVValidationRule[] = [
 export const assetExportColumns = [
   'id', 'assetId', 'type', 'brand', 'modelNumber', 'modelName', 'serialNumber', 
   'specs', 'cpu', 'ram', 'storage', 'status', 'purchaseDate', 'buyPrice', 
-  'warrantyExpiryDate', 'lifeSpan', 'outOfBoxOs', 'assignedToId', 
+  'warrantyExpiryDate', 'lifeSpan', 'outOfBoxOs', 'assignedEmployeeId', 
   'createdAt', 'updatedAt'
 ];
 
 export const employeeExportColumns = [
-  'id', 'empId', 'englishName', 'arabicName', 'email', 'phone', 
-  'department', 'position', 'employmentType', 'startDate', 'salary', 
-  'status', 'address', 'emergencyContact', 'nationalId', 'managerId',
-  'createdAt', 'updatedAt'
+  'id', 'empId', 'englishName', 'arabicName', 'department', 'idNumber', 'title', 
+  'directManager', 'employmentType', 'joiningDate', 'exitDate', 'status', 
+  'personalMobile', 'workMobile', 'personalEmail', 'corporateEmail', 'userId',
+  'email', 'phone', 'position', 'createdAt', 'updatedAt'
 ];
 
 export const ticketExportColumns = [

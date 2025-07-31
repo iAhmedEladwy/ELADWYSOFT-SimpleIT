@@ -1658,8 +1658,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Model Number': asset.modelNumber || '',
           'Model Name': asset.modelName || '',
           'Serial Number': asset.serialNumber,
+          'Specifications': asset.specs || '',
+          'CPU': asset.cpu || '', // New hardware field
+          'RAM': asset.ram || '', // New hardware field  
+          'Storage': asset.storage || '', // New hardware field
           'Status': asset.status,
-          'Specs': asset.specs || '',
           'Purchase Date': asset.purchaseDate ? 
             new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
           'Purchase Price': asset.buyPrice || '',
@@ -2691,41 +2694,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const assets = await storage.getAllAssets();
       
-      // Convert to CSV
-      const fields = [
-        'assetId', 'type', 'brand', 'modelNumber', 'modelName', 
-        'serialNumber', 'specs', 'status', 'purchaseDate', 'buyPrice', 
-        'warrantyExpiryDate', 'lifeSpan', 'outOfBoxOs', 'assignedEmployeeId'
-      ];
-      
-      let csv = fields.join(',') + '\n';
-      
-      assets.forEach(asset => {
-        const row = fields.map(field => {
-          const value = asset[field as keyof schema.Asset];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && value.includes(',')) return `"${value}"`;
-          return value;
-        }).join(',');
-        csv += row + '\n';
+      // Get employees for mapping assignedEmployeeId to employee names
+      const employees = await storage.getAllEmployees();
+      const employeeMap = new Map();
+      employees.forEach(emp => {
+        employeeMap.set(emp.id, emp.englishName);
       });
       
-      // Set headers for file download
-      res.setHeader('Content-Disposition', 'attachment; filename=assets.csv');
-      res.setHeader('Content-Type', 'text/csv');
+      // Enhanced CSV export with all current schema fields including new hardware specs
+      const csvData = assets.map(asset => {
+        const assignedTo = asset.assignedEmployeeId ? 
+          employeeMap.get(asset.assignedEmployeeId) || '' : '';
+          
+        return {
+          'Asset ID': asset.assetId,
+          'Type': asset.type,
+          'Brand': asset.brand,
+          'Model Number': asset.modelNumber || '',
+          'Model Name': asset.modelName || '',
+          'Serial Number': asset.serialNumber,
+          'Specifications': asset.specs || '',
+          'CPU': asset.cpu || '', // New hardware field
+          'RAM': asset.ram || '', // New hardware field  
+          'Storage': asset.storage || '', // New hardware field
+          'Status': asset.status,
+          'Purchase Date': asset.purchaseDate ? 
+            new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
+          'Purchase Price': asset.buyPrice || '',
+          'Warranty Expiry Date': asset.warrantyExpiryDate ? 
+            new Date(asset.warrantyExpiryDate).toISOString().split('T')[0] : '',
+          'Life Span (months)': asset.lifeSpan || '',
+          'Factory OS': asset.outOfBoxOs || '',
+          'Assigned To': assignedTo,
+          'Created Date': asset.createdAt ? 
+            new Date(asset.createdAt).toISOString().split('T')[0] : '',
+          'Last Updated': asset.updatedAt ? 
+            new Date(asset.updatedAt).toISOString().split('T')[0] : ''
+        };
+      });
       
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Export",
-          entityType: "Asset",
-          details: { count: assets.length }
-        });
-      }
-      
-      res.send(csv);
+      // Convert to CSV using csv-stringify
+      csvStringify(csvData, { header: true }, (err, output) => {
+        if (err) {
+          throw new Error('Error generating CSV export');
+        }
+        
+        // Set headers for file download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=assets-export.csv');
+        
+        // Send CSV data
+        res.send(output);
+        
+        // Log activity
+        if (req.user) {
+          logActivity({
+            userId: (req.user as schema.User).id,
+            action: AuditAction.EXPORT,
+            entityType: EntityType.ASSET,
+            details: { count: assets.length }
+          });
+        }
+      });
     } catch (error: unknown) {
+      console.error('Error exporting assets:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
@@ -4423,7 +4455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export API endpoints
+  // Enhanced employees export with all new schema fields
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
@@ -4431,13 +4463,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Employee ID': emp.empId,
         'English Name': emp.englishName,
         'Arabic Name': emp.arabicName || '',
-        'Email': emp.email,
-        'Phone': emp.phone || '',
         'Department': emp.department || '',
-        'Position': emp.position || '',
-        'Hire Date': emp.hireDate || '',
-        'Salary': emp.salary || '',
-        'Status': emp.status
+        'ID Number': emp.idNumber || '', // New field
+        'Title': emp.title || '', // New field
+        'Employment Type': emp.employmentType || '',
+        'Joining Date': emp.joiningDate ? new Date(emp.joiningDate).toISOString().split('T')[0] : '', // New field
+        'Exit Date': emp.exitDate ? new Date(emp.exitDate).toISOString().split('T')[0] : '', // New field
+        'Status': emp.status,
+        'Personal Mobile': emp.personalMobile || '', // New field
+        'Work Mobile': emp.workMobile || '', // New field
+        'Personal Email': emp.personalEmail || '', // New field
+        'Corporate Email': emp.corporateEmail || '', // New field
+        'User ID': emp.userId || '', // New field
+        'Direct Manager ID': emp.directManager || '', // New field
+        // Backward compatibility fields
+        'Email': emp.email || emp.corporateEmail || emp.personalEmail || '',
+        'Phone': emp.phone || emp.workMobile || emp.personalMobile || '',
+        'Position': emp.position || emp.title || '',
+        'Created Date': emp.createdAt ? new Date(emp.createdAt).toISOString().split('T')[0] : '',
+        'Last Updated': emp.updatedAt ? new Date(emp.updatedAt).toISOString().split('T')[0] : ''
       }));
       
       res.setHeader('Content-Type', 'text/csv');
