@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
@@ -566,6 +566,28 @@ export default function Assets() {
             {translations.refresh}
           </Button>
           
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setFilters({});
+              setSearchInput('');
+            }}
+            disabled={Object.values(filters).filter(Boolean).length === 0 && !searchInput}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Clear Filters
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          
           {hasAccess(2) && (
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
@@ -608,14 +630,8 @@ export default function Assets() {
                 <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-muted-foreground">
-                {filteredAssets.length} of {assets && Array.isArray(assets) ? assets.length : 0} assets
-              </div>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
+            <div className="text-sm text-muted-foreground">
+              {filteredAssets.length} of {assets && Array.isArray(assets) ? assets.length : 0} assets
             </div>
           </div>
         </CardHeader>
