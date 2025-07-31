@@ -2849,7 +2849,6 @@ function SystemConfig() {
                         )}
                       </div>
                     )}
-                  )}
                 </div>
 
                 {/* Users Table */}
@@ -3018,7 +3017,6 @@ function SystemConfig() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                </div>
               </div>
             </CardContent>
           </Card>
