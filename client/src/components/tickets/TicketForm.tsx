@@ -45,19 +45,19 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Ticket form schema with all ITIL-compliant fields
+// Ticket form schema with all ITIL-compliant fields - made flexible for better UX
 const ticketFormSchema = z.object({
-  submittedById: z.string().min(1, "Please select who is submitting this ticket"),
+  submittedById: z.string().optional(), // Made optional - can be auto-filled
   assignedToId: z.string().optional(),
   relatedAssetId: z.string().optional(),
-  requestType: z.string().min(1, "Please select a request type"),
+  requestType: z.string().optional(), // Made optional
   category: z.string().default('Incident'),
-  priority: z.string().min(1, "Please select a priority"),
+  priority: z.string().optional(), // Made optional
   urgency: z.string().default('Medium'),
   impact: z.string().default('Medium'),
   status: z.string().default('Open'),
-  summary: z.string().min(5, "Summary must be at least 5 characters").max(200, "Summary cannot exceed 200 characters"),
-  description: z.string().min(5, "Description must be at least 5 characters").max(2000, "Description cannot exceed 2000 characters"),
+  summary: z.string().optional(), // Made optional
+  description: z.string().min(1, "Description is required").max(2000, "Description cannot exceed 2000 characters"),
   resolution: z.string().optional(),
   dueDate: z.string().optional(),
   slaTarget: z.string().optional(),
