@@ -497,6 +497,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                         <TableHead>Date</TableHead>
                         <TableHead>Cost</TableHead>
                         <TableHead>Provider</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -530,6 +531,20 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                               <div className="font-medium">{record.providerName || 'N/A'}</div>
                               <div className="text-gray-500">{record.providerType}</div>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // Handle edit maintenance record
+                                alert(`Edit maintenance record ID: ${record.id}\nThis functionality will allow editing of recorded maintenance entries.`);
+                              }}
+                              className="h-8 w-8 p-0"
+                              title="Edit Maintenance Record"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

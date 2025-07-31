@@ -73,6 +73,8 @@ interface AssetsTableProps {
   onAssign: (assetId: number, employeeId: number) => void;
   onUnassign: (assetId: number) => void;
   onAddMaintenance: (assetId: number, maintenanceData: any) => void;
+  onCheckOut?: (assetId: number) => void;
+  onCheckIn?: (assetId: number) => void;
 }
 
 export default function AssetsTable({ 
@@ -84,7 +86,9 @@ export default function AssetsTable({
   onDelete,
   onAssign,
   onUnassign,
-  onAddMaintenance
+  onAddMaintenance,
+  onCheckOut,
+  onCheckIn
 }: AssetsTableProps) {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
@@ -347,11 +351,8 @@ export default function AssetsTable({
                         variant="ghost" 
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={() => {
-                          // Handle check-out functionality
-                          console.log('Check out asset:', asset.id);
-                        }}
-                        title="Check Out"
+                        onClick={() => onCheckOut && onCheckOut(asset.id)}
+                        title="Check Out Asset"
                       >
                         <LogOut className="h-4 w-4" />
                       </Button>
@@ -361,11 +362,8 @@ export default function AssetsTable({
                         variant="ghost" 
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={() => {
-                          // Handle check-in functionality
-                          console.log('Check in asset:', asset.id);
-                        }}
-                        title="Check In"
+                        onClick={() => onCheckIn && onCheckIn(asset.id)}
+                        title="Check In Asset"
                       >
                         <LogIn className="h-4 w-4" />
                       </Button>

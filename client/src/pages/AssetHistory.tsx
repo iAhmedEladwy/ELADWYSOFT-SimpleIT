@@ -117,7 +117,7 @@ export default function AssetHistory() {
   // Fetch transaction history
   const { data: transactionsData, isLoading } = useQuery({
     queryKey: ['/api/asset-transactions', filters, currentPage, pageSize],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
@@ -125,7 +125,16 @@ export default function AssetHistory() {
       params.append('page', currentPage.toString());
       params.append('limit', pageSize.toString());
       params.append('include', 'asset,employee');
-      return fetch(`/api/asset-transactions?${params.toString()}`).then(res => res.json());
+      
+      const response = await fetch(`/api/asset-transactions?${params.toString()}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+      
+      return response.json();
     }
   });
 

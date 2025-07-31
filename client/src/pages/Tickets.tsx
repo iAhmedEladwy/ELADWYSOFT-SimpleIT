@@ -382,7 +382,7 @@ export default function Tickets() {
       {/* Edit Ticket Dialog */}
       {selectedTicket && (
         <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-          <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
+          <DialogContent className="max-w-5xl h-[95vh] overflow-hidden p-0">
             <DialogHeader className="px-6 pt-6 pb-2 border-b">
               <DialogTitle className="text-xl font-semibold flex items-center gap-2">
                 <Edit3 className="h-5 w-5 text-green-500" />
@@ -390,7 +390,7 @@ export default function Tickets() {
                 <div id="autosave-indicator" className="ml-auto"></div>
               </DialogTitle>
             </DialogHeader>
-            <div className="px-6 pb-6 overflow-y-auto max-h-[calc(95vh-80px)]">
+            <div className="px-6 pb-6 h-[calc(95vh-80px)] overflow-y-auto">
               <TicketForm
                 ticket={selectedTicket}
                 mode="edit"

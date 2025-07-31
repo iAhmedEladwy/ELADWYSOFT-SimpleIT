@@ -344,13 +344,38 @@ export default function Assets() {
   };
 
   const handleAddMaintenance = (assetId: number) => {
-    const asset = assets?.find(a => a.id === assetId);
+    const asset = Array.isArray(assets) ? assets.find((a: any) => a.id === assetId) : null;
     setMaintenanceAsset(asset);
     setOpenMaintenanceDialog(true);
   };
 
   const handleMaintenanceSubmit = (maintenanceData: any) => {
     addMaintenanceMutation.mutate(maintenanceData);
+  };
+
+  // Check-out asset handler
+  const handleCheckOutAsset = (assetId: number) => {
+    const selectedEmployeeId = prompt('Enter Employee ID to assign asset:');
+    if (selectedEmployeeId) {
+      const employeeId = parseInt(selectedEmployeeId);
+      if (!isNaN(employeeId)) {
+        assignAssetMutation.mutate({ assetId, employeeId });
+      } else {
+        toast({
+          title: translations.error,
+          description: 'Invalid Employee ID',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  // Check-in asset handler
+  const handleCheckInAsset = (assetId: number) => {
+    const confirm = window.confirm('Are you sure you want to check in this asset?');
+    if (confirm) {
+      unassignAssetMutation.mutate(assetId);
+    }
   };
 
 
@@ -411,7 +436,7 @@ export default function Assets() {
     const csvContent = [
       headers.join(','),
       ...filteredAssets.map((asset: any) => {
-        const assignedEmployee = employees?.find((e: any) => e.id === asset.assignedEmployeeId);
+        const assignedEmployee = Array.isArray(employees) ? employees.find((e: any) => e.id === asset.assignedEmployeeId) : null;
         return [
           asset.assetId || '',
           asset.type || '',
@@ -778,6 +803,8 @@ export default function Assets() {
               onAddMaintenance={(assetId, maintenanceData) => {
                 handleAddMaintenance(assetId);
               }}
+              onCheckOut={handleCheckOutAsset}
+              onCheckIn={handleCheckInAsset}
             />
           )}
         </CardContent>
