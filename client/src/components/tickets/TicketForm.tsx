@@ -234,13 +234,25 @@ export default function TicketForm({
     }
     
     const employeeIdNum = parseInt(selectedEmployeeId);
+    
     return allAssets.filter((asset: any) => {
-      // Check if asset has assignedEmployee object or assignedEmployeeId field
+      // Check multiple possible field names for assigned employee
+      // 1. Check assignedEmployee object (if populated from API)
       if (asset.assignedEmployee && typeof asset.assignedEmployee === 'object') {
         return asset.assignedEmployee.id === employeeIdNum;
       }
-      // Fallback to assignedEmployeeId if it exists
-      return asset.assignedEmployeeId === employeeIdNum;
+      
+      // 2. Check assignedToId (from AssetResponse type)
+      if (asset.assignedToId) {
+        return asset.assignedToId === employeeIdNum;
+      }
+      
+      // 3. Check assignedEmployeeId (from database schema - most common)
+      if (asset.assignedEmployeeId) {
+        return asset.assignedEmployeeId === employeeIdNum;
+      }
+      
+      return false;
     });
   }, [allAssets, selectedEmployeeId]);
 
