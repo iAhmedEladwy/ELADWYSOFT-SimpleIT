@@ -353,30 +353,7 @@ export default function Assets() {
     addMaintenanceMutation.mutate(maintenanceData);
   };
 
-  // Check-out asset handler
-  const handleCheckOutAsset = (assetId: number) => {
-    const selectedEmployeeId = prompt('Enter Employee ID to assign asset:');
-    if (selectedEmployeeId) {
-      const employeeId = parseInt(selectedEmployeeId);
-      if (!isNaN(employeeId)) {
-        assignAssetMutation.mutate({ assetId, employeeId });
-      } else {
-        toast({
-          title: translations.error,
-          description: 'Invalid Employee ID',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
 
-  // Check-in asset handler
-  const handleCheckInAsset = (assetId: number) => {
-    const confirm = window.confirm('Are you sure you want to check in this asset?');
-    if (confirm) {
-      unassignAssetMutation.mutate(assetId);
-    }
-  };
 
 
 
@@ -803,8 +780,6 @@ export default function Assets() {
               onAddMaintenance={(assetId, maintenanceData) => {
                 handleAddMaintenance(assetId);
               }}
-              onCheckOut={handleCheckOutAsset}
-              onCheckIn={handleCheckInAsset}
             />
           )}
         </CardContent>

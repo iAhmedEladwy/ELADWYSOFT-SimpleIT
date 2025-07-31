@@ -73,8 +73,7 @@ interface AssetsTableProps {
   onAssign: (assetId: number, employeeId: number) => void;
   onUnassign: (assetId: number) => void;
   onAddMaintenance: (assetId: number, maintenanceData: any) => void;
-  onCheckOut?: (assetId: number) => void;
-  onCheckIn?: (assetId: number) => void;
+
 }
 
 export default function AssetsTable({ 
@@ -86,9 +85,7 @@ export default function AssetsTable({
   onDelete,
   onAssign,
   onUnassign,
-  onAddMaintenance,
-  onCheckOut,
-  onCheckIn
+  onAddMaintenance
 }: AssetsTableProps) {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
@@ -345,6 +342,11 @@ export default function AssetsTable({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {/* Check-in/Check-out buttons using AssetActionButtons component */}
+                    <AssetActionButtons 
+                      asset={asset} 
+                      employees={employees}
+                    />
                     <AssetActionsMenu 
                       asset={asset} 
                       employees={employees}
