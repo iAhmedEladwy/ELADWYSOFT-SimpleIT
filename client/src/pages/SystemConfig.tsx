@@ -208,9 +208,16 @@ function SystemConfig() {
     enabled: hasAccess(4), // Admin only
   });
 
-  const { data: allUsers = [] } = useQuery<any[]>({
+  const { data: allUsers = [], refetch: refetchUsers } = useQuery<any[]>({
     queryKey: ['/api/users'],
     enabled: hasAccess(4), // Admin only
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache data (v5 syntax)
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    select: (data) => {
+      console.log('Raw users data from API:', data);
+      return data;
+    }
   });
 
   // Filtered arrays for search functionality
@@ -599,11 +606,18 @@ function SystemConfig() {
     },
     onSuccess: (data, variables) => {
       console.log(`Successfully updated user ${variables.id}:`, data);
+      // Force immediate cache invalidation and refetch
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      // Force refetch the users data
       queryClient.refetchQueries({ queryKey: ['/api/users'] });
-      setIsEditUserDialogOpen(false);
-      setEditingUserId(null);
+      // Also manually trigger refetch
+      refetchUsers();
+      
+      // Only close dialog if it's an edit form update, not a status toggle
+      if (editingUserId === variables.id) {
+        setIsEditUserDialogOpen(false);
+        setEditingUserId(null);
+      }
+      
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'User updated successfully' : 'تم تحديث المستخدم بنجاح',
