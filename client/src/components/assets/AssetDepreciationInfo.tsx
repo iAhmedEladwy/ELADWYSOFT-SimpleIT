@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
-import { calculateAssetValue, formatCurrency, getDepreciationStatusColor, getDepreciationStatusText } from '@/lib/assetUtils';
+import { useCurrency } from '@/lib/currencyContext';
+import { calculateAssetValue, getDepreciationStatusColor, getDepreciationStatusText } from '@/lib/assetUtils';
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ interface AssetDepreciationInfoProps {
 
 export default function AssetDepreciationInfo({ asset, className = '' }: AssetDepreciationInfoProps) {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [depreciationInfo, setDepreciationInfo] = useState({
     currentValue: 0,
     depreciationAmount: 0,
