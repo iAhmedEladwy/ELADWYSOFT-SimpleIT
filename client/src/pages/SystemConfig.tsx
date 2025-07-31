@@ -163,6 +163,7 @@ function SystemConfig() {
   const [newUserEmployeeId, setNewUserEmployeeId] = useState<number | null>(null);
   const [newUserManagerId, setNewUserManagerId] = useState<number | null>(null);
   const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserIsActive, setNewUserIsActive] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editedUserUsername, setEditedUserUsername] = useState('');
@@ -174,6 +175,7 @@ function SystemConfig() {
   const [editedUserEmployeeId, setEditedUserEmployeeId] = useState<number | null>(null);
   const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
   const [editedUserPassword, setEditedUserPassword] = useState('');
+  const [editedUserIsActive, setEditedUserIsActive] = useState(true);
 
   // Queries
   const { data: config } = useQuery<any>({
@@ -573,6 +575,7 @@ function SystemConfig() {
       setNewUserEmployeeId(null);
       setNewUserManagerId(null);
       setNewUserPassword('');
+      setNewUserIsActive(true);
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
@@ -890,7 +893,7 @@ function SystemConfig() {
       employeeId: newUserEmployeeId,
       managerId: newUserManagerId,
       password: newUserPassword.trim(),
-      isActive: true
+      isActive: newUserIsActive
     };
     
     createUserMutation.mutate(userData);
@@ -906,6 +909,7 @@ function SystemConfig() {
     setEditedUserEmployeeId(user.employeeId);
     setEditedUserManagerId(user.managerId);
     setEditedUserPassword('');
+    setEditedUserIsActive(user.isActive !== false); // Default to true if undefined
     setIsEditUserDialogOpen(true);
   };
 
@@ -920,6 +924,7 @@ function SystemConfig() {
       role: editedUserRole,
       employeeId: editedUserEmployeeId,
       managerId: editedUserManagerId,
+      isActive: editedUserIsActive,
       ...(editedUserPassword.trim() && { password: editedUserPassword.trim() })
     };
     
@@ -2761,6 +2766,21 @@ function SystemConfig() {
                               </SelectContent>
                             </Select>
                           </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+                            <Select value={newUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setNewUserIsActive(value === 'active')}>
+                              <SelectTrigger>
+                                <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">{language === 'English' ? 'Active' : 'نشط'}</SelectItem>
+                                <SelectItem value="inactive">{language === 'English' ? 'Inactive' : 'غير نشط'}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'English' ? 'Active users can log in and access the system' : 'المستخدمون النشطون يمكنهم تسجيل الدخول والوصول إلى النظام'}
+                            </p>
+                          </div>
                           <div className="flex justify-end space-x-2">
                             <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
                               {language === 'English' ? 'Cancel' : 'إلغاء'}
@@ -2995,6 +3015,21 @@ function SystemConfig() {
                             <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+                        <Select value={editedUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setEditedUserIsActive(value === 'active')}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">{language === 'English' ? 'Active' : 'نشط'}</SelectItem>
+                            <SelectItem value="inactive">{language === 'English' ? 'Inactive' : 'غير نشط'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Active users can log in and access the system' : 'المستخدمون النشطون يمكنهم تسجيل الدخول والوصول إلى النظام'}
+                        </p>
                       </div>
                       <div className="flex justify-end space-x-2">
                         <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
