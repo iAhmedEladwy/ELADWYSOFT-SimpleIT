@@ -1583,6 +1583,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateCustomAssetType(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(customAssetTypes)
+        .set({
+          name: data.name,
+          description: data.description,
+          updatedAt: new Date()
+        })
+        .where(eq(customAssetTypes.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating custom asset type:', error);
+      return undefined;
+    }
+  }
+
   async deleteCustomAssetType(id: number): Promise<boolean> {
     try {
       const result = await db.delete(customAssetTypes).where(eq(customAssetTypes.id, id));
@@ -1616,6 +1633,23 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error creating custom asset brand:', error);
       throw error;
+    }
+  }
+
+  async updateCustomAssetBrand(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(customAssetBrands)
+        .set({
+          name: data.name,
+          description: data.description,
+          updatedAt: new Date()
+        })
+        .where(eq(customAssetBrands.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating custom asset brand:', error);
+      return undefined;
     }
   }
 
@@ -1656,6 +1690,24 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(customAssetStatuses)
+        .set({
+          name: data.name,
+          description: data.description,
+          color: data.color,
+          updatedAt: new Date()
+        })
+        .where(eq(customAssetStatuses.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating custom asset status:', error);
+      return undefined;
+    }
+  }
+
   async deleteCustomAssetStatus(id: number): Promise<boolean> {
     try {
       const result = await db.delete(customAssetStatuses).where(eq(customAssetStatuses.id, id));
@@ -1691,6 +1743,25 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error creating service provider:', error);
       throw error;
+    }
+  }
+
+  async updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(serviceProviders)
+        .set({
+          name: data.name,
+          contactPerson: data.contactPerson,
+          phone: data.phone,
+          email: data.email,
+          updatedAt: new Date()
+        })
+        .where(eq(serviceProviders.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating service provider:', error);
+      return undefined;
     }
   }
 

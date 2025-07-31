@@ -5342,6 +5342,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
+      const id = parseInt(req.params.id);
+      const userData = req.body;
+      
+      // Get current user data for activity logging
+      const currentUser = await storage.getUser(id);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Hash password if provided
+      if (userData.password) {
+        const bcrypt = require('bcryptjs');
+        userData.password = await bcrypt.hash(userData.password, 10);
+      }
+      
+      const updatedUser = await storage.updateUser(id, userData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log activity for status changes
+      if (req.user && userData.isActive !== undefined && userData.isActive !== currentUser.isActive) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: userData.isActive ? "Activate User" : "Deactivate User",
+          entityType: "User",
+          entityId: id,
+          details: { 
+            username: currentUser.username,
+            statusChange: `${currentUser.isActive ? 'Active' : 'Inactive'} → ${userData.isActive ? 'Active' : 'Inactive'}`
+          }
+        });
+      }
+      
+      res.json(updatedUser);
+    } catch (error: unknown) {
+      console.error("User update error:", error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
       const userId = parseInt(req.params.id);
       const userData = req.body;
       
