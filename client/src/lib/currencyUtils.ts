@@ -45,17 +45,20 @@ export function formatCurrency(
     useSymbol = true
   } = options;
 
-  // Convert string to number if needed
+  // Convert string to number if needed and round to avoid floating point precision issues
   const numericValue = typeof value === 'string' ? parseFloat(value) : value;
   
   // Handle NaN values
   if (isNaN(numericValue)) return '';
   
+  // Round to avoid floating point precision issues
+  const roundedValue = Math.round(numericValue * 100) / 100;
+  
   // Get symbol if requested
   const symbol = useSymbol ? (currencySymbols[currency] || currency) : '';
   
   // Format the number with better locale support
-  const formattedValue = numericValue.toLocaleString(undefined, {
+  const formattedValue = roundedValue.toLocaleString(undefined, {
     minimumFractionDigits,
     maximumFractionDigits,
     style: useSymbol ? undefined : 'decimal',
