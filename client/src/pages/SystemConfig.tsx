@@ -2698,13 +2698,49 @@ function SystemConfig() {
                         : 'إدارة مستخدمي النظام وأدوارهم.'}
                     </p>
                   </div>
-                  <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
-                      </Button>
-                    </DialogTrigger>
+                  <div className="flex items-center gap-2">
+                    {/* Quick Action Buttons for Selected User */}
+                    {selectedUserId && (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const user = allUsers.find(u => u.id === selectedUserId);
+                            if (user) handleToggleUserStatus(user.id, !user.isActive);
+                          }}
+                          disabled={updateUserMutation.isPending}
+                        >
+                          {updateUserMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            (() => {
+                              const user = allUsers.find(u => u.id === selectedUserId);
+                              return user?.isActive ? 
+                                (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
+                                (language === 'English' ? 'Activate' : 'تفعيل');
+                            })()
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const user = allUsers.find(u => u.id === selectedUserId);
+                            if (user) handleEditUser(user);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="mr-2 h-4 w-4" />
+                          {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
                         <DialogTitle>{language === 'English' ? 'Add New User' : 'إضافة مستخدم جديد'}</DialogTitle>
