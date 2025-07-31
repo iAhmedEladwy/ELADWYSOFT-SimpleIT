@@ -134,7 +134,12 @@ export default function AssetHistory() {
         throw new Error('Failed to fetch transactions');
       }
       
-      return response.json();
+      const result = await response.json();
+      // Handle the enhanced route response format
+      return {
+        transactions: result.data || result,
+        pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
+      };
     }
   });
 
@@ -366,7 +371,14 @@ export default function AssetHistory() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {transactionsData?.data?.map((transaction: TransactionWithRelations) => (
+                      {transactionsData?.transactions?.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            {language === 'English' ? 'No transaction records found' : 'لم يتم العثور على سجلات المعاملات'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        transactionsData?.transactions?.map((transaction: TransactionWithRelations) => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-medium">#{transaction.id}</TableCell>
                           <TableCell>
@@ -518,7 +530,8 @@ export default function AssetHistory() {
                             </Dialog>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

@@ -2383,39 +2383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all asset transactions with optional filtering
-  app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
-    try {
-      // Get query parameters for filtering
-      const assetId = req.query.assetId ? parseInt(req.query.assetId as string) : undefined;
-      const employeeId = req.query.employeeId ? parseInt(req.query.employeeId as string) : undefined;
-      const type = req.query.type as string | undefined;
-      
-      // Get all transactions
-      let transactions = await storage.getAllAssetTransactions();
-      
-      // Keep all transactions with proper asset information
-      transactions = transactions.filter(t => {
-        // Keep transactions with valid asset information
-        return t.asset && t.assetId;
-      });
-      
-      // Apply additional filters if provided
-      if (assetId) {
-        transactions = transactions.filter(t => t.assetId === assetId);
-      }
-      if (employeeId) {
-        transactions = transactions.filter(t => t.employeeId === employeeId);
-      }
-      if (type) {
-        transactions = transactions.filter(t => t.type === type);
-      }
-      
-      res.json(transactions);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
   
   app.get("/api/employees/:id/transactions", authenticateUser, async (req, res) => {
     try {
