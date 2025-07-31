@@ -2155,6 +2155,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete maintenance record
+  app.delete("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const maintenanceId = parseInt(req.params.id);
+      
+      // Get existing maintenance record to validate it exists
+      const existingMaintenance = await storage.getAssetMaintenanceById(maintenanceId);
+      if (!existingMaintenance) {
+        return res.status(404).json({ message: "Maintenance record not found" });
+      }
+      
+      // Delete the maintenance record
+      const result = await storage.deleteAssetMaintenance(maintenanceId);
+      
+      if (result) {
+        // Log activity
+        if (req.user) {
+          await storage.logActivity({
+            userId: (req.user as schema.User).id,
+            action: "Delete",
+            entityType: "Asset Maintenance",
+            entityId: maintenanceId,
+            details: { 
+              maintenanceId,
+              assetId: existingMaintenance.assetId,
+              deletedBy: (req.user as schema.User).username
+            }
+          });
+        }
+        
+        res.json({ message: "Maintenance record deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete maintenance record" });
+      }
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Get all maintenance records (for maintenance management page)
   app.get("/api/maintenance", authenticateUser, async (req, res) => {
     try {

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit, Calendar, User, Settings, CheckCircle, AlertCircle, Eye } from 'lucide-react';
+import { MoreHorizontal, Wrench, ArrowUp, FileText, LogOut, LogIn, Edit, Calendar, User, Settings, CheckCircle, AlertCircle, Eye, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
@@ -357,6 +357,9 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   onOpenChange: (open: boolean) => void; 
   asset: any; 
 }) {
+  const { toast } = useToast();
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState<any>(null);
   // Fetch asset transactions
   const { data: transactions = [] } = useQuery({
     queryKey: ['/api/asset-transactions', asset.id],
@@ -365,7 +368,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   });
 
   // Fetch asset maintenance records
-  const { data: maintenanceRecords = [] } = useQuery({
+  const { data: maintenanceRecords = [], refetch: refetchMaintenance } = useQuery({
     queryKey: ['/api/assets', asset.id, 'maintenance'],
     queryFn: () => apiRequest(`/api/assets/${asset.id}/maintenance`),
     enabled: open
@@ -380,6 +383,74 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   const getEmployeeName = (employeeId: number) => {
     const employee = (employees as any[]).find((e: any) => e.id === employeeId);
     return employee ? employee.englishName || employee.name : 'Unknown';
+  };
+
+  // Maintenance mutations
+  const addMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceData: any) => {
+      return apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', maintenanceData);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Maintenance record added successfully' });
+      refetchMaintenance();
+      setShowMaintenanceForm(false);
+      setEditingMaintenance(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to add maintenance record', variant: 'destructive' });
+    }
+  });
+
+  const updateMaintenanceMutation = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      return apiRequest(`/api/maintenance/${id}`, 'PUT', data);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Maintenance record updated successfully' });
+      refetchMaintenance();
+      setShowMaintenanceForm(false);
+      setEditingMaintenance(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to update maintenance record', variant: 'destructive' });
+    }
+  });
+
+  const deleteMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceId: number) => {
+      return apiRequest(`/api/maintenance/${maintenanceId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Maintenance record deleted successfully' });
+      refetchMaintenance();
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to delete maintenance record', variant: 'destructive' });
+    }
+  });
+
+  const handleAddMaintenance = () => {
+    setEditingMaintenance(null);
+    setShowMaintenanceForm(true);
+  };
+
+  const handleEditMaintenance = (record: any) => {
+    setEditingMaintenance(record);
+    setShowMaintenanceForm(true);
+  };
+
+  const handleDeleteMaintenance = (record: any) => {
+    if (confirm('Are you sure you want to delete this maintenance record?')) {
+      deleteMaintenanceMutation.mutate(record.id);
+    }
+  };
+
+  const handleMaintenanceSubmit = (data: any) => {
+    if (editingMaintenance) {
+      updateMaintenanceMutation.mutate({ ...data, id: editingMaintenance.id });
+    } else {
+      addMaintenanceMutation.mutate(data);
+    }
   };
 
   const getTransactionIcon = (type: string) => {
@@ -504,7 +575,17 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
             </TabsContent>
             
             <TabsContent value="maintenance" className="space-y-4">
-              <ScrollArea className="h-[400px]">
+              {/* Add Maintenance Button */}
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Manage maintenance records for {asset.assetId}
+                </div>
+                <Button onClick={handleAddMaintenance} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Maintenance
+                </Button>
+              </div>
+              <ScrollArea className="h-[360px]">
                 {maintenanceRecords.length > 0 ? (
                   <Table>
                     <TableHeader>
@@ -551,18 +632,25 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                // Handle edit maintenance record
-                                alert(`Edit maintenance record ID: ${record.id}\nThis functionality will allow editing of recorded maintenance entries.`);
-                              }}
-                              className="h-8 w-8 p-0"
-                              title="Edit Maintenance Record"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditMaintenance(record)}
+                                title="Edit maintenance record"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMaintenance(record)}
+                                title="Delete maintenance record"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -585,6 +673,24 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Maintenance Form Dialog */}
+      <Dialog open={showMaintenanceForm} onOpenChange={setShowMaintenanceForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingMaintenance ? 'Edit Maintenance Record' : 'Add Maintenance Record'} - {asset.assetId}
+            </DialogTitle>
+          </DialogHeader>
+          <MaintenanceForm
+            onSubmit={handleMaintenanceSubmit}
+            isSubmitting={addMaintenanceMutation.isPending || updateMaintenanceMutation.isPending}
+            assetId={asset.id}
+            assetName={`${asset.assetId} - ${asset.type}`}
+            initialData={editingMaintenance}
+          />
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

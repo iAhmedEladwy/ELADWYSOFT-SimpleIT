@@ -90,6 +90,7 @@ export interface IStorage {
   getMaintenanceForAsset(assetId: number): Promise<AssetMaintenance[]>;
   getAssetMaintenanceById(id: number): Promise<AssetMaintenance | undefined>;
   updateAssetMaintenance(id: number, maintenance: Partial<InsertAssetMaintenance>): Promise<AssetMaintenance | undefined>;
+  deleteAssetMaintenance(id: number): Promise<boolean>;
   getAllMaintenanceRecords(): Promise<AssetMaintenance[]>;
 
   // Asset Transaction operations
@@ -995,6 +996,16 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error updating maintenance record ${id}:`, error);
       return undefined;
+    }
+  }
+
+  async deleteAssetMaintenance(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(assetMaintenance).where(eq(assetMaintenance.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error(`Error deleting maintenance record ${id}:`, error);
+      return false;
     }
   }
 

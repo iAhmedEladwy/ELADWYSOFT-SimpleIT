@@ -680,6 +680,64 @@ export class MemoryStorage implements IStorage {
     return this.assetMaintenance.filter(m => m.assetId === assetId);
   }
 
+  async getAssetMaintenanceById(id: number): Promise<schema.AssetMaintenance | undefined> {
+    return this.assetMaintenance.find(m => m.id === id);
+  }
+
+  async updateAssetMaintenance(id: number, maintenanceData: Partial<schema.InsertAssetMaintenance>): Promise<schema.AssetMaintenance | undefined> {
+    const index = this.assetMaintenance.findIndex(m => m.id === id);
+    if (index === -1) return undefined;
+
+    const updatedMaintenance = {
+      ...this.assetMaintenance[index],
+      ...maintenanceData,
+      updatedAt: new Date()
+    };
+    this.assetMaintenance[index] = updatedMaintenance;
+
+    // Log activity
+    await this.logActivity({
+      userId: 1,
+      action: 'UPDATE',
+      entityType: 'ASSET_MAINTENANCE',
+      entityId: id,
+      details: {
+        maintenanceId: id,
+        changes: maintenanceData
+      }
+    });
+
+    return updatedMaintenance;
+  }
+
+  async deleteAssetMaintenance(id: number): Promise<boolean> {
+    const index = this.assetMaintenance.findIndex(m => m.id === id);
+    if (index === -1) return false;
+
+    const maintenance = this.assetMaintenance[index];
+    this.assetMaintenance.splice(index, 1);
+
+    // Log activity
+    await this.logActivity({
+      userId: 1,
+      action: 'DELETE',
+      entityType: 'ASSET_MAINTENANCE',
+      entityId: id,
+      details: {
+        maintenanceId: id,
+        assetId: maintenance.assetId,
+        type: maintenance.type,
+        description: maintenance.description
+      }
+    });
+
+    return true;
+  }
+
+  async getAllMaintenanceRecords(): Promise<schema.AssetMaintenance[]> {
+    return this.assetMaintenance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
   // Asset Transaction operations
   async createAssetTransaction(transaction: schema.InsertAssetTransaction): Promise<schema.AssetTransaction> {
     const newTransaction: schema.AssetTransaction = {
