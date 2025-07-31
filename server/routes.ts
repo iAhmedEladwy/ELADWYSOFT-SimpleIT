@@ -3521,14 +3521,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard Summary
+  // Dashboard Summary with Historical Comparisons
   app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
     try {
+      const now = new Date();
+      const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+
       const [
         employees,
         assets,
         openTickets,
-        userCount
+        userCount,
+        allTickets
       ] = await Promise.all([
         storage.getAllEmployees().catch(err => {
           console.error('Employee fetch error:', err);
@@ -3544,14 +3551,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Active tickets fetch error:', err);
           return [];
         }),
-        storage.getAllUsers()
+        storage.getAllUsers(),
+        storage.getAllTickets().catch(err => {
+          console.error('All tickets fetch error:', err);
+          return [];
+        })
       ]);
       
-      // Calculate total asset value
+      // Calculate historical comparisons
+      const employeesOneYearAgo = employees.filter(emp => {
+        const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+        return joiningDate && joiningDate <= oneYearAgo;
+      }).length;
+
+      const assetsOneMonthAgo = assets.filter(asset => {
+        const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
+        return createdAt && createdAt <= oneMonthAgo;
+      }).length;
+
+      const activeTicketsOneWeekAgo = allTickets.filter(ticket => {
+        const createdAt = ticket.createdAt ? new Date(ticket.createdAt) : null;
+        const isActive = ticket.status === 'Open' || ticket.status === 'In Progress';
+        return createdAt && createdAt <= oneWeekAgo && isActive;
+      }).length;
+
+      // Calculate asset value one quarter ago
+      const assetsOneQuarterAgo = assets.filter(asset => {
+        const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
+        return createdAt && createdAt <= oneQuarterAgo;
+      });
+      const totalAssetValueOneQuarterAgo = assetsOneQuarterAgo.reduce((sum, asset) => {
+        return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
+      }, 0);
+
+      // Calculate current totals
+      const currentEmployees = employees.length;
+      const currentAssets = assets.length;
+      const currentActiveTickets = openTickets.length;
       const totalAssetValue = assets.reduce((sum, asset) => {
         return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
       }, 0);
-      
+
+      // Calculate percentage changes
+      const calculatePercentageChange = (current: number, previous: number): string => {
+        if (previous === 0) return current > 0 ? '+100%' : '0%';
+        const change = ((current - previous) / previous) * 100;
+        return change >= 0 ? `+${Math.round(change)}%` : `${Math.round(change)}%`;
+      };
+
       // Count assets by type
       const assetsByType = assets.reduce((acc: Record<string, number>, asset) => {
         acc[asset.type] = (acc[asset.type] || 0) + 1;
@@ -3570,23 +3617,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, {});
       
-      // Get recent assets
-      const recentAssets = assets.slice(0, 5);
+      // Get recent assets (sort by creation date)
+      const recentAssets = assets
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, 5);
       
-      // Get recent tickets
-      const allTickets = await storage.getAllTickets();
-      const recentTickets = allTickets.slice(0, 5);
+      // Get recent tickets (sort by creation date)
+      const recentTickets = allTickets
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, 5);
       
       // Get recent activity
       const recentActivity = await storage.getRecentActivity(5);
       
       res.json({
         counts: {
-          employees: employees.length,
-          assets: assets.length,
-          activeTickets: openTickets.length,
+          employees: currentEmployees,
+          assets: currentAssets,
+          activeTickets: currentActiveTickets,
           users: userCount.length,
           totalAssetValue
+        },
+        changes: {
+          employees: calculatePercentageChange(currentEmployees, employeesOneYearAgo),
+          assets: calculatePercentageChange(currentAssets, assetsOneMonthAgo),
+          activeTickets: calculatePercentageChange(currentActiveTickets, activeTicketsOneWeekAgo),
+          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValueOneQuarterAgo)
         },
         assetsByType,
         assetsByStatus,

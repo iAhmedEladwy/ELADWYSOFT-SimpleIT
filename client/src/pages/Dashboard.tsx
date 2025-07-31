@@ -82,33 +82,36 @@ export default function Dashboard() {
                   title={translations.totalEmployees}
                   value={dashboardData?.counts?.employees || 0}
                   icon={<Users className="h-6 w-6" />}
-                  change="+12%"
+                  change={dashboardData?.changes?.employees || '0%'}
                   changeLabel={translations.fromLastYear}
+                  changeColor={dashboardData?.changes?.employees?.startsWith('-') ? 'error' : 'success'}
                   iconColor="primary"
                 />
                 <StatsCard
                   title={translations.totalAssets}
                   value={dashboardData?.counts?.assets || 0}
                   icon={<Laptop className="h-6 w-6" />}
-                  change="+8%"
+                  change={dashboardData?.changes?.assets || '0%'}
                   changeLabel={translations.fromLastMonth}
+                  changeColor={dashboardData?.changes?.assets?.startsWith('-') ? 'error' : 'success'}
                   iconColor="secondary"
                 />
                 <StatsCard
                   title={translations.activeTickets}
                   value={dashboardData?.counts?.activeTickets || 0}
                   icon={<Ticket className="h-6 w-6" />}
-                  change="-5%"
+                  change={dashboardData?.changes?.activeTickets || '0%'}
                   changeLabel={translations.fromLastWeek}
-                  changeColor="warning"
+                  changeColor={dashboardData?.changes?.activeTickets?.startsWith('-') ? 'success' : 'warning'}
                   iconColor="accent"
                 />
                 <StatsCard
                   title={translations.assetValue}
                   value={dashboardData?.counts?.totalAssetValue || 0}
                   icon={<DollarSign className="h-6 w-6" />}
-                  change="+14%"
+                  change={dashboardData?.changes?.totalAssetValue || '0%'}
                   changeLabel={translations.fromLastQuarter}
+                  changeColor={dashboardData?.changes?.totalAssetValue?.startsWith('-') ? 'error' : 'success'}
                   iconColor="warning"
                   isCurrency={true}
                 />
