@@ -1065,7 +1065,6 @@ function SystemConfig() {
           <h1 className="text-2xl font-bold">{translations.systemConfig}</h1>
         </div>
       </div>
-
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-6 lg:max-w-6xl mb-4">
           <TabsTrigger value="general">
@@ -2687,7 +2686,7 @@ function SystemConfig() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-lg font-medium">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
+                      <h3 className="text-[22px] font-bold">{language === 'English' ? 'User Management' : 'إدارة المستخدمين'}</h3>
                       <p className="text-sm text-muted-foreground">
                         {language === 'English' 
                           ? 'Manage system users and their roles.' 
