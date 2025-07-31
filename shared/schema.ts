@@ -130,6 +130,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 100 }).notNull().unique(),
   accessLevel: accessLevelEnum("access_level").notNull().default('1'), // 1=employee, 2=agent, 3=manager, 4=admin
   role: roleEnum("role").notNull().default('employee'), // employee, agent, manager, admin
+  isActive: boolean("is_active").default(true), // User active status
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

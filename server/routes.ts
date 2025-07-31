@@ -5284,6 +5284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
+      console.log("GET /api/users - Raw users from storage:", JSON.stringify(users, null, 2));
       res.json(users);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
