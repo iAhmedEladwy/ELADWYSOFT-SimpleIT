@@ -212,7 +212,7 @@ export default function EmployeesTable({
             employees.map((employee) => (
               <TableRow 
                 key={employee.id}
-                className="group hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-purple-500"
+                className="hover:bg-muted/50"
               >
                 {onSelectionChange && (
                   <TableCell className="w-12">
@@ -223,22 +223,22 @@ export default function EmployeesTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">{employee.empId || employee.employeeId}</TableCell>
+                <TableCell className="font-medium">{employee.employeeId || employee.empId}</TableCell>
                 <TableCell>
                   <button 
                     className="text-gray-900 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-left cursor-pointer transition-all duration-200 font-medium hover:underline decoration-blue-600 decoration-2 underline-offset-2"
                     onClick={() => onEdit(employee)}
                   >
-                    {employee.englishName || employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'N/A'}
+                    {employee.englishName || 'N/A'}
                   </button>
                 </TableCell>
                 <TableCell>{employee.department}</TableCell>
-                <TableCell>{employee.title || employee.position}</TableCell>
+                <TableCell>{employee.position || employee.title}</TableCell>
                 <TableCell>{employee.employmentType || 'Full-time'}</TableCell>
                 <TableCell>
                   {getStatusBadge(employee.status || (employee.isActive !== false ? 'Active' : 'Resigned'))}
                 </TableCell>
-                <TableCell>{formatDate(employee.joiningDate)}</TableCell>
+                <TableCell>{formatDate(employee.dateOfJoining || employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

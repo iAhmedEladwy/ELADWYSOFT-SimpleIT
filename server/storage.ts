@@ -179,18 +179,22 @@ export interface IStorage {
   // Custom Fields operations
   getCustomAssetTypes(): Promise<any[]>;
   createCustomAssetType(data: { name: string; description?: string }): Promise<any>;
+  updateCustomAssetType(id: number, data: { name: string; description?: string }): Promise<any>;
   deleteCustomAssetType(id: number): Promise<boolean>;
   
   getCustomAssetBrands(): Promise<any[]>;
   createCustomAssetBrand(data: { name: string; description?: string }): Promise<any>;
+  updateCustomAssetBrand(id: number, data: { name: string; description?: string }): Promise<any>;
   deleteCustomAssetBrand(id: number): Promise<boolean>;
   
   getCustomAssetStatuses(): Promise<any[]>;
   createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
+  updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any>;
   deleteCustomAssetStatus(id: number): Promise<boolean>;
   
   getServiceProviders(): Promise<any[]>;
   createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
+  updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
   deleteServiceProvider(id: number): Promise<boolean>;
   
   // Custom Request Types operations (Feature 1: Change Category to Request Type)
