@@ -33,7 +33,7 @@ const assetFormSchema = z.object({
   modelNumber: z.string().optional(),
   modelName: z.string().optional(),
   serialNumber: z.string().min(1, 'Serial number is required'),
-  specs: z.string().optional(),
+  specs: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
   status: z.string(),
   purchaseDate: z.string().optional(),
   buyPrice: z.union([z.string(), z.number()]).optional()
@@ -52,11 +52,11 @@ const assetFormSchema = z.object({
       { message: "Invalid date format" }
     ),
   lifeSpan: z.string().optional(),
-  outOfBoxOs: z.string().optional(),
+  outOfBoxOs: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
   assignedEmployeeId: z.string().optional(),
-  cpu: z.string().optional(),
-  ram: z.string().optional(),
-  storage: z.string().optional(),
+  cpu: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
+  ram: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
+  storage: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
 });
 
 interface AssetFormProps {
@@ -153,6 +153,10 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       lifeSpan: initialData.lifeSpan ? initialData.lifeSpan.toString() : '',
       outOfBoxOs: initialData.outOfBoxOs || '',
       assignedEmployeeId: initialData.assignedEmployeeId ? initialData.assignedEmployeeId.toString() : '',
+      cpu: initialData.cpu || '', // Convert null to empty string
+      ram: initialData.ram || '', // Convert null to empty string
+      storage: initialData.storage || '', // Convert null to empty string
+      specs: initialData.specs || '', // Convert null to empty string
     };
   };
 
@@ -173,6 +177,9 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       lifeSpan: '',
       outOfBoxOs: '',
       assignedEmployeeId: '',
+      cpu: '',
+      ram: '',
+      storage: '',
     },
   });
 
@@ -186,6 +193,10 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
         lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
         assignedEmployeeId: values.assignedEmployeeId && values.assignedEmployeeId !== 'none' ? parseInt(values.assignedEmployeeId) : null,
         outOfBoxOs: values.outOfBoxOs || null, // Handle empty string
+        cpu: values.cpu || null, // Ensure null instead of undefined
+        ram: values.ram || null, // Ensure null instead of undefined
+        storage: values.storage || null, // Ensure null instead of undefined
+        specs: values.specs || null, // Ensure null instead of undefined
       };
       
       onSubmit(formattedData);
