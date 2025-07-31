@@ -216,6 +216,15 @@ export default function AssetHistory() {
             <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
             <p className="text-gray-600">{translations.description}</p>
           </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={clearFilters}>
+              {translations.clearFilters}
+            </Button>
+            <Button variant="outline">
+              <FileDown className="h-4 w-4 mr-2" />
+              {translations.export}
+            </Button>
+          </div>
         </div>
 
         {/* Filter & Search Card */}
@@ -322,16 +331,7 @@ export default function AssetHistory() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={clearFilters}>
-                {translations.clearFilters}
-              </Button>
-              <Button variant="outline">
-                <FileDown className="h-4 w-4 mr-2" />
-                {translations.export}
-              </Button>
-            </div>
+
           </CardContent>
         </Card>
 

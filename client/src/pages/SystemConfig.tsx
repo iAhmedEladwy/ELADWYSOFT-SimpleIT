@@ -163,6 +163,7 @@ function SystemConfig() {
   const [newUserEmployeeId, setNewUserEmployeeId] = useState<number | null>(null);
   const [newUserManagerId, setNewUserManagerId] = useState<number | null>(null);
   const [newUserPassword, setNewUserPassword] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editedUserUsername, setEditedUserUsername] = useState('');
   const [editedUserEmail, setEditedUserEmail] = useState('');
@@ -2827,16 +2828,16 @@ function SystemConfig() {
                         <TableHead>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TableHead>
                         <TableHead>{language === 'English' ? 'Role' : 'الدور'}</TableHead>
                         <TableHead>{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
-                        <TableHead>{translations.actions}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {allUsers.map((user: any) => (
-                        <TableRow key={user.id}>
-                          <TableCell 
-                            className="font-medium cursor-pointer hover:text-blue-600 hover:underline" 
-                            onClick={() => handleEditUser(user)}
-                          >
+                        <TableRow 
+                          key={user.id} 
+                          className={`cursor-pointer ${selectedUserId === user.id ? 'bg-muted' : ''} hover:bg-muted/50`}
+                          onClick={() => setSelectedUserId(user.id === selectedUserId ? null : user.id)}
+                        >
+                          <TableCell className="font-medium">
                             {user.username}
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
@@ -2856,50 +2857,6 @@ function SystemConfig() {
                                 (language === 'English' ? 'Inactive' : 'غير نشط')
                               }
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleToggleUserStatus(user.id, !user.isActive)}
-                                disabled={updateUserMutation.isPending}
-                              >
-                                {updateUserMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  user.isActive ? 
-                                    (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
-                                    (language === 'English' ? 'Activate' : 'تفعيل')
-                                )}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleEditUser(user)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {user.id !== 1 && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    if (window.confirm(language === 'English' ? `Are you sure you want to delete user "${user.username}"?` : `هل أنت متأكد من حذف المستخدم "${user.username}"؟`)) {
-                                      deleteUserMutation.mutate(user.id);
-                                    }
-                                  }}
-                                  className="text-red-600 hover:text-red-700"
-                                  disabled={deleteUserMutation.isPending}
-                                >
-                                  {deleteUserMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              )}
-                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -2984,6 +2941,7 @@ function SystemConfig() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
             </CardContent>
           </Card>
