@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
@@ -115,9 +115,6 @@ export default function TicketForm({
   const { data: allAssets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
   const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
   
-  // Filter assets to only show those assigned to employees  
-  const assets = allAssets.filter(asset => asset.assignedEmployee != null);
-  
   // Fetch comments and history for edit mode
   const { data: comments = [] } = useQuery<CommentData[]>({
     queryKey: [`/api/tickets/${ticket?.id}/comments`],
@@ -226,6 +223,26 @@ export default function TicketForm({
       });
     }
   }, [ticket, mode, form]);
+
+  // Watch the submittedById field to dynamically filter assets
+  const selectedEmployeeId = form.watch('submittedById');
+  
+  // Filter assets based on selected employee - show assets assigned to that employee
+  const assets = useMemo(() => {
+    if (!selectedEmployeeId || selectedEmployeeId === '') {
+      return []; // No employee selected, show no assets
+    }
+    
+    const employeeIdNum = parseInt(selectedEmployeeId);
+    return allAssets.filter((asset: any) => {
+      // Check if asset has assignedEmployee object or assignedEmployeeId field
+      if (asset.assignedEmployee && typeof asset.assignedEmployee === 'object') {
+        return asset.assignedEmployee.id === employeeIdNum;
+      }
+      // Fallback to assignedEmployeeId if it exists
+      return asset.assignedEmployeeId === employeeIdNum;
+    });
+  }, [allAssets, selectedEmployeeId]);
 
   // Auto-save handler for edit mode
   const handleAutoSave = async (field: string, value: any) => {
@@ -383,7 +400,11 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            // Clear related asset when employee changes
+                            form.setValue('relatedAssetId', 'none');
+                          }} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
@@ -444,7 +465,7 @@ export default function TicketForm({
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
-                              {assets.map((asset) => (
+                              {assets.map((asset: any) => (
                                 <SelectItem key={asset.id} value={asset.id.toString()}>
                                   {asset.assetId} - {asset.name || 'Unknown'}
                                 </SelectItem>
@@ -978,7 +999,7 @@ export default function TicketForm({
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="none">{language === 'English' ? 'No Asset' : 'لا يوجد أصل'}</SelectItem>
-                                      {assets.map((asset) => (
+                                      {assets.map((asset: any) => (
                                         <SelectItem key={asset.id} value={asset.id.toString()}>
                                           {asset.assetId} - {asset.name}
                                         </SelectItem>
