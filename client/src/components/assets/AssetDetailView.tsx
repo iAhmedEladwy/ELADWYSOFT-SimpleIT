@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/assetUtils';
+import { useCurrency } from '@/lib/currencyContext';
 import AssetDepreciationInfo from './AssetDepreciationInfo';
 import {
   Dialog,
@@ -29,6 +29,7 @@ interface AssetDetailViewProps {
 
 export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDetailViewProps) {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('general');
 
   // Translations
@@ -151,6 +152,7 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
               </TabsTrigger>
             </TabsList>
             
+            <div className="min-h-[500px]">
             <TabsContent value="general" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -294,6 +296,7 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
                 </div>
               )}
             </TabsContent>
+            </div>
           </Tabs>
         )}
       </DialogContent>

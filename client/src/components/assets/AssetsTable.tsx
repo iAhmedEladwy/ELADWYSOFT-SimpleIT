@@ -315,17 +315,17 @@ export default function AssetsTable({
                 <TableCell>
                   <div className="flex items-center gap-1 text-xs">
                     {asset.cpu && (
-                      <span className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                      <span className="text-xs text-muted-foreground">
                         CPU: {asset.cpu}
                       </span>
                     )}
                     {asset.ram && (
-                      <span className="bg-green-100 text-green-800 px-1 py-0.5 rounded">
+                      <span className="text-xs text-muted-foreground">
                         RAM: {asset.ram}
                       </span>
                     )}
                     {asset.storage && (
-                      <span className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                      <span className="text-xs text-muted-foreground">
                         Storage: {asset.storage}
                       </span>
                     )}

@@ -5373,6 +5373,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk Asset Operations
+  
+  // Sell multiple assets
+  app.post("/api/assets/sell", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { assetIds, buyer, saleDate, totalAmount, notes } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Asset IDs are required" });
+      }
+      
+      if (!buyer || !saleDate || !totalAmount) {
+        return res.status(400).json({ message: "Buyer, sale date, and total amount are required" });
+      }
+      
+      const updatedAssets = [];
+      
+      for (const assetId of assetIds) {
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          continue; // Skip non-existent assets
+        }
+        
+        // Update asset status to Sold
+        const updatedAsset = await storage.updateAsset(assetId, {
+          status: 'Sold',
+          assignedEmployeeId: null // Clear assignment when sold
+        });
+        
+        updatedAssets.push(updatedAsset);
+        
+        // Log activity
+        if (req.user) {
+          await storage.logActivity({
+            userId: (req.user as schema.User).id,
+            action: "Sell",
+            entityType: "Asset",
+            entityId: assetId,
+            details: { 
+              assetId: asset.assetId,
+              buyer,
+              saleDate,
+              totalAmount,
+              notes
+            }
+          });
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully sold ${updatedAssets.length} assets`,
+        updatedAssets 
+      });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+  
+  // Retire multiple assets
+  app.post("/api/assets/retire", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { assetIds, reason, retirementDate } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Asset IDs are required" });
+      }
+      
+      const updatedAssets = [];
+      
+      for (const assetId of assetIds) {
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          continue; // Skip non-existent assets
+        }
+        
+        // Update asset status to Retired
+        const updatedAsset = await storage.updateAsset(assetId, {
+          status: 'Retired',
+          assignedEmployeeId: null // Clear assignment when retired
+        });
+        
+        updatedAssets.push(updatedAsset);
+        
+        // Log activity
+        if (req.user) {
+          await storage.logActivity({
+            userId: (req.user as schema.User).id,
+            action: "Retire",
+            entityType: "Asset",
+            entityId: assetId,
+            details: { 
+              assetId: asset.assetId,
+              reason: reason || 'Bulk retirement',
+              retirementDate: retirementDate || new Date().toISOString()
+            }
+          });
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully retired ${updatedAssets.length} assets`,
+        updatedAssets 
+      });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+  
+  // Delete multiple assets
+  app.delete("/api/assets/bulk-delete", authenticateUser, hasAccess(4), async (req, res) => {
+    try {
+      const { assetIds } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Asset IDs are required" });
+      }
+      
+      const deletedAssets = [];
+      
+      for (const assetId of assetIds) {
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          continue; // Skip non-existent assets
+        }
+        
+        // Delete the asset
+        await storage.deleteAsset(assetId);
+        deletedAssets.push(asset);
+        
+        // Log activity
+        if (req.user) {
+          await storage.logActivity({
+            userId: (req.user as schema.User).id,
+            action: "Delete",
+            entityType: "Asset",
+            entityId: assetId,
+            details: { 
+              assetId: asset.assetId,
+              type: asset.type,
+              brand: asset.brand,
+              deletedReason: 'Bulk deletion'
+            }
+          });
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully deleted ${deletedAssets.length} assets`,
+        deletedAssets 
+      });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Add global error handler at the end
   app.use(errorHandler({ 
     showStackTrace: process.env.NODE_ENV === 'development',

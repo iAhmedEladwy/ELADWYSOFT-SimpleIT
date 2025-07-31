@@ -556,15 +556,7 @@ export default function Assets() {
             <p className="text-gray-600">{translations.description}</p>
           </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {translations.refresh}
-          </Button>
+
           
 
           
@@ -757,7 +749,7 @@ export default function Assets() {
           ) : (
             <AssetsTable 
               assets={filteredAssets}
-              employees={employees || []}
+              employees={Array.isArray(employees) ? employees : []}
               selectedAssets={selectedAssets}
               setSelectedAssets={setSelectedAssets}
               onEdit={(asset) => {
