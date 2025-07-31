@@ -339,9 +339,12 @@ export const tickets = pgTable("tickets", {
   status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
   resolution: text("resolution"),
+  resolutionNotes: text("resolution_notes"),
+  rootCause: text("root_cause"),
+  workaround: text("workaround"),
   tags: text("tags").array(),
   dueDate: timestamp("due_date"),
-  slaTarget: integer("sla_target"), // SLA target in hours
+  slaTarget: timestamp("sla_target"), // SLA target timestamp
   slaBreached: boolean("sla_breached").default(false),
   escalationLevel: integer("escalation_level").default(0),
   mergedIntoId: integer("merged_into_id").references(() => tickets.id),
