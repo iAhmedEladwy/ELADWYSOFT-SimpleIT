@@ -606,11 +606,15 @@ function SystemConfig() {
     },
     onSuccess: (data, variables) => {
       console.log(`Successfully updated user ${variables.id}:`, data);
-      // Force immediate cache invalidation and refetch
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      queryClient.refetchQueries({ queryKey: ['/api/users'] });
-      // Also manually trigger refetch
-      refetchUsers();
+      
+      // Immediately update the cache with the new user data
+      queryClient.setQueryData(['/api/users'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        const updatedData = oldData.map(user => 
+          user.id === variables.id ? { ...user, ...data } : user
+        );
+        return updatedData;
+      });
       
       // Only close dialog if it's an edit form update, not a status toggle
       if (editingUserId === variables.id) {
