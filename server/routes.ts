@@ -820,37 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const userData = req.body;
-      
-      // If password is being updated, hash it
-      if (userData.password) {
-        userData.password = await hash(userData.password, 10);
-      }
-      
-      const updatedUser = await storage.updateUser(id, userData);
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Update",
-          entityType: "User",
-          entityId: updatedUser.id,
-          details: { username: updatedUser.username }
-        });
-      }
-      
-      res.json(updatedUser);
-    } catch (error: unknown) {
-      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+  // User update route removed - duplicate of the one later in the file
 
   app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
