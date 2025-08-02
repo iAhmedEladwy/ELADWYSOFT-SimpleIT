@@ -102,6 +102,8 @@ fi
 status_message "Installing application dependencies"
 cd $INSTALL_DIR
 su - $APP_USER -c "cd $INSTALL_DIR && npm install"
+status_message "Auditing and fixing npm vulnerabilities"
+su - $APP_USER -c "cd $INSTALL_DIR && npm audit fix --audit-level=moderate"
 
 # FIX 1: Install PostgreSQL client dependencies
 status_message "Installing PostgreSQL client for direct connections"
