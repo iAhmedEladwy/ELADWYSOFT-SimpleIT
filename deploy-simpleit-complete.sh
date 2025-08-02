@@ -220,9 +220,8 @@ WantedBy=multi-user.target
 EOL
 
 # FIX 8: Set up Nginx with proper proxy and cookie handling
-status_message "Setting up Nginx with Optimized configuration"
-rm -f /etc/nginx/conf.d/default.conf
-cat > /etc/nginx/conf.d/simpleit.conf << EOF
+status_message "Setting up Nginx with optimized configuration"
+cat > /etc/nginx/sites-available/simpleit << EOL
 server {
     listen 80;
     server_name _;
@@ -236,7 +235,7 @@ server {
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_Set_IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header Cookie \$http_cookie;
@@ -257,6 +256,8 @@ server {
 }
 EOL
 
+ln -sf /etc/nginx/sites-available/simpleit /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
 
 # Run database migrations
 status_message "Running database migrations"
