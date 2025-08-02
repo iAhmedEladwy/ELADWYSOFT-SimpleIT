@@ -15,20 +15,40 @@ APP_USER="simpleit"
 DB_USER="simpleit"
 DB_PASSWORD="simpleit"
 DB_NAME="simpleit"
-NODE_VERSION="22.15.1"
+NODE_VERSION="22.18"
 SESSION_SECRET=$(openssl rand -hex 32)
+POSTGRESQL_VERSION="17"  # Updated to PostgreSQL 17 (latest stable)
 
 # Function to display status messages
 status_message() {
   echo -e "\n\033[1;34m==>\033[0m \033[1m$1\033[0m"
 }
 
-status_message "Starting SimpleIT deployment"
+status_message "Starting SimpleIT deployment with latest LTS versions"
+echo "Node.js: v$NODE_VERSION (LTS)"
+echo "PostgreSQL: v$POSTGRESQL_VERSION (Latest Stable)"  
+echo "Nginx: Latest stable from official repository"
 
 # Install required dependencies
 status_message "Installing system dependencies"
 apt-get update
-apt-get install -y curl wget gnupg2 postgresql postgresql-contrib nginx
+apt-get install -y curl wget gnupg2 lsb-release ca-certificates
+
+# Set up PostgreSQL 17 repository and install
+status_message "Setting up PostgreSQL $POSTGRESQL_VERSION (Latest Stable)"
+# Install the PostgreSQL signing key
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+# Add PostgreSQL repository
+echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
+apt-get update
+apt-get install -y postgresql-$POSTGRESQL_VERSION postgresql-contrib-$POSTGRESQL_VERSION
+
+# Set up Nginx from official repository (for latest stable version)
+status_message "Setting up Nginx (Latest Stable)"
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /etc/apt/keyrings/nginx.gpg
+echo "deb [signed-by=/etc/apt/keyrings/nginx.gpg] http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
+apt-get update
+apt-get install -y nginx
 
 # Set up Node.js v22.x LTS
 status_message "Setting up Node.js v$NODE_VERSION (LTS)"
@@ -41,7 +61,13 @@ apt-get install -y nodejs
 # Verify Node.js and npm versions
 node_version=$(node -v)
 npm_version=$(npm -v)
-status_message "Installed Node.js $node_version and npm $npm_version"
+postgresql_version=$(sudo -u postgres psql -c "SELECT version();" | head -3 | tail -1)
+nginx_version=$(nginx -v 2>&1)
+status_message "Installed versions:"
+echo "Node.js: $node_version"
+echo "npm: $npm_version"
+echo "PostgreSQL: $postgresql_version"
+echo "Nginx: $nginx_version"
 
 # Set up PostgreSQL database
 status_message "Setting up PostgreSQL database"
@@ -154,112 +180,9 @@ if [ -f "$INSTALL_DIR/server/replitAuth.ts" ]; then
   sed -i 's|post_logout_redirect_uri: `${req.protocol}://${req.hostname}`|post_logout_redirect_uri: `http://${req.hostname}`|g' "$INSTALL_DIR/server/replitAuth.ts"
   sed -i 's|resave: false|resave: true|g' "$INSTALL_DIR/server/replitAuth.ts"
   sed -i 's|saveUninitialized: false|saveUninitialized: true|g' "$INSTALL_DIR/server/replitAuth.ts"
-fi
+fi       
 
-# FIX 6: Create diagnostic test page
-status_message "Creating diagnostic test page for authentication"
-mkdir -p "$INSTALL_DIR/public"
-cat > "$INSTALL_DIR/public/login-test.html" << EOL
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SimpleIT Login Test</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow: auto; }
-    button { padding: 8px 16px; margin-right: 10px; cursor: pointer; }
-    .card { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <h1>SimpleIT Login Test</h1>
-  
-  <div class="card">
-    <h2>1. Login</h2>
-    <p>Test login with admin/admin123:</p>
-    <button onclick="testLogin()">Login as Admin</button>
-    <h3>Result:</h3>
-    <pre id="login-result">Click to test</pre>
-  </div>
-  
-  <div class="card">
-    <h2>2. Check Authentication</h2>
-    <p>Verify that you are authenticated:</p>
-    <button onclick="checkAuth()">Check Auth</button>
-    <h3>Result:</h3>
-    <pre id="auth-result">Click to test</pre>
-  </div>
-  
-  <div class="card">
-    <h2>3. Access Protected API</h2>
-    <p>Try accessing a protected endpoint:</p>
-    <button onclick="testProtectedApi()">Access /api/system-config</button>
-    <h3>Result:</h3>
-    <pre id="api-result">Click to test</pre>
-  </div>
-  
-  <script>
-    // Test login
-    async function testLogin() {
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: 'admin', password: 'admin123' }),
-          credentials: 'include'
-        });
-        
-        const data = await response.json();
-        document.getElementById('login-result').textContent = JSON.stringify(data, null, 2);
-      } catch (error) {
-        document.getElementById('login-result').textContent = 'Error: ' + error.message;
-      }
-    }
-    
-    // Check authentication
-    async function checkAuth() {
-      try {
-        const response = await fetch('/api/me', {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          document.getElementById('auth-result').textContent = JSON.stringify(data, null, 2);
-        } else {
-          document.getElementById('auth-result').textContent = 'Not authenticated';
-        }
-      } catch (error) {
-        document.getElementById('auth-result').textContent = 'Error: ' + error.message;
-      }
-    }
-    
-    // Test protected API
-    async function testProtectedApi() {
-      try {
-        const response = await fetch('/api/system-config', {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          document.getElementById('api-result').textContent = 'Success! System config retrieved.';
-        } else {
-          document.getElementById('api-result').textContent = 'Failed to access protected API.';
-        }
-      } catch (error) {
-        document.getElementById('api-result').textContent = 'Error: ' + error.message;
-      }
-    }
-  </script>
-</body>
-</html>
-EOL
-chown $APP_USER:$APP_USER "$INSTALL_DIR/public/login-test.html"
-
-# Build the application
+# Build the applicatiion
 status_message "Building the application"
 su - $APP_USER -c "cd $INSTALL_DIR && npm run build"
 
@@ -297,8 +220,9 @@ WantedBy=multi-user.target
 EOL
 
 # FIX 8: Set up Nginx with proper proxy and cookie handling
-status_message "Setting up Nginx with optimized configuration"
-cat > /etc/nginx/sites-available/simpleit << EOL
+status_message "Setting up Nginx with Optimized configuration"
+rm -f /etc/nginx/conf.d/default.conf
+cat > /etc/nginx/conf.d/simpleit.conf << EOF
 server {
     listen 80;
     server_name _;
@@ -333,8 +257,6 @@ server {
 }
 EOL
 
-ln -sf /etc/nginx/sites-available/simpleit /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
 
 # Run database migrations
 status_message "Running database migrations"
