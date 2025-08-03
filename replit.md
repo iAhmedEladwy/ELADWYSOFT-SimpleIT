@@ -13,12 +13,23 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 ## System Architecture
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components for a unified, professional UI/UX. Features include:
     - Centralized System Configuration with a 7-tab structure (System Defaults, Employees, Assets, Tickets, Email, Users & Roles, Import/Export).
-    - Complete Import/Export functionality for Employees, Assets, and Tickets with CSV format support, template downloads, drag-and-drop file upload, progress tracking, and error handling.
+    - **Enhanced Import/Export System** for Employees, Assets, and Tickets with:
+      - Two-step import process with file preview and field mapping confirmation
+      - CSV format support with automatic entity type detection
+      - Comprehensive field validation and error handling with row-specific error messages
+      - Template downloads and drag-and-drop file upload
+      - Progress tracking and detailed import results with success/failure counts
+      - Real-time warnings for data validation issues
     - Unified UI patterns across all pages (Assets, Tickets, Employees) with consistent filter card designs, layout (`p-6`), and enhanced navigation.
     - Interactive grid editing for key fields (Type, Priority, Status, Assigned To) in tables.
     - Comprehensive forms with field validation and auto-save functionality.
     - Bilingual support (English/Arabic).
-- **Backend**: Express.js with TypeScript, enforcing RESTful API patterns and role-based access control.
+- **Backend**: Express.js with TypeScript, enforcing RESTful API patterns and role-based access control. Enhanced import/export system with:
+    - Robust primary key generation using system config prefixes (AST-, EMP-, TKT-)
+    - Advanced CSV parsing with multiple date format support (MM/DD/YYYY, YYYY-MM-DD, ISO)
+    - Comprehensive data validation with fallback values for invalid enum entries
+    - File preview and schema analysis APIs (/api/import/preview, /api/import/schema/:entityType)
+    - Enhanced error handling with detailed field validation and row-specific error reporting.
 - **Database**: PostgreSQL with Drizzle ORM. The schema supports ITIL-compliant asset and ticket management, including hardware specifications, maintenance records, and detailed employee profiles.
 - **Authentication**: Cookie-based sessions with PostgreSQL store, secured by a 4-level ITIL-compliant Role-Based Access Control (RBAC) system (Employee, Agent, Manager, Admin). Features include:
     - Hierarchical permissions for granular access control.

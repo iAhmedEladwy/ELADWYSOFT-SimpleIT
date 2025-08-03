@@ -1405,19 +1405,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const csvString = req.file.buffer.toString('utf-8');
       const parsedData = await parseCSV(csvString);
       
+      if (parsedData.length === 0) {
+        return res.status(400).json({ message: "Empty file or no valid data found" });
+      }
+
+      // Validate file format and required columns
+      const requiredColumns = ['Type'];
+      const firstRow = parsedData[0];
+      const headers = Object.keys(firstRow);
+      
+      const missingColumns = requiredColumns.filter(col => 
+        !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
+      );
+      
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ 
+          message: `Missing required columns: ${missingColumns.join(', ')}`,
+          headers,
+          requiredColumns
+        });
+      }
+      
       const importResults = [];
       const errors: string[] = [];
+      const warnings: string[] = [];
       
-      for (const row of parsedData) {
+      // Get config once outside the loop for efficiency
+      const config = await storage.getSystemConfig();
+      const assetIdPrefix = config?.assetIdPrefix || 'AST';
+      const existingAssets = await storage.getAllAssets();
+      let nextAssetNumber = existingAssets.length + 1;
+
+      // Process each row with comprehensive validation
+      for (const [index, row] of parsedData.entries()) {
         try {
-          // Generate assetId using system config prefix
-          const config = await storage.getSystemConfig();
-          const assetIdPrefix = config?.assetIdPrefix || 'AST';
-          
-          // Get next sequence number
-          const existingAssets = await storage.getAllAssets();
-          const nextAssetNumber = existingAssets.length + 1;
-          const generatedAssetId = `${assetIdPrefix}-${String(nextAssetNumber).padStart(6, '0')}`;
+          // Generate unique assetId for each row
+          const generatedAssetId = `${assetIdPrefix}-${String(nextAssetNumber + index).padStart(6, '0')}`;
 
           const assetData: any = {
             // Generate assetId manually since it's VARCHAR, not auto-increment
@@ -1455,40 +1478,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
             assetData.warrantyExpiryDate = null;
           }
 
-          // Clean numeric fields
+          // Clean and validate numeric fields
           if (assetData.buyPrice && assetData.buyPrice !== '') {
             const price = parseFloat(assetData.buyPrice);
-            assetData.buyPrice = !isNaN(price) ? price : null;
+            if (!isNaN(price) && price >= 0) {
+              assetData.buyPrice = price;
+            } else {
+              assetData.buyPrice = null;
+              warnings.push(`Row ${index + 1}: Invalid buy price "${assetData.buyPrice}", set to null`);
+            }
           } else {
             assetData.buyPrice = null;
           }
 
           if (assetData.lifeSpan && assetData.lifeSpan !== '') {
             const lifeSpan = parseInt(assetData.lifeSpan);
-            assetData.lifeSpan = !isNaN(lifeSpan) ? lifeSpan : null;
+            if (!isNaN(lifeSpan) && lifeSpan > 0) {
+              assetData.lifeSpan = lifeSpan;
+            } else {
+              assetData.lifeSpan = null;
+              warnings.push(`Row ${index + 1}: Invalid life span "${assetData.lifeSpan}", set to null`);
+            }
           } else {
             assetData.lifeSpan = null;
           }
 
           if (assetData.assignedEmployeeId && assetData.assignedEmployeeId !== '') {
             const employeeId = parseInt(assetData.assignedEmployeeId);
-            assetData.assignedEmployeeId = !isNaN(employeeId) ? employeeId : null;
+            if (!isNaN(employeeId) && employeeId > 0) {
+              assetData.assignedEmployeeId = employeeId;
+            } else {
+              assetData.assignedEmployeeId = null;
+              warnings.push(`Row ${index + 1}: Invalid employee ID "${assetData.assignedEmployeeId}", set to null`);
+            }
           } else {
             assetData.assignedEmployeeId = null;
+          }
+
+          // Validate required fields
+          if (!assetData.type || assetData.type.trim() === '') {
+            throw new Error('Type is required but missing or empty');
+          }
+
+          // Validate status enum
+          const validStatuses = ['Available', 'In Use', 'Under Maintenance', 'Retired', 'Lost', 'Stolen'];
+          if (assetData.status && !validStatuses.includes(assetData.status)) {
+            warnings.push(`Row ${index + 1}: Invalid status "${assetData.status}", defaulting to "Available"`);
+            assetData.status = 'Available';
           }
           
           const result = await storage.createAsset(assetData);
           importResults.push(result);
         } catch (error: any) {
-          const rowIndex = parsedData.findIndex(r => r === row) + 1;
-          errors.push(`Row ${rowIndex}: ${error.message}`);
+          errors.push(`Row ${index + 1}: ${error.message}`);
         }
       }
       
       res.json({
         message: `Imported ${importResults.length} assets successfully`,
         imported: importResults.length,
-        errors: errors.length > 0 ? errors : undefined
+        failed: errors.length,
+        total: parsedData.length,
+        errors: errors.length > 0 ? errors : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined,
+        success: errors.length === 0
       });
     } catch (error: any) {
       res.status(500).json({ error: "Asset import failed", details: error.message });
@@ -1603,7 +1656,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         message: `Imported ${importResults.length} employees successfully`,
         imported: importResults.length,
-        errors: errors.length > 0 ? errors : undefined
+        failed: errors.length,
+        total: parsedData.length,
+        errors: errors.length > 0 ? errors : undefined,
+        success: errors.length === 0
       });
     } catch (error: any) {
       res.status(500).json({ error: "Employee import failed", details: error.message });
@@ -1735,7 +1791,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         message: `Imported ${importResults.length} tickets successfully`,
         imported: importResults.length,
-        errors: errors.length > 0 ? errors : undefined
+        failed: errors.length,
+        total: parsedData.length,
+        errors: errors.length > 0 ? errors : undefined,
+        success: errors.length === 0
       });
     } catch (error: any) {
       res.status(500).json({ error: "Ticket import failed", details: error.message });
