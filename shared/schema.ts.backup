@@ -649,16 +649,16 @@ export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit
   createdAt: true,
 });
 
-// export const insertTicketCategorySchema = createInsertSchema(ticketCategories).omit({
-//   id: true,
-//   createdAt: true,
-//   updatedAt: true,
-// });
+export const insertTicketCategorySchema = createInsertSchema(ticketCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
-// export const insertTicketNotificationSchema = createInsertSchema(ticketNotifications).omit({
-//   id: true,
-//   createdAt: true,
-// });
+export const insertTicketNotificationSchema = createInsertSchema(ticketNotifications).omit({
+  id: true,
+  createdAt: true,
+});
 
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ 
   id: true, 
