@@ -12,7 +12,10 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 - **FIXED**: Resolved "name" column schema mismatch in assets table - now using correct model_name field
 - **WORKING**: Asset import (JSON/CSV) functioning with database auto-increment
 - **WORKING**: Employee import with 100% success rate using database auto-increment
-- **IN-PROGRESS**: Ticket import working but requires valid user/employee foreign key references
+- **WORKING**: Ticket import functional with proper foreign key handling
+- **COMPLETED**: Updated import templates to exclude auto-generated ID fields (assetId, employeeId, ticketId)
+- **ENHANCED**: Templates now include comprehensive field guidance with required/optional indicators (*) and format examples
+- **IMPROVED**: Template routing fixed to prevent conflicts with parameterized routes
 
 ## User Preferences
 - Use clean, professional code structure with comments

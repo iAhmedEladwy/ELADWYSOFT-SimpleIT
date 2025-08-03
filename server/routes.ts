@@ -1036,6 +1036,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Standardized CSV Template Generation (MUST BE BEFORE PARAMETERIZED ROUTES)
+  app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { entity } = req.params;
+      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
+      
+      if (!validEntities.includes(entity)) {
+        return res.status(400).json({ error: "Invalid entity type" });
+      }
+
+      let templateData: any[] = [];
+      
+      switch (entity) {
+        case 'assets':
+          templateData = [{
+            'Type*': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
+            'Brand*': 'Dell (Required: Asset manufacturer)',
+            'Model Number': 'Latitude 5520 (Optional: Manufacturer model number)',
+            'Model Name': 'Dell Latitude 15 (Optional: Descriptive model name)',
+            'Serial Number*': 'DL123456789 (Required: Unique serial number)',
+            'Specifications': '16GB RAM, 512GB SSD, Intel i7 (Optional: Hardware specs)',
+            'CPU': 'Intel Core i7-11800H (Optional: Processor details)',
+            'RAM': '16GB DDR4 (Optional: Memory details)',
+            'Storage': '512GB NVMe SSD (Optional: Storage details)',
+            'Status': 'Available (Available, In Use, Maintenance, Retired)',
+            'Purchase Date': '2023-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
+            'Buy Price': '1200.00 (Optional: Purchase price in USD)',
+            'Warranty Expiry Date': '2025-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
+            'Life Span': '36 (Optional: Expected lifespan in months)',
+            'Out of Box OS': 'Windows 11 Pro (Optional: Operating system)',
+            'Assigned Employee ID': '1001 (Optional: Employee ID from employees table)'
+          }];
+          break;
+        case 'employees':
+          templateData = [{
+            'English Name*': 'John Smith (Required: Full name in English)',
+            'Arabic Name': 'جون سميث (Optional: Name in Arabic)',
+            'Department*': 'IT (Required: IT, HR, Finance, Marketing, etc.)',
+            'ID Number*': 'ID123456789 (Required: National/Company ID)',
+            'Title*': 'Software Engineer (Required: Job title)',
+            'Direct Manager ID': '1001 (Optional: Manager employee ID)',
+            'Employment Type': 'Full-time (Full-time, Part-time, Contract, Intern)',
+            'Joining Date*': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'Exit Date': '2024-01-15 (Optional: Format YYYY-MM-DD, if applicable)',
+            'Status': 'Active (Active, Resigned, Terminated, On Leave)',
+            'Personal Mobile': '+1234567890 (Optional: Personal phone)',
+            'Work Mobile': '+1234567891 (Optional: Company phone)',
+            'Personal Email': 'john@personal.com (Optional: Personal email)',
+            'Corporate Email': 'john.smith@company.com (Optional: Work email)'
+          }];
+          break;
+        case 'tickets':
+          templateData = [{
+            'Summary*': 'Computer not starting (Required: Brief ticket description)',
+            'Description*': 'Employee computer fails to boot up after power outage (Required: Detailed description)',
+            'Category': 'Hardware (Hardware, Software, Network, Security, Access)',
+            'Request Type': 'Incident (Service Request, Incident, Problem, Change)',
+            'Priority': 'Medium (Low, Medium, High, Critical)',
+            'Urgency': 'High (Low, Medium, High, Critical)',
+            'Impact': 'Medium (Low, Medium, High, Critical)',
+            'Status': 'Open (Open, In Progress, Resolved, Closed)',
+            'Submitted By ID*': '1001 (Required: Employee ID who submitted)',
+            'Assigned To ID': '1002 (Optional: User ID for assignment)',
+            'Related Asset ID': '501 (Optional: Asset ID if related)',
+            'Due Date': '2024-01-20 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'Tags': 'urgent,hardware (Optional: Comma-separated tags)'
+          }];
+          break;
+        default:
+          return res.status(400).json({ error: "Template not available for this entity" });
+      }
+
+      const { content, headers } = await exportToCSV(templateData, `${entity}-template`, { headers: true });
+      
+      Object.entries(headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+      
+      res.send(content);
+    } catch (error: unknown) {
+      console.error('Error generating template:', error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   app.get("/api/employees/:id", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -1265,79 +1350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Standardized CSV Template Generation
-  app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const { entity } = req.params;
-      const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
-      
-      if (!validEntities.includes(entity)) {
-        return res.status(400).json({ error: "Invalid entity type" });
-      }
 
-      let templateData: any[] = [];
-      
-      switch (entity) {
-        case 'assets':
-          templateData = [{
-            'type': 'Laptop',
-            'brand': 'Example Brand',
-            'assetId': 'AST00001',
-            'serialNumber': 'SN123456789',
-            'status': 'Active',
-            'modelNumber': 'M123456',
-            'modelName': 'Example Model',
-            'specs': '16GB RAM, 512GB SSD, i7 Processor',
-            'purchaseDate': '2023-01-15',
-            'buyPrice': '1200.00',
-            'warrantyEndDate': '2025-01-15',
-            'assignedEmployeeId': '1'
-          }];
-          break;
-        case 'employees':
-          templateData = [{
-            'employeeId': 'EMP00001',
-            'name': 'John Doe',
-            'email': 'john.doe@company.com',
-            'department': 'IT',
-            'position': 'Software Developer',
-            'phone': '+1234567890',
-            'location': 'Office Building A',
-            'managerId': '2',
-            'startDate': '2023-01-15',
-            'salary': '5000.00',
-            'status': 'Active'
-          }];
-          break;
-        case 'tickets':
-          templateData = [{
-            'summary': 'Computer not starting',
-            'description': 'Employee computer fails to boot up after power outage',
-            'category': 'Hardware',
-            'requestType': 'Incident',
-            'urgency': 'High',
-            'impact': 'Medium',
-            'submittedById': '1',
-            'assignedToId': '2',
-            'dueDate': '2024-01-20T10:00:00Z'
-          }];
-          break;
-        default:
-          return res.status(400).json({ error: "Template not available for this entity" });
-      }
-
-      const { content, headers } = await exportToCSV(templateData, `${entity}-template`, { headers: true });
-      
-      Object.entries(headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
-      });
-      
-      res.send(content);
-    } catch (error: unknown) {
-      console.error('Error generating template:', error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
   // Assets Export/Import
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
