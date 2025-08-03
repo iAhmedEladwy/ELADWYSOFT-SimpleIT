@@ -243,7 +243,7 @@ function SystemConfig() {
   };
 
   // Enhanced field mapping handlers with progress tracking
-  const handleMappingComplete = async (mappedData: any[]) => {
+  const handleMappingComplete = async (fieldMappings: any[]) => {
     setShowFieldMapping(false);
     setIsImporting(true);
     setImportProgress(0);
@@ -252,19 +252,39 @@ function SystemConfig() {
       // Create progress updates
       setImportProgress(10);
       
-      // Transform data using the field mappings
-      const formData = new FormData();
-      const csvString = [
-        Object.keys(mappedData[0]).join(','),
-        ...mappedData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
+      // Transform file data using the field mappings
+      const transformedData = parsedFileData.map(row => {
+        const transformedRow: any = {};
+        
+        fieldMappings.forEach(mapping => {
+          if (mapping.sourceColumn && mapping.targetField) {
+            const sourceValue = row[mapping.sourceColumn];
+            transformedRow[mapping.targetField] = sourceValue || '';
+          }
+        });
+        
+        return transformedRow;
+      });
       
       setImportProgress(30);
+      
+      // Create CSV from transformed data
+      const formData = new FormData();
+      const headers = fieldMappings.map(m => m.targetField).join(',');
+      const csvRows = transformedData.map(row => 
+        fieldMappings.map(m => {
+          const value = row[m.targetField] || '';
+          return `"${value.toString().replace(/"/g, '""')}"`;
+        }).join(',')
+      );
+      const csvString = [headers, ...csvRows].join('\n');
+      
+      setImportProgress(50);
       
       const blob = new Blob([csvString], { type: 'text/csv' });
       formData.append('file', blob, 'import.csv');
       
-      setImportProgress(50);
+      setImportProgress(70);
       
       const response = await apiRequest(`/api/${activeImportTab}/import`, 'POST', formData, { isFormData: true });
       
