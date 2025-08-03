@@ -12,7 +12,8 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 
 ## System Architecture
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components for a unified, professional UI/UX. Features include:
-    - Centralized System Configuration with a 6-tab structure (System Defaults, Employees, Assets, Tickets, Email, Users & Roles).
+    - Centralized System Configuration with a 7-tab structure (System Defaults, Employees, Assets, Tickets, Email, Users & Roles, Import/Export).
+    - Complete Import/Export functionality for Employees, Assets, and Tickets with CSV format support, template downloads, drag-and-drop file upload, progress tracking, and error handling.
     - Unified UI patterns across all pages (Assets, Tickets, Employees) with consistent filter card designs, layout (`p-6`), and enhanced navigation.
     - Interactive grid editing for key fields (Type, Priority, Status, Assigned To) in tables.
     - Comprehensive forms with field validation and auto-save functionality.

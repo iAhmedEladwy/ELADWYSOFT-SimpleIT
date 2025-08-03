@@ -165,7 +165,7 @@ function SystemConfig() {
     setDragActive(false);
   };
 
-  const handleExport = async (entityType: 'employees' | 'assets' | 'tickets' | 'audit-logs') => {
+  const handleExport = async (entityType: 'employees' | 'assets' | 'tickets') => {
     try {
       const response = await fetch(`/api/export/${entityType}`, {
         method: 'GET',
@@ -204,7 +204,7 @@ function SystemConfig() {
     }
   };
 
-  const handleDownloadTemplate = async (entityType: 'employees' | 'assets' | 'tickets' | 'audit-logs') => {
+  const handleDownloadTemplate = async (entityType: 'employees' | 'assets' | 'tickets') => {
     try {
       const response = await fetch(`/api/${entityType}/template`, {
         method: 'GET',
@@ -3077,7 +3077,7 @@ function SystemConfig() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeImportTab} onValueChange={setActiveImportTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="employees">
                       <Users className="h-4 w-4 mr-2" />
                       {language === 'English' ? 'Employees' : 'الموظفين'}
@@ -3089,10 +3089,6 @@ function SystemConfig() {
                     <TabsTrigger value="tickets">
                       <Ticket className="h-4 w-4 mr-2" />
                       {language === 'English' ? 'Tickets' : 'التذاكر'}
-                    </TabsTrigger>
-                    <TabsTrigger value="audit-logs">
-                      <FileDown className="h-4 w-4 mr-2" />
-                      {language === 'English' ? 'Audit Logs' : 'سجلات التدقيق'}
                     </TabsTrigger>
                   </TabsList>
 
@@ -3114,20 +3110,18 @@ function SystemConfig() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div className="space-y-3">
-                            {activeImportTab !== 'audit-logs' && (
-                              <Button 
-                                onClick={() => handleDownloadTemplate(activeImportTab as 'employees' | 'assets' | 'tickets')}
-                                variant="outline" 
-                                className="w-full"
-                              >
-                                <FileDown className="h-4 w-4 mr-2" />
-                                {language === 'English' 
-                                  ? `Download ${activeImportTab.charAt(0).toUpperCase() + activeImportTab.slice(1)} Template` 
-                                  : `تنزيل قالب ${activeImportTab}`}
-                              </Button>
-                            )}
                             <Button 
-                              onClick={() => handleExport(activeImportTab as 'employees' | 'assets' | 'tickets' | 'audit-logs')}
+                              onClick={() => handleDownloadTemplate(activeImportTab as 'employees' | 'assets' | 'tickets')}
+                              variant="outline" 
+                              className="w-full"
+                            >
+                              <FileDown className="h-4 w-4 mr-2" />
+                              {language === 'English' 
+                                ? `Download ${activeImportTab.charAt(0).toUpperCase() + activeImportTab.slice(1)} Template` 
+                                : `تنزيل قالب ${activeImportTab}`}
+                            </Button>
+                            <Button 
+                              onClick={() => handleExport(activeImportTab as 'employees' | 'assets' | 'tickets')}
                               className="w-full"
                             >
                               <Download className="h-4 w-4 mr-2" />
@@ -3236,38 +3230,26 @@ function SystemConfig() {
                             </div>
                           )}
 
-                          {/* Import Button - Hide for audit logs */}
-                          {activeImportTab !== 'audit-logs' && (
-                            <Button 
-                              onClick={handleImport}
-                              disabled={!selectedFile || isImporting}
-                              className="w-full"
-                            >
-                              {isImporting ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  {language === 'English' ? 'Importing...' : 'جاري الاستيراد...'}
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  {language === 'English' 
-                                    ? `Import ${activeImportTab.charAt(0).toUpperCase() + activeImportTab.slice(1)}` 
-                                    : `استيراد ${activeImportTab}`}
-                                </>
-                              )}
-                            </Button>
-                          )}
-                          {activeImportTab === 'audit-logs' && (
-                            <div className="p-6 text-center text-muted-foreground">
-                              <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-                              <p className="text-sm">
+                          {/* Import Button */}
+                          <Button 
+                            onClick={handleImport}
+                            disabled={!selectedFile || isImporting}
+                            className="w-full"
+                          >
+                            {isImporting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {language === 'English' ? 'Importing...' : 'جاري الاستيراد...'}
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
                                 {language === 'English' 
-                                  ? 'Audit logs are read-only and cannot be imported.' 
-                                  : 'سجلات التدقيق للقراءة فقط ولا يمكن استيرادها.'}
-                              </p>
-                            </div>
-                          )}
+                                  ? `Import ${activeImportTab.charAt(0).toUpperCase() + activeImportTab.slice(1)}` 
+                                  : `استيراد ${activeImportTab}`}
+                              </>
+                            )}
+                          </Button>
                         </CardContent>
                       </Card>
                     </div>

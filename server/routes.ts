@@ -3638,63 +3638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/export/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      // Get all activity logs without pagination for export
-      const logs = await storage.getActivityLogs({
-        page: 1,
-        limit: 10000, // High limit to get all logs
-        filter: req.query.filter as string,
-        entityType: req.query.entityType as string,
-        action: req.query.action as string,
-        userId: req.query.userId ? parseInt(req.query.userId as string) : undefined,
-        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
-        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
-      });
-      
-      // Get users for populating user information
-      const users = await storage.getAllUsers();
-      const userMap = users.reduce((map, user) => {
-        map[user.id] = user;
-        return map;
-      }, {} as Record<number, schema.User>);
-      
-      const csvData = logs.data.map(log => ({
-        id: log.id,
-        timestamp: new Date(log.createdAt).toISOString(),
-        user: log.userId ? userMap[log.userId]?.username || 'Unknown' : 'System',
-        action: log.action,
-        entityType: log.entityType,
-        entityId: log.entityId || '',
-        details: log.details ? JSON.stringify(log.details).replace(/,/g, ';').replace(/"/g, '""') : ''
-      }));
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      // Log the export activity
-      if (req.user) {
-        await logActivity({
-          userId: (req.user as schema.User).id,
-          action: AuditAction.EXPORT,
-          entityType: EntityType.REPORT,
-          details: { 
-            type: 'Audit Logs', 
-            count: logs.data.length,
-            filters: req.query
-          }
-        });
-      }
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
 
   app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
