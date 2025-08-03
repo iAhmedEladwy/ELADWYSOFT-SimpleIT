@@ -181,45 +181,99 @@ export function validateCSVData(
 }
 
 /**
- * Enhanced date parsing with multiple format support
+ * Enhanced date parsing with multiple format support and robust error handling
  */
 export function parseDate(dateStr: string): Date | null {
-  if (!dateStr || dateStr.trim() === '' || dateStr.toLowerCase() === 'na' || dateStr.toLowerCase() === 'n/a') {
+  if (!dateStr || dateStr.trim() === '' || dateStr.toLowerCase() === 'na' || dateStr.toLowerCase() === 'n/a' || dateStr.toLowerCase() === 'null' || dateStr.toLowerCase() === 'undefined') {
     return null;
   }
 
   const cleanStr = dateStr.trim();
-
-  // Try standard Date parsing first
-  let date = new Date(cleanStr);
-  if (!isNaN(date.getTime())) {
-    return date;
+  
+  // Handle empty or clearly invalid inputs
+  if (cleanStr === '' || cleanStr === 'null' || cleanStr === 'undefined' || cleanStr === '0' || cleanStr === 'NaN') {
+    return null;
   }
 
-  // Try MM/DD/YYYY format (most common in CSV imports)
-  const mmddMatch = cleanStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (mmddMatch) {
-    const month = parseInt(mmddMatch[1]) - 1; // months are 0-indexed
-    const day = parseInt(mmddMatch[2]);
-    const year = parseInt(mmddMatch[3]);
-    date = new Date(year, month, day);
-    if (!isNaN(date.getTime()) && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
-      return date;
+  try {
+    // Try ISO format first (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
+    if (cleanStr.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
+      const isoDate = new Date(cleanStr);
+      if (!isNaN(isoDate.getTime()) && isoDate.getFullYear() >= 1900 && isoDate.getFullYear() <= 2100) {
+        return isoDate;
+      }
     }
-  }
 
-  // Try YYYY-MM-DD format
-  const yyyyMatch = cleanStr.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (yyyyMatch) {
-    const year = parseInt(yyyyMatch[1]);
-    const month = parseInt(yyyyMatch[2]) - 1;
-    const day = parseInt(yyyyMatch[3]);
-    date = new Date(year, month, day);
-    if (!isNaN(date.getTime())) {
-      return date;
+    // Try MM/DD/YYYY format
+    const mmddMatch = cleanStr.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{4})$/);
+    if (mmddMatch) {
+      const month = parseInt(mmddMatch[1]);
+      const day = parseInt(mmddMatch[2]);
+      const year = parseInt(mmddMatch[3]);
+      
+      // Validate ranges before creating Date
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return date;
+        }
+      }
     }
+
+    // Try DD/MM/YYYY format (European)
+    const ddmmMatch = cleanStr.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{4})$/);
+    if (ddmmMatch) {
+      const day = parseInt(ddmmMatch[1]);
+      const month = parseInt(ddmmMatch[2]);
+      const year = parseInt(ddmmMatch[3]);
+      
+      // Validate ranges before creating Date
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return date;
+        }
+      }
+    }
+
+    // Try YYYY-MM-DD format with dashes
+    const yyyyMatch = cleanStr.match(/^(\d{4})[-](\d{1,2})[-](\d{1,2})$/);
+    if (yyyyMatch) {
+      const year = parseInt(yyyyMatch[1]);
+      const month = parseInt(yyyyMatch[2]);
+      const day = parseInt(yyyyMatch[3]);
+      
+      // Validate ranges before creating Date
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return date;
+        }
+      }
+    }
+
+    // Try MM-DD-YYYY format with dashes
+    const mmddDashMatch = cleanStr.match(/^(\d{1,2})[-](\d{1,2})[-](\d{4})$/);
+    if (mmddDashMatch) {
+      const month = parseInt(mmddDashMatch[1]);
+      const day = parseInt(mmddDashMatch[2]);
+      const year = parseInt(mmddDashMatch[3]);
+      
+      // Validate ranges before creating Date
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return date;
+        }
+      }
+    }
+
+  } catch (error) {
+    // If any parsing fails, return null
+    return null;
   }
 
+  // If all parsing attempts fail, return null
   return null;
 }
 

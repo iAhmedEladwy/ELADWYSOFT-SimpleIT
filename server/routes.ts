@@ -1183,100 +1183,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return statusMap[status] || 'Active';
   }
 
-  // Employee Import/Export
-  app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      
-      const results: schema.InsertEmployee[] = [];
-      const errors: any[] = [];
-      let counter = 0;
-      
-      // Convert buffer to readable stream
-      const stream = Readable.from(req.file.buffer.toString());
-      
-      // Parse CSV
-      stream
-        .pipe(csvParser())
-        .on('data', async (data) => {
-          try {
-            counter++;
-            const employeeData: schema.InsertEmployee = {
-              empId: data.empId || `EMP${counter.toString().padStart(5, "0")}`,
-              englishName: data.englishName,
-              arabicName: data.arabicName || null,
-              department: data.department,
-              idNumber: data.idNumber,
-              title: data.title,
-              directManager: data.directManager ? parseInt(data.directManager) : null,
-              employmentType: data.employmentType as any,
-              joiningDate: new Date(data.joiningDate),
-              exitDate: data.exitDate ? new Date(data.exitDate) : null,
-              status: mapEmployeeStatus(data.status) as any,
-              personalMobile: data.personalMobile || null,
-              workMobile: data.workMobile || null,
-              personalEmail: data.personalEmail || null,
-              corporateEmail: data.corporateEmail || null,
-              userId: data.userId ? parseInt(data.userId) : null
-            };
-            
-            results.push(employeeData);
-          } catch (error: unknown) {
-            errors.push({ row: counter, error: error.message });
-          }
-        })
-        .on('end', async () => {
-          // Insert all valid employees
-          const importedEmployees = [];
-          
-          for (const employee of results) {
-            try {
-              // Check if employee already exists by empId
-              const existingEmployee = await storage.getEmployeeByEmpId(employee.empId);
-              if (existingEmployee) {
-                errors.push({ 
-                  employee: employee.englishName, 
-                  error: `Employee with ID ${employee.empId} already exists` 
-                });
-                continue;
-              }
-              
-              const newEmployee = await storage.createEmployee(employee);
-              importedEmployees.push(newEmployee);
-              
-              // Log activity
-              if (req.user) {
-                await storage.logActivity({
-                  userId: (req.user as schema.User).id,
-                  action: "Import",
-                  entityType: "Employee",
-                  entityId: newEmployee.id,
-                  details: { name: newEmployee.englishName, empId: newEmployee.empId }
-                });
-              }
-            } catch (error: unknown) {
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              errors.push({ 
-                employee: employee.englishName, 
-                error: errorMessage.includes('duplicate key') ? 
-                  `Employee with ID ${employee.empId} already exists` : 
-                  errorMessage 
-              });
-            }
-          }
-          
-          res.json({ 
-            message: "Import completed", 
-            imported: importedEmployees.length,
-            errors: errors.length > 0 ? errors : null
-          });
-        });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+  // Employee Import/Export - OLD ROUTE DISABLED (causing date parsing issues)
+  // The enhanced employee import route is below (line ~1591)
 
 
 
@@ -1611,6 +1519,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const nextEmpNumber = existingEmployees.length + 1;
           const generatedEmpId = `${empIdPrefix}${String(nextEmpNumber).padStart(5, '0')}`;
 
+          // Validate and clean employment type BEFORE creating employee data
+          const rawEmploymentType = row['Employment Type'] || row.employmentType || row['employment_type'] || '';
+          const cleanedEmploymentType = cleanEmploymentType(rawEmploymentType);
+          
+          // Validate and parse date BEFORE creating employee data
+          const rawJoiningDate = row['Start Date'] || row.startDate || row['joining_date'] || '';
+          let joiningDateStr = null;
+          if (rawJoiningDate) {
+            const parsedDate = parseDate(rawJoiningDate);
+            if (parsedDate) {
+              joiningDateStr = parsedDate.toISOString().split('T')[0];
+            } else {
+              console.warn(`Invalid date format for employee ${row['English Name'] || row.englishName}: ${rawJoiningDate}`);
+            }
+          }
+
           const employeeData: any = {
             empId: row['Employee ID'] || row.empId || generatedEmpId,
             englishName: row['English Name'] || row.englishName,
@@ -1619,8 +1543,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             phone: row['Phone'] || row.phone || null,
             department: row['Department'] || row.department || null,
             position: row['Position'] || row.position || null,
-            employmentType: cleanEmploymentType(row['Employment Type'] || row.employmentType || ''),
-            startDate: null,
+            employmentType: cleanedEmploymentType, // Use validated employment type
+            startDate: joiningDateStr, // Use validated date
             salary: null,
             status: row['Status'] || row.status || 'Active',
             address: row['Address'] || row.address || null,
@@ -1628,12 +1552,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             nationalId: row['National ID'] || row.nationalId || null,
             managerId: null
           };
-
-          // Enhanced date parsing for start date
-          if (row['Start Date'] || row.startDate) {
-            const date = parseDate(row['Start Date'] || row.startDate);
-            employeeData.startDate = date ? date.toISOString().split('T')[0] : null;
-          }
 
           // Clean numeric fields
           if (row['Salary'] || row.salary) {
@@ -1649,7 +1567,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const result = await storage.createEmployee(employeeData);
           importResults.push(result);
         } catch (error: any) {
-          errors.push(`Row ${index + 1}: ${error.message}`);
+          const errorMsg = error.message || String(error);
+          console.error(`Employee import error for row ${index + 1}:`, errorMsg);
+          errors.push(`Row ${index + 1}: ${errorMsg}`);
         }
       }
       
