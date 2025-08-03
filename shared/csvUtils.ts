@@ -281,8 +281,11 @@ export function parseDate(dateStr: string): Date | null {
  * Clean and validate employment type values
  */
 export function cleanEmploymentType(value: string): string {
-  if (!value || value.trim() === '' || value.toLowerCase() === 'na' || value.toLowerCase() === 'n/a') {
-    return 'Full-time'; // Default to Full-time for missing values
+  // Handle missing, empty, or invalid values
+  if (!value || value.trim() === '' || value.toLowerCase() === 'na' || 
+      value.toLowerCase() === 'n/a' || value.toLowerCase() === 'null' || 
+      value.toLowerCase() === 'undefined' || value === 'undefined') {
+    return 'Full-time'; // Default to Full-time for missing/invalid values
   }
 
   const cleanValue = value.trim();
@@ -301,12 +304,23 @@ export function cleanEmploymentType(value: string): string {
     }
   }
 
-  // Partial matches
-  if (lowerValue.includes('full') || lowerValue.includes('permanent')) return 'Full-time';
-  if (lowerValue.includes('part')) return 'Part-time';
-  if (lowerValue.includes('contract') || lowerValue.includes('temp')) return 'Contract';
-  if (lowerValue.includes('intern') || lowerValue.includes('trainee')) return 'Intern';
+  // Comprehensive partial matches
+  if (lowerValue.includes('full') || lowerValue.includes('permanent') || 
+      lowerValue.includes('regular') || lowerValue === 'ft' || 
+      lowerValue === 'fulltime') return 'Full-time';
+      
+  if (lowerValue.includes('part') || lowerValue === 'pt' || 
+      lowerValue.includes('parttime') || lowerValue.includes('casual')) return 'Part-time';
+      
+  if (lowerValue.includes('contract') || lowerValue.includes('temp') || 
+      lowerValue.includes('freelance') || lowerValue.includes('consultant') ||
+      lowerValue.includes('contractor')) return 'Contract';
+      
+  if (lowerValue.includes('intern') || lowerValue.includes('trainee') ||
+      lowerValue.includes('apprentice') || lowerValue.includes('student')) return 'Intern';
 
+  // Log warning for unrecognized values
+  console.warn(`Unknown employment type "${value}", defaulting to "Full-time"`);
   return 'Full-time'; // Default to Full-time for unrecognized values
 }
 

@@ -270,7 +270,8 @@ function SystemConfig() {
       setImportProgress(100);
 
       if (!response.ok) {
-        throw new Error(result.message || 'Import failed');
+        const errorMsg = result.message || result.error || result.details || 'Import failed';
+        throw new Error(errorMsg);
       }
 
       setImportResults(result);

@@ -1317,22 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Empty file or no valid data found" });
       }
 
-      // Validate file format and required columns
-      const requiredColumns = ['Type'];
-      const firstRow = parsedData[0];
-      const headers = Object.keys(firstRow);
-      
-      const missingColumns = requiredColumns.filter(col => 
-        !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
-      );
-      
-      if (missingColumns.length > 0) {
-        return res.status(400).json({ 
-          message: `Missing required columns: ${missingColumns.join(', ')}`,
-          headers,
-          requiredColumns
-        });
-      }
+      // Removed hardcoded column validation - allow flexible column mapping
       
       const importResults = [];
       const errors: string[] = [];
@@ -1423,9 +1408,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             assetData.assignedEmployeeId = null;
           }
 
-          // Validate required fields
+          // Validate required fields with fallback values
           if (!assetData.type || assetData.type.trim() === '') {
-            throw new Error('Type is required but missing or empty');
+            assetData.type = 'Other'; // Default type instead of failing
+            warnings.push(`Row ${index + 1}: Missing type, defaulted to "Other"`);
           }
 
           // Validate status enum
@@ -1535,33 +1521,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          const employeeData: any = {
-            empId: row['Employee ID'] || row.empId || generatedEmpId,
-            englishName: row['English Name'] || row.englishName,
-            arabicName: row['Arabic Name'] || row.arabicName || null,
-            email: row['Email'] || row.email,
-            phone: row['Phone'] || row.phone || null,
-            department: row['Department'] || row.department || null,
-            position: row['Position'] || row.position || null,
-            employmentType: cleanedEmploymentType, // Use validated employment type
-            startDate: joiningDateStr, // Use validated date
-            salary: null,
-            status: row['Status'] || row.status || 'Active',
-            address: row['Address'] || row.address || null,
-            emergencyContact: row['Emergency Contact'] || row.emergencyContact || null,
-            nationalId: row['National ID'] || row.nationalId || null,
-            managerId: null
-          };
-
-          // Clean numeric fields
-          if (row['Salary'] || row.salary) {
-            const salary = parseFloat(row['Salary'] || row.salary);
-            employeeData.salary = !isNaN(salary) ? salary : null;
+          // Validate required fields first
+          const englishName = row['English Name'] || row.englishName || row['name'] || row.name;
+          const email = row['Email'] || row.email || row['email_address'] || row.emailAddress;
+          
+          if (!englishName || englishName.trim() === '') {
+            throw new Error('English Name is required but missing or empty');
+          }
+          
+          if (!email || email.trim() === '') {
+            throw new Error('Email is required but missing or empty');
           }
 
+          const employeeData: any = {
+            empId: row['Employee ID'] || row.empId || generatedEmpId,
+            englishName: englishName.trim(),
+            arabicName: row['Arabic Name'] || row.arabicName || null,
+            department: row['Department'] || row.department || 'General', // Required field with default
+            idNumber: row['ID Number'] || row.idNumber || row['national_id'] || generatedEmpId, // Required field with fallback
+            title: row['Title'] || row.title || row['Position'] || row.position || 'Employee', // Required field with default
+            directManager: null,
+            employmentType: cleanedEmploymentType,
+            joiningDate: joiningDateStr, // Use validated date
+            exitDate: null,
+            status: row['Status'] || row.status || 'Active',
+            personalMobile: row['Personal Mobile'] || row.personalMobile || row['Phone'] || row.phone || null,
+            workMobile: row['Work Mobile'] || row.workMobile || null,
+            personalEmail: row['Personal Email'] || row.personalEmail || email.trim(),
+            corporateEmail: row['Corporate Email'] || row.corporateEmail || null,
+            userId: null
+          };
+
+          // Handle manager ID if provided
           if (row['Manager ID'] || row.managerId) {
             const managerId = parseInt(row['Manager ID'] || row.managerId);
-            employeeData.managerId = !isNaN(managerId) ? managerId : null;
+            employeeData.directManager = !isNaN(managerId) ? managerId : null;
           }
           
           const result = await storage.createEmployee(employeeData);
@@ -1650,13 +1644,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const config = await storage.getSystemConfig();
           const ticketIdPrefix = config?.ticketIdPrefix || 'TKT-';
           
-          // Generate ticket sequence number
+          // Generate unique ticket sequence number using timestamp for uniqueness
           const existingTickets = await storage.getAllTickets();
-          const nextTicketNumber = existingTickets.length + 1;
+          const nextTicketNumber = existingTickets.length + index + 1;
+          const timestamp = Date.now();
+          const uniqueTicketId = row['Ticket ID'] || row.ticketId || `${ticketIdPrefix}${String(nextTicketNumber).padStart(4, '0')}`;
           
           const ticketData: any = {
-            // Generate ticketId if not provided
-            ticketId: row['Ticket ID'] || row.ticketId || `${ticketIdPrefix}${String(nextTicketNumber + index).padStart(4, '0')}`,
+            ticketId: uniqueTicketId,
             summary: row['Summary'] || row.summary || 'Imported Ticket',
             description: row['Description'] || row.description || '',
             category: row['Category'] || row.category || '',
