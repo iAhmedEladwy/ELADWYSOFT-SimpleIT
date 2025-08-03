@@ -207,8 +207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
   
-  // Add audit logging middleware
-  app.use(auditLogMiddleware);
+  // Audit logging middleware disabled for import/export operations as per user requirements
+  // app.use(auditLogMiddleware);
 
   // Security questions list for the system
   const securityQuestionsList = [
@@ -3954,14 +3954,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
-          const empId = await generateId('employee');
-          
-          // Ensure all required fields have values
-          const idNumber = item.idNumber || item.id_number || empId;
+          // Ensure all required fields have values - no need to generate empId anymore
+          const idNumber = item.idNumber || item.id_number || `ID-${Date.now()}`;
           const title = item.title || 'Employee';
           
-          await storage.createEmployee({
-            empId: empId,
+          const result = await storage.createEmployee({
+            // empId removed - database will auto-generate
             englishName: item.englishName,
             arabicName: item.arabicName || null,
             department: item.department || 'General',

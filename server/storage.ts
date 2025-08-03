@@ -640,18 +640,14 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Generate unique emp_id automatically using sequence
-      const empIdResult = await pool.query('SELECT nextval(\'employees_id_seq\') as next_id');
-      const nextId = empIdResult.rows[0].next_id;
-      const generatedEmpId = `EMP-${nextId.toString().padStart(5, '0')}`;
-
+      // Let database auto-generate emp_id, exclude from INSERT
       const query = `
         INSERT INTO employees (
-          emp_id, english_name, arabic_name, department, id_number, title, 
+          english_name, arabic_name, department, id_number, title, 
           employment_type, joining_date, status, personal_email, corporate_email,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
         ) RETURNING *
       `;
       
@@ -659,7 +655,6 @@ export class DatabaseStorage implements IStorage {
       const joiningDate = employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0];
       
       const values = [
-        employee.empId,
         employee.englishName,
         employee.arabicName || null,
         employee.department,
@@ -671,9 +666,6 @@ export class DatabaseStorage implements IStorage {
         employee.personalEmail || null,
         employee.corporateEmail || null
       ];
-      
-      console.log('Creating employee with query:', query);
-      console.log('Values:', values);
       
       const result = await pool.query(query, values);
       
