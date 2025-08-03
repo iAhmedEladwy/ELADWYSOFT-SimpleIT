@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Search, Users, Ticket, Package } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import {
   Tabs,
@@ -94,18 +94,7 @@ function SystemConfig() {
   const [emailFromName, setEmailFromName] = useState('');
   const [emailSecure, setEmailSecure] = useState(true);
   
-  // Import/Export states
-  const [importing, setImporting] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [importType, setImportType] = useState<'employees' | 'assets' | 'tickets'>('employees');
-  const [exportType, setExportType] = useState<'employees' | 'assets' | 'tickets'>('employees');
-  const [csvData, setCsvData] = useState<any[]>([]);
-  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
-  const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
-  const [importResults, setImportResults] = useState<any>(null);
-  const [importErrors, setImportErrors] = useState<any[]>([]);
-  const [importProgress, setImportProgress] = useState(0);
-  const [showResults, setShowResults] = useState(false);
+  
 
   // Asset Management form states
   const [newTypeName, setNewTypeName] = useState('');
@@ -664,30 +653,7 @@ function SystemConfig() {
     },
   });
 
-  // Import mutation
-  const importMutation = useMutation({
-    mutationFn: (data: { type: string; data: any[]; mapping: Record<string, string> }) =>
-      apiRequest(`/api/import/${data.type}`, 'POST', { data: data.data, mapping: data.mapping }),
-    onSuccess: (result: any) => {
-      queryClient.invalidateQueries();
-      setImporting(false);
-      setImportType(null);
-      setCsvData([]);
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' 
-          ? `Successfully imported ${result.imported || 0} records` 
-          : `تم استيراد ${result.imported || 0} سجل بنجاح`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to import data' : 'فشل استيراد البيانات',
-        variant: 'destructive'
-      });
-    }
-  });
+  
 
   // Remove demo data mutation
   const removeDemoDataMutation = useMutation({
@@ -729,267 +695,7 @@ function SystemConfig() {
 
 
 
-  // Import/Export handlers
-  const handleExport = async (type: 'employees' | 'assets' | 'tickets') => {
-    setExporting(true);
-    setExportType(type);
-    
-    try {
-      const response = await apiRequest(`/api/export/${type}`, { method: 'GET' });
-      const data = await response.text();
-      
-      // Create and download file
-      const blob = new Blob([data], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
-        description: language === 'English' 
-          ? `${type} data has been exported successfully.` 
-          : `تم تصدير بيانات ${type === 'employees' ? 'الموظفين' : type === 'assets' ? 'الأصول' : 'التذاكر'} بنجاح.`,
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: language === 'English' ? 'Export Failed' : 'فشل التصدير',
-        description: language === 'English' 
-          ? 'Failed to export data. Please try again.' 
-          : 'فشل في تصدير البيانات. يرجى المحاولة مرة أخرى.',
-        variant: 'destructive',
-      });
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleDownloadTemplate = (type: 'employees' | 'assets' | 'tickets') => {
-    try {
-      let csvContent = '';
-      let filename = '';
-      
-      if (type === 'employees') {
-        csvContent = 'empId,englishName,arabicName,department,idNumber,title,directManager,employmentType,joiningDate,exitDate,status,personalMobile,workMobile,personalEmail,corporateEmail\n';
-        csvContent += 'EMP-001,John Doe,جون دو,IT,123456789,Software Engineer,,Full-time,2024-01-01,,Active,+1234567890,+1234567891,john@personal.com,john@company.com';
-        filename = 'employees_template.csv';
-      } else if (type === 'assets') {
-        csvContent = 'assetId,type,brand,modelNumber,modelName,serialNumber,specs,cpu,ram,storage,status,purchaseDate,buyPrice,warrantyExpiryDate,lifeSpan,outOfBoxOs,assignedEmployeeId\n';
-        csvContent += 'AST-001,Laptop,Dell,XPS-13,XPS 13 9310,ABC123456,Intel i7 16GB RAM,Intel i7-1165G7,16GB,512GB SSD,Active,2024-01-01,1200.00,2026-01-01,3 years,Windows 11,1';
-        filename = 'assets_template.csv';
-      } else if (type === 'tickets') {
-        csvContent = 'ticketId,submittedById,requestType,category,priority,urgency,impact,summary,description,relatedAssetId,status,assignedToId,resolution,dueDate,tags\n';
-        csvContent += 'TKT-001,1,Incident,Hardware,Medium,Medium,Medium,Laptop not working,The laptop is not turning on,1,Open,2,,2024-02-01,hardware;urgent';
-        filename = 'tickets_template.csv';
-      }
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
-        description: language === 'English' 
-          ? 'CSV template has been downloaded successfully.' 
-          : 'تم تنزيل قالب CSV بنجاح.',
-      });
-    } catch (error) {
-      console.error('Template download error:', error);
-      toast({
-        title: language === 'English' ? 'Download Failed' : 'فشل التنزيل',
-        description: language === 'English' 
-          ? 'Failed to download template. Please try again.' 
-          : 'فشل في تنزيل القالب. يرجى المحاولة مرة أخرى.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const parseCSV = (csvText: string): any[] => {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = [];
-      let currentValue = '';
-      let inQuotes = false;
-      
-      for (let j = 0; j < lines[i].length; j++) {
-        const char = lines[i][j];
-        
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(currentValue.trim());
-          currentValue = '';
-        } else {
-          currentValue += char;
-        }
-      }
-      
-      values.push(currentValue.trim());
-      
-      if (values.length === headers.length) {
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        data.push(row);
-      }
-    }
-    
-    return data;
-  };
-
-  const validateData = (data: any[], type: 'employees' | 'assets' | 'tickets'): { valid: any[], errors: any[] } => {
-    const valid = [];
-    const errors = [];
-    
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      const rowErrors = [];
-      
-      if (type === 'employees') {
-        if (!row.englishName) rowErrors.push('English name is required');
-        if (!row.department) rowErrors.push('Department is required');
-        if (row.employmentType && !['Full-time', 'Part-time', 'Contract', 'Intern'].includes(row.employmentType)) {
-          rowErrors.push('Invalid employment type');
-        }
-        if (row.status && !['Active', 'Resigned', 'Terminated', 'On Leave'].includes(row.status)) {
-          rowErrors.push('Invalid status');
-        }
-      } else if (type === 'assets') {
-        if (!row.type) rowErrors.push('Asset type is required');
-        if (!row.brand) rowErrors.push('Brand is required');
-        if (!row.serialNumber) rowErrors.push('Serial number is required');
-        if (row.status && !['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'].includes(row.status)) {
-          rowErrors.push('Invalid status');
-        }
-      } else if (type === 'tickets') {
-        if (!row.summary || row.summary.length < 5) rowErrors.push('Summary is required (min 5 characters)');
-        if (!row.description || row.description.length < 10) rowErrors.push('Description is required (min 10 characters)');
-        if (!row.submittedById) rowErrors.push('Submitted by ID is required');
-        if (row.priority && !['Low', 'Medium', 'High', 'Critical'].includes(row.priority)) {
-          rowErrors.push('Invalid priority');
-        }
-      }
-      
-      if (rowErrors.length > 0) {
-        errors.push({ row: i + 2, message: rowErrors.join(', ') });
-      } else {
-        valid.push(row);
-      }
-    }
-    
-    return { valid, errors };
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      toast({
-        title: language === 'English' ? 'Invalid File Type' : 'نوع ملف غير صالح',
-        description: language === 'English' 
-          ? 'Please select a CSV file.' 
-          : 'يرجى اختيار ملف CSV.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast({
-        title: language === 'English' ? 'File Too Large' : 'الملف كبير جداً',
-        description: language === 'English' 
-          ? 'File size must be less than 10MB.' 
-          : 'يجب أن يكون حجم الملف أقل من 10 ميجابايت.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setImporting(true);
-    setImportProgress(0);
-    
-    try {
-      const text = await file.text();
-      setImportProgress(25);
-      
-      const parsedData = parseCSV(text);
-      setImportProgress(50);
-      
-      const { valid, errors } = validateData(parsedData, importType);
-      setImportProgress(75);
-      
-      if (valid.length === 0 && errors.length > 0) {
-        setImportErrors(errors);
-        setImportResults({ successful: 0, failed: errors.length, total: parsedData.length });
-        setShowResults(true);
-        setImportProgress(100);
-        return;
-      }
-      
-      // Import valid records
-      const response = await apiRequest(`/api/import/${importType}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: valid }),
-      });
-      
-      const result = await response.json();
-      setImportProgress(100);
-      
-      setImportResults({
-        successful: result.successful || valid.length,
-        failed: errors.length,
-        total: parsedData.length
-      });
-      setImportErrors(errors);
-      setShowResults(true);
-      
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      
-      toast({
-        title: language === 'English' ? 'Import Completed' : 'تم الاستيراد',
-        description: language === 'English' 
-          ? `Successfully imported ${result.successful || valid.length} records.` 
-          : `تم استيراد ${result.successful || valid.length} سجل بنجاح.`,
-      });
-      
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({
-        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
-        description: language === 'English' 
-          ? 'Failed to import data. Please check the file format and try again.' 
-          : 'فشل في استيراد البيانات. يرجى التحقق من تنسيق الملف والمحاولة مرة أخرى.',
-        variant: 'destructive',
-      });
-    } finally {
-      setImporting(false);
-      // Reset file input
-      event.target.value = '';
-    }
-  };
+  
 
   // Configuration handlers
   const handleSaveConfig = () => {
@@ -1267,21 +973,7 @@ function SystemConfig() {
     });
   };
 
-  // Import/Export functionality moved to Import/Export handlers above
-
-  const handleOldExport = (type: 'employees' | 'assets') => {
-    window.open(`/api/${type}/export`, '_blank');
-  };
-
-  const handleImport = () => {
-    if (!importType || csvData.length === 0) return;
-    
-    importMutation.mutate({
-      type: importType,
-      data: csvData,
-      mapping: fieldMapping
-    });
-  };
+  
 
   const translations = {
     systemConfig: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
@@ -1309,7 +1001,6 @@ function SystemConfig() {
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     add: language === 'English' ? 'Add' : 'إضافة',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
-    exportImport: language === 'English' ? 'Export/Import' : 'تصدير/استيراد',
     noData: language === 'English' ? 'No items found' : 'لم يتم العثور على عناصر',
     addRequestType: language === 'English' ? 'Add Request Type' : 'إضافة نوع طلب',
     clearAuditLogs: language === 'English' ? 'Clear Audit Logs' : 'مسح سجلات المراجعة',
@@ -1329,7 +1020,7 @@ function SystemConfig() {
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-7 lg:max-w-7xl mb-4">
+        <TabsList className="grid grid-cols-6 lg:max-w-6xl mb-4">
           <TabsTrigger value="general">
             <Globe className="h-4 w-4 mr-2" />
             {translations.general}
@@ -1353,10 +1044,6 @@ function SystemConfig() {
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             {language === 'English' ? 'Users & Roles' : 'المستخدمين والأدوار'}
-          </TabsTrigger>
-          <TabsTrigger value="import-export">
-            <Upload className="h-4 w-4 mr-2" />
-            {language === 'English' ? 'Import/Export' : 'الاستيراد/التصدير'}
           </TabsTrigger>
         </TabsList>
 
@@ -1539,136 +1226,7 @@ function SystemConfig() {
                     </div>
                   </div>
 
-                  <Card className="mt-6">
-                    <CardHeader>
-                      <CardTitle>{translations.exportImport}</CardTitle>
-                      <CardDescription>
-                        {language === 'English' 
-                          ? 'Export and import data for employees and assets.' 
-                          : 'تصدير واستيراد البيانات للموظفين والأصول.'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">{language === 'English' ? 'Export Data' : 'تصدير البيانات'}</h3>
-                          <div className="space-y-2">
-                            <Button 
-                              variant="outline" 
-                              className="w-full justify-start"
-                              onClick={() => handleExport('employees')}
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              {language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="w-full justify-start"
-                              onClick={() => handleExport('assets')}
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              {language === 'English' ? 'Export Assets' : 'تصدير الأصول'}
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">{language === 'English' ? 'Import Data' : 'استيراد البيانات'}</h3>
-                          <div className="space-y-2">
-                            <div>
-                              <Label htmlFor="employee-upload" className="cursor-pointer">
-                                <Button variant="outline" className="w-full justify-start" asChild>
-                                  <span>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    {language === 'English' ? 'Import Employees' : 'استيراد الموظفين'}
-                                  </span>
-                                </Button>
-                              </Label>
-                              <input
-                                id="employee-upload"
-                                type="file"
-                                accept=".csv"
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, 'employees')}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="asset-upload" className="cursor-pointer">
-                                <Button variant="outline" className="w-full justify-start" asChild>
-                                  <span>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    {language === 'English' ? 'Import Assets' : 'استيراد الأصول'}
-                                  </span>
-                                </Button>
-                              </Label>
-                              <input
-                                id="asset-upload"
-                                type="file"
-                                accept=".csv"
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, 'assets')}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {importing && (
-                        <div className="mt-6 p-4 border rounded-lg bg-muted/50">
-                          <h4 className="font-medium mb-4">
-                            {language === 'English' ? 'Configure Import Mapping' : 'تكوين خريطة الاستيراد'}
-                          </h4>
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {csvHeaders.map((header, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <Label className="w-1/3 text-sm">{header}</Label>
-                                <Select
-                                  value={fieldMapping[header] || ''}
-                                  onValueChange={(value) => setFieldMapping(prev => ({ ...prev, [header]: value }))}
-                                >
-                                  <SelectTrigger className="w-2/3">
-                                    <SelectValue placeholder="Select field" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {importType === 'employees' ? (
-                                      <>
-                                        <SelectItem value="name">Name</SelectItem>
-                                        <SelectItem value="email">Email</SelectItem>
-                                        <SelectItem value="phone">Phone</SelectItem>
-                                        <SelectItem value="department">Department</SelectItem>
-                                        <SelectItem value="position">Position</SelectItem>
-                                        <SelectItem value="employeeId">Employee ID</SelectItem>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <SelectItem value="assetId">Asset ID</SelectItem>
-                                        <SelectItem value="type">Type</SelectItem>
-                                        <SelectItem value="brand">Brand</SelectItem>
-                                        <SelectItem value="modelName">Model Name</SelectItem>
-                                        <SelectItem value="serialNumber">Serial Number</SelectItem>
-                                        <SelectItem value="status">Status</SelectItem>
-                                      </>
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex justify-end space-x-2 mt-4">
-                            <Button variant="outline" onClick={() => setImporting(false)}>
-                              {language === 'English' ? 'Cancel' : 'إلغاء'}
-                            </Button>
-                            <Button onClick={handleImport} disabled={importMutation.isPending}>
-                              {importMutation.isPending ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : null}
-                              {language === 'English' ? 'Import' : 'استيراد'}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  
                 </div>
               )}
             </CardContent>
@@ -3312,232 +2870,7 @@ function SystemConfig() {
           </Card>
         </TabsContent>
 
-        {/* Import/Export Tab */}
-        <TabsContent value="import-export">
-          <div className="space-y-6">
-            {/* Export Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  {language === 'English' ? 'Export Data' : 'تصدير البيانات'}
-                </CardTitle>
-                <CardDescription>
-                  {language === 'English' 
-                    ? 'Download your system data as CSV files for backup or reporting purposes.'
-                    : 'تنزيل بيانات النظام كملفات CSV للنسخ الاحتياطي أو لأغراض التقارير.'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button
-                      onClick={() => handleExport('employees')}
-                      disabled={exporting}
-                      className="h-24 flex flex-col items-center justify-center gap-2"
-                      variant="outline"
-                    >
-                      {exporting && exportType === 'employees' ? (
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      ) : (
-                        <Users className="h-8 w-8" />
-                      )}
-                      <span>{language === 'English' ? 'Export Employees' : 'تصدير الموظفين'}</span>
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleExport('assets')}
-                      disabled={exporting}
-                      className="h-24 flex flex-col items-center justify-center gap-2"
-                      variant="outline"
-                    >
-                      {exporting && exportType === 'assets' ? (
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      ) : (
-                        <Package className="h-8 w-8" />
-                      )}
-                      <span>{language === 'English' ? 'Export Assets' : 'تصدير الأصول'}</span>
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleExport('tickets')}
-                      disabled={exporting}
-                      className="h-24 flex flex-col items-center justify-center gap-2"
-                      variant="outline"
-                    >
-                      {exporting && exportType === 'tickets' ? (
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      ) : (
-                        <Ticket className="h-8 w-8" />
-                      )}
-                      <span>{language === 'English' ? 'Export Tickets' : 'تصدير التذاكر'}</span>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Import Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
-                </CardTitle>
-                <CardDescription>
-                  {language === 'English' 
-                    ? 'Upload CSV files to import employees, assets, or tickets into your system.'
-                    : 'رفع ملفات CSV لاستيراد الموظفين أو الأصول أو التذاكر إلى النظام.'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Import Type Selection */}
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Select Data Type' : 'اختر نوع البيانات'}</Label>
-                    <Select value={importType} onValueChange={(value: 'employees' | 'assets' | 'tickets') => setImportType(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employees">{language === 'English' ? 'Employees' : 'الموظفين'}</SelectItem>
-                        <SelectItem value="assets">{language === 'English' ? 'Assets' : 'الأصول'}</SelectItem>
-                        <SelectItem value="tickets">{language === 'English' ? 'Tickets' : 'التذاكر'}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Template Download */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div className="text-center space-y-4">
-                      <FileText className="h-12 w-12 mx-auto text-gray-400" />
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {language === 'English' ? 'Download Template' : 'تنزيل القالب'}
-                        </h3>
-                        <p className="text-gray-600">
-                          {language === 'English' 
-                            ? 'Download a CSV template with the correct format and required fields.'
-                            : 'تنزيل قالب CSV بالتنسيق الصحيح والحقول المطلوبة.'}
-                        </p>
-                      </div>
-                      <Button onClick={() => handleDownloadTemplate(importType)} variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        {language === 'English' ? `Download ${importType} Template` : `تنزيل قالب ${importType === 'employees' ? 'الموظفين' : importType === 'assets' ? 'الأصول' : 'التذاكر'}`}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* File Upload */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div className="text-center space-y-4">
-                      <Upload className="h-12 w-12 mx-auto text-gray-400" />
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {language === 'English' ? 'Upload CSV File' : 'رفع ملف CSV'}
-                        </h3>
-                        <p className="text-gray-600">
-                          {language === 'English' 
-                            ? 'Choose a CSV file or drag and drop it here to import data.'
-                            : 'اختر ملف CSV أو اسحبه وأفلته هنا لاستيراد البيانات.'}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <input
-                          type="file"
-                          accept=".csv"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          id="csv-upload"
-                        />
-                        <Button asChild variant="outline">
-                          <label htmlFor="csv-upload" className="cursor-pointer">
-                            <Upload className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Choose File' : 'اختر ملف'}
-                          </label>
-                        </Button>
-                        {importing && (
-                          <div className="space-y-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                                style={{ width: `${importProgress}%` }}
-                              ></div>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              {language === 'English' ? `Importing... ${importProgress}%` : `جاري الاستيراد... ${importProgress}%`}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Import Results */}
-                  {showResults && importResults && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-green-600">
-                          {language === 'English' ? 'Import Results' : 'نتائج الاستيراد'}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="text-center p-4 bg-green-50 rounded-lg">
-                              <div className="text-2xl font-bold text-green-600">{importResults.successful || 0}</div>
-                              <div className="text-sm text-green-800">
-                                {language === 'English' ? 'Successful' : 'ناجح'}
-                              </div>
-                            </div>
-                            <div className="text-center p-4 bg-red-50 rounded-lg">
-                              <div className="text-2xl font-bold text-red-600">{importResults.failed || 0}</div>
-                              <div className="text-sm text-red-800">
-                                {language === 'English' ? 'Failed' : 'فاشل'}
-                              </div>
-                            </div>
-                            <div className="text-center p-4 bg-blue-50 rounded-lg">
-                              <div className="text-2xl font-bold text-blue-600">{importResults.total || 0}</div>
-                              <div className="text-sm text-blue-800">
-                                {language === 'English' ? 'Total' : 'المجموع'}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {importErrors.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-red-600">
-                                {language === 'English' ? 'Errors Found:' : 'أخطاء موجودة:'}
-                              </h4>
-                              <div className="max-h-40 overflow-y-auto space-y-1">
-                                {importErrors.map((error, index) => (
-                                  <div key={index} className="text-sm p-2 bg-red-50 rounded border">
-                                    <span className="font-medium">Row {error.row}:</span> {error.message}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <Button 
-                            onClick={() => {
-                              setShowResults(false);
-                              setImportResults(null);
-                              setImportErrors([]);
-                            }}
-                            className="w-full"
-                          >
-                            {language === 'English' ? 'Close' : 'إغلاق'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+        
       </Tabs>
     </div>
   );

@@ -256,7 +256,7 @@ export default function Employees() {
     try {
       await Promise.all(
         selectedEmployees.map(id => 
-          apiRequest('DELETE', `/api/employees/${id}`)
+          apiRequest(`/api/employees/${id}`, 'DELETE')
         )
       );
       
@@ -281,7 +281,7 @@ export default function Employees() {
     try {
       await Promise.all(
         selectedEmployees.map(id => 
-          apiRequest('PUT', `/api/employees/${id}`, { 
+          apiRequest(`/api/employees/${id}`, 'PUT', { 
             status: newStatus,
             isActive: newStatus === 'Active'
           })
