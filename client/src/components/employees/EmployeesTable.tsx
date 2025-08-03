@@ -237,7 +237,7 @@ export default function EmployeesTable({
                 <TableCell className="font-medium">{employee.employeeId || employee.empId}</TableCell>
                 <TableCell>
                   <button 
-                    className="text-gray-900 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-left cursor-pointer transition-all duration-200 font-medium hover:underline decoration-blue-600 decoration-2 underline-offset-2"
+                    className="text-gray-900 px-2 py-1 rounded text-left cursor-pointer font-medium"
                     onClick={() => onEdit(employee)}
                   >
                     {employee.englishName || 'N/A'}
