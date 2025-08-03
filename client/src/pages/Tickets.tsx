@@ -367,13 +367,14 @@ export default function Tickets() {
       </div>
 
       {/* Main Tickets Table */}
-      <EnhancedTicketTable 
+      <TicketsTable 
         tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
         employees={Array.isArray(employees) ? employees : []}
         assets={Array.isArray(assets) ? assets : []}
         users={Array.isArray(users) ? users : []}
-        isLoading={isLoading}
-        onTicketSelect={(ticket) => setSelectedTicket(ticket)}
+        onStatusChange={handleStatusChange}
+        onAssign={handleAssignTicket}
+        onEdit={(ticket) => setSelectedTicket(ticket)}
       />
 
 

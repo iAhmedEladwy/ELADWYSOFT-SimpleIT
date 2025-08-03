@@ -323,6 +323,90 @@ export const upgradeHistory = pgTable("upgrade_history", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Tickets table
+export const tickets = pgTable("tickets", {
+  id: serial("id").primaryKey(),
+  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
+  summary: varchar("summary", { length: 255 }),
+  description: text("description").notNull(),
+  requestType: varchar("request_type", { length: 100 }).notNull().default('Hardware'),
+  category: varchar("category", { length: 100 }).notNull().default('Incident'),
+  priority: ticketPriorityEnum("priority").notNull().default('Medium'),
+  urgency: varchar("urgency", { length: 50 }).notNull().default('Medium'),
+  impact: varchar("impact", { length: 50 }).notNull().default('Medium'),
+  status: ticketStatusEnum("status").notNull().default('Open'),
+  submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
+  assignedToId: integer("assigned_to_id").references(() => users.id),
+  relatedAssetId: integer("related_asset_id").references(() => assets.id),
+  resolution: text("resolution"),
+  resolutionNotes: text("resolution_notes"),
+  dueDate: timestamp("due_date"),
+  slaTarget: timestamp("sla_target"),
+  escalationLevel: varchar("escalation_level", { length: 10 }).default('0'),
+  tags: text("tags"),
+  privateNotes: text("private_notes"),
+  timeSpent: integer("time_spent").default(0), // in minutes
+  isTimeTracking: boolean("is_time_tracking").default(false),
+  timeTrackingStartedAt: timestamp("time_tracking_started_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket History/Audit Trail
+export const ticketHistory = pgTable("ticket_history", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  changeDescription: text("change_description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Ticket Comments
+export const ticketComments = pgTable("ticket_comments", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  isPrivate: boolean("is_private").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// System configuration table
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
+  assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('AST'),
+  employeeIdPrefix: varchar("employee_id_prefix", { length: 10 }).notNull().default('EMP'),
+  ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT'),
+  companyName: varchar("company_name", { length: 255 }).notNull().default('SimpleIT'),
+  companyAddress: text("company_address"),
+  companyPhone: varchar("company_phone", { length: 50 }),
+  companyEmail: varchar("company_email", { length: 100 }),
+  companyWebsite: varchar("company_website", { length: 255 }),
+  defaultCurrency: varchar("default_currency", { length: 10 }).notNull().default('USD'),
+  enableAuditLogs: boolean("enable_audit_logs").default(true),
+  auditLogRetentionDays: integer("audit_log_retention_days").default(365),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Audit logs table
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: integer("entity_id"),
+  details: json("details"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Tickets table with enhanced features and ITIL compliance
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),

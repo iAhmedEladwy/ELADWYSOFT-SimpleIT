@@ -392,33 +392,7 @@ export default function Employees() {
                 {translations.export}
               </Button>
               
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {translations.import}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{translations.import}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <Input
-                      type="file"
-                      accept=".csv,.xlsx"
-                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    />
-                    <Button 
-                      onClick={handleImport} 
-                      disabled={!importFile || isImporting}
-                      className="w-full"
-                    >
-                      {isImporting ? 'Importing...' : translations.import}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              
               
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>

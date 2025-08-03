@@ -212,7 +212,18 @@ export default function EmployeesTable({
             employees.map((employee) => (
               <TableRow 
                 key={employee.id}
-                className="hover:bg-muted/50"
+                className="hover:bg-muted/50 cursor-pointer"
+                onClick={(e) => {
+                  // Prevent row click when clicking on checkbox or action buttons
+                  if (e.target instanceof HTMLElement && 
+                      (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('button') || 
+                       e.target.closest('[role="button"]') ||
+                       e.target.closest('.dropdown-menu'))) {
+                    return;
+                  }
+                  onEdit(employee);
+                }}
               >
                 {onSelectionChange && (
                   <TableCell className="w-12">

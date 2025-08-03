@@ -289,7 +289,18 @@ export default function AssetsTable({
             assets.map((asset) => (
               <TableRow 
                 key={asset.id}
-                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500"
+                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
+                onClick={(e) => {
+                  // Prevent row click when clicking on checkbox or action buttons
+                  if (e.target instanceof HTMLElement && 
+                      (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('button') || 
+                       e.target.closest('[role="button"]') ||
+                       e.target.closest('.dropdown-menu'))) {
+                    return;
+                  }
+                  onEdit(asset);
+                }}
               >
                 {hasAccess(3) && (
                   <TableCell>

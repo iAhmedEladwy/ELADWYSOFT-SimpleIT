@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -44,6 +47,7 @@ interface TicketsTableProps {
   users: any[];
   onStatusChange: (id: number, status: string, resolutionNotes?: string) => void;
   onAssign: (id: number, userId: number) => void;
+  onEdit?: (ticket: any) => void;
 }
 
 export default function TicketsTable({
@@ -53,15 +57,76 @@ export default function TicketsTable({
   users,
   onStatusChange,
   onAssign,
+  onEdit,
 }: TicketsTableProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
+  const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  // Fetch custom request types
+  const { data: customRequestTypes = [] } = useQuery({
+    queryKey: ['/api/custom-request-types'],
+    queryFn: async () => {
+      const response = await apiRequest('/api/custom-request-types');
+      return response.json();
+    },
+  });
+
+  // Combined request types (default + custom)
+  const requestTypes = [
+    { id: 'hardware', name: 'Hardware' },
+    { id: 'software', name: 'Software' },
+    { id: 'network', name: 'Network' },
+    { id: 'other', name: 'Other' },
+    ...customRequestTypes.filter((type: any) => type.isActive !== false)
+  ];
+
+  // Update ticket mutation
+  const updateTicketMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
+      const response = await apiRequest(`/api/tickets/${id}`, 'PATCH', updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Start editing function
+  const startEditing = (ticketId: number, field: string, currentValue: string) => {
+    setEditingField({ ticketId, field });
+    setEditValue(currentValue);
+  };
+
+  // Handle inline edit save
+  const handleInlineEdit = (ticketId: number, field: string, value: string) => {
+    updateTicketMutation.mutate({ 
+      id: ticketId, 
+      updates: { [field]: value } 
+    });
+    setEditingField(null);
+    setEditValue('');
+  };
 
   // Translations
   const translations = {
@@ -217,12 +282,57 @@ export default function TicketsTable({
         </TableHeader>
         <TableBody>
           {tickets.map((ticket: any) => (
-            <TableRow key={ticket.id}>
+            <TableRow 
+              key={ticket.id}
+              className="hover:bg-muted/50 cursor-pointer"
+              onClick={(e) => {
+                // Prevent row click when clicking on action buttons or dropdowns
+                if (e.target instanceof HTMLElement && 
+                    (e.target.closest('button') || 
+                     e.target.closest('[role="button"]') ||
+                     e.target.closest('.dropdown-menu'))) {
+                  return;
+                }
+                if (onEdit) {
+                  onEdit(ticket);
+                }
+              }}
+            >
               <TableCell className="font-medium">{ticket.ticketId}</TableCell>
               <TableCell>
                 {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
               </TableCell>
-              <TableCell>{ticket.requestType}</TableCell>
+              <TableCell>
+                {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
+                  <Select
+                    value={editValue}
+                    onValueChange={(value) => {
+                      handleInlineEdit(ticket.id, 'requestType', value);
+                    }}
+                  >
+                    <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {requestTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.name}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span 
+                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(ticket.id, 'requestType', ticket.requestType || 'Hardware');
+                    }}
+                  >
+                    {ticket.requestType || "Hardware"}
+                  </span>
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={getPriorityBadgeVariant(ticket.priority)}>
                   {ticket.priority}
