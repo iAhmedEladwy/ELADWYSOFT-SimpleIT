@@ -651,15 +651,18 @@ export class DatabaseStorage implements IStorage {
         ) RETURNING *
       `;
       
+      // Ensure joining_date has a value
+      const joiningDate = employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0];
+      
       const values = [
         employee.empId,
         employee.englishName,
         employee.arabicName || null,
         employee.department,
-        employee.idNumber,
-        employee.title,
+        employee.idNumber || employee.nationalId,
+        employee.title || employee.position,
         employee.employmentType || 'Full-time',
-        employee.joiningDate,
+        joiningDate,
         employee.status || 'Active',
         employee.personalEmail || null,
         employee.corporateEmail || null

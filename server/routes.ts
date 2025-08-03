@@ -39,7 +39,7 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
         prefix = config?.assetIdPrefix || 'AST-';
         break;
       case 'employee':
-        prefix = config?.empIdPrefix || 'EMP-';
+        prefix = config?.employeeIdPrefix || 'EMP-';
         break;
       case 'ticket':
         prefix = config?.ticketIdPrefix || 'TKT-';
@@ -47,6 +47,8 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
       default:
         prefix = 'ID-';
     }
+    
+    console.log('generateId called with entityType:', entityType, 'prefix:', prefix);
     
     if (customNumber) {
       nextNumber = customNumber;
@@ -63,15 +65,34 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
       
       // Find highest number with this prefix
       let maxNumber = 0;
+      console.log('Checking existing items for prefix:', prefix, 'total items:', existingItems.length);
       existingItems.forEach((item: any) => {
-        if (item.id && item.id.startsWith(prefix)) {
-          const numberPart = item.id.replace(prefix, '');
+        let itemId: string;
+        switch (entityType) {
+          case 'asset':
+            itemId = item.assetId || item.id;
+            break;
+          case 'employee':
+            itemId = item.empId || item.id;
+            break;
+          case 'ticket':
+            itemId = item.ticketId || item.id;
+            break;
+          default:
+            itemId = item.id;
+        }
+        
+        if (itemId && itemId.startsWith(prefix)) {
+          const numberPart = itemId.replace(prefix, '');
           const num = parseInt(numberPart);
           if (!isNaN(num) && num > maxNumber) {
             maxNumber = num;
           }
+          console.log('Found existing item with id:', itemId, 'extracted number:', num);
         }
       });
+      
+      console.log('Max number found:', maxNumber);
       
       nextNumber = maxNumber + 1;
     }
@@ -3933,19 +3954,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
+          const empId = await generateId('employee');
+          
+          // Ensure all required fields have values
+          const idNumber = item.idNumber || item.id_number || empId;
+          const title = item.title || 'Employee';
+          
           await storage.createEmployee({
-            empId: item.empId,
+            empId: empId,
             englishName: item.englishName,
             arabicName: item.arabicName || null,
-            department: item.department || null,
-            nationalId: item.idNumber || null,
-            position: item.title || null,
+            department: item.department || 'General',
+            nationalId: idNumber,
+            position: title,
             managerId: item.directManager ? parseInt(item.directManager) : null,
             employmentType: item.employmentType || 'Full-time',
-            startDate: item.joiningDate || null,
+            joiningDate: item.joiningDate || item.startDate || new Date().toISOString().split('T')[0],
             status: item.status || 'Active',
-            phone: item.personalMobile || null,
-            email: item.personalEmail || null
+            personalMobile: item.personalMobile || null,
+            personalEmail: item.personalEmail || null
           });
           successful++;
         } catch (error: any) {
@@ -3971,8 +3998,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
+          const assetId = await generateId('AST');
           await storage.createAsset({
-            assetId: item.assetId,
+            assetId: assetId,
             type: item.type,
             brand: item.brand,
             modelNumber: item.modelNumber || null,
@@ -4014,8 +4042,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
+          const ticketId = await generateId('TKT');
           await storage.createTicket({
-            ticketId: item.ticketId,
+            ticketId: ticketId,
             submittedById: parseInt(item.submittedById),
             requestType: item.requestType || 'Other',
             category: item.category || 'Other',
