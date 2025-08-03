@@ -1167,6 +1167,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Helper function to map employee status from import data
+  function mapEmployeeStatus(status: string): string {
+    if (!status) return 'Active';
+    
+    const statusMap: Record<string, string> = {
+      'Active': 'Active',
+      'Inactive': 'Resigned', // Map Inactive to Resigned
+      'Resigned': 'Resigned',
+      'Terminated': 'Terminated',
+      'On Leave': 'On Leave',
+      'Leave': 'On Leave'
+    };
+    
+    return statusMap[status] || 'Active';
+  }
+
   // Employee Import/Export
   app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
@@ -1198,7 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               employmentType: data.employmentType as any,
               joiningDate: new Date(data.joiningDate),
               exitDate: data.exitDate ? new Date(data.exitDate) : null,
-              status: (data.status || 'Active') as any,
+              status: mapEmployeeStatus(data.status) as any,
               personalMobile: data.personalMobile || null,
               workMobile: data.workMobile || null,
               personalEmail: data.personalEmail || null,
@@ -1217,6 +1233,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           for (const employee of results) {
             try {
+              // Check if employee already exists by empId
+              const existingEmployee = await storage.getEmployeeByEmpId(employee.empId);
+              if (existingEmployee) {
+                errors.push({ 
+                  employee: employee.englishName, 
+                  error: `Employee with ID ${employee.empId} already exists` 
+                });
+                continue;
+              }
+              
               const newEmployee = await storage.createEmployee(employee);
               importedEmployees.push(newEmployee);
               
@@ -1231,7 +1257,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
               }
             } catch (error: unknown) {
-              errors.push({ employee: employee.englishName, error: error.message });
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              errors.push({ 
+                employee: employee.englishName, 
+                error: errorMessage.includes('duplicate key') ? 
+                  `Employee with ID ${employee.empId} already exists` : 
+                  errorMessage 
+              });
             }
           }
           

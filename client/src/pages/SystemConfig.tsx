@@ -3276,8 +3276,8 @@ function SystemConfig() {
                                   {language === 'English' ? 'Warnings:' : 'تحذيرات:'}
                                 </p>
                                 <ul className="text-xs text-yellow-700 space-y-1">
-                                  {importResults.errors.slice(0, 5).map((error: string, index: number) => (
-                                    <li key={index}>• {error}</li>
+                                  {importResults.errors.slice(0, 5).map((error: any, index: number) => (
+                                    <li key={index}>• {typeof error === 'string' ? error : JSON.stringify(error)}</li>
                                   ))}
                                   {importResults.errors.length > 5 && (
                                     <li>

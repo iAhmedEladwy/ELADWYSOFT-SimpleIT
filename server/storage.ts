@@ -628,6 +628,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getEmployeeByEmpId(empId: string): Promise<Employee | undefined> {
+    try {
+      const [employee] = await db.select().from(employees).where(eq(employees.empId, empId));
+      return employee;
+    } catch (error) {
+      console.error('Error fetching employee by empId:', error);
+      return undefined;
+    }
+  }
+
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
       // Use successful direct SQL approach that works with the database
