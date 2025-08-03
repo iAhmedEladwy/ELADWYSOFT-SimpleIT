@@ -879,6 +879,82 @@ function SystemConfig() {
     }
   });
 
+  // Department management handler functions
+  const handleAddDepartment = async () => {
+    if (!newDepartment.trim()) return;
+    
+    try {
+      const updatedDepartments = [...departments, newDepartment.trim()];
+      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      setDepartments(updatedDepartments);
+      setNewDepartment('');
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Department added successfully' : 'تم إضافة القسم بنجاح',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add department' : 'فشل في إضافة القسم',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleEditDepartment = (index: number) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(departments[index]);
+  };
+
+  const handleSaveDepartment = async (index: number) => {
+    if (!editedDeptName.trim()) return;
+    
+    try {
+      const updatedDepartments = [...departments];
+      updatedDepartments[index] = editedDeptName.trim();
+      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      setDepartments(updatedDepartments);
+      setEditingDeptIndex(null);
+      setEditedDeptName('');
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Department updated successfully' : 'تم تحديث القسم بنجاح',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to update department' : 'فشل في تحديث القسم',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCancelEditDepartment = () => {
+    setEditingDeptIndex(null);
+    setEditedDeptName('');
+  };
+
+  const handleDeleteDepartment = async (index: number) => {
+    try {
+      const updatedDepartments = departments.filter((_, i) => i !== index);
+      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      setDepartments(updatedDepartments);
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Department deleted successfully' : 'تم حذف القسم بنجاح',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to delete department' : 'فشل في حذف القسم',
+        variant: 'destructive'
+      });
+    }
+  };
+
 
 
   
@@ -899,106 +975,6 @@ function SystemConfig() {
       emailFromAddress: emailFromAddress || null,
       emailFromName: emailFromName || null,
       emailSecure
-    };
-    
-    updateConfigMutation.mutate(configData);
-  };
-
-  // Department handlers
-  const handleAddDepartment = () => {
-    if (!newDepartment.trim()) return;
-    
-    const updatedDepartments = [...departments, newDepartment.trim()];
-    setDepartments(updatedDepartments);
-    setNewDepartment('');
-    
-    // Preserve current tab for restoration after mutation
-    setPreservedTab(activeTab);
-    
-    // Save to backend with all current config data
-    const configData = {
-      language: config?.language || 'en',
-      assetIdPrefix: config?.assetIdPrefix || 'AST-',
-      empIdPrefix: config?.empIdPrefix || 'EMP-',
-      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
-      currency: config?.currency || 'USD',
-      departments: updatedDepartments,
-      emailHost: config?.emailHost || null,
-      emailPort: config?.emailPort || null,
-      emailUser: config?.emailUser || null,
-      emailPassword: config?.emailPassword || null,
-      emailFromAddress: config?.emailFromAddress || null,
-      emailFromName: config?.emailFromName || null,
-      emailSecure: config?.emailSecure !== false
-    };
-    
-    updateConfigMutation.mutate(configData);
-  };
-
-  const handleEditDepartment = (index: number) => {
-    setEditingDeptIndex(index);
-    setEditedDeptName(departments[index]);
-  };
-
-  const handleSaveDepartment = (index: number) => {
-    if (!editedDeptName.trim()) return;
-    
-    const updatedDepartments = [...departments];
-    updatedDepartments[index] = editedDeptName.trim();
-    setDepartments(updatedDepartments);
-    setEditingDeptIndex(null);
-    setEditedDeptName('');
-    
-    // Preserve current tab for restoration after mutation
-    setPreservedTab(activeTab);
-    
-    // Save to backend with all current config data
-    const configData = {
-      language: config?.language || 'en',
-      assetIdPrefix: config?.assetIdPrefix || 'AST-',
-      empIdPrefix: config?.empIdPrefix || 'EMP-',
-      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
-      currency: config?.currency || 'USD',
-      departments: updatedDepartments,
-      emailHost: config?.emailHost || null,
-      emailPort: config?.emailPort || null,
-      emailUser: config?.emailUser || null,
-      emailPassword: config?.emailPassword || null,
-      emailFromAddress: config?.emailFromAddress || null,
-      emailFromName: config?.emailFromName || null,
-      emailSecure: config?.emailSecure !== false
-    };
-    
-    updateConfigMutation.mutate(configData);
-  };
-
-  const handleCancelEditDepartment = () => {
-    setEditingDeptIndex(null);
-    setEditedDeptName('');
-  };
-
-  const handleDeleteDepartment = (index: number) => {
-    const updatedDepartments = departments.filter((_, i) => i !== index);
-    setDepartments(updatedDepartments);
-    
-    // Preserve current tab for restoration after mutation
-    setPreservedTab(activeTab);
-    
-    // Save to backend with all current config data
-    const configData = {
-      language: config?.language || 'en',
-      assetIdPrefix: config?.assetIdPrefix || 'AST-',
-      empIdPrefix: config?.empIdPrefix || 'EMP-',
-      ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
-      currency: config?.currency || 'USD',
-      departments: updatedDepartments,
-      emailHost: config?.emailHost || null,
-      emailPort: config?.emailPort || null,
-      emailUser: config?.emailUser || null,
-      emailPassword: config?.emailPassword || null,
-      emailFromAddress: config?.emailFromAddress || null,
-      emailFromName: config?.emailFromName || null,
-      emailSecure: config?.emailSecure !== false
     };
     
     updateConfigMutation.mutate(configData);
