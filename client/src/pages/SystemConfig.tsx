@@ -885,7 +885,23 @@ function SystemConfig() {
     
     try {
       const updatedDepartments = [...departments, newDepartment.trim()];
-      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      const configData = {
+        language: config?.language || 'en',
+        assetIdPrefix: config?.assetIdPrefix || 'AST-',
+        empIdPrefix: config?.empIdPrefix || 'EMP-',
+        ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+        currency: config?.currency || 'USD',
+        departments: updatedDepartments,
+        emailHost: config?.emailHost || null,
+        emailPort: config?.emailPort || null,
+        emailUser: config?.emailUser || null,
+        emailPassword: config?.emailPassword || null,
+        emailFromAddress: config?.emailFromAddress || null,
+        emailFromName: config?.emailFromName || null,
+        emailSecure: config?.emailSecure !== false
+      };
+      
+      await updateConfigMutation.mutateAsync(configData);
       setDepartments(updatedDepartments);
       setNewDepartment('');
       
@@ -913,7 +929,23 @@ function SystemConfig() {
     try {
       const updatedDepartments = [...departments];
       updatedDepartments[index] = editedDeptName.trim();
-      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      const configData = {
+        language: config?.language || 'en',
+        assetIdPrefix: config?.assetIdPrefix || 'AST-',
+        empIdPrefix: config?.empIdPrefix || 'EMP-',
+        ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+        currency: config?.currency || 'USD',
+        departments: updatedDepartments,
+        emailHost: config?.emailHost || null,
+        emailPort: config?.emailPort || null,
+        emailUser: config?.emailUser || null,
+        emailPassword: config?.emailPassword || null,
+        emailFromAddress: config?.emailFromAddress || null,
+        emailFromName: config?.emailFromName || null,
+        emailSecure: config?.emailSecure !== false
+      };
+      
+      await updateConfigMutation.mutateAsync(configData);
       setDepartments(updatedDepartments);
       setEditingDeptIndex(null);
       setEditedDeptName('');
@@ -939,7 +971,23 @@ function SystemConfig() {
   const handleDeleteDepartment = async (index: number) => {
     try {
       const updatedDepartments = departments.filter((_, i) => i !== index);
-      await updateSystemConfigMutation.mutateAsync({ departments: updatedDepartments });
+      const configData = {
+        language: config?.language || 'en',
+        assetIdPrefix: config?.assetIdPrefix || 'AST-',
+        empIdPrefix: config?.empIdPrefix || 'EMP-',
+        ticketIdPrefix: config?.ticketIdPrefix || 'TKT-',
+        currency: config?.currency || 'USD',
+        departments: updatedDepartments,
+        emailHost: config?.emailHost || null,
+        emailPort: config?.emailPort || null,
+        emailUser: config?.emailUser || null,
+        emailPassword: config?.emailPassword || null,
+        emailFromAddress: config?.emailFromAddress || null,
+        emailFromName: config?.emailFromName || null,
+        emailSecure: config?.emailSecure !== false
+      };
+      
+      await updateConfigMutation.mutateAsync(configData);
       setDepartments(updatedDepartments);
       
       toast({

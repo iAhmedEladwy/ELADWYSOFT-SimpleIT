@@ -382,6 +382,7 @@ export const systemConfig = pgTable("system_config", {
   assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('AST'),
   employeeIdPrefix: varchar("employee_id_prefix", { length: 10 }).notNull().default('EMP'),
   ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT'),
+  departments: text("departments").array().default([]),
   companyName: varchar("company_name", { length: 255 }).notNull().default('SimpleIT'),
   companyAddress: text("company_address"),
   companyPhone: varchar("company_phone", { length: 50 }),
