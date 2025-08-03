@@ -1904,34 +1904,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Advanced ticket management methods
-  async addTicketComment(commentData: any): Promise<any> {
-    try {
-      const comment = {
-        id: this.comments.length + 1,
-        ticketId: commentData.ticketId,
-        userId: commentData.userId,
-        content: commentData.content,
-        isPrivate: commentData.isPrivate || false,
-        attachments: commentData.attachments || [],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      this.comments.push(comment);
-      
-      // Update ticket's last activity
-      const ticket = this.tickets.find(t => t.id === commentData.ticketId);
-      if (ticket) {
-        ticket.lastActivityAt = new Date();
-      }
-      
-      return comment;
-    } catch (error) {
-      console.error('Error adding ticket comment:', error);
-      throw error;
-    }
-  }
+
 
   async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
     try {

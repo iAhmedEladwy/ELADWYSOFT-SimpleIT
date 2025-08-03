@@ -816,4 +816,17 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type CustomRequestType = typeof customRequestTypes.$inferSelect;
 export type InsertCustomRequestType = z.infer<typeof insertCustomRequestTypeSchema>;
 
+// Custom asset management types
+export type CustomAssetType = typeof customAssetTypes.$inferSelect;
+export type InsertCustomAssetType = z.infer<typeof insertCustomAssetTypeSchema>;
+
+export type CustomAssetBrand = typeof customAssetBrands.$inferSelect;
+export type InsertCustomAssetBrand = z.infer<typeof insertCustomAssetBrandSchema>;
+
+export type CustomAssetStatus = typeof customAssetStatuses.$inferSelect;
+export type InsertCustomAssetStatus = z.infer<typeof insertCustomAssetStatusSchema>;
+
+export type ServiceProvider = typeof serviceProviders.$inferSelect;
+export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
+
 // Ticket history types (declared above - removing duplicate)

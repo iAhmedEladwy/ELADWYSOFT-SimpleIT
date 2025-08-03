@@ -593,9 +593,7 @@ export class MemoryStorage implements IStorage {
       workMobile: employee.workMobile || null,
       personalEmail: employee.personalEmail || employee.email || employeeEmail,
       corporateEmail: employee.corporateEmail || null,
-      userId: employee.userId || null,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      userId: employee.userId || null
     };
     this.employees.push(newEmployee);
     return newEmployee;
@@ -1151,45 +1149,7 @@ export class MemoryStorage implements IStorage {
     return { deletedCount };
   }
 
-  // Custom request types management
-  async getAllCustomRequestTypes(): Promise<any[]> {
-    return this.customRequestTypes;
-  }
-
-  async createCustomRequestType(data: { name: string; description?: string }): Promise<any> {
-    const requestType = {
-      id: this.idCounters.customRequestTypes++,
-      name: data.name,
-      description: data.description || '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    this.customRequestTypes.push(requestType);
-    return requestType;
-  }
-
-  async updateCustomRequestType(id: number, data: { name: string; description?: string }): Promise<any> {
-    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
-    if (index === -1) return null;
-
-    this.customRequestTypes[index] = {
-      ...this.customRequestTypes[index],
-      name: data.name,
-      description: data.description || '',
-      updatedAt: new Date()
-    };
-
-    return this.customRequestTypes[index];
-  }
-
-  async deleteCustomRequestType(id: number): Promise<boolean> {
-    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
-    if (index === -1) return false;
-
-    this.customRequestTypes.splice(index, 1);
-    return true;
-  }
+  // Custom request types management - using enhanced implementations below
 
   // Changes Log operations
   async getChangesLog(options: any): Promise<any> {
@@ -1261,35 +1221,8 @@ export class MemoryStorage implements IStorage {
   }
 
   // Custom Fields operations - only user-defined data from System Configuration
-  private customAssetTypes = [
-    { id: 1, name: "Laptop", description: "Portable computer devices" },
-    { id: 2, name: "Desktop", description: "Desktop computer systems" },
-    { id: 3, name: "Monitor", description: "Display screens and monitors" },
-    { id: 4, name: "Printer", description: "Printing devices" },
-    { id: 5, name: "Server", description: "Server equipment" },
-    { id: 6, name: "Network", description: "Networking equipment" }
-  ];
 
-  private customAssetBrands = [
-    { id: 1, name: "Dell", description: "Dell Technologies" },
-    { id: 2, name: "HP", description: "Hewlett-Packard" },
-    { id: 3, name: "Lenovo", description: "Lenovo Group" },
-    { id: 4, name: "Apple", description: "Apple Inc." }
-  ];
 
-  private customAssetStatuses = [
-    { id: 1, name: "Available", description: "Ready for assignment", color: "#28a745" },
-    { id: 2, name: "In Use", description: "Currently assigned", color: "#007bff" },
-    { id: 3, name: "Maintenance", description: "Under maintenance", color: "#ffc107" },
-    { id: 4, name: "Damaged", description: "Needs repair", color: "#dc3545" },
-    { id: 5, name: "Retired", description: "End of life", color: "#6c757d" }
-  ];
-
-  private serviceProviders = [
-    { id: 1, name: "Tech Solutions Inc", contactPerson: "John Smith", phone: "555-0101", email: "john@techsolutions.com" },
-    { id: 2, name: "Hardware Express", contactPerson: "Sarah Johnson", phone: "555-0102", email: "sarah@hardwareexpress.com" },
-    { id: 3, name: "IT Services Pro", contactPerson: "Mike Brown", phone: "555-0103", email: "mike@itservices.com" }
-  ];
 
   async getCustomAssetTypes(): Promise<any[]> {
     return this.customAssetTypes;
@@ -1387,110 +1320,7 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Custom Asset Types operations
-  async getCustomAssetTypes(): Promise<any[]> {
-    return this.customAssetTypes;
-  }
-
-  async createCustomAssetType(type: any): Promise<any> {
-    const newType = {
-      id: this.idCounters.customAssetTypes++,
-      ...type,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.customAssetTypes.push(newType);
-    return newType;
-  }
-
-  async updateCustomAssetType(id: number, type: any): Promise<any | undefined> {
-    const index = this.customAssetTypes.findIndex(t => t.id === id);
-    if (index === -1) return undefined;
-    
-    this.customAssetTypes[index] = {
-      ...this.customAssetTypes[index],
-      ...type,
-      updatedAt: new Date()
-    };
-    return this.customAssetTypes[index];
-  }
-
-  async deleteCustomAssetType(id: number): Promise<boolean> {
-    const index = this.customAssetTypes.findIndex(t => t.id === id);
-    if (index === -1) return false;
-    this.customAssetTypes.splice(index, 1);
-    return true;
-  }
-
-  // Custom Asset Brands operations
-  async getCustomAssetBrands(): Promise<any[]> {
-    return this.customAssetBrands;
-  }
-
-  async createCustomAssetBrand(brand: any): Promise<any> {
-    const newBrand = {
-      id: this.idCounters.customAssetBrands++,
-      ...brand,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.customAssetBrands.push(newBrand);
-    return newBrand;
-  }
-
-  async updateCustomAssetBrand(id: number, brand: any): Promise<any | undefined> {
-    const index = this.customAssetBrands.findIndex(b => b.id === id);
-    if (index === -1) return undefined;
-    
-    this.customAssetBrands[index] = {
-      ...this.customAssetBrands[index],
-      ...brand,
-      updatedAt: new Date()
-    };
-    return this.customAssetBrands[index];
-  }
-
-  async deleteCustomAssetBrand(id: number): Promise<boolean> {
-    const index = this.customAssetBrands.findIndex(b => b.id === id);
-    if (index === -1) return false;
-    this.customAssetBrands.splice(index, 1);
-    return true;
-  }
-
-  // Custom Asset Statuses operations
-  async getCustomAssetStatuses(): Promise<any[]> {
-    return this.customAssetStatuses;
-  }
-
-  async createCustomAssetStatus(status: any): Promise<any> {
-    const newStatus = {
-      id: this.idCounters.customAssetStatuses++,
-      ...status,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.customAssetStatuses.push(newStatus);
-    return newStatus;
-  }
-
-  async updateCustomAssetStatus(id: number, status: any): Promise<any | undefined> {
-    const index = this.customAssetStatuses.findIndex(s => s.id === id);
-    if (index === -1) return undefined;
-    
-    this.customAssetStatuses[index] = {
-      ...this.customAssetStatuses[index],
-      ...status,
-      updatedAt: new Date()
-    };
-    return this.customAssetStatuses[index];
-  }
-
-  async deleteCustomAssetStatus(id: number): Promise<boolean> {
-    const index = this.customAssetStatuses.findIndex(s => s.id === id);
-    if (index === -1) return false;
-    this.customAssetStatuses.splice(index, 1);
-    return true;
-  }
+  // Duplicate implementations removed - using the ones above
 
   async removeDemoData(): Promise<void> {
     // Keep only admin user and system config
@@ -1953,55 +1783,5 @@ export class MemoryStorage implements IStorage {
     return history;
   }
 
-  async addTicketComment(commentData: any): Promise<any> {
-    const comment = {
-      id: this.idCounters.ticketComments++,
-      ticketId: commentData.ticketId,
-      userId: commentData.userId,
-      content: commentData.content,
-      isPrivate: commentData.isPrivate || false,
-      attachments: commentData.attachments || [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.ticketComments.push(comment);
-    
-    // Update ticket's last activity
-    const ticket = this.tickets.find(t => t.id === commentData.ticketId);
-    if (ticket) {
-      ticket.lastActivityAt = new Date();
-    }
-    
-    return comment;
-  }
-
-  async getTicketComments(ticketId: number): Promise<any[]> {
-    return this.ticketComments
-      .filter(comment => comment.ticketId === ticketId)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
-
-  async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
-    const timeEntry = {
-      id: this.idCounters.timeEntries++,
-      ticketId,
-      userId,
-      hours,
-      description,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.timeEntries.push(timeEntry);
-    
-    // Update ticket's actual hours
-    const ticket = this.tickets.find(t => t.id === ticketId);
-    if (ticket) {
-      ticket.actualHours = (ticket.actualHours || 0) + hours;
-      ticket.lastActivityAt = new Date();
-    }
-    
-    return timeEntry;
-  }
+  // Duplicate comment and time entry methods removed - using implementations above
 }

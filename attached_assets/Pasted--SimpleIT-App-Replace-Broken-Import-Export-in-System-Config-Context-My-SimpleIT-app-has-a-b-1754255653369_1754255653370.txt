@@ -1,0 +1,106 @@
+# SimpleIT App: Replace Broken Import/Export in System Config
+
+## Context
+My SimpleIT app has a broken import/export feature in the System Config page that needs to be completely replaced with a working implementation. Keep the feature in the same location but make it fully functional.
+
+## Replacement Requirements
+
+### Replace Existing System Config Import/Export
+- **Location**: Keep in System Config page where it currently exists
+- **Action**: Remove broken code and replace with working functionality
+- **UI**: Maintain same design consistency with the rest of the app
+
+## Database Schema Fields (Based on Your Drizzle Schema)
+
+### Employee Import/Export Fields
+```
+empId, englishName, arabicName, department, idNumber, title, directManager, 
+employmentType, joiningDate, exitDate, status, personalMobile, workMobile, 
+personalEmail, corporateEmail
+```
+
+**Validation Rules:**
+- `empId`: Unique, required
+- `englishName`: Required, max 100 chars
+- `department`: Required
+- `employmentType`: Must be: Full-time, Part-time, Contract, Intern
+- `status`: Must be: Active, Resigned, Terminated, On Leave
+- `joiningDate`: Required, valid date (YYYY-MM-DD)
+- `directManager`: Must reference existing employee if provided
+
+### Asset Import/Export Fields
+```
+assetId, type, brand, modelNumber, modelName, serialNumber, specs, cpu, ram, 
+storage, status, purchaseDate, buyPrice, warrantyExpiryDate, lifeSpan, 
+outOfBoxOs, assignedEmployeeId
+```
+
+**Validation Rules:**
+- `assetId`: Unique, required
+- `serialNumber`: Required, must be unique
+- `status`: Must be: Available, In Use, Damaged, Maintenance, Sold, Retired
+- `buyPrice`: Numeric with 2 decimals if provided
+- `assignedEmployeeId`: Must reference existing employee if provided
+
+### Ticket Import/Export Fields
+```
+ticketId, submittedById, requestType, category, priority, urgency, impact, 
+summary, description, relatedAssetId, status, assignedToId, resolution, 
+dueDate, tags
+```
+
+**Validation Rules:**
+- `ticketId`: Unique, required
+- `submittedById`: Must reference existing employee
+- `priority`: Must be: Low, Medium, High
+- `status`: Must be: Open, In Progress, Resolved, Closed
+- `assignedToId`: Must reference existing user if provided
+- `relatedAssetId`: Must reference existing asset if provided
+
+## Implementation Requirements
+
+### Export Functionality
+- **CSV Format**: Excel-compatible with proper headers
+- **File Naming**: descriptive names like "employees_2025-08-03.csv"
+- **Download**: Direct file download
+- **Progress**: Show progress for large datasets
+- **Filters**: Optional filtering by status, department, date range
+
+### Import Functionality
+- **File Upload**: Drag-and-drop or file picker for CSV files
+- **Validation**: Comprehensive validation before import
+- **Error Handling**: Detailed error reports with row numbers and specific issues
+- **Preview**: Show data preview before importing
+- **Partial Import**: Option to import valid records while reporting invalid ones
+- **Progress**: Visual progress indicators during import
+
+### Error Handling
+- **File Validation**: Check CSV format, size (max 10MB), encoding
+- **Data Validation**: Required fields, data types, unique constraints, foreign keys
+- **User Feedback**: Clear error messages with specific row numbers and issues
+- **Success Messages**: Confirmation of successful imports/exports
+
+### Technical Implementation
+- **CSV Parser**: Use Papa Parse library for robust CSV parsing
+- **Database**: Use existing Drizzle ORM with proper transactions
+- **Chunking**: Process large files in chunks (100 rows at a time)
+- **Foreign Keys**: Validate all relationship constraints
+- **Activity Log**: Record all import/export activities
+
+## Success Criteria
+✅ Users can export data from System Config page
+✅ Users can import valid CSV files successfully  
+✅ Invalid data is rejected with clear error messages
+✅ Large files are handled without crashing
+✅ All database relationships are maintained
+✅ Import/export activities are logged
+
+## Expected Deliverables
+1. **Working export buttons** for Employees, Assets, Tickets
+2. **Working import functionality** with drag-and-drop
+3. **Comprehensive validation** with detailed error reporting
+4. **Progress indicators** and user feedback
+5. **Integration** with existing Drizzle database schema
+6. **Activity logging** for audit trail
+
+Replace the broken import/export code in System Config with this fully functional implementation.
