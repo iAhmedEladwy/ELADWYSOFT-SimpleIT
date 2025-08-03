@@ -1409,17 +1409,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process each row with comprehensive validation
       for (const [index, row] of parsedData.entries()) {
         try {
-          // Generate unique assetId for each row
-          const generatedAssetId = `${assetIdPrefix}-${String(nextAssetNumber + index).padStart(6, '0')}`;
-
+          // Database will auto-generate asset_id, no need to generate manually
           const assetData: any = {
-            // Generate assetId manually since it's VARCHAR, not auto-increment
-            assetId: row['Asset ID'] || row.assetId || generatedAssetId,
+            // assetId removed - database will auto-generate
             type: row['Type'] || row.type || null,
-            brand: row['Brand'] || row.brand || null,
+            brand: row['Brand'] || row.brand || 'Unknown',
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
-            serialNumber: row['Serial Number'] || row.serialNumber || null,
+            serialNumber: row['Serial Number'] || row.serialNumber || 'N/A',
             specs: row['Specifications'] || row.specs || null,
             cpu: row['CPU'] || row.cpu || null,
             ram: row['RAM'] || row.ram || null,
@@ -3996,29 +3993,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
-          const assetId = await generateId('AST');
-          await storage.createAsset({
-            assetId: assetId,
-            type: item.type,
-            brand: item.brand,
-            modelNumber: item.modelNumber || null,
-            modelName: item.modelName || null,
-            serialNumber: item.serialNumber,
-            specs: item.specs || null,
-            cpu: item.cpu || null,
-            ram: item.ram || null,
-            storage: item.storage || null,
+          // Database will auto-generate asset_id, no need to generate manually
+          const result = await storage.createAsset({
+            // assetId removed - database will auto-generate
+            type: item.type || 'Hardware',
+            brand: item.brand || null,
+            modelNumber: item.modelNumber || item.model || null,
+            modelName: item.modelName || item.name || null,
+            serialNumber: item.serialNumber || null,
+            specs: item.specs || item.description || null,
             status: item.status || 'Available',
             purchaseDate: item.purchaseDate || null,
-            buyPrice: item.buyPrice ? parseFloat(item.buyPrice) : null,
-            warrantyExpiryDate: item.warrantyExpiryDate || null,
-            lifeSpan: item.lifeSpan || null,
+            buyPrice: item.buyPrice || item.purchasePrice ? parseFloat((item.buyPrice || item.purchasePrice).toString()) : null,
+            warrantyExpiryDate: item.warrantyExpiryDate || item.warrantyEndDate || null,
+            lifeSpan: item.lifeSpan ? parseInt(item.lifeSpan.toString()) : null,
             outOfBoxOs: item.outOfBoxOs || null,
-            assignedEmployeeId: item.assignedEmployeeId ? parseInt(item.assignedEmployeeId) : null
+            assignedEmployeeId: item.assignedEmployeeId || item.assignedTo ? parseInt((item.assignedEmployeeId || item.assignedTo).toString()) : null,
+            cpu: item.cpu || null,
+            ram: item.ram || null,
+            storage: item.storage || null
           });
           successful++;
         } catch (error: any) {
-          errors.push(`Asset ${item.assetId}: ${error.message}`);
+          errors.push(`Asset ${item.name || item.modelName || 'Unknown'}: ${error.message}`);
         }
       }
 
@@ -4040,20 +4037,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of data) {
         try {
-          const ticketId = await generateId('TKT');
-          await storage.createTicket({
-            ticketId: ticketId,
-            submittedById: parseInt(item.submittedById),
-            requestType: item.requestType || 'Other',
-            category: item.category || 'Other',
+          // Database will auto-generate ticket_id, no need to generate manually
+          const result = await storage.createTicket({
+            // ticketId removed - database will auto-generate
+            submittedById: item.submittedById ? parseInt(item.submittedById.toString()) : 1,
+            requestType: item.requestType || 'Service Request',
+            category: item.category || 'General',
             priority: item.priority || 'Medium',
             urgency: item.urgency || 'Medium',
-            impact: item.impact || 'Medium',
-            summary: item.summary,
-            description: item.description,
-            relatedAssetId: item.relatedAssetId ? parseInt(item.relatedAssetId) : null,
+            impact: item.impact || 'Low',
+            summary: item.title || item.summary || 'Imported Ticket',
+            description: item.description || 'No description provided',
+            relatedAssetId: item.relatedAssetId ? parseInt(item.relatedAssetId.toString()) : null,
             status: item.status || 'Open',
-            assignedToId: item.assignedToId ? parseInt(item.assignedToId) : null,
+            assignedToId: item.assignedToId ? parseInt(item.assignedToId.toString()) : null,
             resolution: item.resolution || null,
             dueDate: item.dueDate || null,
             tags: item.tags || null
@@ -5085,7 +5082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assets = await storage.getAllAssets();
       const csvData = assets.map(asset => ({
         'Asset ID': asset.assetId,
-        'Name': asset.name,
+        'Name': asset.modelName,
         'Type': asset.type,
         'Brand': asset.brand || '',
         'Model': asset.model || '',

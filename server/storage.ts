@@ -865,37 +865,39 @@ export class DatabaseStorage implements IStorage {
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
     try {
-      // Generate asset ID if not provided
-      let assetId = asset.assetId;
-      if (!assetId) {
-        const config = await this.getSystemConfig();
-        const prefix = config?.assetIdPrefix || 'AST-';
-        
-        // Get the highest existing asset number
-        const existingAssets = await this.getAllAssets();
-        const maxNumber = existingAssets.reduce((max, existingAsset) => {
-          if (existingAsset.assetId && existingAsset.assetId.startsWith(prefix)) {
-            const num = parseInt(existingAsset.assetId.substring(prefix.length));
-            return Math.max(max, isNaN(num) ? 0 : num);
-          }
-          return max;
-        }, 0);
-        
-        assetId = `${prefix}${String(maxNumber + 1).padStart(6, '0')}`;
-      }
+      // Let database auto-generate asset_id, exclude from INSERT
+      const query = `
+        INSERT INTO assets (
+          type, brand, model_number, model_name, serial_number, specs,
+          status, purchase_date, buy_price, warranty_expiry_date,
+          life_span, out_of_box_os, assigned_employee_id, cpu, ram, storage,
+          created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+        ) RETURNING *
+      `;
 
-      // Convert numeric buyPrice to string for database storage
-      const processedAsset = {
-        ...asset,
-        assetId,
-        buyPrice: asset.buyPrice ? asset.buyPrice.toString() : null
-      };
-      
-      const [newAsset] = await db
-        .insert(assets)
-        .values(processedAsset)
-        .returning();
-      return newAsset;
+      const values = [
+        asset.type || 'Hardware',
+        asset.brand || null,
+        asset.modelNumber || null,
+        asset.modelName || null,
+        asset.serialNumber || null,
+        asset.specs || asset.description || null,
+        asset.status || 'Available',
+        asset.purchaseDate || null,
+        asset.buyPrice || asset.purchasePrice || null,
+        asset.warrantyExpiryDate || asset.warrantyEndDate || null,
+        asset.lifeSpan || null,
+        asset.outOfBoxOs || null,
+        asset.assignedEmployeeId || asset.assignedTo || null,
+        asset.cpu || null,
+        asset.ram || null,
+        asset.storage || null
+      ];
+
+      const result = await pool.query(query, values);
+      return result.rows[0] as Asset;
     } catch (error) {
       console.error('Error creating asset:', error);
       throw error;
