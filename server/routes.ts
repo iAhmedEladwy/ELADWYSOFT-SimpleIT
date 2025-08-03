@@ -28,21 +28,19 @@ import { getValidationRules, getExportColumns } from "@shared/importExportRules"
 // Enhanced ID generation with system config support
 const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
   try {
-    // Get system config for prefixes
-    const config = await storage.getSystemConfig();
-    
     let prefix: string;
     let nextNumber: number;
     
+    // Use reliable fallback prefixes to avoid database dependency issues during import
     switch (entityType) {
       case 'asset':
-        prefix = config?.assetIdPrefix || 'AST-';
+        prefix = 'AST-';
         break;
       case 'employee':
-        prefix = config?.employeeIdPrefix || 'EMP-';
+        prefix = 'EMP-';
         break;
       case 'ticket':
-        prefix = config?.ticketIdPrefix || 'TKT-';
+        prefix = 'TKT-';
         break;
       default:
         prefix = 'ID-';
@@ -100,10 +98,12 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
     return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
   } catch (error) {
     console.error('Error generating ID:', error);
-    // Fallback to simple generation
+    // Fallback to timestamp + random for unique IDs during import
     const prefixMap = { asset: 'AST-', employee: 'EMP-', ticket: 'TKT-' };
-    const num = customNumber || Date.now() % 100000;
-    return `${prefixMap[entityType]}${num.toString().padStart(5, "0")}`;
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const uniqueNum = (timestamp % 10000) * 1000 + random;
+    return `${prefixMap[entityType]}${uniqueNum.toString().padStart(8, "0")}`;
   }
 };
 

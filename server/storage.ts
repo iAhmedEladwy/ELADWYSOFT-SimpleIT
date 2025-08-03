@@ -640,7 +640,11 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Use successful direct SQL approach that works with the database
+      // Generate unique emp_id automatically using sequence
+      const empIdResult = await pool.query('SELECT nextval(\'employees_id_seq\') as next_id');
+      const nextId = empIdResult.rows[0].next_id;
+      const generatedEmpId = `EMP-${nextId.toString().padStart(5, '0')}`;
+
       const query = `
         INSERT INTO employees (
           emp_id, english_name, arabic_name, department, id_number, title, 
