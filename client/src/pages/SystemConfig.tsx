@@ -402,7 +402,14 @@ function SystemConfig() {
     }
   };
 
-
+  const handleMappingCancel = () => {
+    setShowFieldMapping(false);
+    setSelectedFile(null);
+    setParsedFileData([]);
+    setFileColumns([]);
+    setImportError(null);
+    setImportResults(null);
+  };
 
   // Editing states for asset management
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
