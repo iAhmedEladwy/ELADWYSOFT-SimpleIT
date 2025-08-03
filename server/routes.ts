@@ -1410,13 +1410,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const row of parsedData) {
         try {
+          // Get asset ID prefix from system config
+          const config = await storage.getSystemConfig();
+          const prefix = config?.assetIdPrefix || 'AST-';
+          
+          // Generate unique asset ID
+          const existingAssets = await storage.getAllAssets();
+          const maxNumber = existingAssets.reduce((max, asset) => {
+            if (asset.assetId && asset.assetId.startsWith(prefix)) {
+              const num = parseInt(asset.assetId.substring(prefix.length));
+              return Math.max(max, isNaN(num) ? 0 : num);
+            }
+            return max;
+          }, 0);
+          const newAssetId = `${prefix}${String(maxNumber + 1).padStart(6, '0')}`;
+
           const assetData: any = {
-            assetId: row['Asset ID'] || row.assetId,
-            type: row['Type'] || row.type,
-            brand: row['Brand'] || row.brand,
+            assetId: newAssetId, // Generate unique asset ID
+            type: row['Type'] || row.type || null,
+            brand: row['Brand'] || row.brand || null,
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
-            serialNumber: row['Serial Number'] || row.serialNumber,
+            serialNumber: row['Serial Number'] || row.serialNumber || null,
             specs: row['Specifications'] || row.specs || null,
             cpu: row['CPU'] || row.cpu || null,
             ram: row['RAM'] || row.ram || null,
@@ -1427,7 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             warrantyExpiryDate: row['Warranty Expiry Date'] || row.warrantyExpiryDate || null,
             lifeSpan: row['Life Span'] || row.lifeSpan || null,
             outOfBoxOs: row['Out of Box OS'] || row.outOfBoxOs || null,
-            assignedToId: row['Assigned To ID'] || row.assignedToId || null
+            assignedEmployeeId: row['Assigned Employee ID'] || row.assignedEmployeeId || null
           };
           
           const result = await storage.createAsset(assetData);
