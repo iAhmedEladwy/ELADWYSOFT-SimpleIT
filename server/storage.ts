@@ -866,9 +866,29 @@ export class DatabaseStorage implements IStorage {
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
     try {
+      // Generate asset ID if not provided
+      let assetId = asset.assetId;
+      if (!assetId) {
+        const config = await this.getSystemConfig();
+        const prefix = config?.assetIdPrefix || 'AST-';
+        
+        // Get the highest existing asset number
+        const existingAssets = await this.getAllAssets();
+        const maxNumber = existingAssets.reduce((max, existingAsset) => {
+          if (existingAsset.assetId && existingAsset.assetId.startsWith(prefix)) {
+            const num = parseInt(existingAsset.assetId.substring(prefix.length));
+            return Math.max(max, isNaN(num) ? 0 : num);
+          }
+          return max;
+        }, 0);
+        
+        assetId = `${prefix}${String(maxNumber + 1).padStart(6, '0')}`;
+      }
+
       // Convert numeric buyPrice to string for database storage
       const processedAsset = {
         ...asset,
+        assetId,
         buyPrice: asset.buyPrice ? asset.buyPrice.toString() : null
       };
       
