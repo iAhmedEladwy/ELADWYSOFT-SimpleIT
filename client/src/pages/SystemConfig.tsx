@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
 
 function SystemConfig() {
@@ -131,25 +132,183 @@ function SystemConfig() {
   const [isImporting, setIsImporting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [activeImportTab, setActiveImportTab] = useState('employees');
+  
+  // Field Mapping states
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [parsedFileData, setParsedFileData] = useState<any[]>([]);
+  const [fileColumns, setFileColumns] = useState<string[]>([]);
+
+  // Import CSV parsing utility
+  const parseCSV = (csvText: string): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          reject(new Error('CSV file must have at least a header row and one data row'));
+          return;
+        }
+
+        const headers = parseCSVLine(lines[0]);
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLine(lines[i]);
+          if (values.length > 0) {
+            const row: any = {};
+            headers.forEach((header, index) => {
+              row[header] = values[index] || '';
+            });
+            data.push(row);
+          }
+        }
+
+        resolve(data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  const parseCSVLine = (line: string): string[] => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
+  };
+
+  const analyzeColumns = (data: any[]): any[] => {
+    if (!data || data.length === 0) return [];
+    
+    const columns: any[] = [];
+    const headers = Object.keys(data[0]);
+    
+    headers.forEach(header => {
+      const values = data.map(row => row[header]).filter(val => val && val.toString().trim() !== '');
+      const sampleValues = values.slice(0, 5);
+      
+      columns.push({
+        name: header,
+        sampleValues,
+        dataType: 'text'
+      });
+    });
+    
+    return columns;
+  };
 
   // Import/Export Handlers
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      setImportError(null);
-      setImportResults(null);
+      await processFileForMapping(file);
     }
   };
 
-  const handleFileDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    setDragActive(false);
-    const file = event.dataTransfer.files?.[0];
-    if (file && file.type === 'text/csv') {
+  const processFileForMapping = async (file: File) => {
+    try {
       setSelectedFile(file);
       setImportError(null);
       setImportResults(null);
+      
+      const text = await file.text();
+      const data = await parseCSV(text);
+      const columns = analyzeColumns(data);
+      
+      setParsedFileData(data);
+      setFileColumns(columns);
+      setShowFieldMapping(true);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Failed to parse CSV file');
+    }
+  };
+
+  // Enhanced field mapping handlers with progress tracking
+  const handleMappingComplete = async (mappedData: any[]) => {
+    setShowFieldMapping(false);
+    setIsImporting(true);
+    setImportProgress(0);
+    
+    try {
+      // Create progress updates
+      setImportProgress(10);
+      
+      // Transform data using the field mappings
+      const formData = new FormData();
+      const csvString = [
+        Object.keys(mappedData[0]).join(','),
+        ...mappedData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      setImportProgress(30);
+      
+      const blob = new Blob([csvString], { type: 'text/csv' });
+      formData.append('file', blob, 'import.csv');
+      
+      setImportProgress(50);
+      
+      const response = await apiRequest(`/api/${activeImportTab}/import`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      setImportProgress(90);
+      setImportResults(response);
+      setImportProgress(100);
+      
+      // Show detailed results
+      const successMsg = language === 'English' 
+        ? `Successfully imported ${response.imported} ${activeImportTab}` 
+        : `تم استيراد ${response.imported} ${activeImportTab} بنجاح`;
+      
+      toast({
+        title: language === 'English' ? 'Import Successful' : 'تم الاستيراد بنجاح',
+        description: successMsg,
+      });
+      
+      if (response.errors && response.errors.length > 0) {
+        console.warn('Import completed with some errors:', response.errors);
+      }
+      
+    } catch (error: any) {
+      setImportError(error.message || 'Import failed');
+      toast({
+        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
+        description: error.message || 'Import process failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+
+
+  const handleFileDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    setDragActive(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file && (file.type === 'text/csv' || file.name.endsWith('.csv'))) {
+      await processFileForMapping(file);
     } else {
       setImportError(language === 'English' ? 'Please select a valid CSV file.' : 'يرجى اختيار ملف CSV صالح.');
     }
@@ -243,71 +402,7 @@ function SystemConfig() {
     }
   };
 
-  const handleImport = async () => {
-    if (!selectedFile) return;
 
-    setIsImporting(true);
-    setImportProgress(10);
-    setImportError(null);
-    setImportResults(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      setImportProgress(30);
-
-      const response = await fetch(`/api/${activeImportTab}/import`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-
-      setImportProgress(70);
-
-      const result = await response.json();
-
-      setImportProgress(100);
-
-      if (!response.ok) {
-        const errorMsg = result.message || result.error || result.details || 'Import failed';
-        throw new Error(errorMsg);
-      }
-
-      setImportResults(result);
-      setSelectedFile(null);
-
-      // Clear file input
-      const fileInput = document.getElementById('file-input') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-
-      toast({
-        title: language === 'English' ? 'Import Successful' : 'تم الاستيراد بنجاح',
-        description: language === 'English' 
-          ? `Imported ${result.imported} records successfully.` 
-          : `تم استيراد ${result.imported} سجل بنجاح.`,
-      });
-
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-
-    } catch (error) {
-      console.error('Import error:', error);
-      setImportError(error instanceof Error ? error.message : 'Import failed');
-      toast({
-        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
-        description: language === 'English' 
-          ? 'Failed to import data. Please check the file format and try again.' 
-          : 'فشل في استيراد البيانات. يرجى التحقق من تنسيق الملف والمحاولة مرة أخرى.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsImporting(false);
-      setImportProgress(0);
-    }
-  };
 
   // Editing states for asset management
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
@@ -3117,9 +3212,23 @@ function SystemConfig() {
                     </TabsTrigger>
                   </TabsList>
 
+                  {/* Field Mapping Interface */}
+                  {showFieldMapping && (
+                    <div className="mt-6">
+                      <FieldMappingInterface
+                        entityType={activeImportTab as 'employees' | 'assets' | 'tickets'}
+                        fileData={parsedFileData}
+                        fileColumns={fileColumns}
+                        onMappingComplete={handleMappingComplete}
+                        onCancel={handleMappingCancel}
+                      />
+                    </div>
+                  )}
+
                   {/* Export Section */}
-                  <div className="mt-6 space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
+                  {!showFieldMapping && (
+                    <div className="mt-6 space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
                       {/* Export Card */}
                       <Card>
                         <CardHeader>
@@ -3257,7 +3366,16 @@ function SystemConfig() {
 
                           {/* Import Button */}
                           <Button 
-                            onClick={handleImport}
+                            onClick={() => {
+                              // Import is now handled through field mapping
+                              if (!selectedFile) {
+                                toast({
+                                  title: language === 'English' ? 'No File Selected' : 'لم يتم اختيار ملف',
+                                  description: language === 'English' ? 'Please select a CSV file first.' : 'يرجى اختيار ملف CSV أولاً.',
+                                  variant: 'destructive'
+                                });
+                              }
+                            }}
                             disabled={!selectedFile || isImporting}
                             className="w-full"
                           >
@@ -3382,6 +3500,7 @@ function SystemConfig() {
                       </CardContent>
                     </Card>
                   </div>
+                )}
                 </Tabs>
               </CardContent>
             </Card>

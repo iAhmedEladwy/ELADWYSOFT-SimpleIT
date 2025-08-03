@@ -349,57 +349,140 @@ export function transformCSVData(
 }
 
 /**
- * Validate field type
+ * Enhanced field type validation with comprehensive checks
  */
-function validateFieldType(value: any, type: string): string | null {
-  switch (type) {
+export function validateFieldType(value: any, type: string, fieldName?: string): string | null {
+  // Handle null, undefined, or empty string values
+  if (value === null || value === undefined || value === '') {
+    return null; // Allow empty values, validation rules will handle required fields
+  }
+
+  const valueStr = String(value).trim();
+  if (valueStr === '' || valueStr.toLowerCase() === 'null' || valueStr.toLowerCase() === 'undefined') {
+    return null; // Treat as empty
+  }
+
+  switch (type.toLowerCase()) {
     case 'string':
-      if (typeof value !== 'string') {
-        return 'must be a string';
-      }
-      break;
-    
+    case 'text':
+      if (typeof valueStr !== 'string') return `${fieldName || 'Field'} must be text`;
+      if (valueStr.length > 1000) return `${fieldName || 'Field'} is too long (max 1000 characters)`;
+      return null;
+      
     case 'number':
-      if (isNaN(Number(value))) {
-        return 'must be a valid number';
-      }
-      break;
-    
-    case 'date':
-      if (isNaN(Date.parse(value))) {
-        return 'must be a valid date';
-      }
-      break;
-    
+    case 'integer':
+      const numValue = Number(valueStr);
+      if (isNaN(numValue)) return `${fieldName || 'Field'} must be a valid number`;
+      if (type === 'integer' && !Number.isInteger(numValue)) return `${fieldName || 'Field'} must be a whole number`;
+      if (numValue < 0 && fieldName?.toLowerCase().includes('salary')) return 'Salary must be positive';
+      return null;
+      
     case 'email':
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(String(value))) {
-        return 'must be a valid email address';
-      }
-      break;
-    
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(valueStr)) return `${fieldName || 'Email'} must be a valid email address (e.g., user@domain.com)`;
+      if (valueStr.length > 254) return `${fieldName || 'Email'} is too long (max 254 characters)`;
+      return null;
+      
+    case 'date':
+      const parsedDate = parseDate(valueStr);
+      if (!parsedDate) return `${fieldName || 'Date'} must be a valid date (YYYY-MM-DD, MM/DD/YYYY, or DD/MM/YYYY)`;
+      const year = parsedDate.getFullYear();
+      if (year < 1900 || year > 2100) return `${fieldName || 'Date'} year must be between 1900 and 2100`;
+      return null;
+      
     case 'boolean':
-      const booleanValue = String(value).toLowerCase();
-      if (!['true', 'false', '1', '0', 'yes', 'no'].includes(booleanValue)) {
-        return 'must be a valid boolean (true/false, 1/0, yes/no)';
+      const booleanValue = valueStr.toLowerCase();
+      const validBooleans = ['true', 'false', '1', '0', 'yes', 'no', 'y', 'n', 'on', 'off'];
+      if (!validBooleans.includes(booleanValue)) {
+        return `${fieldName || 'Field'} must be true/false, yes/no, 1/0, or on/off`;
       }
-      break;
-    
+      return null;
+      
+    case 'phone':
+      // Remove common phone number formatting
+      const phoneClean = valueStr.replace(/[\s\-\(\)\+\.]/g, '');
+      if (phoneClean.length < 7 || phoneClean.length > 15) {
+        return `${fieldName || 'Phone'} must be 7-15 digits`;
+      }
+      if (!/^\d+$/.test(phoneClean)) {
+        return `${fieldName || 'Phone'} must contain only digits and common formatting characters`;
+      }
+      return null;
+      
+    case 'url':
+      try {
+        new URL(valueStr.startsWith('http') ? valueStr : `https://${valueStr}`);
+        return null;
+      } catch {
+        return `${fieldName || 'URL'} must be a valid web address`;
+      }
+      
+    case 'enum':
+      // Enum validation handled separately by validation rules
+      return null;
+      
     default:
       return null;
   }
-  
-  return null;
 }
 
 /**
- * Convert boolean-like strings to actual booleans
+ * Enhanced boolean parsing with comprehensive value support
  */
 export function parseBoolean(value: any): boolean {
   if (typeof value === 'boolean') return value;
   
   const stringValue = String(value).toLowerCase().trim();
-  return ['true', '1', 'yes', 'on'].includes(stringValue);
+  const trueValues = ['true', '1', 'yes', 'y', 'on', 'active', 'enabled'];
+  const falseValues = ['false', '0', 'no', 'n', 'off', 'inactive', 'disabled'];
+  
+  if (trueValues.includes(stringValue)) return true;
+  if (falseValues.includes(stringValue)) return false;
+  
+  // Default to false for unrecognized values
+  return false;
+}
+
+/**
+ * Enhanced data transformation with type coercion
+ */
+export function transformValue(value: any, type: string): any {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const valueStr = String(value).trim();
+  
+  switch (type.toLowerCase()) {
+    case 'number':
+    case 'integer':
+      const num = Number(valueStr);
+      return isNaN(num) ? value : (type === 'integer' ? Math.round(num) : num);
+      
+    case 'boolean':
+      return parseBoolean(valueStr);
+      
+    case 'date':
+      const date = parseDate(valueStr);
+      return date ? date.toISOString().split('T')[0] : value; // Return YYYY-MM-DD format
+      
+    case 'string':
+    case 'text':
+      return valueStr;
+      
+    case 'email':
+      return valueStr.toLowerCase();
+      
+    case 'phone':
+      // Normalize phone number format
+      return valueStr.replace(/[\s\-\(\)\+\.]/g, '');
+      
+    case 'employment_type':
+      return cleanEmploymentType(valueStr);
+      
+    default:
+      return value;
+  }
 }
 
 /**

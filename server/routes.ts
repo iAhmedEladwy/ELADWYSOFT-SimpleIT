@@ -25,9 +25,65 @@ import { emailService } from "./emailService";
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
-// Helper function to generate IDs
-const generateId = (prefix: string, num: number) => {
-  return `${prefix}${num.toString().padStart(5, "0")}`;
+// Enhanced ID generation with system config support
+const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
+  try {
+    // Get system config for prefixes
+    const config = await storage.getSystemConfig();
+    
+    let prefix: string;
+    let nextNumber: number;
+    
+    switch (entityType) {
+      case 'asset':
+        prefix = config?.assetIdPrefix || 'AST-';
+        break;
+      case 'employee':
+        prefix = config?.empIdPrefix || 'EMP-';
+        break;
+      case 'ticket':
+        prefix = config?.ticketIdPrefix || 'TKT-';
+        break;
+      default:
+        prefix = 'ID-';
+    }
+    
+    if (customNumber) {
+      nextNumber = customNumber;
+    } else {
+      // Get next available number by checking existing IDs
+      const existingItems = await (async () => {
+        switch (entityType) {
+          case 'asset': return await storage.getAssets();
+          case 'employee': return await storage.getEmployees();
+          case 'ticket': return await storage.getTickets();
+          default: return [];
+        }
+      })();
+      
+      // Find highest number with this prefix
+      let maxNumber = 0;
+      existingItems.forEach((item: any) => {
+        if (item.id && item.id.startsWith(prefix)) {
+          const numberPart = item.id.replace(prefix, '');
+          const num = parseInt(numberPart);
+          if (!isNaN(num) && num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      });
+      
+      nextNumber = maxNumber + 1;
+    }
+    
+    return `${prefix}${nextNumber.toString().padStart(5, "0")}`;
+  } catch (error) {
+    console.error('Error generating ID:', error);
+    // Fallback to simple generation
+    const prefixMap = { asset: 'AST-', employee: 'EMP-', ticket: 'TKT-' };
+    const num = customNumber || Date.now() % 100000;
+    return `${prefixMap[entityType]}${num.toString().padStart(5, "0")}`;
+  }
 };
 
 // Helper function to validate request body against schema
@@ -1496,14 +1552,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const [index, row] of parsedData.entries()) {
         try {
-          // Generate empId using system config prefix
-          const config = await storage.getSystemConfig();
-          const empIdPrefix = config?.employeeIdPrefix || 'EMP';
-          
-          // Get next sequence number  
-          const existingEmployees = await storage.getAllEmployees();
-          const nextEmpNumber = existingEmployees.length + 1;
-          const generatedEmpId = `${empIdPrefix}${String(nextEmpNumber).padStart(5, '0')}`;
+          // Generate empId using enhanced system
+          const generatedEmpId = await generateId('employee');
 
           // Validate and clean employment type BEFORE creating employee data
           const rawEmploymentType = row['Employment Type'] || row.employmentType || row['employment_type'] || '';
@@ -1640,18 +1690,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const [index, row] of parsedData.entries()) {
         try {
-          // Get the current config for ticketId generation
-          const config = await storage.getSystemConfig();
-          const ticketIdPrefix = config?.ticketIdPrefix || 'TKT-';
-          
-          // Generate unique ticket sequence number using timestamp for uniqueness
-          const existingTickets = await storage.getAllTickets();
-          const nextTicketNumber = existingTickets.length + index + 1;
-          const timestamp = Date.now();
-          const uniqueTicketId = row['Ticket ID'] || row.ticketId || `${ticketIdPrefix}${String(nextTicketNumber).padStart(4, '0')}`;
+          // Generate ticket ID using enhanced system
+          let ticketId = row['Ticket ID'] || row.ticketId;
+          if (!ticketId) {
+            ticketId = await generateId('ticket');
+          }
           
           const ticketData: any = {
-            ticketId: uniqueTicketId,
+            ticketId,
             summary: row['Summary'] || row.summary || 'Imported Ticket',
             description: row['Description'] || row.description || '',
             category: row['Category'] || row.category || '',
@@ -1718,7 +1764,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Enhanced Import/Export API endpoints for better field mapping and validation
   
-  // Get database schema for an entity type
+  // Import the schema routes
+  const importSchemaRoutes = await import('./routes/import-schema.js');
+  app.use('/api/import', importSchemaRoutes.default);
+  
+  // Legacy schema endpoint (keeping for compatibility)
   app.get("/api/import/schema/:entityType", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const { entityType } = req.params;
@@ -2799,24 +2849,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             counter++;
             
-            // Generate asset ID if not provided
+            // Generate asset ID using enhanced system
             let assetId = data.assetId;
             if (!assetId) {
-              // Add type prefix
-              let typePrefix = "";
-              switch (data.type) {
-                case "Laptop": typePrefix = "LT-"; break;
-                case "Desktop": typePrefix = "DT-"; break;
-                case "Mobile": typePrefix = "MB-"; break;
-                case "Tablet": typePrefix = "TB-"; break;
-                case "Monitor": typePrefix = "MN-"; break;
-                case "Printer": typePrefix = "PR-"; break;
-                case "Server": typePrefix = "SV-"; break;
-                case "Network": typePrefix = "NW-"; break;
-                default: typePrefix = "OT-";
-              }
-              
-              assetId = `${assetPrefix}${typePrefix}${counter.toString().padStart(4, "0")}`;
+              assetId = await generateId('asset');
             }
             
             const assetData: schema.InsertAsset = {
