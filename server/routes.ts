@@ -54,9 +54,9 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
       // Get next available number by checking existing IDs
       const existingItems = await (async () => {
         switch (entityType) {
-          case 'asset': return await storage.getAssets();
-          case 'employee': return await storage.getEmployees();
-          case 'ticket': return await storage.getTickets();
+          case 'asset': return await storage.getAllAssets();
+          case 'employee': return await storage.getAllEmployees();
+          case 'ticket': return await storage.getAllTickets();
           default: return [];
         }
       })();
@@ -1602,9 +1602,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Validate required fields first
-          const englishName = row['English Name'] || row.englishName || row['name'] || row.name;
-          const email = row['Email'] || row.email || row['email_address'] || row.emailAddress;
+          // Debug: Log available columns and data (can be removed in production)
+          // console.log('Available columns in row:', Object.keys(row));
+          // console.log('Row data:', JSON.stringify(row, null, 2));
+          
+          // Special handling for generic column names
+          if (Object.keys(row).includes('_0')) {
+            // console.log('Detected generic column names, accessing by index'); // Debug logging
+            const englishName = row._0;
+            const email = row._1;
+            
+            // Skip header row
+            if (englishName === 'englishName' || email === 'email') {
+              console.log('Skipping header row');
+              continue;
+            }
+            
+            if (!englishName || englishName.trim() === '') {
+              throw new Error('English Name is required but missing or empty');
+            }
+            
+            if (!email || email.trim() === '') {
+              throw new Error('Email is required but missing or empty');
+            }
+            
+            const employeeData: any = {
+              empId: await generateId('employee'),
+              englishName: englishName.trim(),
+              arabicName: null,
+              department: row._2 || 'General',
+              idNumber: await generateId('employee'),
+              title: row._3 || 'Employee',
+              directManager: null,
+              employmentType: 'Full-time',
+              joiningDate: null,
+              exitDate: null,
+              status: 'Active',
+              personalMobile: null,
+              workMobile: null,
+              personalEmail: email.trim(),
+              corporateEmail: null,
+              userId: null
+            };
+            
+            const result = await storage.createEmployee(employeeData);
+            importResults.push(result);
+            continue;
+          }
+          
+          // Validate required fields first  
+          const englishName = row.englishName || row['English Name'] || row.name || row['Name'];
+          const email = row.email || row['Email'] || row.emailAddress || row['email_address'];
           
           if (!englishName || englishName.trim() === '') {
             throw new Error('English Name is required but missing or empty');
@@ -1721,6 +1769,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const [index, row] of parsedData.entries()) {
         try {
+          console.log(`Processing ticket row ${index + 1}:`, Object.keys(row));
+          
+          // Handle CSV with generic column names like employees
+          if (Object.keys(row).includes('_0')) {
+            // console.log('Detected generic column names for tickets, accessing by index'); // Debug logging
+            
+            // Skip header row
+            if (row._0 === 'summary' || row._0 === 'Summary') {
+              console.log('Skipping ticket header row');
+              continue;
+            }
+            
+            // Generate ticket ID
+            const ticketId = await generateId('ticket');
+            
+            // Find an active employee for submitted_by_id
+            const employees = await storage.getAllEmployees();
+            console.log(`Found ${employees.length} employees for ticket assignment`);
+            
+            if (employees.length === 0) {
+              throw new Error('No employees found in the system to assign as ticket submitter');
+            }
+            
+            const activeEmployee = employees.find(emp => emp.status === 'Active') || employees[0];
+            console.log(`Using employee ID ${activeEmployee.id} for ticket submitter`);
+            
+            const ticketData: any = {
+              ticketId,
+              summary: row._0 || 'Imported Ticket',
+              description: row._1 || '',
+              category: row._2 || '',
+              requestType: 'Other',
+              urgency: 'Medium',
+              impact: 'Medium',
+              priority: row._3 || 'Medium',
+              status: 'Open',
+              submittedById: activeEmployee.id,
+              assignedToId: null,
+              relatedAssetId: null,
+              dueDate: null,
+              slaTarget: null,
+              escalationLevel: null,
+              tags: null,
+              rootCause: null,
+              workaround: null,
+              resolution: null,
+              resolutionNotes: null,
+              privateNotes: null
+            };
+            
+            const result = await storage.createTicket(ticketData);
+            importResults.push(result);
+            continue;
+          }
+          
           // Generate ticket ID using enhanced system
           let ticketId = row['Ticket ID'] || row.ticketId;
           if (!ticketId) {
@@ -1737,7 +1840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             impact: row['Impact'] || row.impact || 'Medium',
             priority: row['Priority'] || row.priority || 'Medium',
             status: row['Status'] || row.status || 'Open',
-            submittedById: null,
+            submittedById: null, // Will be set below with proper validation
             assignedToId: null,
             relatedAssetId: null,
             dueDate: null,
@@ -1751,10 +1854,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
             privateNotes: row['Private Notes'] || row.privateNotes || null
           };
 
-          // Parse IDs properly
+          // Parse IDs properly - find valid employee for submitted_by_id
           if (row['Submitted By ID'] || row.submittedById) {
             const submittedById = parseInt(row['Submitted By ID'] || row.submittedById);
-            ticketData.submittedById = !isNaN(submittedById) ? submittedById : null;
+            if (!isNaN(submittedById)) {
+              // Verify the employee exists
+              const employee = await storage.getEmployee(submittedById);
+              ticketData.submittedById = employee ? submittedById : null;
+            }
+          }
+          
+          // If no valid submittedById found, find any active employee
+          if (!ticketData.submittedById) {
+            const employees = await storage.getAllEmployees();
+            console.log(`Found ${employees.length} employees. Looking for active employee...`);
+            
+            if (employees.length > 0) {
+              // Log first few employees for debugging
+              console.log('First 3 employees:', employees.slice(0, 3).map(emp => ({ id: emp.id, status: emp.status, name: emp.name })));
+              
+              // First try to find an active employee
+              let activeEmployee = employees.find(emp => emp.status === 'Active');
+              
+              // If no active employee found, use the first available employee
+              if (!activeEmployee) {
+                activeEmployee = employees[0];
+                console.log(`No active employee found, using first employee: ID ${activeEmployee.id}, status: ${activeEmployee.status}`);
+              } else {
+                console.log(`Found active employee: ID ${activeEmployee.id}, status: ${activeEmployee.status}`);
+              }
+              
+              ticketData.submittedById = activeEmployee.id;
+              console.log(`Final submittedById assigned: ${ticketData.submittedById}`);
+            } else {
+              throw new Error('No employees found in the system to assign as ticket submitter');
+            }
           }
 
           if (row['Assigned To ID'] || row.assignedToId) {

@@ -57,7 +57,8 @@ export function parseCSV(
     const parserOptions = {
       separator: options.delimiter || ',',
       skipEmptyLines: options.skipEmptyLines !== false,
-      headers: options.headers !== false
+      headers: options.headers !== false ? true : false,
+      mapHeaders: ({ header }: { header: string }) => header.trim()
     };
 
     stream
