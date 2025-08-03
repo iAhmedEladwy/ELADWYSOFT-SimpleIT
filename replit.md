@@ -16,6 +16,9 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 - **COMPLETED**: Updated import templates to exclude auto-generated ID fields (assetId, employeeId, ticketId)
 - **ENHANCED**: Templates now include comprehensive field guidance with required/optional indicators (*) and format examples
 - **IMPROVED**: Template routing fixed to prevent conflicts with parameterized routes
+- **FIXED**: Resolved Select.Item empty value error in field mapping interface preventing runtime crashes
+- **ENHANCED**: Updated apiRequest function to properly handle FormData uploads for import functionality
+- **RESOLVED**: Fixed fetch API method error across all import modules (employees, assets, tickets)
 
 ## User Preferences
 - Use clean, professional code structure with comments

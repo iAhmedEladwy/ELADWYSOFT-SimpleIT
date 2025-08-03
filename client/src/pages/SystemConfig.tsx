@@ -266,10 +266,7 @@ function SystemConfig() {
       
       setImportProgress(50);
       
-      const response = await apiRequest(`/api/${activeImportTab}/import`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await apiRequest(`/api/${activeImportTab}/import`, 'POST', formData, { isFormData: true });
       
       setImportProgress(90);
       setImportResults(response);

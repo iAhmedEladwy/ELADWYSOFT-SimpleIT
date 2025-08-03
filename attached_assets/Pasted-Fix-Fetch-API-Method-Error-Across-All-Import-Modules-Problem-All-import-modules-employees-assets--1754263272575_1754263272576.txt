@@ -1,0 +1,66 @@
+Fix Fetch API Method Error Across All Import Modules
+Problem
+All import modules (employees, assets, tickets) are failing with error:
+Failed to execute 'fetch' on 'Window': '[object Object]' is not a valid HTTP method.
+Error Location:
+
+File: /client/src/lib/queryClient.ts line 16
+Function: apiRequest
+Called from: handleMappingComplete in SystemConfig.tsx
+Triggered by: Field mapping interface completion in all three modules
+
+Root Cause
+The method parameter being passed to fetch() is an object instead of a string like 'POST', 'GET', etc. This affects all import types.
+Solution: Fix Method Parameter in All Import Module API Calls
+1. Fix queryClient.ts apiRequest Function (Global Fix)
+
+Check line 16 in /client/src/lib/queryClient.ts
+Ensure method parameter is a string, not an object
+Add validation to confirm method is valid HTTP method string
+Default to 'GET' if method is invalid or missing
+This fixes the error for all three modules
+
+2. Fix SystemConfig.tsx for All Import Types
+
+Check line 269 in /client/src/pages/SystemConfig.tsx
+Fix handleMappingComplete for employees import
+Fix handleMappingComplete for assets import
+Fix handleMappingComplete for tickets import
+Ensure all three import types pass method as string, not object
+Verify proper HTTP methods ('POST', 'GET', 'PUT', 'DELETE') for each import type
+
+3. Fix FieldMappingInterface.tsx for All Modules
+
+Check line 495 in /client/src/components/import/FieldMappingInterface.tsx
+Fix onClick handler for employees mapping completion
+Fix onClick handler for assets mapping completion
+Fix onClick handler for tickets mapping completion
+Ensure all three import types send proper HTTP method strings
+Fix any shared mapping completion logic affecting all modules
+
+4. Check Import-Specific Components
+
+Employees import component - fix any module-specific API calls
+Assets import component - fix any module-specific API calls
+Tickets import component - fix any module-specific API calls
+Shared import utilities - fix any common API request functions
+Import service files - fix method parameters in all service calls
+
+5. Common Issues to Fix Across All Modules:
+
+Method parameter destructuring error: { method: 'POST' } passed as method instead of 'POST'
+Configuration object confusion: Entire request config passed as method
+Undefined method: Method parameter is undefined, becoming [object Object]
+Object spread issue: Method getting overwritten by object spread
+Module-specific method handling: Each import type may have different method requirements
+
+6. Test All Import Modules
+
+Test employees field mapping completion - verify API calls work
+Test assets field mapping completion - verify API calls work
+Test tickets field mapping completion - verify API calls work
+Test import execution for all three types - ensure fetch calls succeed
+Check browser network tab - confirm HTTP methods are correct for all modules
+Verify all import workflows work without fetch errors
+
+This will systematically fix the fetch API error across the entire import system, ensuring all three import modules (employees, assets, tickets) work properly.
