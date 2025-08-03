@@ -3521,6 +3521,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New Unified Import/Export Routes
+  // Export routes
+  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const data = await storage.getAllEmployees();
+      
+      const csvData = data.map(item => ({
+        empId: item.empId || '',
+        englishName: item.englishName || '',
+        arabicName: item.arabicName || '',
+        department: item.department || '',
+        idNumber: item.nationalId || '',
+        title: item.position || '',
+        directManager: item.managerId || '',
+        employmentType: item.employmentType || '',
+        joiningDate: item.startDate || '',
+        exitDate: '',
+        status: item.status || '',
+        personalMobile: item.phone || '',
+        workMobile: '',
+        personalEmail: item.email || '',
+        corporateEmail: ''
+      }));
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="employees_export.csv"');
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const data = await storage.getAllAssets();
+      
+      const csvData = data.map(item => ({
+        assetId: item.assetId || '',
+        type: item.type || '',
+        brand: item.brand || '',
+        modelNumber: item.modelNumber || '',
+        modelName: item.modelName || '',
+        serialNumber: item.serialNumber || '',
+        specs: item.specs || '',
+        cpu: item.cpu || '',
+        ram: item.ram || '',
+        storage: item.storage || '',
+        status: item.status || '',
+        purchaseDate: item.purchaseDate || '',
+        buyPrice: item.buyPrice || '',
+        warrantyExpiryDate: item.warrantyExpiryDate || '',
+        lifeSpan: item.lifeSpan || '',
+        outOfBoxOs: item.outOfBoxOs || '',
+        assignedEmployeeId: item.assignedEmployeeId || ''
+      }));
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assets_export.csv"');
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const data = await storage.getAllTickets();
+      
+      const csvData = data.map(item => ({
+        ticketId: item.ticketId || '',
+        submittedById: item.submittedById || '',
+        requestType: item.requestType || '',
+        category: item.category || '',
+        priority: item.priority || '',
+        urgency: item.urgency || '',
+        impact: item.impact || '',
+        summary: item.summary || '',
+        description: item.description || '',
+        relatedAssetId: item.relatedAssetId || '',
+        status: item.status || '',
+        assignedToId: item.assignedToId || '',
+        resolution: item.resolution || '',
+        dueDate: item.dueDate || '',
+        tags: item.tags || ''
+      }));
+      
+      const csv = [
+        Object.keys(csvData[0] || {}).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
+      res.send(csv);
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  // Import routes
+  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { data } = req.body;
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ message: "Invalid data format" });
+      }
+
+      let successful = 0;
+      const errors = [];
+
+      for (const item of data) {
+        try {
+          await storage.createEmployee({
+            empId: item.empId,
+            englishName: item.englishName,
+            arabicName: item.arabicName || null,
+            department: item.department || null,
+            nationalId: item.idNumber || null,
+            position: item.title || null,
+            managerId: item.directManager ? parseInt(item.directManager) : null,
+            employmentType: item.employmentType || 'Full-time',
+            startDate: item.joiningDate || null,
+            status: item.status || 'Active',
+            phone: item.personalMobile || null,
+            email: item.personalEmail || null
+          });
+          successful++;
+        } catch (error: any) {
+          errors.push(`Employee ${item.englishName}: ${error.message}`);
+        }
+      }
+
+      res.json({ successful, failed: errors.length, errors });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { data } = req.body;
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ message: "Invalid data format" });
+      }
+
+      let successful = 0;
+      const errors = [];
+
+      for (const item of data) {
+        try {
+          await storage.createAsset({
+            assetId: item.assetId,
+            type: item.type,
+            brand: item.brand,
+            modelNumber: item.modelNumber || null,
+            modelName: item.modelName || null,
+            serialNumber: item.serialNumber,
+            specs: item.specs || null,
+            cpu: item.cpu || null,
+            ram: item.ram || null,
+            storage: item.storage || null,
+            status: item.status || 'Available',
+            purchaseDate: item.purchaseDate || null,
+            buyPrice: item.buyPrice ? parseFloat(item.buyPrice) : null,
+            warrantyExpiryDate: item.warrantyExpiryDate || null,
+            lifeSpan: item.lifeSpan || null,
+            outOfBoxOs: item.outOfBoxOs || null,
+            assignedEmployeeId: item.assignedEmployeeId ? parseInt(item.assignedEmployeeId) : null
+          });
+          successful++;
+        } catch (error: any) {
+          errors.push(`Asset ${item.assetId}: ${error.message}`);
+        }
+      }
+
+      res.json({ successful, failed: errors.length, errors });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.post("/api/import/tickets", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { data } = req.body;
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ message: "Invalid data format" });
+      }
+
+      let successful = 0;
+      const errors = [];
+
+      for (const item of data) {
+        try {
+          await storage.createTicket({
+            ticketId: item.ticketId,
+            submittedById: parseInt(item.submittedById),
+            requestType: item.requestType || 'Other',
+            category: item.category || 'Other',
+            priority: item.priority || 'Medium',
+            urgency: item.urgency || 'Medium',
+            impact: item.impact || 'Medium',
+            summary: item.summary,
+            description: item.description,
+            relatedAssetId: item.relatedAssetId ? parseInt(item.relatedAssetId) : null,
+            status: item.status || 'Open',
+            assignedToId: item.assignedToId ? parseInt(item.assignedToId) : null,
+            resolution: item.resolution || null,
+            dueDate: item.dueDate || null,
+            tags: item.tags || null
+          });
+          successful++;
+        } catch (error: any) {
+          errors.push(`Ticket ${item.summary}: ${error.message}`);
+        }
+      }
+
+      res.json({ successful, failed: errors.length, errors });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Dashboard Summary with Historical Comparisons
   app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
     try {

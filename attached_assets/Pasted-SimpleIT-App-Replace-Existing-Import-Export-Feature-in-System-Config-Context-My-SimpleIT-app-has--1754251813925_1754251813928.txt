@@ -1,0 +1,165 @@
+SimpleIT App: Replace Existing Import/Export Feature in System Config
+Context
+My SimpleIT app has an existing import/export feature in the System Config page that is currently not working properly. I need you to completely replace this existing functionality with a robust, fully-functional import/export system.
+
+Current Situation
+Import/Export buttons/interface already exist in System Config page
+The existing implementation is broken/non-functional
+Users expect to access import/export from the System Config page
+Need to maintain the same UI location but replace with working functionality
+Replacement Requirements
+Replace Existing UI Elements
+Keep import/export in the System Config page location
+Replace broken buttons/forms with working components
+Maintain consistent design with rest of the application
+Add proper progress indicators and status messages
+Full Import/Export System Implementation
+Export Functionality
+Location: System Config page Features:
+
+Export buttons for: Employees, Assets, Tickets
+CSV format (Excel-compatible)
+Include all relevant fields for each data type
+Filter options (by status, date range, department)
+Generate downloadable files with descriptive names
+Progress indicators for large datasets
+Success/failure notifications
+Import Functionality
+Location: System Config page
+Features:
+
+Drag-and-drop upload areas for each data type
+CSV file validation and preview
+Comprehensive error checking and reporting
+Batch validation before import
+Detailed error messages with row numbers
+Option to import valid records while reporting errors
+Progress tracking during import process
+Database Schema Integration
+Employee Fields (Based on Your Schema)
+Export/Import Fields:
+
+empId, englishName, arabicName, department, idNumber, title, directManager, 
+employmentType, joiningDate, exitDate, status, personalMobile, workMobile, 
+personalEmail, corporateEmail
+Validation Rules:
+
+empId: Unique, matches your prefix format
+englishName: Required, max 100 chars
+department: Required, validate against existing departments
+employmentType: Must be: Full-time, Part-time, Contract, Intern
+status: Must be: Active, Resigned, Terminated, On Leave
+joiningDate: Required, valid date (YYYY-MM-DD)
+directManager: Must reference existing employee if provided
+Email validation for email fields
+Asset Fields (Based on Your Schema)
+Export/Import Fields:
+
+assetId, type, brand, modelNumber, modelName, serialNumber, specs, cpu, ram, 
+storage, status, purchaseDate, buyPrice, warrantyExpiryDate, lifeSpan, 
+outOfBoxOs, assignedEmployeeId
+Validation Rules:
+
+assetId: Unique, matches your prefix format
+serialNumber: Required, must be unique
+status: Must be: Available, In Use, Damaged, Maintenance, Sold, Retired
+buyPrice: Numeric with 2 decimals if provided
+assignedEmployeeId: Must reference existing employee
+Date validation for date fields
+Ticket Fields (Based on Your Schema)
+Export/Import Fields:
+
+ticketId, submittedById, requestType, category, priority, urgency, impact, 
+summary, description, relatedAssetId, status, assignedToId, resolution, 
+dueDate, tags
+Validation Rules:
+
+ticketId: Unique, matches your prefix format
+submittedById: Must reference existing employee
+priority: Must be: Low, Medium, High
+status: Must be: Open, In Progress, Resolved, Closed
+assignedToId: Must reference existing user if provided
+relatedAssetId: Must reference existing asset if provided
+Implementation Instructions
+Step 1: Remove Existing Broken Code
+Identify and remove the current non-functional import/export code
+Keep the UI placement in System Config page
+Remove any broken event handlers or API calls
+Step 2: Implement New Export System
+javascript
+// Export functionality should:
+- Generate proper CSV files with all fields
+- Handle large datasets efficiently  
+- Include proper headers and data formatting
+- Provide download with descriptive filenames
+- Show progress for large exports
+- Handle errors gracefully
+Step 3: Implement New Import System
+javascript
+// Import functionality should:
+- Accept CSV files via drag-and-drop or file picker
+- Validate file format and size (max 10MB)
+- Parse CSV with Papa Parse library
+- Validate all data against database schema
+- Show detailed error reports with row numbers
+- Allow partial imports (skip invalid rows)
+- Update database using proper Drizzle ORM transactions
+Step 4: Error Handling Framework
+File Validation: Check format, size, encoding
+Data Validation: Required fields, data types, enums, uniqueness
+Relationship Validation: Foreign key constraints
+User Feedback: Clear error messages, progress indicators
+Logging: Record all import/export activities
+Step 5: User Interface Requirements
+Export Section: Buttons for each data type with optional filters
+Import Section: Drag-and-drop zones with file preview
+Progress Indicators: Visual feedback during processing
+Results Display: Success/error summaries with details
+Status Messages: Clear feedback for all operations
+Technical Specifications
+CSV Processing
+Use Papa Parse for robust CSV parsing
+Handle different encodings (UTF-8, UTF-16)
+Process large files in chunks (100 rows at a time)
+Validate headers before processing data
+Support different date formats and convert to YYYY-MM-DD
+Database Integration
+Use existing Drizzle ORM setup
+Implement proper transactions for imports
+Validate against actual database constraints
+Handle foreign key relationships correctly
+Update related tables as needed
+Error Reporting Format
+javascript
+// Error structure example:
+{
+  row: 15,
+  field: "employmentType", 
+  error: "Invalid value 'Freelance'. Must be one of: Full-time, Part-time, Contract, Intern",
+  value: "Freelance"
+}
+Quality Requirements
+Test with various CSV formats and sizes
+Handle edge cases: empty files, malformed data, special characters
+Verify all validation rules work correctly
+Test rollback functionality
+Ensure proper memory management for large files
+Validate all foreign key relationships
+Expected Deliverables
+Replacement of broken import/export code in System Config page
+Working export functionality for all three data types
+Working import functionality with comprehensive validation
+Error handling system with detailed user feedback
+Progress indicators for better user experience
+Integration with existing database using Drizzle ORM
+Activity logging for audit trail
+Sample CSV templates for users
+Success Criteria
+Users can successfully export data from System Config page
+Users can successfully import valid CSV files
+Invalid data is properly rejected with clear error messages
+System handles large files without crashing
+All database relationships are maintained correctly
+Import/export activities are logged for audit purposes
+Please completely replace the existing broken import/export functionality with this robust, fully-working implementation while maintaining the same location in the System Config page.
+
