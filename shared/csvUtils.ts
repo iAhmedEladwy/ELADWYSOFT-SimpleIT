@@ -181,6 +181,82 @@ export function validateCSVData(
 }
 
 /**
+ * Enhanced date parsing with multiple format support
+ */
+export function parseDate(dateStr: string): Date | null {
+  if (!dateStr || dateStr.trim() === '' || dateStr.toLowerCase() === 'na' || dateStr.toLowerCase() === 'n/a') {
+    return null;
+  }
+
+  const cleanStr = dateStr.trim();
+
+  // Try standard Date parsing first
+  let date = new Date(cleanStr);
+  if (!isNaN(date.getTime())) {
+    return date;
+  }
+
+  // Try MM/DD/YYYY format (most common in CSV imports)
+  const mmddMatch = cleanStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (mmddMatch) {
+    const month = parseInt(mmddMatch[1]) - 1; // months are 0-indexed
+    const day = parseInt(mmddMatch[2]);
+    const year = parseInt(mmddMatch[3]);
+    date = new Date(year, month, day);
+    if (!isNaN(date.getTime()) && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+      return date;
+    }
+  }
+
+  // Try YYYY-MM-DD format
+  const yyyyMatch = cleanStr.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (yyyyMatch) {
+    const year = parseInt(yyyyMatch[1]);
+    const month = parseInt(yyyyMatch[2]) - 1;
+    const day = parseInt(yyyyMatch[3]);
+    date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Clean and validate employment type values
+ */
+export function cleanEmploymentType(value: string): string {
+  if (!value || value.trim() === '' || value.toLowerCase() === 'na' || value.toLowerCase() === 'n/a') {
+    return 'Full-time'; // Default to Full-time for missing values
+  }
+
+  const cleanValue = value.trim();
+  const validTypes = ['Full-time', 'Part-time', 'Contract', 'Intern'];
+  
+  // Direct match
+  if (validTypes.includes(cleanValue)) {
+    return cleanValue;
+  }
+
+  // Case insensitive match
+  const lowerValue = cleanValue.toLowerCase();
+  for (const type of validTypes) {
+    if (type.toLowerCase() === lowerValue) {
+      return type;
+    }
+  }
+
+  // Partial matches
+  if (lowerValue.includes('full') || lowerValue.includes('permanent')) return 'Full-time';
+  if (lowerValue.includes('part')) return 'Part-time';
+  if (lowerValue.includes('contract') || lowerValue.includes('temp')) return 'Contract';
+  if (lowerValue.includes('intern') || lowerValue.includes('trainee')) return 'Intern';
+
+  return 'Full-time'; // Default to Full-time for unrecognized values
+}
+
+/**
  * Transform CSV data according to rules
  */
 export function transformCSVData(

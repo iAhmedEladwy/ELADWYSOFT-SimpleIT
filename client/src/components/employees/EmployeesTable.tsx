@@ -234,7 +234,7 @@ export default function EmployeesTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">{employee.employeeId || employee.empId}</TableCell>
+                <TableCell className="font-medium">{employee.employeeId}</TableCell>
                 <TableCell>
                   <button 
                     className="text-gray-900 px-2 py-1 rounded text-left cursor-pointer font-medium"
@@ -244,12 +244,12 @@ export default function EmployeesTable({
                   </button>
                 </TableCell>
                 <TableCell>{employee.department}</TableCell>
-                <TableCell>{employee.position || employee.title}</TableCell>
+                <TableCell>{employee.position}</TableCell>
                 <TableCell>{employee.employmentType || 'Full-time'}</TableCell>
                 <TableCell>
                   {getStatusBadge(employee.status || (employee.isActive !== false ? 'Active' : 'Resigned'))}
                 </TableCell>
-                <TableCell>{formatDate(employee.dateOfJoining || employee.joiningDate)}</TableCell>
+                <TableCell>{formatDate(employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
