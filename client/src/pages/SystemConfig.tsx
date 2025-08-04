@@ -16,7 +16,7 @@ import {
   X, CheckCircle2, AlertCircle, Loader2, Database,
   Mail, Shield, Globe, Filter, Clock, Trash
 } from 'lucide-react';
-import FieldMappingInterface from '@/components/FieldMappingInterface';
+import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
 // Types
 interface SystemConfig {

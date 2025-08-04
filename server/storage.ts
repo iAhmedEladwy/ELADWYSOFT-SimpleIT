@@ -640,6 +640,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
+      // Remove any empId field that might be passed in and let database auto-generate
+      const { empId, ...cleanEmployee } = employee as any;
+      
       // Let database auto-generate emp_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO employees (
@@ -651,21 +654,21 @@ export class DatabaseStorage implements IStorage {
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()
         ) RETURNING *
       `, [
-        employee.englishName,
-        employee.arabicName || null,
-        employee.department,
-        employee.idNumber || employee.nationalId || `ID-${Date.now()}`,
-        employee.title || employee.position || 'Employee',
-        employee.directManager || null,
-        employee.employmentType || 'Full-time',
-        employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0],
-        employee.exitDate || null,
-        employee.status || 'Active',
-        employee.personalMobile || null,
-        employee.workMobile || null,
-        employee.personalEmail || null,
-        employee.corporateEmail || null,
-        employee.userId || null
+        cleanEmployee.englishName,
+        cleanEmployee.arabicName || null,
+        cleanEmployee.department,
+        cleanEmployee.idNumber || `ID-${Date.now()}`,
+        cleanEmployee.title || 'Employee',
+        cleanEmployee.directManager || null,
+        cleanEmployee.employmentType || 'Full-time',
+        cleanEmployee.joiningDate || new Date().toISOString().split('T')[0],
+        cleanEmployee.exitDate || null,
+        cleanEmployee.status || 'Active',
+        cleanEmployee.personalMobile || null,
+        cleanEmployee.workMobile || null,
+        cleanEmployee.personalEmail || null,
+        cleanEmployee.corporateEmail || null,
+        cleanEmployee.userId || null
       ]);
       
       console.log('Employee created successfully:', result.rows[0]);
