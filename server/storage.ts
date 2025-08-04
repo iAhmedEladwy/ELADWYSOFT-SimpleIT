@@ -1135,6 +1135,52 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
+      // Log the data being inserted to identify the problematic field
+      console.log('Creating ticket with data:', {
+        summary: ticket.summary?.length || 0,
+        description: ticket.description?.length || 0,
+        requestType: ticket.requestType?.length || 0,
+        category: ticket.category?.length || 0,
+        priority: ticket.priority,
+        urgency: ticket.urgency?.length || 0,
+        impact: ticket.impact?.length || 0,
+        status: ticket.status
+      });
+      
+      // Ensure field length limits are respected
+      const safeData = {
+        summary: (ticket.summary || 'Ticket').substring(0, 255),
+        description: ticket.description || '',
+        requestType: (ticket.requestType || 'Other').substring(0, 100),
+        category: (ticket.category || 'Incident').substring(0, 100),
+        priority: ticket.priority || 'Medium',
+        urgency: (ticket.urgency || 'Medium').substring(0, 50),
+        impact: (ticket.impact || 'Medium').substring(0, 50),
+        status: ticket.status || 'Open',
+        submittedById: ticket.submittedById,
+        assignedToId: ticket.assignedToId || null,
+        relatedAssetId: ticket.relatedAssetId || null,
+        resolution: ticket.resolution || null,
+        resolutionNotes: ticket.resolutionNotes || null,
+        dueDate: ticket.dueDate || null,
+        slaTarget: ticket.slaTarget || null,
+        escalationLevel: (ticket.escalationLevel || '0').toString().substring(0, 10),
+        tags: ticket.tags || null,
+        privateNotes: ticket.privateNotes || null,
+        timeSpent: ticket.timeSpent || 0,
+        isTimeTracking: ticket.isTimeTracking || false,
+        timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
+      };
+      
+      console.log('Safe data after truncation:', {
+        summary: safeData.summary.length,
+        requestType: safeData.requestType.length,
+        category: safeData.category.length,
+        urgency: safeData.urgency.length,
+        impact: safeData.impact.length,
+        escalationLevel: safeData.escalationLevel.length
+      });
+      
       // Let database auto-generate ticket_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO tickets (
@@ -1148,27 +1194,27 @@ export class DatabaseStorage implements IStorage {
           $17, $18, $19, $20, $21, NOW(), NOW()
         ) RETURNING *
       `, [
-        ticket.summary || 'Ticket',
-        ticket.description || '',
-        ticket.requestType || 'Other',
-        ticket.category || 'Incident',
-        ticket.priority || 'Medium',
-        ticket.urgency || 'Medium',
-        ticket.impact || 'Medium',
-        ticket.status || 'Open',
-        ticket.submittedById,
-        ticket.assignedToId || null,
-        ticket.relatedAssetId || null,
-        ticket.resolution || null,
-        ticket.resolutionNotes || null,
-        ticket.dueDate || null,
-        ticket.slaTarget || null,
-        ticket.escalationLevel || '0',
-        ticket.tags || null,
-        ticket.privateNotes || null,
-        ticket.timeSpent || 0,
-        ticket.isTimeTracking || false,
-        ticket.timeTrackingStartedAt || null
+        safeData.summary,
+        safeData.description,
+        safeData.requestType,
+        safeData.category,
+        safeData.priority,
+        safeData.urgency,
+        safeData.impact,
+        safeData.status,
+        safeData.submittedById,
+        safeData.assignedToId,
+        safeData.relatedAssetId,
+        safeData.resolution,
+        safeData.resolutionNotes,
+        safeData.dueDate,
+        safeData.slaTarget,
+        safeData.escalationLevel,
+        safeData.tags,
+        safeData.privateNotes,
+        safeData.timeSpent,
+        safeData.isTimeTracking,
+        safeData.timeTrackingStartedAt
       ]);
       
       console.log('Ticket created successfully:', result.rows[0]);
