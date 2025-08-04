@@ -185,7 +185,7 @@ export const employees = pgTable("employees", {
 // Assets table
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
-  assetId: varchar("asset_id", { length: 20 }).notNull().unique(),
+  assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
   type: varchar("type", { length: 100 }).notNull(),
   brand: varchar("brand", { length: 100 }).notNull(),
   modelNumber: varchar("model_number", { length: 100 }),
@@ -326,7 +326,7 @@ export const upgradeHistory = pgTable("upgrade_history", {
 // Tickets table
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
-  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
+  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`concat('TKT-', lpad((nextval('tickets_id_seq'::regclass))::text, 5, '0'::text))`),
   summary: varchar("summary", { length: 255 }),
   description: text("description").notNull(),
   requestType: varchar("request_type", { length: 100 }).notNull().default('Hardware'),

@@ -874,19 +874,27 @@ export class DatabaseStorage implements IStorage {
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
     try {
-      // Let database auto-generate asset_id, exclude from INSERT
+      // Generate asset_id if not provided (for environments without auto-generation)
+      let assetId = asset.assetId;
+      if (!assetId) {
+        const systemConfig = await this.getSystemConfig();
+        const prefix = systemConfig?.assetIdPrefix || 'AST-';
+        assetId = await this.generateId('asset', prefix);
+      }
+
       const query = `
         INSERT INTO assets (
-          type, brand, model_number, model_name, serial_number, specs,
+          asset_id, type, brand, model_number, model_name, serial_number, specs,
           status, purchase_date, buy_price, warranty_expiry_date,
           life_span, out_of_box_os, assigned_employee_id, cpu, ram, storage,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW()
         ) RETURNING *
       `;
 
       const values = [
+        assetId,
         asset.type || 'Hardware',
         asset.brand || null,
         asset.modelNumber || null,
@@ -906,6 +914,7 @@ export class DatabaseStorage implements IStorage {
       ];
 
       const result = await pool.query(query, values);
+      console.log('Asset created successfully:', result.rows[0]);
       return result.rows[0] as Asset;
     } catch (error) {
       console.error('Error creating asset:', error);
@@ -1143,41 +1152,53 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
-      // Exclude ticketId - let database auto-generate it
-      const insertData = {
-        // ticketId is excluded - database will auto-generate it  
-        summary: ticket.summary || 'Ticket',
-        description: ticket.description || '',
-        requestType: ticket.requestType || 'Other',
-        category: ticket.category || 'Incident',
-        priority: ticket.priority || 'Medium',
-        urgency: ticket.urgency || 'Medium',
-        impact: ticket.impact || 'Medium',
-        status: ticket.status || 'Open',
-        submittedById: ticket.submittedById,
-        assignedToId: ticket.assignedToId || null,
-        relatedAssetId: ticket.relatedAssetId || null,
-        resolution: ticket.resolution || null,
-        resolutionNotes: ticket.resolutionNotes || null,
-        dueDate: ticket.dueDate || null,
-        slaTarget: ticket.slaTarget || null,
-        escalationLevel: ticket.escalationLevel || '0',
-        tags: ticket.tags || null,
-        privateNotes: ticket.privateNotes || null,
-        timeSpent: ticket.timeSpent || 0,
-        isTimeTracking: ticket.isTimeTracking || false,
-        timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
-      };
+      // Generate ticket_id if not provided (for environments without auto-generation)
+      let ticketId = ticket.ticketId;
+      if (!ticketId) {
+        const systemConfig = await this.getSystemConfig();
+        const prefix = systemConfig?.ticketIdPrefix || 'TKT-';
+        ticketId = await this.generateId('ticket', prefix);
+      }
       
-      console.log('Creating ticket with data:', insertData);
+      // Use raw SQL for reliable insertion
+      const result = await pool.query(`
+        INSERT INTO tickets (
+          ticket_id, summary, description, request_type, category, priority,
+          urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
+          resolution, resolution_notes, due_date, sla_target, escalation_level,
+          tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,
+          created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, $22, NOW(), NOW()
+        ) RETURNING *
+      `, [
+        ticketId,
+        ticket.summary || 'Ticket',
+        ticket.description || '',
+        ticket.requestType || 'Other',
+        ticket.category || 'Incident',
+        ticket.priority || 'Medium',
+        ticket.urgency || 'Medium',
+        ticket.impact || 'Medium',
+        ticket.status || 'Open',
+        ticket.submittedById,
+        ticket.assignedToId || null,
+        ticket.relatedAssetId || null,
+        ticket.resolution || null,
+        ticket.resolutionNotes || null,
+        ticket.dueDate || null,
+        ticket.slaTarget || null,
+        ticket.escalationLevel || '0',
+        ticket.tags || null,
+        ticket.privateNotes || null,
+        ticket.timeSpent || 0,
+        ticket.isTimeTracking || false,
+        ticket.timeTrackingStartedAt || null
+      ]);
       
-      const [newTicket] = await db
-        .insert(tickets)
-        .values(insertData)
-        .returning();
-        
-      console.log('Ticket created successfully:', newTicket);
-      return newTicket;
+      console.log('Ticket created successfully:', result.rows[0]);
+      return result.rows[0];
     } catch (error) {
       console.error('Error creating ticket:', error);
       throw error;

@@ -28,6 +28,9 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 - **IMPLEMENTED**: Proper generated column handling in schema with `sql` function for `COALESCE(english_name, arabic_name, emp_id)`
 - **ADDED**: Comprehensive bulk actions functionality to Assets Management with multi-select operations
 - **ENHANCED**: Assets page now supports bulk delete, status change, and assignment operations similar to Employees page
+- **CRITICAL FIX**: Applied consistent ID generation fix across all entities (Employees, Assets, Tickets)
+- **IMPLEMENTED**: Raw SQL insertion methods for all entities to ensure cross-environment compatibility
+- **FIXED**: Ubuntu deployment compatibility - all entity creation now works reliably in both Replit and Ubuntu environments
 
 ## User Preferences
 - Use clean, professional code structure with comments
