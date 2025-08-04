@@ -319,8 +319,14 @@ export default function TicketsTable({
                      e.target.closest('select'))) {
                   return;
                 }
-                if (onEdit) {
-                  onEdit(ticket);
+                try {
+                  if (onEdit) {
+                    onEdit(ticket);
+                  }
+                } catch (error) {
+                  console.error('Row click error:', error);
+                  // Fallback to navigation if edit fails
+                  navigate(`/tickets/${ticket.id}`);
                 }
               }}
             >
@@ -487,13 +493,19 @@ export default function TicketsTable({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Prefetch ticket details data for faster loading
-                        queryClient.prefetchQuery({
-                          queryKey: ['/api/tickets', ticket.id.toString()],
-                          queryFn: () => apiRequest(`/api/tickets/${ticket.id}`, 'GET'),
-                          staleTime: 1000 * 60 * 5,
-                        });
-                        navigate(`/tickets/${ticket.id}`);
+                        try {
+                          // Prefetch ticket details data for faster loading
+                          queryClient.prefetchQuery({
+                            queryKey: ['/api/tickets', ticket.id.toString()],
+                            queryFn: () => apiRequest(`/api/tickets/${ticket.id}`, 'GET'),
+                            staleTime: 1000 * 60 * 5,
+                          });
+                          navigate(`/tickets/${ticket.id}`);
+                        } catch (error) {
+                          console.error('Navigation error:', error);
+                          // Fallback navigation without prefetch
+                          navigate(`/tickets/${ticket.id}`);
+                        }
                       }}
                     >
 {language === 'English' ? 'View Details' : 'عرض التفاصيل'}

@@ -42,6 +42,24 @@ export default function TicketDetails() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
 
+  // Early return if no ticket ID to prevent white pages
+  if (!ticketId) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {language === 'English' ? 'Invalid Ticket ID' : 'معرف تذكرة غير صالح'}
+          </h2>
+          <Button onClick={() => navigate('/tickets')} variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {language === 'English' ? 'Back to Tickets' : 'العودة للتذاكر'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Translations
   const translations = {
     backToTickets: language === 'English' ? 'Back to Tickets' : 'العودة للتذاكر',
@@ -254,7 +272,28 @@ export default function TicketDetails() {
     );
   }
 
-  if (ticketError || !ticket) {
+  if (ticketError) {
+    console.error('Ticket loading error:', ticketError);
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {language === 'English' ? 'Error Loading Ticket' : 'خطأ في تحميل التذكرة'}
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {ticketError?.message || (language === 'English' ? 'Unable to load ticket details' : 'غير قادر على تحميل تفاصيل التذكرة')}
+          </p>
+          <Button onClick={() => navigate('/tickets')} variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {translations.backToTickets}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ticket) {
     return (
       <div className="p-6">
         <div className="text-center py-12">

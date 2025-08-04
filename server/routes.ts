@@ -5550,8 +5550,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const ticketId = parseInt(req.params.id);
       const updateData = req.body;
-      const userId = req.user.id;
+      const userId = (req.user as schema.User)?.id;
       
+      // Check if user is authenticated
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       // Use updateTicketWithHistory to ensure proper tracking
       const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
       if (!updatedTicket) {
