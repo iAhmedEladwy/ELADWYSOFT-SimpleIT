@@ -8,7 +8,8 @@ export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Temporary']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Inactive', 'Terminated', 'On Leave']);
-export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Under Maintenance', 'Disposed', 'Lost']);
+export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
+export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed', 'Cancelled']);
 export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High', 'Critical']);
@@ -64,14 +65,14 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 // Employees table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
-  empId: varchar("emp_id", { length: 20 }).notNull().unique(),
+  empId: varchar("emp_id", { length: 20 }).notNull().unique().default(sql`concat('EMP-', lpad((nextval('employees_id_seq'::regclass))::text, 5, '0'::text))`),
   englishName: varchar("english_name", { length: 100 }).notNull(),
   arabicName: varchar("arabic_name", { length: 100 }),
   department: varchar("department", { length: 100 }).notNull(),
   idNumber: varchar("id_number", { length: 50 }).notNull(),
   title: varchar("title", { length: 100 }).notNull(),
   directManager: integer("direct_manager").references((): any => employees.id),
-  employmentType: employmentTypeEnum("employment_type").notNull().default('Full-time'),
+  employmentType: employmentTypeEnum("employment_type").notNull(),
   joiningDate: date("joining_date").notNull(),
   exitDate: date("exit_date"),
   status: employeeStatusEnum("status").notNull().default('Active'),
@@ -92,8 +93,8 @@ export const employees = pgTable("employees", {
 // Assets table
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
-  assetId: varchar("asset_id", { length: 20 }).notNull().unique(),
-  type: varchar("type", { length: 100 }).notNull(),
+  assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
+  type: assetTypeEnum("type").notNull(),
   brand: varchar("brand", { length: 100 }).notNull(),
   modelNumber: varchar("model_number", { length: 100 }),
   modelName: varchar("model_name", { length: 100 }),
@@ -108,9 +109,6 @@ export const assets = pgTable("assets", {
   assignedEmployeeId: integer("assigned_employee_id").references(() => employees.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  cpu: varchar("cpu", { length: 100 }),
-  ram: varchar("ram", { length: 100 }),
-  storage: varchar("storage", { length: 100 }),
 });
 
 // Asset Maintenance table
@@ -158,7 +156,7 @@ export const assetSaleItems = pgTable("asset_sale_items", {
 // Tickets table
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
-  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
+  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`('TKT-'::text || lpad(nextval('tickets_id_seq'::regclass)::text, 6, '0'::text))`),
   summary: varchar("summary", { length: 255 }),
   description: text("description").notNull(),
   requestType: varchar("request_type", { length: 100 }).notNull().default('Hardware'),
