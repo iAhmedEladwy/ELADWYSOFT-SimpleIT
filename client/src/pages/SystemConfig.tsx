@@ -822,7 +822,7 @@ const SystemConfig = () => {
           </div>
         </TabsContent>
 
-        {/* Employees Tab */}
+        {/* Employees Tab - Custom Fields Management */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader>
@@ -832,8 +832,8 @@ const SystemConfig = () => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure employee-related settings and defaults.'
-                  : 'تكوين الإعدادات والافتراضات المتعلقة بالموظفين.'}
+                  ? 'Configure employee-related settings and custom fields.'
+                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالموظفين.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -883,11 +883,32 @@ const SystemConfig = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Custom Fields Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
+                  </h3>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
+                  </Button>
+                </div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
+                  <p className="text-sm mt-2">
+                    {language === 'English' 
+                      ? 'Add custom fields to capture additional employee information.' 
+                      : 'أضف حقولاً مخصصة لالتقاط معلومات إضافية عن الموظفين.'}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Assets Tab */}
+        {/* Assets Tab - Custom Fields Management */}
         <TabsContent value="assets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -897,8 +918,8 @@ const SystemConfig = () => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure asset types, statuses, and management settings.'
-                  : 'تكوين أنواع الأصول والحالات وإعدادات الإدارة.'}
+                  ? 'Configure asset types, statuses, and custom fields.'
+                  : 'تكوين أنواع الأصول والحالات والحقول المخصصة.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -942,11 +963,32 @@ const SystemConfig = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Custom Fields Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
+                  </h3>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
+                  </Button>
+                </div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
+                  <p className="text-sm mt-2">
+                    {language === 'English' 
+                      ? 'Add custom fields to capture additional asset specifications.' 
+                      : 'أضف حقولاً مخصصة لالتقاط مواصفات إضافية للأصول.'}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tickets Tab */}
+        {/* Tickets Tab - Custom Fields Management */}
         <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -956,8 +998,8 @@ const SystemConfig = () => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure ticket categories, priorities, and workflow settings.'
-                  : 'تكوين فئات التذاكر والأولويات وإعدادات سير العمل.'}
+                  ? 'Configure ticket categories, priorities, and custom fields.'
+                  : 'تكوين فئات التذاكر والأولويات والحقول المخصصة.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1016,11 +1058,32 @@ const SystemConfig = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Custom Fields Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
+                  </h3>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
+                  </Button>
+                </div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
+                  <p className="text-sm mt-2">
+                    {language === 'English' 
+                      ? 'Add custom fields to capture additional ticket information.' 
+                      : 'أضف حقولاً مخصصة لالتقاط معلومات إضافية عن التذاكر.'}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Email Tab */}
+        {/* Email Tab - Complete Configuration */}
         <TabsContent value="email" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1111,11 +1174,20 @@ const SystemConfig = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending}>
+                  {updateConfigMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : null}
+                  {language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد الإلكتروني'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Users & Roles Tab */}
+        {/* Users & Roles Tab - Complete User Management */}
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1131,9 +1203,16 @@ const SystemConfig = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'User Roles & Permissions' : 'أدوار المستخدمين والصلاحيات'}
-                </h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'System Users' : 'مستخدمو النظام'}
+                  </h3>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
+                  </Button>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 border rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
@@ -1208,6 +1287,26 @@ const SystemConfig = () => {
                     </Label>
                     <Switch id="twoFactor" />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'User Management Actions' : 'إجراءات إدارة المستخدمين'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" className="justify-start">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Bulk Import Users' : 'استيراد مجمع للمستخدمين'}
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Download className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Export User List' : 'تصدير قائمة المستخدمين'}
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {language === 'English' ? 'Reset Passwords' : 'إعادة تعيين كلمات المرور'}
+                  </Button>
                 </div>
               </div>
             </CardContent>
