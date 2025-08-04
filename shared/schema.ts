@@ -461,6 +461,16 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, c
 export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 
+// Additional insert schemas for missing tables
+export const insertAssetSalesSchema = createInsertSchema(assetSales).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAssetSaleItemsSchema = createInsertSchema(assetSaleItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ id: true, createdAt: true });
+export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
+export const insertChangesLogSchema = createInsertSchema(changesLog).omit({ id: true, createdAt: true });
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -474,3 +484,21 @@ export type AssetMaintenance = typeof assetMaintenance.$inferSelect;
 export type InsertAssetMaintenance = z.infer<typeof insertAssetMaintenanceSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Additional type exports for missing tables
+export type AssetSale = typeof assetSales.$inferSelect;
+export type InsertAssetSale = z.infer<typeof insertAssetSalesSchema>;
+export type AssetSaleItem = typeof assetSaleItems.$inferSelect;
+export type InsertAssetSaleItem = z.infer<typeof insertAssetSaleItemsSchema>;
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type AssetTransaction = typeof assetTransactions.$inferSelect;
+export type InsertAssetTransaction = z.infer<typeof insertAssetTransactionSchema>;
+export type SecurityQuestion = typeof securityQuestions.$inferSelect;
+export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type ChangeLog = typeof changesLog.$inferSelect;
+export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
