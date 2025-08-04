@@ -1,0 +1,29 @@
+       table_name        
+-------------------------
+ activity_log
+ asset_maintenance
+ asset_sale_items
+ asset_sales
+ asset_service_providers
+ asset_transactions
+ asset_upgrades
+ assets
+ changes_log
+ custom_asset_brands
+ custom_asset_statuses
+ custom_asset_types
+ custom_request_types
+ employees
+ notifications
+ password_reset_tokens
+ security_questions
+ service_providers
+ sessions
+ system_config
+ ticket_comments
+ ticket_history
+ tickets
+ upgrade_history
+ users
+(25 rows)
+
