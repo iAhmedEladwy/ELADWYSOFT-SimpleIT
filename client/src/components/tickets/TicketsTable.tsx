@@ -49,7 +49,6 @@ interface TicketsTableProps {
   users: any[];
   onStatusChange: (id: number, status: string, resolutionNotes?: string) => void;
   onAssign: (id: number, userId: number) => void;
-  onEdit?: (ticket: any) => void;
 }
 
 export default function TicketsTable({
@@ -59,7 +58,6 @@ export default function TicketsTable({
   users,
   onStatusChange,
   onAssign,
-  onEdit,
 }: TicketsTableProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -556,8 +554,21 @@ export default function TicketsTable({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (onEdit) {
-                          onEdit(ticket);
+                        try {
+                          // Use same edit dialog as row click
+                          if (ticket && ticket.id) {
+                            setTicketToEdit(ticket);
+                            setEditDialogOpen(true);
+                          } else {
+                            console.error('Invalid ticket data:', ticket);
+                          }
+                        } catch (error) {
+                          console.error('Edit button error:', error);
+                          toast({
+                            title: language === 'English' ? 'Error' : 'خطأ',
+                            description: language === 'English' ? 'Unable to open ticket for editing' : 'تعذر فتح التذكرة للتعديل',
+                            variant: 'destructive',
+                          });
                         }
                       }}
                     >
