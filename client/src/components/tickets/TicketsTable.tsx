@@ -363,6 +363,26 @@ export default function TicketsTable({
                     <DropdownMenuSeparator />
                     
                     <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/tickets/${ticket.id}`;
+                      }}
+                    >
+{language === 'English' ? 'View Details' : 'عرض التفاصيل'}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onEdit) {
+                          onEdit(ticket);
+                        }
+                      }}
+                    >
+{language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة'}
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem
                       onClick={() => {
                         setSelectedTicket(ticket);
                         setSelectedStatus('');
