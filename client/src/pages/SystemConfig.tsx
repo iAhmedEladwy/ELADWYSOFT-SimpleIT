@@ -14,7 +14,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { 
   Users, Settings, Download, Upload, FileDown, FileUp, 
   X, CheckCircle2, AlertCircle, Loader2, Database,
-  Mail, Shield, Globe, Filter, Clock, Trash
+  Mail, Shield, Globe, Filter, Clock, Trash, Monitor, User
 } from 'lucide-react';
 import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
@@ -118,7 +118,7 @@ const SystemConfig = () => {
   // Mutations
   const updateConfigMutation = useMutation({
     mutationFn: (newConfig: SystemConfig) => 
-      apiRequest('/api/config', { method: 'PUT', body: newConfig }),
+      apiRequest('/api/config', 'PUT', newConfig),
     onSuccess: () => {
       toast({
         title: language === 'English' ? 'Settings Updated' : 'تم تحديث الإعدادات',
@@ -205,7 +205,15 @@ const SystemConfig = () => {
     }
   };
 
-  const handleMappingComplete = async (mappedData: any[], fieldMapping: Record<string, string>) => {
+  // Field mapping types
+  interface FieldMapping {
+    sourceColumn: string | null;
+    targetField: string;
+    isValid: boolean;
+    warnings: string[];
+  }
+
+  const handleMappingComplete = async (mappings: FieldMapping[]) => {
     try {
       setIsImporting(true);
       setImportProgress(0);
@@ -228,8 +236,8 @@ const SystemConfig = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          data: mappedData,
-          fieldMapping,
+          data: parsedFileData,
+          fieldMapping: mappings,
         }),
       });
 
@@ -596,7 +604,11 @@ const SystemConfig = () => {
                     <FieldMappingInterface
                       entityType={selectedDataType as 'employees' | 'assets' | 'tickets'}
                       fileData={parsedFileData}
-                      fileColumns={fileColumns}
+                      fileColumns={fileColumns.map(col => ({ 
+                        name: col, 
+                        sampleValues: [], 
+                        dataType: 'text' as const 
+                      }))}
                       onMappingComplete={handleMappingComplete}
                       onCancel={handleMappingCancel}
                     />
