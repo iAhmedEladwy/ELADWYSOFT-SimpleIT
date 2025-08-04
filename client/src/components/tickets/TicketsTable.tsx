@@ -110,13 +110,15 @@ export default function TicketsTable({
     }
   };
 
-  // Fetch request types from system configuration
-  const { data: customRequestTypes = [] } = useQuery({
+  // Fetch request types from system configuration with loading state
+  const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
     queryKey: ['/api/custom-request-types'],
     queryFn: async () => {
       const response = await apiRequest('/api/custom-request-types');
       return response.json();
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to improve performance
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
   });
 
   // Use only request types from system configuration
@@ -337,11 +339,17 @@ export default function TicketsTable({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {requestTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.name}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
+                        {isLoadingRequestTypes ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : requestTypes.length > 0 ? (
+                          requestTypes.map((type: any) => (
+                            <SelectItem key={type.id} value={type.name}>
+                              {type.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>No request types available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

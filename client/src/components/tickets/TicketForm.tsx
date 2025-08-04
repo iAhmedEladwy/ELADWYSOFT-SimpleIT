@@ -109,11 +109,27 @@ export default function TicketForm({
   const [commentText, setCommentText] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
 
-  // Fetch data
-  const { data: users = [] } = useQuery<UserResponse[]>({ queryKey: ['/api/users'] });
-  const { data: employees = [] } = useQuery<any[]>({ queryKey: ['/api/employees'] });
-  const { data: allAssets = [] } = useQuery<AssetResponse[]>({ queryKey: ['/api/assets'] });
-  const { data: requestTypes = [] } = useQuery<Array<{id: number, name: string}>>({ queryKey: ['/api/custom-request-types'] });
+  // Fetch data with improved caching and loading states
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<UserResponse[]>({ 
+    queryKey: ['/api/users'],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
+  });
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<any[]>({ 
+    queryKey: ['/api/employees'],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+  const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
+    queryKey: ['/api/assets'],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+  const { data: requestTypes = [], isLoading: isLoadingRequestTypes } = useQuery<Array<{id: number, name: string}>>({ 
+    queryKey: ['/api/custom-request-types'],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
   
   // Fetch comments and history for edit mode
   const { data: comments = [] } = useQuery<CommentData[]>({
@@ -450,11 +466,15 @@ export default function TicketForm({
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
-                              {users.map((user) => (
-                                <SelectItem key={user.id} value={user.id.toString()}>
-                                  {user.username}
-                                </SelectItem>
-                              ))}
+                              {isLoadingUsers ? (
+                                <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                              ) : (
+                                users.map((user: any) => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -477,11 +497,15 @@ export default function TicketForm({
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
-                              {assets.map((asset: any) => (
-                                <SelectItem key={asset.id} value={asset.id.toString()}>
-                                  {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
-                                </SelectItem>
-                              ))}
+                              {isLoadingAssets ? (
+                                <SelectItem value="loading" disabled>Loading assets...</SelectItem>
+                              ) : (
+                                allAssets.map((asset: any) => (
+                                  <SelectItem key={asset.id} value={asset.id.toString()}>
+                                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -503,11 +527,17 @@ export default function TicketForm({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {requestTypes.map((type) => (
-                                <SelectItem key={type.id} value={type.name}>
-                                  {type.name}
-                                </SelectItem>
-                              ))}
+                              {isLoadingRequestTypes ? (
+                                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                              ) : requestTypes.length > 0 ? (
+                                requestTypes.map((type: any) => (
+                                  <SelectItem key={type.id} value={type.name}>
+                                    {type.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="none" disabled>No request types available</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -957,11 +987,15 @@ export default function TicketForm({
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {employees.map((employee) => (
-                                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                                          {employee.englishName || employee.name}
-                                        </SelectItem>
-                                      ))}
+                                      {isLoadingEmployees ? (
+                                        <SelectItem value="loading" disabled>Loading employees...</SelectItem>
+                                      ) : (
+                                        employees.map((employee: any) => (
+                                          <SelectItem key={employee.id} value={employee.id.toString()}>
+                                            {employee.englishName || employee.name}
+                                          </SelectItem>
+                                        ))
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
@@ -984,11 +1018,15 @@ export default function TicketForm({
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
-                                      {users.map((user) => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                          {user.username}
-                                        </SelectItem>
-                                      ))}
+                                      {isLoadingUsers ? (
+                                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                                      ) : (
+                                        users.map((user: any) => (
+                                          <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.username}
+                                          </SelectItem>
+                                        ))
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
@@ -1011,11 +1049,15 @@ export default function TicketForm({
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="none">{language === 'English' ? 'No Asset' : 'لا يوجد أصل'}</SelectItem>
-                                      {assets.map((asset: any) => (
-                                        <SelectItem key={asset.id} value={asset.id.toString()}>
-                                          {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
-                                        </SelectItem>
-                                      ))}
+                                      {isLoadingAssets ? (
+                                        <SelectItem value="loading" disabled>Loading assets...</SelectItem>
+                                      ) : (
+                                        allAssets.map((asset: any) => (
+                                          <SelectItem key={asset.id} value={asset.id.toString()}>
+                                            {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
+                                          </SelectItem>
+                                        ))
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
@@ -1037,11 +1079,17 @@ export default function TicketForm({
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {requestTypes.map((type) => (
-                                        <SelectItem key={type.id} value={type.name}>
-                                          {type.name}
-                                        </SelectItem>
-                                      ))}
+                                      {isLoadingRequestTypes ? (
+                                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                      ) : requestTypes.length > 0 ? (
+                                        requestTypes.map((type: any) => (
+                                          <SelectItem key={type.id} value={type.name}>
+                                            {type.name}
+                                          </SelectItem>
+                                        ))
+                                      ) : (
+                                        <SelectItem value="none" disabled>No request types available</SelectItem>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
