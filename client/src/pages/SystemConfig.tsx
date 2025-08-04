@@ -301,6 +301,8 @@ function SystemConfig() {
       apiRequest('/api/system-config', 'PUT', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
+      // Force refetch to ensure language changes are reflected immediately
+      queryClient.refetchQueries({ queryKey: ['/api/system-config'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',

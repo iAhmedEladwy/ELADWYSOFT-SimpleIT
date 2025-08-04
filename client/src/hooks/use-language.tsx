@@ -16,12 +16,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Fetch current config
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    onSuccess: (data: any) => {
-      if (data?.language) {
-        setLanguage(data.language);
-      }
-    },
   });
+
+  // Update language when config changes
+  useEffect(() => {
+    if (config && (config as any).language) {
+      const newLanguage = (config as any).language === 'en' ? 'English' : 'Arabic';
+      setLanguage(newLanguage);
+    }
+  }, [config]);
 
   // Update language mutation
   const updateLanguageMutation = useMutation({
