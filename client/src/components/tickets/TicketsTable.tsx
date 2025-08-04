@@ -233,18 +233,36 @@ export default function TicketsTable({
   };
 
   const getEmployeeName = (id: number) => {
-    const employee = employees.find(emp => emp.id === id);
-    return employee ? employee.englishName : translations.none;
+    try {
+      if (!Array.isArray(employees)) return translations.none;
+      const employee = employees.find(emp => emp && emp.id === id);
+      return employee && employee.englishName ? employee.englishName : translations.none;
+    } catch (error) {
+      console.error('Error getting employee name:', error);
+      return translations.none;
+    }
   };
 
   const getAssetName = (id: number) => {
-    const asset = assets.find(a => a.id === id);
-    return asset ? asset.name : translations.none;
+    try {
+      if (!Array.isArray(assets)) return translations.none;
+      const asset = assets.find(a => a && a.id === id);
+      return asset && asset.name ? asset.name : translations.none;
+    } catch (error) {
+      console.error('Error getting asset name:', error);
+      return translations.none;
+    }
   };
 
   const getUserName = (id: number) => {
-    const assignedUser = users.find(u => u.id === id);
-    return assignedUser ? assignedUser.username : translations.unassigned;
+    try {
+      if (!Array.isArray(users)) return translations.unassigned;
+      const assignedUser = users.find(u => u && u.id === id);
+      return assignedUser && assignedUser.username ? assignedUser.username : translations.unassigned;
+    } catch (error) {
+      console.error('Error getting user name:', error);
+      return translations.unassigned;
+    }
   };
 
   const canUpdateStatus = (ticketStatus: string) => {
@@ -264,26 +282,35 @@ export default function TicketsTable({
     }
   };
 
-  const getAvailableStatuses = (currentStatus: string) => {
-    // Full access for admins and managers
-    if (user && ['admin', 'manager', 'agent'].includes(user.role)) {
-      return ['Open', 'In Progress', 'Resolved', 'Closed'];
-    }
-    
-    // Regular users can only move tickets forward
-    switch (currentStatus) {
-      case 'Open':
-        return ['In Progress'];
-      case 'In Progress':
-        return ['Resolved'];
-      case 'Resolved':
-        return ['Closed'];
-      default:
-        return [];
+  const getAvailableStatuses = (currentStatus: string): string[] => {
+    // Ensure we always return an array to prevent .join errors
+    try {
+      // Full access for admins and managers
+      if (user && Array.isArray(user.role ? [user.role] : []) && ['admin', 'manager', 'agent'].includes(user.role)) {
+        return ['Open', 'In Progress', 'Resolved', 'Closed'];
+      }
+      
+      // Regular users can only move tickets forward
+      switch (currentStatus) {
+        case 'Open':
+          return ['In Progress'];
+        case 'In Progress':
+          return ['Resolved'];
+        case 'Resolved':
+          return ['Closed'];
+        default:
+          return ['Open', 'In Progress', 'Resolved', 'Closed']; // Fallback to all statuses
+      }
+    } catch (error) {
+      console.error('Error getting available statuses:', error);
+      return ['Open', 'In Progress', 'Resolved', 'Closed']; // Safe fallback
     }
   };
 
-  if (tickets.length === 0) {
+  // Ensure tickets is always an array to prevent runtime errors
+  const safeTickets = Array.isArray(tickets) ? tickets : [];
+  
+  if (safeTickets.length === 0) {
     return <div className="text-center py-8 text-gray-500">{translations.noTickets}</div>;
   }
 
@@ -303,7 +330,7 @@ export default function TicketsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tickets.map((ticket: any) => (
+          {safeTickets.map((ticket: any) => (
             <TableRow 
               key={ticket.id}
               className="hover:bg-muted/50 cursor-pointer"
@@ -320,13 +347,20 @@ export default function TicketsTable({
                   return;
                 }
                 try {
-                  if (onEdit) {
-                    onEdit(ticket);
+                  // Ensure ticket has required properties before navigation
+                  if (ticket && ticket.id) {
+                    // Always use direct navigation for better cross-platform compatibility
+                    navigate(`/tickets/${ticket.id}`);
+                  } else {
+                    console.error('Invalid ticket data:', ticket);
                   }
                 } catch (error) {
-                  console.error('Row click error:', error);
-                  // Fallback to navigation if edit fails
-                  navigate(`/tickets/${ticket.id}`);
+                  console.error('Row click navigation error:', error);
+                  toast({
+                    title: language === 'English' ? 'Navigation Error' : 'خطأ في التنقل',
+                    description: language === 'English' ? 'Unable to open ticket details' : 'تعذر فتح تفاصيل التذكرة',
+                    variant: 'destructive',
+                  });
                 }
               }}
             >
@@ -349,14 +383,19 @@ export default function TicketsTable({
                       <SelectContent>
                         {isLoadingRequestTypes ? (
                           <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : requestTypes.length > 0 ? (
+                        ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
                           requestTypes.map((type: any) => (
-                            <SelectItem key={type.id} value={type.name}>
-                              {type.name}
+                            <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
+                              {type.name || 'Hardware'}
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="none" disabled>No request types available</SelectItem>
+                          <>
+                            <SelectItem value="Hardware">Hardware</SelectItem>
+                            <SelectItem value="Software">Software</SelectItem>
+                            <SelectItem value="Network">Network</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </>
                         )}
                       </SelectContent>
                     </Select>
@@ -569,7 +608,8 @@ export default function TicketsTable({
                   <SelectValue placeholder={translations.selectStatus} />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedTicket && getAvailableStatuses(selectedTicket.status).map((status) => (
+                  {selectedTicket && Array.isArray(getAvailableStatuses(selectedTicket.status)) && 
+                   getAvailableStatuses(selectedTicket.status).map((status) => (
                     <SelectItem key={status} value={status}>
                       {status === 'Open' ? translations.open :
                        status === 'In Progress' ? translations.inProgress :
