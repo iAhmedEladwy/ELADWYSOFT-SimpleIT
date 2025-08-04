@@ -945,7 +945,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAssets(): Promise<Asset[]> {
     try {
-      return await db.select().from(assets).orderBy(asc(assets.assetId));
+      return await db.select().from(assets).orderBy(asc(assets.id));
     } catch (error) {
       console.error('Error fetching assets:', error);
       return [];
