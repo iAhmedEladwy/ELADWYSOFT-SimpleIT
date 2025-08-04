@@ -1782,8 +1782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               description: row._2 || 'No description',     // Description is text field, no limit
               category: (row._3 || 'Incident').substring(0, 100),              // Limit to 100 chars
               requestType: (row._4 || 'Hardware').substring(0, 100),           // Limit to 100 chars
-              urgency: (row._5 || 'Medium').substring(0, 50),                 // Limit to 50 chars
-              impact: (row._6 || 'Medium').substring(0, 50),                  // Limit to 50 chars
+              urgency: (row._5 || 'Medium').substring(0, 20),                 // Limit to 20 chars 
+              impact: (row._6 || 'Medium').substring(0, 20),                  // Limit to 20 chars
               priority: row._7 || 'Medium',                // Enum field
               status: row._8 || 'Open',                    // Enum field
               submittedById: activeEmployee.id,
@@ -1825,8 +1825,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description: row['Description'] || row.description || 'No description provided',
             category: (row['Category'] || row.category || 'Incident').substring(0, 100),
             requestType: (row['Request Type'] || row.requestType || 'Hardware').substring(0, 100),
-            urgency: (row['Urgency'] || row.urgency || 'Medium').substring(0, 50),
-            impact: (row['Impact'] || row.impact || 'Medium').substring(0, 50),
+            urgency: (row['Urgency'] || row.urgency || 'Medium').substring(0, 20),
+            impact: (row['Impact'] || row.impact || 'Medium').substring(0, 20),
             priority: row['Priority'] || row.priority || 'Medium',
             status: row['Status'] || row.status || 'Open',
             submittedById: null, // Will be set below with proper validation
