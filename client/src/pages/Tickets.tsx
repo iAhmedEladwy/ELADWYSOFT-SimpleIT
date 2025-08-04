@@ -374,7 +374,10 @@ export default function Tickets() {
         users={Array.isArray(users) ? users : []}
         onStatusChange={handleStatusChange}
         onAssign={handleAssignTicket}
-        onEdit={(ticket) => setSelectedTicket(ticket)}
+        onEdit={(ticket) => {
+          // Navigate to ticket details page instead of setting selected ticket
+          window.location.href = `/tickets/${ticket.id}`;
+        }}
       />
 
 

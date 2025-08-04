@@ -509,14 +509,14 @@ export default function TicketDetails() {
                 </Label>
                 {isEditing ? (
                   <Select
-                    value={editForm.assignedToId}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, assignedToId: value }))}
+                    value={editForm.assignedToId || "unassigned"}
+                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, assignedToId: value === "unassigned" ? null : value }))}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder={translations.unassigned} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">{translations.unassigned}</SelectItem>
+                      <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
                       {(users as any[]).map((user: any) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.fullName || user.username}

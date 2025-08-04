@@ -698,11 +698,11 @@ export default function EnhancedTicketTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (onTicketSelect) {
-                          onTicketSelect(ticket);
-                        }
+                        // Navigate to ticket details page
+                        window.location.href = `/tickets/${ticket.id}`;
                       }}
                       className="h-8 w-8 p-0 hover:bg-blue-100 hover:scale-110 transition-all duration-200"
+                      title={language === 'English' ? 'View Details' : 'عرض التفاصيل'}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
