@@ -640,26 +640,17 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Generate emp_id if not provided (for environments without auto-generation)
-      let empId = employee.empId;
-      if (!empId) {
-        const systemConfig = await this.getSystemConfig();
-        const prefix = systemConfig?.employeeIdPrefix || 'EMP-';
-        empId = await this.generateId('employee', prefix);
-      }
-      
-      // Use raw SQL for reliable insertion, excluding generated columns
+      // Let database auto-generate emp_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO employees (
-          emp_id, english_name, arabic_name, department, id_number, title,
+          english_name, arabic_name, department, id_number, title,
           direct_manager, employment_type, joining_date, exit_date, status,
           personal_mobile, work_mobile, personal_email, corporate_email, user_id,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()
         ) RETURNING *
       `, [
-        empId,
         employee.englishName,
         employee.arabicName || null,
         employee.department,
@@ -874,27 +865,19 @@ export class DatabaseStorage implements IStorage {
 
   async createAsset(asset: InsertAsset): Promise<Asset> {
     try {
-      // Generate asset_id if not provided (for environments without auto-generation)
-      let assetId = asset.assetId;
-      if (!assetId) {
-        const systemConfig = await this.getSystemConfig();
-        const prefix = systemConfig?.assetIdPrefix || 'AST-';
-        assetId = await this.generateId('asset', prefix);
-      }
-
+      // Let database auto-generate asset_id - don't include it in INSERT
       const query = `
         INSERT INTO assets (
-          asset_id, type, brand, model_number, model_name, serial_number, specs,
+          type, brand, model_number, model_name, serial_number, specs,
           status, purchase_date, buy_price, warranty_expiry_date,
           life_span, out_of_box_os, assigned_employee_id, cpu, ram, storage,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
         ) RETURNING *
       `;
 
       const values = [
-        assetId,
         asset.type || 'Hardware',
         asset.brand || null,
         asset.modelNumber || null,
@@ -1152,28 +1135,19 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
-      // Generate ticket_id if not provided (for environments without auto-generation)
-      let ticketId = ticket.ticketId;
-      if (!ticketId) {
-        const systemConfig = await this.getSystemConfig();
-        const prefix = systemConfig?.ticketIdPrefix || 'TKT-';
-        ticketId = await this.generateId('ticket', prefix);
-      }
-      
-      // Use raw SQL for reliable insertion
+      // Let database auto-generate ticket_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO tickets (
-          ticket_id, summary, description, request_type, category, priority,
+          summary, description, request_type, category, priority,
           urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
           resolution, resolution_notes, due_date, sla_target, escalation_level,
           tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+          $17, $18, $19, $20, $21, NOW(), NOW()
         ) RETURNING *
       `, [
-        ticketId,
         ticket.summary || 'Ticket',
         ticket.description || '',
         ticket.requestType || 'Other',
