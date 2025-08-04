@@ -1160,7 +1160,7 @@ function SystemConfig() {
           </div>
         </TabsContent>
 
-        {/* Placeholder tabs for now - complete functionality will be added */}
+        {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1170,20 +1170,172 @@ function SystemConfig() {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure employee-related settings and custom fields.'
-                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالموظفين.'}
+                  ? 'Manage employee departments, custom fields, and organizational settings.'
+                  : 'إدارة أقسام الموظفين والحقول المخصصة وإعدادات المؤسسة.'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {language === 'English' 
-                  ? 'Employee configuration features will be available in the next update.'
-                  : 'ستكون ميزات تكوين الموظفين متاحة في التحديث القادم.'}
-              </p>
+            <CardContent className="space-y-6">
+              {/* Department Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      const newDept = prompt(language === 'English' ? 'Enter department name:' : 'أدخل اسم القسم:');
+                      if (newDept && newDept.trim()) {
+                        const updatedDepartments = [...departments, newDept.trim()];
+                        setDepartments(updatedDepartments);
+                        setPreservedTab('employees');
+                      }
+                    }}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {language === 'English' ? 'Add Department' : 'إضافة قسم'}
+                  </Button>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!departments?.length ? (
+                    <div className="p-8 text-center">
+                      <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {language === 'English' ? 'No Departments' : 'لا توجد أقسام'}
+                      </h3>
+                      <p className="text-gray-600">
+                        {language === 'English' ? 'Add departments to organize your employees.' : 'أضف أقساماً لتنظيم موظفيك.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Department Name' : 'اسم القسم'}</TableHead>
+                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {departments.map((dept: string, index: number) => (
+                          <TableRow key={index} className="hover:bg-gray-50">
+                            <TableCell>
+                              {editingDeptIndex === index ? (
+                                <Input
+                                  value={editedDeptName}
+                                  onChange={(e) => setEditedDeptName(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const updatedDepartments = [...departments];
+                                      updatedDepartments[index] = editedDeptName.trim();
+                                      setDepartments(updatedDepartments);
+                                      setEditingDeptIndex(null);
+                                      setEditedDeptName('');
+                                      setPreservedTab('employees');
+                                    }
+                                  }}
+                                  className="h-8"
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="font-medium">{dept}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {editingDeptIndex === index ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const updatedDepartments = [...departments];
+                                        updatedDepartments[index] = editedDeptName.trim();
+                                        setDepartments(updatedDepartments);
+                                        setEditingDeptIndex(null);
+                                        setEditedDeptName('');
+                                        setPreservedTab('employees');
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingDeptIndex(null);
+                                        setEditedDeptName('');
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingDeptIndex(index);
+                                        setEditedDeptName(dept);
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (window.confirm(language === 'English' ? `Delete department "${dept}"?` : `حذف القسم "${dept}"؟`)) {
+                                          const updatedDepartments = departments.filter((_, i) => i !== index);
+                                          setDepartments(updatedDepartments);
+                                          setPreservedTab('employees');
+                                        }
+                                      }}
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6 border-t">
+                <Button 
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Save Settings' : 'حفظ الإعدادات'}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Assets Tab */}
         <TabsContent value="assets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1193,20 +1345,144 @@ function SystemConfig() {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure asset-related settings and custom fields.'
-                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالأصول.'}
+                  ? 'Manage asset types, brands, statuses, and service providers for comprehensive asset tracking.'
+                  : 'إدارة أنواع الأصول والعلامات التجارية والحالات ومقدمي الخدمات لتتبع شامل للأصول.'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {language === 'English' 
-                  ? 'Asset configuration features will be available in the next update.'
-                  : 'ستكون ميزات تكوين الأصول متاحة في التحديث القادم.'}
-              </p>
+            <CardContent className="space-y-6">
+              {/* Asset Types Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder={language === 'English' ? 'Search types...' : 'البحث في الأنواع...'}
+                        value={assetTypeSearch}
+                        onChange={(e) => setAssetTypeSearch(e.target.value)}
+                        className="pl-10 w-48"
+                      />
+                    </div>
+                    <Dialog open={isAssetTypeDialogOpen} onOpenChange={setIsAssetTypeDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          {language === 'English' ? 'Add Type' : 'إضافة نوع'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل'}</DialogTitle>
+                          <DialogDescription>
+                            {language === 'English' ? 'Create a new asset type for classification.' : 'إنشاء نوع أصل جديد للتصنيف.'}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Type Name' : 'اسم النوع'}</Label>
+                            <Input 
+                              value={newTypeName} 
+                              onChange={(e) => setNewTypeName(e.target.value)}
+                              placeholder={language === 'English' ? 'e.g., Laptop, Desktop, Server' : 'مثال: لابتوب، سطح مكتب، خادم'}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                            <Input 
+                              value={newTypeDescription} 
+                              onChange={(e) => setNewTypeDescription(e.target.value)}
+                              placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setIsAssetTypeDialogOpen(false)}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button onClick={() => {
+                              // Handle add asset type logic here
+                              setNewTypeName('');
+                              setNewTypeDescription('');
+                              setIsAssetTypeDialogOpen(false);
+                            }}>
+                              {language === 'English' ? 'Add' : 'إضافة'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!filteredAssetTypes?.length ? (
+                    <div className="p-8 text-center">
+                      <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {language === 'English' ? 'No Asset Types' : 'لا توجد أنواع أصول'}
+                      </h3>
+                      <p className="text-gray-600">
+                        {language === 'English' ? 'Add asset types to categorize your equipment.' : 'أضف أنواع الأصول لتصنيف معداتك.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Type Name' : 'اسم النوع'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssetTypes.map((type: any) => (
+                          <TableRow key={type.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{type.name}</TableCell>
+                            <TableCell className="text-gray-600">{type.description}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6 border-t">
+                <Button 
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Save Settings' : 'حفظ الإعدادات'}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Tickets Tab */}
         <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1216,16 +1492,155 @@ function SystemConfig() {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure ticket-related settings and custom fields.'
-                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالتذاكر.'}
+                  ? 'Manage ticket request types, priorities, and workflow settings for efficient support operations.'
+                  : 'إدارة أنواع طلبات التذاكر والأولويات وإعدادات سير العمل لعمليات دعم فعالة.'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {language === 'English' 
-                  ? 'Ticket configuration features will be available in the next update.'
-                  : 'ستكون ميزات تكوين التذاكر متاحة في التحديث القادم.'}
-              </p>
+            <CardContent className="space-y-6">
+              {/* Request Types Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Request Types' : 'أنواع الطلبات'}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder={language === 'English' ? 'Search request types...' : 'البحث في أنواع الطلبات...'}
+                        value={requestTypeSearch}
+                        onChange={(e) => setRequestTypeSearch(e.target.value)}
+                        className="pl-10 w-48"
+                      />
+                    </div>
+                    <Dialog open={isRequestTypeDialogOpen} onOpenChange={setIsRequestTypeDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          {language === 'English' ? 'Add Type' : 'إضافة نوع'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>{language === 'English' ? 'Add Request Type' : 'إضافة نوع طلب'}</DialogTitle>
+                          <DialogDescription>
+                            {language === 'English' ? 'Create a new request type for ticket categorization.' : 'إنشاء نوع طلب جديد لتصنيف التذاكر.'}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Request Type Name' : 'اسم نوع الطلب'}</Label>
+                            <Input 
+                              value={newRequestTypeName} 
+                              onChange={(e) => setNewRequestTypeName(e.target.value)}
+                              placeholder={language === 'English' ? 'e.g., Hardware Issue, Software Support' : 'مثال: مشكلة أجهزة، دعم برمجيات'}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                            <Input 
+                              value={newRequestTypeDescription} 
+                              onChange={(e) => setNewRequestTypeDescription(e.target.value)}
+                              placeholder={language === 'English' ? 'Brief description of this request type...' : 'وصف مختصر لهذا النوع من الطلبات...'}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => {
+                              setIsRequestTypeDialogOpen(false);
+                              setNewRequestTypeName('');
+                              setNewRequestTypeDescription('');
+                            }}>
+                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            </Button>
+                            <Button 
+                              onClick={() => {
+                                if (newRequestTypeName.trim()) {
+                                  createRequestTypeMutation.mutate({
+                                    name: newRequestTypeName.trim(),
+                                    description: newRequestTypeDescription.trim()
+                                  });
+                                }
+                              }}
+                              disabled={createRequestTypeMutation.isPending || !newRequestTypeName.trim()}
+                            >
+                              {createRequestTypeMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                </>
+                              ) : (
+                                language === 'English' ? 'Add' : 'إضافة'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!filteredRequestTypes?.length ? (
+                    <div className="p-8 text-center">
+                      <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {language === 'English' ? 'No Request Types' : 'لا توجد أنواع طلبات'}
+                      </h3>
+                      <p className="text-gray-600">
+                        {language === 'English' ? 'Add request types to categorize support tickets.' : 'أضف أنواع الطلبات لتصنيف تذاكر الدعم.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Request Type' : 'نوع الطلب'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRequestTypes.map((requestType: any) => (
+                          <TableRow key={requestType.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{requestType.name}</TableCell>
+                            <TableCell className="text-gray-600">{requestType.description}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6 border-t">
+                <Button 
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Save Settings' : 'حفظ الإعدادات'}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
