@@ -647,60 +647,6 @@ export default function Assets() {
             <p className="text-gray-600">{translations.description}</p>
           </div>
         <div className="flex gap-2">
-          {/* Bulk Actions for Selected Assets */}
-          {selectedAssets.length > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-              <span className="text-sm font-medium text-blue-700">
-                {selectedAssets.length} {translations.selectAll}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSelectAll}
-                  className="text-xs"
-                >
-                  {selectedAssets.length === filteredAssets.length ? 
-                    translations.deselectAll : translations.selectAll}
-                </Button>
-                <Select onValueChange={handleBulkStatusChange}>
-                  <SelectTrigger className="w-32 h-8 text-xs">
-                    <SelectValue placeholder={translations.changeStatus} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Available">Available</SelectItem>
-                    <SelectItem value="In Use">In Use</SelectItem>
-                    <SelectItem value="Maintenance">Maintenance</SelectItem>
-                    <SelectItem value="Damaged">Damaged</SelectItem>
-                    <SelectItem value="Retired">Retired</SelectItem>
-                  </SelectContent>
-                </Select>
-                {employees && Array.isArray(employees) && employees.length > 0 && (
-                  <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
-                    <SelectTrigger className="w-32 h-8 text-xs">
-                      <SelectValue placeholder={translations.assignSelected} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((employee: any) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.englishName || employee.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleBulkDelete}
-                  className="text-xs"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  {translations.deleteSelected}
-                </Button>
-              </div>
-            </div>
-          )}
 
           
 
@@ -872,6 +818,61 @@ export default function Assets() {
 
         </CardContent>
       </Card>
+
+      {/* Bulk Actions for Selected Assets */}
+      {selectedAssets.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+          <span className="text-sm font-medium text-blue-700">
+            {selectedAssets.length} selected
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSelectAll}
+              className="text-xs"
+            >
+              {selectedAssets.length === filteredAssets.length ? 
+                translations.deselectAll : translations.selectAll}
+            </Button>
+            <Select onValueChange={handleBulkStatusChange}>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue placeholder={translations.changeStatus} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Available">Available</SelectItem>
+                <SelectItem value="In Use">In Use</SelectItem>
+                <SelectItem value="Maintenance">Maintenance</SelectItem>
+                <SelectItem value="Damaged">Damaged</SelectItem>
+                <SelectItem value="Retired">Retired</SelectItem>
+              </SelectContent>
+            </Select>
+            {employees && Array.isArray(employees) && employees.length > 0 && (
+              <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
+                <SelectTrigger className="w-36 h-8 text-xs">
+                  <SelectValue placeholder={translations.assignSelected} />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee: any) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.englishName || employee.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              className="text-xs"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              {translations.deleteSelected}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ITIL-Compliant Assets Data Table */}
       <Card>
