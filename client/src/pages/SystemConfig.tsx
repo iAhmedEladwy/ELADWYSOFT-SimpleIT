@@ -345,6 +345,105 @@ function SystemConfig() {
     }
   });
 
+  // Create custom asset type mutation
+  const createAssetTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-asset-types', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type added successfully' : 'تمت إضافة نوع الأصل بنجاح',
+      });
+      setNewTypeName('');
+      setNewTypeDescription('');
+      setIsAssetTypeDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset type' : 'فشل إضافة نوع الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to create asset type:', error);
+    }
+  });
+
+  // Create custom asset brand mutation
+  const createAssetBrandMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-asset-brands', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل بنجاح',
+      });
+      setNewBrandName('');
+      setNewBrandDescription('');
+      setIsAssetBrandDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset brand' : 'فشل إضافة علامة الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to create asset brand:', error);
+    }
+  });
+
+  // Create custom asset status mutation  
+  const createAssetStatusMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; color?: string }) => 
+      apiRequest('/api/custom-asset-statuses', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status added successfully' : 'تمت إضافة حالة الأصل بنجاح',
+      });
+      setNewStatusName('');
+      setNewStatusDescription('');
+      setNewStatusColor('#3B82F6');
+      setIsAssetStatusDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add asset status' : 'فشل إضافة حالة الأصل',
+        variant: 'destructive'
+      });
+      console.error('Failed to create asset status:', error);
+    }
+  });
+
+  // Create service provider mutation
+  const createServiceProviderMutation = useMutation({
+    mutationFn: (data: { name: string; contact?: string; phone?: string; email?: string }) => 
+      apiRequest('/api/service-providers', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider added successfully' : 'تمت إضافة مقدم الخدمة بنجاح',
+      });
+      setNewProviderName('');
+      setNewProviderContact('');
+      setNewProviderPhone('');
+      setNewProviderEmail('');
+      setIsServiceProviderDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add service provider' : 'فشل إضافة مقدم الخدمة',
+        variant: 'destructive'
+      });
+      console.error('Failed to create service provider:', error);
+    }
+  });
+
   // User management mutations
   const createUserMutation = useMutation({
     mutationFn: async (userData: any) => {
@@ -1401,13 +1500,25 @@ function SystemConfig() {
                             <Button variant="outline" onClick={() => setIsAssetTypeDialogOpen(false)}>
                               {language === 'English' ? 'Cancel' : 'إلغاء'}
                             </Button>
-                            <Button onClick={() => {
-                              // Handle add asset type logic here
-                              setNewTypeName('');
-                              setNewTypeDescription('');
-                              setIsAssetTypeDialogOpen(false);
-                            }}>
-                              {language === 'English' ? 'Add' : 'إضافة'}
+                            <Button 
+                              onClick={() => {
+                                if (newTypeName.trim()) {
+                                  createAssetTypeMutation.mutate({
+                                    name: newTypeName.trim(),
+                                    description: newTypeDescription.trim()
+                                  });
+                                }
+                              }}
+                              disabled={createAssetTypeMutation.isPending || !newTypeName.trim()}
+                            >
+                              {createAssetTypeMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                </>
+                              ) : (
+                                language === 'English' ? 'Add' : 'إضافة'
+                              )}
                             </Button>
                           </div>
                         </div>
