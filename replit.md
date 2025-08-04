@@ -24,6 +24,10 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 - **FIXED**: Employee import now working with 100% success rate - properly handles field mapping and data validation
 - **ENHANCED**: Ticket import now assigns valid employee IDs for submitted_by_id field, preventing foreign key constraint violations
 - **IMPROVED**: Storage method consistency - fixed generateId function to use correct getAllAssets(), getAllEmployees(), getAllTickets() methods
+- **RESOLVED**: Fixed critical employee creation error - removed generated `name` column from INSERT operations
+- **IMPLEMENTED**: Proper generated column handling in schema with `sql` function for `COALESCE(english_name, arabic_name, emp_id)`
+- **ADDED**: Comprehensive bulk actions functionality to Assets Management with multi-select operations
+- **ENHANCED**: Assets page now supports bulk delete, status change, and assignment operations similar to Employees page
 
 ## User Preferences
 - Use clean, professional code structure with comments

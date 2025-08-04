@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2 } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
@@ -39,6 +39,7 @@ export default function Assets() {
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
   const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   
 
@@ -59,6 +60,12 @@ export default function Assets() {
     deleteAsset: language === 'Arabic' ? 'حذف الأصل' : 'Delete Asset',
     assignAsset: language === 'Arabic' ? 'تخصيص الأصل' : 'Assign Asset',
     unassignAsset: language === 'Arabic' ? 'إلغاء تخصيص الأصل' : 'Unassign Asset',
+    selectAll: language === 'Arabic' ? 'تحديد الكل' : 'Select All',
+    deselectAll: language === 'Arabic' ? 'إلغاء تحديد الكل' : 'Deselect All',
+    bulkActions: language === 'Arabic' ? 'العمليات المجمعة' : 'Bulk Actions',
+    deleteSelected: language === 'Arabic' ? 'حذف المحدد' : 'Delete Selected',
+    changeStatus: language === 'Arabic' ? 'تغيير الحالة' : 'Change Status',
+    assignSelected: language === 'Arabic' ? 'تخصيص المحدد' : 'Assign Selected',
     export: language === 'Arabic' ? 'تصدير' : 'Export',
     import: language === 'Arabic' ? 'استيراد' : 'Import',
     refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
@@ -397,6 +404,90 @@ export default function Assets() {
     exportMutation.mutate();
   };
 
+  // Bulk operations handlers
+  const handleSelectAll = () => {
+    if (selectedAssets.length === filteredAssets.length) {
+      setSelectedAssets([]);
+    } else {
+      setSelectedAssets(filteredAssets.map((asset: any) => asset.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(id => 
+          apiRequest(`/api/assets/${id}`, 'DELETE')
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets deleted successfully`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to delete assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(id => 
+          apiRequest(`/api/assets/${id}`, 'PUT', { status: newStatus })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets status updated to ${newStatus}`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to update asset status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkAssign = async (employeeId: number) => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(assetId => 
+          apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets assigned successfully`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to assign assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Enhanced export function for filtered data
   const handleExportFilteredAssets = () => {
     if (filteredAssets.length === 0) {
@@ -556,6 +647,60 @@ export default function Assets() {
             <p className="text-gray-600">{translations.description}</p>
           </div>
         <div className="flex gap-2">
+          {/* Bulk Actions for Selected Assets */}
+          {selectedAssets.length > 0 && (
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+              <span className="text-sm font-medium text-blue-700">
+                {selectedAssets.length} {translations.selectAll}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSelectAll}
+                  className="text-xs"
+                >
+                  {selectedAssets.length === filteredAssets.length ? 
+                    translations.deselectAll : translations.selectAll}
+                </Button>
+                <Select onValueChange={handleBulkStatusChange}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue placeholder={translations.changeStatus} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Available">Available</SelectItem>
+                    <SelectItem value="In Use">In Use</SelectItem>
+                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="Damaged">Damaged</SelectItem>
+                    <SelectItem value="Retired">Retired</SelectItem>
+                  </SelectContent>
+                </Select>
+                {employees && Array.isArray(employees) && employees.length > 0 && (
+                  <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue placeholder={translations.assignSelected} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employees.map((employee: any) => (
+                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                          {employee.englishName || employee.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  className="text-xs"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  {translations.deleteSelected}
+                </Button>
+              </div>
+            </div>
+          )}
 
           
 
