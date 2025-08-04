@@ -1,0 +1,24 @@
+     column_name      |          data_type          
+----------------------+-----------------------------
+ id                   | integer
+ asset_id             | character varying
+ type                 | USER-DEFINED
+ brand                | character varying
+ model_number         | character varying
+ model_name           | character varying
+ serial_number        | character varying
+ specs                | text
+ status               | USER-DEFINED
+ purchase_date        | date
+ buy_price            | numeric
+ warranty_expiry_date | date
+ life_span            | integer
+ out_of_box_os        | character varying
+ assigned_employee_id | integer
+ created_at           | timestamp without time zone
+ updated_at           | timestamp without time zone
+ cpu                  | character varying
+ ram                  | character varying
+ storage              | character varying
+(20 rows)
+

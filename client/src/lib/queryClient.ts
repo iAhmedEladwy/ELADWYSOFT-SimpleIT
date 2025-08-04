@@ -8,19 +8,33 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
+  method: string = 'GET',
   data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  options?: { isFormData?: boolean }
+): Promise<any> {
+  try {
+    const isFormData = options?.isFormData || data instanceof FormData;
+    
+    const res = await fetch(url, {
+      method,
+      headers: isFormData ? {} : (data ? { "Content-Type": "application/json" } : {}),
+      body: isFormData ? data as FormData : (data ? JSON.stringify(data) : undefined),
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res);
+    
+    // Handle empty responses
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
+    return res;
+  } catch (error) {
+    console.error(`API Request Error (${method} ${url}):`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -47,11 +61,12 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes - improved from Infinity
+      retry: 2, // Enhanced retry logic
+      retryDelay: 1000,
     },
     mutations: {
-      retry: false,
+      retry: 1, // Enhanced retry for mutations
     },
   },
 });

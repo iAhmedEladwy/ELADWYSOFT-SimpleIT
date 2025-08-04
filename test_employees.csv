@@ -1,0 +1,2 @@
+empId,englishName,arabicName,department,idNumber,title,directManager,employmentType,joiningDate,exitDate,status,personalMobile,workMobile,personalEmail,corporateEmail
+"","Test Import Employee","موظف استيراد","IT","IMP001","Import Tester","","Full-time","2025-01-15","","Active","","","test@import.com",""

@@ -1,0 +1,179 @@
+SimpleIT App: Critical Bug Fixes
+Context
+My SimpleIT app has several critical bugs that need to be fixed. These issues are affecting core functionality across Assets, Employees, Tickets, and System Config modules. Please fix each bug with proper implementation and testing.
+
+Bug Fix Requirements
+1. Assets Module Bugs
+Bug 1.1: Asset History - Maintenance Records Status Not Reflected
+Issue: When viewing asset history, maintenance records are not showing the correct status or the status is not being updated properly.
+
+Expected Fix:
+
+Ensure maintenance records in asset history display the current status
+Verify that when maintenance is performed, the asset status is updated accordingly
+Show maintenance history with proper status transitions (e.g., "Available" → "Maintenance" → "Available")
+Include timestamps for when status changes occurred
+Display maintenance type and description in the history view
+Database Check Required:
+
+Verify assetMaintenance table is properly linked to assets table
+Ensure maintenance records update the asset status field
+Check if maintenance history query includes proper joins
+Bug 1.2: Bulk Actions Not Implemented (Sell, Retire, Delete)
+Issue: Bulk actions for assets (Sell, Retire, Delete) are missing or not working.
+
+Required Implementation:
+
+Add checkbox selection for multiple assets in the asset grid
+Implement "Select All" functionality
+Create bulk action buttons: "Bulk Sell", "Bulk Retire", "Bulk Delete"
+Bulk Sell: Open modal to enter sale details, update asset status to "Sold"
+Bulk Retire: Update selected assets status to "Retired" with confirmation
+Bulk Delete: Delete selected assets with proper confirmation dialog
+Add progress indicator for bulk operations
+Show success/error messages for bulk operations
+Update asset counts and refresh grid after bulk operations
+Bug 1.3: Row Click Should Open Edit Form
+Issue: Clicking on an asset row doesn't open the edit form.
+
+Fix Required:
+
+Make entire asset table row clickable
+Clicking any part of the row should open the asset edit modal/form
+Ensure row hover effects indicate clickability
+Preserve existing column sorting and filtering functionality
+Handle edit permissions properly (only allow authorized users to edit)
+2. Employees Module Bugs
+Bug 2.1: View Assets Feature Not Working
+Issue: The "View Assets" functionality for employees is broken or not displaying assigned assets.
+
+Required Fix:
+
+Fix the employee asset view to show all assets assigned to that employee
+Display asset details: Asset ID, Type, Brand, Model, Serial Number, Status
+Include asset assignment history (when assigned, by whom)
+Add proper loading states and error handling
+Ensure the view updates when assets are assigned/unassigned
+Make assets clickable to view asset details
+Database Query Fix:
+
+Verify the join between employees and assets tables using assignedEmployeeId
+Include proper error handling for employees with no assigned assets
+Show historical assignments, not just current ones
+Bug 2.2: Row Click Should Open Edit Form
+Issue: Clicking on an employee row doesn't open the edit form.
+
+Fix Required:
+
+Make entire employee table row clickable
+Clicking any part of the row should open the employee edit modal/form
+Ensure row hover effects indicate clickability
+Preserve existing column sorting and filtering functionality
+Handle edit permissions properly
+3. Tickets Module Bugs
+Bug 3.1: Grid Inline Editing - Request Types Not Implemented
+Issue: Request types from system config are not available for inline editing in the tickets grid.
+
+Required Fix:
+
+Integrate custom request types from customRequestTypes table in system config
+Populate request type dropdown in ticket grid inline editing with:
+Default request types: Hardware, Software, Network, Other
+Custom request types from system config
+Ensure the dropdown shows active request types only (isActive = true)
+Update ticket when request type is changed via inline editing
+Refresh grid to show updated request type immediately
+Implementation Details:
+
+Query customRequestTypes table for active types
+Combine with default enum values from ticketRequestTypeEnum
+Create proper dropdown component for inline editing
+Handle validation and error states
+Bug 3.2: Row Click Should Open Edit Form
+Issue: Clicking on a ticket row doesn't open the edit form, and rows are not fully clickable.
+
+Fix Required:
+
+Make entire ticket table row clickable (not just specific columns)
+Clicking anywhere on the row should open the ticket edit modal/form
+Ensure row hover effects indicate clickability
+Preserve inline editing functionality for specific fields
+Handle edit permissions properly
+Show loading state when opening ticket details
+4. Assets Management Module Bug
+Bug 4.1: Hide Audit Logs from Sidebar
+Issue: Audit Logs should not be visible in the Assets Management sidebar navigation.
+
+Fix Required:
+
+Remove "Audit Logs" menu item from Assets Management sidebar
+Ensure Audit Logs remain accessible from appropriate admin/system areas
+Update navigation permissions if needed
+Verify no broken links or navigation issues after removal
+5. System Config Module Bug
+Bug 5.1: Tickets Request Types - Edit Mode Issues
+Issue: When editing ticket request types in system config, clicking on the description field causes the row to exit edit mode unexpectedly.
+
+Required Fix:
+
+Fix the edit mode behavior for request types table
+Ensure clicking on description field keeps the row in edit mode
+Prevent accidental exit from edit mode when interacting with form fields
+Implement proper form validation and error handling
+Add save/cancel buttons that are clearly visible and functional
+Show proper loading states during save operations
+Implementation Details:
+
+Fix event handlers to prevent bubbling that might trigger row deselection
+Ensure text areas and input fields maintain focus properly
+Add proper form state management
+Implement inline validation for required fields
+Testing Requirements for Each Fix
+After Implementing Fixes, Test:
+Assets Module:
+
+Create maintenance record and verify status updates in history
+Test bulk sell/retire/delete with multiple assets
+Click various parts of asset rows to ensure edit form opens
+Verify permissions for different user roles
+Employees Module:
+
+Test view assets for employees with and without assigned assets
+Click employee rows to verify edit form opens
+Test with different user permission levels
+Tickets Module:
+
+Test inline editing with both default and custom request types
+Verify request types from system config appear in dropdown
+Click ticket rows to ensure edit form opens properly
+Test inline editing doesn't conflict with row click
+Assets Management:
+
+Verify Audit Logs is removed from sidebar
+Check all other navigation items still work
+Ensure audit logs are accessible from proper admin areas
+System Config:
+
+Test editing request type descriptions without exiting edit mode
+Verify all form fields work properly in edit mode
+Test save/cancel functionality
+Success Criteria
+Each bug fix should:
+
+✅ Resolve the specific issue described
+✅ Maintain existing functionality
+✅ Include proper error handling
+✅ Work across different user permission levels
+✅ Be responsive and user-friendly
+✅ Include appropriate loading states and feedback
+✅ Pass basic functionality tests
+Priority Order
+HIGH: Row click edit forms (affects all modules)
+HIGH: Tickets request types inline editing
+MEDIUM: Employee view assets functionality
+MEDIUM: Asset maintenance status in history
+MEDIUM: Asset bulk actions implementation
+LOW: Hide audit logs from sidebar
+LOW: System config edit mode issue
+Please fix these bugs systematically, test each fix thoroughly, and ensure no new issues are introduced during the fix process.
+

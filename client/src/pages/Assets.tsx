@@ -1,31 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
-import AssetsTable from '@/components/assets/AssetsTable';
-import AssetForm from '@/components/assets/AssetForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Upload, DollarSign } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { Helmet } from 'react-helmet-async';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2 } from 'lucide-react';
+import type { AssetFilters as AssetFiltersType } from '@shared/types';
+import AssetFilters from '@/components/assets/AssetFilters';
+import AssetForm from '@/components/assets/AssetForm';
+import MaintenanceForm from '@/components/assets/MaintenanceForm';
+import AssetsTable from '@/components/assets/AssetsTable';
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -34,157 +31,128 @@ export default function Assets() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<AssetFiltersType>({});
+  const [searchInput, setSearchInput] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
+  const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
+  const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
   
-  // Listen for the FAB add asset event
-  useEffect(() => {
-    const handleFabAddAsset = () => {
-      // Clear editing state and open dialog for new asset
-      setEditingAsset(null);
-      setOpenDialog(true);
-    };
-    
-    // Register event listener
-    window.addEventListener('fab:add-asset', handleFabAddAsset);
-    
-    // Check if URL has action=new parameter
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'new') {
-      handleFabAddAsset();
-      // Clean up the URL to prevent dialog from reopening on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('fab:add-asset', handleFabAddAsset);
-    };
-  }, []);
+
   
   // Sell assets form state
   const [sellForm, setSellForm] = useState({
     buyer: '',
-    date: new Date().toISOString().split('T')[0],
+    saleDate: new Date().toISOString().split('T')[0],
     totalAmount: '',
     notes: ''
   });
 
-  // Translations
   const translations = {
-    title: language === 'English' ? 'Assets Management' : 'إدارة الأصول',
-    description: language === 'English' 
-      ? 'Track and manage all company IT assets' 
-      : 'تتبع وإدارة جميع أصول تكنولوجيا المعلومات للشركة',
-    allAssets: language === 'English' ? 'All Assets' : 'جميع الأصول',
-    available: language === 'English' ? 'Available' : 'متاح',
-    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
-    maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
-    sold: language === 'English' ? 'Sold' : 'تم بيعه',
-    damaged: language === 'English' ? 'Damaged' : 'تالف',
-    retired: language === 'English' ? 'Retired' : 'متقاعد',
-    addAsset: language === 'English' ? 'Add Asset' : 'إضافة أصل',
-    editAsset: language === 'English' ? 'Edit Asset' : 'تعديل الأصل',
-    refresh: language === 'English' ? 'Refresh' : 'تحديث',
-    search: language === 'English' ? 'Search...' : 'بحث...',
-    import: language === 'English' ? 'Import' : 'استيراد',
-    export: language === 'English' ? 'Export' : 'تصدير',
-    sellAssets: language === 'English' ? 'Sell Assets' : 'بيع الأصول',
-    selectFile: language === 'English' ? 'Select File' : 'اختر ملف',
-    assetAdded: language === 'English' ? 'Asset added successfully' : 'تمت إضافة الأصل بنجاح',
-    assetUpdated: language === 'English' ? 'Asset updated successfully' : 'تم تحديث الأصل بنجاح',
-    assetDeleted: language === 'English' ? 'Asset deleted successfully' : 'تم حذف الأصل بنجاح',
-    importSuccess: language === 'English' ? 'Assets imported successfully' : 'تم استيراد الأصول بنجاح',
-    sellSuccess: language === 'English' ? 'Assets sold successfully' : 'تم بيع الأصول بنجاح',
-    buyer: language === 'English' ? 'Buyer' : 'المشتري',
-    date: language === 'English' ? 'Date' : 'التاريخ',
-    totalAmount: language === 'English' ? 'Total Amount' : 'المبلغ الإجمالي',
-    notes: language === 'English' ? 'Notes' : 'ملاحظات',
-    sell: language === 'English' ? 'Sell' : 'بيع',
-    error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
-    noAssetsSelected: language === 'English' ? 'No assets selected' : 'لم يتم تحديد أي أصول',
-    assetAssigned: language === 'English' ? 'Asset assigned successfully' : 'تم تعيين الأصل بنجاح',
-    assetUnassigned: language === 'English' ? 'Asset unassigned successfully' : 'تم إلغاء تعيين الأصل بنجاح',
-    maintenanceSuccess: language === 'English' ? 'Maintenance record added successfully' : 'تمت إضافة سجل الصيانة بنجاح',
+    title: language === 'Arabic' ? 'إدارة الأصول' : 'Assets Management',
+    description: language === 'Arabic' ? 'إدارة شاملة للأصول مع التتبع الذكي ومعايير ITIL' : 'Comprehensive ITIL-compliant asset management with intelligent tracking',
+    addAsset: language === 'Arabic' ? 'إضافة أصل' : 'Add Asset',
+    editAsset: language === 'Arabic' ? 'تعديل الأصل' : 'Edit Asset',
+    deleteAsset: language === 'Arabic' ? 'حذف الأصل' : 'Delete Asset',
+    assignAsset: language === 'Arabic' ? 'تخصيص الأصل' : 'Assign Asset',
+    unassignAsset: language === 'Arabic' ? 'إلغاء تخصيص الأصل' : 'Unassign Asset',
+    selectAll: language === 'Arabic' ? 'تحديد الكل' : 'Select All',
+    deselectAll: language === 'Arabic' ? 'إلغاء تحديد الكل' : 'Deselect All',
+    bulkActions: language === 'Arabic' ? 'العمليات المجمعة' : 'Bulk Actions',
+    deleteSelected: language === 'Arabic' ? 'حذف المحدد' : 'Delete Selected',
+    changeStatus: language === 'Arabic' ? 'تغيير الحالة' : 'Change Status',
+    assignSelected: language === 'Arabic' ? 'تخصيص المحدد' : 'Assign Selected',
+    export: language === 'Arabic' ? 'تصدير' : 'Export',
+    import: language === 'Arabic' ? 'استيراد' : 'Import',
+    refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
+    sell: language === 'Arabic' ? 'بيع الأصول' : 'Sell Assets',
+    sellSelected: language === 'Arabic' ? 'بيع المحدد' : 'Sell Selected',
+    buyer: language === 'Arabic' ? 'المشتري' : 'Buyer',
+    saleDate: language === 'Arabic' ? 'تاريخ البيع' : 'Sale Date',
+    totalAmount: language === 'Arabic' ? 'المبلغ الإجمالي' : 'Total Amount',
+    notes: language === 'Arabic' ? 'ملاحظات' : 'Notes',
+    cancel: language === 'Arabic' ? 'إلغاء' : 'Cancel',
+    selectFile: language === 'Arabic' ? 'اختر ملف' : 'Select File',
+    uploadFile: language === 'Arabic' ? 'رفع الملف' : 'Upload File',
+    importing: language === 'Arabic' ? 'جاري الاستيراد...' : 'Importing...',
+    success: language === 'Arabic' ? 'نجح' : 'Success',
+    error: language === 'Arabic' ? 'خطأ' : 'Error',
+    assetAdded: language === 'Arabic' ? 'تم إضافة الأصل بنجاح' : 'Asset added successfully',
+    assetUpdated: language === 'Arabic' ? 'تم تحديث الأصل بنجاح' : 'Asset updated successfully',
+    assetDeleted: language === 'Arabic' ? 'تم حذف الأصل بنجاح' : 'Asset deleted successfully',
+    assetAssigned: language === 'Arabic' ? 'تم تخصيص الأصل بنجاح' : 'Asset assigned successfully',
+    assetUnassigned: language === 'Arabic' ? 'تم إلغاء تخصيص الأصل بنجاح' : 'Asset unassigned successfully',
+    assetsSold: language === 'Arabic' ? 'تم بيع الأصول بنجاح' : 'Assets sold successfully',
+    assetsImported: language === 'Arabic' ? 'تم استيراد الأصول بنجاح' : 'Assets imported successfully',
+    deleteConfirm: language === 'Arabic' ? 'هل أنت متأكد من حذف هذا الأصل؟' : 'Are you sure you want to delete this asset?',
+    sellConfirm: language === 'Arabic' ? 'هل أنت متأكد من بيع الأصول المحددة؟' : 'Are you sure you want to sell the selected assets?',
+    noAssetsSelected: language === 'Arabic' ? 'لم يتم تحديد أصول للبيع' : 'No assets selected for sale',
+    invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file'
   };
 
-  // Fetch assets
-  const { 
-    data: assets = [], 
-    isLoading,
-    refetch 
-  } = useQuery({
+  // Fetch data
+  const { data: assets, isLoading, refetch } = useQuery({
     queryKey: ['/api/assets'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Fetch employees for assignment dropdown
-  const { 
-    data: employees = [], 
-    isLoading: employeesLoading
-  } = useQuery({
+  const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  // Add asset mutation
+  // Mutations
   const addAssetMutation = useMutation({
-    mutationFn: async (assetData: any) => {
-      const res = await apiRequest('POST', '/api/assets', assetData);
-      return res.json();
-    },
+    mutationFn: (assetData: any) => apiRequest('/api/assets', 'POST', assetData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.assetAdded,
-      });
-      setOpenDialog(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Update asset mutation
-  const updateAssetMutation = useMutation({
-    mutationFn: async ({ id, assetData }: { id: number; assetData: any }) => {
-      const res = await apiRequest('PUT', `/api/assets/${id}`, assetData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.assetUpdated,
-      });
       setOpenDialog(false);
       setEditingAsset(null);
-    },
-    onError: (error: any) => {
       toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
+        title: translations.success,
+        description: translations.assetAdded,
       });
     },
+    onError: (error: any) => {
+      console.error('Add asset error:', error);
+      toast({
+        title: translations.error,
+        description: error.message || 'Failed to add asset',
+        variant: 'destructive',
+      });
+    }
   });
 
-  // Delete asset mutation
+  const updateAssetMutation = useMutation({
+    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets/${id}`, 'PUT', assetData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenDialog(false);
+      setEditingAsset(null);
+      toast({
+        title: translations.success,
+        description: translations.assetUpdated,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Update asset error:', error);
+      toast({
+        title: translations.error,
+        description: error.message || 'Failed to update asset',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const deleteAssetMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/assets/${id}`, {});
-      return res.json();
-    },
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetDeleted,
+        title: translations.success,
+        description: translations.assetDeleted,
       });
     },
     onError: (error: any) => {
@@ -193,19 +161,17 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Assign asset mutation
   const assignAssetMutation = useMutation({
-    mutationFn: async ({ id, employeeId }: { id: number; employeeId: number }) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/assign`, { employeeId });
-      return res.json();
-    },
+    mutationFn: ({ assetId, employeeId }: { assetId: number; employeeId: number }) =>
+      apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetAssigned,
+        title: translations.success,
+        description: translations.assetAssigned,
       });
     },
     onError: (error: any) => {
@@ -214,19 +180,16 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Unassign asset mutation
   const unassignAssetMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/unassign`, {});
-      return res.json();
-    },
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}/unassign`, 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: translations.assetUnassigned,
+        title: translations.success,
+        description: translations.assetUnassigned,
       });
     },
     onError: (error: any) => {
@@ -235,83 +198,24 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Add maintenance record mutation
-  const addMaintenanceMutation = useMutation({
-    mutationFn: async ({ id, maintenanceData }: { id: number; maintenanceData: any }) => {
-      const res = await apiRequest('POST', `/api/assets/${id}/maintenance`, maintenanceData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.maintenanceSuccess,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Import assets mutation
-  const importAssetsMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await fetch('/api/assets/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.importSuccess,
-        description: `${data.imported} assets imported.`,
-      });
-      setImportFile(null);
-      setIsImporting(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-      setIsImporting(false);
-    },
-  });
-
-  // Sell assets mutation
   const sellAssetsMutation = useMutation({
-    mutationFn: async (saleData: any) => {
-      const res = await apiRequest('POST', '/api/asset-sales', saleData);
-      return res.json();
-    },
+    mutationFn: (saleData: any) => apiRequest('/api/assets/sell', 'POST', saleData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.sellSuccess,
-      });
       setOpenSellDialog(false);
       setSelectedAssets([]);
       setSellForm({
         buyer: '',
-        date: new Date().toISOString().split('T')[0],
+        saleDate: new Date().toISOString().split('T')[0],
         totalAmount: '',
         notes: ''
+      });
+      toast({
+        title: translations.success,
+        description: translations.assetsSold,
       });
     },
     onError: (error: any) => {
@@ -320,51 +224,333 @@ export default function Assets() {
         description: error.message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      try {
+        const res = await fetch('/api/assets/import', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Import failed');
+        return res.json();
+      } catch (error) {
+        console.error('Import error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setImportFile(null);
+      setIsImporting(false);
+      toast({
+        title: translations.success,
+        description: translations.assetsImported,
+      });
+    },
+    onError: (error: any) => {
+      setIsImporting(false);
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch('/api/assets/export', {
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Export failed');
+        return res.blob();
+      } catch (error) {
+        console.error('Export error:', error);
+        throw error;
+      }
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `assets-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const addMaintenanceMutation = useMutation({
+    mutationFn: async (maintenanceData: any) => {
+      try {
+        const { assetId, ...data } = maintenanceData;
+        const res = await fetch(`/api/assets/${assetId}/maintenance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to add maintenance record');
+        }
+        return res.json();
+      } catch (error) {
+        console.error('Maintenance error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setOpenMaintenanceDialog(false);
+      setMaintenanceAsset(null);
+      toast({
+        title: translations.success,
+        description: language === 'Arabic' ? 'تم إضافة سجل الصيانة بنجاح' : 'Maintenance record added successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'Arabic' ? 'فشل في إضافة سجل الصيانة' : 'Failed to add maintenance record'),
+        variant: 'destructive',
+      });
+    }
+  });
+
+
+
+  // Event handlers
   const handleAddAsset = (assetData: any) => {
     addAssetMutation.mutate(assetData);
   };
 
   const handleUpdateAsset = (assetData: any) => {
-    if (editingAsset && editingAsset.id) {
-      updateAssetMutation.mutate({ id: editingAsset.id, assetData });
-    }
-  };
-
-  const handleDeleteAsset = (assetId: number) => {
-    deleteAssetMutation.mutate(assetId);
-  };
-
-  const handleEditAsset = (asset: any) => {
-    setEditingAsset(asset);
-    setOpenDialog(true);
+    updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
   };
 
   const handleAssignAsset = (assetId: number, employeeId: number) => {
-    assignAssetMutation.mutate({ id: assetId, employeeId });
+    assignAssetMutation.mutate({ assetId, employeeId });
   };
 
   const handleUnassignAsset = (assetId: number) => {
     unassignAssetMutation.mutate(assetId);
   };
 
-  const handleAddMaintenance = (assetId: number, maintenanceData: any) => {
-    addMaintenanceMutation.mutate({ id: assetId, maintenanceData });
+  const handleAddMaintenance = (assetId: number) => {
+    const asset = Array.isArray(assets) ? assets.find((a: any) => a.id === assetId) : null;
+    setMaintenanceAsset(asset);
+    setOpenMaintenanceDialog(true);
+  };
+
+  const handleMaintenanceSubmit = (maintenanceData: any) => {
+    addMaintenanceMutation.mutate(maintenanceData);
+  };
+
+
+
+
+
+  const handleUpgradeAsset = (assetId: number) => {
+    // Record asset upgrade
+    const upgradeDescription = prompt('Enter upgrade details (e.g., RAM upgrade, Storage upgrade):');
+    if (!upgradeDescription) return;
+    
+    const upgradeData = {
+      assetId: assetId,
+      date: new Date().toISOString().split('T')[0],
+      type: 'Upgrade',
+      description: upgradeDescription,
+      cost: parseFloat(prompt('Enter upgrade cost (optional):') || '0'),
+      providerType: 'Internal',
+      providerName: 'IT Department'
+    };
+    
+    // Call API to record upgrade
+    fetch('/api/maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(upgradeData)
+    }).then(() => {
+      toast({
+        title: 'Success',
+        description: 'Asset upgrade recorded successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+    }).catch(() => {
+      toast({
+        title: 'Error',
+        description: 'Failed to record asset upgrade',
+        variant: 'destructive',
+      });
+    });
   };
 
   const handleExport = () => {
-    window.open('/api/assets/export', '_blank');
+    exportMutation.mutate();
+  };
+
+  // Bulk operations handlers
+  const handleSelectAll = () => {
+    if (selectedAssets.length === filteredAssets.length) {
+      setSelectedAssets([]);
+    } else {
+      setSelectedAssets(filteredAssets.map((asset: any) => asset.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(id => 
+          apiRequest(`/api/assets/${id}`, 'DELETE')
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets deleted successfully`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to delete assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(id => 
+          apiRequest(`/api/assets/${id}`, 'PUT', { status: newStatus })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets status updated to ${newStatus}`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to update asset status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkAssign = async (employeeId: number) => {
+    if (selectedAssets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedAssets.map(assetId => 
+          apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      toast({
+        title: `${selectedAssets.length} assets assigned successfully`,
+      });
+      setSelectedAssets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to assign assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Enhanced export function for filtered data
+  const handleExportFilteredAssets = () => {
+    if (filteredAssets.length === 0) {
+      toast({
+        title: translations.error,
+        description: 'No assets to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Create CSV content from filtered assets
+    const headers = ['Asset ID', 'Type', 'Brand', 'Model', 'Serial Number', 'CPU', 'RAM', 'Storage', 'Status', 'Assigned To'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredAssets.map((asset: any) => {
+        const assignedEmployee = Array.isArray(employees) ? employees.find((e: any) => e.id === asset.assignedEmployeeId) : null;
+        return [
+          asset.assetId || '',
+          asset.type || '',
+          asset.brand || '',
+          asset.modelName || '',
+          asset.serialNumber || '',
+          asset.cpu || '',
+          asset.ram || '',
+          asset.storage || '',
+          asset.status || '',
+          assignedEmployee ? assignedEmployee.englishName : ''
+        ].map(field => `"${field}"`).join(',');
+      })
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `filtered-assets-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: translations.success,
+      description: `Exported ${filteredAssets.length} assets successfully`,
+    });
   };
 
   const handleImport = () => {
-    if (!importFile) return;
-    
-    setIsImporting(true);
+    if (!importFile) {
+      toast({
+        title: translations.error,
+        description: translations.invalidFile,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', importFile);
-    importAssetsMutation.mutate(formData);
+    setIsImporting(true);
+    importMutation.mutate(formData);
   };
 
   const handleSellAssets = () => {
@@ -386,141 +572,107 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-  // Filter assets based on search query
-  const filteredAssets = assets.filter((asset: any) => {
-    const searchString = searchQuery.toLowerCase();
-    return (
-      asset.assetId?.toLowerCase().includes(searchString) ||
-      asset.type?.toLowerCase().includes(searchString) ||
-      asset.brand?.toLowerCase().includes(searchString) ||
-      asset.modelName?.toLowerCase().includes(searchString) ||
-      asset.serialNumber?.toLowerCase().includes(searchString)
-    );
-  });
-
-  // Filter assets by status
-  const availableAssets = filteredAssets.filter((asset: any) => asset.status === 'Available');
-  const inUseAssets = filteredAssets.filter((asset: any) => asset.status === 'In Use');
-  const maintenanceAssets = filteredAssets.filter((asset: any) => asset.status === 'Maintenance');
-  const soldAssets = filteredAssets.filter((asset: any) => asset.status === 'Sold');
-  const damagedAssets = filteredAssets.filter((asset: any) => asset.status === 'Damaged');
-  const retiredAssets = filteredAssets.filter((asset: any) => asset.status === 'Retired');
+  // Filter assets based on filters
+  const filteredAssets = useMemo(() => {
+    if (!assets || !Array.isArray(assets)) return [];
+    
+    return assets.filter((asset: any) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const searchFields = [
+          asset.assetId,
+          asset.type,
+          asset.brand,
+          asset.modelName,
+          asset.serialNumber,
+          asset.location,
+          asset.specs,
+          asset.cpu,
+          asset.ram,
+          asset.storage
+        ].filter(Boolean);
+        
+        if (!searchFields.some(field => 
+          field?.toLowerCase().includes(searchLower)
+        )) {
+          return false;
+        }
+      }
+      
+      // Type filter
+      if (filters.type && asset.type !== filters.type) {
+        return false;
+      }
+      
+      // Brand filter
+      if (filters.brand && asset.brand !== filters.brand) {
+        return false;
+      }
+      
+      // Model filter
+      if (filters.model && asset.modelName !== filters.model) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status && asset.status !== filters.status) {
+        return false;
+      }
+      
+      // Assignment filter - Fixed to use proper field mapping
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          if (asset.assignedEmployeeId) return false;
+        } else {
+          if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [assets, filters]);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
-          <p className="text-gray-600">{translations.description}</p>
-        </div>
+    <>
+      <Helmet>
+        <title>{translations.title} | SimpleIT v1.3</title>
+        <meta name="description" content={translations.description} />
+      </Helmet>
+      
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
+            <p className="text-gray-600">{translations.description}</p>
+          </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {translations.refresh}
-          </Button>
+
+          
+
           
           {hasAccess(2) && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                {translations.export}
-              </Button>
-              
-              <Dialog>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleExportFilteredAssets}
+              disabled={filteredAssets.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV ({filteredAssets.length})
+            </Button>
+          )}
+          
+          {hasAccess(2) && (
+            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {translations.import}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{translations.import}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <Input
-                      type="file"
-                      accept=".csv,.xlsx"
-                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    />
-                    <Button 
-                      onClick={handleImport} 
-                      disabled={!importFile || isImporting}
-                      className="w-full"
-                    >
-                      {isImporting ? 'Importing...' : translations.import}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              
-              {selectedAssets.length > 0 && hasAccess(3) && (
-                <Dialog open={openSellDialog} onOpenChange={setOpenSellDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      {translations.sellAssets} ({selectedAssets.length})
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{translations.sellAssets}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="buyer">{translations.buyer}</Label>
-                        <Input
-                          id="buyer"
-                          value={sellForm.buyer}
-                          onChange={(e) => setSellForm({ ...sellForm, buyer: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="date">{translations.date}</Label>
-                        <Input
-                          id="date"
-                          type="date"
-                          value={sellForm.date}
-                          onChange={(e) => setSellForm({ ...sellForm, date: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="totalAmount">{translations.totalAmount}</Label>
-                        <Input
-                          id="totalAmount"
-                          type="number"
-                          value={sellForm.totalAmount}
-                          onChange={(e) => setSellForm({ ...sellForm, totalAmount: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="notes">{translations.notes}</Label>
-                        <Input
-                          id="notes"
-                          value={sellForm.notes}
-                          onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })}
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSellAssets} 
-                        disabled={!sellForm.buyer || !sellForm.date || !sellForm.totalAmount || sellAssetsMutation.isPending}
-                        className="w-full"
-                      >
-                        {sellAssetsMutation.isPending ? 'Processing...' : translations.sell}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              
-              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setEditingAsset(null); // Clear editing state for new asset
+                      setOpenDialog(true);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     {translations.addAsset}
                   </Button>
@@ -530,6 +682,9 @@ export default function Assets() {
                     <DialogTitle>
                       {editingAsset ? translations.editAsset : translations.addAsset}
                     </DialogTitle>
+                    <DialogDescription>
+                      {editingAsset ? 'Edit asset information and specifications' : 'Add a new asset to the inventory system'}
+                    </DialogDescription>
                   </DialogHeader>
                   <AssetForm
                     onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
@@ -538,157 +693,279 @@ export default function Assets() {
                   />
                 </DialogContent>
               </Dialog>
-            </>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="mb-6">
-        <Input
-          placeholder={translations.search}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
-      </div>
+      {/* ITIL-Compliant Filter & Search Card */}
+      <Card className="mb-6">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+              {Object.values(filters).filter(Boolean).length > 0 && (
+                <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {filteredAssets.length} of {assets && Array.isArray(assets) ? assets.length : 0} assets
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setFilters({ ...filters, search: searchInput });
+          }} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by Asset ID, Type, Brand, Model, Serial Number, Specs, CPU, RAM, Storage..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button type="submit" variant="outline">
+              Search
+            </Button>
+          </form>
 
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">{translations.allAssets}</TabsTrigger>
-          <TabsTrigger value="available">{translations.available}</TabsTrigger>
-          <TabsTrigger value="inuse">{translations.inUse}</TabsTrigger>
-          <TabsTrigger value="maintenance">{translations.maintenance}</TabsTrigger>
-          <TabsTrigger value="sold">{translations.sold}</TabsTrigger>
-          <TabsTrigger value="damaged">{translations.damaged}</TabsTrigger>
-          <TabsTrigger value="retired">{translations.retired}</TabsTrigger>
-        </TabsList>
+          {/* Filter Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Type Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Type</label>
+              <Select
+                value={filters.type || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  )) : null}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <TabsContent value="all">
+            {/* Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select
+                value={filters.status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Available">Available</SelectItem>
+                  <SelectItem value="In Use">In Use</SelectItem>
+                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+                  <SelectItem value="Damaged">Damaged</SelectItem>
+                  <SelectItem value="Retired">Retired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Brand Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <Select
+                value={filters.brand || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Brands" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
+                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                  )) : null}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Assignment Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Assignment</label>
+              <Select
+                value={filters.assignedTo || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, assignedTo: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Assignments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Assignments</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {employees && Array.isArray(employees) ? employees.map((employee: any) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.englishName || employee.name}
+                    </SelectItem>
+                  )) : null}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+
+        </CardContent>
+      </Card>
+
+      {/* Bulk Actions for Selected Assets */}
+      {selectedAssets.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+          <span className="text-sm font-medium text-blue-700">
+            {selectedAssets.length} selected
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSelectAll}
+              className="text-xs"
+            >
+              {selectedAssets.length === filteredAssets.length ? 
+                translations.deselectAll : translations.selectAll}
+            </Button>
+            <Select onValueChange={handleBulkStatusChange}>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue placeholder={translations.changeStatus} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Available">Available</SelectItem>
+                <SelectItem value="In Use">In Use</SelectItem>
+                <SelectItem value="Maintenance">Maintenance</SelectItem>
+                <SelectItem value="Damaged">Damaged</SelectItem>
+                <SelectItem value="Retired">Retired</SelectItem>
+              </SelectContent>
+            </Select>
+            {employees && Array.isArray(employees) && employees.length > 0 && (
+              <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
+                <SelectTrigger className="w-36 h-8 text-xs">
+                  <SelectValue placeholder={translations.assignSelected} />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee: any) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.englishName || employee.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              className="text-xs"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              {translations.deleteSelected}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ITIL-Compliant Assets Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Asset Inventory ({filteredAssets.length})
+          </CardTitle>
+          <CardDescription>
+            Complete ITIL-compliant asset management with lifecycle tracking, hardware specifications, and change history
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
           ) : (
             <AssetsTable 
               assets={filteredAssets}
-              employees={employees}
+              employees={Array.isArray(employees) ? employees : []}
               selectedAssets={selectedAssets}
               setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
+              onEdit={(asset) => {
+                setEditingAsset(asset);
+                setOpenDialog(true);
+              }}
+              onDelete={(assetId) => deleteAssetMutation.mutate(assetId)}
+              onAssign={(assetId, employeeId) => assignAssetMutation.mutate({ assetId, employeeId })}
+              onUnassign={(assetId) => unassignAssetMutation.mutate(assetId)}
+              onAddMaintenance={(assetId, maintenanceData) => {
+                handleAddMaintenance(assetId);
+              }}
             />
           )}
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="available">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={availableAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
+      {/* Add/Edit Asset Dialog */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAsset ? translations.editAsset : translations.addAsset}
+            </DialogTitle>
+            <DialogDescription>
+              {editingAsset 
+                ? 'Update the asset information below' 
+                : 'Fill in the details to add a new asset'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <AssetForm
+            onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
+            initialData={editingAsset}
+            isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
 
-        <TabsContent value="inuse">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={inUseAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
+      {/* Maintenance Form Dialog */}
+      <Dialog open={openMaintenanceDialog} onOpenChange={setOpenMaintenanceDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              {language === 'Arabic' ? 'إضافة سجل صيانة' : 'Add Maintenance Record'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'Arabic' 
+                ? 'أضف سجل صيانة مفصل لتتبع أعمال الصيانة والإصلاحات' 
+                : 'Add a detailed maintenance record to track service work and repairs'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          {maintenanceAsset && (
+            <MaintenanceForm
+              onSubmit={handleMaintenanceSubmit}
+              isSubmitting={addMaintenanceMutation.isPending}
+              assetId={maintenanceAsset.id}
+              assetName={`${maintenanceAsset.type} - ${maintenanceAsset.brand} ${maintenanceAsset.modelName || ''}`.trim()}
             />
           )}
-        </TabsContent>
+        </DialogContent>
+      </Dialog>
 
-        <TabsContent value="maintenance">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={maintenanceAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
 
-        <TabsContent value="sold">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={soldAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="damaged">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={damagedAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="retired">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AssetsTable 
-              assets={retiredAssets}
-              employees={employees}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={handleEditAsset}
-              onDelete={handleDeleteAsset}
-              onAssign={handleAssignAsset}
-              onUnassign={handleUnassignAsset}
-              onAddMaintenance={handleAddMaintenance}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </>
   );
 }

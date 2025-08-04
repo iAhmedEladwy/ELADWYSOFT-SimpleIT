@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '@/lib/currencyContext';
 
 interface StatsCardProps {
   title: string;
@@ -9,6 +10,7 @@ interface StatsCardProps {
   changeLabel: string;
   changeColor?: 'success' | 'warning' | 'error';
   iconColor?: 'primary' | 'secondary' | 'accent' | 'warning';
+  isCurrency?: boolean;
 }
 
 export default function StatsCard({
@@ -18,8 +20,11 @@ export default function StatsCard({
   change,
   changeLabel,
   changeColor = 'success',
-  iconColor = 'primary'
+  iconColor = 'primary',
+  isCurrency = false
 }: StatsCardProps) {
+  // Use currency context to format values if needed
+  const { formatCurrency } = useCurrency();
   const getChangeColor = () => {
     switch (changeColor) {
       case 'success': return 'text-success';
@@ -40,11 +45,19 @@ export default function StatsCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-5">
+    <div className="bg-white rounded-lg shadow p-5 hover:shadow-md transition-all duration-200 hover:scale-105 animate-fade-in btn-enhanced">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-500 text-sm">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">
+            {isCurrency 
+              ? formatCurrency(value, { 
+                  minimumFractionDigits: 2, 
+                  maximumFractionDigits: 2,
+                  useSymbol: true 
+                }) 
+              : value}
+          </h3>
         </div>
         <div className={cn("h-12 w-12 rounded-full flex items-center justify-center", getIconColor())}>
           {icon}

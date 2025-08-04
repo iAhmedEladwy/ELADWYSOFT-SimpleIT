@@ -1,23 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
+import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import TicketForm from '@/components/tickets/TicketForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import TicketFilters from '@/components/tickets/TicketFilters';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Plus, RefreshCw, Settings, Zap, Edit3, Download } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import type { TicketFilters as TicketFiltersType } from '@shared/types';
 
 export default function Tickets() {
   const { language } = useLanguage();
@@ -25,7 +23,10 @@ export default function Tickets() {
   const { user, hasAccess } = useAuth();
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<TicketFiltersType>({});
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -110,25 +111,28 @@ export default function Tickets() {
     enabled: hasAccess(2), // Only fetch if user has manager access
   });
 
-  // Create ticket mutation
+  // Create ticket mutation using standard API
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      // Use fetch directly to bypass any middleware issues
-      const response = await fetch('/api/tickets/create-raw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(ticketData),
-        credentials: 'include'
-      });
+      console.log('Creating ticket with data:', ticketData);
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create ticket');
-      }
+      // Ensure data format is correct for backend
+      const formattedData = {
+        submittedById: Number(ticketData.submittedById),
+        assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null,
+        relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
+        requestType: String(ticketData.requestType), // Ensure it's a string, not enum
+        priority: String(ticketData.priority),
+        status: 'Open', // Always start as Open for new tickets
+        summary: String(ticketData.summary),
+        description: String(ticketData.description),
+        dueDate: ticketData.dueDate ? new Date(ticketData.dueDate).toISOString() : null,
+        slaTarget: ticketData.slaTarget ? Number(ticketData.slaTarget) : null,
+      };
       
-      return response.json();
+      console.log('Formatted ticket data:', formattedData);
+      const response = await apiRequest('/api/tickets', 'POST', formattedData);
+      return response;
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
@@ -138,7 +142,7 @@ export default function Tickets() {
       
       toast({
         title: translations.ticketCreated,
-        description: `Ticket ${data.ticket_id} created successfully`,
+        description: `Ticket ${data.ticketId || data.ticket_id} created successfully`,
       });
       setOpenDialog(false);
       
@@ -217,29 +221,103 @@ export default function Tickets() {
     assignTicketMutation.mutate({ id: ticketId, userId });
   };
 
-  // Filter tickets based on search query
-  const filteredTickets = tickets.filter((ticket: any) => {
-    const searchString = searchQuery.toLowerCase();
-    return (
-      ticket.ticketId?.toLowerCase().includes(searchString) ||
-      ticket.description?.toLowerCase().includes(searchString) ||
-      ticket.category?.toLowerCase().includes(searchString) ||
-      ticket.priority?.toLowerCase().includes(searchString) ||
-      ticket.status?.toLowerCase().includes(searchString)
-    );
-  });
+  // Filter tickets based on filters
+  const filteredTickets = useMemo(() => {
+    if (!Array.isArray(tickets)) return [];
+    
+    return tickets.filter((ticket: any) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const searchFields = [
+          ticket.ticketId,
+          ticket.summary,
+          ticket.description,
+          ticket.requestType,
+          ticket.priority,
+          ticket.status
+        ].filter(Boolean);
+        
+        if (!searchFields.some(field => 
+          field?.toLowerCase().includes(searchLower)
+        )) {
+          return false;
+        }
+      }
+      
+      // Status filter
+      if (filters.status && ticket.status !== filters.status) {
+        return false;
+      }
+      
+      // Priority filter
+      if (filters.priority && ticket.priority !== filters.priority) {
+        return false;
+      }
+      
+      // Request type filter  
+      if (filters.requestType && ticket.requestType !== filters.requestType) {
+        return false;
+      }
+      
+      // Assigned filter
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          if (ticket.assignedToId) return false;
+        } else if (filters.assignedTo === 'me') {
+          if (ticket.assignedToId !== user?.id) return false;
+        } else {
+          if (ticket.assignedToId?.toString() !== filters.assignedTo) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [tickets, filters, user]);
 
-  // Filter tickets by status
-  const openTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Open');
-  const inProgressTickets = filteredTickets.filter((ticket: any) => ticket.status === 'In Progress');
-  const resolvedTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Resolved');
-  const closedTickets = filteredTickets.filter((ticket: any) => ticket.status === 'Closed');
-  
-  // Filter tickets assigned to current user
-  const myTickets = filteredTickets.filter((ticket: any) => 
-    ticket.assignedToId === user?.id || 
-    (ticket.submittedById && employees.find((emp: any) => emp.id === ticket.submittedById)?.userId === user?.id)
-  );
+  // Enhanced export mutation with all fields
+  const exportMutation = useMutation({
+    mutationFn: async (format: 'csv' | 'json') => {
+      const response = await apiRequest(`/api/tickets/export?format=${format}`, 'GET');
+      
+      const filename = `tickets_export_${new Date().toISOString().split('T')[0]}.${format}`;
+      
+      if (format === 'csv') {
+        const blob = new Blob([response], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Tickets exported successfully with all fields' : 'تم تصدير التذاكر بنجاح مع جميع الحقول',
+      });
+    },
+    onError: () => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to export tickets' : 'فشل في تصدير التذاكر',
+        variant: 'destructive'
+      });
+    }
+  });
 
   return (
     <div className="p-6">
@@ -252,11 +330,11 @@ export default function Tickets() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
+            onClick={() => exportMutation.mutate('csv')}
+            disabled={exportMutation.isPending}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {translations.refresh}
+            <Download className="h-4 w-4 mr-2" />
+            {language === 'English' ? 'Export' : 'تصدير'}
           </Button>
           
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -266,130 +344,62 @@ export default function Tickets() {
                 {translations.createTicket}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{translations.createTicket}</DialogTitle>
-              </DialogHeader>
+            <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
               <TicketForm
+                mode="create"
                 onSubmit={handleCreateTicket}
+                onCancel={() => setOpenDialog(false)}
                 isSubmitting={createTicketMutation.isPending}
-                employees={employees}
-                assets={assets}
               />
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
+      {/* Filter & Search Tickets Section */}
       <div className="mb-6">
-        <Input
-          placeholder={translations.search}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
+        <TicketFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalCount={Array.isArray(tickets) ? tickets.length : 0}
+          filteredCount={Array.isArray(filteredTickets) ? filteredTickets.length : 0}
         />
       </div>
 
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">{translations.allTickets}</TabsTrigger>
-          <TabsTrigger value="open">{translations.open}</TabsTrigger>
-          <TabsTrigger value="inprogress">{translations.inProgress}</TabsTrigger>
-          <TabsTrigger value="resolved">{translations.resolved}</TabsTrigger>
-          <TabsTrigger value="closed">{translations.closed}</TabsTrigger>
-          <TabsTrigger value="mytickets">{translations.myTickets}</TabsTrigger>
-        </TabsList>
+      {/* Main Tickets Table */}
+      <TicketsTable 
+        tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
+        employees={Array.isArray(employees) ? employees : []}
+        assets={Array.isArray(assets) ? assets : []}
+        users={Array.isArray(users) ? users : []}
+        onStatusChange={handleStatusChange}
+        onAssign={handleAssignTicket}
+        onEdit={(ticket) => setSelectedTicket(ticket)}
+      />
 
-        <TabsContent value="all">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={filteredTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
 
-        <TabsContent value="open">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={openTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
 
-        <TabsContent value="inprogress">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={inProgressTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="resolved">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={resolvedTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="closed">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={closedTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="mytickets">
-          {isLoading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <TicketsTable 
-              tickets={myTickets}
-              employees={employees}
-              assets={assets}
-              users={users}
-              onStatusChange={handleStatusChange}
-              onAssign={handleAssignTicket}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      {/* Edit Ticket Dialog */}
+      {selectedTicket && (
+        <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
+          <DialogContent className="max-w-5xl h-[95vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-6 pb-2 border-b">
+              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                <Edit3 className="h-5 w-5 text-green-500" />
+                Edit Ticket #{selectedTicket?.ticketId}
+                <div id="autosave-indicator" className="ml-auto"></div>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="px-6 pb-6 h-[calc(95vh-80px)] overflow-y-auto">
+              <TicketForm
+                ticket={selectedTicket}
+                mode="edit"
+                onCancel={() => setSelectedTicket(null)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

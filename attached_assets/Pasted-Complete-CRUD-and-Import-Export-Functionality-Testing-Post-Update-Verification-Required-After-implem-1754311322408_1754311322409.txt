@@ -1,0 +1,208 @@
+Complete CRUD and Import/Export Functionality Testing
+Post-Update Verification Required
+After implementing the database auto-increment ID generation fixes, comprehensive testing is needed to ensure all core functionality works correctly across all entity types.
+CRITICAL TESTING: Employees Module
+1. Employee CRUD Operations
+Create Employee:
+
+Test manual employee creation through UI form
+Verify empId is auto-generated in format EMP-00001, EMP-00002, etc.
+Confirm all required fields (English Name, Department, ID Number, Title, etc.) are validated
+Test with all employment types (Full-time, Part-time, Contract, Intern)
+Verify employee status defaults to 'Active'
+Check creation timestamp is set properly
+
+Read/View Employees:
+
+Test employee list display shows all employees with generated empId
+Verify employee details view displays all fields correctly
+Test search and filtering functionality works
+Confirm employee hierarchy (direct manager relationships) display correctly
+
+Update Employee:
+
+Test editing employee information (name, department, contact details)
+Verify empId cannot be modified (should be read-only or hidden)
+Test status changes (Active → Resigned, etc.)
+Test employment type updates
+Confirm updatedAt timestamp changes on modifications
+
+Delete Employee:
+
+Test employee deletion (soft delete if implemented)
+Verify cascading effects on related assets and tickets
+Test deletion permissions and confirmation dialogs
+Ensure audit trail is maintained for deleted employees
+
+2. Employee Import/Export
+Import Testing:
+
+Test CSV import with various employee data formats
+Verify field mapping interface excludes empId from mapping options
+Test required field validation (English Name, Department, etc.)
+Test enum value handling for employment types
+Test date field parsing for joining dates
+Verify successful import with auto-generated empId values
+Test error handling for invalid data (missing required fields, invalid enums)
+
+Export Testing:
+
+Test employee data export to CSV/Excel formats
+Verify all employee fields are included in export
+Test export filtering (by department, status, etc.)
+Confirm export file format is compatible with import
+
+CRITICAL TESTING: Assets Module
+1. Asset CRUD Operations
+Create Asset:
+
+Test manual asset creation through UI form
+Verify assetId is auto-generated in format AST-00001, AST-00002, etc.
+Test all required fields (Type, Brand, Serial Number, etc.)
+Test asset assignment to employees
+Verify asset status defaults to 'Available'
+Test purchase date and warranty fields
+
+Read/View Assets:
+
+Test asset list display with generated assetId
+Verify asset details view shows all specifications
+Test asset search and filtering
+Test asset assignment history
+
+Update Asset:
+
+Test asset information updates (specs, status, assignment)
+Verify assetId remains unchanged during updates
+Test asset status changes (Available → In Use → Maintenance, etc.)
+Test employee assignment changes
+
+Delete Asset:
+
+Test asset deletion functionality
+Verify related maintenance records handling
+Test asset sale/retirement processes
+
+2. Asset Import/Export
+Import Testing:
+
+Test asset CSV import with field mapping interface
+Verify assetId is excluded from mapping options and marked as "System Generated"
+Test asset type and status enum validation
+Test asset assignment during import (linking to existing employees)
+Verify successful import with proper assetId generation
+Test duplicate serial number handling
+
+Export Testing:
+
+Test asset export with all fields included
+Test filtered exports (by type, status, assigned employee)
+Verify export format compatibility
+
+CRITICAL TESTING: Tickets Module
+1. Ticket CRUD Operations
+Create Ticket:
+
+Test manual ticket creation through UI form
+Verify ticketId is auto-generated in format TKT-00001, TKT-00002, etc.
+Test required field validation (Description, Request Type, submitted_by_id)
+Test ticket assignment to users/agents
+Test asset linking functionality
+Verify ticket status defaults to 'Open'
+
+Read/View Tickets:
+
+Test ticket list display with generated ticketId
+Test ticket details view with all information
+Test ticket search and filtering
+Verify ticket history and comments display
+
+Update Ticket:
+
+Test ticket status updates (Open → In Progress → Resolved → Closed)
+Test ticket assignment changes
+Test priority and urgency updates
+Verify ticketId remains unchanged
+
+Delete Ticket:
+
+Test ticket deletion (if permitted)
+Verify ticket closure processes
+Test ticket archiving functionality
+
+2. Ticket Import/Export
+Import Testing:
+
+Test ticket CSV import with field mapping
+Verify ticketId is excluded from mapping and auto-generated
+Test submitted_by_id field mapping and validation (link to existing employees)
+Test request type and priority enum validation
+Test asset linking during import
+Verify successful import with proper ID generation
+
+Export Testing:
+
+Test ticket export with all fields
+Test filtered exports (by status, priority, date range)
+Verify export includes related employee and asset information
+
+SYSTEM-WIDE INTEGRATION TESTING
+1. Cross-Module Relationships
+
+Test employee-asset assignments work correctly after imports
+Test ticket-asset relationships are maintained
+Test ticket-employee relationships (submitted by, assigned to)
+Verify referential integrity across all modules
+
+2. Database Consistency
+
+Verify all auto-generated IDs are unique and sequential
+Test concurrent operations don't create duplicate IDs
+Confirm database constraints are enforced properly
+Test transaction rollbacks work correctly
+
+3. UI/UX Consistency
+
+Verify all forms exclude auto-generated ID fields
+Test field mapping interfaces mark auto-generated fields properly
+Confirm success messages show generated IDs
+Test error handling displays user-friendly messages
+
+PERFORMANCE AND RELIABILITY TESTING
+1. Large Data Sets
+
+Test imports with 1000+ records for each entity type
+Verify performance of ID generation at scale
+Test memory usage during large imports
+Confirm transaction handling for bulk operations
+
+2. Error Recovery
+
+Test import rollback when errors occur mid-process
+Verify partial import handling (some records succeed, others fail)
+Test duplicate data handling
+Confirm data integrity after failed operations
+
+SUCCESS CRITERIA
+All Tests Must Pass:
+
+✅ Manual creation of employees, assets, tickets with auto-generated IDs
+✅ Full CRUD operations work without ID-related errors
+✅ Import functionality works with field mapping and excludes auto-generated IDs
+✅ Export functionality includes all relevant data
+✅ Cross-module relationships are maintained properly
+✅ Database constraints are enforced correctly
+✅ UI interfaces are consistent and user-friendly
+✅ Error handling provides clear, actionable messages
+✅ Performance is acceptable for expected data volumes
+
+IMMEDIATE ACTION PLAN
+
+Test each module individually - start with employees (known working), then assets, then tickets
+Verify ID generation works consistently across all environments
+Test import/export flows end-to-end for each entity type
+Validate cross-module integrations work properly
+Perform stress testing with larger datasets
+Document any remaining issues for immediate resolution
+
+This comprehensive testing ensures the entire SimpleIT system functions reliably after the ID generation architecture changes.

@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import {
   Form,
   FormControl,
@@ -25,7 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Define schema for form validation with proper transformations
 const employeeFormSchema = z.object({
-  empId: z.string().optional(),
   englishName: z.string().min(2, 'Name must be at least 2 characters'),
   arabicName: z.string().optional().or(z.literal('')),
   department: z.string().min(1, 'Department is required'),
@@ -62,6 +62,12 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   // Fetch employees list for manager dropdown
   const { data: employees = [] } = useQuery({
     queryKey: ['/api/employees'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  // Fetch system configuration for departments
+  const { data: systemConfig } = useQuery({
+    queryKey: ['/api/system-config'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -105,16 +111,27 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
   };
 
-  // Convert initial data to form format 
-  // (convert dates to string format and ids to strings)
+  // Convert initial data to form format with proper field mapping
   const getFormattedInitialData = () => {
     if (!initialData) return undefined;
     
+    console.log('Initial data for formatting:', initialData);
+    
     return {
-      ...initialData,
+      englishName: initialData.name || initialData.englishName || '',
+      arabicName: initialData.arabicName || '',
+      department: initialData.department || '',
+      idNumber: initialData.idNumber || '',
+      title: initialData.position || initialData.title || '',
+      directManager: initialData.directManager ? initialData.directManager.toString() : '',
+      employmentType: initialData.employmentType || 'Full-time',
       joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : '',
       exitDate: initialData.exitDate ? new Date(initialData.exitDate).toISOString().split('T')[0] : '',
-      directManager: initialData.directManager ? initialData.directManager.toString() : '',
+      status: initialData.status || (initialData.isActive !== false ? 'Active' : 'Resigned'),
+      personalMobile: initialData.personalMobile || initialData.phone || '',
+      workMobile: initialData.workMobile || '',
+      personalEmail: initialData.personalEmail || initialData.email || '',
+      corporateEmail: initialData.corporateEmail || '',
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
   };
@@ -122,8 +139,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
   // Initialize form with default values
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: getFormattedInitialData() || {
-      empId: '',
+    defaultValues: {
       englishName: '',
       arabicName: '',
       department: '',
@@ -141,6 +157,37 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       userId: '',
     },
   });
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      const formattedData = getFormattedInitialData();
+      console.log('Formatted data for form reset:', formattedData);
+      if (formattedData) {
+        // Reset form with formatted data
+        form.reset(formattedData);
+      }
+    } else {
+      // Reset to default values for create mode
+      form.reset({
+        englishName: '',
+        arabicName: '',
+        department: '',
+        idNumber: '',
+        title: '',
+        directManager: '',
+        employmentType: 'Full-time',
+        joiningDate: new Date().toISOString().split('T')[0],
+        exitDate: '',
+        status: 'Active',
+        personalMobile: '',
+        workMobile: '',
+        personalEmail: '',
+        corporateEmail: '',
+        userId: '',
+      });
+    }
+  }, [initialData, form]);
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof employeeFormSchema>) => {
@@ -160,7 +207,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       joiningDate: values.joiningDate || new Date().toISOString().split('T')[0],
       
       // Optional fields with proper null handling
-      empId: values.empId || undefined,
       arabicName: values.arabicName || null,
       directManager: values.directManager && values.directManager !== '' ? parseInt(values.directManager) : null,
       exitDate: values.exitDate && values.exitDate !== '' ? values.exitDate : null,
@@ -171,12 +217,18 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       userId: values.userId && values.userId !== '' ? parseInt(values.userId) : null,
     };
     
+    // For edit mode, include the empId if it exists in initialData
+    if (isEditMode && initialData?.empId) {
+      (formattedData as any).empId = initialData.empId;
+    }
+    
+    console.log('Formatted data being sent:', formattedData);
     onSubmit(formattedData);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2 max-h-[60vh] overflow-y-auto px-1">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
         <Tabs defaultValue="general">
           <TabsList className="mb-4 grid w-full md:w-auto grid-cols-2">
             <TabsTrigger value="general">{translations.generalInfo}</TabsTrigger>
@@ -184,22 +236,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
           </TabsList>
           
           <TabsContent value="general" className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mx-1">
-              <FormField
-                control={form.control}
-                name="empId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.employeeID}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>{translations.idDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="englishName"
@@ -235,9 +272,29 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{translations.department}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.department} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(systemConfig as any)?.departments?.map((dept: string) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                        {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
+                          <SelectItem value="General">General</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {language === 'English' ? 
+                        'Select from departments defined in System Configuration' : 
+                        'اختر من الأقسام المعرفة في إعدادات النظام'}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -289,9 +346,9 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">{translations.none}</SelectItem>
-                        {employees.map((employee: any) => (
+                        {(employees as any[])?.map((employee: any) => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.englishName}
+                            {employee.name || employee.englishName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -388,7 +445,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
           </TabsContent>
           
           <TabsContent value="contact" className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mx-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="personalMobile"
@@ -462,7 +519,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">{translations.none}</SelectItem>
-                        {users.map((user: any) => (
+                        {(users as any[])?.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username} ({user.email})
                           </SelectItem>

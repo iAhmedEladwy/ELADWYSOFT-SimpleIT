@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useCurrency } from '@/lib/currencyContext';
 import StatsCard from '@/components/dashboard/StatsCard';
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
 import AssetsByType from '@/components/dashboard/AssetsByType';
 import DepartmentDistribution from '@/components/dashboard/DepartmentDistribution';
-import FeaturedAssets from '@/components/dashboard/FeaturedAssets';
-import RecentActivity from '@/components/dashboard/RecentActivity';
+
 import Notifications from '@/components/dashboard/Notifications';
 import { 
   Tabs, 
@@ -25,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard() {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Get translations based on language
@@ -34,7 +35,7 @@ export default function Dashboard() {
       ? 'Welcome to SimpleIT - IT Asset Management System' 
       : 'مرحبًا بك في SimpleIT - نظام إدارة أصول تكنولوجيا المعلومات',
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
-    recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
+
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
     totalEmployees: language === 'English' ? 'Total Employees' : 'إجمالي الموظفين',
     totalAssets: language === 'English' ? 'Total Assets' : 'إجمالي الأصول',
@@ -62,7 +63,6 @@ export default function Dashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="overview">{translations.overview}</TabsTrigger>
-          <TabsTrigger value="recent-activity">{translations.recentActivity}</TabsTrigger>
           <TabsTrigger value="notifications">{translations.notifications}</TabsTrigger>
         </TabsList>
 
@@ -82,34 +82,38 @@ export default function Dashboard() {
                   title={translations.totalEmployees}
                   value={dashboardData?.counts?.employees || 0}
                   icon={<Users className="h-6 w-6" />}
-                  change="+12%"
+                  change={dashboardData?.changes?.employees || '0%'}
                   changeLabel={translations.fromLastYear}
+                  changeColor={dashboardData?.changes?.employees?.startsWith('-') ? 'error' : 'success'}
                   iconColor="primary"
                 />
                 <StatsCard
                   title={translations.totalAssets}
                   value={dashboardData?.counts?.assets || 0}
                   icon={<Laptop className="h-6 w-6" />}
-                  change="+8%"
+                  change={dashboardData?.changes?.assets || '0%'}
                   changeLabel={translations.fromLastMonth}
+                  changeColor={dashboardData?.changes?.assets?.startsWith('-') ? 'error' : 'success'}
                   iconColor="secondary"
                 />
                 <StatsCard
                   title={translations.activeTickets}
                   value={dashboardData?.counts?.activeTickets || 0}
                   icon={<Ticket className="h-6 w-6" />}
-                  change="-5%"
+                  change={dashboardData?.changes?.activeTickets || '0%'}
                   changeLabel={translations.fromLastWeek}
-                  changeColor="warning"
+                  changeColor={dashboardData?.changes?.activeTickets?.startsWith('-') ? 'success' : 'warning'}
                   iconColor="accent"
                 />
                 <StatsCard
                   title={translations.assetValue}
-                  value={`$${(dashboardData?.counts?.totalAssetValue || 0).toLocaleString()}`}
+                  value={dashboardData?.counts?.totalAssetValue || 0}
                   icon={<DollarSign className="h-6 w-6" />}
-                  change="+14%"
+                  change={dashboardData?.changes?.totalAssetValue || '0%'}
                   changeLabel={translations.fromLastQuarter}
+                  changeColor={dashboardData?.changes?.totalAssetValue?.startsWith('-') ? 'error' : 'success'}
                   iconColor="warning"
+                  isCurrency={true}
                 />
               </>
             )}
@@ -132,14 +136,9 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
           </div>
-
-          {/* Featured Assets */}
-          <FeaturedAssets />
         </TabsContent>
 
-        <TabsContent value="recent-activity">
-          <RecentActivity activities={dashboardData?.recentActivity || []} isLoading={isLoading} />
-        </TabsContent>
+
 
         <TabsContent value="notifications">
           <Notifications />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -11,35 +12,41 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, FileDown } from 'lucide-react';
-import { AssetTransaction, Asset, Employee } from '@shared/schema';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FileDown, Loader2, Package } from 'lucide-react';
 
-// Define the transaction response structure with joined entities
-interface TransactionResponse {
-  asset_transactions: AssetTransaction;
-  assets?: Asset;
-  employees?: Employee;
+interface Asset {
+  id: number;
+  assetId: string;
+  type: string;
+  brand?: string;
+  modelName?: string;
 }
 
-// Combine them for easier usage in component
-interface TransactionWithRelations extends AssetTransaction {
+interface Employee {
+  id: number;
+  englishName?: string;
+  arabicName?: string;
+}
+
+interface TransactionWithRelations {
+  id: number;
+  assetId: number;
+  employeeId?: number;
+  type: string;
+  date?: string;
+  transactionDate?: string;
+  notes?: string;
+  conditionNotes?: string;
   asset?: Asset;
   employee?: Employee;
 }
@@ -51,6 +58,8 @@ export default function TransactionHistoryTable() {
     assetId: 'all',
     employeeId: 'all',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // Translations
   const translations = {
@@ -70,68 +79,84 @@ export default function TransactionHistoryTable() {
     filterType: language === 'English' ? 'Filter by Type' : 'تصفية حسب النوع',
     filterAsset: language === 'English' ? 'Filter by Asset' : 'تصفية حسب الأصل',
     filterEmployee: language === 'English' ? 'Filter by Employee' : 'تصفية حسب الموظف',
-    clearFilters: language === 'English' ? 'Clear Filters' : 'مسح التصفية',
     downloadCSV: language === 'English' ? 'Download CSV' : 'تحميل CSV',
     loading: language === 'English' ? 'Loading transactions...' : 'جاري تحميل المعاملات...',
     noTransactions: language === 'English' ? 'No transactions found' : 'لم يتم العثور على معاملات',
   };
   
   // Fetch asset transactions
-  const { data: transactionResponse, isLoading } = useQuery<TransactionResponse[]>({
+  const { data: transactions, isLoading } = useQuery<TransactionWithRelations[]>({
     queryKey: ['/api/asset-transactions'],
-  });
-  
-  // Transform the response to more usable format
-  const transactions = transactionResponse?.map(item => {
-    return {
-      ...item.asset_transactions,
-      asset: item.assets,
-      employee: item.employees
-    } as TransactionWithRelations;
+    queryFn: async () => {
+      const response = await fetch('/api/asset-transactions', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+      return response.json();
+    }
   });
   
   // Assets data for the filter
   const { data: assets } = useQuery<Asset[]>({
     queryKey: ['/api/assets'],
+    queryFn: async () => {
+      const response = await fetch('/api/assets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch assets');
+      }
+      return response.json();
+    }
   });
   
   // Employees data for the filter
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
+    queryFn: async () => {
+      const response = await fetch('/api/employees', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+      return response.json();
+    }
   });
   
   // Filter transactions
-  const filteredTransactions = transactions?.filter((transaction: TransactionWithRelations) => {
+  const filteredTransactions = (transactions || [])?.filter((transaction: TransactionWithRelations) => {
     if (filter.type !== 'all' && transaction.type !== filter.type) return false;
     if (filter.assetId !== 'all' && transaction.asset?.id !== parseInt(filter.assetId)) return false;
     if (filter.employeeId !== 'all' && transaction.employee?.id !== parseInt(filter.employeeId)) return false;
     return true;
   });
+
+  // Pagination calculations
+  const totalItems = filteredTransactions?.length || 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedTransactions = filteredTransactions?.slice(startIndex, endIndex);
   
-  // Clear all filters
-  const clearFilters = () => {
-    setFilter({
-      type: 'all',
-      assetId: 'all',
-      employeeId: 'all',
-    });
-  };
-  
-  // Download transaction history as CSV
+  // Page size options
+  const pageSizeOptions = [5, 10, 25, 50];
+
+  // CSV download function
   const downloadCSV = () => {
-    if (!transactions || !filteredTransactions) return;
+    if (!filteredTransactions || filteredTransactions.length === 0) return;
     
-    // Prepare CSV data
-    const headers = ['ID', 'Asset', 'Employee', 'Type', 'Date', 'Notes'];
-    const csvRows = [headers.join(',')];
+    const csvRows = [
+      'ID,Asset,Employee,Type,Date,Notes' // Header
+    ];
     
-    // Add null check to ensure filteredTransactions is defined
-    if (filteredTransactions) {
-      for (const transaction of filteredTransactions) {
-      const assetName = transaction.asset?.assetId || '';
-      const employeeName = transaction.employee?.englishName || '';
-      const date = transaction.transactionDate ? format(new Date(transaction.transactionDate), 'yyyy-MM-dd HH:mm') : '';
-      const notes = transaction.conditionNotes ? `"${transaction.conditionNotes.replace(/"/g, '""')}"` : '';
+    for (const transaction of filteredTransactions) {
+      const assetName = transaction.asset ? `${transaction.asset.assetId} - ${transaction.asset.type}` : 'N/A';
+      const employeeName = transaction.employee ? (transaction.employee.englishName || transaction.employee.arabicName) : 'N/A';
+      const date = transaction.date ? format(new Date(transaction.date), 'yyyy-MM-dd') : (transaction.transactionDate ? format(new Date(transaction.transactionDate), 'yyyy-MM-dd') : 'N/A');
+      const notes = transaction.notes || transaction.conditionNotes || '';
       
       csvRows.push([
         transaction.id,
@@ -141,7 +166,6 @@ export default function TransactionHistoryTable() {
         date,
         notes,
       ].join(','));
-      }
     }
     
     // Create a downloadable CSV
@@ -155,12 +179,13 @@ export default function TransactionHistoryTable() {
   };
   
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>{translations.title}</CardTitle>
-        <CardDescription>{translations.description}</CardDescription>
-        
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{translations.title}</h2>
+          <p className="text-gray-600 text-sm mb-4">{translations.description}</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="type-filter">{translations.filterType}</Label>
             <Select 
@@ -177,7 +202,7 @@ export default function TransactionHistoryTable() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="asset-filter">{translations.filterAsset}</Label>
             <Select 
@@ -189,15 +214,15 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {assets?.map((asset: Asset) => (
-                  <SelectItem key={asset.id} value={String(asset.id)}>
-                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown'}
+                {assets?.map((asset) => (
+                  <SelectItem key={asset.id} value={asset.id.toString()}>
+                    {asset.assetId} - {asset.type}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="employee-filter">{translations.filterEmployee}</Label>
             <Select 
@@ -209,28 +234,25 @@ export default function TransactionHistoryTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.all}</SelectItem>
-                {employees?.map((employee: Employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.englishName || employee.empId || 'Unknown Employee'}
+                {employees?.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id.toString()}>
+                    {employee.englishName || employee.arabicName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="flex items-end gap-2 mt-auto">
-            <Button variant="outline" onClick={clearFilters}>
-              {translations.clearFilters}
-            </Button>
+
+          <div className="flex flex-col justify-end">
             <Button variant="outline" onClick={downloadCSV}>
               <FileDown className="h-4 w-4 mr-2" />
               {translations.downloadCSV}
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent>
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -250,8 +272,14 @@ export default function TransactionHistoryTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions?.length ? (
-                  filteredTransactions.map((transaction: TransactionWithRelations) => (
+                {paginatedTransactions?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6">
+                      {translations.noTransactions}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedTransactions?.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>{transaction.id}</TableCell>
                       <TableCell className="font-medium">{transaction.asset?.assetId || '-'}</TableCell>
@@ -270,18 +298,68 @@ export default function TransactionHistoryTable() {
                       </TableCell>
                     </TableRow>
                   ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6">
-                      {translations.noTransactions}
-                    </TableCell>
-                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                {language === 'English' ? 'Items per page:' : 'عناصر لكل صفحة:'}
+              </span>
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(value) => {
+                  setPageSize(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                {language === 'English' ? 'Previous' : 'السابق'}
+              </Button>
+              
+              <span className="px-3 py-1 text-sm">
+                {language === 'English' 
+                  ? `Page ${currentPage} of ${totalPages}`
+                  : `صفحة ${currentPage} من ${totalPages}`}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                {language === 'English' ? 'Next' : 'التالي'}
+              </Button>
+            </div>
+          </div>
+        )}
+        </div>
+      </div>
+    </div>
   );
 }

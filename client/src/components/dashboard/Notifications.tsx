@@ -1,15 +1,36 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Lock, 
   AlertTriangle, 
   Tag, 
   CheckCircle,
   Bell,
+  Calendar,
+  Clock,
+  Wrench,
+  Users,
 } from 'lucide-react';
 
 export default function Notifications() {
   const { language } = useLanguage();
+
+  // Fetch real notification data
+  const { data: assets, isLoading: assetsLoading } = useQuery({
+    queryKey: ['/api/assets'],
+  });
+
+  const { data: tickets, isLoading: ticketsLoading } = useQuery({
+    queryKey: ['/api/tickets'],
+  });
+
+  const { data: systemConfig, isLoading: configLoading } = useQuery({
+    queryKey: ['/api/system-config'],
+  });
+
+  const isLoading = assetsLoading || ticketsLoading || configLoading;
 
   // Translations
   const translations = {
@@ -24,62 +45,95 @@ export default function Notifications() {
     minsAgo: language === 'English' ? 'mins ago' : 'دقائق مضت',
     hourAgo: language === 'English' ? 'hour ago' : 'ساعة مضت',
     daysAgo: language === 'English' ? 'days ago' : 'أيام مضت',
+    hoursAgo: language === 'English' ? 'hours ago' : 'ساعات مضت',
     weekAgo: language === 'English' ? 'week ago' : 'أسبوع مضت',
+    noNotifications: language === 'English' ? 'No notifications to display' : 'لا توجد إشعارات للعرض',
   };
 
-  // Sample notifications data
-  const notifications = [
-    {
-      id: 1,
-      title: 'License Expiration Warning',
-      message: 'Adobe Creative Cloud licenses (10) will expire in 15 days. Please renew to avoid service interruption.',
-      time: '10 ' + translations.minsAgo,
-      icon: <Lock className="h-5 w-5 text-white" />,
-      iconColor: 'bg-primary',
-      unread: true,
-      primaryAction: translations.viewDetails,
-    },
-    {
-      id: 2,
-      title: 'Maintenance Alert',
-      message: 'Server maintenance scheduled for Sunday, 12th July from 2:00 AM to 5:00 AM. System will be unavailable during this time.',
-      time: '1 ' + translations.hourAgo,
-      icon: <AlertTriangle className="h-5 w-5 text-white" />,
-      iconColor: 'bg-warning',
-      unread: true,
-      primaryAction: translations.viewCalendar,
-    },
-    {
-      id: 3,
-      title: 'New Hardware Available',
-      message: 'New Dell XPS laptops are now available for requisition. Submit a request through the Assets portal.',
-      time: 'Yesterday',
-      icon: <Tag className="h-5 w-5 text-white" />,
-      iconColor: 'bg-accent',
-      unread: false,
-      primaryAction: translations.requestAsset,
-    },
-    {
-      id: 4,
-      title: 'Employee Import Completed',
-      message: 'The employee data import was completed successfully. 24 new employees were added to the system.',
-      time: '2 ' + translations.daysAgo,
-      icon: <CheckCircle className="h-5 w-5 text-white" />,
-      iconColor: 'bg-success',
-      unread: false,
-      primaryAction: translations.viewReport,
-    },
-    {
-      id: 5,
-      title: 'System Update',
-      message: 'SimpleIT has been updated to version 2.3.0. View the changelog for new features and improvements.',
-      time: '1 ' + translations.weekAgo,
-      icon: <Bell className="h-5 w-5 text-white" />,
-      iconColor: 'bg-gray-500',
-      unread: false,
-      primaryAction: translations.viewChangelog,
+  // Generate real notifications from system data
+  const generateNotifications = () => {
+    const notifications = [];
+    
+    if (!assets || !tickets || !systemConfig) return notifications;
+
+    // Check for assets in maintenance
+    const maintenanceAssets = assets.filter(asset => asset.status === 'Maintenance');
+    if (maintenanceAssets.length > 0) {
+      notifications.push({
+        id: 'maintenance-alert',
+        title: `${maintenanceAssets.length} Asset${maintenanceAssets.length > 1 ? 's' : ''} Under Maintenance`,
+        message: `${maintenanceAssets.length} asset${maintenanceAssets.length > 1 ? 's are' : ' is'} currently under maintenance and unavailable for assignment.`,
+        time: '2 ' + translations.minsAgo,
+        icon: <Wrench className="h-5 w-5 text-white" />,
+        iconColor: 'bg-warning',
+        unread: true,
+        primaryAction: translations.viewDetails,
+      });
     }
-  ];
+
+    // Check for damaged assets
+    const damagedAssets = assets.filter(asset => asset.status === 'Damaged');
+    if (damagedAssets.length > 0) {
+      notifications.push({
+        id: 'damaged-alert',
+        title: `${damagedAssets.length} Damaged Asset${damagedAssets.length > 1 ? 's' : ''} Need Attention`,
+        message: `${damagedAssets.length} asset${damagedAssets.length > 1 ? 's require' : ' requires'} repair or replacement. Check asset management for details.`,
+        time: '15 ' + translations.minsAgo,
+        icon: <AlertTriangle className="h-5 w-5 text-white" />,
+        iconColor: 'bg-error',
+        unread: true,
+        primaryAction: translations.viewDetails,
+      });
+    }
+
+    // Check for open tickets
+    const openTickets = tickets.filter(ticket => ticket.status === 'Open');
+    if (openTickets.length > 0) {
+      notifications.push({
+        id: 'open-tickets',
+        title: `${openTickets.length} Open Support Ticket${openTickets.length > 1 ? 's' : ''}`,
+        message: `You have ${openTickets.length} unresolved support ticket${openTickets.length > 1 ? 's' : ''} awaiting attention.`,
+        time: '1 ' + translations.hourAgo,
+        icon: <Users className="h-5 w-5 text-white" />,
+        iconColor: 'bg-primary',
+        unread: true,
+        primaryAction: translations.viewDetails,
+      });
+    }
+
+    // Check for available assets
+    const availableAssets = assets.filter(asset => asset.status === 'Available');
+    if (availableAssets.length > 10) {
+      notifications.push({
+        id: 'available-assets',
+        title: 'Assets Available for Assignment',
+        message: `${availableAssets.length} assets are currently available and ready for assignment to employees.`,
+        time: '3 ' + translations.hoursAgo,
+        icon: <Tag className="h-5 w-5 text-white" />,
+        iconColor: 'bg-success',
+        unread: false,
+        primaryAction: translations.viewDetails,
+      });
+    }
+
+    // System update notification
+    if (systemConfig?.systemVersion) {
+      notifications.push({
+        id: 'system-version',
+        title: 'System Status',
+        message: `SimpleIT is running version ${systemConfig.systemVersion}. All systems operational.`,
+        time: '1 ' + translations.daysAgo,
+        icon: <CheckCircle className="h-5 w-5 text-white" />,
+        iconColor: 'bg-success',
+        unread: false,
+        primaryAction: translations.viewChangelog,
+      });
+    }
+
+    return notifications;
+  };
+
+  const notifications = generateNotifications();
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -88,30 +142,41 @@ export default function Notifications() {
         <button className="text-primary text-sm hover:underline">{translations.markAllAsRead}</button>
       </div>
       <div className="divide-y divide-gray-200">
-        {notifications.map((notification) => (
-          <div key={notification.id} className={notification.unread ? "p-4 bg-blue-50" : "p-4"}>
-            <div className="flex items-start gap-4">
-              <div className={`h-10 w-10 rounded-full ${notification.iconColor} flex items-center justify-center flex-shrink-0`}>
-                {notification.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <h4 className="font-medium text-gray-900">{notification.title}</h4>
-                  <span className="text-xs text-gray-500">{notification.time}</span>
+        {isLoading ? (
+          <div className="p-4">
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <div key={notification.id} className={notification.unread ? "p-4 bg-blue-50" : "p-4"}>
+              <div className="flex items-start gap-4">
+                <div className={`h-10 w-10 rounded-full ${notification.iconColor} flex items-center justify-center flex-shrink-0`}>
+                  {notification.icon}
                 </div>
-                <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-white">
-                    {notification.primaryAction}
-                  </Button>
-                  <Button variant="outline" size="sm" className="border-gray-300 text-gray-600 hover:bg-gray-100">
-                    {translations.dismiss}
-                  </Button>
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                    <span className="text-xs text-gray-500">{notification.time}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-white">
+                      {notification.primaryAction}
+                    </Button>
+                    <Button variant="outline" size="sm" className="border-gray-300 text-gray-600 hover:bg-gray-100">
+                      {translations.dismiss}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
+          ))
+        ) : (
+          <div className="p-8 text-center text-gray-500">
+            <Bell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>{translations.noNotifications}</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,271 @@
+impleIT Import/Export System Fix Instructions
+CRITICAL ISSUES ANALYSIS
+Current Status:
+
+Employee Import: Working but with data validation warnings
+Assets Import: Failing at frontend validation level (Missing required columns: Type)
+Tickets Import: Failing with primary key constraint violations
+System-wide: Multiple layers of failures preventing successful imports
+
+PRIORITY 1: Create Field Mapping UI Interface
+Requirement: Interactive Field Mapping Before Import
+User wants a visual interface that:
+
+Shows mandatory vs optional fields clearly
+Allows field mapping confirmation before import
+Prevents import failures through pre-validation
+
+Instructions for Replit:
+Step 1: Create Import Preview Screen
+
+After file upload, show a preview screen before any import attempts
+Display file information: filename, format, number of rows detected
+Show first 3-5 rows of the uploaded file as a data preview table
+Parse and display all column headers from the uploaded file
+
+Step 2: Build Field Mapping Interface
+
+Create a two-column mapping layout:
+
+Left side: "Your File Columns" - show all detected column headers from uploaded file
+Right side: "Database Fields" - show all available fields for the selected entity type
+
+
+Visual field indicators:
+
+Red asterisk (*) for mandatory fields that must be mapped
+Blue text for optional fields
+Grey/disabled for auto-generated fields (like asset_id, ticket_id) with "System Generated" label
+Green checkmark when a field is successfully mapped
+
+
+Mapping interaction:
+
+Dropdown selection for each database field showing available source columns
+Smart suggestions - auto-suggest mappings based on similar column names
+Clear mapping option for each field
+Visual connection lines or highlighting when fields are mapped
+
+
+
+Step 3: Add Field Information Display
+
+For each database field, show:
+
+Field name and description
+Data type (text, date, number, enum)
+Whether it's required or optional
+For enum fields: show valid options (Full Time, Part Time, Contract, etc.)
+Example valid values
+
+
+For mapped fields, show data preview:
+
+Sample values from the source column
+Validation status (valid/invalid/needs transformation)
+Data type compatibility warnings
+
+
+
+Step 4: Create Validation Summary
+
+Before allowing import, show validation summary:
+
+"✅ Required fields mapped: X/Y"
+"⚠️ Data validation warnings: Z issues found"
+"📊 Records ready to import: X valid, Y with warnings"
+
+
+Show specific validation issues:
+
+List any unmapped required fields
+Highlight data format issues (invalid dates, enum values)
+Suggest fixes for common problems
+
+
+
+Step 5: Add Confirmation and Import Controls
+
+Mapping actions:
+
+"Save Mapping Template" button - save current mapping for reuse
+"Load Template" button - apply previously saved mapping
+"Reset Mapping" button - clear all mappings
+
+
+Import controls:
+
+"Preview Import" - show first 5-10 records as they would be imported
+"Import All" button - only enabled when all required fields are mapped
+"Import Valid Records Only" - skip problematic records
+"Cancel" - return to file selection
+
+
+
+Step 6: Implementation Requirements
+
+Entity type detection - automatically detect if importing assets, employees, or tickets
+Dynamic field loading - get field definitions from database/API, not hardcoded
+Real-time validation - update mapping status as user makes changes
+Template persistence - save/load mapping configurations
+Progress indication - show mapping completion percentage
+
+PRIORITY 2: Fix Current Import Issues (After UI is Built)
+Instructions for SystemConfig.tsx Fix
+
+Remove hardcoded validation that causes "Missing required columns" errors
+Replace with mapping-based validation that uses the UI mapping results
+Only allow imports after successful field mapping is completed
+Use mapped field relationships instead of expecting specific column names
+
+Data Quality Improvements
+
+Handle "NA" enum values through the mapping interface
+Fix date parsing issues with format selection in mapping UI
+Provide data transformation options during mapping process
+Show data quality warnings before import execution
+
+SUCCESS CRITERIA FOR UI
+
+User uploads file and immediately sees preview with column detection
+Clear visual distinction between required, optional, and auto-generated fields
+Interactive mapping interface that prevents common import errors
+Validation feedback before any database operations
+Template saving for recurring import tasks
+No imports allowed until proper field mapping is confirmed
+User-friendly error messages with actionable guidance
+
+IMMEDIATE DEVELOPMENT STEPS
+
+Create the field mapping UI component first - this will solve most import issues
+Build entity schema API to provide field definitions dynamically
+Implement mapping validation logic to replace hardcoded checks
+Add template save/load functionality for user convenience
+Test with real import files to ensure UI handles various scenarios
+Fix underlying data parsing issues once UI is providing clean mappings
+
+The UI interface should be the primary solution - it will prevent most import failures by ensuring proper field mapping before any database operations occur.
+PRIORITY 2: Fix Data Type Validation and Transformation
+Issue: Invalid Enum Values and Date Parsing
+Current Warnings:
+
+Employment type "NA" values causing enum constraint violations
+Date fields producing "0NaN-NaN-NaN" format causing database errors
+
+Instructions for Replit:
+
+Fix Employment Type Enum Handling:
+
+Create mapping logic for common invalid values: "NA", "N/A", empty strings should map to null or valid enum values
+Provide a dropdown or mapping interface showing valid employment types
+Add validation that converts invalid enum values before database insertion
+Don't fail the entire import for invalid enum values - handle gracefully
+
+
+Fix Date Field Parsing:
+
+The date parsing is producing "0NaN-NaN-NaN" which indicates broken date conversion logic
+Implement robust date parsing that handles multiple input formats (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD)
+Handle empty, null, or invalid date values by setting them to null instead of malformed date strings
+Add date format detection and conversion before database insertion
+Test with various date formats and empty date cells
+
+
+
+PRIORITY 3: Fix Primary Key Generation
+Issue: Assets and Tickets Import Failing Due to Null Primary Keys
+Instructions for Replit:
+
+Investigate Database Schema:
+
+Check if asset_id, ticket_id, and employee_id columns are set up as auto-increment/serial fields
+Verify the primary key generation strategy for each entity type
+
+
+Fix Primary Key Handling:
+
+If using auto-increment: Remove primary key fields from INSERT statements and let database generate them
+If using application-generated IDs: Ensure ID generation logic runs before database insertion
+Create consistent primary key handling across all entity types (assets, tickets, employees)
+Test that every import generates valid, unique primary keys
+
+
+
+PRIORITY 4: Fix HTTP Method Issues
+Issue: Fetch API Errors
+Instructions for Replit:
+
+Find any fetch calls in the import functionality that are passing objects as the HTTP method parameter
+Ensure all fetch calls use string values for the method parameter ('POST', 'GET', etc.)
+Review API request construction in import-related functions
+Test that HTTP requests are properly formatted and successfully reach the backend
+
+REQUIRED SYSTEM IMPROVEMENTS
+1. Implement Dynamic Field Mapping System
+Instructions:
+
+Create a two-step import process: file upload → field mapping → import execution
+Build an interface that shows source file columns on the left and target database fields on the right
+Allow users to drag/drop or select mappings between source and target fields
+Show which fields are required vs optional vs auto-generated
+Provide data preview showing how source data will be transformed
+Save mapping templates for reuse
+
+2. Add Data Validation and Transformation Layer
+Instructions:
+
+Create validation logic that runs before database insertion
+Handle common data quality issues: empty values, invalid enums, malformed dates
+Provide data transformation options: date format conversion, text cleaning, enum value mapping
+Show validation results to users before executing import
+Allow partial imports - continue with valid records, log problematic ones
+
+3. Improve Error Handling and User Feedback
+Instructions:
+
+Replace technical error messages with user-friendly explanations
+Show import progress and results clearly
+Provide detailed reports of successful vs failed record counts
+Include specific reasons for failures with guidance on how to fix them
+Implement rollback capability for failed imports
+
+4. Add File Format Support
+Instructions:
+
+Support multiple file formats: CSV, Excel (.xlsx, .xls), TSV, JSON
+Add proper file format detection and validation
+Handle different encodings and delimiters
+Provide clear error messages for unsupported formats
+
+TESTING REQUIREMENTS
+Critical Test Cases:
+
+Test assets import with various column names (not just hardcoded "Type")
+Test employee import with "NA" employment types and empty date fields
+Test tickets import with primary key generation
+Test field mapping interface with different file structures
+Test data transformation for dates and enums
+Test partial imports with mixed valid/invalid data
+Test large file imports (1000+ records)
+Test rollback functionality when imports fail
+
+SUCCESS CRITERIA
+
+Assets import works without "Missing required columns" errors
+All entity types (assets, tickets, employees) can import successfully
+Data validation handles invalid enum values and date formats gracefully
+Primary key generation works correctly for all entities
+Field mapping interface allows flexible column mapping
+Clear error messages and import progress feedback
+Ability to save and reuse mapping configurations
+Robust handling of data quality issues
+
+IMMEDIATE ACTION PLAN
+
+First: Fix the frontend validation in SystemConfig.tsx to stop blocking imports
+Second: Fix the date parsing logic that's creating malformed date strings
+Third: Fix enum value handling to accept "NA" and similar values
+Fourth: Ensure primary key generation works for assets and tickets
+Fifth: Build the field mapping interface to prevent future column mismatch issues
+
+Focus on getting basic imports working first, then enhance with the mapping interface and advanced features.

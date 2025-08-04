@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
-import { calculateAssetValue, formatCurrency, getDepreciationStatusColor, getDepreciationStatusText } from '@/lib/assetUtils';
+import { useCurrency } from '@/lib/currencyContext';
+import { calculateAssetValue, getDepreciationStatusColor, getDepreciationStatusText } from '@/lib/assetUtils';
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ interface AssetDepreciationInfoProps {
 
 export default function AssetDepreciationInfo({ asset, className = '' }: AssetDepreciationInfoProps) {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [depreciationInfo, setDepreciationInfo] = useState({
     currentValue: 0,
     depreciationAmount: 0,
@@ -109,13 +111,13 @@ export default function AssetDepreciationInfo({ asset, className = '' }: AssetDe
           <div className="space-y-2">
             <h4 className="text-sm font-medium">{translations.originalValue}</h4>
             <p className="text-2xl font-bold">
-              {formatCurrency(asset.buyPrice)}
+              {formatCurrency(Math.round(asset.buyPrice || 0), { useSymbol: true })}
             </p>
           </div>
           <div className="space-y-2">
             <h4 className="text-sm font-medium">{translations.currentValue}</h4>
             <p className="text-2xl font-bold">
-              {formatCurrency(depreciationInfo.currentValue)}
+              {formatCurrency(Math.round(depreciationInfo.currentValue), { useSymbol: true })}
             </p>
           </div>
         </div>
@@ -154,7 +156,7 @@ export default function AssetDepreciationInfo({ asset, className = '' }: AssetDe
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">{translations.depreciationAmount}:</p>
-            <p className="font-medium">{formatCurrency(depreciationInfo.depreciationAmount)}</p>
+            <p className="font-medium">{formatCurrency(Math.round(depreciationInfo.depreciationAmount), { useSymbol: true })}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{translations.ageMonths}:</p>

@@ -2,7 +2,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
+import { useCurrency } from '@/lib/currencyContext';
 import { useQuery } from '@tanstack/react-query';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Form,
   FormControl,
@@ -28,22 +30,32 @@ import { Textarea } from '@/components/ui/textarea';
 const assetFormSchema = z.object({
   type: z.string(),
   brand: z.string().min(1, 'Brand is required'),
-  modelNumber: z.string().optional(),
-  modelName: z.string().optional(),
+  modelNumber: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  modelName: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
   serialNumber: z.string().min(1, 'Serial number is required'),
-  specs: z.string().optional(),
+  specs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
   status: z.string(),
-  purchaseDate: z.string().optional(),
-  buyPrice: z.string().optional(),
-  warrantyExpiryDate: z.string().optional()
-    .transform(value => value === "" ? undefined : value)
+  purchaseDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
     .refine(
       (date) => !date || !isNaN(Date.parse(date)),
       { message: "Invalid date format" }
     ),
-  lifeSpan: z.string().optional(),
-  outOfBoxOs: z.string().optional(),
-  assignedEmployeeId: z.string().optional(),
+  buyPrice: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+    .refine(
+      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+      { message: "Enter a valid price (e.g., 999.99)" }
+    ),
+  warrantyExpiryDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+    .refine(
+      (date) => !date || !isNaN(Date.parse(date)),
+      { message: "Invalid date format" }
+    ),
+  lifeSpan: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  outOfBoxOs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  assignedEmployeeId: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  cpu: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  ram: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  storage: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
 });
 
 interface AssetFormProps {
@@ -54,11 +66,28 @@ interface AssetFormProps {
 
 export default function AssetForm({ onSubmit, initialData, isSubmitting }: AssetFormProps) {
   const { language } = useLanguage();
+  const { formatCurrency, symbol } = useCurrency();
   const isEditMode = !!initialData;
 
   // Fetch employees list for assignment dropdown
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  // Fetch custom asset types, brands, and statuses
+  const { data: customAssetTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-types'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  const { data: customAssetBrands = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-brands'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  const { data: customAssetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-statuses'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -66,7 +95,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const translations = {
     basicInfo: language === 'English' ? 'Basic Information' : 'معلومات أساسية',
     purchaseInfo: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
-    additionalInfo: language === 'English' ? 'Additional Information' : 'معلومات إضافية',
     assetID: language === 'English' ? 'Asset ID' : 'معرف الأصل',
     idDesc: language === 'English' ? 'Auto-generated if left blank' : 'يتم إنشاؤه تلقائيًا إذا تُرك فارغًا',
     type: language === 'English' ? 'Type' : 'النوع',
@@ -118,11 +146,19 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     
     return {
       ...initialData,
+      // Handle optional fields properly - convert null to empty string for form display
+      modelNumber: initialData.modelNumber || '',
+      modelName: initialData.modelName || '',
       purchaseDate: initialData.purchaseDate ? new Date(initialData.purchaseDate).toISOString().split('T')[0] : '',
       warrantyExpiryDate: initialData.warrantyExpiryDate ? new Date(initialData.warrantyExpiryDate).toISOString().split('T')[0] : '',
       buyPrice: initialData.buyPrice ? initialData.buyPrice.toString() : '',
       lifeSpan: initialData.lifeSpan ? initialData.lifeSpan.toString() : '',
+      outOfBoxOs: initialData.outOfBoxOs || '',
       assignedEmployeeId: initialData.assignedEmployeeId ? initialData.assignedEmployeeId.toString() : '',
+      cpu: initialData.cpu || '',
+      ram: initialData.ram || '',
+      storage: initialData.storage || '',
+      specs: initialData.specs || '',
     };
   };
 
@@ -143,20 +179,37 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       lifeSpan: '',
       outOfBoxOs: '',
       assignedEmployeeId: '',
+      cpu: '',
+      ram: '',
+      storage: '',
     },
   });
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof assetFormSchema>) => {
-    // Convert string values to appropriate types for submission
-    const formattedData = {
-      ...values,
-      buyPrice: values.buyPrice ? parseFloat(values.buyPrice) : null,
-      lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
-      assignedEmployeeId: values.assignedEmployeeId ? parseInt(values.assignedEmployeeId) : null,
-    };
-    
-    onSubmit(formattedData);
+    try {
+      // Convert string values to appropriate types for submission
+      const formattedData = {
+        ...values,
+        // Handle optional fields - convert undefined to null for database compatibility
+        modelNumber: values.modelNumber || null,
+        modelName: values.modelName || null,
+        buyPrice: values.buyPrice ? parseFloat(values.buyPrice) : null,
+        lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
+        assignedEmployeeId: values.assignedEmployeeId && values.assignedEmployeeId !== 'none' ? parseInt(values.assignedEmployeeId) : null,
+        outOfBoxOs: values.outOfBoxOs || null,
+        cpu: values.cpu || null,
+        ram: values.ram || null,
+        storage: values.storage || null,
+        specs: values.specs || null,
+        purchaseDate: values.purchaseDate || null,
+        warrantyExpiryDate: values.warrantyExpiryDate || null,
+      };
+      
+      onSubmit(formattedData);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    }
   };
 
   return (
@@ -166,7 +219,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
           <TabsList className="mb-4">
             <TabsTrigger value="basic">{translations.basicInfo}</TabsTrigger>
             <TabsTrigger value="purchase">{translations.purchaseInfo}</TabsTrigger>
-            <TabsTrigger value="additional">{translations.additionalInfo}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="basic" className="space-y-4">
@@ -189,15 +241,25 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Laptop">{translations.laptop}</SelectItem>
-                        <SelectItem value="Desktop">{translations.desktop}</SelectItem>
-                        <SelectItem value="Mobile">{translations.mobile}</SelectItem>
-                        <SelectItem value="Tablet">{translations.tablet}</SelectItem>
-                        <SelectItem value="Monitor">{translations.monitor}</SelectItem>
-                        <SelectItem value="Printer">{translations.printer}</SelectItem>
-                        <SelectItem value="Server">{translations.server}</SelectItem>
-                        <SelectItem value="Network">{translations.network}</SelectItem>
-                        <SelectItem value="Other">{translations.other}</SelectItem>
+                        <ScrollArea className="h-72">
+                          {/* Custom asset types only */}
+                          {customAssetTypes && customAssetTypes.length > 0 ? (
+                            customAssetTypes.map((type: any) => (
+                              <SelectItem key={type.id} value={type.name}>
+                                {type.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No asset types configured' : 'لا توجد أنواع أصول مكونة'}
+                            </div>
+                          )}
+                          
+                          {/* Other option */}
+                          <SelectItem value="Other">
+                            {language === 'English' ? 'Other' : 'أخرى'}
+                          </SelectItem>
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -211,9 +273,37 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{translations.brand}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={translations.brand} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <ScrollArea className="h-72">
+                          {/* Custom brands only */}
+                          {customAssetBrands && customAssetBrands.length > 0 ? (
+                            customAssetBrands.map((brand: any) => (
+                              <SelectItem key={brand.id} value={brand.name}>
+                                {brand.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No brands configured' : 'لا توجد علامات تجارية مكونة'}
+                            </div>
+                          )}
+                          
+                          {/* Other option */}
+                          <SelectItem value="Other">
+                            {language === 'English' ? 'Other' : 'أخرى'}
+                          </SelectItem>
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -279,14 +369,98 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Available">{translations.available}</SelectItem>
-                        <SelectItem value="In Use">{translations.inUse}</SelectItem>
-                        <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
-                        <SelectItem value="Damaged">{translations.damaged}</SelectItem>
-                        <SelectItem value="Sold">{translations.sold}</SelectItem>
-                        <SelectItem value="Retired">{translations.retired}</SelectItem>
+                        <ScrollArea className="h-72">
+                          {/* Custom statuses only */}
+                          {customAssetStatuses && customAssetStatuses.length > 0 ? (
+                            customAssetStatuses.map((status: any) => (
+                              <SelectItem 
+                                key={status.id} 
+                                value={status.name}
+                                className="flex items-center"
+                              >
+                                {status.color && (
+                                  <span 
+                                    className="w-3 h-3 rounded-full inline-block mr-2" 
+                                    style={{ backgroundColor: status.color }}
+                                  />
+                                )}
+                                {status.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {language === 'English' ? 'No statuses configured' : 'لا توجد حالات مكونة'}
+                            </div>
+                          )}
+                        </ScrollArea>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Hardware Specifications */}
+              <FormField
+                control={form.control}
+                name="cpu"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'CPU' : 'المعالج'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ram"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'RAM' : 'الذاكرة'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="storage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'Storage' : 'التخزين'}</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD'} />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه'}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="outOfBoxOs"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{language === 'English' ? 'Installed OS' : 'نظام التشغيل المثبت'}</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        value={field.value || ''} 
+                        onChange={(e) => field.onChange(e.target.value)}
+                        placeholder={language === 'English' ? 'e.g., Windows 11 Pro, Ubuntu 22.04' : 'مثال: Windows 11 Pro، Ubuntu 22.04'} 
+                      />
+                    </FormControl>
+                    <FormDescription>{language === 'English' ? 'Operating system currently installed on the asset (optional)' : 'نظام التشغيل المثبت حالياً على الأصل (اختياري)'}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -333,7 +507,18 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.buyPrice}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="number" step="0.01" value={field.value || ''} />
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <span className="text-gray-500">{symbol}</span>
+                        </div>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          step="0.01" 
+                          value={field.value || ''} 
+                          className="pl-8" 
+                        />
+                      </div>
                     </FormControl>
                     <FormDescription>{translations.buyPriceDesc}</FormDescription>
                     <FormMessage />
@@ -373,55 +558,15 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
             </div>
           </TabsContent>
           
-          <TabsContent value="additional" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="outOfBoxOs"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.outOfBoxOs}</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormDescription>{translations.outOfBoxOsDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="assignedEmployeeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.assignedTo}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={translations.none} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">{translations.none}</SelectItem>
-                        {employees.map((employee: any) => (
-                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.englishName} ({employee.empId})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>{translations.assignedToDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </TabsContent>
         </Tabs>
+
+        {/* Hidden field for assignedEmployeeId to maintain backend compatibility */}
+        <input 
+          type="hidden" 
+          {...form.register('assignedEmployeeId')} 
+          value={form.watch('assignedEmployeeId') || ''} 
+        />
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? translations.submitting : isEditMode ? translations.save : translations.create}

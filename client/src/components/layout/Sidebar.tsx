@@ -1,6 +1,7 @@
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
+import { RoleGuard, hasPermission } from '@/components/auth/RoleGuard';
 import {
   Home,
   Users,
@@ -20,7 +21,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isSidebarOpen }: SidebarProps) {
   const [location] = useLocation();
-  const { hasAccess } = useAuth();
+  const { user } = useAuth();
   const { language } = useLanguage();
 
   // Link translations
@@ -72,21 +73,16 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </Link>
         </div>
         
-        {hasAccess(3) && (
+
+        
+        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
           <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/users" className={getLinkClass('/users')}>
-              <Users className="h-5 w-5" />
-              <span>{translations.Users}</span>
+            <Link href="/employees" className={getLinkClass('/employees')}>
+              <UserPlus className="h-5 w-5" />
+              <span>{translations.Employees}</span>
             </Link>
           </div>
-        )}
-        
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/employees" className={getLinkClass('/employees')}>
-            <UserPlus className="h-5 w-5" />
-            <span>{translations.Employees}</span>
-          </Link>
-        </div>
+        </RoleGuard>
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
           <Link href="/assets" className={getLinkClass('/assets')}>
@@ -95,12 +91,14 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </Link>
         </div>
         
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/asset-history" className={getLinkClass('/asset-history')}>
-            <History className="h-5 w-5" />
-            <span>{translations.AssetHistory}</span>
-          </Link>
-        </div>
+        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+          <div className="transform hover:translate-x-1 transition-transform duration-200">
+            <Link href="/asset-history" className={getLinkClass('/asset-history')}>
+              <History className="h-5 w-5" />
+              <span>{translations.AssetHistory}</span>
+            </Link>
+          </div>
+        </RoleGuard>
         
         <div className="transform hover:translate-x-1 transition-transform duration-200">
           <Link href="/tickets" className={getLinkClass('/tickets')}>
@@ -109,32 +107,32 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </Link>
         </div>
         
-        {hasAccess(2) && (
+        <RoleGuard allowedRoles={['admin', 'manager']}>
           <div className="transform hover:translate-x-1 transition-transform duration-200">
             <Link href="/reports" className={getLinkClass('/reports')}>
               <BarChart2 className="h-5 w-5" />
               <span>{translations.Reports}</span>
             </Link>
           </div>
-        )}
+        </RoleGuard>
         
-        {hasAccess(3) && (
+        <RoleGuard allowedRoles={['admin']}>
           <div className="transform hover:translate-x-1 transition-transform duration-200">
             <Link href="/system-config" className={getLinkClass('/system-config')}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
             </Link>
           </div>
-        )}
+        </RoleGuard>
         
-        {hasAccess(2) && (
+        <RoleGuard allowedRoles={['admin', 'manager']}>
           <div className="transform hover:translate-x-1 transition-transform duration-200">
             <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
               <FileText className="h-5 w-5" />
               <span>{translations.AuditLogs}</span>
             </Link>
           </div>
-        )}
+        </RoleGuard>
 
         <div className="transform hover:translate-x-1 transition-transform duration-200">
           <Link href="/profile" className={getLinkClass('/profile')}>
@@ -148,7 +146,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v1.0</span>
+            <span className="text-xs text-gray-500">SimpleIT v1.6</span>
           </div>
         </div>
       </div>

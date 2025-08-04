@@ -162,7 +162,7 @@ export function SecurityQuestionsSettings() {
     try {
       setIsLoading(true);
       
-      const response = await apiRequest('POST', '/api/user/security-questions', {
+      const response = await apiRequest('/api/user/security-questions', 'POST', {
         questions: validQuestions
       });
       

@@ -1,0 +1,110 @@
+{
+  "name": "SimpleIT GitHub Deployment Configuration",
+  "version": "1.6.0",
+  "description": "Configuration ensuring identical deployment from GitHub to any environment",
+  "replit_environment_match": true,
+  "deployment": {
+    "database": {
+      "type": "PostgreSQL",
+      "minimum_version": "16.0",
+      "recommended_version": "16.9",
+      "setup_script": "deployment-database-setup.sql",
+      "sequences_required": [
+        "employees_emp_id_seq",
+        "assets_asset_id_seq", 
+        "tickets_ticket_id_seq"
+      ],
+      "auto_increment_format": {
+        "employees": "EMP-XXXXX",
+        "assets": "AST-XXXXX",
+        "tickets": "TKT-XXXXXX"
+      }
+    },
+    "nodejs": {
+      "minimum_version": "22.0.0",
+      "recommended_version": "22.18.0",
+      "package_manager": "npm",
+      "build_command": "npm run build",
+      "start_command": "npm run start",
+      "dev_command": "npm run dev"
+    },
+    "environment_variables": {
+      "required": [
+        "DATABASE_URL",
+        "NODE_ENV",
+        "SESSION_SECRET"
+      ],
+      "optional": [
+        "PGHOST",
+        "PGPORT", 
+        "PGUSER",
+        "PGPASSWORD",
+        "PGDATABASE"
+      ]
+    }
+  },
+  "features": {
+    "employee_management": {
+      "crud_operations": true,
+      "auto_id_generation": true,
+      "import_export": true,
+      "bulk_operations": true
+    },
+    "asset_management": {
+      "crud_operations": true,
+      "auto_id_generation": true,
+      "import_export": true,
+      "bulk_operations": true
+    },
+    "ticket_management": {
+      "crud_operations": true,
+      "auto_id_generation": true,
+      "unified_editing": true,
+      "real_time_updates": true
+    },
+    "authentication": {
+      "session_based": true,
+      "role_hierarchy": ["Employee", "Agent", "Manager", "Admin"],
+      "emergency_login": true
+    },
+    "internationalization": {
+      "languages": ["English", "Arabic"],
+      "rtl_support": true
+    }
+  },
+  "critical_files": [
+    "shared/schema.ts",
+    "server/storage.ts", 
+    "server/routes.ts",
+    "client/src/pages/Employees.tsx",
+    "deployment-database-setup.sql",
+    "setup-ubuntu-environment.sh",
+    "drizzle.config.ts",
+    "replit.md"
+  ],
+  "deployment_verification": {
+    "database_sequences": "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name LIKE '%_seq';",
+    "employee_creation_test": "POST /api/employees/create-raw with test data",
+    "auto_id_generation": "Verify EMP-XXXXX format in response",
+    "ui_update_test": "Confirm employee list updates immediately"
+  },
+  "troubleshooting": {
+    "employee_creation_fails": [
+      "Check database sequences exist",
+      "Verify /api/employees/create-raw endpoint",
+      "Run deployment-database-setup.sql",
+      "Check console logs for errors"
+    ],
+    "ui_not_updating": [
+      "Check query cache settings", 
+      "Verify invalidateQueries is called",
+      "Check network tab for 201 response",
+      "Test manual refetch"
+    ],
+    "schema_mismatches": [
+      "Run npm run db:push",
+      "Compare shared/schema.ts with database",
+      "Use sync tools to identify differences"
+    ]
+  }
+}

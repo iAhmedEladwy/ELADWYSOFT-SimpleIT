@@ -86,21 +86,7 @@ export function calculateMonthsBetween(startDate: Date, endDate: Date): number {
   return (years * 12) + months;
 }
 
-/**
- * Format currency with the appropriate symbol and decimal places
- * 
- * @param amount - The amount to format
- * @param currency - The currency symbol to use (defaults to EGP)
- * @returns Formatted currency string
- */
-export function formatCurrency(amount: number | null, currency: string = 'EGP'): string {
-  if (amount === null) return '-';
-  
-  return `${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} ${currency}`;
-}
+// formatCurrency function removed - now using useCurrency hook from currencyContext
 
 /**
  * Calculate and return a color representing the health/status of an asset

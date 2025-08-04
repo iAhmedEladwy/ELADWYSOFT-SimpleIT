@@ -3,6 +3,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
 import AssetDetailView from '@/components/assets/AssetDetailView';
+import { AssetActionsMenu } from '@/components/assets/AssetActionsMenu';
 import { 
   Table, 
   TableBody, 
@@ -57,7 +58,9 @@ import {
   UserMinus,
   Drill,
   Info,
-  QrCode
+  QrCode,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
 interface AssetsTableProps {
@@ -70,13 +73,14 @@ interface AssetsTableProps {
   onAssign: (assetId: number, employeeId: number) => void;
   onUnassign: (assetId: number) => void;
   onAddMaintenance: (assetId: number, maintenanceData: any) => void;
+
 }
 
 export default function AssetsTable({ 
-  assets, 
-  employees,
-  selectedAssets,
-  setSelectedAssets,
+  assets = [], 
+  employees = [],
+  selectedAssets = [],
+  setSelectedAssets = () => {},
   onEdit, 
   onDelete,
   onAssign,
@@ -190,17 +194,17 @@ export default function AssetsTable({
     }
   };
 
-  // Find assigned employee name
+  // Find assigned employee name - Updated to handle proper field mapping
   const getAssignedEmployeeName = (employeeId: number | null) => {
     if (!employeeId) return '-';
     const employee = employees.find((e: any) => e.id === employeeId);
-    return employee ? employee.englishName : '-';
+    return employee ? (employee.englishName || employee.name) : '-';
   };
 
   // Handle asset selection for multi-select operations
   const handleSelectAsset = (assetId: number) => {
     if (selectedAssets.includes(assetId)) {
-      setSelectedAssets(selectedAssets.filter(id => id !== assetId));
+      setSelectedAssets(selectedAssets?.filter(id => id !== assetId) || []);
     } else {
       setSelectedAssets([...selectedAssets, assetId]);
     }
@@ -208,6 +212,7 @@ export default function AssetsTable({
 
   // Handle select all assets
   const handleSelectAll = () => {
+    if (!assets || assets.length === 0) return;
     if (selectedAssets.length === assets.length) {
       setSelectedAssets([]);
     } else {
@@ -262,7 +267,7 @@ export default function AssetsTable({
             {hasAccess(3) && (
               <TableHead className="w-[50px]">
                 <Checkbox 
-                  checked={assets.length > 0 && selectedAssets.length === assets.length}
+                  checked={assets && assets.length > 0 && selectedAssets.length === assets.length}
                   onCheckedChange={handleSelectAll}
                   aria-label="Select all assets"
                 />
@@ -272,15 +277,31 @@ export default function AssetsTable({
             <TableHead>{translations.type}</TableHead>
             <TableHead>{translations.brand}</TableHead>
             <TableHead>{translations.modelName}</TableHead>
+            <TableHead>{translations.serialNumber}</TableHead>
+            <TableHead>Specs</TableHead>
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {assets.length > 0 ? (
+          {assets && assets.length > 0 ? (
             assets.map((asset) => (
-              <TableRow key={asset.id}>
+              <TableRow 
+                key={asset.id}
+                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
+                onClick={(e) => {
+                  // Prevent row click when clicking on checkbox or action buttons
+                  if (e.target instanceof HTMLElement && 
+                      (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('button') || 
+                       e.target.closest('[role="button"]') ||
+                       e.target.closest('.dropdown-menu'))) {
+                    return;
+                  }
+                  onEdit(asset);
+                }}
+              >
                 {hasAccess(3) && (
                   <TableCell>
                     <Checkbox 
@@ -290,66 +311,65 @@ export default function AssetsTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">{asset.assetId}</TableCell>
+                <TableCell className="font-medium">
+                  <button
+                    onClick={() => onEdit(asset)}
+                    className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors"
+                  >
+                    {asset.assetId}
+                  </button>
+                </TableCell>
                 <TableCell>{asset.type}</TableCell>
                 <TableCell>{asset.brand}</TableCell>
                 <TableCell>{asset.modelName || '-'}</TableCell>
+                <TableCell>{asset.serialNumber || '-'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs">
+                    {asset.cpu && (
+                      <span className="text-xs text-muted-foreground">
+                        CPU: {asset.cpu}
+                      </span>
+                    )}
+                    {asset.ram && (
+                      <span className="text-xs text-muted-foreground">
+                        RAM: {asset.ram}
+                      </span>
+                    )}
+                    {asset.storage && (
+                      <span className="text-xs text-muted-foreground">
+                        Storage: {asset.storage}
+                      </span>
+                    )}
+                    {!asset.cpu && !asset.ram && !asset.storage && '-'}
+                  </div>
+                </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                <TableCell>{getAssignedEmployeeName(asset.assignedEmployeeId)}</TableCell>
+                <TableCell>
+                  {(() => {
+                    if (!asset.assignedEmployeeId) return '-';
+                    const employee = employees.find((e: any) => e.id === asset.assignedEmployeeId);
+                    return employee ? `${employee.empId} - ${employee.englishName || employee.name}` : '-';
+                  })()}
+                </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end">
-                    <AssetActionButtons asset={asset} employees={employees} />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(asset)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          {translations.edit}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => setAssetToMaintenance(asset)}>
-                          <Drill className="h-4 w-4 mr-2" />
-                          {translations.addMaintenanceShort}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem onClick={() => {
-                          setAssetToView(asset.id);
-                          setShowDetailView(true);
-                        }}>
-                          <Info className="h-4 w-4 mr-2" />
-                          {translations.details}
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <DropdownMenuItem>
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {translations.qrCode}
-                        </DropdownMenuItem>
-                        
-                        {hasAccess(3) && (
-                          <DropdownMenuItem 
-                            onClick={() => setAssetToDelete(asset)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {translations.delete}
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="flex items-center justify-end gap-1">
+                    {/* Check-in/Check-out buttons using AssetActionButtons component */}
+                    <AssetActionButtons 
+                      asset={asset} 
+                      employees={employees}
+                    />
+                    <AssetActionsMenu 
+                      asset={asset} 
+                      employees={employees}
+                      onEdit={onEdit}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={hasAccess(3) ? 8 : 7} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={hasAccess(3) ? 9 : 8} className="text-center h-24 text-muted-foreground">
                 {translations.noAssets}
               </TableCell>
             </TableRow>
@@ -396,8 +416,8 @@ export default function AssetsTable({
                     <SelectValue placeholder={translations.selectEmployee} />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees
-                      .filter((employee: any) => employee.status === 'Active')
+                    {(employees || [])
+                      .filter((employee: any) => employee?.status === 'Active')
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id.toString()}>
                           {employee.englishName} ({employee.empId})

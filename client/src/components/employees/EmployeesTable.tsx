@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
+import { useLocation } from 'wouter';
+import type { EmployeeResponse } from '@shared/types';
 import { 
   Table, 
   TableBody, 
@@ -9,6 +11,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -38,17 +41,68 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/authContext';
+import EmployeeDetailsDialog from './EmployeeDetailsDialog';
 
 interface EmployeesTableProps {
-  employees: any[];
-  onEdit: (employee: any) => void;
+  employees: EmployeeResponse[];
+  onEdit: (employee: EmployeeResponse) => void;
   onDelete: (employeeId: number) => void;
+  selectedEmployees?: number[];
+  onSelectionChange?: (selectedIds: number[]) => void;
 }
 
-export default function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTableProps) {
+export default function EmployeesTable({ 
+  employees, 
+  onEdit, 
+  onDelete, 
+  selectedEmployees = [],
+  onSelectionChange
+}: EmployeesTableProps) {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
-  const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
+  const [, navigate] = useLocation();
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponse | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeResponse | null>(null);
+  
+  // Action handlers for dropdown menu
+  const handleViewDetails = (employee: EmployeeResponse) => {
+    setSelectedEmployee(employee);
+    setShowDetailsDialog(true);
+  };
+
+  const handleViewAssets = (employee: EmployeeResponse) => {
+    navigate(`/assets?assignedTo=${employee.id}`);
+  };
+
+  const handleViewTickets = (employee: EmployeeResponse) => {
+    navigate(`/tickets?assignedTo=${employee.id}`);
+  };
+
+  // Handle individual checkbox selection
+  const handleEmployeeSelect = (employeeId: number, checked: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (checked) {
+      onSelectionChange([...selectedEmployees, employeeId]);
+    } else {
+      onSelectionChange(selectedEmployees.filter(id => id !== employeeId));
+    }
+  };
+
+  // Handle select all checkbox
+  const handleSelectAll = (checked: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (checked) {
+      onSelectionChange(employees.map(emp => emp.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const isAllSelected = employees.length > 0 && selectedEmployees.length === employees.length;
+  const isIndeterminate = selectedEmployees.length > 0 && selectedEmployees.length < employees.length;
 
   // Translations
   const translations = {
@@ -105,7 +159,11 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
           </Badge>
         );
       default:
-        return null;
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+            {status || 'N/A'}
+          </Badge>
+        );
     }
   };
 
@@ -129,10 +187,21 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
       <Table>
         <TableHeader>
           <TableRow>
+            {onSelectionChange && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all employees"
+                  className={isIndeterminate ? "data-[state=checked]:bg-blue-600" : ""}
+                />
+              </TableHead>
+            )}
             <TableHead>{translations.employeeID}</TableHead>
             <TableHead>{translations.name}</TableHead>
             <TableHead>{translations.department}</TableHead>
             <TableHead>{translations.title}</TableHead>
+            <TableHead>Employment Type</TableHead>
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.joiningDate}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -141,12 +210,45 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
         <TableBody>
           {employees.length > 0 ? (
             employees.map((employee) => (
-              <TableRow key={employee.id}>
-                <TableCell className="font-medium">{employee.empId}</TableCell>
-                <TableCell>{employee.englishName}</TableCell>
+              <TableRow 
+                key={employee.id}
+                className="hover:bg-muted/50 cursor-pointer"
+                onClick={(e) => {
+                  // Prevent row click when clicking on checkbox or action buttons
+                  if (e.target instanceof HTMLElement && 
+                      (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('button') || 
+                       e.target.closest('[role="button"]') ||
+                       e.target.closest('.dropdown-menu'))) {
+                    return;
+                  }
+                  onEdit(employee);
+                }}
+              >
+                {onSelectionChange && (
+                  <TableCell className="w-12">
+                    <Checkbox
+                      checked={selectedEmployees.includes(employee.id)}
+                      onCheckedChange={(checked) => handleEmployeeSelect(employee.id, checked as boolean)}
+                      aria-label={`Select employee ${employee.englishName}`}
+                    />
+                  </TableCell>
+                )}
+                <TableCell className="font-medium">{employee.employeeId}</TableCell>
+                <TableCell>
+                  <button 
+                    className="text-gray-900 px-2 py-1 rounded text-left cursor-pointer font-medium"
+                    onClick={() => onEdit(employee)}
+                  >
+                    {employee.englishName || 'N/A'}
+                  </button>
+                </TableCell>
                 <TableCell>{employee.department}</TableCell>
-                <TableCell>{employee.title}</TableCell>
-                <TableCell>{getStatusBadge(employee.status)}</TableCell>
+                <TableCell>{employee.position}</TableCell>
+                <TableCell>{employee.employmentType || 'Full-time'}</TableCell>
+                <TableCell>
+                  {getStatusBadge(employee.status || (employee.isActive !== false ? 'Active' : 'Resigned'))}
+                </TableCell>
                 <TableCell>{formatDate(employee.joiningDate)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -162,17 +264,17 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
                         {translations.edit}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
                         <Eye className="h-4 w-4 mr-2" />
                         {translations.viewDetails}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewAssets(employee)}>
                         <Laptop className="h-4 w-4 mr-2" />
                         {translations.viewAssets}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewTickets(employee)}>
                         <Ticket className="h-4 w-4 mr-2" />
                         {translations.viewTickets}
                       </DropdownMenuItem>
@@ -193,7 +295,7 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={onSelectionChange ? 8 : 7} className="text-center h-24 text-muted-foreground">
                 {translations.noEmployees}
               </TableCell>
             </TableRow>
@@ -220,6 +322,13 @@ export default function EmployeesTable({ employees, onEdit, onDelete }: Employee
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Employee Details Dialog */}
+      <EmployeeDetailsDialog
+        employee={selectedEmployee}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+      />
     </div>
   );
 }

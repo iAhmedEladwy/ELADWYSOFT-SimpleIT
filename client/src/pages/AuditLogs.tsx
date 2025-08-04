@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Helmet } from "react-helmet-async";
 import { 
   FileText, 
   AlertTriangle,
   Download,
-  Search
+  Search,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import AuditLogTable from '@/components/audit/AuditLogTable';
 import AuditLogFilter from '@/components/audit/AuditLogFilter';
 import { useAuth } from '@/lib/authContext';
@@ -36,6 +57,18 @@ export default function AuditLogs() {
   const [filters, setFilters] = useState<any>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [clearOptions, setClearOptions] = useState<{
+    timeframe: string;
+    entityType: string;
+    action: string;
+  }>({
+    timeframe: 'all',
+    entityType: '',
+    action: ''
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Build query parameters
   const queryParams = new URLSearchParams();
@@ -87,6 +120,75 @@ export default function AuditLogs() {
     queryKey: ['/api/audit-logs', page, limit, filters],
     enabled: hasAccess(3), // Only accessible to level 3 users
   });
+  
+  // Clear logs mutation
+  const clearLogsMutation = useMutation({
+    mutationFn: async (options: any) => {
+      const response = await fetch('/api/audit-logs', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(options),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to clear logs');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Logs cleared',
+        description: data.message || `Successfully cleared ${data.deletedCount} log entries`,
+      });
+      setDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/audit-logs'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to clear logs',
+        variant: 'destructive'
+      });
+    }
+  });
+  
+  // Handle clear logs
+  const handleClearLogs = () => {
+    const options: any = {};
+    
+    // Set olderThan date based on timeframe selection
+    if (clearOptions.timeframe !== 'all') {
+      if (clearOptions.timeframe === 'week') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        options.olderThan = weekAgo.toISOString();
+      } else if (clearOptions.timeframe === 'month') {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        options.olderThan = monthAgo.toISOString();
+      } else if (clearOptions.timeframe === 'year') {
+        const yearAgo = new Date();
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        options.olderThan = yearAgo.toISOString();
+      }
+    }
+    
+    // Add entity type and action filters if selected
+    if (clearOptions.entityType && clearOptions.entityType !== '') {
+      options.entityType = clearOptions.entityType;
+    }
+    
+    if (clearOptions.action && clearOptions.action !== '') {
+      options.action = clearOptions.action;
+    }
+    
+    clearLogsMutation.mutate(options);
+  };
 
   // Fetch users for filtering
   const { data: users = [] } = useQuery<Array<{ id: number; username: string }>>({
@@ -153,7 +255,7 @@ export default function AuditLogs() {
         <meta name="description" content="View and search system audit logs. Track user actions and security events." />
       </Helmet>
       
-      <div className="container mx-auto py-6">
+      <div className="p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
@@ -162,15 +264,122 @@ export default function AuditLogs() {
             </p>
           </div>
           
-          <Button 
-            onClick={exportToCSV} 
-            variant="outline" 
-            className="mt-4 sm:mt-0"
-            disabled={isLoading || isError || !data?.data?.length}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex space-x-2">
+            {hasAccess(3) && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4 sm:mt-0"
+                    disabled={isLoading || isError || !data?.data?.length}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Logs
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center">
+                      <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
+                      Clear Audit Logs
+                    </DialogTitle>
+                    <DialogDescription>
+                      This action cannot be undone. Please select which logs to clear.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="timeframe">Time Period</Label>
+                      <Select
+                        value={clearOptions.timeframe}
+                        onValueChange={(value) => setClearOptions({...clearOptions, timeframe: value})}
+                      >
+                        <SelectTrigger id="timeframe">
+                          <SelectValue placeholder="Select time period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All logs</SelectItem>
+                          <SelectItem value="week">Older than 1 week</SelectItem>
+                          <SelectItem value="month">Older than 1 month</SelectItem>
+                          <SelectItem value="year">Older than 1 year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="entityType">Entity Type (Optional)</Label>
+                      <Select
+                        value={clearOptions.entityType}
+                        onValueChange={(value) => setClearOptions({...clearOptions, entityType: value})}
+                      >
+                        <SelectTrigger id="entityType">
+                          <SelectValue placeholder="All entity types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All entity types</SelectItem>
+                          <SelectItem value="USER">User</SelectItem>
+                          <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                          <SelectItem value="ASSET">Asset</SelectItem>
+                          <SelectItem value="TICKET">Ticket</SelectItem>
+                          <SelectItem value="REPORT">Report</SelectItem>
+                          <SelectItem value="SYSTEM">System</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="action">Action (Optional)</Label>
+                      <Select
+                        value={clearOptions.action}
+                        onValueChange={(value) => setClearOptions({...clearOptions, action: value})}
+                      >
+                        <SelectTrigger id="action">
+                          <SelectValue placeholder="All actions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All actions</SelectItem>
+                          <SelectItem value="CREATE">Create</SelectItem>
+                          <SelectItem value="UPDATE">Update</SelectItem>
+                          <SelectItem value="DELETE">Delete</SelectItem>
+                          <SelectItem value="LOGIN">Login</SelectItem>
+                          <SelectItem value="LOGOUT">Logout</SelectItem>
+                          <SelectItem value="VIEW">View</SelectItem>
+                          <SelectItem value="EXPORT">Export</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleClearLogs}
+                      disabled={clearLogsMutation.isPending}
+                    >
+                      {clearLogsMutation.isPending ? 'Clearing...' : 'Clear Logs'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+            
+            <Button 
+              onClick={exportToCSV} 
+              variant="outline" 
+              className="mt-4 sm:mt-0"
+              disabled={isLoading || isError || !data?.data?.length}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         <AuditLogFilter 

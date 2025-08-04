@@ -1,0 +1,84 @@
+Fix ID Generation Based on Actual Database Schema
+Schema Analysis - Root Cause Identified
+Based on your schema.ts file, the problem is clear:
+Current Schema Configuration:
+
+employees.empId: Uses SQL default with sequence - concat('EMP-', lpad((nextval('employees_id_seq'::regclass))::text, 5, '0'::text))
+assets.assetId: Uses SQL default with sequence - concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))
+tickets.ticketId: Uses SQL default with sequence - concat('TKT-', lpad((nextval('tickets_id_seq'::regclass))::text, 5, '0'::text))
+
+The Issue:
+Your application code is trying to generate IDs manually when the database schema is already configured to auto-generate them with custom format (EMP-00001, AST-00001, TKT-00001).
+Solution: Remove Application ID Generation Completely
+1. Fix Employee Creation
+
+Remove empId from INSERT operations - let database generate it automatically
+Don't send empId field in API requests from frontend
+Remove any generateId functions for employees
+Update employee creation form to exclude empId field
+The database will automatically generate EMP-00001, EMP-00002, etc.
+
+2. Fix Asset Creation
+
+Remove assetId from INSERT operations - let database generate it automatically
+Don't send assetId field in API requests from frontend
+Remove any generateId functions for assets
+Update asset creation form to exclude assetId field
+The database will automatically generate AST-00001, AST-00002, etc.
+
+3. Fix Ticket Creation
+
+Remove ticketId from INSERT operations - let database generate it automatically
+Don't send ticketId field in API requests from frontend
+Remove any generateId functions for tickets
+Update ticket creation form to exclude ticketId field
+The database will automatically generate TKT-00001, TKT-00002, etc.
+
+4. Update Import Schemas
+Your schema already excludes auto-generated IDs from insert schemas:
+
+insertEmployeeSchema - omits id but should also omit empId
+insertAssetSchema - omits id but should also omit assetId
+insertTicketSchema - already omits ticketId ✓
+
+Fix the schemas:
+
+Add empId to omit list in insertEmployeeSchema
+Add assetId to omit list in insertAssetSchema
+Verify ticketId is omitted in insertTicketSchema (already done)
+
+5. Update Field Mapping Interface
+
+Mark empId, assetId, ticketId as "System Generated" in all import interfaces
+Prevent mapping these fields from source files
+Show in UI that these are auto-generated with format examples
+Remove from all import templates
+
+6. Verify Database Sequences Exist
+Check that these sequences exist in your database:
+
+employees_id_seq
+assets_id_seq
+tickets_id_seq
+
+If missing, the database defaults won't work.
+7. Local Environment Fix
+Your local environment issue is because:
+
+Code is correct but trying to use generateId function that doesn't exist
+Database sequences might not exist locally
+Schema might not be synchronized between local and production
+
+Fix locally:
+
+Create the missing sequences in local database
+Verify the default expressions are set on ID columns
+Remove any generateId function calls from the codebase
+Test that database generates IDs automatically
+
+Why This is Different Between Environments:
+
+Production/Replit: Database schema properly configured with sequences and defaults
+Local Ubuntu: Database schema missing sequences or default expressions
+
+The schema shows your database is designed for auto-generation - the application just needs to stop interfering with it.

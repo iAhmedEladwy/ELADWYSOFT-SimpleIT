@@ -18,17 +18,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Menu, Globe } from 'lucide-react';
+import { Menu, Globe, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
 interface HeaderProps {
   toggleSidebar: () => void;
+  hideSidebar?: boolean;
 }
 
-export default function Header({ toggleSidebar }: HeaderProps) {
+export default function Header({ toggleSidebar, hideSidebar = false }: HeaderProps) {
   const { user, logout } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const handleLogout = async () => {
     try {
@@ -55,12 +58,14 @@ export default function Header({ toggleSidebar }: HeaderProps) {
     <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10 h-[57px]">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <button 
-            onClick={toggleSidebar}
-            className="lg:hidden p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+          {!hideSidebar && (
+            <button 
+              onClick={toggleSidebar}
+              className="p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          )}
           <div className="flex flex-col">
             <div className="flex items-center">
               <span className="text-blue-600 font-bold text-xl mr-1">SimpleIT</span>
@@ -82,6 +87,11 @@ export default function Header({ toggleSidebar }: HeaderProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.username || 'User'}</DropdownMenuLabel>
               <DropdownMenuLabel className="text-xs text-gray-500">{user?.email || ''}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation('/changes-log')}>
+                <FileText className="mr-2 h-4 w-4" />
+                {language === 'English' ? 'Changes Log' : 'سجل التغييرات'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>

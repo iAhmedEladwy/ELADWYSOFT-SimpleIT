@@ -1,12 +1,18 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from './queryClient';
+import { apiRequest, getQueryFn } from './queryClient';
 
 type User = {
   id: number;
   username: string;
   email: string;
-  accessLevel: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  role: string;
+  employeeId?: number;
+  managerId?: number;
+  isActive: boolean;
 };
 
 type AuthContextType = {
@@ -14,7 +20,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasAccess: (minAccessLevel: number) => boolean;
+  hasAccess: (minRoleLevel: number) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,14 +33,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
+    retry: 2,
+    retryDelay: 1000,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await apiRequest('POST', '/api/login', { username, password });
-      return res.json();
+      const result = await apiRequest('/api/login', 'POST', { username, password });
+      return result;
     },
     onSuccess: async () => {
       // Force a refetch of the user data immediately instead of just invalidating
@@ -46,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/logout', {});
+      const res = await apiRequest('/api/logout', 'POST', {});
       return res.json();
     },
     onSuccess: () => {
@@ -81,6 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     } catch (error) {
       console.error("Login error:", error);
+      // Add more detailed error logging for debugging
+      if (error instanceof Error) {
+        console.error("Login error details:", error.message, error.stack);
+      }
       setIsLoading(false);
       throw error;
     }
@@ -90,13 +103,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
-  const hasAccess = (minAccessLevel: number) => {
-    if (!user) return false;
-    return parseInt(user.accessLevel) >= minAccessLevel;
+  const hasAccess = (minRoleLevel: number) => {
+    if (!user || !user.role) return false;
+    
+    // Role hierarchy: admin=4, manager=3, agent=2, employee=1
+    const roleLevel = {
+      'admin': 4,
+      'manager': 3,
+      'agent': 2,
+      'employee': 1
+    }[user.role] || 0;
+    
+    return roleLevel >= minRoleLevel;
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, hasAccess }}>
+    <AuthContext.Provider value={{ user: user || null, isLoading, login, logout, hasAccess }}>
       {children}
     </AuthContext.Provider>
   );
@@ -110,28 +132,4 @@ export function useAuth() {
   return context;
 }
 
-// Helper to handle 401 responses differently
-type UnauthorizedBehavior = 'returnNull' | 'throw';
-const getQueryFn =
-  ({ on401 }: { on401: UnauthorizedBehavior }) =>
-  async ({ queryKey }: { queryKey: string[] }) => {
-    try {
-      const res = await fetch(queryKey[0], {
-        credentials: 'include',
-      });
 
-      if (on401 === 'returnNull' && res.status === 401) {
-        return null;
-      }
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status}: ${text || res.statusText}`);
-      }
-
-      return await res.json();
-    } catch (error) {
-      console.error('Query error:', error);
-      throw error;
-    }
-  };

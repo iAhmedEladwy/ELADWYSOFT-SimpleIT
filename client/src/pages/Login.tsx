@@ -105,9 +105,27 @@ export default function Login() {
       
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Enhanced error handling with network detection
+      let errorTitle = translations.loginFailed;
+      let errorDescription = translations.invalidCredentials;
+      
+      if (error instanceof Error) {
+        console.error('Login error details:', error.message);
+        if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+          errorDescription = language === 'English' 
+            ? 'Network error. Please check your connection and try again.' 
+            : 'خطأ في الشبكة. يرجى التحقق من الاتصال والمحاولة مرة أخرى.';
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorDescription = language === 'English' 
+            ? 'Invalid username or password. Please try again.' 
+            : 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
+        }
+      }
+      
       toast({
-        title: translations.loginFailed,
-        description: translations.invalidCredentials,
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
       });
       setIsLoading(false);
@@ -179,7 +197,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="text-sm text-center text-gray-500">
           <p className="w-full">
-            Default login: admin / admin123
+            Copy right reserved ELADWYSOFT 2025
           </p>
         </CardFooter>
       </Card>

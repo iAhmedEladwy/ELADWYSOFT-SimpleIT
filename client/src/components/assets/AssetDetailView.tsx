@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/assetUtils';
+import { useCurrency } from '@/lib/currencyContext';
 import AssetDepreciationInfo from './AssetDepreciationInfo';
 import {
   Dialog,
@@ -29,6 +29,7 @@ interface AssetDetailViewProps {
 
 export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDetailViewProps) {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('general');
 
   // Translations
@@ -151,6 +152,7 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
               </TabsTrigger>
             </TabsList>
             
+            <div className="min-h-[500px]">
             <TabsContent value="general" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -211,24 +213,36 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
               {maintenanceLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  <span className="ml-2">{translations.loading}</span>
                 </div>
               ) : !maintenanceRecords || maintenanceRecords.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">{translations.noMaintenance}</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Wrench className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>{language === 'English' ? 'No maintenance records found' : 'لم يتم العثور على سجلات صيانة'}</p>
+                  <p className="text-sm mt-2">{language === 'English' ? 'This asset has no maintenance history' : 'هذا الأصل ليس له تاريخ صيانة'}</p>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {maintenanceRecords.map((record: any) => (
-                    <div key={record.id} className="border rounded-md p-4">
+                    <div key={record.id} className="border rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold">{record.type} Maintenance</h4>
+                          <h4 className="font-semibold">{record.maintenanceType || record.type} Maintenance</h4>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(record.date), 'PPP')}
+                            {record.date ? format(new Date(record.date), 'PPP') : 'Date not available'}
                           </p>
+                          {record.performerName && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Performed by: {record.performerName}
+                            </p>
+                          )}
                         </div>
-                        <Badge>{record.providerType}</Badge>
+                        <Badge variant={record.maintenanceType === 'Completed' ? 'default' : 'secondary'}>
+                          {record.providerType || record.maintenanceType || 'Maintenance'}
+                        </Badge>
                       </div>
                       <Separator className="my-3" />
-                      <p className="text-sm">{record.description}</p>
+                      <p className="text-sm">{record.description || 'No description provided'}</p>
                       {record.cost && (
                         <p className="text-sm font-medium mt-2">
                           Cost: {formatCurrency(record.cost)}
@@ -282,6 +296,7 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
                 </div>
               )}
             </TabsContent>
+            </div>
           </Tabs>
         )}
       </DialogContent>
