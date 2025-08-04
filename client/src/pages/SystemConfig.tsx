@@ -275,7 +275,7 @@ const SystemConfig = () => {
 
   const handleDownloadTemplate = async (entityType: 'employees' | 'assets' | 'tickets') => {
     try {
-      const response = await fetch(`/api/templates/${entityType}`);
+      const response = await fetch(`/api/${entityType}/template`);
       if (!response.ok) throw new Error('Failed to download template');
       
       const blob = await response.blob();
