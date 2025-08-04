@@ -17,6 +17,8 @@ export const notificationTypeEnum = pgEnum('notification_type', ['Asset', 'Ticke
 export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
+export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
+export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
 
 // Sessions table for authentication
 export const sessions = pgTable(
@@ -109,34 +111,79 @@ export const assets = pgTable("assets", {
   assignedEmployeeId: integer("assigned_employee_id").references(() => employees.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Additional hardware specification columns
+  cpu: varchar("cpu", { length: 100 }),
+  ram: varchar("ram", { length: 100 }),
+  storage: varchar("storage", { length: 100 }),
 });
 
 // Asset Maintenance table
 export const assetMaintenance = pgTable("asset_maintenance", {
   id: serial("id").primaryKey(),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  maintenanceType: varchar("maintenance_type", { length: 100 }).notNull(),
+  date: date("date").notNull(),
   description: text("description").notNull(),
-  scheduledDate: date("scheduled_date"),
-  completedDate: date("completed_date"),
-  cost: decimal("cost", { precision: 10, scale: 2 }),
-  performedById: integer("performed_by_id").references(() => users.id),
+  cost: decimal("cost", { precision: 10, scale: 2 }).default('0'),
+  providerType: varchar("provider_type", { length: 100 }).notNull(),
+  providerName: varchar("provider_name", { length: 100 }),
+  type: maintenanceTypeEnum("type").notNull().default('Preventive'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service Providers table
+export const serviceProviders = pgTable("service_providers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  contactPerson: varchar("contact_person", { length: 100 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 100 }),
+  address: varchar("address", { length: 255 }),
+  serviceType: varchar("service_type", { length: 100 }),
+  contractStartDate: timestamp("contract_start_date"),
+  contractEndDate: timestamp("contract_end_date"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Asset Service Providers relationship table
+export const assetServiceProviders = pgTable("asset_service_providers", {
+  id: serial("id").primaryKey(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  serviceProviderId: integer("service_provider_id").notNull().references(() => serviceProviders.id),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  contractNumber: varchar("contract_number", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Asset Transactions table
+export const assetTransactions = pgTable("asset_transactions", {
+  id: serial("id").primaryKey(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  type: assetTransactionTypeEnum("type").notNull(),
+  employeeId: integer("employee_id").references(() => employees.id),
+  transactionDate: timestamp("transaction_date").notNull().defaultNow(),
+  expectedReturnDate: timestamp("expected_return_date"),
+  actualReturnDate: timestamp("actual_return_date"),
+  conditionNotes: text("condition_notes"),
+  handledById: integer("handled_by_id").references(() => users.id),
+  attachments: text("attachments").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deviceSpecs: jsonb("device_specs"),
+});
+
 // Asset Sales table
 export const assetSales = pgTable("asset_sales", {
   id: serial("id").primaryKey(),
-  saleId: varchar("sale_id", { length: 20 }).notNull().unique(),
-  buyerName: varchar("buyer_name", { length: 255 }).notNull(),
-  buyerContact: varchar("buyer_contact", { length: 100 }),
-  saleDate: date("sale_date").notNull(),
+  buyer: varchar("buyer", { length: 100 }).notNull(),
+  date: date("date").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: varchar("payment_method", { length: 50 }),
   notes: text("notes"),
-  handledById: integer("handled_by_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -146,216 +193,15 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   id: serial("id").primaryKey(),
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
-  condition: varchar("condition", { length: 50 }),
-  notes: text("notes"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Tickets table
-export const tickets = pgTable("tickets", {
-  id: serial("id").primaryKey(),
-  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`('TKT-'::text || lpad(nextval('tickets_id_seq'::regclass)::text, 6, '0'::text))`),
-  summary: varchar("summary", { length: 255 }),
-  description: text("description").notNull(),
-  requestType: varchar("request_type", { length: 100 }).notNull().default('Hardware'),
-  category: varchar("category", { length: 100 }).notNull().default('Incident'),
-  priority: ticketPriorityEnum("priority").notNull().default('Medium'),
-  urgency: varchar("urgency", { length: 50 }).notNull().default('Medium'),
-  impact: varchar("impact", { length: 50 }).notNull().default('Medium'),
-  status: ticketStatusEnum("status").notNull().default('Open'),
-  submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
-  assignedToId: integer("assigned_to_id").references(() => users.id),
-  relatedAssetId: integer("related_asset_id").references(() => assets.id),
-  resolution: text("resolution"),
-  resolutionNotes: text("resolution_notes"),
-  dueDate: timestamp("due_date"),
-  slaTarget: timestamp("sla_target"),
-  escalationLevel: varchar("escalation_level", { length: 10 }).default('0'),
-  tags: text("tags"),
-  privateNotes: text("private_notes"),
-  timeSpent: integer("time_spent").default(0),
-  isTimeTracking: boolean("is_time_tracking").default(false),
-  timeTrackingStartedAt: timestamp("time_tracking_started_at"),
-  mergedIntoId: integer("merged_into_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Ticket History table
-export const ticketHistory = pgTable("ticket_history", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  action: varchar("action", { length: 100 }).notNull(),
-  previousValue: text("previous_value"),
-  newValue: text("new_value"),
-  changeDescription: text("change_description"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Ticket Comments table
-export const ticketComments = pgTable("ticket_comments", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  comment: text("comment").notNull(),
-  isPrivate: boolean("is_private").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Notifications table
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  type: notificationTypeEnum("type").notNull(),
-  entityId: integer("entity_id"),
-  isRead: boolean("is_read").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// System Configuration table
-export const systemConfig = pgTable("system_config", {
-  id: serial("id").primaryKey(),
-  language: varchar("language", { length: 10 }).notNull().default('en'),
-  assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('AST'),
-  employeeIdPrefix: varchar("employee_id_prefix", { length: 10 }).notNull().default('EMP'),
-  ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT'),
-  departments: text("departments").array().default([]),
-  companyName: varchar("company_name", { length: 255 }).notNull().default('SimpleIT'),
-  companyAddress: text("company_address"),
-  companyPhone: varchar("company_phone", { length: 50 }),
-  companyEmail: varchar("company_email", { length: 100 }),
-  companyWebsite: varchar("company_website", { length: 255 }),
-  defaultCurrency: varchar("default_currency", { length: 10 }).notNull().default('USD'),
-  enableAuditLogs: boolean("enable_audit_logs").default(true),
-  auditLogRetentionDays: integer("audit_log_retention_days").default(365),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Activity Log table
-export const activityLog = pgTable("activity_log", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  action: varchar("action", { length: 100 }).notNull(),
-  entityType: varchar("entity_type", { length: 50 }).notNull(),
-  entityId: integer("entity_id"),
-  details: jsonb("details"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Changes Log table
-export const changesLog = pgTable("changes_log", {
-  id: serial("id").primaryKey(),
-  version: varchar("version", { length: 20 }).notNull(),
-  category: varchar("category", { length: 100 }).notNull(),
-  description: text("description").notNull(),
-  technicalDetails: text("technical_details"),
-  date: date("date").notNull().default(sql`CURRENT_DATE`),
-  author: varchar("author", { length: 100 }).notNull().default('System Administrator'),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Asset Transactions table
-export const assetTransactions = pgTable("asset_transactions", {
-  id: serial("id").primaryKey(),
-  transactionId: varchar("transaction_id", { length: 20 }).notNull().unique(),
-  assetId: integer("asset_id").notNull().references(() => assets.id),
-  employeeId: integer("employee_id").references(() => employees.id),
-  transactionType: varchar("transaction_type", { length: 50 }).notNull(),
-  fromLocation: varchar("from_location", { length: 255 }),
-  toLocation: varchar("to_location", { length: 255 }),
-  handledById: integer("handled_by_id").references(() => users.id),
-  notes: text("notes"),
-  transactionDate: timestamp("transaction_date").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom Asset Types table
-export const customAssetTypes = pgTable("custom_asset_types", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull().unique(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom Asset Brands table
-export const customAssetBrands = pgTable("custom_asset_brands", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull().unique(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom Asset Statuses table
-export const customAssetStatuses = pgTable("custom_asset_statuses", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull().unique(),
-  description: text("description"),
-  color: varchar("color", { length: 7 }).default('#6B7280'),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Service Providers table
-export const serviceProviders = pgTable("service_providers", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  contactPerson: varchar("contact_person", { length: 100 }),
-  email: varchar("email", { length: 100 }),
-  phone: varchar("phone", { length: 50 }),
-  address: text("address"),
-  serviceType: varchar("service_type", { length: 100 }),
-  isActive: boolean("is_active").default(true),
-  contractStartDate: date("contract_start_date"),
-  contractEndDate: date("contract_end_date"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Asset Service Providers table
-export const assetServiceProviders = pgTable("asset_service_providers", {
-  id: serial("id").primaryKey(),
-  assetId: integer("asset_id").notNull().references(() => assets.id),
-  serviceProviderId: integer("service_provider_id").notNull().references(() => serviceProviders.id),
-  serviceType: varchar("service_type", { length: 100 }).notNull(),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  contractNumber: varchar("contract_number", { length: 100 }),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Custom Request Types table
-export const customRequestTypes = pgTable("custom_request_types", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull().unique(),
-  description: text("description"),
-  color: varchar("color", { length: 50 }),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  priority: varchar("priority", { length: 50 }),
-  slaHours: integer("sla_hours"),
 });
 
 // Asset Upgrades table
 export const assetUpgrades = pgTable("asset_upgrades", {
   id: serial("id").primaryKey(),
-  upgradeId: varchar("upgrade_id", { length: 20 }).notNull().unique(),
+  upgradeId: varchar("upgrade_id", { length: 20 }).notNull(),
   assetId: integer("asset_id").notNull().references(() => assets.id),
   requestedById: integer("requested_by_id").notNull().references(() => users.id),
   approvedById: integer("approved_by_id").references(() => users.id),
@@ -397,11 +243,7 @@ export const assetUpgrades = pgTable("asset_upgrades", {
   rollbackNotes: text("rollback_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_asset_upgrades_asset_id").on(table.assetId),
-  index("idx_asset_upgrades_requested_by").on(table.requestedById),
-  index("idx_asset_upgrades_status").on(table.status),
-]);
+});
 
 // Upgrade History table
 export const upgradeHistory = pgTable("upgrade_history", {
@@ -409,430 +251,226 @@ export const upgradeHistory = pgTable("upgrade_history", {
   upgradeId: integer("upgrade_id").notNull().references(() => assetUpgrades.id),
   userId: integer("user_id").notNull().references(() => users.id),
   action: varchar("action", { length: 100 }).notNull(),
-  details: text("details"),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
-}, (table) => [
-  index("idx_upgrade_history_upgrade_id").on(table.upgradeId),
-  index("idx_upgrade_history_timestamp").on(table.timestamp),
-]);
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  notes: text("notes"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
 
-// RELATIONS
+// Tickets table
+export const tickets = pgTable("tickets", {
+  id: serial("id").primaryKey(),
+  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`('TKT-' || lpad((nextval('tickets_id_seq'::regclass))::text, 6, '0'::text))`),
+  submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
+  requestType: varchar("request_type", { length: 100 }).notNull(),
+  priority: ticketPriorityEnum("priority").notNull(),
+  description: text("description").notNull(),
+  relatedAssetId: integer("related_asset_id").references(() => assets.id),
+  status: ticketStatusEnum("status").notNull().default('Open'),
+  assignedToId: integer("assigned_to_id").references(() => users.id),
+  resolutionNotes: text("resolution_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  startTime: timestamp("start_time"),
+  completionTime: timestamp("completion_time"),
+  timeSpent: integer("time_spent"),
+  category: varchar("category", { length: 100 }).default('Incident'),
+  summary: varchar("summary", { length: 255 }),
+  urgency: varchar("urgency", { length: 50 }).default('Medium'),
+  impact: varchar("impact", { length: 50 }).default('Medium'),
+  rootCause: text("root_cause"),
+  workaround: text("workaround"),
+  resolution: text("resolution"),
+  tags: text("tags").array(),
+  mergedIntoId: integer("merged_into_id").references((): any => tickets.id),
+});
+
+// Ticket Comments table
+export const ticketComments = pgTable("ticket_comments", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  isPrivate: boolean("is_private").default(false),
+  attachments: text("attachments").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket History table
+export const ticketHistory = pgTable("ticket_history", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  fieldChanged: varchar("field_changed", { length: 100 }),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Activity Log table
+export const activityLog = pgTable("activity_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  entityType: varchar("entity_type", { length: 50 }).notNull(),
+  entityId: integer("entity_id"),
+  details: jsonb("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// System Configuration table
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  language: varchar("language", { length: 10 }).notNull().default('English'),
+  assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('SIT-'),
+  empIdPrefix: varchar("emp_id_prefix", { length: 10 }).notNull().default('EMP-'),
+  ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
+  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
+  departments: text("departments").array(),
+  emailHost: varchar("email_host", { length: 100 }),
+  emailPort: integer("email_port"),
+  emailUser: varchar("email_user", { length: 100 }),
+  emailPassword: varchar("email_password", { length: 100 }),
+  emailFromAddress: varchar("email_from_address", { length: 100 }),
+  emailFromName: varchar("email_from_name", { length: 100 }),
+  emailSecure: boolean("email_secure").default(true),
+  employeeIdPrefix: varchar("employee_id_prefix", { length: 10 }).default('EMP'),
+  companyName: varchar("company_name", { length: 255 }).default('ELADWYSOFT'),
+  companyAddress: text("company_address"),
+  companyPhone: varchar("company_phone", { length: 50 }),
+  companyEmail: varchar("company_email", { length: 100 }),
+  companyWebsite: varchar("company_website", { length: 255 }),
+  defaultCurrency: varchar("default_currency", { length: 10 }).default('USD'),
+  enableAuditLogs: boolean("enable_audit_logs").default(true),
+  auditLogRetentionDays: integer("audit_log_retention_days").default(365),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Custom Asset Brands table
+export const customAssetBrands = pgTable("custom_asset_brands", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Custom Asset Statuses table
+export const customAssetStatuses = pgTable("custom_asset_statuses", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  color: varchar("color", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Custom Asset Types table
+export const customAssetTypes = pgTable("custom_asset_types", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Custom Request Types table
+export const customRequestTypes = pgTable("custom_request_types", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }).default('#3B82F6'),
+  isActive: boolean("is_active").default(true),
+  priority: varchar("priority", { length: 20 }).default('Medium'),
+  slaHours: integer("sla_hours").default(24),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Changes Log table
+export const changesLog = pgTable("changes_log", {
+  id: serial("id").primaryKey(),
+  version: varchar("version", { length: 20 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  technicalDetails: text("technical_details"),
+  date: date("date").notNull().default(sql`CURRENT_DATE`),
+  author: varchar("author", { length: 100 }).notNull().default('System Administrator'),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  entityId: integer("entity_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations
 export const usersRelations = relations(users, ({ many }) => ({
   employees: many(employees),
+  tickets: many(tickets),
+  ticketComments: many(ticketComments),
+  activityLogs: many(activityLog),
+  notifications: many(notifications),
   securityQuestions: many(securityQuestions),
   passwordResetTokens: many(passwordResetTokens),
-  notifications: many(notifications),
-  ticketHistory: many(ticketHistory),
-  ticketComments: many(ticketComments),
-  assetUpgrades: many(assetUpgrades),
-  upgradeHistory: many(upgradeHistory),
 }));
 
 export const employeesRelations = relations(employees, ({ one, many }) => ({
-  user: one(users, {
-    fields: [employees.userId],
-    references: [users.id],
-  }),
-  manager: one(employees, {
-    fields: [employees.directManager],
-    references: [employees.id],
-    relationName: "manager",
-  }),
-  subordinates: many(employees, { relationName: "manager" }),
+  user: one(users, { fields: [employees.userId], references: [users.id] }),
+  directManagerEmployee: one(employees, { fields: [employees.directManager], references: [employees.id] }),
+  subordinates: many(employees),
   assets: many(assets),
-  submittedTickets: many(tickets),
+  tickets: many(tickets),
 }));
 
 export const assetsRelations = relations(assets, ({ one, many }) => ({
-  assignedTo: one(employees, {
-    fields: [assets.assignedEmployeeId],
-    references: [employees.id],
-  }),
-  maintenance: many(assetMaintenance),
-  saleItems: many(assetSaleItems),
+  assignedEmployee: one(employees, { fields: [assets.assignedEmployeeId], references: [employees.id] }),
   tickets: many(tickets),
-  transactions: many(assetTransactions),
-  serviceProviders: many(assetServiceProviders),
-  upgrades: many(assetUpgrades),
+  assetMaintenance: many(assetMaintenance),
+  assetTransactions: many(assetTransactions),
+  assetUpgrades: many(assetUpgrades),
+  assetServiceProviders: many(assetServiceProviders),
+  assetSaleItems: many(assetSaleItems),
 }));
 
 export const ticketsRelations = relations(tickets, ({ one, many }) => ({
-  submittedBy: one(employees, {
-    fields: [tickets.submittedById],
-    references: [employees.id],
-  }),
-  assignedTo: one(users, {
-    fields: [tickets.assignedToId],
-    references: [users.id],
-  }),
-  relatedAsset: one(assets, {
-    fields: [tickets.relatedAssetId],
-    references: [assets.id],
-  }),
-  // mergedInto: one(tickets, {
-  //   fields: [tickets.mergedIntoId],
-  //   references: [tickets.id],
-  //   relationName: "mergedTickets",
-  // }),
-  history: many(ticketHistory),
+  submittedByEmployee: one(employees, { fields: [tickets.submittedById], references: [employees.id] }),
+  assignedToUser: one(users, { fields: [tickets.assignedToId], references: [users.id] }),
+  relatedAsset: one(assets, { fields: [tickets.relatedAssetId], references: [assets.id] }),
+  mergedIntoTicket: one(tickets, { fields: [tickets.mergedIntoId], references: [tickets.id] }),
   comments: many(ticketComments),
+  history: many(ticketHistory),
 }));
 
-export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
-  ticket: one(tickets, {
-    fields: [ticketHistory.ticketId],
-    references: [tickets.id],
-  }),
-  user: one(users, {
-    fields: [ticketHistory.userId],
-    references: [users.id],
-  }),
-}));
+// Insert schemas for form validation
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true, empId: true });
+export const insertAssetSchema = createInsertSchema(assets).omit({ id: true, createdAt: true, updatedAt: true, assetId: true });
+export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true, ticketId: true });
+export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 
-export const ticketCommentsRelations = relations(ticketComments, ({ one }) => ({
-  ticket: one(tickets, {
-    fields: [ticketComments.ticketId],
-    references: [tickets.id],
-  }),
-  user: one(users, {
-    fields: [ticketComments.userId],
-    references: [users.id],
-  }),
-}));
-
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
-  }),
-}));
-
-export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [passwordResetTokens.userId],
-    references: [users.id],
-  }),
-}));
-
-export const securityQuestionsRelations = relations(securityQuestions, ({ one }) => ({
-  user: one(users, {
-    fields: [securityQuestions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const assetMaintenanceRelations = relations(assetMaintenance, ({ one }) => ({
-  asset: one(assets, {
-    fields: [assetMaintenance.assetId],
-    references: [assets.id],
-  }),
-  performedBy: one(users, {
-    fields: [assetMaintenance.performedById],
-    references: [users.id],
-  }),
-}));
-
-export const assetSalesRelations = relations(assetSales, ({ one, many }) => ({
-  handledBy: one(users, {
-    fields: [assetSales.handledById],
-    references: [users.id],
-  }),
-  items: many(assetSaleItems),
-}));
-
-export const assetSaleItemsRelations = relations(assetSaleItems, ({ one }) => ({
-  sale: one(assetSales, {
-    fields: [assetSaleItems.saleId],
-    references: [assetSales.id],
-  }),
-  asset: one(assets, {
-    fields: [assetSaleItems.assetId],
-    references: [assets.id],
-  }),
-}));
-
-export const assetTransactionsRelations = relations(assetTransactions, ({ one }) => ({
-  asset: one(assets, {
-    fields: [assetTransactions.assetId],
-    references: [assets.id],
-  }),
-  employee: one(employees, {
-    fields: [assetTransactions.employeeId],
-    references: [employees.id],
-  }),
-  handledBy: one(users, {
-    fields: [assetTransactions.handledById],
-    references: [users.id],
-  }),
-}));
-
-export const serviceProvidersRelations = relations(serviceProviders, ({ many }) => ({
-  assetServiceProviders: many(assetServiceProviders),
-}));
-
-export const assetServiceProvidersRelations = relations(assetServiceProviders, ({ one }) => ({
-  asset: one(assets, {
-    fields: [assetServiceProviders.assetId],
-    references: [assets.id],
-  }),
-  serviceProvider: one(serviceProviders, {
-    fields: [assetServiceProviders.serviceProviderId],
-    references: [serviceProviders.id],
-  }),
-}));
-
-export const assetUpgradesRelations = relations(assetUpgrades, ({ one, many }) => ({
-  asset: one(assets, {
-    fields: [assetUpgrades.assetId],
-    references: [assets.id],
-  }),
-  requestedBy: one(users, {
-    fields: [assetUpgrades.requestedById],
-    references: [users.id],
-  }),
-  approvedBy: one(users, {
-    fields: [assetUpgrades.approvedById],
-    references: [users.id],
-  }),
-  implementedBy: one(users, {
-    fields: [assetUpgrades.implementedById],
-    references: [users.id],
-  }),
-  history: many(upgradeHistory),
-}));
-
-export const upgradeHistoryRelations = relations(upgradeHistory, ({ one }) => ({
-  upgrade: one(assetUpgrades, {
-    fields: [upgradeHistory.upgradeId],
-    references: [assetUpgrades.id],
-  }),
-  user: one(users, {
-    fields: [upgradeHistory.userId],
-    references: [users.id],
-  }),
-}));
-
-export const activityLogRelations = relations(activityLog, ({ one }) => ({
-  user: one(users, {
-    fields: [activityLog.userId],
-    references: [users.id],
-  }),
-}));
-
-// INSERT SCHEMAS
-export const insertUserSchema = createInsertSchema(users).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertEmployeeSchema = createInsertSchema(employees).omit({ 
-  id: true, 
-  empId: true,
-  createdAt: true, 
-  updatedAt: true,
-  name: true,
-  email: true,
-  phone: true,
-  position: true
-});
-
-export const insertAssetSchema = createInsertSchema(assets).omit({ 
-  id: true, 
-  assetId: true,
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertAssetSaleSchema = createInsertSchema(assetSales).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertAssetSaleItemSchema = createInsertSchema(assetSaleItems).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertTicketSchema = createInsertSchema(tickets).omit({ 
-  id: true, 
-  ticketId: true,
-  createdAt: true, 
-  updatedAt: true
-});
-
-export const insertTicketHistorySchema = createInsertSchema(ticketHistory).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ 
-  id: true, 
-  createdAt: true
-});
-
-export const insertChangesLogSchema = createInsertSchema(changesLog).omit({ 
-  id: true, 
-  createdAt: true
-});
-
-export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCustomAssetTypeSchema = createInsertSchema(customAssetTypes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertCustomAssetBrandSchema = createInsertSchema(customAssetBrands).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertCustomAssetStatusSchema = createInsertSchema(customAssetStatuses).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertAssetServiceProviderSchema = createInsertSchema(assetServiceProviders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertCustomRequestTypeSchema = createInsertSchema(customRequestTypes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true
-});
-
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
-  id: true,
-  createdAt: true
-});
-
-export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertAssetUpgradeSchema = createInsertSchema(assetUpgrades).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertUpgradeHistorySchema = createInsertSchema(upgradeHistory).omit({
-  id: true
-});
-
-// TYPE EXPORTS
+// Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-
 export type Asset = typeof assets.$inferSelect;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
-
-export type AssetMaintenance = typeof assetMaintenance.$inferSelect;
-export type InsertAssetMaintenance = z.infer<typeof insertAssetMaintenanceSchema>;
-
-export type AssetSale = typeof assetSales.$inferSelect;
-export type InsertAssetSale = z.infer<typeof insertAssetSaleSchema>;
-
-export type AssetSaleItem = typeof assetSaleItems.$inferSelect;
-export type InsertAssetSaleItem = z.infer<typeof insertAssetSaleItemSchema>;
-
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
-
-export type TicketHistory = typeof ticketHistory.$inferSelect;
-export type InsertTicketHistory = z.infer<typeof insertTicketHistorySchema>;
-
-export type TicketComment = typeof ticketComments.$inferSelect;
-export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
-
-export type SystemConfig = typeof systemConfig.$inferSelect;
-export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
-
-export type ActivityLog = typeof activityLog.$inferSelect;
-export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
-
-export type ChangeLog = typeof changesLog.$inferSelect;
-export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
-
-export type AssetTransaction = typeof assetTransactions.$inferSelect;
-export type InsertAssetTransaction = z.infer<typeof insertAssetTransactionSchema>;
-
-export type CustomAssetType = typeof customAssetTypes.$inferSelect;
-export type InsertCustomAssetType = z.infer<typeof insertCustomAssetTypeSchema>;
-
-export type CustomAssetBrand = typeof customAssetBrands.$inferSelect;
-export type InsertCustomAssetBrand = z.infer<typeof insertCustomAssetBrandSchema>;
-
-export type CustomAssetStatus = typeof customAssetStatuses.$inferSelect;
-export type InsertCustomAssetStatus = z.infer<typeof insertCustomAssetStatusSchema>;
-
-export type ServiceProvider = typeof serviceProviders.$inferSelect;
-export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
-
-export type AssetServiceProvider = typeof assetServiceProviders.$inferSelect;
-export type InsertAssetServiceProvider = z.infer<typeof insertAssetServiceProviderSchema>;
-
-export type CustomRequestType = typeof customRequestTypes.$inferSelect;
-export type InsertCustomRequestType = z.infer<typeof insertCustomRequestTypeSchema>;
-
+export type AssetMaintenance = typeof assetMaintenance.$inferSelect;
+export type InsertAssetMaintenance = z.infer<typeof insertAssetMaintenanceSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-
-export type SecurityQuestion = typeof securityQuestions.$inferSelect;
-export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
-
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
-export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
-
-export type AssetUpgrade = typeof assetUpgrades.$inferSelect;
-export type InsertAssetUpgrade = z.infer<typeof insertAssetUpgradeSchema>;
-
-export type UpgradeHistory = typeof upgradeHistory.$inferSelect;
-export type InsertUpgradeHistory = z.infer<typeof insertUpgradeHistorySchema>;
