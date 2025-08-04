@@ -178,7 +178,7 @@ export const tickets = pgTable("tickets", {
   timeSpent: integer("time_spent").default(0),
   isTimeTracking: boolean("is_time_tracking").default(false),
   timeTrackingStartedAt: timestamp("time_tracking_started_at"),
-  mergedIntoId: integer("merged_into_id").references(() => tickets.id),
+  mergedIntoId: integer("merged_into_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -469,10 +469,11 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
     fields: [tickets.relatedAssetId],
     references: [assets.id],
   }),
-  mergedInto: one(tickets, {
-    fields: [tickets.mergedIntoId],
-    references: [tickets.id],
-  }),
+  // mergedInto: one(tickets, {
+  //   fields: [tickets.mergedIntoId],
+  //   references: [tickets.id],
+  //   relationName: "mergedTickets",
+  // }),
   history: many(ticketHistory),
   comments: many(ticketComments),
 }));
