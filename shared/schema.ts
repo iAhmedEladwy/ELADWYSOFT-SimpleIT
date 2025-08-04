@@ -64,7 +64,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 // Employees table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
-  empId: varchar("emp_id", { length: 20 }).notNull().unique().default(sql`concat('EMP-', lpad((nextval('employees_id_seq'::regclass))::text, 5, '0'::text))`),
+  empId: varchar("emp_id", { length: 20 }).notNull().unique(),
   englishName: varchar("english_name", { length: 100 }).notNull(),
   arabicName: varchar("arabic_name", { length: 100 }),
   department: varchar("department", { length: 100 }).notNull(),
@@ -82,8 +82,8 @@ export const employees = pgTable("employees", {
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  // Generated columns
-  name: varchar("name", { length: 100 }).generatedAlwaysAs(sql`COALESCE(english_name, arabic_name, emp_id)`),
+  // Compatibility columns (not generated to avoid PostgreSQL version issues)
+  name: varchar("name", { length: 100 }),
   email: varchar("email", { length: 100 }),
   phone: varchar("phone", { length: 20 }),
   position: varchar("position", { length: 100 }),
@@ -92,7 +92,7 @@ export const employees = pgTable("employees", {
 // Assets table
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
-  assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
+  assetId: varchar("asset_id", { length: 20 }).notNull().unique(),
   type: varchar("type", { length: 100 }).notNull(),
   brand: varchar("brand", { length: 100 }).notNull(),
   modelNumber: varchar("model_number", { length: 100 }),
@@ -158,7 +158,7 @@ export const assetSaleItems = pgTable("asset_sale_items", {
 // Tickets table
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
-  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`concat('TKT-', lpad((nextval('tickets_id_seq'::regclass))::text, 5, '0'::text))`),
+  ticketId: varchar("ticket_id", { length: 20 }).notNull().unique(),
   summary: varchar("summary", { length: 255 }),
   description: text("description").notNull(),
   requestType: varchar("request_type", { length: 100 }).notNull().default('Hardware'),
