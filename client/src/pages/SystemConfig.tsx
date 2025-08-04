@@ -810,69 +810,394 @@ const SystemConfig = () => {
           </div>
         </TabsContent>
 
-        {/* Other tabs would go here - employees, assets, tickets, email, users */}
-        <TabsContent value="employees">
+        {/* Employees Tab */}
+        <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Employee Management</CardTitle>
-              <CardDescription>Configure employee-related settings.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {language === 'English' ? 'Employee Configuration' : 'تكوين الموظفين'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure employee-related settings and defaults.'
+                  : 'تكوين الإعدادات والافتراضات المتعلقة بالموظفين.'}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Employee configuration options coming soon...</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Default Departments' : 'الأقسام الافتراضية'}
+                  </h3>
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'Available Departments' : 'الأقسام المتاحة'}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['IT', 'HR', 'Finance', 'Marketing', 'Operations', 'Sales'].map(dept => (
+                        <span key={dept} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          {dept}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Employment Types' : 'أنواع التوظيف'}
+                  </h3>
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'Available Types' : 'الأنواع المتاحة'}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Full-time', 'Part-time', 'Contract', 'Intern'].map(type => (
+                        <span key={type} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                          {type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'Employee Status Options' : 'خيارات حالة الموظف'}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Active', 'Resigned', 'Terminated', 'On Leave'].map(status => (
+                    <span key={status} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                      {status}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="assets">
+        {/* Assets Tab */}
+        <TabsContent value="assets" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Asset Management</CardTitle>
-              <CardDescription>Configure asset-related settings.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Monitor className="h-5 w-5" />
+                {language === 'English' ? 'Asset Configuration' : 'تكوين الأصول'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure asset types, statuses, and management settings.'
+                  : 'تكوين أنواع الأصول والحالات وإعدادات الإدارة.'}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Asset configuration options coming soon...</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 'Network', 'Printer', 'Tablet', 'Mobile'].map(type => (
+                      <span key={type} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Available', 'In Use', 'Maintenance', 'Retired', 'Damaged', 'Sold'].map(status => (
+                      <span key={status} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        {status}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'Common Brands' : 'العلامات التجارية الشائعة'}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Dell', 'HP', 'Lenovo', 'Apple', 'Microsoft', 'Cisco', 'Canon', 'Samsung'].map(brand => (
+                    <span key={brand} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                      {brand}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="tickets">
+        {/* Tickets Tab */}
+        <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Ticket Management</CardTitle>
-              <CardDescription>Configure ticket-related settings.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {language === 'English' ? 'Ticket Configuration' : 'تكوين التذاكر'}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure ticket categories, priorities, and workflow settings.'
+                  : 'تكوين فئات التذاكر والأولويات وإعدادات سير العمل.'}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Ticket configuration options coming soon...</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Request Types' : 'أنواع الطلبات'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Service Request', 'Incident', 'Problem', 'Change'].map(type => (
+                      <span key={type} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Categories' : 'الفئات'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Hardware', 'Software', 'Network', 'Security', 'Access'].map(category => (
+                      <span key={category} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Priority Levels' : 'مستويات الأولوية'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Low', 'Medium', 'High', 'Critical'].map(priority => (
+                      <span key={priority} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                        {priority}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Status Options' : 'خيارات الحالة'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['Open', 'In Progress', 'Resolved', 'Closed'].map(status => (
+                      <span key={status} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        {status}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="email">
+        {/* Email Tab */}
+        <TabsContent value="email" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Email Configuration
+                {language === 'English' ? 'Email Configuration' : 'تكوين البريد الإلكتروني'}
               </CardTitle>
-              <CardDescription>Configure email server settings for notifications.</CardDescription>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Configure email server settings for notifications and alerts.'
+                  : 'تكوين إعدادات خادم البريد الإلكتروني للإشعارات والتنبيهات.'}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Email configuration options coming soon...</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="emailHost">
+                    {language === 'English' ? 'SMTP Host' : 'مضيف SMTP'}
+                  </Label>
+                  <Input
+                    id="emailHost"
+                    value={config.emailHost}
+                    onChange={(e) => handleConfigChange('emailHost', e.target.value)}
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="emailPort">
+                    {language === 'English' ? 'SMTP Port' : 'منفذ SMTP'}
+                  </Label>
+                  <Input
+                    id="emailPort"
+                    value={config.emailPort}
+                    onChange={(e) => handleConfigChange('emailPort', e.target.value)}
+                    placeholder="587"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="emailUser">
+                    {language === 'English' ? 'Email Username' : 'اسم مستخدم البريد الإلكتروني'}
+                  </Label>
+                  <Input
+                    id="emailUser"
+                    value={config.emailUser}
+                    onChange={(e) => handleConfigChange('emailUser', e.target.value)}
+                    placeholder="your-email@domain.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="emailPassword">
+                    {language === 'English' ? 'Email Password' : 'كلمة مرور البريد الإلكتروني'}
+                  </Label>
+                  <Input
+                    id="emailPassword"
+                    type="password"
+                    value={config.emailPassword}
+                    onChange={(e) => handleConfigChange('emailPassword', e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'Notification Settings' : 'إعدادات الإشعارات'}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="ticketNotifications">
+                      {language === 'English' ? 'Ticket Notifications' : 'إشعارات التذاكر'}
+                    </Label>
+                    <Switch id="ticketNotifications" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="assetNotifications">
+                      {language === 'English' ? 'Asset Notifications' : 'إشعارات الأصول'}
+                    </Label>
+                    <Switch id="assetNotifications" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="maintenanceNotifications">
+                      {language === 'English' ? 'Maintenance Reminders' : 'تذكيرات الصيانة'}
+                    </Label>
+                    <Switch id="maintenanceNotifications" />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="users">
+        {/* Users & Roles Tab */}
+        <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Users & Roles
+                {language === 'English' ? 'Users & Roles Management' : 'إدارة المستخدمين والأدوار'}
               </CardTitle>
-              <CardDescription>Manage user accounts and role permissions.</CardDescription>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage user accounts and role-based access control.'
+                  : 'إدارة حسابات المستخدمين والتحكم في الوصول القائم على الأدوار.'}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">User and role management options coming soon...</p>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'User Roles & Permissions' : 'أدوار المستخدمين والصلاحيات'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-red-600" />
+                      <span className="font-medium text-red-600">Admin</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' 
+                        ? 'Full system access and configuration rights'
+                        : 'الوصول الكامل للنظام وحقوق التكوين'}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-blue-600">Manager</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' 
+                        ? 'Department management and reporting access'
+                        : 'إدارة القسم والوصول إلى التقارير'}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-green-600">Agent</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' 
+                        ? 'Ticket handling and asset management'
+                        : 'معالجة التذاكر وإدارة الأصول'}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="h-4 w-4 text-gray-600" />
+                      <span className="font-medium text-gray-600">Employee</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'English' 
+                        ? 'Basic access to create tickets and view assets'
+                        : 'الوصول الأساسي لإنشاء التذاكر وعرض الأصول'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  {language === 'English' ? 'Security Settings' : 'إعدادات الأمان'}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="passwordComplexity">
+                      {language === 'English' ? 'Enforce Password Complexity' : 'فرض تعقيد كلمة المرور'}
+                    </Label>
+                    <Switch id="passwordComplexity" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="sessionTimeout">
+                      {language === 'English' ? 'Auto Session Timeout' : 'انتهاء الجلسة التلقائي'}
+                    </Label>
+                    <Switch id="sessionTimeout" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="twoFactor">
+                      {language === 'English' ? 'Two-Factor Authentication' : 'المصادقة الثنائية'}
+                    </Label>
+                    <Switch id="twoFactor" />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
