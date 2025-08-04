@@ -1428,27 +1428,39 @@ function SystemConfig() {
                   : 'إدارة أنواع الأصول والعلامات التجارية والحالات ومقدمي الخدمات لتتبع شامل للأصول.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Asset Types Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <CardContent>
+              <Tabs defaultValue="types" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="types" className="text-xs">
+                    {language === 'English' ? 'Types' : 'الأنواع'}
+                  </TabsTrigger>
+                  <TabsTrigger value="brands" className="text-xs">
+                    {language === 'English' ? 'Brands' : 'العلامات'}
+                  </TabsTrigger>
+                  <TabsTrigger value="statuses" className="text-xs">
+                    {language === 'English' ? 'Statuses' : 'الحالات'}
+                  </TabsTrigger>
+                  <TabsTrigger value="providers" className="text-xs">
+                    {language === 'English' ? 'Providers' : 'المقدمون'}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Asset Types Tab */}
+                <TabsContent value="types" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-gray-400" />
                       <Input
                         placeholder={language === 'English' ? 'Search types...' : 'البحث في الأنواع...'}
                         value={assetTypeSearch}
                         onChange={(e) => setAssetTypeSearch(e.target.value)}
-                        className="pl-10 w-48"
+                        className="w-48"
                       />
                     </div>
                     <Dialog open={isAssetTypeDialogOpen} onOpenChange={setIsAssetTypeDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="flex items-center gap-2">
-                          <Plus className="h-4 w-4" />
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
                           {language === 'English' ? 'Add Type' : 'إضافة نوع'}
                         </Button>
                       </DialogTrigger>
@@ -1505,61 +1517,67 @@ function SystemConfig() {
                       </DialogContent>
                     </Dialog>
                   </div>
-                </div>
-                
-                <div className="border rounded-lg bg-white shadow-sm">
-                  {!filteredAssetTypes?.length ? (
-                    <div className="p-8 text-center">
-                      <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {language === 'English' ? 'No Asset Types' : 'لا توجد أنواع أصول'}
-                      </h3>
-                      <p className="text-gray-600">
-                        {language === 'English' ? 'Add asset types to categorize your equipment.' : 'أضف أنواع الأصول لتصنيف معداتك.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Type Name' : 'اسم النوع'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAssetTypes.map((type: any) => (
-                          <TableRow key={type.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{type.name}</TableCell>
-                            <TableCell className="text-gray-600">{type.description}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  
+                  <div className="border rounded-lg">
+                    {!filteredAssetTypes?.length ? (
+                      <div className="p-8 text-center">
+                        <Package className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">
+                          {language === 'English' ? 'No Asset Types' : 'لا توجد أنواع أصول'}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {language === 'English' ? 'Add asset types to categorize equipment.' : 'أضف أنواع الأصول لتصنيف المعدات.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{language === 'English' ? 'Type Name' : 'اسم النوع'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAssetTypes.map((type: any) => (
+                            <TableRow key={type.id}>
+                              <TableCell className="font-medium">{type.name}</TableCell>
+                              <TableCell className="text-gray-600">{type.description}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </TabsContent>
 
-              {/* Asset Brands Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Asset Brands' : 'علامات الأصول'}
-                  </h3>
-                  <Dialog open={isAssetBrandDialogOpen} onOpenChange={setIsAssetBrandDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
+
+                {/* Asset Brands Tab */}
+                <TabsContent value="brands" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder={language === 'English' ? 'Search brands...' : 'البحث في العلامات...'}
+                        value={assetBrandSearch}
+                        onChange={(e) => setAssetBrandSearch(e.target.value)}
+                        className="w-48"
+                      />
+                    </div>
+                    <Dialog open={isAssetBrandDialogOpen} onOpenChange={setIsAssetBrandDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
                         {language === 'English' ? 'Add Brand' : 'إضافة علامة'}
                       </Button>
                     </DialogTrigger>
@@ -1612,61 +1630,67 @@ function SystemConfig() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                </div>
-                
-                <div className="border rounded-lg bg-white shadow-sm">
-                  {!filteredAssetBrands?.length ? (
-                    <div className="p-6 text-center">
-                      <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h3 className="text-sm font-medium text-gray-900 mb-1">
-                        {language === 'English' ? 'No Asset Brands' : 'لا توجد علامات أصول'}
-                      </h3>
-                      <p className="text-xs text-gray-600">
-                        {language === 'English' ? 'Add brands to categorize equipment by manufacturer.' : 'أضف العلامات لتصنيف المعدات حسب الشركة المصنعة.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAssetBrands.map((brand: any) => (
-                          <TableRow key={brand.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{brand.name}</TableCell>
-                            <TableCell className="text-gray-600">{brand.description}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  </div>
+                  
+                  <div className="border rounded-lg">
+                    {!filteredAssetBrands?.length ? (
+                      <div className="p-8 text-center">
+                        <Package className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">
+                          {language === 'English' ? 'No Asset Brands' : 'لا توجد علامات أصول'}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {language === 'English' ? 'Add brands to track manufacturers.' : 'أضف العلامات لتتبع المصنعين.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAssetBrands.map((brand: any) => (
+                            <TableRow key={brand.id}>
+                              <TableCell className="font-medium">{brand.name}</TableCell>
+                              <TableCell className="text-gray-600">{brand.description}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </TabsContent>
 
-              {/* Asset Statuses Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
-                  </h3>
+                {/* Asset Statuses Tab */}
+                <TabsContent value="statuses" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder={language === 'English' ? 'Search statuses...' : 'البحث في الحالات...'}
+                        value={assetStatusSearch}
+                        onChange={(e) => setAssetStatusSearch(e.target.value)}
+                        className="w-48"
+                      />
+                    </div>
                   <Dialog open={isAssetStatusDialogOpen} onOpenChange={setIsAssetStatusDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
                         {language === 'English' ? 'Add Status' : 'إضافة حالة'}
                       </Button>
                     </DialogTrigger>
@@ -1729,71 +1753,77 @@ function SystemConfig() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                </div>
-                
-                <div className="border rounded-lg bg-white shadow-sm">
-                  {!filteredAssetStatuses?.length ? (
-                    <div className="p-6 text-center">
-                      <Settings className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h3 className="text-sm font-medium text-gray-900 mb-1">
-                        {language === 'English' ? 'No Asset Statuses' : 'لا توجد حالات أصول'}
-                      </h3>
-                      <p className="text-xs text-gray-600">
-                        {language === 'English' ? 'Add statuses to track equipment lifecycle.' : 'أضف الحالات لتتبع دورة حياة المعدات.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Status Name' : 'اسم الحالة'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Color' : 'اللون'}</TableHead>
-                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAssetStatuses.map((status: any) => (
-                          <TableRow key={status.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{status.name}</TableCell>
-                            <TableCell className="text-gray-600">{status.description}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded border" 
-                                  style={{ backgroundColor: status.color }}
-                                ></div>
-                                <span className="text-xs text-gray-500">{status.color}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  </div>
+                  
+                  <div className="border rounded-lg">
+                    {!filteredAssetStatuses?.length ? (
+                      <div className="p-8 text-center">
+                        <Settings className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">
+                          {language === 'English' ? 'No Asset Statuses' : 'لا توجد حالات أصول'}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {language === 'English' ? 'Add statuses to track lifecycle.' : 'أضف الحالات لتتبع دورة الحياة.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{language === 'English' ? 'Status Name' : 'اسم الحالة'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Color' : 'اللون'}</TableHead>
+                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAssetStatuses.map((status: any) => (
+                            <TableRow key={status.id}>
+                              <TableCell className="font-medium">{status.name}</TableCell>
+                              <TableCell className="text-gray-600">{status.description}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded border" 
+                                    style={{ backgroundColor: status.color }}
+                                  ></div>
+                                  <span className="text-xs text-gray-500">{status.color}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </TabsContent>
 
-              {/* Service Providers Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Service Providers' : 'مقدمو الخدمة'}
-                  </h3>
+                {/* Service Providers Tab */}
+                <TabsContent value="providers" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder={language === 'English' ? 'Search providers...' : 'البحث في المقدمين...'}
+                        value={serviceProviderSearch}
+                        onChange={(e) => setServiceProviderSearch(e.target.value)}
+                        className="w-48"
+                      />
+                    </div>
                   <Dialog open={isServiceProviderDialogOpen} onOpenChange={setIsServiceProviderDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
                         {language === 'English' ? 'Add Provider' : 'إضافة مقدم خدمة'}
                       </Button>
                     </DialogTrigger>
@@ -1883,36 +1913,38 @@ function SystemConfig() {
                       <TableHeader>
                         <TableRow className="bg-gray-50/50">
                           <TableHead className="font-semibold">{language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Contact' : 'الشخص المسؤول'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Phone' : 'الهاتف'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Email' : 'البريد'}</TableHead>
-                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredServiceProviders.map((provider: any) => (
-                          <TableRow key={provider.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{provider.name}</TableCell>
-                            <TableCell className="text-gray-600">{provider.contact}</TableCell>
-                            <TableCell className="text-gray-600">{provider.phone}</TableCell>
-                            <TableCell className="text-gray-600">{provider.email}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                            <TableHead>{language === 'English' ? 'Contact' : 'المسؤول'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Phone' : 'الهاتف'}</TableHead>
+                            <TableHead>{language === 'English' ? 'Email' : 'البريد'}</TableHead>
+                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredServiceProviders.map((provider: any) => (
+                            <TableRow key={provider.id}>
+                              <TableCell className="font-medium">{provider.name}</TableCell>
+                              <TableCell className="text-gray-600">{provider.contact}</TableCell>
+                              <TableCell className="text-gray-600">{provider.phone}</TableCell>
+                              <TableCell className="text-gray-600">{provider.email}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </TabsContent>
+
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
