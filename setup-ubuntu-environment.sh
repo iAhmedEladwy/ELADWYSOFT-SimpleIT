@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# SimpleIT Ubuntu Deployment Script
+# Automated setup for production deployment matching Replit environment
+#
 
 # SimpleIT Ubuntu Environment Setup Script
 # Sets up Node.js v22.18 LTS and PostgreSQL v17 with exact repository configurations
