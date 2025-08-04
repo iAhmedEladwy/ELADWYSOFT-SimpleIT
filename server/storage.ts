@@ -886,11 +886,11 @@ export class DatabaseStorage implements IStorage {
         asset.specs || asset.description || null,
         asset.status || 'Available',
         asset.purchaseDate || null,
-        asset.buyPrice || asset.purchasePrice || null,
+        asset.buyPrice || null,
         asset.warrantyExpiryDate || asset.warrantyEndDate || null,
         asset.lifeSpan || null,
         asset.outOfBoxOs || null,
-        asset.assignedEmployeeId || asset.assignedTo || null,
+        asset.assignedEmployeeId || null,
         asset.cpu || null,
         asset.ram || null,
         asset.storage || null
@@ -972,7 +972,7 @@ export class DatabaseStorage implements IStorage {
       return await db
         .select()
         .from(assets)
-        .where(eq(assets.assignedTo, employeeId))
+        .where(eq(assets.assignedEmployeeId, employeeId))
         .orderBy(asc(assets.assetId));
     } catch (error) {
       console.error(`Error fetching assets for employee ${employeeId}:`, error);

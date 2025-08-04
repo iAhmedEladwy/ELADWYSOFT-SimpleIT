@@ -93,22 +93,24 @@ export const employees = pgTable("employees", {
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
   assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
-  modelName: varchar("model_name", { length: 100 }).notNull(),
-  brand: varchar("brand", { length: 100 }).notNull(),
   type: varchar("type", { length: 100 }).notNull(),
-  serialNumber: varchar("serial_number", { length: 100 }),
-  purchaseDate: date("purchase_date"),
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
-  warrantyExpiry: date("warranty_expiry"),
+  brand: varchar("brand", { length: 100 }).notNull(),
+  modelNumber: varchar("model_number", { length: 100 }),
+  modelName: varchar("model_name", { length: 100 }),
+  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
+  specs: text("specs"),
   status: assetStatusEnum("status").notNull().default('Available'),
-  condition: assetConditionEnum("condition").notNull().default('New'),
-  assignedToId: integer("assigned_to_id").references(() => employees.id),
-  location: varchar("location", { length: 255 }),
-  notes: text("notes"),
-  specifications: jsonb("specifications"),
-  maintenanceSchedule: varchar("maintenance_schedule", { length: 100 }),
+  purchaseDate: date("purchase_date"),
+  buyPrice: decimal("buy_price", { precision: 10, scale: 2 }),
+  warrantyExpiryDate: date("warranty_expiry_date"),
+  lifeSpan: integer("life_span"),
+  outOfBoxOs: varchar("out_of_box_os", { length: 100 }),
+  assignedEmployeeId: integer("assigned_employee_id").references(() => employees.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  cpu: varchar("cpu", { length: 100 }),
+  ram: varchar("ram", { length: 100 }),
+  storage: varchar("storage", { length: 100 }),
 });
 
 // Asset Maintenance table
@@ -344,10 +346,12 @@ export const customRequestTypes = pgTable("custom_request_types", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   description: text("description"),
-  category: varchar("category", { length: 50 }).notNull().default('General'),
+  color: varchar("color", { length: 50 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  priority: varchar("priority", { length: 50 }),
+  slaHours: integer("sla_hours"),
 });
 
 // Asset Upgrades table
@@ -443,7 +447,7 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
 
 export const assetsRelations = relations(assets, ({ one, many }) => ({
   assignedTo: one(employees, {
-    fields: [assets.assignedToId],
+    fields: [assets.assignedEmployeeId],
     references: [employees.id],
   }),
   maintenance: many(assetMaintenance),
