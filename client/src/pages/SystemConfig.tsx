@@ -29,7 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
 function SystemConfig() {
-  const { language, toggleLanguage } = useLanguage();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
@@ -72,6 +72,7 @@ function SystemConfig() {
   const [empIdPrefix, setEmpIdPrefix] = useState('EMP-');
   const [ticketIdPrefix, setTicketIdPrefix] = useState('TKT-');
   const [currency, setCurrency] = useState('USD');
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [isLoading, setIsLoading] = useState(true);
   
   // Department management states
@@ -278,6 +279,7 @@ function SystemConfig() {
       setEmpIdPrefix(config.empIdPrefix || 'EMP-');
       setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
       setCurrency(config.currency || 'USD');
+      setSelectedLanguage(config.language === 'en' ? 'English' : 'Arabic');
       setDepartments(config.departments || []);
       
       // Load email configuration
@@ -737,6 +739,7 @@ function SystemConfig() {
       empIdPrefix,
       ticketIdPrefix,
       currency,
+      language: selectedLanguage === 'English' ? 'en' : 'ar',
       departments,
       emailHost,
       emailPort: emailPort ? parseInt(emailPort) : 587,
@@ -959,7 +962,7 @@ function SystemConfig() {
                 
                 <div className="space-y-2">
                   <Label>{language === 'English' ? 'System Language' : 'لغة النظام'}</Label>
-                  <Select value={language} onValueChange={() => toggleLanguage()}>
+                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
