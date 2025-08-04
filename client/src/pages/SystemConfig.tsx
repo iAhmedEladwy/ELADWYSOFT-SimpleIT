@@ -1549,6 +1549,370 @@ function SystemConfig() {
                   )}
                 </div>
               </div>
+
+              {/* Asset Brands Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Asset Brands' : 'علامات الأصول'}
+                  </h3>
+                  <Dialog open={isAssetBrandDialogOpen} onOpenChange={setIsAssetBrandDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {language === 'English' ? 'Add Brand' : 'إضافة علامة'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add Asset Brand' : 'إضافة علامة أصل'}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</Label>
+                          <Input 
+                            value={newBrandName} 
+                            onChange={(e) => setNewBrandName(e.target.value)}
+                            placeholder={language === 'English' ? 'e.g., Dell, HP, Lenovo' : 'مثال: Dell، HP، Lenovo'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                          <Input 
+                            value={newBrandDescription} 
+                            onChange={(e) => setNewBrandDescription(e.target.value)}
+                            placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setIsAssetBrandDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (newBrandName.trim()) {
+                                createAssetBrandMutation.mutate({
+                                  name: newBrandName.trim(),
+                                  description: newBrandDescription.trim()
+                                });
+                              }
+                            }}
+                            disabled={createAssetBrandMutation.isPending || !newBrandName.trim()}
+                          >
+                            {createAssetBrandMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                              </>
+                            ) : (
+                              language === 'English' ? 'Add' : 'إضافة'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!filteredAssetBrands?.length ? (
+                    <div className="p-6 text-center">
+                      <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h3 className="text-sm font-medium text-gray-900 mb-1">
+                        {language === 'English' ? 'No Asset Brands' : 'لا توجد علامات أصول'}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {language === 'English' ? 'Add brands to categorize equipment by manufacturer.' : 'أضف العلامات لتصنيف المعدات حسب الشركة المصنعة.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssetBrands.map((brand: any) => (
+                          <TableRow key={brand.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{brand.name}</TableCell>
+                            <TableCell className="text-gray-600">{brand.description}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+
+              {/* Asset Statuses Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
+                  </h3>
+                  <Dialog open={isAssetStatusDialogOpen} onOpenChange={setIsAssetStatusDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {language === 'English' ? 'Add Status' : 'إضافة حالة'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل'}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Status Name' : 'اسم الحالة'}</Label>
+                          <Input 
+                            value={newStatusName} 
+                            onChange={(e) => setNewStatusName(e.target.value)}
+                            placeholder={language === 'English' ? 'e.g., Active, Under Repair' : 'مثال: نشط، قيد الإصلاح'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                          <Input 
+                            value={newStatusDescription} 
+                            onChange={(e) => setNewStatusDescription(e.target.value)}
+                            placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Color' : 'اللون'}</Label>
+                          <Input 
+                            type="color"
+                            value={newStatusColor} 
+                            onChange={(e) => setNewStatusColor(e.target.value)}
+                            className="h-10 w-20"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setIsAssetStatusDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (newStatusName.trim()) {
+                                createAssetStatusMutation.mutate({
+                                  name: newStatusName.trim(),
+                                  description: newStatusDescription.trim(),
+                                  color: newStatusColor
+                                });
+                              }
+                            }}
+                            disabled={createAssetStatusMutation.isPending || !newStatusName.trim()}
+                          >
+                            {createAssetStatusMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                              </>
+                            ) : (
+                              language === 'English' ? 'Add' : 'إضافة'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!filteredAssetStatuses?.length ? (
+                    <div className="p-6 text-center">
+                      <Settings className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h3 className="text-sm font-medium text-gray-900 mb-1">
+                        {language === 'English' ? 'No Asset Statuses' : 'لا توجد حالات أصول'}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {language === 'English' ? 'Add statuses to track equipment lifecycle.' : 'أضف الحالات لتتبع دورة حياة المعدات.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Status Name' : 'اسم الحالة'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Color' : 'اللون'}</TableHead>
+                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssetStatuses.map((status: any) => (
+                          <TableRow key={status.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{status.name}</TableCell>
+                            <TableCell className="text-gray-600">{status.description}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded border" 
+                                  style={{ backgroundColor: status.color }}
+                                ></div>
+                                <span className="text-xs text-gray-500">{status.color}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+
+              {/* Service Providers Management */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Service Providers' : 'مقدمو الخدمة'}
+                  </h3>
+                  <Dialog open={isServiceProviderDialogOpen} onOpenChange={setIsServiceProviderDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {language === 'English' ? 'Add Provider' : 'إضافة مقدم خدمة'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة'}</Label>
+                          <Input 
+                            value={newProviderName} 
+                            onChange={(e) => setNewProviderName(e.target.value)}
+                            placeholder={language === 'English' ? 'e.g., TechCorp Services' : 'مثال: خدمات تك كورب'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Contact Person' : 'الشخص المسؤول'}</Label>
+                          <Input 
+                            value={newProviderContact} 
+                            onChange={(e) => setNewProviderContact(e.target.value)}
+                            placeholder={language === 'English' ? 'Contact person name...' : 'اسم الشخص المسؤول...'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Phone' : 'الهاتف'}</Label>
+                          <Input 
+                            value={newProviderPhone} 
+                            onChange={(e) => setNewProviderPhone(e.target.value)}
+                            placeholder={language === 'English' ? 'Phone number...' : 'رقم الهاتف...'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                          <Input 
+                            type="email"
+                            value={newProviderEmail} 
+                            onChange={(e) => setNewProviderEmail(e.target.value)}
+                            placeholder={language === 'English' ? 'Email address...' : 'عنوان البريد الإلكتروني...'}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => setIsServiceProviderDialogOpen(false)}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (newProviderName.trim()) {
+                                createServiceProviderMutation.mutate({
+                                  name: newProviderName.trim(),
+                                  contact: newProviderContact.trim(),
+                                  phone: newProviderPhone.trim(),
+                                  email: newProviderEmail.trim()
+                                });
+                              }
+                            }}
+                            disabled={createServiceProviderMutation.isPending || !newProviderName.trim()}
+                          >
+                            {createServiceProviderMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                              </>
+                            ) : (
+                              language === 'English' ? 'Add' : 'إضافة'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                <div className="border rounded-lg bg-white shadow-sm">
+                  {!filteredServiceProviders?.length ? (
+                    <div className="p-6 text-center">
+                      <Users className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <h3 className="text-sm font-medium text-gray-900 mb-1">
+                        {language === 'English' ? 'No Service Providers' : 'لا يوجد مقدمو خدمة'}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {language === 'English' ? 'Add service providers for maintenance and support.' : 'أضف مقدمي الخدمة للصيانة والدعم.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50">
+                          <TableHead className="font-semibold">{language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Contact' : 'الشخص المسؤول'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Phone' : 'الهاتف'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Email' : 'البريد'}</TableHead>
+                          <TableHead className="font-semibold w-24">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredServiceProviders.map((provider: any) => (
+                          <TableRow key={provider.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{provider.name}</TableCell>
+                            <TableCell className="text-gray-600">{provider.contact}</TableCell>
+                            <TableCell className="text-gray-600">{provider.phone}</TableCell>
+                            <TableCell className="text-gray-600">{provider.email}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
