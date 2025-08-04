@@ -30,30 +30,35 @@ SELECT setval('tickets_ticket_id_seq', GREATEST((SELECT COALESCE(MAX(CAST(SUBSTR
 ```
 
 ### 2. Environment Configuration
-Create/update your `.env` file:
+Create/update your `.env` file (matching deployment script format):
 ```env
-DATABASE_URL=postgresql://username:password@localhost:5432/your_database_name
 NODE_ENV=development
+PORT=5000
+USE_HTTPS=false
+DATABASE_URL=postgres://your_username:your_password@localhost:5432/your_database_name
 SESSION_SECRET=your-session-secret-here
 ```
 
 ### 3. Update Database Configuration
-Your `server/db.ts` should use standard PostgreSQL driver for local development:
+Create/update your `server/db.ts` with this exact configuration (from deployment script):
 
 ```typescript
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
+// Check for database connection string
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
+  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
+// Create direct PostgreSQL connection (no WebSocket)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false // No SSL for local development
+  ssl: false
 });
 
+// Create Drizzle instance
 const db = drizzle(pool, { schema });
 
 export { pool, db };
@@ -70,14 +75,18 @@ npm run db:push
 npm run dev
 ```
 
-## Key Differences from Replit
+## Configuration Applied from Deployment Script
 
-| Component | Replit | Local PostgreSQL |
-|-----------|--------|------------------|
-| Database Driver | `@neondatabase/serverless` | `pg` (node-postgres) |
-| Connection | HTTP/WebSocket | Direct TCP connection |
-| SSL | Managed by Neon | Disabled for local |
-| Auto-increment | Database sequences | Same sequences |
+The following settings match your provided deployment script:
+
+- **PostgreSQL Driver**: Standard `pg` with Pool connections
+- **Database URL Format**: `postgres://user:pass@localhost:5432/db`
+- **SSL**: Disabled (`ssl: false`)
+- **Connection**: Direct TCP connection to local PostgreSQL
+- **Auto-increment**: Database sequences with EMP-/AST-/TKT- prefixes
+- **Environment**: Production-ready configuration for development
+
+This ensures your local environment matches the deployment script exactly.
 
 ## Testing Employee Creation
 
