@@ -30,33 +30,32 @@ import { Textarea } from '@/components/ui/textarea';
 const assetFormSchema = z.object({
   type: z.string(),
   brand: z.string().min(1, 'Brand is required'),
-  modelNumber: z.string().optional(),
-  modelName: z.string().optional(),
+  modelNumber: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  modelName: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
   serialNumber: z.string().min(1, 'Serial number is required'),
-  specs: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
+  specs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
   status: z.string(),
-  purchaseDate: z.string().optional(),
-  buyPrice: z.union([z.string(), z.number()]).optional()
-    .transform(value => {
-      if (value === "" || value === undefined || value === null) return undefined;
-      return typeof value === "string" ? value : String(value);
-    })
-    .refine(
-      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
-      { message: "Enter a valid price (e.g., 999.99)" }
-    ),
-  warrantyExpiryDate: z.string().optional()
-    .transform(value => value === "" ? undefined : value)
+  purchaseDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
     .refine(
       (date) => !date || !isNaN(Date.parse(date)),
       { message: "Invalid date format" }
     ),
-  lifeSpan: z.string().optional(),
-  outOfBoxOs: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
-  assignedEmployeeId: z.string().optional(),
-  cpu: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
-  ram: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
-  storage: z.union([z.string(), z.null()]).optional().transform(value => value === null ? "" : value || ""),
+  buyPrice: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+    .refine(
+      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+      { message: "Enter a valid price (e.g., 999.99)" }
+    ),
+  warrantyExpiryDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+    .refine(
+      (date) => !date || !isNaN(Date.parse(date)),
+      { message: "Invalid date format" }
+    ),
+  lifeSpan: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  outOfBoxOs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  assignedEmployeeId: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  cpu: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  ram: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  storage: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
 });
 
 interface AssetFormProps {
@@ -147,16 +146,19 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     
     return {
       ...initialData,
+      // Handle optional fields properly - convert null to empty string for form display
+      modelNumber: initialData.modelNumber || '',
+      modelName: initialData.modelName || '',
       purchaseDate: initialData.purchaseDate ? new Date(initialData.purchaseDate).toISOString().split('T')[0] : '',
       warrantyExpiryDate: initialData.warrantyExpiryDate ? new Date(initialData.warrantyExpiryDate).toISOString().split('T')[0] : '',
       buyPrice: initialData.buyPrice ? initialData.buyPrice.toString() : '',
       lifeSpan: initialData.lifeSpan ? initialData.lifeSpan.toString() : '',
       outOfBoxOs: initialData.outOfBoxOs || '',
       assignedEmployeeId: initialData.assignedEmployeeId ? initialData.assignedEmployeeId.toString() : '',
-      cpu: initialData.cpu || '', // Convert null to empty string
-      ram: initialData.ram || '', // Convert null to empty string
-      storage: initialData.storage || '', // Convert null to empty string
-      specs: initialData.specs || '', // Convert null to empty string
+      cpu: initialData.cpu || '',
+      ram: initialData.ram || '',
+      storage: initialData.storage || '',
+      specs: initialData.specs || '',
     };
   };
 
@@ -189,14 +191,19 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       // Convert string values to appropriate types for submission
       const formattedData = {
         ...values,
+        // Handle optional fields - convert undefined to null for database compatibility
+        modelNumber: values.modelNumber || null,
+        modelName: values.modelName || null,
         buyPrice: values.buyPrice ? parseFloat(values.buyPrice) : null,
         lifeSpan: values.lifeSpan ? parseInt(values.lifeSpan) : null,
         assignedEmployeeId: values.assignedEmployeeId && values.assignedEmployeeId !== 'none' ? parseInt(values.assignedEmployeeId) : null,
-        outOfBoxOs: values.outOfBoxOs || null, // Handle empty string
-        cpu: values.cpu || null, // Ensure null instead of undefined
-        ram: values.ram || null, // Ensure null instead of undefined
-        storage: values.storage || null, // Ensure null instead of undefined
-        specs: values.specs || null, // Ensure null instead of undefined
+        outOfBoxOs: values.outOfBoxOs || null,
+        cpu: values.cpu || null,
+        ram: values.ram || null,
+        storage: values.storage || null,
+        specs: values.specs || null,
+        purchaseDate: values.purchaseDate || null,
+        warrantyExpiryDate: values.warrantyExpiryDate || null,
       };
       
       onSubmit(formattedData);
