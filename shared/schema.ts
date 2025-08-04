@@ -15,7 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Enums
 
@@ -175,8 +175,8 @@ export const employees = pgTable("employees", {
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  // Compatibility fields for backward compatibility
-  name: varchar("name", { length: 100 }),
+  // Generated columns for backward compatibility (name is always generated)
+  name: varchar("name", { length: 100 }).generatedAlwaysAs(sql`COALESCE(english_name, arabic_name, emp_id)`),
   email: varchar("email", { length: 100 }),
   phone: varchar("phone", { length: 20 }),
   position: varchar("position", { length: 100 }),

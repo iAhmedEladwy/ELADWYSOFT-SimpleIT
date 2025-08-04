@@ -641,8 +641,10 @@ export class DatabaseStorage implements IStorage {
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
       // Use Drizzle ORM to let database auto-generate both id and emp_id
+      // Exclude generated columns: empId, name, email, phone, position
       const insertData = {
         // empId is excluded - database will auto-generate it
+        // name, email, phone, position are excluded - they are generated columns
         englishName: employee.englishName,
         arabicName: employee.arabicName || null,
         department: employee.department,
@@ -657,12 +659,7 @@ export class DatabaseStorage implements IStorage {
         workMobile: employee.workMobile || null,
         personalEmail: employee.personalEmail || null,
         corporateEmail: employee.corporateEmail || null,
-        userId: employee.userId || null,
-        // Compatibility fields
-        name: employee.name || employee.englishName,
-        email: employee.email || employee.personalEmail || employee.corporateEmail,
-        phone: employee.phone || employee.personalMobile || employee.workMobile,
-        position: employee.position || employee.title
+        userId: employee.userId || null
       };
       
       console.log('Creating employee with data:', insertData);
