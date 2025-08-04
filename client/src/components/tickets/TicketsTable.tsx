@@ -5,7 +5,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import TicketEditDialog from './TicketEditDialog';
+
 import {
   Table,
   TableBody,
@@ -49,6 +49,7 @@ interface TicketsTableProps {
   users: any[];
   onStatusChange: (id: number, status: string, resolutionNotes?: string) => void;
   onAssign: (id: number, userId: number) => void;
+  onEdit?: (ticket: any) => void;
 }
 
 export default function TicketsTable({
@@ -58,6 +59,7 @@ export default function TicketsTable({
   users,
   onStatusChange,
   onAssign,
+  onEdit,
 }: TicketsTableProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -72,8 +74,7 @@ export default function TicketsTable({
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [ticketToEdit, setTicketToEdit] = useState<any>(null);
+
 
   // Start editing function
   const startEditing = (ticketId: number, field: string, currentValue: string) => {
@@ -348,12 +349,11 @@ export default function TicketsTable({
                   return;
                 }
                 try {
-                  // Open edit dialog instead of navigating to details page
-                  if (ticket && ticket.id) {
-                    setTicketToEdit(ticket);
-                    setEditDialogOpen(true);
+                  // Use same edit form as action button
+                  if (onEdit && ticket && ticket.id) {
+                    onEdit(ticket);
                   } else {
-                    console.error('Invalid ticket data:', ticket);
+                    console.error('Invalid ticket data or missing onEdit callback:', ticket);
                   }
                 } catch (error) {
                   console.error('Row click error:', error);
@@ -554,21 +554,8 @@ export default function TicketsTable({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        try {
-                          // Use same edit dialog as row click
-                          if (ticket && ticket.id) {
-                            setTicketToEdit(ticket);
-                            setEditDialogOpen(true);
-                          } else {
-                            console.error('Invalid ticket data:', ticket);
-                          }
-                        } catch (error) {
-                          console.error('Edit button error:', error);
-                          toast({
-                            title: language === 'English' ? 'Error' : 'خطأ',
-                            description: language === 'English' ? 'Unable to open ticket for editing' : 'تعذر فتح التذكرة للتعديل',
-                            variant: 'destructive',
-                          });
+                        if (onEdit) {
+                          onEdit(ticket);
                         }
                       }}
                     >
@@ -707,15 +694,7 @@ export default function TicketsTable({
         </DialogContent>
       </Dialog>
 
-      {/* Ticket Edit Dialog */}
-      <TicketEditDialog
-        ticket={ticketToEdit}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        employees={employees}
-        assets={assets}
-        users={users}
-      />
+
     </>
   );
 }
