@@ -72,6 +72,44 @@ export default function TicketsTable({
   const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  // Start editing function
+  const startEditing = (ticketId: number, field: string, currentValue: string) => {
+    setEditingField({ ticketId, field });
+    setEditValue(currentValue);
+  };
+
+  // Handle inline edit
+  const handleInlineEdit = async (ticketId: number, field: string, value: string) => {
+    try {
+      let updateData: any = {};
+      
+      if (field === 'assignedTo') {
+        updateData.assignedToId = value === 'unassigned' ? null : parseInt(value);
+      } else {
+        updateData[field] = value;
+      }
+
+      await apiRequest(`/api/tickets/${ticketId}`, 'PATCH', updateData);
+      
+      // Update the local state
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
+      });
+    } catch (error: any) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || 'Failed to update ticket',
+        variant: 'destructive',
+      });
+    } finally {
+      setEditingField(null);
+      setEditValue('');
+    }
+  };
+
   // Fetch custom request types
   const { data: customRequestTypes = [] } = useQuery({
     queryKey: ['/api/custom-request-types'],
@@ -112,21 +150,7 @@ export default function TicketsTable({
     },
   });
 
-  // Start editing function
-  const startEditing = (ticketId: number, field: string, currentValue: string) => {
-    setEditingField({ ticketId, field });
-    setEditValue(currentValue);
-  };
 
-  // Handle inline edit save
-  const handleInlineEdit = (ticketId: number, field: string, value: string) => {
-    updateTicketMutation.mutate({ 
-      id: ticketId, 
-      updates: { [field]: value } 
-    });
-    setEditingField(null);
-    setEditValue('');
-  };
 
   // Translations
   const translations = {
@@ -286,11 +310,15 @@ export default function TicketsTable({
               key={ticket.id}
               className="hover:bg-muted/50 cursor-pointer"
               onClick={(e) => {
-                // Prevent row click when clicking on action buttons or dropdowns
+                // Prevent row click when clicking on action buttons, dropdowns, or inline edit elements
                 if (e.target instanceof HTMLElement && 
                     (e.target.closest('button') || 
                      e.target.closest('[role="button"]') ||
-                     e.target.closest('.dropdown-menu'))) {
+                     e.target.closest('.dropdown-menu') ||
+                     e.target.closest('[data-radix-popper-content-wrapper]') ||
+                     e.target.closest('.inline-edit-element') ||
+                     e.target.tagName === 'SELECT' ||
+                     e.target.closest('select'))) {
                   return;
                 }
                 if (onEdit) {
@@ -304,26 +332,28 @@ export default function TicketsTable({
               </TableCell>
               <TableCell>
                 {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
-                  <Select
-                    value={editValue}
-                    onValueChange={(value) => {
-                      handleInlineEdit(ticket.id, 'requestType', value);
-                    }}
-                  >
-                    <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {requestTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.name}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        handleInlineEdit(ticket.id, 'requestType', value);
+                      }}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {requestTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.name}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ) : (
                   <span 
-                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors inline-edit-element"
                     onClick={(e) => {
                       e.stopPropagation();
                       startEditing(ticket.id, 'requestType', ticket.requestType || 'Hardware');
@@ -334,21 +364,109 @@ export default function TicketsTable({
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={getPriorityBadgeVariant(ticket.priority)}>
-                  {ticket.priority}
-                </Badge>
+                {editingField?.ticketId === ticket.id && editingField?.field === 'priority' ? (
+                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        handleInlineEdit(ticket.id, 'priority', value);
+                      }}
+                    >
+                      <SelectTrigger className="w-24 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <Badge 
+                    variant={getPriorityBadgeVariant(ticket.priority)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity inline-edit-element"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(ticket.id, 'priority', ticket.priority || 'Medium');
+                    }}
+                  >
+                    {ticket.priority}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
-                <Badge variant={getStatusBadgeVariant(ticket.status)}>
-                  {ticket.status}
-                </Badge>
+                {editingField?.ticketId === ticket.id && editingField?.field === 'status' ? (
+                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        handleInlineEdit(ticket.id, 'status', value);
+                      }}
+                    >
+                      <SelectTrigger className="w-28 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Open">Open</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Resolved">Resolved</SelectItem>
+                        <SelectItem value="Closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <Badge 
+                    variant={getStatusBadgeVariant(ticket.status)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity inline-edit-element"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(ticket.id, 'status', ticket.status || 'Open');
+                    }}
+                  >
+                    {ticket.status}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>{ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}</TableCell>
               <TableCell>
-                {ticket.assignedToId ? (
-                  getUserName(ticket.assignedToId)
+                {editingField?.ticketId === ticket.id && editingField?.field === 'assignedTo' ? (
+                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={editValue}
+                      onValueChange={(value) => {
+                        handleInlineEdit(ticket.id, 'assignedTo', value);
+                      }}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">
+                          <span className="text-gray-500">{translations.unassigned}</span>
+                        </SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName} ${user.lastName}` 
+                              : user.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ) : (
-                  <span className="text-gray-400">{translations.unassigned}</span>
+                  <span 
+                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors inline-edit-element"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(ticket.id, 'assignedTo', ticket.assignedToId?.toString() || 'unassigned');
+                    }}
+                  >
+                    {ticket.assignedToId ? getUserName(ticket.assignedToId) : (
+                      <span className="text-gray-400">{translations.unassigned}</span>
+                    )}
+                  </span>
                 )}
               </TableCell>
               <TableCell>
