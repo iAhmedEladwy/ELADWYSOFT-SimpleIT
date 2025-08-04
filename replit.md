@@ -4,9 +4,15 @@
 SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, offering intelligent tracking, robust service management, and enhanced operational efficiency. The system provides ITIL-compliant asset lifecycle management, including tracking, maintenance, and detailed specifications. It features an advanced ticket management system for handling IT service requests, incidents, and problems with integrated time tracking, history, and comments. The platform aims to streamline IT operations, improve visibility into IT assets, and enhance service delivery within an organization.
 
 ## Recent Critical Fixes (August 2025)
+- **SCHEMA REBUILT FROM SCRATCH**: Completely recreated shared/schema.ts to eliminate duplicate table definitions and relation errors
+- **AUTOMATED SYNC WORKFLOW ESTABLISHED**: Created comprehensive sync system to keep source code aligned with database state
+- **SYNC SCRIPTS IMPLEMENTED**: 
+  - `scripts/sync-schema.js` - Manual schema export and analysis
+  - `scripts/auto-sync-workflow.js` - Automated monitoring and sync workflow
+  - `.sync-config.json` - Configuration for sync behavior and monitoring
+- **DATABASE COMPATIBILITY RESOLVED**: Addressed PostgreSQL version mismatch (server v16.9 vs pg_dump v15.7) with alternative export methods
 - **ENVIRONMENT UPDATED**: Successfully upgraded Replit environment to Node.js v22.17.0 and PostgreSQL 16.9 (latest available)
 - **SCHEMA ANALYSIS COMPLETED**: Exported complete database schema from working Replit environment (25 tables)
-- **SCHEMA MISMATCH IDENTIFIED**: shared/schema.ts missing 8+ critical tables causing local deployment issues
 - **UBUNTU DEPLOYMENT READY**: Created setup-ubuntu-environment.sh with Node.js v22.18 LTS and PostgreSQL v17 configurations
 - **CROSS-PLATFORM FIXES**: Resolved ticket row click ".join is not a function" error with enhanced data validation
 - **TICKET UI ENHANCED**: Changed ticket row click behavior to open comprehensive edit dialog instead of details page
@@ -66,6 +72,18 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT, 
 - Maintain role-based access control
 - Use existing styling and component libraries
 - Keep database schema changes minimal
+
+## Schema-to-Code Sync Workflow
+- **Automated Sync System**: Comprehensive workflow to ensure source code always reflects current database state
+- **Sync Scripts Available**:
+  - `node scripts/sync-schema.js` - Manual schema export and comparison
+  - `node scripts/auto-sync-workflow.js start` - Start automated monitoring
+  - `node scripts/auto-sync-workflow.js status` - Check sync status
+- **Configuration**: `.sync-config.json` controls sync behavior, intervals, and monitoring settings
+- **Database Export**: Uses psql queries to export schema information (works around pg_dump version conflicts)
+- **Schema Validation**: Automatic detection of missing tables, duplicate exports, and relation errors
+- **Backup System**: Automatic schema backups before any sync operations
+- **GitHub Sync Ready**: Changes can be auto-committed to maintain source code consistency
 
 ## System Architecture
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components for a unified, professional UI/UX. Features include:

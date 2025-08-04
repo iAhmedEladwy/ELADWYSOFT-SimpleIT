@@ -1,0 +1,14 @@
+{
+  "watchFiles": [
+    "shared/schema.ts",
+    "server/storage.ts",
+    "drizzle.config.ts"
+  ],
+  "syncInterval": 300000,
+  "autoCommit": false,
+  "backupEnabled": true,
+  "notificationEnabled": true,
+  "schemaExportCommand": "psql \"$DATABASE_URL\" -c \"SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position;\" > schema-export.txt",
+  "lastSync": null,
+  "version": "1.0.0"
+}
