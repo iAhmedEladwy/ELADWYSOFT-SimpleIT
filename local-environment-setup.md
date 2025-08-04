@@ -5,9 +5,28 @@
 Since you're using local PostgreSQL, here's the streamlined setup to match your Replit environment:
 
 ### 1. Database Setup
-```bash
-# Run the local PostgreSQL setup
-psql -d your_database_name < local-postgresql-setup.sql
+Connect to your PostgreSQL database and run these commands:
+
+```sql
+-- Create sequences for auto-increment IDs
+CREATE SEQUENCE IF NOT EXISTS employees_emp_id_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS assets_asset_id_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS tickets_ticket_id_seq START 1;
+
+-- Set up auto-increment defaults
+ALTER TABLE employees 
+ALTER COLUMN emp_id SET DEFAULT 'EMP-' || LPAD(nextval('employees_emp_id_seq')::TEXT, 5, '0');
+
+ALTER TABLE assets 
+ALTER COLUMN asset_id SET DEFAULT 'AST-' || LPAD(nextval('assets_asset_id_seq')::TEXT, 5, '0');
+
+ALTER TABLE tickets 
+ALTER COLUMN ticket_id SET DEFAULT 'TKT-' || LPAD(nextval('tickets_ticket_id_seq')::TEXT, 6, '0');
+
+-- Sync sequences with existing data (if any)
+SELECT setval('employees_emp_id_seq', GREATEST((SELECT COALESCE(MAX(CAST(SUBSTRING(emp_id FROM 5) AS INTEGER)), 0) FROM employees WHERE emp_id ~ '^EMP-[0-9]+$') + 1, 1));
+SELECT setval('assets_asset_id_seq', GREATEST((SELECT COALESCE(MAX(CAST(SUBSTRING(asset_id FROM 5) AS INTEGER)), 0) FROM assets WHERE asset_id ~ '^AST-[0-9]+$') + 1, 1));
+SELECT setval('tickets_ticket_id_seq', GREATEST((SELECT COALESCE(MAX(CAST(SUBSTRING(ticket_id FROM 5) AS INTEGER)), 0) FROM tickets WHERE ticket_id ~ '^TKT-[0-9]+$') + 1, 1));
 ```
 
 ### 2. Environment Configuration
