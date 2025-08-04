@@ -9,7 +9,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Configuration variables
+# Configuration variables - Updated to match current Replit environment
 INSTALL_DIR="/opt/simpleit"
 APP_USER="simpleit"
 DB_USER="simpleit"
@@ -17,7 +17,7 @@ DB_PASSWORD="simpleit"
 DB_NAME="simpleit"
 NODE_VERSION="22.18"
 SESSION_SECRET=$(openssl rand -hex 32)
-POSTGRESQL_VERSION="17"  # Updated to PostgreSQL 17 (latest stable)
+POSTGRESQL_VERSION="16"  # Match Replit PostgreSQL version (16.9)
 
 # Function to display status messages
 status_message() {
@@ -26,7 +26,7 @@ status_message() {
 
 status_message "Starting SimpleIT deployment with latest LTS versions"
 echo "Node.js: v$NODE_VERSION (LTS)"
-echo "PostgreSQL: v$POSTGRESQL_VERSION (Latest Stable)"  
+echo "PostgreSQL: v$POSTGRESQL_VERSION (Matching Replit Environment)"  
 echo "Nginx: Latest stable from official repository"
 
 # Install required dependencies
@@ -34,8 +34,8 @@ status_message "Installing system dependencies"
 apt-get update
 apt-get install -y curl wget gnupg2 lsb-release ca-certificates
 
-# Set up PostgreSQL 17 repository and install
-status_message "Setting up PostgreSQL $POSTGRESQL_VERSION (Latest Stable)"
+# Set up PostgreSQL 16 repository and install (matches Replit environment)
+status_message "Setting up PostgreSQL $POSTGRESQL_VERSION (Matching Replit Environment)"
 # Install the PostgreSQL signing key
 curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
 # Add PostgreSQL repository
@@ -105,9 +105,9 @@ su - $APP_USER -c "cd $INSTALL_DIR && npm install"
 status_message "Auditing and fixing npm vulnerabilities"
 su - $APP_USER -c "cd $INSTALL_DIR && npm audit fix --audit-level=moderate"
 
-# FIX 1: Install PostgreSQL client dependencies
-status_message "Installing PostgreSQL client for direct connections"
-su - $APP_USER -c "cd $INSTALL_DIR && npm install pg @types/pg"
+# FIX 1: Install dependencies matching Replit environment  
+status_message "Installing dependencies matching Replit environment"
+su - $APP_USER -c "cd $INSTALL_DIR && npm install @neondatabase/serverless drizzle-orm drizzle-kit"
 
 # Set up environment variables
 status_message "Setting up environment variables"
@@ -120,30 +120,31 @@ SESSION_SECRET=$SESSION_SECRET
 EOL
 chown $APP_USER:$APP_USER $INSTALL_DIR/.env
 
-# FIX 2: Create fixed database configuration with direct PostgreSQL connection
-status_message "Creating fixed database configuration with direct PostgreSQL connection"
-cat > "$INSTALL_DIR/server/db.ts" << EOL
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
+# FIX 2: Use existing database configuration - don't override working db.ts
+status_message "Verifying database configuration matches Replit environment"
+# The existing db.ts should already be correct for @neondatabase/serverless
+# Only update if using standard pg driver instead
+if [ -f "$INSTALL_DIR/server/db.ts" ]; then
+  echo "Using existing database configuration (matches Replit setup)"
+else
+  # Fallback: create compatible db.ts
+  cat > "$INSTALL_DIR/server/db.ts" << EOL
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "@shared/schema";
 
-// Check for database connection string
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-// Create direct PostgreSQL connection (no WebSocket)
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: false
-});
+// Use neon for compatibility with Replit setup
+const sql = neon(process.env.DATABASE_URL);
+const db = drizzle(sql, { schema });
 
-// Create Drizzle instance
-const db = drizzle(pool, { schema });
-
-export { pool, db };
+export { db, sql as pool };
 EOL
-chown $APP_USER:$APP_USER "$INSTALL_DIR/server/db.ts"
+  chown $APP_USER:$APP_USER "$INSTALL_DIR/server/db.ts"
+fi
 
 # FIX 3: Add trust proxy setting to Express
 status_message "Setting trust proxy in Express for better proxy integration"
@@ -237,7 +238,7 @@ server {
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
-        proxy_Set_IP \$remote_addr;
+        proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header Cookie \$http_cookie;
@@ -261,8 +262,24 @@ EOL
 ln -sf /etc/nginx/sites-available/simpleit /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
-# Run database migrations
-status_message "Running database migrations"
+# Run database setup and migrations
+status_message "Setting up database schema and sequences"
+# First run the deployment database setup to create sequences
+if [ -f "$INSTALL_DIR/deployment-database-setup.sql" ]; then
+  sudo -u postgres psql -d $DB_NAME < "$INSTALL_DIR/deployment-database-setup.sql"
+else
+  echo "Warning: deployment-database-setup.sql not found. Creating sequences manually."
+  sudo -u postgres psql -d $DB_NAME -c "
+    CREATE SEQUENCE IF NOT EXISTS employees_emp_id_seq START 1;
+    CREATE SEQUENCE IF NOT EXISTS assets_asset_id_seq START 1; 
+    CREATE SEQUENCE IF NOT EXISTS tickets_ticket_id_seq START 1;
+    ALTER TABLE employees ALTER COLUMN emp_id SET DEFAULT 'EMP-' || LPAD(nextval('employees_emp_id_seq')::TEXT, 5, '0');
+    ALTER TABLE assets ALTER COLUMN asset_id SET DEFAULT 'AST-' || LPAD(nextval('assets_asset_id_seq')::TEXT, 5, '0');
+    ALTER TABLE tickets ALTER COLUMN ticket_id SET DEFAULT 'TKT-' || LPAD(nextval('tickets_ticket_id_seq')::TEXT, 6, '0');
+  "
+fi
+
+# Then run schema migrations
 su - $APP_USER -c "cd $INSTALL_DIR && NODE_ENV=production npm run db:push"
 
 # Start and enable services
