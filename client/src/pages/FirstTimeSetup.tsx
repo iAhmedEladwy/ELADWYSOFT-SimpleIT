@@ -49,7 +49,7 @@ export default function FirstTimeSetup() {
       setIsLoading(true);
       
       // Submit the form data to create the admin user
-      const result = await apiRequest('/api/setup', 'POST', {
+      const result = await apiRequest('POST', '/api/setup', {
         username: values.username,
         password: values.password,
         email: values.email || undefined

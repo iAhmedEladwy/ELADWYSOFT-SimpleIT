@@ -77,7 +77,7 @@ export default function UserProfile() {
     setLoading(true);
     
     try {
-      const response = await apiRequest('/api/user/change-password', 'POST', {
+      const response = await apiRequest('POST', '/api/user/change-password', {
         currentPassword,
         newPassword
       });

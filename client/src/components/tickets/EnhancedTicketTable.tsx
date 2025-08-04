@@ -271,7 +271,7 @@ export default function EnhancedTicketTable({
   const markAsDoneMutation = useMutation({
     mutationFn: async ({ ticketId, resolutionType, comment }: { ticketId: number, resolutionType: string, comment: string }) => {
       const status = resolutionType === 'Resolved' ? 'Resolved' : 'Closed';
-      return await apiRequest(`/api/tickets/${ticketId}/enhanced`, 'PUT', {
+      return await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, {
         status,
         resolution: resolutionType,
         resolutionNotes: comment
@@ -299,7 +299,7 @@ export default function EnhancedTicketTable({
   // Reopen ticket mutation
   const reopenTicketMutation = useMutation({
     mutationFn: async (ticketId: number) => {
-      return await apiRequest(`/api/tickets/${ticketId}/enhanced`, 'PUT', {
+      return await apiRequest('PUT', `/api/tickets/${ticketId}/enhanced`, {
         status: 'Open'
       });
     },
