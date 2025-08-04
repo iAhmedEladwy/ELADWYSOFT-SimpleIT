@@ -682,6 +682,9 @@ export default function Assets() {
                     <DialogTitle>
                       {editingAsset ? translations.editAsset : translations.addAsset}
                     </DialogTitle>
+                    <DialogDescription>
+                      {editingAsset ? 'Edit asset information and specifications' : 'Add a new asset to the inventory system'}
+                    </DialogDescription>
                   </DialogHeader>
                   <AssetForm
                     onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}

@@ -596,6 +596,9 @@ export default function TicketsTable({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{translations.updateStatus}</DialogTitle>
+            <DialogDescription>
+              Update the status of the selected ticket
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
@@ -654,6 +657,9 @@ export default function TicketsTable({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{translations.assignTicket}</DialogTitle>
+            <DialogDescription>
+              Assign this ticket to a user for processing
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">

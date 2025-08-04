@@ -608,7 +608,7 @@ export default function Employees() {
       {/* Results Summary */}
       <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
         <span>
-          Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {employees?.length || 0} employees
+          Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {Array.isArray(employees) ? employees.length : 0} employees
         </span>
         {activeFilterCount > 0 && (
           <span className="text-blue-600">

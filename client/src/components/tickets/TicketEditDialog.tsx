@@ -242,6 +242,9 @@ export default function TicketEditDialog({
             <Ticket className="h-5 w-5" />
             {t.editTicket} - {ticket.ticketId}
           </DialogTitle>
+          <DialogDescription>
+            Edit ticket details, status, and assignment information
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
