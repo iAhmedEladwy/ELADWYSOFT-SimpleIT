@@ -5,6 +5,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import TicketEditDialog from './TicketEditDialog';
 import {
   Table,
   TableBody,
@@ -73,6 +74,8 @@ export default function TicketsTable({
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [ticketToEdit, setTicketToEdit] = useState<any>(null);
 
   // Start editing function
   const startEditing = (ticketId: number, field: string, currentValue: string) => {
@@ -347,18 +350,18 @@ export default function TicketsTable({
                   return;
                 }
                 try {
-                  // Ensure ticket has required properties before navigation
+                  // Open edit dialog instead of navigating to details page
                   if (ticket && ticket.id) {
-                    // Always use direct navigation for better cross-platform compatibility
-                    navigate(`/tickets/${ticket.id}`);
+                    setTicketToEdit(ticket);
+                    setEditDialogOpen(true);
                   } else {
                     console.error('Invalid ticket data:', ticket);
                   }
                 } catch (error) {
-                  console.error('Row click navigation error:', error);
+                  console.error('Row click error:', error);
                   toast({
-                    title: language === 'English' ? 'Navigation Error' : 'خطأ في التنقل',
-                    description: language === 'English' ? 'Unable to open ticket details' : 'تعذر فتح تفاصيل التذكرة',
+                    title: language === 'English' ? 'Error' : 'خطأ',
+                    description: language === 'English' ? 'Unable to open ticket for editing' : 'تعذر فتح التذكرة للتعديل',
                     variant: 'destructive',
                   });
                 }
@@ -692,6 +695,16 @@ export default function TicketsTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Ticket Edit Dialog */}
+      <TicketEditDialog
+        ticket={ticketToEdit}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        employees={employees}
+        assets={assets}
+        users={users}
+      />
     </>
   );
 }
