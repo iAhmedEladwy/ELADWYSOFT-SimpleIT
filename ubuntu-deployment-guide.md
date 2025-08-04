@@ -29,13 +29,51 @@ PORT=5000
 ```
 
 ### 3. Install Dependencies and Setup
+
+#### Node.js v22.18 LTS Installation
 ```bash
-# Install Node.js 22 LTS (if not already installed)
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+# Add NodeSource repository with GPG key
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+
+# Update and install Node.js v22.18 LTS
+sudo apt-get update
 sudo apt-get install -y nodejs
+
+# Verify installation
+node --version  # Should show v22.18.x or higher
+```
+
+#### PostgreSQL v17 Installation
+```bash
+# Add PostgreSQL official repository with GPG key
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+
+# Update and install PostgreSQL v17
+sudo apt-get update
+sudo apt-get install -y postgresql-17 postgresql-contrib-17 postgresql-client-17
+
+# Verify installation
+psql --version  # Should show 17.x
 
 # Install project dependencies
 npm install
+
+#### Database Configuration for PostgreSQL v17
+```bash
+# Switch to postgres user
+sudo -u postgres psql
+
+# Create database and user
+CREATE DATABASE simpleit;
+CREATE USER simpleit_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE simpleit TO simpleit_user;
+ALTER DATABASE simpleit OWNER TO simpleit_user;
+\q
+
+# Update your .env file
+DATABASE_URL=postgresql://simpleit_user:your_secure_password@localhost:5432/simpleit
 
 # Push database schema
 npm run db:push
