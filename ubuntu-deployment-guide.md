@@ -30,8 +30,8 @@ PORT=5000
 
 ### 3. Install Dependencies and Setup
 ```bash
-# Install Node.js 20 (if not already installed)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Install Node.js 22 LTS (if not already installed)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Install project dependencies
