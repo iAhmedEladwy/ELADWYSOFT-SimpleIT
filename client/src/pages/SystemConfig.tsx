@@ -1830,6 +1830,25 @@ function SystemConfig() {
                 </div>
               </div>
 
+              <div className="flex justify-end pt-6 border-t">
+                <Button 
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد'}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
