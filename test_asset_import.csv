@@ -1,0 +1,4 @@
+type,brand,modelName,serialNumber,status
+Laptop,Dell,Latitude 5520,DELL001,Available
+Desktop,HP,EliteDesk 800,HP001,Available
+Monitor,Samsung,24" Monitor,SAMSUNG001,Available
