@@ -186,22 +186,22 @@ function SystemConfig() {
   const DATA_TYPE_OPTIONS = [
     { 
       value: 'employees', 
-      label: { English: 'Employees', Arabic: 'الموظفون' },
-      description: { English: 'Manage employee records and information', Arabic: 'إدارة سجلات ومعلومات الموظفين' },
+      label: { English: 'Employees', Arabic: 'الموظفون' } as Record<string, string>,
+      description: { English: 'Manage employee records and information', Arabic: 'إدارة سجلات ومعلومات الموظفين' } as Record<string, string>,
       icon: Users,
       color: 'text-blue-600'
     },
     { 
       value: 'assets', 
-      label: { English: 'Assets', Arabic: 'الأصول' },
-      description: { English: 'Manage IT assets and equipment', Arabic: 'إدارة الأصول والمعدات التقنية' },
+      label: { English: 'Assets', Arabic: 'الأصول' } as Record<string, string>,
+      description: { English: 'Manage IT assets and equipment', Arabic: 'إدارة الأصول والمعدات التقنية' } as Record<string, string>,
       icon: Package,
       color: 'text-green-600'
     },
     { 
       value: 'tickets', 
-      label: { English: 'Tickets', Arabic: 'التذاكر' },
-      description: { English: 'Manage support tickets and requests', Arabic: 'إدارة تذاكر الدعم والطلبات' },
+      label: { English: 'Tickets', Arabic: 'التذاكر' } as Record<string, string>,
+      description: { English: 'Manage support tickets and requests', Arabic: 'إدارة تذاكر الدعم والطلبات' } as Record<string, string>,
       icon: Ticket,
       color: 'text-orange-600'
     }
@@ -674,7 +674,13 @@ function SystemConfig() {
     reader.readAsText(selectedFile);
   };
 
-  const handleMappingComplete = async (mappedData: any[], mapping: Record<string, string>) => {
+  const handleMappingComplete = async (mappings: any[]) => {
+    // Extract mapped data and mapping from the interface format
+    const mappedData = parsedFileData;
+    const mapping = mappings.reduce((acc: Record<string, string>, m: any) => {
+      acc[m.fileColumn] = m.systemField;
+      return acc;
+    }, {});
     setIsImporting(true);
     setImportProgress(0);
     setImportError('');
