@@ -840,14 +840,7 @@ function SystemConfig() {
           </p>
         </div>
         
-        <Button 
-          variant="outline" 
-          onClick={toggleLanguage}
-          className="flex items-center gap-2"
-        >
-          <Globe className="h-4 w-4" />
-          {language === 'English' ? 'العربية' : 'English'}
-        </Button>
+        
       </div>
 
       {/* Navigation Tabs */}
