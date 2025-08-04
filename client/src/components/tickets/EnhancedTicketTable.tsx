@@ -466,9 +466,8 @@ export default function EnhancedTicketTable({
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                     onClick={() => {
-                      if (onTicketSelect) {
-                        onTicketSelect(ticket);
-                      }
+                      // Navigate to ticket details page
+                      window.location.href = `/tickets/${ticket.id}`;
                     }}
                   >
                     {ticket.ticketId}
@@ -479,9 +478,8 @@ export default function EnhancedTicketTable({
                     <span 
                       className="font-medium cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                       onClick={() => {
-                        if (onTicketSelect) {
-                          onTicketSelect(ticket);
-                        }
+                        // Navigate to ticket details page
+                        window.location.href = `/tickets/${ticket.id}`;
                       }}
                     >
                       {ticket.summary || ticket.description.substring(0, 50) + '...'}
@@ -509,9 +507,8 @@ export default function EnhancedTicketTable({
                   <span 
                     className="cursor-pointer hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
                     onClick={() => {
-                      if (onTicketSelect) {
-                        onTicketSelect(ticket);
-                      }
+                      // Navigate to ticket details page
+                      window.location.href = `/tickets/${ticket.id}`;
                     }}
                   >
                     {submittedByEmployee?.englishName || submittedByEmployee?.name || 'Unknown'}

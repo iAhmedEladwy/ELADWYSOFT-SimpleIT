@@ -14,6 +14,7 @@ import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
 import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
+import TicketDetails from "@/pages/TicketDetails";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
@@ -142,6 +143,11 @@ function Router() {
         <Route path="/tickets">
           <Layout>
             <PrivateRoute component={Tickets} />
+          </Layout>
+        </Route>
+        <Route path="/tickets/:id">
+          <Layout>
+            <PrivateRoute component={TicketDetails} />
           </Layout>
         </Route>
         <Route path="/reports">
