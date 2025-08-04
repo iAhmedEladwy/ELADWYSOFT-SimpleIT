@@ -125,6 +125,9 @@ function SystemConfig() {
   const [isAssetBrandDialogOpen, setIsAssetBrandDialogOpen] = useState(false);
   const [isAssetStatusDialogOpen, setIsAssetStatusDialogOpen] = useState(false);
   const [isServiceProviderDialogOpen, setIsServiceProviderDialogOpen] = useState(false);
+  
+  // Department dialog state
+  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
 
   // Asset Management search states
   const [assetTypeSearch, setAssetTypeSearch] = useState('');
@@ -1284,21 +1287,54 @@ function SystemConfig() {
                   <h3 className="text-lg font-medium">
                     {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
                   </h3>
-                  <Button
-                    onClick={() => {
-                      const newDept = prompt(language === 'English' ? 'Enter department name:' : 'أدخل اسم القسم:');
-                      if (newDept && newDept.trim()) {
-                        const updatedDepartments = [...departments, newDept.trim()];
-                        setDepartments(updatedDepartments);
-                        setPreservedTab('employees');
-                      }
-                    }}
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {language === 'English' ? 'Add Department' : 'إضافة قسم'}
-                  </Button>
+                  <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {language === 'English' ? 'Add Department' : 'إضافة قسم'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add Department' : 'إضافة قسم'}</DialogTitle>
+                        <DialogDescription>
+                          {language === 'English' ? 'Create a new department to organize employees.' : 'إنشاء قسم جديد لتنظيم الموظفين.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Department Name' : 'اسم القسم'}</Label>
+                          <Input 
+                            value={newDepartment} 
+                            onChange={(e) => setNewDepartment(e.target.value)}
+                            placeholder={language === 'English' ? 'e.g., IT, HR, Finance' : 'مثال: تقنية المعلومات، الموارد البشرية، المالية'}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => {
+                            setIsDepartmentDialogOpen(false);
+                            setNewDepartment('');
+                          }}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (newDepartment.trim()) {
+                                const updatedDepartments = [...departments, newDepartment.trim()];
+                                setDepartments(updatedDepartments);
+                                setNewDepartment('');
+                                setIsDepartmentDialogOpen(false);
+                                setPreservedTab('employees');
+                              }
+                            }}
+                            disabled={!newDepartment.trim()}
+                          >
+                            {language === 'English' ? 'Add' : 'إضافة'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 
                 <div className="border rounded-lg bg-white shadow-sm">
