@@ -4,7 +4,7 @@ import { getStorage } from "./storage-factory";
 
 const storage = getStorage();
 import * as schema from "@shared/schema";
-import { ZodError } from "zod";
+import { ZodError, type ZodSchema } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { ValidationError, NotFoundError, UnauthorizedError, createErrorResponse } from "@shared/errors";
 import type { UserResponse, EmployeeResponse, AssetResponse, TicketResponse } from "@shared/types";
@@ -108,9 +108,9 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
 };
 
 // Helper function to validate request body against schema
-function validateBody<T>(schema: schema.ZodSchema<T>, data: unknown): T {
+function validateBody<T>(zodSchema: ZodSchema<T>, data: unknown): T {
   try {
-    return schema.parse(data);
+    return zodSchema.parse(data);
   } catch (error) {
     if (error instanceof ZodError) {
       throw new ValidationError(fromZodError(error).message);
