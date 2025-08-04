@@ -640,36 +640,37 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Let database auto-generate emp_id, exclude from INSERT
-      const query = `
-        INSERT INTO employees (
-          english_name, arabic_name, department, id_number, title, 
-          employment_type, joining_date, status, personal_email, corporate_email,
-          created_at, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
-        ) RETURNING *
-      `;
+      // Use Drizzle ORM to let database auto-generate both id and emp_id
+      const insertData = {
+        // empId is excluded - database will auto-generate it
+        englishName: employee.englishName,
+        arabicName: employee.arabicName || null,
+        department: employee.department,
+        idNumber: employee.idNumber || employee.nationalId || `ID-${Date.now()}`,
+        title: employee.title || employee.position || 'Employee',
+        directManager: employee.directManager || null,
+        employmentType: employee.employmentType || 'Full-time',
+        joiningDate: employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0],
+        exitDate: employee.exitDate || null,
+        status: employee.status || 'Active',
+        personalMobile: employee.personalMobile || null,
+        workMobile: employee.workMobile || null,
+        personalEmail: employee.personalEmail || null,
+        corporateEmail: employee.corporateEmail || null,
+        userId: employee.userId || null,
+        // Compatibility fields
+        name: employee.name || employee.englishName,
+        email: employee.email || employee.personalEmail || employee.corporateEmail,
+        phone: employee.phone || employee.personalMobile || employee.workMobile,
+        position: employee.position || employee.title
+      };
       
-      // Ensure joining_date has a value
-      const joiningDate = employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0];
+      console.log('Creating employee with data:', insertData);
       
-      const values = [
-        employee.englishName,
-        employee.arabicName || null,
-        employee.department,
-        employee.idNumber || employee.nationalId,
-        employee.title || employee.position,
-        employee.employmentType || 'Full-time',
-        joiningDate,
-        employee.status || 'Active',
-        employee.personalEmail || null,
-        employee.corporateEmail || null
-      ];
+      const [result] = await db.insert(employees).values(insertData).returning();
       
-      const result = await pool.query(query, values);
-      
-      return result.rows[0] as Employee;
+      console.log('Employee created successfully:', result);
+      return result;
     } catch (error) {
       console.error('Error creating employee:', error);
       throw error;
@@ -1134,10 +1135,40 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
+      // Exclude ticketId - let database auto-generate it
+      const insertData = {
+        // ticketId is excluded - database will auto-generate it  
+        summary: ticket.summary || 'Ticket',
+        description: ticket.description || '',
+        requestType: ticket.requestType || 'Other',
+        category: ticket.category || 'Incident',
+        priority: ticket.priority || 'Medium',
+        urgency: ticket.urgency || 'Medium',
+        impact: ticket.impact || 'Medium',
+        status: ticket.status || 'Open',
+        submittedById: ticket.submittedById,
+        assignedToId: ticket.assignedToId || null,
+        relatedAssetId: ticket.relatedAssetId || null,
+        resolution: ticket.resolution || null,
+        resolutionNotes: ticket.resolutionNotes || null,
+        dueDate: ticket.dueDate || null,
+        slaTarget: ticket.slaTarget || null,
+        escalationLevel: ticket.escalationLevel || '0',
+        tags: ticket.tags || null,
+        privateNotes: ticket.privateNotes || null,
+        timeSpent: ticket.timeSpent || 0,
+        isTimeTracking: ticket.isTimeTracking || false,
+        timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
+      };
+      
+      console.log('Creating ticket with data:', insertData);
+      
       const [newTicket] = await db
         .insert(tickets)
-        .values(ticket)
+        .values(insertData)
         .returning();
+        
+      console.log('Ticket created successfully:', newTicket);
       return newTicket;
     } catch (error) {
       console.error('Error creating ticket:', error);

@@ -738,14 +738,8 @@ export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type TicketComment = typeof ticketComments.$inferSelect;
 export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
 
-export type TicketCategory = typeof ticketCategories.$inferSelect;
-export type InsertTicketCategory = z.infer<typeof insertTicketCategorySchema>;
-
 export type TicketHistory = typeof ticketHistory.$inferSelect;
 export type InsertTicketHistory = z.infer<typeof insertTicketHistorySchema>;
-
-export type TicketNotification = typeof ticketNotifications.$inferSelect;
-export type InsertTicketNotification = z.infer<typeof insertTicketNotificationSchema>;
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
