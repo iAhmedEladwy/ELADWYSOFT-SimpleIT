@@ -21,14 +21,20 @@ import { relations, sql } from "drizzle-orm";
 
 export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
-export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
-export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
-export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
+export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Temporary']);
+export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Inactive', 'Terminated']);
+export const assetStatusEnum = pgEnum('asset_status', ['Available', 'Assigned', 'Under Maintenance', 'Disposed', 'Lost', 'Retired']);
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
-export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
+export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Emergency']);
 export const ticketRequestTypeEnum = pgEnum('ticket_request_type', ['Hardware', 'Software', 'Network', 'Other']);
 export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
+
+// Additional enums for missing functionality
+export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Low', 'Medium', 'High', 'Critical']);
+export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Low', 'Medium', 'High']);
+export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'In Progress', 'Completed', 'Cancelled', 'Failed']);
+export const notificationTypeEnum = pgEnum('notification_type', ['info', 'warning', 'error', 'success']);
 
 // Session storage table for authentication
 // Custom lookup tables for asset management
@@ -89,11 +95,13 @@ export const customRequestTypes = pgTable(
   {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull().unique(),
-    description: varchar("description", { length: 255 }),
-    priority: varchar("priority", { length: 50 }).default('Medium'),
+    description: text("description"),
+    color: varchar("color", { length: 7 }).default('#3B82F6'),
     isActive: boolean("is_active").default(true),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
+    priority: varchar("priority", { length: 20 }).default('Medium'),
+    slaHours: integer("sla_hours").default(24),
   }
 );
 
@@ -241,87 +249,7 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// ITIL-Compliant Asset Upgrade Management
-export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
-export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High', 'Medium', 'Low']);
-export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 
-export const assetUpgrades = pgTable("asset_upgrades", {
-  id: serial("id").primaryKey(),
-  upgradeId: varchar("upgrade_id", { length: 20 }).notNull().unique(),
-  assetId: integer("asset_id").notNull().references(() => assets.id),
-  requestedById: integer("requested_by_id").notNull().references(() => users.id),
-  approvedById: integer("approved_by_id").references(() => users.id),
-  implementedById: integer("implemented_by_id").references(() => users.id),
-  
-  // ITIL Change Management Fields
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description").notNull(),
-  businessJustification: text("business_justification").notNull(),
-  upgradeType: varchar("upgrade_type", { length: 100 }).notNull(), // Hardware, Software, Firmware, Configuration
-  priority: upgradePriorityEnum("priority").notNull().default('Medium'),
-  risk: upgradeRiskEnum("risk").notNull().default('Medium'),
-  status: upgradeStatusEnum("status").notNull().default('Planned'),
-  
-  // Current vs New Configuration
-  currentConfiguration: json("current_configuration"), // Current asset specs/config
-  newConfiguration: json("new_configuration"), // Planned new specs/config
-  
-  // Implementation Details
-  plannedStartDate: timestamp("planned_start_date"),
-  plannedEndDate: timestamp("planned_end_date"),
-  actualStartDate: timestamp("actual_start_date"),
-  actualEndDate: timestamp("actual_end_date"),
-  implementationNotes: text("implementation_notes"),
-  
-  // Testing & Verification
-  testingRequired: boolean("testing_required").default(true),
-  testingNotes: text("testing_notes"),
-  backoutPlan: text("backout_plan").notNull(), // ITIL Requirement
-  
-  // Cost Management
-  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).default('0'),
-  actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default('0'),
-  costJustification: text("cost_justification"),
-  
-  // Impact Assessment
-  impactAssessment: text("impact_assessment").notNull(),
-  dependentAssets: text("dependent_assets").array(), // Asset IDs that depend on this
-  affectedUsers: text("affected_users").array(), // User IDs affected by upgrade
-  downtimeRequired: boolean("downtime_required").default(false),
-  estimatedDowntime: integer("estimated_downtime"), // Minutes
-  
-  // Approval Workflow
-  requiresApproval: boolean("requires_approval").default(true),
-  approvalDate: timestamp("approval_date"),
-  approvalNotes: text("approval_notes"),
-  
-  // Success Criteria
-  successCriteria: text("success_criteria").notNull(),
-  verificationSteps: text("verification_steps").array(),
-  postUpgradeValidation: text("post_upgrade_validation"),
-  
-  // Rollback Information
-  rollbackRequired: boolean("rollback_required").default(false),
-  rollbackDate: timestamp("rollback_date"),
-  rollbackReason: text("rollback_reason"),
-  rollbackNotes: text("rollback_notes"),
-  
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Upgrade History/Audit Trail
-export const upgradeHistory = pgTable("upgrade_history", {
-  id: serial("id").primaryKey(),
-  upgradeId: integer("upgrade_id").notNull().references(() => assetUpgrades.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  action: varchar("action", { length: 100 }).notNull(), // Status Change, Comment Added, Configuration Updated, etc.
-  previousValue: text("previous_value"),
-  newValue: text("new_value"),
-  notes: text("notes"),
-  timestamp: timestamp("timestamp").defaultNow(),
-});
 
 // Tickets table
 export const tickets = pgTable("tickets", {
@@ -348,6 +276,7 @@ export const tickets = pgTable("tickets", {
   timeSpent: integer("time_spent").default(0), // in minutes
   isTimeTracking: boolean("is_time_tracking").default(false),
   timeTrackingStartedAt: timestamp("time_tracking_started_at"),
+  mergedIntoId: integer("merged_into_id").references(() => tickets.id), // Self-referencing for ticket merging
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -364,16 +293,7 @@ export const ticketHistory = pgTable("ticket_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Ticket Comments
-export const ticketComments = pgTable("ticket_comments", {
-  id: serial("id").primaryKey(),
-  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  comment: text("comment").notNull(),
-  isPrivate: boolean("is_private").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+
 
 // System configuration table
 export const systemConfig = pgTable("system_config", {
@@ -419,20 +339,16 @@ export const activityLog = pgTable("activity_log", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Changes Log table for tracking system updates
+// Changes Log table (corrected to match database structure)
 export const changesLog = pgTable("changes_log", {
   id: serial("id").primaryKey(),
   version: varchar("version", { length: 20 }).notNull(),
-  title: varchar("title", { length: 200 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
   description: text("description").notNull(),
-  changeType: varchar("change_type", { length: 50 }).notNull(), // Feature, Bug Fix, Enhancement, Security
-  priority: varchar("priority", { length: 20 }).notNull().default('Medium'), // Low, Medium, High, Critical
-  affectedModules: text("affected_modules").array(),
-  userId: integer("user_id").references(() => users.id),
-  status: varchar("status", { length: 20 }).notNull().default('Active'), // Active, Archived
-  releaseDate: timestamp("release_date").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  technicalDetails: text("technical_details"),
+  date: date("date").notNull().default(sql`CURRENT_DATE`),
+  author: varchar("author", { length: 100 }).notNull().default('System Administrator'),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Relations
@@ -520,6 +436,99 @@ export const assetTransactionsRelations = relations(assetTransactions, ({ one })
   }),
 }));
 
+// MISSING CRITICAL TABLES FROM REPLIT DATABASE
+
+// Ticket Comments table
+export const ticketComments = pgTable("ticket_comments", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  isInternal: boolean("is_internal").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  entityId: integer("entity_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+
+
+// Asset Upgrades table (complete definition matching Replit database)
+export const assetUpgrades = pgTable("asset_upgrades", {
+  id: serial("id").primaryKey(),
+  upgradeId: varchar("upgrade_id", { length: 20 }).notNull().unique(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  requestedById: integer("requested_by_id").notNull().references(() => users.id),
+  approvedById: integer("approved_by_id").references(() => users.id),
+  implementedById: integer("implemented_by_id").references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  businessJustification: text("business_justification").notNull(),
+  upgradeType: varchar("upgrade_type", { length: 100 }).notNull(),
+  priority: upgradePriorityEnum("priority").notNull().default('Medium'),
+  risk: upgradeRiskEnum("risk").notNull().default('Medium'),
+  status: upgradeStatusEnum("status").notNull().default('Planned'),
+  currentConfiguration: jsonb("current_configuration"),
+  newConfiguration: jsonb("new_configuration"),
+  plannedStartDate: timestamp("planned_start_date"),
+  plannedEndDate: timestamp("planned_end_date"),
+  actualStartDate: timestamp("actual_start_date"),
+  actualEndDate: timestamp("actual_end_date"),
+  implementationNotes: text("implementation_notes"),
+  testingRequired: boolean("testing_required").default(true),
+  testingNotes: text("testing_notes"),
+  backoutPlan: text("backout_plan").notNull(),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).default('0'),
+  actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default('0'),
+  costJustification: text("cost_justification"),
+  impactAssessment: text("impact_assessment").notNull(),
+  dependentAssets: text("dependent_assets").array(),
+  affectedUsers: text("affected_users").array(),
+  downtimeRequired: boolean("downtime_required").default(false),
+  estimatedDowntime: integer("estimated_downtime"),
+  requiresApproval: boolean("requires_approval").default(true),
+  approvalDate: timestamp("approval_date"),
+  approvalNotes: text("approval_notes"),
+  successCriteria: text("success_criteria").notNull(),
+  verificationSteps: text("verification_steps").array(),
+  postUpgradeValidation: text("post_upgrade_validation"),
+  rollbackRequired: boolean("rollback_required").default(false),
+  rollbackDate: timestamp("rollback_date"),
+  rollbackReason: text("rollback_reason"),
+  rollbackNotes: text("rollback_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_asset_upgrades_asset_id").on(table.assetId),
+  index("idx_asset_upgrades_requested_by").on(table.requestedById),
+  index("idx_asset_upgrades_status").on(table.status),
+]);
+
+// Upgrade History table
+export const upgradeHistory = pgTable("upgrade_history", {
+  id: serial("id").primaryKey(),
+  upgradeId: integer("upgrade_id").notNull().references(() => assetUpgrades.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  details: text("details"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+}, (table) => [
+  index("idx_upgrade_history_upgrade_id").on(table.upgradeId),
+  index("idx_upgrade_history_timestamp").on(table.timestamp),
+]);
+
+
+
 export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedBy: one(employees, {
     fields: [tickets.submittedById],
@@ -535,6 +544,7 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
     references: [users.id],
   }),
   history: many(ticketHistory),
+  comments: many(ticketComments),
 }));
 
 export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
@@ -544,6 +554,69 @@ export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
   }),
   user: one(users, {
     fields: [ticketHistory.userId],
+    references: [users.id],
+  }),
+}));
+
+export const ticketCommentsRelations = relations(ticketComments, ({ one }) => ({
+  ticket: one(tickets, {
+    fields: [ticketComments.ticketId],
+    references: [tickets.id],
+  }),
+  user: one(users, {
+    fields: [ticketComments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const securityQuestionsRelations = relations(securityQuestions, ({ one }) => ({
+  user: one(users, {
+    fields: [securityQuestions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const assetUpgradesRelations = relations(assetUpgrades, ({ one, many }) => ({
+  asset: one(assets, {
+    fields: [assetUpgrades.assetId],
+    references: [assets.id],
+  }),
+  requestedBy: one(users, {
+    fields: [assetUpgrades.requestedById],
+    references: [users.id],
+  }),
+  approvedBy: one(users, {
+    fields: [assetUpgrades.approvedById],
+    references: [users.id],
+  }),
+  implementedBy: one(users, {
+    fields: [assetUpgrades.implementedById],
+    references: [users.id],
+  }),
+  history: many(upgradeHistory),
+}));
+
+export const upgradeHistoryRelations = relations(upgradeHistory, ({ one }) => ({
+  upgrade: one(assetUpgrades, {
+    fields: [upgradeHistory.upgradeId],
+    references: [assetUpgrades.id],
+  }),
+  user: one(users, {
+    fields: [upgradeHistory.userId],
     references: [users.id],
   }),
 }));
@@ -715,6 +788,35 @@ export const insertCustomRequestTypeSchema = createInsertSchema(customRequestTyp
   updatedAt: true
 });
 
+// Add insert schemas for new tables
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertAssetUpgradeSchema = createInsertSchema(assetUpgrades).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertUpgradeHistorySchema = createInsertSchema(upgradeHistory).omit({
+  id: true
+});
+
+
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -762,17 +864,12 @@ export const insertAssetTransactionSchema = createInsertSchema(assetTransactions
 export type AssetTransaction = typeof assetTransactions.$inferSelect;
 export type InsertAssetTransaction = z.infer<typeof insertAssetTransactionSchema>;
 
-// Security questions and password reset types
-export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
+// Export types for new tables
+export type TicketComment = typeof ticketComments.$inferSelect;
+export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
 
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
-  id: true,
-  createdAt: true
-});
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type SecurityQuestion = typeof securityQuestions.$inferSelect;
 export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
@@ -780,34 +877,17 @@ export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 
-// Notification system
-export const notificationEnum = pgEnum('notification_type', ['Asset', 'Ticket', 'System', 'Employee']);
+export type AssetUpgrade = typeof assetUpgrades.$inferSelect;
+export type InsertAssetUpgrade = z.infer<typeof insertAssetUpgradeSchema>;
 
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  type: notificationEnum("type").notNull(),
-  entityId: integer("entity_id"),
-  isRead: boolean("is_read").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export type UpgradeHistory = typeof upgradeHistory.$inferSelect;
+export type InsertUpgradeHistory = z.infer<typeof insertUpgradeHistorySchema>;
 
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
-  }),
-}));
 
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-});
 
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+
+
 
 // Custom request types for ticket module
 export type CustomRequestType = typeof customRequestTypes.$inferSelect;
