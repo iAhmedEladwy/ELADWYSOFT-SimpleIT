@@ -1,6 +1,9 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
+import { db } from "./db";
+import { users, employees, assets, tickets } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const storage = getStorage();
 import * as schema from "@shared/schema";
@@ -12,6 +15,7 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { compare, hash } from "bcryptjs";
+import * as bcrypt from "bcryptjs";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
