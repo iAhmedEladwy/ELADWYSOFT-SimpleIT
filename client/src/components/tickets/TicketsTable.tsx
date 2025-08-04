@@ -110,7 +110,7 @@ export default function TicketsTable({
     }
   };
 
-  // Fetch custom request types
+  // Fetch request types from system configuration
   const { data: customRequestTypes = [] } = useQuery({
     queryKey: ['/api/custom-request-types'],
     queryFn: async () => {
@@ -119,14 +119,8 @@ export default function TicketsTable({
     },
   });
 
-  // Combined request types (default + custom)
-  const requestTypes = [
-    { id: 'hardware', name: 'Hardware' },
-    { id: 'software', name: 'Software' },
-    { id: 'network', name: 'Network' },
-    { id: 'other', name: 'Other' },
-    ...customRequestTypes.filter((type: any) => type.isActive !== false)
-  ];
+  // Use only request types from system configuration
+  const requestTypes = customRequestTypes.filter((type: any) => type.isActive !== false);
 
   // Update ticket mutation
   const updateTicketMutation = useMutation({
