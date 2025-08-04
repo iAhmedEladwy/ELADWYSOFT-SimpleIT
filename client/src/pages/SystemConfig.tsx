@@ -1,277 +1,621 @@
-import { useState, useEffect, ChangeEvent, DragEvent } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/use-language';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/lib/authContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { 
-  Users, Settings, Download, Upload, FileDown, FileUp, 
-  X, CheckCircle2, AlertCircle, Loader2, Database,
-  Mail, Shield, Globe, Filter, Clock, Trash, Monitor, User
-} from 'lucide-react';
 import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
-// Types
-interface SystemConfig {
-  id: string;
-  emailHost: string;
-  emailPort: number;
-  emailUser: string;
-  emailPassword: string;
-  employeePrefix: string;
-  assetPrefix: string;
-  ticketPrefix: string;
-  language: 'English' | 'Arabic';
-  timezone: string;
-  dateFormat: string;
-  theme: 'light' | 'dark' | 'auto';
-}
-
-interface ImportResult {
-  success: boolean;
-  total: number;
-  imported: number;
-  failed: number;
-  errors?: string[];
-}
-
-// Data type options for the new interface
-const DATA_TYPE_OPTIONS = [
-  { 
-    value: 'employees', 
-    label: { English: 'Employees', Arabic: 'الموظفون' },
-    description: { English: 'Manage employee records and information', Arabic: 'إدارة سجلات ومعلومات الموظفين' },
-    icon: Users,
-    color: 'text-blue-600'
-  },
-  { 
-    value: 'assets', 
-    label: { English: 'Assets', Arabic: 'الأصول' },
-    description: { English: 'Manage IT assets and equipment', Arabic: 'إدارة الأصول والمعدات التقنية' },
-    icon: Database,
-    color: 'text-green-600'
-  },
-  { 
-    value: 'tickets', 
-    label: { English: 'Tickets', Arabic: 'التذاكر' },
-    description: { English: 'Manage support tickets and requests', Arabic: 'إدارة تذاكر الدعم والطلبات' },
-    icon: Clock,
-    color: 'text-orange-600'
-  }
-];
-
-const SystemConfig = () => {
+function SystemConfig() {
+  const { language, toggleLanguage } = useLanguage();
   const { toast } = useToast();
+  const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
-
-  // State
-  const [config, setConfig] = useState<SystemConfig>({
-    id: '1',
-    emailHost: '',
-    emailPort: 587,
-    emailUser: '',
-    emailPassword: '',
-    employeePrefix: 'EMP-',
-    assetPrefix: 'AST-',
-    ticketPrefix: 'TKT-',
-    language: 'English',
-    timezone: 'UTC',
-    dateFormat: 'YYYY-MM-DD',
-    theme: 'light'
+  
+  // Tab state management with localStorage persistence
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('systemConfigActiveTab') || 'general';
+    } catch {
+      return 'general';
+    }
   });
+  const [preservedTab, setPreservedTab] = useState<string | null>(null);
 
-  // Import/Export state
+  // Handle tab changes with persistence
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    try {
+      localStorage.setItem('systemConfigActiveTab', value);
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+
+  // Restore preserved tab after mutations
+  useEffect(() => {
+    if (preservedTab) {
+      setActiveTab(preservedTab);
+      try {
+        localStorage.setItem('systemConfigActiveTab', preservedTab);
+      } catch {
+        // Ignore localStorage errors
+      }
+      setPreservedTab(null);
+    }
+  }, [preservedTab]);
+  
+  // Basic configuration states
+  const [assetIdPrefix, setAssetIdPrefix] = useState('AST-');
+  const [empIdPrefix, setEmpIdPrefix] = useState('EMP-');
+  const [ticketIdPrefix, setTicketIdPrefix] = useState('TKT-');
+  const [currency, setCurrency] = useState('USD');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Department management states
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState('');
+  const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
+  const [editedDeptName, setEditedDeptName] = useState('');
+  
+  // Request type management states
+  const [newRequestTypeName, setNewRequestTypeName] = useState('');
+  const [newRequestTypeDescription, setNewRequestTypeDescription] = useState('');
+  const [isRequestTypeDialogOpen, setIsRequestTypeDialogOpen] = useState(false);
+  
+  // Email configuration states
+  const [emailHost, setEmailHost] = useState('');
+  const [emailPort, setEmailPort] = useState('');
+  const [emailUser, setEmailUser] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailFromAddress, setEmailFromAddress] = useState('');
+  const [emailFromName, setEmailFromName] = useState('');
+  const [emailSecure, setEmailSecure] = useState(true);
+  
+  // Import/Export states from current working version
   const [selectedDataType, setSelectedDataType] = useState<string>('employees');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  const [importResults, setImportResults] = useState<ImportResult | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-  
-  // Field mapping state
-  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
+  const [importError, setImportError] = useState<string>('');
   const [parsedFileData, setParsedFileData] = useState<any[]>([]);
   const [fileColumns, setFileColumns] = useState<string[]>([]);
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
 
-  const language = config.language;
+  // Asset Management form states
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeDescription, setNewTypeDescription] = useState('');
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandDescription, setNewBrandDescription] = useState('');
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusDescription, setNewStatusDescription] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3B82F6');
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderContact, setNewProviderContact] = useState('');
+  const [newProviderPhone, setNewProviderPhone] = useState('');
+  const [newProviderEmail, setNewProviderEmail] = useState('');
+
+  // Asset Management dialog states
+  const [isAssetTypeDialogOpen, setIsAssetTypeDialogOpen] = useState(false);
+  const [isAssetBrandDialogOpen, setIsAssetBrandDialogOpen] = useState(false);
+  const [isAssetStatusDialogOpen, setIsAssetStatusDialogOpen] = useState(false);
+  const [isServiceProviderDialogOpen, setIsServiceProviderDialogOpen] = useState(false);
+
+  // Asset Management search states
+  const [assetTypeSearch, setAssetTypeSearch] = useState('');
+  const [assetBrandSearch, setAssetBrandSearch] = useState('');
+  const [assetStatusSearch, setAssetStatusSearch] = useState('');
+  const [serviceProviderSearch, setServiceProviderSearch] = useState('');
+  const [requestTypeSearch, setRequestTypeSearch] = useState('');
+
+  // Editing states for asset management
+  const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
+  const [editedTypeName, setEditedTypeName] = useState('');
+  const [editedTypeDescription, setEditedTypeDescription] = useState('');
+  const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
+  const [editedBrandName, setEditedBrandName] = useState('');
+  const [editedBrandDescription, setEditedBrandDescription] = useState('');
+  const [editingStatusId, setEditingStatusId] = useState<number | null>(null);
+  const [editedStatusName, setEditedStatusName] = useState('');
+  const [editedStatusDescription, setEditedStatusDescription] = useState('');
+  const [editedStatusColor, setEditedStatusColor] = useState('#3B82F6');
+  const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
+  const [editedProviderName, setEditedProviderName] = useState('');
+  const [editedProviderContact, setEditedProviderContact] = useState('');
+  const [editedProviderPhone, setEditedProviderPhone] = useState('');
+  const [editedProviderEmail, setEditedProviderEmail] = useState('');
+  const [editingRequestTypeId, setEditingRequestTypeId] = useState<number | null>(null);
+  const [editedRequestTypeName, setEditedRequestTypeName] = useState('');
+  const [editedRequestTypeDescription, setEditedRequestTypeDescription] = useState('');
+  
+  // Clear audit logs states
+  const [clearLogsDialogOpen, setClearLogsDialogOpen] = useState(false);
+  const [clearLogsTimeframe, setClearLogsTimeframe] = useState('month');
+  
+  // User management states
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+  const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserFirstName, setNewUserFirstName] = useState('');
+  const [newUserLastName, setNewUserLastName] = useState('');
+  const [newUserRole, setNewUserRole] = useState('employee');
+  const [newUserAccessLevel, setNewUserAccessLevel] = useState('1');
+  const [newUserEmployeeId, setNewUserEmployeeId] = useState<number | null>(null);
+  const [newUserManagerId, setNewUserManagerId] = useState<number | null>(null);
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserIsActive, setNewUserIsActive] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editedUserUsername, setEditedUserUsername] = useState('');
+  const [editedUserEmail, setEditedUserEmail] = useState('');
+  const [editedUserFirstName, setEditedUserFirstName] = useState('');
+  const [editedUserLastName, setEditedUserLastName] = useState('');
+  const [editedUserRole, setEditedUserRole] = useState('');
+  const [editedUserAccessLevel, setEditedUserAccessLevel] = useState('1');
+  const [editedUserEmployeeId, setEditedUserEmployeeId] = useState<number | null>(null);
+  const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
+  const [editedUserPassword, setEditedUserPassword] = useState('');
+  const [editedUserIsActive, setEditedUserIsActive] = useState(true);
+
+  // Data type options for import/export
+  const DATA_TYPE_OPTIONS = [
+    { 
+      value: 'employees', 
+      label: { English: 'Employees', Arabic: 'الموظفون' },
+      description: { English: 'Manage employee records and information', Arabic: 'إدارة سجلات ومعلومات الموظفين' },
+      icon: Users,
+      color: 'text-blue-600'
+    },
+    { 
+      value: 'assets', 
+      label: { English: 'Assets', Arabic: 'الأصول' },
+      description: { English: 'Manage IT assets and equipment', Arabic: 'إدارة الأصول والمعدات التقنية' },
+      icon: Package,
+      color: 'text-green-600'
+    },
+    { 
+      value: 'tickets', 
+      label: { English: 'Tickets', Arabic: 'التذاكر' },
+      description: { English: 'Manage support tickets and requests', Arabic: 'إدارة تذاكر الدعم والطلبات' },
+      icon: Ticket,
+      color: 'text-orange-600'
+    }
+  ];
 
   // Queries
-  const { data: systemConfig, isLoading } = useQuery({
-    queryKey: ['/api/config'],
+  const { data: config } = useQuery<any>({
+    queryKey: ['/api/system-config'],
+    enabled: hasAccess(3),
   });
 
-  // Update config when data is loaded
-  useEffect(() => {
-    if (systemConfig) {
-      setConfig(systemConfig);
-    }
-  }, [systemConfig]);
+  const { data: customRequestTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-request-types'],
+    enabled: hasAccess(4), // Admin only
+  });
 
-  // Mutations
+  const { data: customAssetTypes = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-types'],
+    enabled: hasAccess(4), // Admin only
+  });
+
+  const { data: customAssetBrands = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-brands'],
+    enabled: hasAccess(4), // Admin only
+  });
+
+  const { data: customAssetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-statuses'],
+    enabled: hasAccess(4), // Admin only
+  });
+
+  const { data: serviceProviders = [] } = useQuery<any[]>({
+    queryKey: ['/api/service-providers'],
+    enabled: hasAccess(4), // Admin only
+  });
+
+  const { data: allUsers = [], refetch: refetchUsers } = useQuery<any[]>({
+    queryKey: ['/api/users'],
+    enabled: hasAccess(4), // Admin only
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache data (v5 syntax)
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    select: (data) => {
+      console.log('Raw users data from API:', data);
+      return data;
+    }
+  });
+
+  // Filtered arrays for search functionality
+  const filteredAssetTypes = customAssetTypes.filter((type: any) =>
+    type.name.toLowerCase().includes(assetTypeSearch.toLowerCase())
+  );
+
+  const filteredAssetBrands = customAssetBrands.filter((brand: any) =>
+    brand.name.toLowerCase().includes(assetBrandSearch.toLowerCase())
+  );
+
+  const filteredAssetStatuses = customAssetStatuses.filter((status: any) =>
+    status.name.toLowerCase().includes(assetStatusSearch.toLowerCase())
+  );
+
+  const filteredServiceProviders = serviceProviders.filter((provider: any) =>
+    provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
+  );
+
+  const filteredRequestTypes = customRequestTypes.filter((requestType: any) =>
+    requestType.name.toLowerCase().includes(requestTypeSearch.toLowerCase())
+  );
+
+  // Update local state when config data is loaded
+  useEffect(() => {
+    if (config) {
+      setAssetIdPrefix(config.assetIdPrefix || 'AST-');
+      setEmpIdPrefix(config.empIdPrefix || 'EMP-');
+      setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
+      setCurrency(config.currency || 'USD');
+      setDepartments(config.departments || []);
+      
+      // Load email configuration
+      setEmailHost(config.emailHost || '');
+      setEmailPort(config.emailPort?.toString() || '');
+      setEmailUser(config.emailUser || '');
+      setEmailPassword(config.emailPassword || '');
+      setEmailFromAddress(config.emailFromAddress || '');
+      setEmailFromName(config.emailFromName || '');
+      setEmailSecure(config.emailSecure !== false);
+      
+      setIsLoading(false);
+    }
+  }, [config]);
+
+  // Configuration update mutation
   const updateConfigMutation = useMutation({
-    mutationFn: (newConfig: SystemConfig) => 
-      apiRequest('/api/config', 'PUT', newConfig),
+    mutationFn: (data: any) => 
+      apiRequest('/api/system-config', 'PUT', data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({
-        title: language === 'English' ? 'Settings Updated' : 'تم تحديث الإعدادات',
-        description: language === 'English' ? 'Configuration saved successfully.' : 'تم حفظ التكوين بنجاح.',
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      // Restore preserved tab after department operations
+      if (preservedTab) {
+        setActiveTab(preservedTab);
+        setPreservedTab(null);
+      }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Config update error:", error);
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to save settings.' : 'فشل في حفظ الإعدادات.',
-        variant: 'destructive',
+        description: language === 'English' 
+          ? 'Failed to update settings. Please try again.' 
+          : 'فشل تحديث الإعدادات. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive'
       });
-    },
+    }
   });
 
-  // Handlers
-  const handleSaveConfig = () => {
-    updateConfigMutation.mutate(config);
-  };
-
-  const handleConfigChange = (field: keyof SystemConfig, value: any) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
-  };
-
-  // File handling
-  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setImportResults(null);
-      setImportError(null);
+  // Create custom request type mutation
+  const createRequestTypeMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-request-types', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type added successfully' : 'تمت إضافة نوع الطلب بنجاح',
+      });
+      setNewRequestTypeName('');
+      setNewRequestTypeDescription('');
+      setIsRequestTypeDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to add request type' : 'فشل إضافة نوع الطلب',
+        variant: 'destructive'
+      });
+      console.error('Failed to create request type:', error);
     }
-  };
+  });
 
-  const handleFileDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  // User management mutations
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest('/api/users', 'POST', userData);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsUserDialogOpen(false);
+      setNewUserUsername('');
+      setNewUserEmail('');
+      setNewUserFirstName('');
+      setNewUserLastName('');
+      setNewUserRole('employee');
+      setNewUserAccessLevel('employee');
+      setNewUserEmployeeId(null);
+      setNewUserManagerId(null);
+      setNewUserPassword('');
+      setNewUserIsActive(true);
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to create user' : 'فشل في إنشاء المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, userData }: { id: number; userData: any }) => {
+      console.log(`Updating user ${id} with data:`, userData);
+      const response = await apiRequest(`/api/users/${id}`, 'PUT', userData);
+      console.log(`Update response for user ${id}:`, response);
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      console.log(`Successfully updated user ${variables.id}:`, data);
+      
+      // Immediately update the cache with the new user data
+      queryClient.setQueryData(['/api/users'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        const updatedData = oldData.map(user => 
+          user.id === variables.id ? { ...user, ...data } : user
+        );
+        return updatedData;
+      });
+      
+      // Only close dialog if it's an edit form update, not a status toggle
+      if (editingUserId === variables.id) {
+        setIsEditUserDialogOpen(false);
+        setEditingUserId(null);
+      }
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User updated successfully' : 'تم تحديث المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update user:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update user' : 'فشل في تحديث المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      console.log(`Deleting user ${id}`);
+      const response = await apiRequest(`/api/users/${id}`, 'DELETE');
+      console.log(`Delete response for user ${id}:`, response);
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      console.log(`Successfully deleted user ${variables}:`, data);
+      
+      // Remove user from cache
+      queryClient.setQueryData(['/api/users'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.filter(user => user.id !== variables);
+      });
+      
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'User deleted successfully' : 'تم حذف المستخدم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete user:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete user' : 'فشل في حذف المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Import/Export functions from current working version
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setDragActive(false);
-    const file = event.dataTransfer.files?.[0];
-    if (file && file.type === 'text/csv') {
-      setSelectedFile(file);
-      setImportResults(null);
-      setImportError(null);
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type === 'text/csv') {
+      setSelectedFile(files[0]);
     }
   };
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setDragActive(true);
   };
 
-  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setDragActive(false);
   };
 
-  // Import/Export functions
-  const handleFileImport = async () => {
-    if (!selectedFile) return;
-
-    try {
-      // Parse CSV file first
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('entityType', selectedDataType);
-
-      const previewResponse = await fetch('/api/import/preview', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!previewResponse.ok) {
-        throw new Error('Failed to parse file');
-      }
-
-      const previewData = await previewResponse.json();
-      
-      setParsedFileData(previewData.data || []);
-      setFileColumns(previewData.columns || []);
-      setShowFieldMapping(true);
-    } catch (error) {
-      console.error('Import error:', error);
-      setImportError(error instanceof Error ? error.message : 'Failed to process file');
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0] && files[0].type === 'text/csv') {
+      setSelectedFile(files[0]);
     }
   };
 
-  // Field mapping types
-  interface FieldMapping {
-    sourceColumn: string | null;
-    targetField: string;
-    isValid: boolean;
-    warnings: string[];
-  }
-
-  const handleMappingComplete = async (mappings: FieldMapping[]) => {
+  const handleDownloadTemplate = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      setIsImporting(true);
-      setImportProgress(0);
-      setShowFieldMapping(false);
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setImportProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 500);
-
-      const response = await fetch(`/api/import/${selectedDataType}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: parsedFileData,
-          fieldMapping: mappings,
-        }),
+      const response = await fetch(`/api/import/template/${type}`, {
+        method: 'GET',
+        credentials: 'include',
       });
-
-      clearInterval(progressInterval);
-      setImportProgress(100);
 
       if (!response.ok) {
-        throw new Error('Import failed');
+        throw new Error('Failed to download template');
       }
 
-      const result = await response.json();
-      setImportResults(result);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${type}_template.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to download template' : 'فشل تحميل القالب',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleExport = async (type: 'employees' | 'assets' | 'tickets') => {
+    try {
+      const response = await fetch(`/api/export/${type}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Failed to export data' : 'فشل تصدير البيانات',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const parseCSV = (csvText: string) => {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].trim()) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        data.push(row);
+      }
+    }
+    
+    return { headers, data };
+  };
+
+  const handleFileImport = async () => {
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const csvText = e.target?.result as string;
+        const { headers, data } = parseCSV(csvText);
+        
+        setParsedFileData(data);
+        setFileColumns(headers);
+        setShowFieldMapping(true);
+      } catch (error) {
+        console.error('File parsing error:', error);
+        setImportError(language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV');
+      }
+    };
+    reader.readAsText(selectedFile);
+  };
+
+  const handleMappingComplete = async (mappedData: any[], mapping: Record<string, string>) => {
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportError('');
+    setImportResults(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('entityType', selectedDataType);
+      formData.append('data', JSON.stringify(mappedData));
+      formData.append('mapping', JSON.stringify(mapping));
+
+      const response = await fetch('/api/import/process', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Import failed');
+      }
+
+      const results = await response.json();
+      setImportResults(results);
+      setShowFieldMapping(false);
       setSelectedFile(null);
       
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: [`/api/${selectedDataType}`] });
-      
       toast({
-        title: language === 'English' ? 'Import Successful' : 'تم الاستيراد بنجاح',
+        title: language === 'English' ? 'Import Complete' : 'اكتمل الاستيراد',
         description: language === 'English' 
-          ? `Successfully imported ${result.imported} records.` 
-          : `تم استيراد ${result.imported} سجل بنجاح.`,
+          ? `Successfully imported ${results.imported} of ${results.total} records` 
+          : `تم استيراد ${results.imported} من ${results.total} سجل بنجاح`,
       });
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Import error:', error);
-      setImportError(error instanceof Error ? error.message : 'Import failed');
-      toast({
-        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'destructive',
-      });
+      setImportError(error.message);
     } finally {
       setIsImporting(false);
-      setTimeout(() => setImportProgress(0), 2000);
+      setImportProgress(100);
     }
   };
 
@@ -281,130 +625,243 @@ const SystemConfig = () => {
     setFileColumns([]);
   };
 
-  const handleDownloadTemplate = async (entityType: 'employees' | 'assets' | 'tickets') => {
-    try {
-      const response = await fetch(`/api/${entityType}/template`);
-      if (!response.ok) throw new Error('Failed to download template');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${entityType}_template.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
-        description: language === 'English' ? 'Template file saved to downloads.' : 'تم حفظ ملف القالب في التنزيلات.',
-      });
-    } catch (error) {
-      toast({
-        title: language === 'English' ? 'Download Failed' : 'فشل التنزيل',
-        description: language === 'English' ? 'Failed to download template.' : 'فشل في تنزيل القالب.',
-        variant: 'destructive',
-      });
-    }
+  // Handler functions for various operations
+  const handleSaveConfig = () => {
+    const configData = {
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      departments,
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : 587,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure,
+    };
+    updateConfigMutation.mutate(configData);
   };
 
-  const handleExport = async (entityType: 'employees' | 'assets' | 'tickets') => {
-    try {
-      const response = await fetch(`/api/export/${entityType}`);
-      if (!response.ok) throw new Error('Failed to export data');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${entityType}_export_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
-        description: language === 'English' ? 'Data exported successfully.' : 'تم تصدير البيانات بنجاح.',
-      });
-    } catch (error) {
-      toast({
-        title: language === 'English' ? 'Export Failed' : 'فشل التصدير',
-        description: language === 'English' ? 'Failed to export data.' : 'فشل في تصدير البيانات.',
-        variant: 'destructive',
-      });
-    }
+  const handleAddUser = () => {
+    const userData = {
+      username: newUserUsername.trim(),
+      email: newUserEmail.trim(),
+      firstName: newUserFirstName.trim(),
+      lastName: newUserLastName.trim(),
+      role: newUserRole,
+      employeeId: newUserEmployeeId,
+      managerId: newUserManagerId,
+      password: newUserPassword,
+      isActive: newUserIsActive,
+    };
+    createUserMutation.mutate(userData);
   };
 
-  if (isLoading) {
+  const handleEditUser = (user: any) => {
+    setEditingUserId(user.id);
+    setEditedUserUsername(user.username);
+    setEditedUserEmail(user.email);
+    setEditedUserFirstName(user.firstName || '');
+    setEditedUserLastName(user.lastName || '');
+    setEditedUserRole(user.role);
+    setEditedUserEmployeeId(user.employeeId);
+    setEditedUserManagerId(user.managerId);
+    setEditedUserPassword('');
+    setEditedUserIsActive(user.isActive);
+    setIsEditUserDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUserId) return;
+    
+    const userData: any = {
+      username: editedUserUsername.trim(),
+      email: editedUserEmail.trim(),
+      firstName: editedUserFirstName.trim(),
+      lastName: editedUserLastName.trim(),
+      role: editedUserRole,
+      employeeId: editedUserEmployeeId,
+      managerId: editedUserManagerId,
+      isActive: editedUserIsActive,
+    };
+    
+    // Only include password if it's provided
+    if (editedUserPassword.trim()) {
+      userData.password = editedUserPassword.trim();
+    }
+    
+    updateUserMutation.mutate({ id: editingUserId, userData });
+  };
+
+  const handleToggleUserStatus = (userId: number, newStatus: boolean) => {
+    const userData = { isActive: newStatus };
+    updateUserMutation.mutate({ id: userId, userData });
+  };
+
+  // If user doesn't have access to system configuration
+  if (!hasAccess(3)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Settings className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {language === 'English' ? 'Access Denied' : 'تم رفض الوصول'}
+          </h2>
+          <p className="text-gray-600">
+            {language === 'English' 
+              ? 'You do not have permission to access system configuration.' 
+              : 'ليس لديك إذن للوصول إلى إعدادات النظام.'}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Settings className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">
-          {language === 'English' ? 'System Configuration' : 'تكوين النظام'}
-        </h1>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Settings className="h-8 w-8 text-blue-600" />
+            {language === 'English' ? 'System Configuration' : 'إعدادات النظام'}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {language === 'English' 
+              ? 'Configure system-wide settings, manage custom fields, and control user access.'
+              : 'تكوين إعدادات النظام، إدارة الحقول المخصصة، والتحكم في وصول المستخدمين.'}
+          </p>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          onClick={toggleLanguage}
+          className="flex items-center gap-2"
+        >
+          <Globe className="h-4 w-4" />
+          {language === 'English' ? 'العربية' : 'English'}
+        </Button>
       </div>
 
-      <Tabs defaultValue="defaults" className="w-full">
+      {/* Navigation Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="defaults">
-            {language === 'English' ? 'System Defaults' : 'الافتراضات'}
+          <TabsTrigger value="general" className="flex items-center gap-2 text-sm">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'General' : 'عام'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="employees">
-            {language === 'English' ? 'Employees' : 'الموظفون'}
+          <TabsTrigger value="employees" className="flex items-center gap-2 text-sm">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Employees' : 'الموظفون'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="assets">
-            {language === 'English' ? 'Assets' : 'الأصول'}
+          <TabsTrigger value="assets" className="flex items-center gap-2 text-sm">
+            <Package className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Assets' : 'الأصول'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="tickets">
-            {language === 'English' ? 'Tickets' : 'التذاكر'}
+          <TabsTrigger value="tickets" className="flex items-center gap-2 text-sm">
+            <Ticket className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Tickets' : 'التذاكر'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="email">
-            {language === 'English' ? 'Email' : 'البريد الإلكتروني'}
+          <TabsTrigger value="email" className="flex items-center gap-2 text-sm">
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Email' : 'البريد'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="users">
-            {language === 'English' ? 'Users & Roles' : 'المستخدمون والأدوار'}
+          <TabsTrigger value="users" className="flex items-center gap-2 text-sm">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Users' : 'المستخدمون'}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="import-export">
-            {language === 'English' ? 'Import/Export' : 'استيراد/تصدير'}
+          <TabsTrigger value="import-export" className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {language === 'English' ? 'Import/Export' : 'استيراد/تصدير'}
+            </span>
           </TabsTrigger>
         </TabsList>
 
-        {/* System Defaults Tab */}
-        <TabsContent value="defaults" className="space-y-4">
+        {/* General Tab */}
+        <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                {language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية للنظام'}
-              </CardTitle>
+              <CardTitle>{language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية'}</CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure default system settings and preferences.'
-                  : 'تكوين الإعدادات والتفضيلات الافتراضية للنظام.'}
+                  ? 'Configure basic system settings and ID prefixes.'
+                  : 'تكوين الإعدادات الأساسية وبادئات المعرفات.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل'}</Label>
+                  <Input
+                    value={assetIdPrefix}
+                    onChange={(e) => setAssetIdPrefix(e.target.value)}
+                    placeholder="AST-"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'English' ? 'Used for automatic asset ID generation' : 'يستخدم لتوليد معرفات الأصول تلقائياً'}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف'}</Label>
+                  <Input
+                    value={empIdPrefix}
+                    onChange={(e) => setEmpIdPrefix(e.target.value)}
+                    placeholder="EMP-"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'English' ? 'Used for automatic employee ID generation' : 'يستخدم لتوليد معرفات الموظفين تلقائياً'}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة'}</Label>
+                  <Input
+                    value={ticketIdPrefix}
+                    onChange={(e) => setTicketIdPrefix(e.target.value)}
+                    placeholder="TKT-"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'English' ? 'Used for automatic ticket ID generation' : 'يستخدم لتوليد معرفات التذاكر تلقائياً'}
+                  </p>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="language">
-                    {language === 'English' ? 'Default Language' : 'اللغة الافتراضية'}
-                  </Label>
-                  <Select 
-                    value={config.language} 
-                    onValueChange={(value: 'English' | 'Arabic') => handleConfigChange('language', value)}
-                  >
+                  <Label>{language === 'English' ? 'Default Currency' : 'العملة الافتراضية'}</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="SAR">SAR (ر.س)</SelectItem>
+                      <SelectItem value="AED">AED (د.إ)</SelectItem>
+                      <SelectItem value="EGP">EGP (ج.م)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>{language === 'English' ? 'System Language' : 'لغة النظام'}</Label>
+                  <Select value={language} onValueChange={() => toggleLanguage()}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -414,120 +871,22 @@ const SystemConfig = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">
-                    {language === 'English' ? 'Timezone' : 'المنطقة الزمنية'}
-                  </Label>
-                  <Select 
-                    value={config.timezone} 
-                    onValueChange={(value) => handleConfigChange('timezone', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="Asia/Riyadh">Asia/Riyadh</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York</SelectItem>
-                      <SelectItem value="Europe/London">Europe/London</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">
-                    {language === 'English' ? 'Date Format' : 'تنسيق التاريخ'}
-                  </Label>
-                  <Select 
-                    value={config.dateFormat} 
-                    onValueChange={(value) => handleConfigChange('dateFormat', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="theme">
-                    {language === 'English' ? 'Theme' : 'المظهر'}
-                  </Label>
-                  <Select 
-                    value={config.theme} 
-                    onValueChange={(value: 'light' | 'dark' | 'auto') => handleConfigChange('theme', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">{language === 'English' ? 'Light' : 'فاتح'}</SelectItem>
-                      <SelectItem value="dark">{language === 'English' ? 'Dark' : 'داكن'}</SelectItem>
-                      <SelectItem value="auto">{language === 'English' ? 'Auto' : 'تلقائي'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'ID Prefixes' : 'بادئات المعرفات'}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="employeePrefix">
-                      {language === 'English' ? 'Employee Prefix' : 'بادئة الموظف'}
-                    </Label>
-                    <Input
-                      id="employeePrefix"
-                      value={config.employeePrefix}
-                      onChange={(e) => handleConfigChange('employeePrefix', e.target.value)}
-                      placeholder="EMP-"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assetPrefix">
-                      {language === 'English' ? 'Asset Prefix' : 'بادئة الأصل'}
-                    </Label>
-                    <Input
-                      id="assetPrefix"
-                      value={config.assetPrefix}
-                      onChange={(e) => handleConfigChange('assetPrefix', e.target.value)}
-                      placeholder="AST-"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ticketPrefix">
-                      {language === 'English' ? 'Ticket Prefix' : 'بادئة التذكرة'}
-                    </Label>
-                    <Input
-                      id="ticketPrefix"
-                      value={config.ticketPrefix}
-                      onChange={(e) => handleConfigChange('ticketPrefix', e.target.value)}
-                      placeholder="TKT-"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-6 border-t">
                 <Button 
                   onClick={handleSaveConfig}
                   disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
                 >
                   {updateConfigMutation.isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {language === 'English' ? 'Saving...' : 'جاري الحفظ...'}
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
                     </>
                   ) : (
                     <>
-                      <Settings className="h-4 w-4 mr-2" />
+                      <Save className="mr-2 h-4 w-4" />
                       {language === 'English' ? 'Save Settings' : 'حفظ الإعدادات'}
                     </>
                   )}
@@ -537,41 +896,38 @@ const SystemConfig = () => {
           </Card>
         </TabsContent>
 
-        {/* Import/Export Tab */}
+        {/* Import/Export Tab - Working version preserved */}
         <TabsContent value="import-export" className="space-y-4">
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  {language === 'English' ? 'Data Management' : 'إدارة البيانات'}
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  {language === 'English' ? 'Import & Export Data' : 'استيراد وتصدير البيانات'}
                 </CardTitle>
                 <CardDescription>
                   {language === 'English' 
-                    ? 'Import and export data for employees, assets, and tickets.'
-                    : 'استيراد وتصدير البيانات للموظفين والأصول والتذاكر.'}
+                    ? 'Import data from CSV files or export existing data for backup and analysis.'
+                    : 'استيراد البيانات من ملفات CSV أو تصدير البيانات الموجودة للنسخ الاحتياطي والتحليل.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Data Type Selection */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-5 w-5 text-muted-foreground" />
-                    <Label className="text-base font-medium">
-                      {language === 'English' ? 'Select Data Type' : 'اختيار نوع البيانات'}
-                    </Label>
-                  </div>
-                  
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Select Data Type' : 'اختر نوع البيانات'}
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {DATA_TYPE_OPTIONS.map((option) => {
                       const Icon = option.icon;
                       const isSelected = selectedDataType === option.value;
+                      
                       return (
-                        <Card 
+                        <Card
                           key={option.value}
-                          className={`cursor-pointer transition-all ${
+                          className={`cursor-pointer transition-all duration-200 ${
                             isSelected 
-                              ? 'ring-2 ring-blue-500 bg-blue-50' 
+                              ? 'ring-2 ring-blue-500 shadow-md bg-blue-50' 
                               : 'hover:shadow-md'
                           }`}
                           onClick={() => setSelectedDataType(option.value)}
@@ -588,7 +944,7 @@ const SystemConfig = () => {
                                 </p>
                               </div>
                               {isSelected && (
-                                <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                                <Check className="h-5 w-5 text-blue-600" />
                               )}
                             </div>
                           </CardContent>
@@ -643,7 +999,7 @@ const SystemConfig = () => {
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                         >
-                          <FileUp className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                          <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                           <div className="space-y-2">
                             <p className="text-sm font-medium">
                               {language === 'English' 
@@ -675,7 +1031,7 @@ const SystemConfig = () => {
                         {selectedFile && (
                           <div className="flex items-center justify-between p-3 bg-blue-50 rounded-md border">
                             <div className="flex items-center gap-2">
-                              <FileUp className="h-4 w-4 text-blue-600" />
+                              <Upload className="h-4 w-4 text-blue-600" />
                               <span className="text-sm font-medium">{selectedFile.name}</span>
                               <span className="text-xs text-muted-foreground">
                                 ({(selectedFile.size / 1024).toFixed(1)} KB)
@@ -698,7 +1054,7 @@ const SystemConfig = () => {
                             variant="outline" 
                             className="w-full"
                           >
-                            <FileDown className="h-4 w-4 mr-2" />
+                            <Download className="h-4 w-4 mr-2" />
                             {language === 'English' ? 'Get Template' : 'احصل على القالب'}
                           </Button>
                           
@@ -736,30 +1092,12 @@ const SystemConfig = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Import Progress */}
-                    {isImporting && (
-                      <Card className="mt-4">
-                        <CardContent className="pt-6">
-                          <div className="space-y-2">
-                            <Progress value={importProgress} className="w-full" />
-                            <p className="text-sm text-center text-muted-foreground">
-                              {importProgress}% {language === 'English' ? 'complete' : 'مكتمل'}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
                     {/* Import Results */}
                     {importResults && (
                       <Card className="mt-4">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-2 mb-4">
-                            {importResults.success ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <AlertCircle className="h-5 w-5 text-red-600" />
-                            )}
+                            <Check className="h-5 w-5 text-green-600" />
                             <span className="font-medium text-lg">
                               {language === 'English' ? 'Import Results' : 'نتائج الاستيراد'}
                             </span>
@@ -806,7 +1144,7 @@ const SystemConfig = () => {
                       <Card className="mt-4 border-red-200">
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="h-5 w-5 text-red-600" />
+                            <X className="h-5 w-5 text-red-600" />
                             <span className="font-medium text-red-800 text-lg">
                               {language === 'English' ? 'Import Error' : 'خطأ في الاستيراد'}
                             </span>
@@ -822,7 +1160,7 @@ const SystemConfig = () => {
           </div>
         </TabsContent>
 
-        {/* Employees Tab - Custom Fields Management */}
+        {/* Placeholder tabs for now - complete functionality will be added */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader>
@@ -836,254 +1174,62 @@ const SystemConfig = () => {
                   : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالموظفين.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Default Departments' : 'الأقسام الافتراضية'}
-                  </h3>
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Available Departments' : 'الأقسام المتاحة'}</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {['IT', 'HR', 'Finance', 'Marketing', 'Operations', 'Sales'].map(dept => (
-                        <span key={dept} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                          {dept}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Employment Types' : 'أنواع التوظيف'}
-                  </h3>
-                  <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Available Types' : 'الأنواع المتاحة'}</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Full-time', 'Part-time', 'Contract', 'Intern'].map(type => (
-                        <span key={type} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                          {type}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'Employee Status Options' : 'خيارات حالة الموظف'}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {['Active', 'Resigned', 'Terminated', 'On Leave'].map(status => (
-                    <span key={status} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                      {status}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Fields Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
-                  </h3>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
-                  </Button>
-                </div>
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
-                  <p className="text-sm mt-2">
-                    {language === 'English' 
-                      ? 'Add custom fields to capture additional employee information.' 
-                      : 'أضف حقولاً مخصصة لالتقاط معلومات إضافية عن الموظفين.'}
-                  </p>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-muted-foreground">
+                {language === 'English' 
+                  ? 'Employee configuration features will be available in the next update.'
+                  : 'ستكون ميزات تكوين الموظفين متاحة في التحديث القادم.'}
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Assets Tab - Custom Fields Management */}
         <TabsContent value="assets" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
+                <Package className="h-5 w-5" />
                 {language === 'English' ? 'Asset Configuration' : 'تكوين الأصول'}
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure asset types, statuses, and custom fields.'
-                  : 'تكوين أنواع الأصول والحالات والحقول المخصصة.'}
+                  ? 'Configure asset-related settings and custom fields.'
+                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالأصول.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Asset Types' : 'أنواع الأصول'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 'Network', 'Printer', 'Tablet', 'Mobile'].map(type => (
-                      <span key={type} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        {type}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Asset Statuses' : 'حالات الأصول'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Available', 'In Use', 'Maintenance', 'Retired', 'Damaged', 'Sold'].map(status => (
-                      <span key={status} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                        {status}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'Common Brands' : 'العلامات التجارية الشائعة'}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {['Dell', 'HP', 'Lenovo', 'Apple', 'Microsoft', 'Cisco', 'Canon', 'Samsung'].map(brand => (
-                    <span key={brand} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                      {brand}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Fields Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
-                  </h3>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
-                  </Button>
-                </div>
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
-                  <p className="text-sm mt-2">
-                    {language === 'English' 
-                      ? 'Add custom fields to capture additional asset specifications.' 
-                      : 'أضف حقولاً مخصصة لالتقاط مواصفات إضافية للأصول.'}
-                  </p>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-muted-foreground">
+                {language === 'English' 
+                  ? 'Asset configuration features will be available in the next update.'
+                  : 'ستكون ميزات تكوين الأصول متاحة في التحديث القادم.'}
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tickets Tab - Custom Fields Management */}
         <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+                <Ticket className="h-5 w-5" />
                 {language === 'English' ? 'Ticket Configuration' : 'تكوين التذاكر'}
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure ticket categories, priorities, and custom fields.'
-                  : 'تكوين فئات التذاكر والأولويات والحقول المخصصة.'}
+                  ? 'Configure ticket-related settings and custom fields.'
+                  : 'تكوين الإعدادات والحقول المخصصة المتعلقة بالتذاكر.'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Request Types' : 'أنواع الطلبات'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Service Request', 'Incident', 'Problem', 'Change'].map(type => (
-                      <span key={type} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        {type}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Categories' : 'الفئات'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Hardware', 'Software', 'Network', 'Security', 'Access'].map(category => (
-                      <span key={category} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Priority Levels' : 'مستويات الأولوية'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Low', 'Medium', 'High', 'Critical'].map(priority => (
-                      <span key={priority} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-                        {priority}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Status Options' : 'خيارات الحالة'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Open', 'In Progress', 'Resolved', 'Closed'].map(status => (
-                      <span key={status} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                        {status}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom Fields Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Custom Fields' : 'الحقول المخصصة'}
-                  </h3>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Add Custom Field' : 'إضافة حقل مخصص'}
-                  </Button>
-                </div>
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>{language === 'English' ? 'No custom fields configured' : 'لا توجد حقول مخصصة مكونة'}</p>
-                  <p className="text-sm mt-2">
-                    {language === 'English' 
-                      ? 'Add custom fields to capture additional ticket information.' 
-                      : 'أضف حقولاً مخصصة لالتقاط معلومات إضافية عن التذاكر.'}
-                  </p>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-muted-foreground">
+                {language === 'English' 
+                  ? 'Ticket configuration features will be available in the next update.'
+                  : 'ستكون ميزات تكوين التذاكر متاحة في التحديث القادم.'}
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Email Tab - Complete Configuration */}
         <TabsContent value="email" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1093,228 +1239,546 @@ const SystemConfig = () => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Configure email server settings for notifications and alerts.'
-                  : 'تكوين إعدادات خادم البريد الإلكتروني للإشعارات والتنبيهات.'}
+                  ? 'Configure SMTP settings for email notifications and system communications.'
+                  : 'تكوين إعدادات SMTP لإشعارات البريد الإلكتروني واتصالات النظام.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="emailHost">
-                    {language === 'English' ? 'SMTP Host' : 'مضيف SMTP'}
-                  </Label>
-                  <Input
-                    id="emailHost"
-                    value={config.emailHost}
-                    onChange={(e) => handleConfigChange('emailHost', e.target.value)}
-                    placeholder="smtp.gmail.com"
-                  />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'SMTP Server Settings' : 'إعدادات خادم SMTP'}
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'SMTP Host' : 'خادم SMTP'}</Label>
+                    <Input
+                      value={emailHost}
+                      onChange={(e) => setEmailHost(e.target.value)}
+                      placeholder="smtp.gmail.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'SMTP server hostname' : 'اسم خادم SMTP'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'SMTP Port' : 'منفذ SMTP'}</Label>
+                    <Input
+                      type="number"
+                      value={emailPort}
+                      onChange={(e) => setEmailPort(e.target.value)}
+                      placeholder="587"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'Common ports: 587 (TLS), 465 (SSL), 25 (unsecured)' : 'المنافذ الشائعة: 587 (TLS)، 465 (SSL)، 25 (غير آمن)'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                    <Input
+                      value={emailUser}
+                      onChange={(e) => setEmailUser(e.target.value)}
+                      placeholder="your-email@gmail.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'SMTP authentication username' : 'اسم مستخدم التحقق من SMTP'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
+                    <Input
+                      type="password"
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      placeholder="your-app-password"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'SMTP authentication password or app password' : 'كلمة مرور SMTP أو كلمة مرور التطبيق'}
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="emailPort">
-                    {language === 'English' ? 'SMTP Port' : 'منفذ SMTP'}
-                  </Label>
-                  <Input
-                    id="emailPort"
-                    value={config.emailPort}
-                    onChange={(e) => handleConfigChange('emailPort', e.target.value)}
-                    placeholder="587"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="emailUser">
-                    {language === 'English' ? 'Email Username' : 'اسم مستخدم البريد الإلكتروني'}
-                  </Label>
-                  <Input
-                    id="emailUser"
-                    value={config.emailUser}
-                    onChange={(e) => handleConfigChange('emailUser', e.target.value)}
-                    placeholder="your-email@domain.com"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="emailPassword">
-                    {language === 'English' ? 'Email Password' : 'كلمة مرور البريد الإلكتروني'}
-                  </Label>
-                  <Input
-                    id="emailPassword"
-                    type="password"
-                    value={config.emailPassword}
-                    onChange={(e) => handleConfigChange('emailPassword', e.target.value)}
-                    placeholder="••••••••"
-                  />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    {language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني'}
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'From Email Address' : 'عنوان البريد المرسل'}</Label>
+                    <Input
+                      type="email"
+                      value={emailFromAddress}
+                      onChange={(e) => setEmailFromAddress(e.target.value)}
+                      placeholder="noreply@yourcompany.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'Email address that appears as sender' : 'عنوان البريد الذي يظهر كمرسل'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'From Name' : 'اسم المرسل'}</Label>
+                    <Input
+                      value={emailFromName}
+                      onChange={(e) => setEmailFromName(e.target.value)}
+                      placeholder="SimpleIT System"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'Display name for sent emails' : 'الاسم المعروض للرسائل المرسلة'}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{language === 'English' ? 'Use Secure Connection (TLS/SSL)' : 'استخدام اتصال آمن (TLS/SSL)'}</Label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="email-secure"
+                        checked={emailSecure}
+                        onChange={(e) => setEmailSecure(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="email-secure" className="text-sm">
+                        {language === 'English' ? 'Enable secure connection' : 'تفعيل الاتصال الآمن'}
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'English' ? 'Recommended for most SMTP providers' : 'موصى به لمعظم مقدمي خدمة SMTP'}
+                    </p>
+                  </div>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'Notification Settings' : 'إعدادات الإشعارات'}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="ticketNotifications">
-                      {language === 'English' ? 'Ticket Notifications' : 'إشعارات التذاكر'}
-                    </Label>
-                    <Switch id="ticketNotifications" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="assetNotifications">
-                      {language === 'English' ? 'Asset Notifications' : 'إشعارات الأصول'}
-                    </Label>
-                    <Switch id="assetNotifications" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="maintenanceNotifications">
-                      {language === 'English' ? 'Maintenance Reminders' : 'تذكيرات الصيانة'}
-                    </Label>
-                    <Switch id="maintenanceNotifications" />
-                  </div>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">
+                  {language === 'English' ? 'Common SMTP Configurations:' : 'تكوينات SMTP الشائعة:'}
+                </h4>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <div><strong>Gmail:</strong> smtp.gmail.com:587 (TLS)</div>
+                  <div><strong>Outlook:</strong> smtp-mail.outlook.com:587 (TLS)</div>
+                  <div><strong>Yahoo:</strong> smtp.mail.yahoo.com:587 (TLS)</div>
+                  <div><strong>SendGrid:</strong> smtp.sendgrid.net:587 (TLS)</div>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={handleSaveConfig} disabled={updateConfigMutation.isPending}>
+              <div className="flex justify-end pt-6 border-t">
+                <Button 
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="min-w-32"
+                >
                   {updateConfigMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : null}
-                  {language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد الإلكتروني'}
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد'}
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Users & Roles Tab - Complete User Management */}
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                {language === 'English' ? 'Users & Roles Management' : 'إدارة المستخدمين والأدوار'}
+                <Users className="h-5 w-5" />
+                {language === 'English' ? 'User Management' : 'إدارة المستخدمين'}
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Manage user accounts and role-based access control.'
-                  : 'إدارة حسابات المستخدمين والتحكم في الوصول القائم على الأدوار.'}
+                  ? 'Manage system users, their roles, and access permissions.'
+                  : 'إدارة مستخدمي النظام وأدوارهم وصلاحيات الوصول.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'System Users' : 'مستخدمو النظام'}
-                  </h3>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
-                  </Button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-gray-500" />
+                    <span className="font-medium">
+                      {language === 'English' ? 'Total Users:' : 'إجمالي المستخدمين:'} {allUsers.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-sm text-gray-600">
+                      {language === 'English' ? 'Active:' : 'نشط:'} {allUsers.filter(u => u.isActive).length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                    <span className="text-sm text-gray-600">
+                      {language === 'English' ? 'Inactive:' : 'غير نشط:'} {allUsers.filter(u => !u.isActive).length}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="h-4 w-4 text-red-600" />
-                      <span className="font-medium text-red-600">Admin</span>
+                {/* Add User Button */}
+                <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{language === 'English' ? 'Create New User' : 'إنشاء مستخدم جديد'}</DialogTitle>
+                      <DialogDescription>
+                        {language === 'English' ? 'Add a new user to the system with role-based access control.' : 'إضافة مستخدم جديد إلى النظام مع التحكم في الوصول القائم على الأدوار.'}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                        <Input 
+                          value={newUserUsername} 
+                          onChange={(e) => setNewUserUsername(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Must be unique and at least 3 characters' : 'يجب أن يكون فريداً وعلى الأقل 3 أحرف'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                        <Input 
+                          type="email"
+                          value={newUserEmail} 
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter email address' : 'أدخل عنوان البريد الإلكتروني'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Used for login and notifications' : 'يستخدم لتسجيل الدخول والإشعارات'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
+                        <Input 
+                          type="password"
+                          value={newUserPassword} 
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Minimum 6 characters required' : 'مطلوب 6 أحرف على الأقل'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
+                        <Select value={newUserRole} onValueChange={setNewUserRole}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                            <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                            <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                            <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+                        <Select value={newUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setNewUserIsActive(value === 'active')}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">{language === 'English' ? 'Active' : 'نشط'}</SelectItem>
+                            <SelectItem value="inactive">{language === 'English' ? 'Inactive' : 'غير نشط'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'English' ? 'Active users can log in and access the system' : 'المستخدمون النشطون يمكنهم تسجيل الدخول والوصول إلى النظام'}
+                        </p>
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+                          {language === 'English' ? 'Cancel' : 'إلغاء'}
+                        </Button>
+                        <Button 
+                          onClick={handleAddUser}
+                          disabled={createUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
+                        >
+                          {createUserMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                            </>
+                          ) : (
+                            language === 'English' ? 'Add User' : 'إضافة مستخدم'
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' 
-                        ? 'Full system access and configuration rights'
-                        : 'الوصول الكامل للنظام وحقوق التكوين'}
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-blue-600">Manager</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' 
-                        ? 'Department management and reporting access'
-                        : 'إدارة القسم والوصول إلى التقارير'}
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="h-4 w-4 text-green-600" />
-                      <span className="font-medium text-green-600">Agent</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' 
-                        ? 'Ticket handling and asset management'
-                        : 'معالجة التذاكر وإدارة الأصول'}
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-gray-600" />
-                      <span className="font-medium text-gray-600">Employee</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {language === 'English' 
-                        ? 'Basic access to create tickets and view assets'
-                        : 'الوصول الأساسي لإنشاء التذاكر وعرض الأصول'}
-                    </p>
-                  </div>
-                </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'Security Settings' : 'إعدادات الأمان'}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="passwordComplexity">
-                      {language === 'English' ? 'Enforce Password Complexity' : 'فرض تعقيد كلمة المرور'}
-                    </Label>
-                    <Switch id="passwordComplexity" />
+              {/* Action Buttons for Selected User */}
+              {selectedUserId && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-xs text-blue-700 font-medium">
+                      {language === 'English' ? 'Selected User Actions:' : 'إجراءات المستخدم المحدد:'}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const user = allUsers.find(u => u.id === selectedUserId);
+                        if (user) handleToggleUserStatus(user.id, !user.isActive);
+                      }}
+                      disabled={updateUserMutation.isPending}
+                      className="h-8"
+                    >
+                      {updateUserMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        (() => {
+                          const user = allUsers.find(u => u.id === selectedUserId);
+                          return user?.isActive ? 
+                            (language === 'English' ? 'Deactivate' : 'إلغاء تفعيل') : 
+                            (language === 'English' ? 'Activate' : 'تفعيل');
+                        })()
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const user = allUsers.find(u => u.id === selectedUserId);
+                        if (user) handleEditUser(user);
+                      }}
+                      className="h-8"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      {language === 'English' ? 'Edit' : 'تعديل'}
+                    </Button>
+                    {selectedUserId !== 1 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const user = allUsers.find(u => u.id === selectedUserId);
+                          if (user && window.confirm(language === 'English' ? `Are you sure you want to delete user "${user.username}"?` : `هل أنت متأكد من حذف المستخدم "${user.username}"؟`)) {
+                            deleteUserMutation.mutate(user.id);
+                            setSelectedUserId(null);
+                          }
+                        }}
+                        className="h-8 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                        disabled={deleteUserMutation.isPending}
+                      >
+                        {deleteUserMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Trash className="h-3 w-3 mr-1" />
+                            {language === 'English' ? 'Delete' : 'حذف'}
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sessionTimeout">
-                      {language === 'English' ? 'Auto Session Timeout' : 'انتهاء الجلسة التلقائي'}
-                    </Label>
-                    <Switch id="sessionTimeout" />
+                )}
+
+              {/* Users Table */}
+              <div className="border rounded-lg bg-white shadow-sm">
+                {!allUsers?.length ? (
+                  <div className="p-8 text-center">
+                    <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {language === 'English' ? 'No Users Found' : 'لم يتم العثور على مستخدمين'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'English' ? 'Get started by adding your first user.' : 'ابدأ بإضافة أول مستخدم.'}
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="twoFactor">
-                      {language === 'English' ? 'Two-Factor Authentication' : 'المصادقة الثنائية'}
-                    </Label>
-                    <Switch id="twoFactor" />
-                  </div>
-                </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50/50">
+                        <TableHead className="font-semibold">{language === 'English' ? 'Username' : 'اسم المستخدم'}</TableHead>
+                        <TableHead className="font-semibold">{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</TableHead>
+                        <TableHead className="font-semibold">{language === 'English' ? 'Role' : 'الدور'}</TableHead>
+                        <TableHead className="font-semibold">{language === 'English' ? 'Status' : 'الحالة'}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allUsers.map((user: any) => (
+                        <TableRow 
+                          key={user.id} 
+                          className={`cursor-pointer transition-colors ${
+                            selectedUserId === user.id 
+                              ? 'bg-blue-50 border-l-4 border-l-blue-500' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => setSelectedUserId(user.id === selectedUserId ? null : user.id)}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {selectedUserId === user.id && (
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                              )}
+                              {user.username}
+                              {user.id === 1 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {language === 'English' ? 'System Admin' : 'مشرف النظام'}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-600">{user.email}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={`${
+                                user.role === 'admin' ? 'border-red-200 text-red-700 bg-red-50' :
+                                user.role === 'manager' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                                user.role === 'agent' ? 'border-green-200 text-green-700 bg-green-50' :
+                                'border-gray-200 text-gray-700 bg-gray-50'
+                              }`}
+                            >
+                              {language === 'English' ? user.role : (
+                                user.role === 'admin' ? 'مشرف' :
+                                user.role === 'manager' ? 'مدير' :
+                                user.role === 'agent' ? 'وكيل' : 'موظف'
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={user.isActive ? "default" : "secondary"}
+                              className={`${
+                                user.isActive 
+                                  ? 'bg-green-100 text-green-800 border-green-200' 
+                                  : 'bg-gray-100 text-gray-600 border-gray-200'
+                              }`}
+                            >
+                              {user.isActive ? 
+                                (language === 'English' ? 'Active' : 'نشط') : 
+                                (language === 'English' ? 'Inactive' : 'غير نشط')
+                              }
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  {language === 'English' ? 'User Management Actions' : 'إجراءات إدارة المستخدمين'}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="justify-start">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Bulk Import Users' : 'استيراد مجمع للمستخدمين'}
-                  </Button>
-                  <Button variant="outline" className="justify-start">
-                    <Download className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Export User List' : 'تصدير قائمة المستخدمين'}
-                  </Button>
-                  <Button variant="outline" className="justify-start">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Reset Passwords' : 'إعادة تعيين كلمات المرور'}
-                  </Button>
-                </div>
-              </div>
+              {/* Edit User Dialog */}
+              <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{language === 'English' ? 'Edit User' : 'تعديل المستخدم'}</DialogTitle>
+                    <DialogDescription>
+                      {language === 'English' ? 'Update user information and settings. Leave password field blank to keep current password.' : 'تحديث معلومات المستخدم والإعدادات. اترك حقل كلمة المرور فارغاً للاحتفاظ بكلمة المرور الحالية.'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                      <Input 
+                        value={editedUserUsername} 
+                        onChange={(e) => setEditedUserUsername(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
+                      <Input 
+                        type="email"
+                        value={editedUserEmail} 
+                        onChange={(e) => setEditedUserEmail(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                      <Input 
+                        type="password"
+                        value={editedUserPassword} 
+                        onChange={(e) => setEditedUserPassword(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter new password' : 'أدخل كلمة مرور جديدة'}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? 'Leave blank to keep current password' : 'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
+                      <Select value={editedUserRole} onValueChange={setEditedUserRole}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
+                          <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
+                          <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
+                          <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
+                      <Select value={editedUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setEditedUserIsActive(value === 'active')}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">{language === 'English' ? 'Active' : 'نشط'}</SelectItem>
+                          <SelectItem value="inactive">{language === 'English' ? 'Inactive' : 'غير نشط'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? 'Active users can log in and access the system' : 'المستخدمون النشطون يمكنهم تسجيل الدخول والوصول إلى النظام'}
+                      </p>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+                        {language === 'English' ? 'Cancel' : 'إلغاء'}
+                      </Button>
+                      <Button 
+                        onClick={handleUpdateUser}
+                        disabled={updateUserMutation.isPending || !editedUserUsername.trim() || !editedUserEmail.trim()}
+                      >
+                        {updateUserMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {language === 'English' ? 'Updating...' : 'جارٍ التحديث...'}
+                          </>
+                        ) : (
+                          language === 'English' ? 'Update' : 'تحديث'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-};
+}
 
 export default SystemConfig;
