@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
@@ -63,6 +64,7 @@ export default function TicketsTable({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
@@ -485,7 +487,13 @@ export default function TicketsTable({
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.location.href = `/tickets/${ticket.id}`;
+                        // Prefetch ticket details data for faster loading
+                        queryClient.prefetchQuery({
+                          queryKey: ['/api/tickets', ticket.id.toString()],
+                          queryFn: () => apiRequest(`/api/tickets/${ticket.id}`, 'GET'),
+                          staleTime: 1000 * 60 * 5,
+                        });
+                        navigate(`/tickets/${ticket.id}`);
                       }}
                     >
 {language === 'English' ? 'View Details' : 'عرض التفاصيل'}

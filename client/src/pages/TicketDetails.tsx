@@ -70,7 +70,7 @@ export default function TicketDetails() {
     unassigned: language === 'English' ? 'Unassigned' : 'غير مُكلف',
   };
 
-  // Fetch ticket details
+  // Fetch ticket details with optimized caching and prefetching
   const { 
     data: ticket, 
     isLoading: ticketLoading,
@@ -79,25 +79,58 @@ export default function TicketDetails() {
     queryKey: ['/api/tickets', ticketId],
     queryFn: () => apiRequest(`/api/tickets/${ticketId}`, 'GET'),
     enabled: !!ticketId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache for ticket details
+    gcTime: 1000 * 60 * 15, // Keep in cache for 15 minutes
+    // Try to get initial data from tickets list cache if available
+    initialData: () => {
+      const ticketsCache = queryClient.getQueryData(['/api/tickets']);
+      if (ticketsCache && Array.isArray(ticketsCache)) {
+        return ticketsCache.find((t: any) => t.id.toString() === ticketId);
+      }
+      return undefined;
+    },
+    initialDataUpdatedAt: () => {
+      return queryClient.getQueryState(['/api/tickets'])?.dataUpdatedAt;
+    },
   });
 
-  // Fetch employees for submitter/assignee info
+  // Fetch employees for submitter/assignee info with improved caching
   const { data: employees = [] } = useQuery({
     queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
 
-  // Fetch assets for related asset info
+  // Fetch assets for related asset info with improved caching
   const { data: assets = [] } = useQuery({
     queryKey: ['/api/assets'],
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
 
-  // Fetch users for assignee info
+  // Fetch users for assignee info with improved caching
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users'],
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
     enabled: hasAccess(2),
+  });
+
+  // Prefetch comments and history for smoother experience
+  useQuery({
+    queryKey: ['/api/tickets', ticketId, 'comments'],
+    queryFn: () => apiRequest(`/api/tickets/${ticketId}/comments`),
+    enabled: !!ticketId && !!ticket,
+    staleTime: 1000 * 60 * 2, // 2 minutes cache for comments
+    gcTime: 1000 * 60 * 10,
+  });
+
+  useQuery({
+    queryKey: ['/api/tickets', ticketId, 'history'],
+    queryFn: () => apiRequest(`/api/tickets/${ticketId}/history`),
+    enabled: !!ticketId && !!ticket,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache for history
+    gcTime: 1000 * 60 * 15,
   });
 
   // Update ticket mutation
@@ -210,7 +243,7 @@ export default function TicketDetails() {
     }
   };
 
-  if (ticketLoading) {
+  if (ticketLoading && !ticket) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
