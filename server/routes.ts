@@ -1753,12 +1753,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Processing ticket row ${index + 1}:`, Object.keys(row));
           
-          // Handle CSV with generic column names like employees
+          // Handle CSV with generic column names or proper headers
           if (Object.keys(row).includes('_0')) {
-            // console.log('Detected generic column names for tickets, accessing by index'); // Debug logging
-            
-            // Skip header row
-            if (row._0 === 'summary' || row._0 === 'Summary') {
+            // Skip header row if detected
+            if (row._0 === 'ticketId' || row._0 === 'summary' || row._0 === 'Summary') {
               console.log('Skipping ticket header row');
               continue;
             }
@@ -1777,22 +1775,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const activeEmployee = employees.find(emp => emp.status === 'Active') || employees[0];
             console.log(`Using employee ID ${activeEmployee.id} for ticket submitter`);
             
+            // Map CSV fields correctly - fixing the column mapping issue
             const ticketData: any = {
               ticketId,
-              summary: row._0 || 'Imported Ticket',
-              description: row._1 || '',
-              category: row._2 || '',
-              requestType: 'Other',
-              urgency: 'Medium',
-              impact: 'Medium',
-              priority: row._3 || 'Medium',
-              status: 'Open',
+              summary: row._1 || 'Imported Ticket',        // Summary is usually _1
+              description: row._2 || 'No description',     // Description is usually _2  
+              category: row._3 || 'Incident',              // Category is usually _3
+              requestType: row._4 || 'Hardware',           // Request Type is usually _4
+              urgency: row._5 || 'Medium',                 // Urgency is usually _5
+              impact: row._6 || 'Medium',                  // Impact is usually _6
+              priority: row._7 || 'Medium',                // Priority is usually _7
+              status: row._8 || 'Open',                    // Status is usually _8
               submittedById: activeEmployee.id,
               assignedToId: null,
               relatedAssetId: null,
               dueDate: null,
               slaTarget: null,
-              escalationLevel: null,
+              escalationLevel: 0,
               tags: null,
               rootCause: null,
               workaround: null,
@@ -1800,6 +1799,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               resolutionNotes: null,
               privateNotes: null
             };
+            
+            // Validate enum values before creating ticket
+            const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+            const validStatuses = ['Open', 'In Progress', 'Resolved', 'Closed', 'Cancelled'];
+            
+            if (!validPriorities.includes(ticketData.priority)) {
+              ticketData.priority = 'Medium';
+            }
+            if (!validStatuses.includes(ticketData.status)) {
+              ticketData.status = 'Open';
+            }
             
             const result = await storage.createTicket(ticketData);
             importResults.push(result);
@@ -1815,9 +1825,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const ticketData: any = {
             ticketId,
             summary: row['Summary'] || row.summary || 'Imported Ticket',
-            description: row['Description'] || row.description || '',
-            category: row['Category'] || row.category || '',
-            requestType: row['Request Type'] || row.requestType || 'Other',
+            description: row['Description'] || row.description || 'No description provided',
+            category: row['Category'] || row.category || 'Incident',
+            requestType: row['Request Type'] || row.requestType || 'Hardware',
             urgency: row['Urgency'] || row.urgency || 'Medium',
             impact: row['Impact'] || row.impact || 'Medium',
             priority: row['Priority'] || row.priority || 'Medium',
@@ -1827,7 +1837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             relatedAssetId: null,
             dueDate: null,
             slaTarget: row['SLA Target'] || row.slaTarget || null,
-            escalationLevel: row['Escalation Level'] || row.escalationLevel || null,
+            escalationLevel: row['Escalation Level'] || row.escalationLevel || 0,
             tags: row['Tags'] || row.tags || null,
             rootCause: row['Root Cause'] || row.rootCause || null,
             workaround: row['Workaround'] || row.workaround || null,
@@ -1835,6 +1845,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             resolutionNotes: row['Resolution Notes'] || row.resolutionNotes || null,
             privateNotes: row['Private Notes'] || row.privateNotes || null
           };
+
+          // Validate enum values to prevent database errors
+          const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+          const validStatuses = ['Open', 'In Progress', 'Resolved', 'Closed', 'Cancelled'];
+          
+          if (!validPriorities.includes(ticketData.priority)) {
+            console.warn(`Invalid priority "${ticketData.priority}", defaulting to "Medium"`);
+            ticketData.priority = 'Medium';
+          }
+          if (!validStatuses.includes(ticketData.status)) {
+            console.warn(`Invalid status "${ticketData.status}", defaulting to "Open"`);
+            ticketData.status = 'Open';
+          }
 
           // Parse IDs properly - find valid employee for submitted_by_id
           if (row['Submitted By ID'] || row.submittedById) {
