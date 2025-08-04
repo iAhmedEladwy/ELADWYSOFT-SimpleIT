@@ -97,13 +97,14 @@ export default function Employees() {
       return apiRequest('/api/employees/create-raw', 'POST', employeeData);
     },
     onSuccess: async () => {
-      // Force refetch to ensure fresh data
+      // Force immediate cache invalidation and refetch
       await queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
-      refetch(); // Manual refetch to guarantee UI update
+      await refetch(); // Ensure fresh data loads immediately
       toast({
         title: translations.employeeAdded,
       });
       setOpenDialog(false);
+      setEditingEmployee(null); // Clear any editing state
     },
     onError: (error: any) => {
       console.error('Employee creation error:', error);
@@ -119,8 +120,10 @@ export default function Employees() {
   const updateEmployeeMutation = useMutation({
     mutationFn: ({ id, employeeData }: { id: number; employeeData: any }) => 
       apiRequest(`/api/employees/${id}`, 'PUT', employeeData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+    onSuccess: async () => {
+      // Force immediate cache invalidation and refetch
+      await queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      await refetch(); // Ensure UI reflects changes immediately
       toast({
         title: translations.employeeUpdated,
       });
@@ -140,8 +143,10 @@ export default function Employees() {
   const deleteEmployeeMutation = useMutation({
     mutationFn: (id: number) => 
       apiRequest(`/api/employees/${id}`, 'DELETE'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+    onSuccess: async () => {
+      // Force immediate cache invalidation and refetch
+      await queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      await refetch(); // Ensure deleted employee is removed from UI immediately
       toast({
         title: translations.employeeDeleted,
       });

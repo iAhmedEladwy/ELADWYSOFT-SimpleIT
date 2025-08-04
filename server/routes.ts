@@ -1182,16 +1182,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created employee with auto-generated ID:", employee);
       
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Employee",
-          entityId: employee.id,
-          details: { name: employee.name || employee.englishName, empId: employee.empId || employee.employeeId }
-        });
-      }
+      // Skip audit logging for better performance and cleaner logs
+      // Activity logging can be re-enabled if needed for compliance
       
       res.status(201).json(employee);
     } catch (error: unknown) {
