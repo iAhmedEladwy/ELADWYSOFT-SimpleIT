@@ -640,34 +640,45 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
     try {
-      // Use Drizzle ORM to let database auto-generate both id and emp_id
-      // Exclude generated columns: empId, name, email, phone, position
-      const insertData = {
-        // empId is excluded - database will auto-generate it
-        // name, email, phone, position are excluded - they are generated columns
-        englishName: employee.englishName,
-        arabicName: employee.arabicName || null,
-        department: employee.department,
-        idNumber: employee.idNumber || employee.nationalId || `ID-${Date.now()}`,
-        title: employee.title || employee.position || 'Employee',
-        directManager: employee.directManager || null,
-        employmentType: employee.employmentType || 'Full-time',
-        joiningDate: employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0],
-        exitDate: employee.exitDate || null,
-        status: employee.status || 'Active',
-        personalMobile: employee.personalMobile || null,
-        workMobile: employee.workMobile || null,
-        personalEmail: employee.personalEmail || null,
-        corporateEmail: employee.corporateEmail || null,
-        userId: employee.userId || null
-      };
+      // Generate emp_id if not provided (for environments without auto-generation)
+      let empId = employee.empId;
+      if (!empId) {
+        const systemConfig = await this.getSystemConfig();
+        const prefix = systemConfig?.employeeIdPrefix || 'EMP-';
+        empId = await this.generateId('employee', prefix);
+      }
       
-      console.log('Creating employee with data:', insertData);
+      // Use raw SQL for reliable insertion, excluding generated columns
+      const result = await pool.query(`
+        INSERT INTO employees (
+          emp_id, english_name, arabic_name, department, id_number, title,
+          direct_manager, employment_type, joining_date, exit_date, status,
+          personal_mobile, work_mobile, personal_email, corporate_email, user_id,
+          created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+        ) RETURNING *
+      `, [
+        empId,
+        employee.englishName,
+        employee.arabicName || null,
+        employee.department,
+        employee.idNumber || employee.nationalId || `ID-${Date.now()}`,
+        employee.title || employee.position || 'Employee',
+        employee.directManager || null,
+        employee.employmentType || 'Full-time',
+        employee.joiningDate || employee.startDate || new Date().toISOString().split('T')[0],
+        employee.exitDate || null,
+        employee.status || 'Active',
+        employee.personalMobile || null,
+        employee.workMobile || null,
+        employee.personalEmail || null,
+        employee.corporateEmail || null,
+        employee.userId || null
+      ]);
       
-      const [result] = await db.insert(employees).values(insertData).returning();
-      
-      console.log('Employee created successfully:', result);
-      return result;
+      console.log('Employee created successfully:', result.rows[0]);
+      return result.rows[0];
     } catch (error) {
       console.error('Error creating employee:', error);
       throw error;

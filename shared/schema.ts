@@ -157,7 +157,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 // Employees table - Matches actual database structure
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
-  empId: varchar("emp_id", { length: 20 }).notNull().unique(), // Primary employee ID
+  empId: varchar("emp_id", { length: 20 }).notNull().unique().default(sql`concat('EMP-', lpad((nextval('employees_id_seq'::regclass))::text, 5, '0'::text))`), // Primary employee ID
   englishName: varchar("english_name", { length: 100 }).notNull(),
   arabicName: varchar("arabic_name", { length: 100 }),
   department: varchar("department", { length: 100 }).notNull(),
