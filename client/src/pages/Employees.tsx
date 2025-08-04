@@ -87,7 +87,7 @@ export default function Employees() {
     refetch 
   } = useQuery({
     queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Add employee mutation
@@ -96,8 +96,10 @@ export default function Employees() {
       console.log('Submitting employee data:', employeeData);
       return apiRequest('/api/employees/create-raw', 'POST', employeeData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+    onSuccess: async () => {
+      // Force refetch to ensure fresh data
+      await queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+      refetch(); // Manual refetch to guarantee UI update
       toast({
         title: translations.employeeAdded,
       });
