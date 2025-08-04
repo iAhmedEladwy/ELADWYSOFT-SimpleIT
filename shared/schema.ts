@@ -282,7 +282,19 @@ export const tickets = pgTable("tickets", {
   workaround: text("workaround"),
   resolution: text("resolution"),
   tags: text("tags").array(),
+  dueDate: timestamp("due_date"),
+  isTimeTracking: boolean("is_time_tracking").default(false),
+  lastActivityAt: timestamp("last_activity_at").defaultNow(),
+  slaTarget: timestamp("sla_target"),
+  slaBreached: boolean("sla_breached").default(false),
+  escalationLevel: integer("escalation_level").default(0),
   mergedIntoId: integer("merged_into_id").references((): any => tickets.id),
+  reopenCount: integer("reopen_count").default(0),
+  customerRating: integer("customer_rating"),
+  customerFeedback: text("customer_feedback"),
+  privateNotes: text("private_notes"),
+  attachments: text("attachments").array(),
+  timeTrackingStartedAt: timestamp("time_tracking_started_at"),
 });
 
 // Ticket Comments table
