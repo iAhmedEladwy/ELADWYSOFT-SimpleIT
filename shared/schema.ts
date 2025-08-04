@@ -6,13 +6,13 @@ import { z } from "zod";
 // Enums matching the current database
 export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
-export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Temporary']);
-export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Inactive', 'Terminated', 'On Leave']);
+export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
+export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
-export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed', 'Cancelled']);
-export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High', 'Critical']);
+export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
+export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High']);
 export const notificationTypeEnum = pgEnum('notification_type', ['Asset', 'Ticket', 'System', 'Employee']);
 export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
