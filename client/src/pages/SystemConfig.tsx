@@ -185,6 +185,12 @@ function SystemConfig() {
   const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
   const [editedUserPassword, setEditedUserPassword] = useState('');
   const [editedUserIsActive, setEditedUserIsActive] = useState(true);
+  
+  // Password change states
+  const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false);
+  const [changePasswordUserId, setChangePasswordUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Data type options for import/export
   const DATA_TYPE_OPTIONS = [
@@ -1151,6 +1157,47 @@ function SystemConfig() {
   const handleToggleUserStatus = (userId: number, newStatus: boolean) => {
     const userData = { isActive: newStatus };
     updateUserMutation.mutate({ id: userId, userData });
+  };
+
+  // Password change handlers
+  const handleChangePassword = (user: any) => {
+    setChangePasswordUserId(user.id);
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsPasswordChangeDialogOpen(true);
+  };
+
+  const handlePasswordUpdate = () => {
+    if (!changePasswordUserId) return;
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Passwords do not match' : 'كلمات المرور غير متطابقة',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const userData = { password: newPassword };
+    updateUserMutation.mutate({ 
+      id: changePasswordUserId, 
+      userData 
+    });
+    
+    setIsPasswordChangeDialogOpen(false);
+    setChangePasswordUserId(null);
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   // Handler functions for delete operations
@@ -3727,6 +3774,17 @@ function SystemConfig() {
                       <Edit className="h-3 w-3 mr-1" />
                       {language === 'English' ? 'Edit' : 'تعديل'}
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const user = allUsers.find(u => u.id === selectedUserId);
+                        if (user) handleChangePassword(user);
+                      }}
+                      className="h-8"
+                    >
+                      {language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'}
+                    </Button>
                     {selectedUserId !== 1 && (
                       <Button 
                         variant="outline" 
@@ -3929,6 +3987,61 @@ function SystemConfig() {
                           </>
                         ) : (
                           language === 'English' ? 'Update' : 'تحديث'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Password Change Dialog */}
+              <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'}</DialogTitle>
+                    <DialogDescription>
+                      {language === 'English' 
+                        ? `Change password for user: ${allUsers.find(u => u.id === changePasswordUserId)?.username || ''}`
+                        : `تغيير كلمة المرور للمستخدم: ${allUsers.find(u => u.id === changePasswordUserId)?.username || ''}`}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                      <Input 
+                        type="password"
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter new password' : 'أدخل كلمة مرور جديدة'}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Confirm Password' : 'تأكيد كلمة المرور'}</Label>
+                      <Input 
+                        type="password"
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder={language === 'English' ? 'Confirm new password' : 'أكد كلمة المرور الجديدة'}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsPasswordChangeDialogOpen(false)}>
+                        {language === 'English' ? 'Cancel' : 'إلغاء'}
+                      </Button>
+                      <Button 
+                        onClick={handlePasswordUpdate}
+                        disabled={updateUserMutation.isPending || !newPassword.trim() || !confirmPassword.trim()}
+                      >
+                        {updateUserMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {language === 'English' ? 'Updating...' : 'جارٍ التحديث...'}
+                          </>
+                        ) : (
+                          language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'
                         )}
                       </Button>
                     </div>
