@@ -109,7 +109,11 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setReason('');
   };
 
-  const handleMaintenance = () => {
+  const handleMaintenance = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowMaintenanceForm(true);
   };
 
@@ -117,7 +121,11 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setShowUpgradeForm(true);
   };
 
-  const handleViewHistory = () => {
+  const handleViewHistory = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowHistoryDialog(true);
   };
 
