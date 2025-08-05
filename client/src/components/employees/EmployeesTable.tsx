@@ -222,7 +222,7 @@ export default function EmployeesTable({
                        e.target.closest('.dropdown-menu'))) {
                     return;
                   }
-                  handleViewDetails(employee);
+                  onEdit(employee);
                 }}
               >
                 {onSelectionChange && (
@@ -238,7 +238,7 @@ export default function EmployeesTable({
                 <TableCell>
                   <button 
                     className="text-gray-900 px-2 py-1 rounded text-left cursor-pointer font-medium hover:text-blue-600 hover:underline"
-                    onClick={() => handleViewDetails(employee)}
+                    onClick={() => onEdit(employee)}
                   >
                     {employee.englishName || 'N/A'}
                   </button>
