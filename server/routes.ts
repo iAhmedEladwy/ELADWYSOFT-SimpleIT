@@ -2142,8 +2142,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
 
             case 'assets':
+              // Helper function to parse dates safely
+              const parseDate = (dateStr: string): string | null => {
+                if (!dateStr || typeof dateStr !== 'string') return null;
+                dateStr = dateStr.trim();
+                if (dateStr === '' || dateStr.includes('(Optional') || dateStr.includes('Format:')) return null;
+                
+                // Try common date formats
+                const dateFormats = [
+                  /^\d{4}-\d{2}-\d{2}$/,  // YYYY-MM-DD
+                  /^\d{1,2}\/\d{1,2}\/\d{4}$/,  // MM/DD/YYYY or M/D/YYYY
+                  /^\d{1,2}-\d{1,2}-\d{4}$/   // MM-DD-YYYY
+                ];
+                
+                for (const format of dateFormats) {
+                  if (format.test(dateStr)) {
+                    try {
+                      const date = new Date(dateStr);
+                      if (!isNaN(date.getTime())) {
+                        return date.toISOString().split('T')[0];
+                      }
+                    } catch (e) {
+                      // Continue to next format
+                    }
+                  }
+                }
+                return null;
+              };
+
+              // Helper function to normalize asset type
+              const normalizeAssetType = (type: string): string => {
+                if (!type || typeof type !== 'string') return 'Other';
+                const normalized = type.trim().toLowerCase();
+                const typeMapping: Record<string, string> = {
+                  'laptop': 'Laptop',
+                  'desktop': 'Desktop',
+                  'monitor': 'Monitor',
+                  'phone': 'Phone',
+                  'smartphone': 'Phone',
+                  'mobile': 'Phone',
+                  'server': 'Server',
+                  'printer': 'Printer',
+                  'router': 'Network',
+                  'switch': 'Network',
+                  'network': 'Network',
+                  'tablet': 'Tablet',
+                  'keyboard': 'Accessories',
+                  'mouse': 'Accessories',
+                  'headset': 'Accessories',
+                  'webcam': 'Accessories',
+                  'other': 'Other'
+                };
+                return typeMapping[normalized] || 'Other';
+              };
+
               await storage.createAsset({
-                type: mappedRecord.type || 'Other',
+                type: normalizeAssetType(mappedRecord.type),
                 brand: mappedRecord.brand || 'Unknown',
                 modelNumber: mappedRecord.modelNumber || null,
                 modelName: mappedRecord.modelName || null,
@@ -2153,12 +2207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ram: mappedRecord.ram || null,
                 storage: mappedRecord.storage || null,
                 status: mappedRecord.status || 'Available',
-                purchaseDate: mappedRecord.purchaseDate || null,
-                buyPrice: mappedRecord.buyPrice ? parseFloat(mappedRecord.buyPrice) : null,
-                warrantyExpiryDate: mappedRecord.warrantyExpiryDate || null,
-                lifeSpan: mappedRecord.lifeSpan ? parseInt(mappedRecord.lifeSpan) : null,
+                purchaseDate: parseDate(mappedRecord.purchaseDate),
+                buyPrice: mappedRecord.buyPrice && !isNaN(parseFloat(mappedRecord.buyPrice)) ? parseFloat(mappedRecord.buyPrice) : null,
+                warrantyExpiryDate: parseDate(mappedRecord.warrantyExpiryDate),
+                lifeSpan: mappedRecord.lifeSpan && !isNaN(parseInt(mappedRecord.lifeSpan)) ? parseInt(mappedRecord.lifeSpan) : null,
                 outOfBoxOs: mappedRecord.outOfBoxOs || null,
-                assignedEmployeeId: mappedRecord.assignedEmployeeId ? parseInt(mappedRecord.assignedEmployeeId) : null
+                assignedEmployeeId: mappedRecord.assignedEmployeeId && !isNaN(parseInt(mappedRecord.assignedEmployeeId)) ? parseInt(mappedRecord.assignedEmployeeId) : null
               });
               break;
 
