@@ -1,5 +1,0 @@
-Summary,Description,Category,Request Type,Urgency,Impact,Priority,Status
-Computer not starting,Laptop fails to boot after power button press,Incident,Hardware,High,Medium,High,Open
-Email access issue,Cannot access corporate email from Outlook,Service Request,Software,Medium,Low,Medium,Open
-Printer offline,Office printer not responding to print jobs,Incident,Hardware,Low,Low,Low,Open
-Software installation,Need Adobe Creative Suite installed,Service Request,Software,Medium,Medium,Medium,Open

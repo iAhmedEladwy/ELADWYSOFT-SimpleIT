@@ -1,4 +1,0 @@
-date,type,description,cost,providerType,providerName
-2025-08-05,Preventive,"Monthly system maintenance",100,Internal,"IT Department"
-2025-08-04,Corrective,"Fixed network connectivity issue",75,External,"TechSolutions LLC"
-2025-08-03,Upgrade,"RAM upgrade from 16GB to 32GB",200,Internal,"IT Department"

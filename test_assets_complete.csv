@@ -1,4 +1,0 @@
-Type*,Brand*,Model Number,Model Name,Serial Number*,Specifications,CPU,RAM,Storage,Status,Purchase Date,Buy Price,Warranty Expiry Date,Life Span,Out of Box OS,Assigned Employee ID
-Laptop,Dell,Latitude 5520,Dell Latitude 15,DL001,16GB RAM 512GB SSD,Intel i7,16GB,512GB SSD,Available,2023-01-15,1200.00,2025-01-15,36,Windows 11 Pro,
-Desktop,HP,EliteDesk 800,HP Elite Desktop,HP002,8GB RAM 256GB SSD,Intel i5,8GB,256GB SSD,In Use,2023-02-10,800.00,2025-02-10,48,Windows 10 Pro,
-Monitor,Samsung,24 inch,Samsung 24 Monitor,SM003,1920x1080 LED,,,,,2023-01-20,300.00,2024-01-20,60,,
