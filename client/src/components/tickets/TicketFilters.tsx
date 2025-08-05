@@ -155,7 +155,7 @@ export default function TicketFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allStatuses}</SelectItem>
-                {ticketStatuses.map(status => (
+                {ticketStatuses?.map(status => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
               </SelectContent>
@@ -170,7 +170,7 @@ export default function TicketFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allPriorities}</SelectItem>
-                {ticketPriorities.map(priority => (
+                {ticketPriorities?.map(priority => (
                   <SelectItem key={priority} value={priority}>{priority}</SelectItem>
                 ))}
               </SelectContent>
@@ -185,7 +185,7 @@ export default function TicketFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allRequestTypes}</SelectItem>
-                {requestTypes.map((requestType: any) => (
+                {requestTypes?.map((requestType: any) => (
                   <SelectItem key={requestType.id} value={requestType.name}>{requestType.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -218,7 +218,7 @@ export default function TicketFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allCategories}</SelectItem>
-                {ticketCategories.map(category => (
+                {ticketCategories?.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
               </SelectContent>
