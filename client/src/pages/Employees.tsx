@@ -286,9 +286,15 @@ export default function Employees() {
     if (selectedEmployees.length === 0) return;
     
     try {
+      // Get the full employee data for each selected employee
+      const selectedEmployeeData = employees.filter((emp: any) => 
+        selectedEmployees.includes(emp.id)
+      );
+      
       await Promise.all(
-        selectedEmployees.map(id => 
-          apiRequest(`/api/employees/${id}`, 'PUT', { 
+        selectedEmployeeData.map((employee: any) => 
+          apiRequest(`/api/employees/${employee.id}`, 'PUT', {
+            ...employee, // Send all existing data
             status: newStatus,
             isActive: newStatus === 'Active'
           })
