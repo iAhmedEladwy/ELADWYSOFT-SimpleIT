@@ -999,7 +999,9 @@ function SystemConfig() {
     // Extract mapped data and mapping from the interface format
     const mappedData = parsedFileData;
     const mapping = mappings.reduce((acc: Record<string, string>, m: any) => {
-      acc[m.fileColumn] = m.systemField;
+      if (m.sourceColumn && m.targetField) {
+        acc[m.targetField] = m.sourceColumn;
+      }
       return acc;
     }, {});
     
