@@ -259,29 +259,44 @@ export default function EmployeesTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(employee);
+                      }}>
                         <Edit className="h-4 w-4 mr-2" />
                         {translations.edit}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(employee);
+                      }}>
                         <Eye className="h-4 w-4 mr-2" />
                         {translations.viewDetails}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewAssets(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewAssets(employee);
+                      }}>
                         <Laptop className="h-4 w-4 mr-2" />
                         {translations.viewAssets}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewTickets(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewTickets(employee);
+                      }}>
                         <Ticket className="h-4 w-4 mr-2" />
                         {translations.viewTickets}
                       </DropdownMenuItem>
                       
                       {hasAccess(3) && (
                         <DropdownMenuItem 
-                          onClick={() => setEmployeeToDelete(employee)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmployeeToDelete(employee);
+                          }}
                           className="text-red-600 focus:text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
