@@ -128,8 +128,8 @@ export default function TicketFilters({
       </CardHeader>
       <CardContent className="space-y-3">
         {/* First Row - Search Field */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 gap-3">
+          <div>
             <Label className="text-xs">{translations.search}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -139,12 +139,10 @@ export default function TicketFilters({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
-                className="pl-8 h-8 text-sm"
+                className="pl-8 h-8 text-sm w-full"
               />
             </div>
           </div>
-          {/* Empty space for alignment */}
-          <div className="md:col-span-2"></div>
         </div>
 
         {/* Second Row - Dropdown Filters */}
