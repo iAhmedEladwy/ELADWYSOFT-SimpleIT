@@ -1673,8 +1673,8 @@ function SystemConfig() {
                 <Button
                   onClick={() => {
                     if (window.confirm(language === 'English' 
-                      ? 'Are you sure you want to remove all demo data? This action cannot be undone.'
-                      : 'هل أنت متأكد من حذف جميع البيانات التجريبية؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                      ? 'Are you sure you want to remove all demo data? This will delete users, employees, assets, and tickets but will preserve all system configuration (General, Employees, Assets, Tickets, Email, Users settings). This action cannot be undone.'
+                      : 'هل أنت متأكد من حذف جميع البيانات التجريبية؟ سيؤدي هذا إلى حذف المستخدمين والموظفين والأصول والتذاكر ولكن سيحافظ على جميع إعدادات النظام (العامة، الموظفين، الأصول، التذاكر، البريد الإلكتروني، إعدادات المستخدمين). لا يمكن التراجع عن هذا الإجراء.')) {
                       removeDemoDataMutation.mutate();
                     }
                   }}
@@ -1690,7 +1690,7 @@ function SystemConfig() {
                   ) : (
                     <>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية'}
+                      {language === 'English' ? 'Delete Demo Data (Exclude System Config)' : 'حذف البيانات التجريبية (باستثناء إعدادات النظام)'}
                     </>
                   )}
                 </Button>

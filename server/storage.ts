@@ -2219,7 +2219,7 @@ export class DatabaseStorage implements IStorage {
   async removeDemoData(): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        console.log('Starting demo data removal with proper foreign key handling...');
+        console.log('Starting demo data removal (excluding system configuration data)...');
         
         // Step 1: Remove dependent records first (proper cascade order)
         
@@ -2262,28 +2262,24 @@ export class DatabaseStorage implements IStorage {
         await tx.delete(activityLog);
         console.log('Activity logs removed');
         
-        // Remove custom data (no dependencies)
-        await tx.delete(customAssetTypes);
-        await tx.delete(customAssetBrands);
-        await tx.delete(customAssetStatuses);
-        await tx.delete(serviceProviders);
-        console.log('Custom data removed');
-        
         // Remove all users except admin (no dependencies)
         await tx.delete(users).where(
           sql`${users.id} > 1`
         );
         console.log('Non-admin users removed');
         
-        // Reset system config to defaults but keep custom settings
-        await tx.update(systemConfig).set({
-          assetIdPrefix: 'SIT-',
-          currency: 'USD'
-        });
-        console.log('System config reset to defaults');
+        // PRESERVE SYSTEM CONFIGURATION DATA:
+        // - DO NOT delete customAssetTypes (system config)
+        // - DO NOT delete customAssetBrands (system config)
+        // - DO NOT delete customAssetStatuses (system config)
+        // - DO NOT delete serviceProviders (system config)
+        // - DO NOT delete customRequestTypes (system config)
+        // - DO NOT modify systemConfig table (General, Employees, Assets, Tickets, Email, Users settings)
+        
+        console.log('System configuration data preserved (General, Employees, Assets, Tickets, Email, Users settings)');
       });
       
-      console.log('Demo data removal completed successfully');
+      console.log('Demo data removal completed successfully - system configuration preserved');
     } catch (error) {
       console.error('Error removing demo data:', error);
       throw error;
