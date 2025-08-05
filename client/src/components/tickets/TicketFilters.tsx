@@ -228,23 +228,6 @@ export default function TicketFilters({
 
         {/* Third Row - Additional Filters */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div>
-            <Label className="text-xs">{translations.creator}</Label>
-            <Select value={filters.createdBy || 'all'} onValueChange={(value) => updateFilter('createdBy', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder={translations.allUsers} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allUsers}</SelectItem>
-                {users?.map((user: any) => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.firstName} {user.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
           {/* Empty space for alignment */}
           <div className="md:col-span-4"></div>
         </div>
