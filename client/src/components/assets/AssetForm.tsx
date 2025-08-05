@@ -87,7 +87,7 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   });
   
   const { data: assetStatuses = [] } = useQuery<any[]>({
-    queryKey: ['/api/asset-statuses'],
+    queryKey: ['/api/custom-asset-statuses'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
