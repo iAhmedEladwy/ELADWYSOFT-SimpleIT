@@ -2172,14 +2172,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Helper function to normalize asset type using system config
               const normalizeAssetType = async (type: string): Promise<string> => {
-                if (!type || typeof type !== 'string') return 'Other';
+                if (!type || typeof type !== 'string') return type || 'Unknown';
                 
-                // Get available asset types from system config
-                const systemConfig = await storage.getSystemConfig();
-                const availableTypes = systemConfig?.assetTypes || [
-                  'Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 
-                  'Printer', 'Network', 'Tablet', 'Accessories', 'Other'
-                ];
+                // Get available asset types from system config ONLY
+                const customTypes = await storage.getCustomAssetTypes();
+                const availableTypes = customTypes.map(t => t.name);
+                
+                // If no custom types are configured, use the input as-is
+                if (availableTypes.length === 0) {
+                  return type.trim();
+                }
                 
                 const normalized = type.trim();
                 
@@ -2189,25 +2191,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 );
                 if (exactMatch) return exactMatch;
                 
-                // Then try common mappings to available types
-                const typeMapping: Record<string, string> = {
-                  'smartphone': 'Phone',
-                  'mobile': 'Phone',
-                  'router': 'Network',
-                  'switch': 'Network',
-                  'keyboard': 'Accessories',
-                  'mouse': 'Accessories',
-                  'headset': 'Accessories',
-                  'webcam': 'Accessories'
+                // Then try common mappings only to configured types
+                const typeMapping: Record<string, string[]> = {
+                  'smartphone': ['Phone', 'Mobile', 'Device'],
+                  'mobile': ['Phone', 'Mobile', 'Device'],
+                  'router': ['Network', 'Router', 'Equipment'],
+                  'switch': ['Network', 'Switch', 'Equipment'],
+                  'keyboard': ['Accessories', 'Peripheral', 'Input'],
+                  'mouse': ['Accessories', 'Peripheral', 'Input'],
+                  'headset': ['Accessories', 'Audio', 'Peripheral'],
+                  'webcam': ['Accessories', 'Camera', 'Peripheral'],
+                  'laptop': ['Laptop', 'Computer', 'Device'],
+                  'desktop': ['Desktop', 'Computer', 'PC']
                 };
                 
-                const mappedType = typeMapping[normalized.toLowerCase()];
-                if (mappedType && availableTypes.includes(mappedType)) {
-                  return mappedType;
+                const possibleMappings = typeMapping[normalized.toLowerCase()] || [];
+                for (const mapping of possibleMappings) {
+                  if (availableTypes.some(t => t.toLowerCase() === mapping.toLowerCase())) {
+                    return availableTypes.find(t => t.toLowerCase() === mapping.toLowerCase())!;
+                  }
                 }
                 
-                // Default to 'Other' if no match found
-                return availableTypes.includes('Other') ? 'Other' : availableTypes[0] || 'Other';
+                // If no mapping found, use the original input as-is (fully dynamic)
+                return normalized;
               };
 
               await storage.createAsset({
