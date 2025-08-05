@@ -1794,15 +1794,33 @@ function SystemConfig() {
                           </Button>
                           <Button 
                             onClick={() => {
-                              if (newDepartment.trim()) {
+                              if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
                                 const updatedDepartments = [...departments, newDepartment.trim()];
                                 setDepartments(updatedDepartments);
                                 setNewDepartment('');
                                 setIsDepartmentDialogOpen(false);
                                 setPreservedTab('employees');
+                                
+                                // Save immediately to database
+                                const configData = {
+                                  assetIdPrefix,
+                                  empIdPrefix,
+                                  ticketIdPrefix,
+                                  currency,
+                                  language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                  departments: updatedDepartments,
+                                  emailHost,
+                                  emailPort: emailPort ? parseInt(emailPort) : 587,
+                                  emailUser,
+                                  emailPassword,
+                                  emailFromAddress,
+                                  emailFromName,
+                                  emailSecure,
+                                };
+                                updateConfigMutation.mutate(configData);
                               }
                             }}
-                            disabled={!newDepartment.trim()}
+                            disabled={!newDepartment.trim() || departments.includes(newDepartment.trim())}
                           >
                             {language === 'English' ? 'Add' : 'إضافة'}
                           </Button>
@@ -1847,6 +1865,24 @@ function SystemConfig() {
                                       setEditingDeptIndex(null);
                                       setEditedDeptName('');
                                       setPreservedTab('employees');
+                                      
+                                      // Save immediately to database
+                                      const configData = {
+                                        assetIdPrefix,
+                                        empIdPrefix,
+                                        ticketIdPrefix,
+                                        currency,
+                                        language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                        departments: updatedDepartments,
+                                        emailHost,
+                                        emailPort: emailPort ? parseInt(emailPort) : 587,
+                                        emailUser,
+                                        emailPassword,
+                                        emailFromAddress,
+                                        emailFromName,
+                                        emailSecure,
+                                      };
+                                      updateConfigMutation.mutate(configData);
                                     }
                                   }}
                                   className="h-8"
@@ -1870,6 +1906,24 @@ function SystemConfig() {
                                         setEditingDeptIndex(null);
                                         setEditedDeptName('');
                                         setPreservedTab('employees');
+                                        
+                                        // Save immediately to database
+                                        const configData = {
+                                          assetIdPrefix,
+                                          empIdPrefix,
+                                          ticketIdPrefix,
+                                          currency,
+                                          language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                          departments: updatedDepartments,
+                                          emailHost,
+                                          emailPort: emailPort ? parseInt(emailPort) : 587,
+                                          emailUser,
+                                          emailPassword,
+                                          emailFromAddress,
+                                          emailFromName,
+                                          emailSecure,
+                                        };
+                                        updateConfigMutation.mutate(configData);
                                       }}
                                       className="h-8 w-8 p-0"
                                     >
