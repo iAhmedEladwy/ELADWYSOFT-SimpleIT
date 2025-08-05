@@ -614,15 +614,6 @@ export default function Employees() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleBulkStatusChange('Active')}
-            >
-              <UserCheck className="h-4 w-4 mr-2" />
-              {language === 'English' ? 'Change Status' : 'تغيير الحالة'}
-            </Button>
           </div>
         </div>
       )}
