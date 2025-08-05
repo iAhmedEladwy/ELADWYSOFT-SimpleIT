@@ -650,6 +650,126 @@ function SystemConfig() {
     }
   });
 
+  // UPDATE MUTATIONS - Missing functionality
+  
+  // Update Asset Type Mutation
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-asset-types/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
+      });
+      setEditingTypeId(null);
+      setEditedTypeName('');
+      setEditedTypeDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset type' : 'فشل تحديث نوع الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Asset Brand Mutation
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-asset-brands/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+      });
+      setEditingBrandId(null);
+      setEditedBrandName('');
+      setEditedBrandDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset brand' : 'فشل تحديث علامة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Asset Status Mutation
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string; color?: string } }) => 
+      apiRequest(`/api/custom-asset-statuses/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+      setEditingStatusId(null);
+      setEditedStatusName('');
+      setEditedStatusDescription('');
+      setEditedStatusColor('#3B82F6');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset status' : 'فشل تحديث حالة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Request Type Mutation
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-request-types/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+      });
+      setEditingRequestTypeId(null);
+      setEditedRequestTypeName('');
+      setEditedRequestTypeDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update request type' : 'فشل تحديث نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Service Provider Mutation
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; contactPerson?: string; phone?: string; email?: string } }) => 
+      apiRequest(`/api/service-providers/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مقدم الخدمة بنجاح',
+      });
+      setEditingProviderId(null);
+      setEditedProviderName('');
+      setEditedProviderContact('');
+      setEditedProviderPhone('');
+      setEditedProviderEmail('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update service provider' : 'فشل تحديث مقدم الخدمة'),
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Import/Export functions from current working version
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -999,6 +1119,144 @@ function SystemConfig() {
       updateConfigMutation.mutate(configData);
     }
   };
+
+  // EDIT HANDLER FUNCTIONS FOR CUSTOM FIELDS
+
+  // Asset Type Edit Handlers
+  const startEditAssetType = (type: any) => {
+    setEditingTypeId(type.id);
+    setEditedTypeName(type.name);
+    setEditedTypeDescription(type.description || '');
+  };
+
+  const handleSaveAssetType = () => {
+    if (editingTypeId && editedTypeName.trim()) {
+      updateAssetTypeMutation.mutate({
+        id: editingTypeId,
+        data: {
+          name: editedTypeName.trim(),
+          description: editedTypeDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetTypeEdit = () => {
+    setEditingTypeId(null);
+    setEditedTypeName('');
+    setEditedTypeDescription('');
+  };
+
+  // Asset Brand Edit Handlers
+  const startEditAssetBrand = (brand: any) => {
+    setEditingBrandId(brand.id);
+    setEditedBrandName(brand.name);
+    setEditedBrandDescription(brand.description || '');
+  };
+
+  const handleSaveAssetBrand = () => {
+    if (editingBrandId && editedBrandName.trim()) {
+      updateAssetBrandMutation.mutate({
+        id: editingBrandId,
+        data: {
+          name: editedBrandName.trim(),
+          description: editedBrandDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetBrandEdit = () => {
+    setEditingBrandId(null);
+    setEditedBrandName('');
+    setEditedBrandDescription('');
+  };
+
+  // Asset Status Edit Handlers
+  const startEditAssetStatus = (status: any) => {
+    setEditingStatusId(status.id);
+    setEditedStatusName(status.name);
+    setEditedStatusDescription(status.description || '');
+    setEditedStatusColor(status.color || '#3B82F6');
+  };
+
+  const handleSaveAssetStatus = () => {
+    if (editingStatusId && editedStatusName.trim()) {
+      updateAssetStatusMutation.mutate({
+        id: editingStatusId,
+        data: {
+          name: editedStatusName.trim(),
+          description: editedStatusDescription.trim(),
+          color: editedStatusColor
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetStatusEdit = () => {
+    setEditingStatusId(null);
+    setEditedStatusName('');
+    setEditedStatusDescription('');
+    setEditedStatusColor('#3B82F6');
+  };
+
+  // Request Type Edit Handlers
+  const startEditRequestType = (requestType: any) => {
+    setEditingRequestTypeId(requestType.id);
+    setEditedRequestTypeName(requestType.name);
+    setEditedRequestTypeDescription(requestType.description || '');
+  };
+
+  const handleSaveRequestType = () => {
+    if (editingRequestTypeId && editedRequestTypeName.trim()) {
+      updateRequestTypeMutation.mutate({
+        id: editingRequestTypeId,
+        data: {
+          name: editedRequestTypeName.trim(),
+          description: editedRequestTypeDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelRequestTypeEdit = () => {
+    setEditingRequestTypeId(null);
+    setEditedRequestTypeName('');
+    setEditedRequestTypeDescription('');
+  };
+
+  // Service Provider Edit Handlers
+  const startEditServiceProvider = (provider: any) => {
+    setEditingProviderId(provider.id);
+    setEditedProviderName(provider.name);
+    setEditedProviderContact(provider.contactPerson || '');
+    setEditedProviderPhone(provider.phone || '');
+    setEditedProviderEmail(provider.email || '');
+  };
+
+  const handleSaveServiceProvider = () => {
+    if (editingProviderId && editedProviderName.trim()) {
+      updateServiceProviderMutation.mutate({
+        id: editingProviderId,
+        data: {
+          name: editedProviderName.trim(),
+          contactPerson: editedProviderContact.trim(),
+          phone: editedProviderPhone.trim(),
+          email: editedProviderEmail.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelServiceProviderEdit = () => {
+    setEditingProviderId(null);
+    setEditedProviderName('');
+    setEditedProviderContact('');
+    setEditedProviderPhone('');
+    setEditedProviderEmail('');
+  };
+
+
 
   const handleCancelDepartmentEdit = () => {
     setEditingDeptIndex(null);
@@ -1796,7 +2054,12 @@ function SystemConfig() {
                               <TableCell className="text-gray-600">{type.description}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditAssetType(type)}
+                                  >
                                     <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button 
@@ -1915,7 +2178,12 @@ function SystemConfig() {
                               <TableCell className="text-gray-600">{brand.description}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditAssetBrand(brand)}
+                                  >
                                     <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button 
@@ -2053,7 +2321,12 @@ function SystemConfig() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditAssetStatus(status)}
+                                  >
                                     <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button 
@@ -2194,7 +2467,12 @@ function SystemConfig() {
                               <TableCell className="text-gray-600">{provider.email}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditServiceProvider(provider)}
+                                  >
                                     <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button 
@@ -2344,7 +2622,12 @@ function SystemConfig() {
                             <TableCell className="text-gray-600">{requestType.description}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => startEditRequestType(requestType)}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button 

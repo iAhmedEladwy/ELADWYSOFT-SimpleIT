@@ -123,155 +123,124 @@ export default function TicketFilters({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Search Bar */}
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="flex-1">
-            <Input
-              placeholder={translations.searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
+      <CardContent className="space-y-3">
+        {/* First Row - Search and Primary Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div className="md:col-span-2">
+            <Label className="text-xs">{translations.search}</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={translations.searchPlaceholder}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
           </div>
-          <Button type="submit" variant="outline">
-            <Search className="h-4 w-4 mr-2" />
-            {translations.search}
-          </Button>
-        </form>
 
-        {/* Filter Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Status Filter */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.status}
-            </Label>
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
+            <Label className="text-xs">{translations.status}</Label>
+            <Select value={filters.status || ''} onValueChange={(value) => updateFilter('status', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allStatuses} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allStatuses}</SelectItem>
-                {ticketStatuses.map((status: string) => (
+                {ticketStatuses.map(status => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Priority Filter */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.priority}
-            </Label>
-            <Select
-              value={filters.priority || 'all'}
-              onValueChange={(value) => updateFilter('priority', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
+            <Label className="text-xs">{translations.priority}</Label>
+            <Select value={filters.priority || ''} onValueChange={(value) => updateFilter('priority', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allPriorities} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allPriorities}</SelectItem>
-                {ticketPriorities.map((priority: string) => (
+                <SelectItem value="">{translations.allPriorities}</SelectItem>
+                {ticketPriorities.map(priority => (
                   <SelectItem key={priority} value={priority}>{priority}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Category Filter */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.category}
-            </Label>
-            <Select
-              value={filters.category || 'all'}
-              onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
+            <Label className="text-xs">{translations.requestType}</Label>
+            <Select value={filters.requestType || ''} onValueChange={(value) => updateFilter('requestType', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder={translations.allRequestTypes} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{translations.allRequestTypes}</SelectItem>
+                {requestTypes.map((requestType: any) => (
+                  <SelectItem key={requestType.id} value={requestType.name}>{requestType.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-xs">{translations.assignedTo}</Label>
+            <Select value={filters.assignedTo || ''} onValueChange={(value) => updateFilter('assignedTo', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder={translations.allUsers} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{translations.allUsers}</SelectItem>
+                <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
+                {users?.map((user: any) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.firstName} {user.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Second Row - Additional Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div>
+            <Label className="text-xs">{translations.category}</Label>
+            <Select value={filters.category || ''} onValueChange={(value) => updateFilter('category', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allCategories} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allCategories}</SelectItem>
-                {ticketCategories.map((category: string) => (
+                <SelectItem value="">{translations.allCategories}</SelectItem>
+                {ticketCategories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Request Type Filter */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.requestType}
-            </Label>
-            <Select
-              value={filters.requestType || 'all'}
-              onValueChange={(value) => updateFilter('requestType', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allRequestTypes} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allRequestTypes}</SelectItem>
-                {requestTypes.map((type: any) => (
-                  <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Assigned To Filter */}
-          <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.assignedTo}
-            </Label>
-            <Select
-              value={filters.assignedTo || 'all'}
-              onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
+            <Label className="text-xs">{translations.creator}</Label>
+            <Select value={filters.createdBy || ''} onValueChange={(value) => updateFilter('createdBy', value || undefined)}>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allUsers} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allUsers}</SelectItem>
-                <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
-                {(users || []).map((user: any) => (
+                <SelectItem value="">{translations.allUsers}</SelectItem>
+                {users?.map((user: any) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.username}
+                    {user.firstName} {user.lastName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          {/* Creator Filter */}
-          <div>
-            <Label className="text-sm font-medium mb-2 block">
-              {translations.creator}
-            </Label>
-            <Select
-              value={filters.createdBy || 'all'}
-              onValueChange={(value) => updateFilter('createdBy', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allUsers} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allUsers}</SelectItem>
-                {(users || []).map((user: any) => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          
+          {/* Empty space for alignment */}
+          <div className="md:col-span-4"></div>
         </div>
       </CardContent>
     </Card>

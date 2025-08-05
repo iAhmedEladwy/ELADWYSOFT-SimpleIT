@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { MoreHorizontal, UserCircle2 } from 'lucide-react';
 
@@ -51,6 +52,8 @@ interface TicketsTableProps {
   onStatusChange: (id: number, status: string, resolutionNotes?: string) => void;
   onAssign: (id: number, userId: number) => void;
   onEdit?: (ticket: any) => void;
+  selectedTickets?: number[];
+  onSelectionChange?: (selectedIds: number[]) => void;
 }
 
 export default function TicketsTable({
@@ -61,6 +64,8 @@ export default function TicketsTable({
   onStatusChange,
   onAssign,
   onEdit,
+  selectedTickets = [],
+  onSelectionChange,
 }: TicketsTableProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -75,6 +80,17 @@ export default function TicketsTable({
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  // Handle checkbox selection
+  const handleTicketSelection = (ticketId: number, checked: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (checked) {
+      onSelectionChange([...selectedTickets, ticketId]);
+    } else {
+      onSelectionChange(selectedTickets.filter(id => id !== ticketId));
+    }
+  };
 
 
   // Start editing function
@@ -157,6 +173,7 @@ export default function TicketsTable({
   const translations = {
     ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
     dateCreated: language === 'English' ? 'Date Created' : 'تاريخ الإنشاء',
+    summary: language === 'English' ? 'Summary' : 'الملخص',
     requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
     priority: language === 'English' ? 'Priority' : 'الأولوية',
     status: language === 'English' ? 'Status' : 'الحالة',
@@ -322,8 +339,23 @@ export default function TicketsTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {onSelectionChange && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedTickets.length === tickets.length && tickets.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      onSelectionChange(tickets.map(t => t.id));
+                    } else {
+                      onSelectionChange([]);
+                    }
+                  }}
+                />
+              </TableHead>
+            )}
             <TableHead>{translations.ticketId}</TableHead>
             <TableHead>{translations.dateCreated}</TableHead>
+            <TableHead>{translations.summary}</TableHead>
             <TableHead>{translations.requestType}</TableHead>
             <TableHead>{translations.priority}</TableHead>
             <TableHead>{translations.status}</TableHead>
@@ -346,7 +378,8 @@ export default function TicketsTable({
                      e.target.closest('[data-radix-popper-content-wrapper]') ||
                      e.target.closest('.inline-edit-element') ||
                      e.target.tagName === 'SELECT' ||
-                     e.target.closest('select'))) {
+                     e.target.closest('select') ||
+                     e.target.closest('[type="checkbox"]'))) {
                   return;
                 }
                 try {
@@ -366,9 +399,20 @@ export default function TicketsTable({
                 }
               }}
             >
+              {onSelectionChange && (
+                <TableCell>
+                  <Checkbox
+                    checked={selectedTickets.includes(ticket.id)}
+                    onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                  />
+                </TableCell>
+              )}
               <TableCell className="font-medium">{ticket.ticketId}</TableCell>
               <TableCell>
                 {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+              </TableCell>
+              <TableCell className="max-w-xs truncate" title={ticket.summary}>
+                {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
               </TableCell>
               <TableCell>
                 {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
