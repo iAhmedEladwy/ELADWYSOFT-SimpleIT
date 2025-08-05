@@ -66,7 +66,6 @@ import {
 interface AssetsTableProps {
   assets: any[];
   employees: any[];
-  customAssetStatuses?: any[];
   selectedAssets: number[];
   setSelectedAssets: (assets: number[]) => void;
   onEdit: (asset: any) => void;
@@ -80,7 +79,6 @@ interface AssetsTableProps {
 export default function AssetsTable({ 
   assets = [], 
   employees = [],
-  customAssetStatuses = [],
   selectedAssets = [],
   setSelectedAssets = () => {},
   onEdit, 
@@ -152,42 +150,48 @@ export default function AssetsTable({
     retired: language === 'English' ? 'Retired' : 'متقاعد',
   };
 
-  // Get status badge with dynamic color from custom statuses
+  // Get status badge with color
   const getStatusBadge = (status: string) => {
-    // Find the custom status configuration
-    const customStatus = customAssetStatuses?.find((s: any) => s.name === status);
-    
-    if (customStatus) {
-      const backgroundColor = customStatus.color || '#3B82F6';
-      // Convert hex to lighter background
-      const lighterBg = backgroundColor + '20';
-      const textColor = backgroundColor;
-      
-      return (
-        <Badge 
-          variant="outline" 
-          className="border-0"
-          style={{
-            backgroundColor: lighterBg,
-            color: textColor,
-            borderColor: backgroundColor + '40'
-          }}
-        >
-          <span 
-            className="w-2 h-2 rounded-full inline-block mr-2" 
-            style={{ backgroundColor }}
-          />
-          {status}
-        </Badge>
-      );
+    switch (status) {
+      case 'Available':
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+            {translations.available}
+          </Badge>
+        );
+      case 'In Use':
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+            {translations.inUse}
+          </Badge>
+        );
+      case 'Maintenance':
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+            {translations.maintenance}
+          </Badge>
+        );
+      case 'Damaged':
+        return (
+          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+            {translations.damaged}
+          </Badge>
+        );
+      case 'Sold':
+        return (
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+            {translations.sold}
+          </Badge>
+        );
+      case 'Retired':
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+            {translations.retired}
+          </Badge>
+        );
+      default:
+        return null;
     }
-    
-    // Fallback for unconfigured statuses
-    return (
-      <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-        {status}
-      </Badge>
-    );
   };
 
   // Find assigned employee name - Updated to handle proper field mapping
