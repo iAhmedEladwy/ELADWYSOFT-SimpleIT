@@ -4014,7 +4014,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         message: `Demo data (${size} dataset) has been successfully created.`,
-        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`
+        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`,
+        users: createdUsers,
+        employees: createdEmployees,
+        assets: createdAssets
       });
       
     } catch (error: unknown) {
