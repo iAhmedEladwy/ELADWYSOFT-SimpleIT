@@ -1079,14 +1079,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'modelNumber': 'Latitude 5520 (Optional: Manufacturer model number)',
             'modelName': 'Dell Latitude 15 (Optional: Descriptive model name)',
             'serialNumber': 'DL123456789 (Required: Unique serial number)',
-            'specs': '16GB RAM, 512GB SSD, Intel i7 (Optional: Hardware specs)',
-            'cpu': 'Intel Core i7-11800H (Optional: Processor details)',
-            'ram': '16GB DDR4 (Optional: Memory details)',
-            'storage': '512GB NVMe SSD (Optional: Storage details)',
+            'specs': '16GB RAM, 512GB SSD, Intel Core i7-11800H (Required: Complete hardware specifications)',
             'status': 'Available (Available, In Use, Maintenance, Retired)',
-            'purchaseDate': '2023-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
-            'buyPrice': '1200.00 (Optional: Purchase price in USD)',
-            'warrantyExpiryDate': '2025-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
+            'purchaseDate': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'buyPrice': '1200.00 (Required: Purchase price in USD)',
+            'warrantyExpiryDate': '2025-01-15 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
             'lifeSpan': '36 (Optional: Expected lifespan in months)',
             'outOfBoxOs': 'Windows 11 Pro (Optional: Operating system)',
             'assignedEmployeeId': '1001 (Optional: Employee ID from employees table)'
@@ -2219,19 +2216,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return normalized;
               };
 
+              // Parse purchase price properly
+              const parseBuyPrice = (priceStr: string): number | null => {
+                if (!priceStr || typeof priceStr !== 'string') return null;
+                const cleanPrice = priceStr.replace(/[^\d.-]/g, ''); // Remove currency symbols and spaces
+                const price = parseFloat(cleanPrice);
+                return !isNaN(price) ? price : null;
+              };
+
               await storage.createAsset({
                 type: await normalizeAssetType(mappedRecord.type),
                 brand: mappedRecord.brand || 'Unknown',
                 modelNumber: mappedRecord.modelNumber || null,
                 modelName: mappedRecord.modelName || null,
                 serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
-                specs: mappedRecord.specs || null,
-                cpu: mappedRecord.cpu || null,
-                ram: mappedRecord.ram || null,
-                storage: mappedRecord.storage || null,
+                specs: mappedRecord.specs || null, // Single specs field - no splitting
+                cpu: null, // Removed - specs field contains all hardware info
+                ram: null, // Removed - specs field contains all hardware info  
+                storage: null, // Removed - specs field contains all hardware info
                 status: mappedRecord.status || 'Available',
                 purchaseDate: parseDate(mappedRecord.purchaseDate),
-                buyPrice: mappedRecord.buyPrice && !isNaN(parseFloat(mappedRecord.buyPrice)) ? parseFloat(mappedRecord.buyPrice) : null,
+                buyPrice: parseBuyPrice(mappedRecord.buyPrice),
                 warrantyExpiryDate: parseDate(mappedRecord.warrantyExpiryDate),
                 lifeSpan: mappedRecord.lifeSpan && !isNaN(parseInt(mappedRecord.lifeSpan)) ? parseInt(mappedRecord.lifeSpan) : null,
                 outOfBoxOs: mappedRecord.outOfBoxOs || null,
