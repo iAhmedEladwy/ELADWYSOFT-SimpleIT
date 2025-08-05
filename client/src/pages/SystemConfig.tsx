@@ -2050,26 +2050,97 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetTypes.map((type: any) => (
                             <TableRow key={type.id}>
-                              <TableCell className="font-medium">{type.name}</TableCell>
-                              <TableCell className="text-gray-600">{type.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeName}
+                                    onChange={(e) => setEditedTypeName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetTypeMutation.mutate({
+                                          id: type.id,
+                                          data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  type.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeDescription}
+                                    onChange={(e) => setEditedTypeDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetTypeMutation.mutate({
+                                          id: type.id,
+                                          data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  type.description
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => startEditAssetType(type)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0 text-red-600"
-                                    onClick={() => handleDeleteAssetType(type.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingTypeId === type.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetTypeMutation.mutate({
+                                            id: type.id,
+                                            data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetTypeMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingTypeId(null);
+                                          setEditedTypeName('');
+                                          setEditedTypeDescription('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetType(type)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetType(type.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2174,26 +2245,97 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetBrands.map((brand: any) => (
                             <TableRow key={brand.id}>
-                              <TableCell className="font-medium">{brand.name}</TableCell>
-                              <TableCell className="text-gray-600">{brand.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandName}
+                                    onChange={(e) => setEditedBrandName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetBrandMutation.mutate({
+                                          id: brand.id,
+                                          data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  brand.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandDescription}
+                                    onChange={(e) => setEditedBrandDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetBrandMutation.mutate({
+                                          id: brand.id,
+                                          data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  brand.description
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => startEditAssetBrand(brand)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0 text-red-600"
-                                    onClick={() => handleDeleteAssetBrand(brand.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingBrandId === brand.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetBrandMutation.mutate({
+                                            id: brand.id,
+                                            data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetBrandMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingBrandId(null);
+                                          setEditedBrandName('');
+                                          setEditedBrandDescription('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetBrand(brand)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetBrand(brand.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2308,35 +2450,119 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetStatuses.map((status: any) => (
                             <TableRow key={status.id}>
-                              <TableCell className="font-medium">{status.name}</TableCell>
-                              <TableCell className="text-gray-600">{status.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusName}
+                                    onChange={(e) => setEditedStatusName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetStatusMutation.mutate({
+                                          id: status.id,
+                                          data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  status.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusDescription}
+                                    onChange={(e) => setEditedStatusDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetStatusMutation.mutate({
+                                          id: status.id,
+                                          data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  status.description
+                                )}
+                              </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded border" 
-                                    style={{ backgroundColor: status.color }}
-                                  ></div>
-                                  <span className="text-xs text-gray-500">{status.color}</span>
-                                </div>
+                                {editingStatusId === status.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="color"
+                                      value={editedStatusColor}
+                                      onChange={(e) => setEditedStatusColor(e.target.value)}
+                                      className="h-8 w-16"
+                                    />
+                                    <span className="text-xs text-gray-500">{editedStatusColor}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded border" 
+                                      style={{ backgroundColor: status.color }}
+                                    ></div>
+                                    <span className="text-xs text-gray-500">{status.color}</span>
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => startEditAssetStatus(status)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0 text-red-600"
-                                    onClick={() => handleDeleteAssetStatus(status.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingStatusId === status.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetStatusMutation.mutate({
+                                            id: status.id,
+                                            data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetStatusMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingStatusId(null);
+                                          setEditedStatusName('');
+                                          setEditedStatusDescription('');
+                                          setEditedStatusColor('#3B82F6');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetStatus(status)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetStatus(status.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2461,28 +2687,165 @@ function SystemConfig() {
                         <TableBody>
                           {filteredServiceProviders.map((provider: any) => (
                             <TableRow key={provider.id}>
-                              <TableCell className="font-medium">{provider.name}</TableCell>
-                              <TableCell className="text-gray-600">{provider.contact}</TableCell>
-                              <TableCell className="text-gray-600">{provider.phone}</TableCell>
-                              <TableCell className="text-gray-600">{provider.email}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderName}
+                                    onChange={(e) => setEditedProviderName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  provider.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderContact}
+                                    onChange={(e) => setEditedProviderContact(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Contact person..."
+                                  />
+                                ) : (
+                                  provider.contactPerson
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderPhone}
+                                    onChange={(e) => setEditedProviderPhone(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Phone..."
+                                  />
+                                ) : (
+                                  provider.phone
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    type="email"
+                                    value={editedProviderEmail}
+                                    onChange={(e) => setEditedProviderEmail(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Email..."
+                                  />
+                                ) : (
+                                  provider.email
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => startEditServiceProvider(provider)}
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 w-7 p-0 text-red-600"
-                                    onClick={() => handleDeleteServiceProvider(provider.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingProviderId === provider.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateServiceProviderMutation.mutate({
+                                            id: provider.id,
+                                            data: {
+                                              name: editedProviderName.trim(),
+                                              contactPerson: editedProviderContact.trim(),
+                                              phone: editedProviderPhone.trim(),
+                                              email: editedProviderEmail.trim()
+                                            }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateServiceProviderMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingProviderId(null);
+                                          setEditedProviderName('');
+                                          setEditedProviderContact('');
+                                          setEditedProviderPhone('');
+                                          setEditedProviderEmail('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditServiceProvider(provider)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteServiceProvider(provider.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2618,26 +2981,106 @@ function SystemConfig() {
                       <TableBody>
                         {filteredRequestTypes.map((requestType: any) => (
                           <TableRow key={requestType.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{requestType.name}</TableCell>
-                            <TableCell className="text-gray-600">{requestType.description}</TableCell>
+                            <TableCell className="font-medium">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeName}
+                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        data: {
+                                          name: editedRequestTypeName.trim(),
+                                          description: editedRequestTypeDescription.trim()
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="h-8"
+                                  autoFocus
+                                />
+                              ) : (
+                                requestType.name
+                              )}
+                            </TableCell>
+                            <TableCell className="text-gray-600">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeDescription}
+                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        data: {
+                                          name: editedRequestTypeName.trim(),
+                                          description: editedRequestTypeDescription.trim()
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="h-8"
+                                  placeholder="Description..."
+                                />
+                              ) : (
+                                requestType.description
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => startEditRequestType(requestType)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => handleDeleteRequestType(requestType.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {editingRequestTypeId === requestType.id ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        updateRequestTypeMutation.mutate({
+                                          id: requestType.id,
+                                          data: {
+                                            name: editedRequestTypeName.trim(),
+                                            description: editedRequestTypeDescription.trim()
+                                          }
+                                        });
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                      disabled={updateRequestTypeMutation.isPending}
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingRequestTypeId(null);
+                                        setEditedRequestTypeName('');
+                                        setEditedRequestTypeDescription('');
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => startEditRequestType(requestType)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleDeleteRequestType(requestType.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
