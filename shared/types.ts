@@ -215,6 +215,7 @@ export interface TicketFilters {
   requestType?: string;
   assignedTo?: string;
   category?: string;
+  createdBy?: string;
   search?: string;
 }
 

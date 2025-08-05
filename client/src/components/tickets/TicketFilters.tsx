@@ -66,7 +66,10 @@ export default function TicketFilters({
   const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
   const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
   const ticketCategories = ['Hardware', 'Software', 'Network', 'Security', 'Access Control', 'General'];
-  const requestTypes = systemConfig?.customRequestTypes || [];
+  const { data: requestTypesData } = useQuery({
+    queryKey: ['/api/custom-request-types'],
+  });
+  const requestTypes = requestTypesData || [];
 
   // Count active filters
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => 
@@ -143,7 +146,7 @@ export default function TicketFilters({
 
           <div>
             <Label className="text-xs">{translations.status}</Label>
-            <Select value={filters.status || ''} onValueChange={(value) => updateFilter('status', value || undefined)}>
+            <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allStatuses} />
               </SelectTrigger>
@@ -158,12 +161,12 @@ export default function TicketFilters({
 
           <div>
             <Label className="text-xs">{translations.priority}</Label>
-            <Select value={filters.priority || ''} onValueChange={(value) => updateFilter('priority', value || undefined)}>
+            <Select value={filters.priority || 'all'} onValueChange={(value) => updateFilter('priority', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allPriorities} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.allPriorities}</SelectItem>
+                <SelectItem value="all">{translations.allPriorities}</SelectItem>
                 {ticketPriorities.map(priority => (
                   <SelectItem key={priority} value={priority}>{priority}</SelectItem>
                 ))}
@@ -173,12 +176,12 @@ export default function TicketFilters({
 
           <div>
             <Label className="text-xs">{translations.requestType}</Label>
-            <Select value={filters.requestType || ''} onValueChange={(value) => updateFilter('requestType', value || undefined)}>
+            <Select value={filters.requestType || 'all'} onValueChange={(value) => updateFilter('requestType', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allRequestTypes} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.allRequestTypes}</SelectItem>
+                <SelectItem value="all">{translations.allRequestTypes}</SelectItem>
                 {requestTypes.map((requestType: any) => (
                   <SelectItem key={requestType.id} value={requestType.name}>{requestType.name}</SelectItem>
                 ))}
@@ -188,12 +191,12 @@ export default function TicketFilters({
 
           <div>
             <Label className="text-xs">{translations.assignedTo}</Label>
-            <Select value={filters.assignedTo || ''} onValueChange={(value) => updateFilter('assignedTo', value || undefined)}>
+            <Select value={filters.assignedTo || 'all'} onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allUsers} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.allUsers}</SelectItem>
+                <SelectItem value="all">{translations.allUsers}</SelectItem>
                 <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
                 {users?.map((user: any) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
@@ -209,12 +212,12 @@ export default function TicketFilters({
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div>
             <Label className="text-xs">{translations.category}</Label>
-            <Select value={filters.category || ''} onValueChange={(value) => updateFilter('category', value || undefined)}>
+            <Select value={filters.category || 'all'} onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allCategories} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.allCategories}</SelectItem>
+                <SelectItem value="all">{translations.allCategories}</SelectItem>
                 {ticketCategories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
@@ -224,12 +227,12 @@ export default function TicketFilters({
 
           <div>
             <Label className="text-xs">{translations.creator}</Label>
-            <Select value={filters.createdBy || ''} onValueChange={(value) => updateFilter('createdBy', value || undefined)}>
+            <Select value={filters.createdBy || 'all'} onValueChange={(value) => updateFilter('createdBy', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allUsers} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{translations.allUsers}</SelectItem>
+                <SelectItem value="all">{translations.allUsers}</SelectItem>
                 {users?.map((user: any) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
                     {user.firstName} {user.lastName}
