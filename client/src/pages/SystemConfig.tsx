@@ -1002,6 +1002,24 @@ function SystemConfig() {
       acc[m.fileColumn] = m.systemField;
       return acc;
     }, {});
+    
+    // Validate required data before proceeding
+    if (!selectedDataType) {
+      throw new Error('No data type selected');
+    }
+    if (!mappedData || !Array.isArray(mappedData)) {
+      throw new Error('No parsed file data available');
+    }
+    if (!mapping || Object.keys(mapping).length === 0) {
+      throw new Error('No field mapping provided');
+    }
+    
+    console.log('Import validation:', { 
+      selectedDataType, 
+      mappedDataLength: mappedData.length, 
+      mappingKeys: Object.keys(mapping) 
+    });
+    
     setIsImporting(true);
     setImportProgress(0);
     setImportError('');

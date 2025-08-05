@@ -2069,9 +2069,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ({ entityType, data, mapping } = req.body);
       } else {
         // Handle FormData format from the frontend
+        console.log('FormData fields available:', Object.keys(req.body));
         entityType = req.body.entityType;
-        data = req.body.data ? JSON.parse(req.body.data) : null;
-        mapping = req.body.mapping ? JSON.parse(req.body.mapping) : null;
+        console.log('Raw entityType:', entityType);
+        console.log('Raw data field:', req.body.data);
+        console.log('Raw mapping field:', req.body.mapping);
+        
+        try {
+          data = req.body.data ? JSON.parse(req.body.data) : null;
+        } catch (e) {
+          console.error('Failed to parse data field:', e);
+          data = null;
+        }
+        
+        try {
+          mapping = req.body.mapping ? JSON.parse(req.body.mapping) : null;
+        } catch (e) {
+          console.error('Failed to parse mapping field:', e);
+          mapping = null;
+        }
       }
       
       console.log('Parsed values:', { entityType, dataLength: data?.length, mapping });
