@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Download, Upload, AlertCircle, CheckCircle2, FileDown, FileUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useLanguage } from '@/hooks/use-language';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 
 const AssetImportExport = () => {
   const { toast } = useToast();
@@ -152,13 +152,53 @@ const AssetImportExport = () => {
   };
 
   // Function to download template
-  const downloadTemplate = () => {
-    window.location.href = '/api/assets/template';
+  const downloadTemplate = async () => {
+    try {
+      // Use a simple window.open approach that respects authentication
+      const link = document.createElement('a');
+      link.href = '/api/assets/template';
+      link.download = 'asset-template.csv';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
+        description: language === 'English' ? 'Asset template download initiated' : 'تم بدء تنزيل قالب الأصول',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'English' ? 'Download Error' : 'خطأ في التنزيل',
+        description: language === 'English' ? 'Failed to download template' : 'فشل في تنزيل القالب',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Function to download export
-  const downloadExport = () => {
-    window.location.href = '/api/assets/export/csv';
+  const downloadExport = async () => {
+    try {
+      // Use a simple window.open approach that respects authentication
+      const link = document.createElement('a');
+      link.href = '/api/assets/export/csv';
+      link.download = `assets-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: language === 'English' ? 'Export Downloaded' : 'تم تنزيل التصدير',
+        description: language === 'English' ? 'Asset export download initiated' : 'تم بدء تنزيل تصدير الأصول',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'English' ? 'Download Error' : 'خطأ في التنزيل',
+        description: language === 'English' ? 'Failed to download export' : 'فشل في تنزيل التصدير',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
