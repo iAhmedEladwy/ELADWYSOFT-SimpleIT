@@ -858,7 +858,7 @@ export default function Assets() {
                 <SelectContent>
                   {employees.map((employee: any) => (
                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName || employee.name}
+                      {employee.englishName || employee.name || 'Unknown Employee'}
                     </SelectItem>
                   ))}
                 </SelectContent>

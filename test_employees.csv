@@ -1,2 +1,4 @@
-empId,englishName,arabicName,department,idNumber,title,directManager,employmentType,joiningDate,exitDate,status,personalMobile,workMobile,personalEmail,corporateEmail
-"","Test Import Employee","موظف استيراد","IT","IMP001","Import Tester","","Full-time","2025-01-15","","Active","","","test@import.com",""
+English Name,Arabic Name,Department,Email,Title,Employment Type,Joining Date,Status,Personal Mobile,Personal Email
+John Smith,جون سميث,IT,john.smith@company.com,Software Engineer,Full-time,2023-01-15,Active,+1234567890,john@personal.com
+Sarah Johnson,سارة جونسون,HR,sarah.johnson@company.com,HR Manager,Full-time,2022-06-10,Active,+1234567891,sarah@personal.com
+Ahmed Ali,أحمد علي,Finance,ahmed.ali@company.com,Accountant,Full-time,2023-03-20,Active,+966123456789,ahmed@personal.com

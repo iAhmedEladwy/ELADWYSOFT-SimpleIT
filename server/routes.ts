@@ -2059,10 +2059,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Process import data with mapping
   app.post("/api/import/process", authenticateUser, hasAccess(3), async (req, res) => {
     try {
-      const { entityType, data, mapping } = req.body;
+      console.log('Raw request body:', req.body);
+      console.log('Request headers:', req.headers);
+      
+      // Handle both JSON and FormData formats
+      let entityType, data, mapping;
+      
+      if (req.headers['content-type']?.includes('application/json')) {
+        ({ entityType, data, mapping } = req.body);
+      } else {
+        // Handle FormData format from the frontend
+        entityType = req.body.entityType;
+        data = req.body.data ? JSON.parse(req.body.data) : null;
+        mapping = req.body.mapping ? JSON.parse(req.body.mapping) : null;
+      }
+      
+      console.log('Parsed values:', { entityType, dataLength: data?.length, mapping });
       
       if (!entityType || !Array.isArray(data) || !mapping) {
-        return res.status(400).json({ message: "Missing required fields: entityType, data, or mapping" });
+        return res.status(400).json({ 
+          message: "Missing required fields: entityType, data, or mapping",
+          received: {
+            entityType: !!entityType,
+            data: Array.isArray(data) ? `array with ${data.length} items` : typeof data,
+            mapping: !!mapping
+          }
+        });
       }
 
       console.log(`Processing import for ${entityType} with ${data.length} records`);
