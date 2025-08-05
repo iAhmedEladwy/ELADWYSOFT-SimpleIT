@@ -799,24 +799,27 @@ function SystemConfig() {
 
   const handleDownloadTemplate = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      const response = await fetch(`/api/import/template/${type}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download template');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Use the correct endpoint and authenticated fetch
+      const response = await apiRequest(`/api/${type}/template`);
+      
+      // Create blob from the CSV content
+      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Trigger download
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = `${type}_template.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
+        description: language === 'English' ? `${type} template downloaded successfully` : `تم تنزيل قالب ${type} بنجاح`,
+      });
     } catch (error) {
       console.error('Download error:', error);
       toast({
@@ -829,24 +832,27 @@ function SystemConfig() {
 
   const handleExport = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      const response = await fetch(`/api/export/${type}`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export data');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Use the correct endpoint and authenticated fetch
+      const response = await apiRequest(`/api/${type}/export`);
+      
+      // Create blob from the CSV content
+      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Trigger download
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
+        description: language === 'English' ? `${type} data exported successfully` : `تم تصدير بيانات ${type} بنجاح`,
+      });
     } catch (error) {
       console.error('Export error:', error);
       toast({

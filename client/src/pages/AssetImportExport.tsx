@@ -154,20 +154,30 @@ const AssetImportExport = () => {
   // Function to download template
   const downloadTemplate = async () => {
     try {
-      // Use a simple window.open approach that respects authentication
+      // Use authenticated fetch to get the CSV content
+      const response = await apiRequest('/api/assets/template');
+      
+      // Create blob from the CSV content
+      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Trigger download
       const link = document.createElement('a');
-      link.href = '/api/assets/template';
+      link.href = url;
       link.download = 'asset-template.csv';
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+      
       toast({
         title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
-        description: language === 'English' ? 'Asset template download initiated' : 'تم بدء تنزيل قالب الأصول',
+        description: language === 'English' ? 'Asset template downloaded successfully' : 'تم تنزيل قالب الأصول بنجاح',
       });
     } catch (error) {
+      console.error('Template download error:', error);
       toast({
         title: language === 'English' ? 'Download Error' : 'خطأ في التنزيل',
         description: language === 'English' ? 'Failed to download template' : 'فشل في تنزيل القالب',
