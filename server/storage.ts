@@ -13,6 +13,7 @@ import {
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
   customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
+  assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification,
   changesLog, type ChangeLog, type InsertChangeLog
 } from "@shared/schema";
@@ -191,6 +192,14 @@ export interface IStorage {
   createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
   updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any>;
   deleteCustomAssetStatus(id: number): Promise<boolean>;
+  
+  // Asset Status operations (flexible status system)
+  getAssetStatuses(): Promise<AssetStatus[]>;
+  createAssetStatus(data: InsertAssetStatus): Promise<AssetStatus>;
+  updateAssetStatus(id: number, data: Partial<InsertAssetStatus>): Promise<AssetStatus | undefined>;
+  deleteAssetStatus(id: number): Promise<boolean>;
+  getAssetStatusByName(name: string): Promise<AssetStatus | undefined>;
+  ensureAssetStatus(name: string, color?: string): Promise<AssetStatus>;
   
   getServiceProviders(): Promise<any[]>;
   createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
@@ -1805,6 +1814,88 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting custom asset status:', error);
       return false;
+    }
+  }
+
+  // Asset Status operations (flexible status system)
+  async getAssetStatuses(): Promise<AssetStatus[]> {
+    try {
+      const statuses = await db.select().from(assetStatuses).orderBy(asc(assetStatuses.name));
+      return statuses;
+    } catch (error) {
+      console.error('Error fetching asset statuses:', error);
+      return [];
+    }
+  }
+
+  async createAssetStatus(data: InsertAssetStatus): Promise<AssetStatus> {
+    try {
+      const [newStatus] = await db.insert(assetStatuses)
+        .values(data)
+        .returning();
+      return newStatus;
+    } catch (error) {
+      console.error('Error creating asset status:', error);
+      throw error;
+    }
+  }
+
+  async updateAssetStatus(id: number, data: Partial<InsertAssetStatus>): Promise<AssetStatus | undefined> {
+    try {
+      const [updated] = await db.update(assetStatuses)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(assetStatuses.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating asset status:', error);
+      return undefined;
+    }
+  }
+
+  async deleteAssetStatus(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(assetStatuses).where(eq(assetStatuses.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('Error deleting asset status:', error);
+      return false;
+    }
+  }
+
+  async getAssetStatusByName(name: string): Promise<AssetStatus | undefined> {
+    try {
+      const [status] = await db.select().from(assetStatuses).where(eq(assetStatuses.name, name));
+      return status;
+    } catch (error) {
+      console.error('Error fetching asset status by name:', error);
+      return undefined;
+    }
+  }
+
+  async ensureAssetStatus(name: string, color?: string): Promise<AssetStatus> {
+    try {
+      // Try to get existing status
+      const existing = await this.getAssetStatusByName(name);
+      if (existing) {
+        return existing;
+      }
+
+      // Create new status if it doesn't exist
+      const newStatusData: InsertAssetStatus = {
+        name,
+        color: color || '#6b7280', // Default gray color
+        isDefault: false,
+        description: `Custom status: ${name}`
+      };
+
+      return await this.createAssetStatus(newStatusData);
+    } catch (error) {
+      console.error('Error ensuring asset status:', error);
+      throw error;
     }
   }
 

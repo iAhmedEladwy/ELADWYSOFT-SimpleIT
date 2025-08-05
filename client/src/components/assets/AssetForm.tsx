@@ -86,8 +86,8 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  const { data: customAssetStatuses = [] } = useQuery<any[]>({
-    queryKey: ['/api/custom-asset-statuses'],
+  const { data: assetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/asset-statuses'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -370,9 +370,9 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                       </FormControl>
                       <SelectContent>
                         <ScrollArea className="h-72">
-                          {/* Custom statuses only */}
-                          {customAssetStatuses && customAssetStatuses.length > 0 ? (
-                            customAssetStatuses.map((status: any) => (
+                          {/* Flexible asset statuses */}
+                          {assetStatuses && assetStatuses.length > 0 ? (
+                            assetStatuses.map((status: any) => (
                               <SelectItem 
                                 key={status.id} 
                                 value={status.name}
@@ -385,6 +385,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                                   />
                                 )}
                                 {status.name}
+                                {status.isDefault && (
+                                  <span className="ml-auto text-xs text-muted-foreground">
+                                    {language === 'English' ? 'Default' : 'افتراضي'}
+                                  </span>
+                                )}
                               </SelectItem>
                             ))
                           ) : (

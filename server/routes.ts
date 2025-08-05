@@ -1502,11 +1502,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             warnings.push(`Row ${index + 1}: Missing type, defaulted to "Other"`);
           }
 
-          // Validate status enum
-          const validStatuses = ['Available', 'In Use', 'Under Maintenance', 'Retired', 'Lost', 'Stolen'];
-          if (assetData.status && !validStatuses.includes(assetData.status)) {
-            warnings.push(`Row ${index + 1}: Invalid status "${assetData.status}", defaulting to "Available"`);
-            assetData.status = 'Available';
+          // Ensure asset status exists (flexible status system)
+          if (assetData.status && assetData.status.trim() !== '') {
+            try {
+              await storage.ensureAssetStatus(assetData.status);
+            } catch (error) {
+              console.warn(`Could not ensure status "${assetData.status}" for row ${index + 1}:`, error);
+              warnings.push(`Row ${index + 1}: Status "${assetData.status}" will be created if not exists`);
+            }
+          } else {
+            assetData.status = 'Available'; // Default fallback
+            warnings.push(`Row ${index + 1}: Missing status, defaulted to "Available"`);
           }
           
           const result = await storage.createAsset(assetData);
@@ -3785,16 +3791,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create demo assets using valid enum values
+      // Create demo assets using flexible types and statuses
       const validAssetTypes = ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other'];
-      const validAssetStatuses = ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
+      const flexibleAssetStatuses = ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
       const brands = ['Dell', 'HP', 'Lenovo', 'Apple', 'Samsung'];
       
       let createdAssets = 0;
       for (let i = 0; i < config.assets; i++) {
         const type = validAssetTypes[Math.floor(Math.random() * validAssetTypes.length)];
         const brand = brands[Math.floor(Math.random() * brands.length)];
-        const status = validAssetStatuses[Math.floor(Math.random() * validAssetStatuses.length)];
+        const status = flexibleAssetStatuses[Math.floor(Math.random() * flexibleAssetStatuses.length)];
         
         try {
           // Generate unique asset ID with timestamp to avoid conflicts
@@ -4766,6 +4772,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       console.error('Error deleting custom asset status:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  // Asset Status API routes (flexible status system)
+  app.get('/api/asset-statuses', authenticateUser, async (req, res) => {
+    try {
+      const statuses = await storage.getAssetStatuses();
+      res.json(statuses);
+    } catch (error: any) {
+      console.error('Error fetching asset statuses:', error);
+      res.status(500).json({ error: 'Failed to fetch asset statuses', details: error.message });
+    }
+  });
+
+  app.post('/api/asset-statuses', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { name, color, description } = req.body;
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Status name is required' });
+      }
+
+      const statusData = {
+        name: name.trim(),
+        color: color || '#6b7280',
+        description: description || `Custom status: ${name.trim()}`,
+        isDefault: false
+      };
+
+      const newStatus = await storage.createAssetStatus(statusData);
+      res.status(201).json(newStatus);
+    } catch (error: any) {
+      console.error('Error creating asset status:', error);
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        res.status(409).json({ error: 'Asset status with this name already exists' });
+      } else {
+        res.status(500).json({ error: 'Failed to create asset status', details: error.message });
+      }
+    }
+  });
+
+  app.put('/api/asset-statuses/:id', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid ID' });
+      }
+
+      const { name, color, description } = req.body;
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Status name is required' });
+      }
+
+      const updateData = {
+        name: name.trim(),
+        color: color || '#6b7280',
+        description: description
+      };
+
+      const updatedStatus = await storage.updateAssetStatus(id, updateData);
+      if (updatedStatus) {
+        res.json(updatedStatus);
+      } else {
+        res.status(404).json({ error: 'Asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating asset status:', error);
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        res.status(409).json({ error: 'Asset status with this name already exists' });
+      } else {
+        res.status(500).json({ error: 'Failed to update asset status', details: error.message });
+      }
+    }
+  });
+
+  app.delete('/api/asset-statuses/:id', authenticateUser, hasAccess(4), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid ID' });
+      }
+
+      // Check if this is a default status
+      const status = await storage.getAssetStatuses();
+      const targetStatus = status.find(s => s.id === id);
+      
+      if (targetStatus?.isDefault) {
+        return res.status(400).json({ error: 'Cannot delete default asset status' });
+      }
+
+      const success = await storage.deleteAssetStatus(id);
+      if (success) {
+        res.json({ message: 'Asset status deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting asset status:', error);
+      res.status(500).json({ error: 'Failed to delete asset status', details: error.message });
     }
   });
   

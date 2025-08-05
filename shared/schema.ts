@@ -8,7 +8,7 @@ export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
-export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
+// Asset statuses are now flexible - ENUM removed to allow custom statuses
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
@@ -102,7 +102,7 @@ export const assets = pgTable("assets", {
   modelName: varchar("model_name", { length: 100 }),
   serialNumber: varchar("serial_number", { length: 100 }).notNull(),
   specs: text("specs"),
-  status: assetStatusEnum("status").notNull().default('Available'),
+  status: varchar("status", { length: 100 }).notNull().default('Available'),
   purchaseDate: date("purchase_date"),
   buyPrice: decimal("buy_price", { precision: 10, scale: 2 }),
   warrantyExpiryDate: date("warranty_expiry_date"),
@@ -194,6 +194,17 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Asset Statuses lookup table for defaults and custom statuses
+export const assetStatuses = pgTable("asset_statuses", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  color: varchar("color", { length: 7 }), // Hex color code
+  isDefault: boolean("is_default").default(false),
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -456,6 +467,10 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   assetSaleItems: many(assetSaleItems),
 }));
 
+export const assetStatusesRelations = relations(assetStatuses, ({ many }) => ({
+  // No direct relations needed as assets reference statuses by name, not ID
+}));
+
 export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedByEmployee: one(employees, { fields: [tickets.submittedById], references: [employees.id] }),
   assignedToUser: one(users, { fields: [tickets.assignedToId], references: [users.id] }),
@@ -514,3 +529,12 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 export type ChangeLog = typeof changesLog.$inferSelect;
 export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
+
+// Asset Status types
+export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type AssetStatus = typeof assetStatuses.$inferSelect;
+export type InsertAssetStatus = z.infer<typeof insertAssetStatusSchema>;

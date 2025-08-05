@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
@@ -150,48 +151,48 @@ export default function AssetsTable({
     retired: language === 'English' ? 'Retired' : 'متقاعد',
   };
 
-  // Get status badge with color
+  // Fetch asset statuses for dynamic badges
+  const { data: assetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/asset-statuses'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Get status badge with flexible colors
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Available':
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-            {translations.available}
-          </Badge>
-        );
-      case 'In Use':
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-            {translations.inUse}
-          </Badge>
-        );
-      case 'Maintenance':
-        return (
-          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-            {translations.maintenance}
-          </Badge>
-        );
-      case 'Damaged':
-        return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-            {translations.damaged}
-          </Badge>
-        );
-      case 'Sold':
-        return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-            {translations.sold}
-          </Badge>
-        );
-      case 'Retired':
-        return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-            {translations.retired}
-          </Badge>
-        );
-      default:
-        return null;
+    // Find the status configuration
+    const statusConfig = assetStatuses.find(s => s.name === status);
+    
+    if (statusConfig?.color) {
+      // Use the configured color for the badge
+      const color = statusConfig.color;
+      const lightColor = color + '20'; // Adding transparency
+      const textColor = color;
+      
+      return (
+        <Badge 
+          variant="outline" 
+          className="border"
+          style={{ 
+            backgroundColor: lightColor,
+            color: textColor,
+            borderColor: color + '40'
+          }}
+        >
+          <span 
+            className="w-2 h-2 rounded-full inline-block mr-1" 
+            style={{ backgroundColor: color }}
+          />
+          {status}
+        </Badge>
+      );
     }
+
+    // Fallback for status without configuration or unknown status
+    return (
+      <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+        {status || 'N/A'}
+      </Badge>
+    );
   };
 
   // Find assigned employee name - Updated to handle proper field mapping
