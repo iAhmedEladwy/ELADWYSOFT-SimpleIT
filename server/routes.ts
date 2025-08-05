@@ -2170,34 +2170,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return null;
               };
 
-              // Helper function to normalize asset type
-              const normalizeAssetType = (type: string): string => {
+              // Helper function to normalize asset type using system config
+              const normalizeAssetType = async (type: string): Promise<string> => {
                 if (!type || typeof type !== 'string') return 'Other';
-                const normalized = type.trim().toLowerCase();
+                
+                // Get available asset types from system config
+                const systemConfig = await storage.getSystemConfig();
+                const availableTypes = systemConfig?.assetTypes || [
+                  'Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 
+                  'Printer', 'Network', 'Tablet', 'Accessories', 'Other'
+                ];
+                
+                const normalized = type.trim();
+                
+                // First try exact match (case insensitive)
+                const exactMatch = availableTypes.find(t => 
+                  t.toLowerCase() === normalized.toLowerCase()
+                );
+                if (exactMatch) return exactMatch;
+                
+                // Then try common mappings to available types
                 const typeMapping: Record<string, string> = {
-                  'laptop': 'Laptop',
-                  'desktop': 'Desktop',
-                  'monitor': 'Monitor',
-                  'phone': 'Phone',
                   'smartphone': 'Phone',
                   'mobile': 'Phone',
-                  'server': 'Server',
-                  'printer': 'Printer',
                   'router': 'Network',
                   'switch': 'Network',
-                  'network': 'Network',
-                  'tablet': 'Tablet',
                   'keyboard': 'Accessories',
                   'mouse': 'Accessories',
                   'headset': 'Accessories',
-                  'webcam': 'Accessories',
-                  'other': 'Other'
+                  'webcam': 'Accessories'
                 };
-                return typeMapping[normalized] || 'Other';
+                
+                const mappedType = typeMapping[normalized.toLowerCase()];
+                if (mappedType && availableTypes.includes(mappedType)) {
+                  return mappedType;
+                }
+                
+                // Default to 'Other' if no match found
+                return availableTypes.includes('Other') ? 'Other' : availableTypes[0] || 'Other';
               };
 
               await storage.createAsset({
-                type: normalizeAssetType(mappedRecord.type),
+                type: await normalizeAssetType(mappedRecord.type),
                 brand: mappedRecord.brand || 'Unknown',
                 modelNumber: mappedRecord.modelNumber || null,
                 modelName: mappedRecord.modelName || null,
@@ -4015,9 +4029,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create demo assets using flexible types and statuses
-      const validAssetTypes = ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other'];
-      const flexibleAssetStatuses = ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
+      // Create demo assets using dynamic types from system config
+      const systemConfig = await storage.getSystemConfig();
+      const validAssetTypes = systemConfig?.assetTypes || ['Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 'Printer', 'Network', 'Tablet', 'Accessories', 'Other'];
+      const flexibleAssetStatuses = systemConfig?.assetStatuses || ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
       const brands = ['Dell', 'HP', 'Lenovo', 'Apple', 'Samsung'];
       
       let createdAssets = 0;

@@ -96,7 +96,7 @@ export const employees = pgTable("employees", {
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
   assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
-  type: assetTypeEnum("type").notNull(),
+  type: varchar("type", { length: 100 }).notNull(),
   brand: varchar("brand", { length: 100 }).notNull(),
   modelNumber: varchar("model_number", { length: 100 }),
   modelName: varchar("model_name", { length: 100 }),
