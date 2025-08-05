@@ -32,7 +32,7 @@ const employeeFormSchema = z.object({
   idNumber: z.string().min(3, 'ID number is required'),
   title: z.string().min(1, 'Job title is required'),
   directManager: z.string().optional().or(z.literal('')),
-  employmentType: z.enum(['Full-time', 'Part-time', 'Contract', 'Intern']),
+  employmentType: z.enum(['Full-time', 'Part-time', 'Contract', 'Intern','Freelance']),
   joiningDate: z.string(),
   exitDate: z.string().optional().or(z.literal('')),
   status: z.enum(['Active', 'Resigned', 'Terminated', 'On Leave']),
@@ -92,6 +92,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     partTime: language === 'English' ? 'Part-time' : 'دوام جزئي',
     contract: language === 'English' ? 'Contract' : 'عقد',
     intern: language === 'English' ? 'Intern' : 'متدرب',
+    freelance: language == 'English' ? 'Freelance' : 'حر',
     joiningDate: language === 'English' ? 'Joining Date' : 'تاريخ الالتحاق',
     exitDate: language === 'English' ? 'Exit Date' : 'تاريخ المغادرة',
     exitDateDesc: language === 'English' ? 'Leave blank if not applicable' : 'اتركه فارغًا إذا لم ينطبق',
@@ -379,6 +380,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         <SelectItem value="Part-time">{translations.partTime}</SelectItem>
                         <SelectItem value="Contract">{translations.contract}</SelectItem>
                         <SelectItem value="Intern">{translations.intern}</SelectItem>
+			<SelectItem value="Freelance">{translations.intern}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
