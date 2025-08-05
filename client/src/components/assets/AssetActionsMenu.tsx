@@ -159,18 +159,33 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button 
+            variant="ghost" 
+            className="h-8 w-8 p-0"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={handleEdit}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleEdit();
+          }}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Asset
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handleViewDetails}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleViewDetails();
+          }}>
             <Eye className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
@@ -178,14 +193,22 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           <DropdownMenuSeparator />
           
           {asset.status === 'Available' && (
-            <DropdownMenuItem onClick={handleCheckOut}>
+            <DropdownMenuItem onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCheckOut();
+            }}>
               <LogOut className="mr-2 h-4 w-4" />
               Check Out
             </DropdownMenuItem>
           )}
           
           {asset.status === 'In Use' && (
-            <DropdownMenuItem onClick={handleCheckIn}>
+            <DropdownMenuItem onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCheckIn();
+            }}>
               <LogIn className="mr-2 h-4 w-4" />
               Check In
             </DropdownMenuItem>
@@ -193,14 +216,22 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={handleMaintenance}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMaintenance();
+          }}>
             <Wrench className="mr-2 h-4 w-4" />
             Schedule Maintenance
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={handleViewHistory}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleViewHistory();
+          }}>
             <FileText className="mr-2 h-4 w-4" />
             View History
           </DropdownMenuItem>
