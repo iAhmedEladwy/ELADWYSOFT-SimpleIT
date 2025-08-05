@@ -2105,6 +2105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Processing import for ${entityType} with ${data.length} records`);
+      console.log('Sample record:', data[0]);
+      console.log('Mapping object:', mapping);
       
       let successful = 0;
       let failed = 0;
@@ -2119,6 +2121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Object.entries(mapping).forEach(([dbField, csvField]) => {
             if (csvField && record[csvField as string] !== undefined) {
               mappedRecord[dbField] = record[csvField as string];
+              console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
             }
           });
 
@@ -2224,6 +2227,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return !isNaN(price) ? price : null;
               };
 
+              console.log('Asset data being created:', {
+                type: await normalizeAssetType(mappedRecord.type),
+                brand: mappedRecord.brand || 'Unknown',
+                serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
+                specs: mappedRecord.specs || null,
+                buyPrice: parseBuyPrice(mappedRecord.buyPrice),
+                status: mappedRecord.status || 'Available'
+              });
+
               await storage.createAsset({
                 type: await normalizeAssetType(mappedRecord.type),
                 brand: mappedRecord.brand || 'Unknown',
@@ -2236,7 +2248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 storage: null, // Removed - specs field contains all hardware info
                 status: mappedRecord.status || 'Available',
                 purchaseDate: parseDate(mappedRecord.purchaseDate),
-                buyPrice: parseBuyPrice(mappedRecord.buyPrice),
+                buyPrice: parseBuyPrice(mappedRecord.buyPrice)?.toString() || null,
                 warrantyExpiryDate: parseDate(mappedRecord.warrantyExpiryDate),
                 lifeSpan: mappedRecord.lifeSpan && !isNaN(parseInt(mappedRecord.lifeSpan)) ? parseInt(mappedRecord.lifeSpan) : null,
                 outOfBoxOs: mappedRecord.outOfBoxOs || null,
@@ -6337,8 +6349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash password if provided
       if (userData.password) {
-        const bcrypt = require('bcryptjs');
-        userData.password = await bcrypt.hash(userData.password, 10);
+        userData.password = await hash(userData.password, 10);
       }
       
       const newUser = await storage.createUser(userData);
@@ -6362,8 +6373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash password if provided
       if (userData.password) {
-        const bcrypt = require('bcryptjs');
-        userData.password = await bcrypt.hash(userData.password, 10);
+        userData.password = await hash(userData.password, 10);
       }
       
       const updatedUser = await storage.updateUser(id, userData);
