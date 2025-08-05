@@ -909,20 +909,40 @@ function SystemConfig() {
   };
 
   const handleFileImport = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      console.log('No file selected for import');
+      return;
+    }
+
+    console.log('Starting file import for:', selectedFile.name, 'Selected data type:', selectedDataType);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const csvText = e.target?.result as string;
+        console.log('CSV text length:', csvText.length);
+        console.log('CSV preview:', csvText.substring(0, 200));
+        
         const { headers, data } = parseCSV(csvText);
+        console.log('Parsed headers:', headers);
+        console.log('Parsed data rows:', data.length);
+        console.log('First data row:', data[0]);
         
         setParsedFileData(data);
         setFileColumns(headers);
         setShowFieldMapping(true);
+        setImportError('');
+        
+        console.log('Field mapping dialog should now show');
       } catch (error) {
         console.error('File parsing error:', error);
-        setImportError(language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV');
+        const errorMessage = language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV';
+        setImportError(errorMessage);
+        toast({
+          title: language === 'English' ? 'Parse Error' : 'خطأ تحليل',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
     };
     reader.readAsText(selectedFile);
@@ -971,7 +991,13 @@ function SystemConfig() {
 
     } catch (error: any) {
       console.error('Import error:', error);
-      setImportError(error.message);
+      const errorMessage = error?.message || error?.toString() || 'Unknown import error occurred';
+      setImportError(errorMessage);
+      toast({
+        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setIsImporting(false);
       setImportProgress(100);
