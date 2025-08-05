@@ -36,7 +36,7 @@ export default function Employees() {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
+
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   
@@ -273,7 +273,6 @@ export default function Employees() {
         title: `${selectedEmployees.length} employees deleted successfully`,
       });
       setSelectedEmployees([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -301,7 +300,6 @@ export default function Employees() {
         title: `${selectedEmployees.length} employees updated successfully`,
       });
       setSelectedEmployees([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -541,27 +539,17 @@ export default function Employees() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          {selectedEmployees.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {selectedEmployees.length} selected
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkActions(!showBulkActions)}
-              >
-                {translations.bulkActions}
-              </Button>
-            </div>
-          )}
+      {/* Employee count summary */}
+      {selectedEmployees.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm text-gray-600">
+            {selectedEmployees.length} {language === 'English' ? 'employees selected' : 'موظف محدد'}
+          </span>
         </div>
-      </div>
+      )}
 
       {/* Bulk Operations */}
-      {showBulkActions && selectedEmployees.length > 0 && (
+      {selectedEmployees.length > 0 && (
         <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400 mb-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-blue-700">
