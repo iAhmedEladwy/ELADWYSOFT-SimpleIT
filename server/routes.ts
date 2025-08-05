@@ -1074,22 +1074,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (entity) {
         case 'assets':
           templateData = [{
-            'Type*': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
-            'Brand*': 'Dell (Required: Asset manufacturer)',
-            'Model Number': 'Latitude 5520 (Optional: Manufacturer model number)',
-            'Model Name': 'Dell Latitude 15 (Optional: Descriptive model name)',
-            'Serial Number*': 'DL123456789 (Required: Unique serial number)',
-            'Specifications': '16GB RAM, 512GB SSD, Intel Core i7-11800H (Required: Complete hardware specifications)',
-            'CPU': 'Intel Core i7-11800H (Optional: Processor details)',
-            'RAM': '16GB DDR4 (Optional: Memory details)',
-            'Storage': '512GB NVMe SSD (Optional: Storage details)',
-            'Status': 'Available (Available, In Use, Maintenance, Retired)',
-            'Purchase Date': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'Buy Price': '1200.00 (Required: Purchase price in USD)',
-            'Warranty Expiry Date': '2025-01-15 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'Life Span': '36 (Optional: Expected lifespan in months)',
-            'Out of Box OS': 'Windows 11 Pro (Optional: Operating system)',
-            'Assigned Employee ID': '1001 (Optional: Employee ID from employees table)'
+            'Type*': 'Laptop',
+            'Brand*': 'Dell',
+            'Model Number': 'Latitude 5520',
+            'Model Name': 'Dell Latitude 15',
+            'Serial Number*': 'DL123456789',
+            'Specifications': '16GB RAM, 512GB SSD, Intel Core i7-11800H',
+            'Status': 'Available',
+            'Purchase Date': '2023-01-15',
+            'Buy Price': '1200.00',
+            'Warranty Expiry Date': '2025-01-15',
+            'Life Span': '36',
+            'Out of Box OS': 'Windows 11 Pro',
+            'Assigned Employee ID': '1001'
           }];
           break;
         case 'employees':
@@ -1435,10 +1432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
             serialNumber: row['Serial Number*'] || row['Serial Number'] || row.serialNumber || 'N/A',
+            // Keep specifications intact - do not split into separate fields
             specs: row['Specifications'] || row.specs || null,
-            cpu: row['CPU'] || row.cpu || null,
-            ram: row['RAM'] || row.ram || null,
-            storage: row['Storage'] || row.storage || null,
             status: row['Status'] || row.status || 'Available',
             purchaseDate: row['Purchase Date'] || row.purchaseDate || null,
             buyPrice: row['Buy Price'] || row.buyPrice || null,
@@ -2123,8 +2118,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           Object.entries(mapping).forEach(([dbField, csvField]) => {
             if (csvField && record[csvField as string] !== undefined) {
-              mappedRecord[dbField] = record[csvField as string];
-              console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+              // For specifications field, preserve the complete content
+              if (dbField === 'specs' && csvField === 'Specifications') {
+                mappedRecord[dbField] = record[csvField as string];
+                console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+              }
+              // Skip CPU, RAM, Storage fields if we're using the complete Specifications field
+              else if (['cpu', 'ram', 'storage'].includes(dbField)) {
+                // Only map these if there's no Specifications field or if Specifications is empty
+                if (!record['Specifications'] || record['Specifications'].toString().trim() === '') {
+                  mappedRecord[dbField] = record[csvField as string];
+                  console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+                }
+              }
+              else {
+                mappedRecord[dbField] = record[csvField as string];
+                console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+              }
             }
           });
 
