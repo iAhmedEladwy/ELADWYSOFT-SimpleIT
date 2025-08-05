@@ -380,7 +380,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         <SelectItem value="Part-time">{translations.partTime}</SelectItem>
                         <SelectItem value="Contract">{translations.contract}</SelectItem>
                         <SelectItem value="Intern">{translations.intern}</SelectItem>
-			<SelectItem value="Freelance">{translations.intern}</SelectItem>
+			                  <SelectItem value="Freelance">{translations.freelance}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
