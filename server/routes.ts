@@ -35,19 +35,38 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
     let prefix: string;
     let nextNumber: number;
     
-    // Use reliable fallback prefixes to avoid database dependency issues during import
-    switch (entityType) {
-      case 'asset':
-        prefix = 'AST-';
-        break;
-      case 'employee':
-        prefix = 'EMP-';
-        break;
-      case 'ticket':
-        prefix = 'TKT-';
-        break;
-      default:
-        prefix = 'ID-';
+    // Get system config for prefixes
+    try {
+      const config = await storage.getSystemConfig();
+      switch (entityType) {
+        case 'asset':
+          prefix = config?.assetIdPrefix || 'AST-';
+          break;
+        case 'employee':
+          prefix = config?.empIdPrefix || 'EMP-';
+          break;
+        case 'ticket':
+          prefix = config?.ticketIdPrefix || 'TKT-';
+          break;
+        default:
+          prefix = 'ID-';
+      }
+    } catch (error) {
+      console.warn('Could not load system config for prefixes, using defaults:', error);
+      // Use reliable fallback prefixes to avoid database dependency issues during import
+      switch (entityType) {
+        case 'asset':
+          prefix = 'AST-';
+          break;
+        case 'employee':
+          prefix = 'EMP-';
+          break;
+        case 'ticket':
+          prefix = 'TKT-';
+          break;
+        default:
+          prefix = 'ID-';
+      }
     }
     
     console.log('generateId called with entityType:', entityType, 'prefix:', prefix);

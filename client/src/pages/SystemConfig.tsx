@@ -555,6 +555,101 @@ function SystemConfig() {
     }
   });
 
+  // Delete Asset Type Mutation
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-types/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset type' : 'فشل حذف نوع الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Asset Brand Mutation  
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-brands/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset brand' : 'فشل حذف علامة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Asset Status Mutation
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-statuses/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset status' : 'فشل حذف حالة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Request Type Mutation
+  const deleteRequestTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-request-types/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete request type' : 'فشل حذف نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Service Provider Mutation
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/service-providers/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مقدم الخدمة'),
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Import/Export functions from current working version
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -811,6 +906,128 @@ function SystemConfig() {
   const handleToggleUserStatus = (userId: number, newStatus: boolean) => {
     const userData = { isActive: newStatus };
     updateUserMutation.mutate({ id: userId, userData });
+  };
+
+  // Handler functions for delete operations
+  const handleDeleteAssetType = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset type?' : 'هل أنت متأكد من حذف نوع الأصل هذا؟')) {
+      deleteAssetTypeMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteAssetBrand = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset brand?' : 'هل أنت متأكد من حذف علامة الأصل هذه؟')) {
+      deleteAssetBrandMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteAssetStatus = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset status?' : 'هل أنت متأكد من حذف حالة الأصل هذه؟')) {
+      deleteAssetStatusMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteRequestType = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this request type?' : 'هل أنت متأكد من حذف نوع الطلب هذا؟')) {
+      deleteRequestTypeMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteServiceProvider = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this service provider?' : 'هل أنت متأكد من حذف مقدم الخدمة هذا؟')) {
+      deleteServiceProviderMutation.mutate(id);
+    }
+  };
+
+  // Department handlers
+  const handleAddDepartment = () => {
+    if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
+      const updatedDepartments = [...departments, newDepartment.trim()];
+      setDepartments(updatedDepartments);
+      setNewDepartment('');
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
+  };
+
+  const handleEditDepartment = (index: number) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(departments[index]);
+  };
+
+  const handleSaveDepartmentEdit = () => {
+    if (editingDeptIndex !== null && editedDeptName.trim()) {
+      const updatedDepartments = departments.map((dept, index) => 
+        index === editingDeptIndex ? editedDeptName.trim() : dept
+      );
+      setDepartments(updatedDepartments);
+      setEditingDeptIndex(null);
+      setEditedDeptName('');
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
+  };
+
+  const handleCancelDepartmentEdit = () => {
+    setEditingDeptIndex(null);
+    setEditedDeptName('');
+  };
+
+  const handleDeleteDepartment = (index: number) => {
+    if (window.confirm(language === 'English' ? `Delete department "${departments[index]}"?` : `حذف القسم "${departments[index]}"؟`)) {
+      const updatedDepartments = departments.filter((_, i) => i !== index);
+      setDepartments(updatedDepartments);
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
   };
 
   // If user doesn't have access to system configuration
@@ -1428,13 +1645,7 @@ function SystemConfig() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => {
-                                        if (window.confirm(language === 'English' ? `Delete department "${dept}"?` : `حذف القسم "${dept}"؟`)) {
-                                          const updatedDepartments = departments.filter((_, i) => i !== index);
-                                          setDepartments(updatedDepartments);
-                                          setPreservedTab('employees');
-                                        }
-                                      }}
+                                      onClick={() => handleDeleteDepartment(index)}
                                       className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -1588,7 +1799,12 @@ function SystemConfig() {
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                                     <Edit className="h-3 w-3" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 text-red-600"
+                                    onClick={() => handleDeleteAssetType(type.id)}
+                                  >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -1702,7 +1918,12 @@ function SystemConfig() {
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                                     <Edit className="h-3 w-3" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 text-red-600"
+                                    onClick={() => handleDeleteAssetBrand(brand.id)}
+                                  >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -1835,7 +2056,12 @@ function SystemConfig() {
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                                     <Edit className="h-3 w-3" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 text-red-600"
+                                    onClick={() => handleDeleteAssetStatus(status.id)}
+                                  >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -1971,7 +2197,12 @@ function SystemConfig() {
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                                     <Edit className="h-3 w-3" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0 text-red-600"
+                                    onClick={() => handleDeleteServiceProvider(provider.id)}
+                                  >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -2116,7 +2347,12 @@ function SystemConfig() {
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteRequestType(requestType.id)}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
