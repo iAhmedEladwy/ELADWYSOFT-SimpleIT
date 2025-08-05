@@ -10,10 +10,15 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT. 
 - Use existing styling and component libraries
 - Keep database schema changes minimal
 
+## Recent Changes (August 2025)
+- **Fixed CSV Template Downloads**: Resolved "[object Response]" issue by switching from `apiRequest()` to direct `fetch().text()` for proper CSV content extraction in both SystemConfig and AssetImportExport components
+- **Enhanced Employee Table Navigation**: Updated row clicks to open edit forms instead of details view, with preserved "View Details" functionality in dropdown menus
+- **Improved Event Handling**: Added proper event bubbling prevention for dropdown menu interactions
+
 ## System Architecture
 - **Frontend**: Built with React, TypeScript, Tailwind CSS, and shadcn/ui for a unified, professional UI/UX. Key features include:
     - A centralized System Configuration interface with seven tabs for managing system defaults, employees, assets, tickets, email, users & roles, and import/export with full inline editing capabilities across all tables.
-    - An enhanced Import/Export system for Employees, Assets, and Tickets featuring a two-step process with file preview, field mapping, CSV support, comprehensive validation, template downloads, drag-and-drop uploads, and progress tracking.
+    - An enhanced Import/Export system for Employees, Assets, and Tickets featuring a two-step process with file preview, field mapping, CSV support, comprehensive validation, template downloads, drag-and-drop uploads, and progress tracking. CSV template downloads are fully functional with proper authentication and content extraction.
     - Unified UI patterns across all modules (Assets, Tickets, Employees) with consistent filter cards, layouts, and enhanced navigation. Employee and asset tables feature row-click editing with preserved details view access via dropdown menus.
     - Flexible custom asset status system replacing rigid ENUM constraints with unlimited custom statuses, dynamic color configuration, and seamless migration of default statuses.
     - Interactive grid editing for key fields in tables and comprehensive forms with validation and auto-save.
