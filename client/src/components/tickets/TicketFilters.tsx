@@ -225,12 +225,6 @@ export default function TicketFilters({
             </Select>
           </div>
         </div>
-
-        {/* Third Row - Additional Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {/* Empty space for alignment */}
-          <div className="md:col-span-4"></div>
-        </div>
       </CardContent>
     </Card>
   );

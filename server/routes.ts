@@ -5984,33 +5984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced ticket update endpoint
-  app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      if (isNaN(ticketId)) {
-        return res.status(400).json({ message: "Invalid ticket ID" });
-      }
-      
-      const userId = req.user.id;
-      const updateData = req.body;
-      
-      // Ensure requestType is valid text (not enum validation)
-      if (updateData.requestType && typeof updateData.requestType !== 'string') {
-        return res.status(400).json({ message: "Invalid request type format" });
-      }
-      
-      const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
-      if (!updatedTicket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json(updatedTicket);
-    } catch (error: unknown) {
-      console.error("Enhanced ticket update error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
 
   // Custom Request Types CRUD routes  
   app.get("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {

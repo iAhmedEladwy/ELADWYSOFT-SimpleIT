@@ -2662,6 +2662,20 @@ export class DatabaseStorage implements IStorage {
         updateData.dueDate = new Date(updateData.dueDate);
       }
       
+      // Handle slaTarget field properly - convert number to date or handle string dates
+      if (updateData.slaTarget !== undefined) {
+        if (typeof updateData.slaTarget === 'number') {
+          // If it's a number, treat it as days from now
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + updateData.slaTarget);
+          updateData.slaTarget = targetDate;
+        } else if (typeof updateData.slaTarget === 'string') {
+          // If it's a string, parse it as a date
+          updateData.slaTarget = new Date(updateData.slaTarget);
+        }
+        // If it's already a Date object, leave it as is
+      }
+      
       // Remove any undefined values that could cause type errors
       Object.keys(updateData).forEach(key => {
         if (updateData[key as keyof typeof updateData] === undefined) {
