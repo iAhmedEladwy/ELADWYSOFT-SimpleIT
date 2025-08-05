@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText, Database, Info as InfoIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import {
   Tabs,
@@ -519,6 +519,53 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: error.message || (language === 'English' ? 'Failed to update user' : 'فشل في تحديث المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Demo data mutations
+  const createDemoDataMutation = useMutation({
+    mutationFn: async (size: 'small' | 'medium' | 'large') => {
+      return await apiRequest('/api/create-demo-data', 'POST', { size });
+    },
+    onSuccess: (data) => {
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Demo Data Created' : 'تم إنشاء البيانات التجريبية',
+        description: language === 'English' 
+          ? `Successfully created demo data: ${data.users || 0} users, ${data.employees || 0} employees, ${data.assets || 0} assets`
+          : `تم إنشاء البيانات التجريبية بنجاح: ${data.users || 0} مستخدمين، ${data.employees || 0} موظفين، ${data.assets || 0} أصول`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to create demo data' : 'فشل في إنشاء البيانات التجريبية'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const removeDemoDataMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/remove-demo-data', 'POST');
+    },
+    onSuccess: () => {
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Demo Data Removed' : 'تم حذف البيانات التجريبية',
+        description: language === 'English' 
+          ? 'All demo data has been successfully removed'
+          : 'تم حذف جميع البيانات التجريبية بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to remove demo data' : 'فشل في حذف البيانات التجريبية'),
         variant: 'destructive'
       });
     }
@@ -1530,6 +1577,125 @@ function SystemConfig() {
                     </>
                   )}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Demo Data Management Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Demo Data Management' : 'إدارة البيانات التجريبية'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Create sample data for testing and training purposes, or remove existing demo data.'
+                  : 'إنشاء بيانات تجريبية للاختبار والتدريب، أو حذف البيانات التجريبية الموجودة.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('small')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Users className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Small Demo Data' : 'بيانات تجريبية صغيرة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('medium')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Package className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Medium Demo Data' : 'بيانات تجريبية متوسطة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('large')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Database className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Large Demo Data' : 'بيانات تجريبية كبيرة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    if (window.confirm(language === 'English' 
+                      ? 'Are you sure you want to remove all demo data? This action cannot be undone.'
+                      : 'هل أنت متأكد من حذف جميع البيانات التجريبية؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                      removeDemoDataMutation.mutate();
+                    }
+                  }}
+                  disabled={removeDemoDataMutation.isPending}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {removeDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Removing...' : 'جارٍ الحذف...'}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية'}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start">
+                  <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">
+                      {language === 'English' ? 'Demo Data Options:' : 'خيارات البيانات التجريبية:'}
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      <li>
+                        <strong>{language === 'English' ? 'Small:' : 'صغيرة:'}</strong> {language === 'English' ? '3 users, 8 employees, 12 assets' : '3 مستخدمين، 8 موظفين، 12 أصل'}
+                      </li>
+                      <li>
+                        <strong>{language === 'English' ? 'Medium:' : 'متوسطة:'}</strong> {language === 'English' ? '5 users, 15 employees, 25 assets' : '5 مستخدمين، 15 موظف، 25 أصل'}
+                      </li>
+                      <li>
+                        <strong>{language === 'English' ? 'Large:' : 'كبيرة:'}</strong> {language === 'English' ? '8 users, 25 employees, 50 assets' : '8 مستخدمين، 25 موظف، 50 أصل'}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
