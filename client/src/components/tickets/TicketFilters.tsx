@@ -127,9 +127,9 @@ export default function TicketFilters({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* First Row - Search and Primary Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-          <div className="md:col-span-2">
+        {/* First Row - Search Field */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-1">
             <Label className="text-xs">{translations.search}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -143,7 +143,12 @@ export default function TicketFilters({
               />
             </div>
           </div>
+          {/* Empty space for alignment */}
+          <div className="md:col-span-2"></div>
+        </div>
 
+        {/* Second Row - Dropdown Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">{translations.status}</Label>
             <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
@@ -206,10 +211,7 @@ export default function TicketFilters({
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        {/* Second Row - Additional Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div>
             <Label className="text-xs">{translations.category}</Label>
             <Select value={filters.category || 'all'} onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}>
@@ -224,7 +226,10 @@ export default function TicketFilters({
               </SelectContent>
             </Select>
           </div>
+        </div>
 
+        {/* Third Row - Additional Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">{translations.creator}</Label>
             <Select value={filters.createdBy || 'all'} onValueChange={(value) => updateFilter('createdBy', value === 'all' ? undefined : value)}>
