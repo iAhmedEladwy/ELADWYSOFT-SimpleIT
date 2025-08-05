@@ -2056,6 +2056,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Process import data with mapping
+  app.post("/api/import/process", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { entityType, data, mapping } = req.body;
+      
+      if (!entityType || !Array.isArray(data) || !mapping) {
+        return res.status(400).json({ message: "Missing required fields: entityType, data, or mapping" });
+      }
+
+      console.log(`Processing import for ${entityType} with ${data.length} records`);
+      
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      // Process each record with field mapping
+      for (const [index, record] of data.entries()) {
+        try {
+          // Apply field mapping to transform the record
+          const mappedRecord: any = {};
+          
+          Object.entries(mapping).forEach(([dbField, csvField]) => {
+            if (csvField && record[csvField as string] !== undefined) {
+              mappedRecord[dbField] = record[csvField as string];
+            }
+          });
+
+          // Process based on entity type
+          switch (entityType) {
+            case 'employees':
+              await storage.createEmployee({
+                englishName: mappedRecord.englishName || `Employee ${index + 1}`,
+                arabicName: mappedRecord.arabicName || null,
+                department: mappedRecord.department || 'General',
+                email: mappedRecord.email || `employee${index + 1}@company.com`,
+                title: mappedRecord.title || 'Employee',
+                employmentType: mappedRecord.employmentType || 'Full-time',
+                joiningDate: mappedRecord.joiningDate || new Date().toISOString().split('T')[0],
+                status: mappedRecord.status || 'Active',
+                personalMobile: mappedRecord.personalMobile || null,
+                personalEmail: mappedRecord.personalEmail || null
+              });
+              break;
+
+            case 'assets':
+              await storage.createAsset({
+                type: mappedRecord.type || 'Other',
+                brand: mappedRecord.brand || 'Unknown',
+                modelNumber: mappedRecord.modelNumber || null,
+                modelName: mappedRecord.modelName || null,
+                serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
+                specs: mappedRecord.specs || null,
+                cpu: mappedRecord.cpu || null,
+                ram: mappedRecord.ram || null,
+                storage: mappedRecord.storage || null,
+                status: mappedRecord.status || 'Available',
+                purchaseDate: mappedRecord.purchaseDate || null,
+                buyPrice: mappedRecord.buyPrice ? parseFloat(mappedRecord.buyPrice) : null,
+                warrantyExpiryDate: mappedRecord.warrantyExpiryDate || null,
+                lifeSpan: mappedRecord.lifeSpan ? parseInt(mappedRecord.lifeSpan) : null,
+                outOfBoxOs: mappedRecord.outOfBoxOs || null,
+                assignedEmployeeId: mappedRecord.assignedEmployeeId ? parseInt(mappedRecord.assignedEmployeeId) : null
+              });
+              break;
+
+            case 'tickets':
+              // Find a default employee for submittedById
+              const employees = await storage.getAllEmployees();
+              const defaultEmployee = employees.find(emp => emp.status === 'Active') || employees[0];
+              
+              if (!defaultEmployee) {
+                throw new Error('No employees found to assign as ticket submitter');
+              }
+
+              await storage.createTicket({
+                summary: mappedRecord.summary || `Imported Ticket ${index + 1}`,
+                description: mappedRecord.description || 'No description provided',
+                category: mappedRecord.category || 'General',
+                requestType: mappedRecord.requestType || 'Other',
+                urgency: mappedRecord.urgency || 'Medium',
+                impact: mappedRecord.impact || 'Medium',
+                priority: mappedRecord.priority || 'Medium',
+                status: mappedRecord.status || 'Open',
+                submittedById: defaultEmployee.id,
+                assignedToId: mappedRecord.assignedToId ? parseInt(mappedRecord.assignedToId) : null,
+                relatedAssetId: mappedRecord.relatedAssetId ? parseInt(mappedRecord.relatedAssetId) : null,
+                dueDate: mappedRecord.dueDate || null,
+                slaTarget: mappedRecord.slaTarget || null,
+                escalationLevel: mappedRecord.escalationLevel ? parseInt(mappedRecord.escalationLevel) : 0,
+                tags: mappedRecord.tags ? JSON.parse(mappedRecord.tags) : null,
+                rootCause: mappedRecord.rootCause || null,
+                workaround: mappedRecord.workaround || null,
+                resolution: mappedRecord.resolution || null,
+                resolutionNotes: mappedRecord.resolutionNotes || null,
+                privateNotes: mappedRecord.privateNotes || null
+              });
+              break;
+
+            default:
+              throw new Error(`Unsupported entity type: ${entityType}`);
+          }
+
+          successful++;
+        } catch (error: any) {
+          failed++;
+          errors.push(`Row ${index + 1}: ${error.message}`);
+          console.error(`Import error for row ${index + 1}:`, error.message);
+        }
+      }
+
+      res.json({
+        total: data.length,
+        imported: successful,
+        failed,
+        errors: errors.slice(0, 10) // Limit to first 10 errors to avoid huge responses
+      });
+
+    } catch (error: any) {
+      console.error('Import process error:', error);
+      res.status(500).json({ error: "Import process failed", details: error.message });
+    }
+  });
+
   app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
