@@ -1074,19 +1074,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (entity) {
         case 'assets':
           templateData = [{
-            'type': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
-            'brand': 'Dell (Required: Asset manufacturer)',
-            'modelNumber': 'Latitude 5520 (Optional: Manufacturer model number)',
-            'modelName': 'Dell Latitude 15 (Optional: Descriptive model name)',
-            'serialNumber': 'DL123456789 (Required: Unique serial number)',
-            'specs': '16GB RAM, 512GB SSD, Intel Core i7-11800H (Required: Complete hardware specifications)',
-            'status': 'Available (Available, In Use, Maintenance, Retired)',
-            'purchaseDate': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'buyPrice': '1200.00 (Required: Purchase price in USD)',
-            'warrantyExpiryDate': '2025-01-15 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'lifeSpan': '36 (Optional: Expected lifespan in months)',
-            'outOfBoxOs': 'Windows 11 Pro (Optional: Operating system)',
-            'assignedEmployeeId': '1001 (Optional: Employee ID from employees table)'
+            'Type*': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
+            'Brand*': 'Dell (Required: Asset manufacturer)',
+            'Model Number': 'Latitude 5520 (Optional: Manufacturer model number)',
+            'Model Name': 'Dell Latitude 15 (Optional: Descriptive model name)',
+            'Serial Number*': 'DL123456789 (Required: Unique serial number)',
+            'Specifications': '16GB RAM, 512GB SSD, Intel Core i7-11800H (Required: Complete hardware specifications)',
+            'CPU': 'Intel Core i7-11800H (Optional: Processor details)',
+            'RAM': '16GB DDR4 (Optional: Memory details)',
+            'Storage': '512GB NVMe SSD (Optional: Storage details)',
+            'Status': 'Available (Available, In Use, Maintenance, Retired)',
+            'Purchase Date': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'Buy Price': '1200.00 (Required: Purchase price in USD)',
+            'Warranty Expiry Date': '2025-01-15 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'Life Span': '36 (Optional: Expected lifespan in months)',
+            'Out of Box OS': 'Windows 11 Pro (Optional: Operating system)',
+            'Assigned Employee ID': '1001 (Optional: Employee ID from employees table)'
           }];
           break;
         case 'employees':
@@ -1427,11 +1430,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Database will auto-generate asset_id, no need to generate manually
           const assetData: any = {
             // assetId removed - database will auto-generate
-            type: row['Type'] || row.type || null,
-            brand: row['Brand'] || row.brand || 'Unknown',
+            type: row['Type*'] || row['Type'] || row.type || null,
+            brand: row['Brand*'] || row['Brand'] || row.brand || 'Unknown',
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
-            serialNumber: row['Serial Number'] || row.serialNumber || 'N/A',
+            serialNumber: row['Serial Number*'] || row['Serial Number'] || row.serialNumber || 'N/A',
             specs: row['Specifications'] || row.specs || null,
             cpu: row['CPU'] || row.cpu || null,
             ram: row['RAM'] || row.ram || null,

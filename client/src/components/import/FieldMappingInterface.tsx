@@ -113,7 +113,7 @@ export function FieldMappingInterface({
       'assetid': ['asset id', 'asset number', 'id'],
       'type': ['type', 'type*', 'asset type', 'category'],
       'brand': ['brand', 'brand*', 'manufacturer', 'make'],
-      'modelnumber': ['model number', 'model', 'model no'],
+      'modelnumber': ['model number', 'model no', 'model'],
       'modelname': ['model name', 'name', 'product name'],
       'serialnumber': ['serial number', 'serial number*', 'serial', 'sn'],
       'specs': ['specifications', 'specs', 'description'],
