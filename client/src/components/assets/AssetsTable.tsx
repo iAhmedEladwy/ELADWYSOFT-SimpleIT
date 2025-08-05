@@ -292,7 +292,7 @@ export default function AssetsTable({
                 key={asset.id}
                 className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
                 onClick={(e) => {
-                  // Prevent row click when clicking on interactive elements
+                  // Prevent row click when clicking on interactive elements or dialog overlays
                   if (e.target instanceof HTMLElement && 
                       (e.target.closest('input[type="checkbox"]') || 
                        e.target.closest('button') || 
@@ -300,8 +300,11 @@ export default function AssetsTable({
                        e.target.closest('.dropdown-menu') ||
                        e.target.closest('[data-radix-collection-item]') ||
                        e.target.closest('[role="menuitem"]') ||
-                       e.target.closest('[data-state]'))) {
-                    e.preventDefault();
+                       e.target.closest('[data-state]') ||
+                       e.target.closest('[role="dialog"]') ||
+                       e.target.closest('[data-radix-dialog-overlay]') ||
+                       e.target.closest('[data-radix-dialog-content]'))) {
+                    e.preventDefault();  
                     e.stopPropagation();
                     return;
                   }
@@ -452,8 +455,12 @@ export default function AssetsTable({
       </Dialog>
 
       {/* Add Maintenance Dialog */}
-      <Dialog open={!!assetToMaintenance} onOpenChange={(open) => !open && setAssetToMaintenance(null)}>
-        <DialogContent>
+      <Dialog open={!!assetToMaintenance} onOpenChange={(open) => {
+        if (!open) {
+          setAssetToMaintenance(null);
+        }
+      }}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>{translations.addMaintenance}</DialogTitle>
           </DialogHeader>

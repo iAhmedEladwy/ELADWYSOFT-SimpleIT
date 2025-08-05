@@ -2550,7 +2550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (asset.status === 'Under Maintenance') {
         const existingMaintenance = await storage.getMaintenanceForAsset(assetId);
         const activeMaintenance = existingMaintenance.find(m => 
-          m.maintenanceType !== 'Completed' && m.maintenanceType !== 'Cancelled'
+          m.type !== 'Completed' && m.type !== 'Cancelled'
         );
         
         if (activeMaintenance) {
@@ -2563,7 +2563,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let requestData = { ...req.body };
       if (requestData.cost === undefined || requestData.cost === null || requestData.cost === '') {
-        requestData.cost = 0;
+        requestData.cost = '0';
+      } else if (typeof requestData.cost === 'number') {
+        requestData.cost = requestData.cost.toString();
       }
       
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
@@ -2582,7 +2584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: maintenance.id,
           details: { 
             assetId: asset.assetId,
-            maintenanceType: maintenance.maintenanceType,
+            maintenanceType: maintenance.type,
             description: maintenance.description,
             statusChanged: asset.status !== 'Under Maintenance'
           }
