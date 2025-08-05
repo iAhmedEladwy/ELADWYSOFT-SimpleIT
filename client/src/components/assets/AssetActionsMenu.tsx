@@ -261,8 +261,29 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
       </DropdownMenu>
 
       {/* Maintenance Form Dialog - using a wrapper dialog */}
-      <Dialog open={showMaintenanceForm} onOpenChange={setShowMaintenanceForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showMaintenanceForm} onOpenChange={(open) => {
+        console.log('Maintenance dialog open state changed:', open);
+        setShowMaintenanceForm(open);
+        
+        // Prevent immediate row click after dialog closes
+        if (!open) {
+          setTimeout(() => {
+            // Small delay to prevent row click event after dialog closes
+          }, 100);
+        }
+      }}>
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-y-auto maintenance-dialog" 
+          data-dialog="maintenance"
+          onPointerDownOutside={(e) => {
+            // Prevent dialog from closing when clicking outside if it would trigger row click
+            e.preventDefault();
+            setShowMaintenanceForm(false);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Schedule Maintenance - {asset.assetId}</DialogTitle>
           </DialogHeader>

@@ -303,7 +303,9 @@ export default function AssetsTable({
                        e.target.closest('[data-state]') ||
                        e.target.closest('[role="dialog"]') ||
                        e.target.closest('[data-radix-dialog-overlay]') ||
-                       e.target.closest('[data-radix-dialog-content]'))) {
+                       e.target.closest('[data-radix-dialog-content]') ||
+                       e.target.closest('.maintenance-dialog') ||
+                       e.target.closest('[data-dialog]'))) {
                     e.preventDefault();  
                     e.stopPropagation();
                     return;
