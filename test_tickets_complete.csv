@@ -1,0 +1,4 @@
+Summary*,Description*,Category,Request Type,Priority,Urgency,Impact,Status,Submitted By ID*,Assigned To ID,Related Asset ID,Due Date,Tags
+Computer not starting,Employee computer fails to boot up after power outage,Hardware,Incident,Medium,High,Medium,Open,1082,,,2024-01-20,urgent hardware
+Software installation request,Need Adobe Creative Suite installed on workstation,Software,Service Request,Low,Low,Low,Open,1082,,,2024-01-25,software installation
+Network connectivity issue,Unable to access company servers from office network,Network,Incident,High,High,High,In Progress,1082,,,2024-01-18,network urgent

@@ -1131,13 +1131,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Template not available for this entity" });
       }
 
-      const { content, headers } = await exportToCSV(templateData, `${entity}-template`, { headers: true });
-      
-      Object.entries(headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
+      // Generate CSV content directly using csv-stringify
+      csvStringify(templateData, { header: true }, (err, output) => {
+        if (err) {
+          throw new Error('Error generating CSV template');
+        }
+        
+        // Set proper headers for CSV download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${entity}-template.csv"`);
+        
+        // Send CSV content
+        res.send(output);
       });
-      
-      res.send(content);
     } catch (error: unknown) {
       console.error('Error generating template:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
