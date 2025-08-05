@@ -11,9 +11,11 @@ SimpleIT is a comprehensive IT asset management system designed for ELADWYSOFT. 
 - Keep database schema changes minimal
 
 ## Recent Changes (August 2025)
+- **Fixed MaintenanceForm Button Functionality**: Resolved "Save Maintenance Record" button issues by correcting backend field mapping (maintenanceType vs type), fixing cost validation (string vs number), and enhancing dialog event propagation to prevent edit form conflicts
 - **Fixed CSV Template Downloads**: Resolved "[object Response]" issue by switching from `apiRequest()` to direct `fetch().text()` for proper CSV content extraction in both SystemConfig and AssetImportExport components
 - **Enhanced Employee Table Navigation**: Updated row clicks to open edit forms instead of details view, with preserved "View Details" functionality in dropdown menus
-- **Improved Event Handling**: Added proper event bubbling prevention for dropdown menu interactions
+- **Improved Dialog Management**: Fixed dialog closing behavior in AssetsTable to prevent unwanted edit form triggers after maintenance dialog closure
+- **Verified Import System**: Confirmed full operational status of CSV import/export functionality for employees, assets, and tickets with proper field validation and mapping
 
 ## System Architecture
 - **Frontend**: Built with React, TypeScript, Tailwind CSS, and shadcn/ui for a unified, professional UI/UX. Key features include:
