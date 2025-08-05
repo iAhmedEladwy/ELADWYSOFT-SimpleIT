@@ -154,11 +154,24 @@ const AssetImportExport = () => {
   // Function to download template
   const downloadTemplate = async () => {
     try {
-      // Use authenticated fetch to get the CSV content
-      const response = await apiRequest('/api/assets/template');
+      // Use direct fetch with authentication since we need the raw CSV text
+      const response = await fetch('/api/assets/template', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/csv, application/csv, text/plain',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the CSV text content
+      const csvContent = await response.text();
       
       // Create blob from the CSV content
-      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       
       // Trigger download

@@ -799,11 +799,24 @@ function SystemConfig() {
 
   const handleDownloadTemplate = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      // Use the correct endpoint and authenticated fetch
-      const response = await apiRequest(`/api/${type}/template`);
+      // Use direct fetch with authentication since we need the raw CSV text
+      const response = await fetch(`/api/${type}/template`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/csv, application/csv, text/plain',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the CSV text content
+      const csvContent = await response.text();
       
       // Create blob from the CSV content
-      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       
       // Trigger download
@@ -832,11 +845,24 @@ function SystemConfig() {
 
   const handleExport = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      // Use the correct endpoint and authenticated fetch
-      const response = await apiRequest(`/api/${type}/export`);
+      // Use direct fetch with authentication since we need the raw CSV text
+      const response = await fetch(`/api/${type}/export`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/csv, application/csv, text/plain',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the CSV text content
+      const csvContent = await response.text();
       
       // Create blob from the CSV content
-      const blob = new Blob([response], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       
       // Trigger download
