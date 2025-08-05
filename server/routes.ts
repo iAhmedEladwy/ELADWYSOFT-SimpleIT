@@ -1074,40 +1074,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (entity) {
         case 'assets':
           templateData = [{
-            'Type*': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
-            'Brand*': 'Dell (Required: Asset manufacturer)',
-            'Model Number': 'Latitude 5520 (Optional: Manufacturer model number)',
-            'Model Name': 'Dell Latitude 15 (Optional: Descriptive model name)',
-            'Serial Number*': 'DL123456789 (Required: Unique serial number)',
-            'Specifications': '16GB RAM, 512GB SSD, Intel i7 (Optional: Hardware specs)',
-            'CPU': 'Intel Core i7-11800H (Optional: Processor details)',
-            'RAM': '16GB DDR4 (Optional: Memory details)',
-            'Storage': '512GB NVMe SSD (Optional: Storage details)',
-            'Status': 'Available (Available, In Use, Maintenance, Retired)',
-            'Purchase Date': '2023-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
-            'Buy Price': '1200.00 (Optional: Purchase price in USD)',
-            'Warranty Expiry Date': '2025-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
-            'Life Span': '36 (Optional: Expected lifespan in months)',
-            'Out of Box OS': 'Windows 11 Pro (Optional: Operating system)',
-            'Assigned Employee ID': '1001 (Optional: Employee ID from employees table)'
+            'type': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
+            'brand': 'Dell (Required: Asset manufacturer)',
+            'modelNumber': 'Latitude 5520 (Optional: Manufacturer model number)',
+            'modelName': 'Dell Latitude 15 (Optional: Descriptive model name)',
+            'serialNumber': 'DL123456789 (Required: Unique serial number)',
+            'specs': '16GB RAM, 512GB SSD, Intel i7 (Optional: Hardware specs)',
+            'cpu': 'Intel Core i7-11800H (Optional: Processor details)',
+            'ram': '16GB DDR4 (Optional: Memory details)',
+            'storage': '512GB NVMe SSD (Optional: Storage details)',
+            'status': 'Available (Available, In Use, Maintenance, Retired)',
+            'purchaseDate': '2023-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
+            'buyPrice': '1200.00 (Optional: Purchase price in USD)',
+            'warrantyExpiryDate': '2025-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
+            'lifeSpan': '36 (Optional: Expected lifespan in months)',
+            'outOfBoxOs': 'Windows 11 Pro (Optional: Operating system)',
+            'assignedEmployeeId': '1001 (Optional: Employee ID from employees table)'
           }];
           break;
         case 'employees':
           templateData = [{
-            'English Name*': 'John Smith (Required: Full name in English)',
-            'Arabic Name': 'جون سميث (Optional: Name in Arabic)',
-            'Department*': 'IT (Required: IT, HR, Finance, Marketing, etc.)',
-            'ID Number*': 'ID123456789 (Required: National/Company ID)',
-            'Title*': 'Software Engineer (Required: Job title)',
-            'Direct Manager ID': '1001 (Optional: Manager employee ID)',
-            'Employment Type': 'Full-time (Full-time, Part-time, Contract, Intern)',
-            'Joining Date*': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'Exit Date': '2024-01-15 (Optional: Format YYYY-MM-DD, if applicable)',
-            'Status': 'Active (Active, Resigned, Terminated, On Leave)',
-            'Personal Mobile': '+1234567890 (Optional: Personal phone)',
-            'Work Mobile': '+1234567891 (Optional: Company phone)',
-            'Personal Email': 'john@personal.com (Optional: Personal email)',
-            'Corporate Email': 'john.smith@company.com (Optional: Work email)'
+            'englishName': 'John Smith (Required: Full name in English)',
+            'arabicName': 'جون سميث (Optional: Name in Arabic)',
+            'department': 'IT (Required: IT, HR, Finance, Marketing, etc.)',
+            'idNumber': 'ID123456789 (Required: National/Company ID)',
+            'title': 'Software Engineer (Required: Job title)',
+            'directManager': '1001 (Optional: Manager employee ID)',
+            'employmentType': 'Full-time (Full-time, Part-time, Contract, Intern)',
+            'joiningDate': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'status': 'Active (Active, Resigned, Terminated, On Leave)',
+            'personalMobile': '+1234567890 (Optional: Personal phone)',
+            'personalEmail': 'john@personal.com (Optional: Personal email)'
           }];
           break;
         case 'tickets':
@@ -4074,21 +4071,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await storage.getAllEmployees();
       
       const csvData = data.map(item => ({
-        empId: item.empId || '',
         englishName: item.englishName || '',
         arabicName: item.arabicName || '',
         department: item.department || '',
-        idNumber: item.nationalId || '',
-        title: item.position || '',
-        directManager: item.managerId || '',
+        idNumber: item.idNumber || '',
+        title: item.title || '',
+        directManager: item.directManager || '',
         employmentType: item.employmentType || '',
-        joiningDate: item.startDate || '',
-        exitDate: '',
+        joiningDate: item.joiningDate || '',
         status: item.status || '',
-        personalMobile: item.phone || '',
-        workMobile: '',
-        personalEmail: item.email || '',
-        corporateEmail: ''
+        personalMobile: item.personalMobile || '',
+        personalEmail: item.personalEmail || ''
       }));
       
       const csv = [
@@ -4243,11 +4236,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             englishName: item.englishName,
             arabicName: item.arabicName || null,
             department: item.department || 'General',
-            nationalId: idNumber,
-            position: title,
-            managerId: item.directManager ? parseInt(item.directManager) : null,
+            idNumber: idNumber,
+            title: title,
+            directManager: item.directManager ? parseInt(item.directManager) : null,
             employmentType: item.employmentType || 'Full-time',
-            joiningDate: item.joiningDate || item.startDate || new Date().toISOString().split('T')[0],
+            joiningDate: item.joiningDate || new Date().toISOString().split('T')[0],
             status: item.status || 'Active',
             personalMobile: item.personalMobile || null,
             personalEmail: item.personalEmail || null
