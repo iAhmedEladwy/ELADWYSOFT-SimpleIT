@@ -121,21 +121,37 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setShowHistoryDialog(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (onEdit) {
       onEdit(asset);
     }
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowCheckOutDialog(true);
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowCheckInDialog(true);
   };
 
-  const handleViewDetails = () => {
+  const handleViewDetails = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowDetailsDialog(true);
   };
 

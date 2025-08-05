@@ -124,12 +124,16 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   };
 
   // Handle check-out button click
-  const handleCheckOut = () => {
+  const handleCheckOut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setShowCheckOutDialog(true);
   };
 
   // Handle check-in button click
-  const handleCheckIn = () => {
+  const handleCheckIn = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setShowCheckInDialog(true);
   };
 

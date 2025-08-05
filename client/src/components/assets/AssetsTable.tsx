@@ -292,12 +292,17 @@ export default function AssetsTable({
                 key={asset.id}
                 className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
                 onClick={(e) => {
-                  // Prevent row click when clicking on checkbox or action buttons
+                  // Prevent row click when clicking on interactive elements
                   if (e.target instanceof HTMLElement && 
                       (e.target.closest('input[type="checkbox"]') || 
                        e.target.closest('button') || 
                        e.target.closest('[role="button"]') ||
-                       e.target.closest('.dropdown-menu'))) {
+                       e.target.closest('.dropdown-menu') ||
+                       e.target.closest('[data-radix-collection-item]') ||
+                       e.target.closest('[role="menuitem"]') ||
+                       e.target.closest('[data-state]'))) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     return;
                   }
                   onEdit(asset);
@@ -314,7 +319,10 @@ export default function AssetsTable({
                 )}
                 <TableCell className="font-medium">
                   <button
-                    onClick={() => onEdit(asset)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(asset);
+                    }}
                     className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors"
                   >
                     {asset.assetId}
