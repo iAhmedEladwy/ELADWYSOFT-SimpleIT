@@ -109,6 +109,20 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setReason('');
   };
 
+  // Maintenance mutation
+  const maintenanceMutation = useMutation({
+    mutationFn: (maintenanceData: any) => apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', maintenanceData),
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Maintenance record added successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setShowMaintenanceForm(false);
+    },
+    onError: (error: any) => {
+      console.error('Maintenance submission error:', error);
+      toast({ title: 'Error', description: error?.message || 'Failed to add maintenance record', variant: 'destructive' });
+    }
+  });
+
   const handleMaintenance = (e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -254,18 +268,10 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           </DialogHeader>
           <MaintenanceForm
             onSubmit={(data) => {
-              // Handle maintenance form submission
-              apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', data)
-                .then(() => {
-                  toast({ title: 'Success', description: 'Maintenance scheduled successfully' });
-                  queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-                  setShowMaintenanceForm(false);
-                })
-                .catch((error) => {
-                  toast({ title: 'Error', description: error?.message || 'Failed to schedule maintenance', variant: 'destructive' });
-                });
+              console.log('Maintenance form submission data:', data);
+              maintenanceMutation.mutate(data);
             }}
-            isSubmitting={false}
+            isSubmitting={maintenanceMutation.isPending}
             assetId={asset.id}
             assetName={`${asset.assetId} - ${asset.type}`}
           />
