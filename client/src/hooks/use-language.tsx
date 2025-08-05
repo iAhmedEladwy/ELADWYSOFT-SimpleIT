@@ -23,6 +23,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (config && (config as any).language) {
       const newLanguage = (config as any).language === 'en' ? 'English' : 'Arabic';
       setLanguage(newLanguage);
+    } else {
+      // Default to English if no config is loaded yet
+      setLanguage('English');
     }
   }, [config]);
 
