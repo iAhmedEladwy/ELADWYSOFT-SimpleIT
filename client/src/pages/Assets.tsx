@@ -65,7 +65,7 @@ export default function Assets() {
     bulkActions: language === 'Arabic' ? 'العمليات المجمعة' : 'Bulk Actions',
     deleteSelected: language === 'Arabic' ? 'حذف المحدد' : 'Delete Selected',
     changeStatus: language === 'Arabic' ? 'تغيير الحالة' : 'Change Status',
-    assignSelected: language === 'Arabic' ? 'تخصيص المحدد' : 'Assign Selected',
+
     export: language === 'Arabic' ? 'تصدير' : 'Export',
     import: language === 'Arabic' ? 'استيراد' : 'Import',
     refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
@@ -463,30 +463,7 @@ export default function Assets() {
     }
   };
 
-  const handleBulkAssign = async (employeeId: number) => {
-    if (selectedAssets.length === 0) return;
-    
-    try {
-      await Promise.all(
-        selectedAssets.map(assetId => 
-          apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId })
-        )
-      );
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: `${selectedAssets.length} assets assigned successfully`,
-      });
-      setSelectedAssets([]);
-      setShowBulkActions(false);
-    } catch (error) {
-      toast({
-        title: translations.error,
-        description: 'Failed to assign assets',
-        variant: 'destructive',
-      });
-    }
-  };
+
 
   // Enhanced export function for filtered data
   const handleExportFilteredAssets = () => {
@@ -850,20 +827,7 @@ export default function Assets() {
                 <SelectItem value="Retired">Retired</SelectItem>
               </SelectContent>
             </Select>
-            {employees && Array.isArray(employees) && employees.length > 0 && (
-              <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
-                <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue placeholder={translations.assignSelected} />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee: any) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName || employee.name || 'Unknown Employee'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+
             <Button
               size="sm"
               variant="destructive"
