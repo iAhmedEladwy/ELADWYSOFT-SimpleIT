@@ -767,11 +767,23 @@ export default function Assets() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Available">Available</SelectItem>
-                  <SelectItem value="In Use">In Use</SelectItem>
-                  <SelectItem value="Maintenance">Maintenance</SelectItem>
-                  <SelectItem value="Damaged">Damaged</SelectItem>
-                  <SelectItem value="Retired">Retired</SelectItem>
+                  {customAssetStatuses && customAssetStatuses.length > 0 ? (
+                    customAssetStatuses.map((status: any) => (
+                      <SelectItem key={status.id} value={status.name}>
+                        <div className="flex items-center">
+                          {status.color && (
+                            <span 
+                              className="w-3 h-3 rounded-full inline-block mr-2" 
+                              style={{ backgroundColor: status.color }}
+                            />
+                          )}
+                          {status.name}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="Available">Available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

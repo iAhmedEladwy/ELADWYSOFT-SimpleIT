@@ -102,7 +102,7 @@ export const assets = pgTable("assets", {
   modelName: varchar("model_name", { length: 100 }),
   serialNumber: varchar("serial_number", { length: 100 }).notNull(),
   specs: text("specs"),
-  status: assetStatusEnum("status").notNull().default('Available'),
+  status: varchar("status", { length: 100 }).notNull().default('Available'),
   purchaseDate: date("purchase_date"),
   buyPrice: decimal("buy_price", { precision: 10, scale: 2 }),
   warrantyExpiryDate: date("warranty_expiry_date"),
