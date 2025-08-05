@@ -3890,21 +3890,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const config = configs[size as keyof typeof configs] || configs.medium;
       
-      // Create demo users
+      // Create demo users with unique usernames using timestamp
+      const timestamp = Date.now();
       const userTemplates = [
-        { username: 'manager1', password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
-        { username: 'agent1', password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
-        { username: 'agent2', password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
-        { username: 'employee1', password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
-        { username: 'employee2', password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
-        { username: 'employee3', password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
-        { username: 'employee4', password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
-        { username: 'employee5', password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
+        { username: `manager_${timestamp}_1`, password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
+        { username: `agent_${timestamp}_1`, password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
+        { username: `agent_${timestamp}_2`, password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
+        { username: `employee_${timestamp}_1`, password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
+        { username: `employee_${timestamp}_2`, password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
+        { username: `employee_${timestamp}_3`, password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
+        { username: `employee_${timestamp}_4`, password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
+        { username: `employee_${timestamp}_5`, password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
       ];
 
       let createdUsers = 0;
       for (let i = 0; i < config.users && i < userTemplates.length; i++) {
         try {
+          console.log(`Creating demo user: ${userTemplates[i].username}`);
           await storage.createUser({
             username: userTemplates[i].username,
             password: userTemplates[i].password,
@@ -3914,9 +3916,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: `${userTemplates[i].username}@simpleit.com`,
             isActive: true
           });
+          console.log(`Successfully created user: ${userTemplates[i].username}`);
           createdUsers++;
-        } catch (error) {
-          // Skip if user already exists
+        } catch (error: any) {
+          console.error(`Failed to create user ${userTemplates[i].username}:`, error.message);
+          // Continue with next user
         }
       }
 
@@ -3943,10 +3947,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             department: department,
             idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
             title: position,
-            employmentType: 'Full-time', // Valid enum value
-            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-            status: 'Active', // Valid enum value
-            personalEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            employmentType: 'Full-time',
+            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            status: 'Active',
+            personalEmail: `${name.toLowerCase().replace(' ', '.')}@personal.com`,
             corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`
           };
           
@@ -3972,31 +3976,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const status = flexibleAssetStatuses[Math.floor(Math.random() * flexibleAssetStatuses.length)];
         
         try {
-          // Generate unique asset ID with timestamp to avoid conflicts
-          const assetTimestamp = Date.now();
-          const uniqueAssetId = `SIT-${String(assetTimestamp + i).slice(-6)}`;
-          
-          await storage.createAsset({
-            assetId: uniqueAssetId,
-            name: `${brand} ${type} Model ${i + 1}`,
+          console.log(`Creating demo asset: ${brand} ${type} Model ${i + 1}`);
+          const result = await storage.createAsset({
             type: type,
             brand: brand,
             modelName: `${brand} ${type} Model ${i + 1}`,
             modelNumber: `${brand.substring(0, 3).toUpperCase()}${String(i + 1).padStart(4, '0')}`,
             serialNumber: `SN${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
             status: status,
-            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             buyPrice: Math.floor(Math.random() * 2000) + 500,
-            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000),
+            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             specs: JSON.stringify({ 
               cpu: 'Intel i5', 
               ram: '8GB', 
               storage: '256GB SSD' 
             })
           });
+          console.log(`Asset created successfully:`, result);
           createdAssets++;
-        } catch (error) {
-          // Skip if asset already exists
+        } catch (error: any) {
+          console.error(`Failed to create asset ${brand} ${type} Model ${i + 1}:`, error.message);
+          // Continue with next asset
         }
       }
       
