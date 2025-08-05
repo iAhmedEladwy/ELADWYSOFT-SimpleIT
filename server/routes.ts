@@ -2057,7 +2057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Process import data with mapping
-  app.post("/api/import/process", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/process", authenticateUser, hasAccess(3), upload.none(), async (req, res) => {
     try {
       console.log('Raw request body:', req.body);
       console.log('Request headers:', req.headers);

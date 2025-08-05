@@ -1,0 +1,4 @@
+Type,Brand,Model Name,Serial Number,Status,CPU,RAM,Storage
+Laptop,Dell,Latitude 5520,DL001,Available,Intel i7,16GB,512GB SSD
+Desktop,HP,EliteDesk 800,HP002,In Use,Intel i5,8GB,256GB SSD
+Monitor,Samsung,24 inch,SM003,Available,,,,
