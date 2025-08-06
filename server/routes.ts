@@ -2118,27 +2118,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Apply field mapping to transform the record
           const mappedRecord: any = {};
           
-          Object.entries(mapping).forEach(([dbField, csvField]) => {
+           Object.entries(mapping).forEach(([dbField, csvField]) => {
             if (csvField && record[csvField as string] !== undefined) {
-              // For specifications field, preserve the complete content
-              if (dbField === 'specs' && csvField === 'Specifications') {
-                mappedRecord[dbField] = record[csvField as string];
-                console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
-              }
-              // Skip CPU, RAM, Storage fields if we're using the complete Specifications field
-              else if (['cpu', 'ram', 'storage'].includes(dbField)) {
-                // Only map these if there's no Specifications field or if Specifications is empty
-                if (!record['Specifications'] || record['Specifications'].toString().trim() === '') {
-                  mappedRecord[dbField] = record[csvField as string];
-                  console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
-                }
-              }
-              else {
-                mappedRecord[dbField] = record[csvField as string];
-                console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
-              }
-            }
-          });
+           // For specifications field, preserve the complete content
+            if (dbField === 'specs' && csvField === 'Specifications') {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+            // For CPU, RAM, Storage - always map them if they have values
+            else if (['cpu', 'ram', 'storage'].includes(dbField)) {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+          else {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+          }
+        });
 
           // Process based on entity type
           switch (entityType) {
