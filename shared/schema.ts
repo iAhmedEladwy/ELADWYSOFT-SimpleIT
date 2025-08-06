@@ -370,7 +370,7 @@ export const activityLog = pgTable("activity_log", {
 // System Configuration table
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
-  language: varchar("language", { length: 10 }).notNull().default('English'),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
   assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('SIT-'),
   empIdPrefix: varchar("emp_id_prefix", { length: 10 }).notNull().default('EMP-'),
   ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
