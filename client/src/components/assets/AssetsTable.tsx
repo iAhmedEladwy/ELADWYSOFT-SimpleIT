@@ -113,7 +113,7 @@ export default function AssetsTable({
     modelName: language === 'English' ? 'Model' : 'الطراز',
     serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
     status: language === 'English' ? 'Status' : 'الحالة',
-    hardware: language === 'English' ? 'Hardware' : 'المواصفات',
+    hardwarespecs: language === 'English' ? 'Hardware' : 'المواصفات',
     moredetails: language === 'English' ? 'More Details' : 'تفاصيل',
     assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
@@ -281,7 +281,7 @@ export default function AssetsTable({
             <TableHead>{translations.brand}</TableHead>
             <TableHead>{translations.modelName}</TableHead>
             <TableHead>{translations.serialNumber}</TableHead>
-            <TableHead>{translations.hardware}</TableHead>
+            <TableHead>{translations.hardwarespecs}</TableHead>
             <TableHead>{translations.moredetails}</TableHead> 
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
