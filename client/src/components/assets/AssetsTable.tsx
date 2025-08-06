@@ -354,7 +354,14 @@ export default function AssetsTable({
                         Storage: {asset.storage}
                       </span>
                     )}
-                    {!asset.cpu && !asset.ram && !asset.storage && '-'}
+                      {/* Raw Specifications - Show at the end */}
+                    {asset.specs && (
+                      <div className="text-sm font-medium truncate" title={asset.specs}>
+        📋            {asset.specs}
+                      </div>
+                    )}
+                    {!asset.specs && !asset.cpu && !asset.ram && !asset.storage && '-'}
+                    
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
