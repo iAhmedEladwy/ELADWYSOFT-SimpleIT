@@ -113,6 +113,8 @@ export default function AssetsTable({
     modelName: language === 'English' ? 'Model' : 'الطراز',
     serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
     status: language === 'English' ? 'Status' : 'الحالة',
+    hardware: language === 'English' ? 'Hardware' : 'المواصفات',
+    moredetails: language === 'English' ? 'More Details' : 'تفاصيل',
     assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     edit: language === 'English' ? 'Edit' : 'تعديل',
@@ -279,7 +281,8 @@ export default function AssetsTable({
             <TableHead>{translations.brand}</TableHead>
             <TableHead>{translations.modelName}</TableHead>
             <TableHead>{translations.serialNumber}</TableHead>
-            <TableHead>Specs</TableHead>
+            <TableHead>{translations.hardware}</TableHead>
+            <TableHead>{translations.moredetails}</TableHead> 
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -354,14 +357,18 @@ export default function AssetsTable({
                         Storage: {asset.storage}
                       </span>
                     )}
-                      {/* Raw Specifications - Show at the end */}
-                    {asset.specs && (
-                      <div className="text-sm font-medium truncate" title={asset.specs}>
-        📋            {asset.specs}
-                      </div>
-                    )}
-                    {!asset.specs && !asset.cpu && !asset.ram && !asset.storage && '-'}
-                    
+                    {!asset.cpu && !asset.ram && !asset.storage && '-'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                    <div className="max-w-xs">
+                      {asset.specs ? (
+                        <div className="text-sm truncate" title={asset.specs}>
+        📋                {asset.specs}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                     )}
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
@@ -390,7 +397,7 @@ export default function AssetsTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={hasAccess(3) ? 9 : 8} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={hasAccess(3) ? 10 : 9} className="text-center h-24 text-muted-foreground">
                 {translations.noAssets}
               </TableCell>
             </TableRow>
