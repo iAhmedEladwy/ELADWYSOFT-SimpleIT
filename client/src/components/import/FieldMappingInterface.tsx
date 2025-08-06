@@ -116,7 +116,11 @@ export function FieldMappingInterface({
       'modelnumber': ['model number', 'model no', 'model'],
       'modelname': ['model name', 'name', 'product name'],
       'serialnumber': ['serial number', 'serial number*', 'serial', 'sn'],
-      'specs': ['specifications', 'specs', 'description', 'cpu', 'ram', 'storage'],
+      // ✅ FIXED - Separate patterns for each field:
+      'specs': ['specifications', 'specs', 'description'],  // Removed cpu, ram, storage
+      'cpu': ['cpu', 'processor', 'chip'],                  // ✅ NEW - CPU specific
+      'ram': ['ram', 'memory', 'ram memory'],               // ✅ NEW - RAM specific  
+      'storage': ['storage', 'disk', 'drive', 'ssd', 'hdd'], // ✅ NEW - Storage specific
       'status': ['status', 'condition', 'state'],
       'purchasedate': ['purchase date', 'buy date', 'date purchased'],
       'buyprice': ['buy price', 'price', 'cost', 'purchase price'],

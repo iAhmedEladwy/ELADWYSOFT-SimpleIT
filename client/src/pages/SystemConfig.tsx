@@ -942,24 +942,57 @@ function SystemConfig() {
     }
   };
 
-  const parseCSV = (csvText: string) => {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      if (lines[i].trim()) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        data.push(row);
-      }
+ const parseCSV = (csvText: string) => {
+  const lines = csvText.split('\n');
+  const headers = parseCSVLine(lines[0]);
+  const data = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim()) {
+      const values = parseCSVLine(lines[i]);
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      data.push(row);
     }
+  }
+  
+  return { headers, data };
+};
+
+// ✅ NEW: Proper CSV line parser that handles quotes
+const parseCSVLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
     
-    return { headers, data };
-  };
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // Handle escaped quotes ("") -> single quote
+        current += '"';
+        i++; // Skip the next quote
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // Only split on comma if we're not inside quotes
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim());
+  
+  return result;
+};
 
   const handleFileImport = async () => {
     if (!selectedFile) {
@@ -1737,7 +1770,7 @@ function SystemConfig() {
                   ) : (
                     <>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية'}
+                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية)'}
                     </>
                   )}
                 </Button>

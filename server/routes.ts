@@ -2112,25 +2112,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let failed = 0;
       const errors: string[] = [];
 
+      
       // Process each record with field mapping
       for (const [index, record] of data.entries()) {
         try {
           // Apply field mapping to transform the record
           const mappedRecord: any = {};
           
-           Object.entries(mapping).forEach(([dbField, csvField]) => {
-            if (csvField && record[csvField as string] !== undefined) {
+        Object.entries(mapping).forEach(([dbField, csvField]) => {
+          if (csvField && record[csvField as string] !== undefined) {
            // For specifications field, preserve the complete content
             if (dbField === 'specs' && csvField === 'Specifications') {
             mappedRecord[dbField] = record[csvField as string];
             console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
            }
             // For CPU, RAM, Storage - always map them if they have values
-            else if (['cpu', 'ram', 'storage'].includes(dbField)) {
+           else if (['cpu', 'ram', 'storage'].includes(dbField)) {
             mappedRecord[dbField] = record[csvField as string];
             console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
            }
-          else {
+           else {
             mappedRecord[dbField] = record[csvField as string];
             console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
            }
