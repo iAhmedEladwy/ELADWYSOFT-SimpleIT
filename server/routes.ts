@@ -1432,33 +1432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
             serialNumber: row['Serial Number*'] || row['Serial Number'] || row.serialNumber || 'N/A',
-            // Keep specifications intact - do not split into separate fields
-            // If separate CPU, RAM, Storage columns exist, combine them into specs
-            specs: (() => {
-              const specs = row['Specifications'] || row.specs || '';
-              const cpu = row['CPU'] || row.cpu || '';
-              const ram = row['RAM'] || row.ram || '';
-              const storage = row['Storage'] || row.storage || '';
-              
-              // If specs field already has content, use it
-              if (specs && specs.trim() && specs !== cpu && specs !== ram && specs !== storage) {
-                return specs;
-              }
-              
-              // Otherwise, combine CPU, RAM, Storage if they exist
-              const parts = [cpu, ram, storage].filter(part => part && part.trim() && 
-                !part.includes('Optional:') && !part.includes('(Optional') &&
-                part !== 'Intel Core i7-11800H (Optional: Processor details)' &&
-                part !== '16GB DDR4 (Optional: Memory details)' &&
-                part !== '512GB NVMe SSD (Optional: Storage details)'
-              );
-              
-              if (parts.length > 0) {
-                return parts.join(', ');
-              }
-              
-              return specs || null;
-            })(),
+            specs: row['Specifications'] || row.specs || null,
+            cpu: row['CPU'] || row.cpu || null,
+            ram: row['RAM'] || row.ram || null,
+            storage: row['Storage'] || row.storage || null,,
             status: row['Status'] || row.status || 'Available',
             purchaseDate: row['Purchase Date'] || row.purchaseDate || null,
             buyPrice: row['Buy Price'] || row.buyPrice || null,
