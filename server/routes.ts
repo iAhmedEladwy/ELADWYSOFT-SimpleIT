@@ -1435,7 +1435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             specs: row['Specifications'] || row.specs || null,
             cpu: row['CPU'] || row.cpu || null,
             ram: row['RAM'] || row.ram || null,
-            storage: row['Storage'] || row.storage || null,,
+            storage: row['Storage'] || row.storage || null,
             status: row['Status'] || row.status || 'Available',
             purchaseDate: row['Purchase Date'] || row.purchaseDate || null,
             buyPrice: row['Buy Price'] || row.buyPrice || null,
