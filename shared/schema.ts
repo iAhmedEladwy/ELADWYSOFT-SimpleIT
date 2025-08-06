@@ -20,6 +20,29 @@ export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved'
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
 export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
 
+// Add sequence definitions with increment: 1
+export const employeesIdSequence = pgSequence('employees_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const assetsIdSequence = pgSequence('assets_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const ticketsIdSequence = pgSequence('tickets_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+
 // Sessions table for authentication
 export const sessions = pgTable(
   "sessions",
