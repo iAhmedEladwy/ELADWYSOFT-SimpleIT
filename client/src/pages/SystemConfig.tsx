@@ -1737,7 +1737,7 @@ function SystemConfig() {
                   ) : (
                     <>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Delete Demo Data (Exclude System Config)' : 'حذف البيانات التجريبية (باستثناء إعدادات النظام)'}
+                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية'}
                     </>
                   )}
                 </Button>
