@@ -2254,10 +2254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 modelNumber: mappedRecord.modelNumber || null,
                 modelName: mappedRecord.modelName || null,
                 serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
-                specs: mappedRecord.specs || null, // Single specs field - no splitting
-                cpu: null, // Removed - specs field contains all hardware info
-                ram: null, // Removed - specs field contains all hardware info  
-                storage: null, // Removed - specs field contains all hardware info
+                specs: mappedRecord.specs || null,
+                cpu: mappedRecord.cpu || null, // Save individual CPU field if provided
+                ram: mappedRecord.ram || null, // Save individual RAM field if provided
+                storage: mappedRecord.storage || null, // Save individual Storage field if provided
                 status: mappedRecord.status || 'Available',
                 purchaseDate: parseDate(mappedRecord.purchaseDate),
                 buyPrice: parseBuyPrice(mappedRecord.buyPrice)?.toString() || null,
