@@ -33,8 +33,6 @@ export default function Assets() {
   const [editingAsset, setEditingAsset] = useState<any>(null);
   const [filters, setFilters] = useState<AssetFiltersType>({});
   const [searchInput, setSearchInput] = useState('');
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
@@ -344,7 +342,8 @@ export default function Assets() {
   };
 
   const handleUpdateAsset = (assetData: any) => {
-    updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
+  if (!editingAsset) return;
+  updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
   };
 
   const handleAssignAsset = (assetId: number, employeeId: number) => {
@@ -882,10 +881,11 @@ export default function Assets() {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-                ? `${translations.editAsset} (${editingAsset.assetId})` 
-                 : translations.addAsset}
-            </DialogTitle>
+          <DialogTitle>
+            {editingAsset 
+              ? `${translations.editAsset} (${editingAsset.assetId})` 
+              : translations.addAsset}
+          </DialogTitle>
             <DialogDescription>
               {editingAsset 
                 ? 'Update the asset information below' 
