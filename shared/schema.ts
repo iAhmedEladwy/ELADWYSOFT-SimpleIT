@@ -8,6 +8,7 @@ export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
+export const pricingModeEnum = pgEnum('pricing_mode', ['total', 'individual']);
 // Asset statuses are now flexible - ENUM removed to allow custom statuses
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
@@ -36,6 +37,13 @@ export const assetsIdSequence = pgSequence('assets_id_seq', {
 });
 
 export const ticketsIdSequence = pgSequence('tickets_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const assetSalesIdSequence = pgSequence('asset_sales_id_seq', {
   startWith: 1,
   increment: 1,
   minValue: 1,
@@ -203,6 +211,11 @@ export const assetTransactions = pgTable("asset_transactions", {
 // Asset Sales table
 export const assetSales = pgTable("asset_sales", {
   id: serial("id").primaryKey(),
+  // ADD THESE 3 NEW FIELDS:
+  saleId: varchar("sale_id", { length: 20 }).notNull().unique().default(sql`concat('SALE-', to_char(CURRENT_DATE, 'YYYY'), '-', lpad((nextval('asset_sales_id_seq'::regclass))::text, 3, '0'::text))`),
+  pricingMode: pricingModeEnum("pricing_mode").notNull().default('total'),
+  createdById: integer("created_by_id").references(() => users.id),
+  // KEEP YOUR EXISTING FIELDS:
   buyer: varchar("buyer", { length: 100 }).notNull(),
   date: date("date").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
@@ -216,7 +229,12 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   id: serial("id").primaryKey(),
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  // CHANGE THIS: amount -> salePrice
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
+  // ADD THESE 2 NEW FIELDS:
+  assetCondition: varchar("asset_condition", { length: 100 }),
+  notes: text("notes"),
+  // KEEP EXISTING:
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -488,6 +506,16 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   assetUpgrades: many(assetUpgrades),
   assetServiceProviders: many(assetServiceProviders),
   assetSaleItems: many(assetSaleItems),
+}));
+
+export const assetSalesRelations = relations(assetSales, ({ one, many }) => ({
+  createdByUser: one(users, { fields: [assetSales.createdById], references: [users.id] }),
+  saleItems: many(assetSaleItems),
+}));
+
+export const assetSaleItemsRelations = relations(assetSaleItems, ({ one }) => ({
+  sale: one(assetSales, { fields: [assetSaleItems.saleId], references: [assetSales.id] }),
+  asset: one(assets, { fields: [assetSaleItems.assetId], references: [assets.id] }),
 }));
 
 export const assetStatusesRelations = relations(assetStatuses, ({ many }) => ({
