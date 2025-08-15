@@ -1266,6 +1266,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Add this method to your DatabaseStorage class in storage.ts
+// Place it with the other ticket methods around line 1800+
+
+async deleteTicket(id: number): Promise<boolean> {
+  try {
+    const result = await db.delete(tickets).where(eq(tickets.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    return false;
+  }
+}
+
   async getAllTickets(): Promise<Ticket[]> {
     try {
       return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
