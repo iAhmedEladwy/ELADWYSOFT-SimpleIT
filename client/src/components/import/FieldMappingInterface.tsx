@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,7 +74,9 @@ export function FieldMappingInterface({
   onMappingComplete,
   onCancel
 }: FieldMappingInterfaceProps) {
-  const fileColumns = filterValidColumns(rawFileColumns);  
+  const fileColumns = useMemo(() => {
+    return filterValidColumns(rawFileColumns);
+  }, [rawFileColumns]);
   const [databaseFields, setDatabaseFields] = useState<DatabaseField[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [manuallyChangedFields, setManuallyChangedFields] = useState<Set<string>>(new Set());
