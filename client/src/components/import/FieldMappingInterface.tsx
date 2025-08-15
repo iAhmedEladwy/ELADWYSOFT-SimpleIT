@@ -77,6 +77,7 @@ export function FieldMappingInterface({
   const fileColumns = filterValidColumns(rawFileColumns);  
   const [databaseFields, setDatabaseFields] = useState<DatabaseField[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
+  const [manuallyChangedFields, setManuallyChangedFields] = useState<Set<string>>(new Set());
   const [validationSummary, setValidationSummary] = useState({
     requiredMapped: 0,
     totalRequired: 0,
@@ -89,29 +90,58 @@ export function FieldMappingInterface({
 
   // Fetch database schema for the entity type
   useEffect(() => {
-    const fetchSchema = async () => {
-      try {
-        const response = await fetch(`/api/import/schema/${entityType}`, {
-          credentials: 'include'
-        });
-        const schema = await response.json();
-        setDatabaseFields(schema.fields || []);
+  const fetchSchema = async () => {
+    try {
+      const response = await fetch(`/api/import/schema/${entityType}`, {
+        credentials: 'include'
+      });
+      const schema = await response.json();
+      setDatabaseFields(schema.fields || []);
+      
+      // Initialize mappings - but PRESERVE manual changes
+      setMappings(prevMappings => {
+        // If this is the first load, create new mappings
+        if (prevMappings.length === 0) {
+          return (schema.fields || []).map((field: DatabaseField) => ({
+            sourceColumn: suggestMapping(field, fileColumns),
+            targetField: field.name,
+            isValid: false,
+            warnings: []
+          }));
+        }
         
-        // Initialize mappings
-        const initialMappings = (schema.fields || []).map((field: DatabaseField) => ({
-          sourceColumn: suggestMapping(field, fileColumns),
-          targetField: field.name,
-          isValid: false,
-          warnings: []
-        }));
-        setMappings(initialMappings);
-      } catch (error) {
-        console.error('Failed to fetch schema:', error);
-      }
-    };
+        // If mappings exist, only update auto-mapped fields (preserve manual changes)
+        return prevMappings.map(prevMapping => {
+          // If this field was manually changed, keep the manual selection
+          if (manuallyChangedFields.has(prevMapping.targetField)) {
+            return {
+              ...prevMapping,
+              isValid: validateMapping(prevMapping.targetField, prevMapping.sourceColumn),
+              warnings: getValidationWarnings(prevMapping.targetField, prevMapping.sourceColumn)
+            };
+          }
+          
+          // Otherwise, re-run auto-mapping for this field
+          const field = (schema.fields || []).find((f: DatabaseField) => f.name === prevMapping.targetField);
+          if (field) {
+            return {
+              ...prevMapping,
+              sourceColumn: suggestMapping(field, fileColumns),
+              isValid: false,
+              warnings: []
+            };
+          }
+          
+          return prevMapping;
+        });
+      });
+    } catch (error) {
+      console.error('Failed to fetch schema:', error);
+    }
+    }; 
 
-    fetchSchema();
-  }, [entityType, fileColumns]);
+      fetchSchema();
+      }, [entityType, fileColumns]);
 
   // Smart mapping suggestions based on field names
   const suggestMapping = (field: DatabaseField, columns: FileColumn[]): string | null => {
@@ -148,7 +178,7 @@ export function FieldMappingInterface({
       'modelnumber': ['model number', 'model no', 'model'],
       'modelname': ['model name', 'name', 'product name'],
       'serialnumber': ['serial number', 'serial number*', 'serial', 'sn'],
-      // ✅ FIXED - Separate patterns for each field:
+      // FIXED - Separate patterns for each field:
       'specs': ['specifications', 'specs', 'description'],  // Removed cpu, ram, storage
       'cpu': ['cpu', 'processor', 'chip'],                  // ✅ NEW - CPU specific
       'ram': ['ram', 'memory', 'ram memory'],               // ✅ NEW - RAM specific  
@@ -180,29 +210,23 @@ export function FieldMappingInterface({
 
  // Update mapping for a specific field
   const updateMapping = (targetField: string, sourceColumn: string | null) => {
-    console.log('updateMapping called:', targetField, '->', sourceColumn);
-    console.log('Current mappings before update:', mappings);
+    console.log('Manual mapping change:', targetField, '->', sourceColumn);
     
-    setMappings(prev => {
-      const newMappings = prev.map(mapping => {
-        if (mapping.targetField === targetField) {
-          const updatedMapping = {
-            ...mapping,
-            sourceColumn,
-            isValid: validateMapping(targetField, sourceColumn),
-            warnings: getValidationWarnings(targetField, sourceColumn)
-          };
-          console.log(`✅ Updated mapping for ${targetField}:`, updatedMapping);
-          return updatedMapping;
-        }
-        return mapping;
-      });
-      
-      console.log('🎯 New mappings state:', newMappings);
-      return newMappings;
-    });
+    // Mark this field as manually changed
+    setManuallyChangedFields(prev => new Set([...prev, targetField]));
+    
+    setMappings(prev => prev.map(mapping => 
+      mapping.targetField === targetField 
+        ? { 
+            ...mapping, 
+            sourceColumn, 
+            isValid: validateMapping(targetField, sourceColumn), 
+            warnings: getValidationWarnings(targetField, sourceColumn) 
+          }
+        : mapping
+    ));
   };
-
+            
   // Validate individual mapping
   const validateMapping = (targetField: string, sourceColumn: string | null): boolean => {
     const field = databaseFields.find(f => f.name === targetField);
@@ -406,38 +430,31 @@ export function FieldMappingInterface({
                       {!field.autoGenerated && (
                         <div>
                           <Select
-                            key={`select-${field.name}`}
-                            value={mapping?.sourceColumn || 'none'}
-                            onValueChange={(value) => {
-                              console.log('Select onChange triggered:', field.name, '->', value);
-                              updateMapping(field.name, value === 'none' ? null : value);
-                            }}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select column..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No mapping</SelectItem>
-                              {fileColumns
-                                .filter(col => col && col.name && col.name.trim() !== '')
-                                .map(col => (
-                                  <SelectItem key={col.name} value={col.name}>
-                                    {col.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          {/* Test button */}
-                          <button 
-                            onClick={() => {
-                              console.log('Test button clicked for', field.name);
-                              updateMapping(field.name, 'test-value');
-                            }}
-                            className="mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded"
-                          >
-                            Test {field.displayName}
-                          </button>
+                              key={`select-${field.name}`}
+                              value={mapping?.sourceColumn || 'none'}
+                              onValueChange={(value) => {
+                                console.log('🎭 Select onChange triggered:', field.name, '->', value);
+                                const newValue = value === 'none' ? null : value;
+                                updateMapping(field.name, newValue);
+                              }}
+                              onOpenChange={(isOpen) => {
+                                console.log('🔽 Select dropdown', isOpen ? 'opened' : 'closed', 'for', field.name);
+                              }}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Select column..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No mapping</SelectItem>
+                                {fileColumns
+                                  .filter(col => col && col.name && col.name.trim() !== '')
+                                  .map(col => (
+                                    <SelectItem key={col.name} value={col.name}>
+                                      {col.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
                         </div>
                       )}
                       
