@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
@@ -112,6 +113,8 @@ export default function AssetsTable({
     modelName: language === 'English' ? 'Model' : 'الطراز',
     serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
     status: language === 'English' ? 'Status' : 'الحالة',
+    hardwarespecs: language === 'English' ? 'Hardware' : 'المواصفات',
+    moredetails: language === 'English' ? 'More Details' : 'تفاصيل',
     assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     edit: language === 'English' ? 'Edit' : 'تعديل',
@@ -150,48 +153,48 @@ export default function AssetsTable({
     retired: language === 'English' ? 'Retired' : 'متقاعد',
   };
 
-  // Get status badge with color
+  // Fetch asset statuses for dynamic badges
+  const { data: assetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-statuses'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Get status badge with flexible colors
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Available':
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-            {translations.available}
-          </Badge>
-        );
-      case 'In Use':
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-            {translations.inUse}
-          </Badge>
-        );
-      case 'Maintenance':
-        return (
-          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-            {translations.maintenance}
-          </Badge>
-        );
-      case 'Damaged':
-        return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-            {translations.damaged}
-          </Badge>
-        );
-      case 'Sold':
-        return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-            {translations.sold}
-          </Badge>
-        );
-      case 'Retired':
-        return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-            {translations.retired}
-          </Badge>
-        );
-      default:
-        return null;
+    // Find the status configuration
+    const statusConfig = assetStatuses.find(s => s.name === status);
+    
+    if (statusConfig?.color) {
+      // Use the configured color for the badge
+      const color = statusConfig.color;
+      const lightColor = color + '20'; // Adding transparency
+      const textColor = color;
+      
+      return (
+        <Badge 
+          variant="outline" 
+          className="border"
+          style={{ 
+            backgroundColor: lightColor,
+            color: textColor,
+            borderColor: color + '40'
+          }}
+        >
+          <span 
+            className="w-2 h-2 rounded-full inline-block mr-1" 
+            style={{ backgroundColor: color }}
+          />
+          {status}
+        </Badge>
+      );
     }
+
+    // Fallback for status without configuration or unknown status
+    return (
+      <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+        {status || 'N/A'}
+      </Badge>
+    );
   };
 
   // Find assigned employee name - Updated to handle proper field mapping
@@ -278,7 +281,8 @@ export default function AssetsTable({
             <TableHead>{translations.brand}</TableHead>
             <TableHead>{translations.modelName}</TableHead>
             <TableHead>{translations.serialNumber}</TableHead>
-            <TableHead>Specs</TableHead>
+            <TableHead>{translations.hardwarespecs}</TableHead>
+            <TableHead>{translations.moredetails}</TableHead> 
             <TableHead>{translations.status}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -291,12 +295,22 @@ export default function AssetsTable({
                 key={asset.id}
                 className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
                 onClick={(e) => {
-                  // Prevent row click when clicking on checkbox or action buttons
+                  // Prevent row click when clicking on interactive elements or dialog overlays
                   if (e.target instanceof HTMLElement && 
                       (e.target.closest('input[type="checkbox"]') || 
                        e.target.closest('button') || 
                        e.target.closest('[role="button"]') ||
-                       e.target.closest('.dropdown-menu'))) {
+                       e.target.closest('.dropdown-menu') ||
+                       e.target.closest('[data-radix-collection-item]') ||
+                       e.target.closest('[role="menuitem"]') ||
+                       e.target.closest('[data-state]') ||
+                       e.target.closest('[role="dialog"]') ||
+                       e.target.closest('[data-radix-dialog-overlay]') ||
+                       e.target.closest('[data-radix-dialog-content]') ||
+                       e.target.closest('.maintenance-dialog') ||
+                       e.target.closest('[data-dialog]'))) {
+                    e.preventDefault();  
+                    e.stopPropagation();
                     return;
                   }
                   onEdit(asset);
@@ -313,7 +327,10 @@ export default function AssetsTable({
                 )}
                 <TableCell className="font-medium">
                   <button
-                    onClick={() => onEdit(asset)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(asset);
+                    }}
                     className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors"
                   >
                     {asset.assetId}
@@ -343,6 +360,17 @@ export default function AssetsTable({
                     {!asset.cpu && !asset.ram && !asset.storage && '-'}
                   </div>
                 </TableCell>
+                <TableCell>
+                    <div className="max-w-xs">
+                      {asset.specs ? (
+                        <div className="text-sm truncate" title={asset.specs}>
+        📋                {asset.specs}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                     )}
+                  </div>
+                </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>
                   {(() => {
@@ -352,7 +380,9 @@ export default function AssetsTable({
                   })()}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-1"
+                      onClick={(e) => e.stopPropagation()} 
+                  >
                     {/* Check-in/Check-out buttons using AssetActionButtons component */}
                     <AssetActionButtons 
                       asset={asset} 
@@ -369,7 +399,7 @@ export default function AssetsTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={hasAccess(3) ? 9 : 8} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={hasAccess(3) ? 10 : 9} className="text-center h-24 text-muted-foreground">
                 {translations.noAssets}
               </TableCell>
             </TableRow>
@@ -442,119 +472,7 @@ export default function AssetsTable({
         </DialogContent>
       </Dialog>
 
-      {/* Add Maintenance Dialog */}
-      <Dialog open={!!assetToMaintenance} onOpenChange={(open) => !open && setAssetToMaintenance(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.addMaintenance}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="maintenance-date">{translations.date}</Label>
-                  <Input
-                    id="maintenance-date"
-                    type="date"
-                    value={maintenanceData.date}
-                    onChange={(e) => setMaintenanceData({
-                      ...maintenanceData,
-                      date: e.target.value,
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="maintenance-type">{translations.maintenanceType}</Label>
-                  <Select
-                    value={maintenanceData.type}
-                    onValueChange={(value) => setMaintenanceData({
-                      ...maintenanceData,
-                      type: value,
-                    })}
-                  >
-                    <SelectTrigger id="maintenance-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Hardware">{translations.hardware}</SelectItem>
-                      <SelectItem value="Software">{translations.software}</SelectItem>
-                      <SelectItem value="Both">{translations.both}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="maintenance-description">{translations.description}</Label>
-                <Textarea
-                  id="maintenance-description"
-                  value={maintenanceData.description}
-                  onChange={(e) => setMaintenanceData({
-                    ...maintenanceData,
-                    description: e.target.value,
-                  })}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="maintenance-cost">{translations.cost}</Label>
-                <Input
-                  id="maintenance-cost"
-                  type="number"
-                  value={maintenanceData.cost}
-                  onChange={(e) => setMaintenanceData({
-                    ...maintenanceData,
-                    cost: e.target.value,
-                  })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="provider-type">{translations.providerType}</Label>
-                  <Select
-                    value={maintenanceData.providerType}
-                    onValueChange={(value) => setMaintenanceData({
-                      ...maintenanceData,
-                      providerType: value,
-                    })}
-                  >
-                    <SelectTrigger id="provider-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Internal">{translations.internal}</SelectItem>
-                      <SelectItem value="External">{translations.external}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {maintenanceData.providerType === 'External' && (
-                  <div>
-                    <Label htmlFor="provider-name">{translations.providerName}</Label>
-                    <Input
-                      id="provider-name"
-                      value={maintenanceData.providerName}
-                      onChange={(e) => setMaintenanceData({
-                        ...maintenanceData,
-                        providerName: e.target.value,
-                      })}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">{translations.cancel}</Button>
-            </DialogClose>
-            <Button 
-              onClick={handleMaintenanceSave}
-              disabled={!maintenanceData.description}
-            >
-              {translations.save}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Asset Detail View */}
       <AssetDetailView 

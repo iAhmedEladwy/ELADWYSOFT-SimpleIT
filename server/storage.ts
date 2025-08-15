@@ -13,6 +13,7 @@ import {
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
   customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
+  assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification,
   changesLog, type ChangeLog, type InsertChangeLog
 } from "@shared/schema";
@@ -191,6 +192,14 @@ export interface IStorage {
   createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
   updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any>;
   deleteCustomAssetStatus(id: number): Promise<boolean>;
+  
+  // Asset Status operations (flexible status system)
+  getAssetStatuses(): Promise<AssetStatus[]>;
+  createAssetStatus(data: InsertAssetStatus): Promise<AssetStatus>;
+  updateAssetStatus(id: number, data: Partial<InsertAssetStatus>): Promise<AssetStatus | undefined>;
+  deleteAssetStatus(id: number): Promise<boolean>;
+  getAssetStatusByName(name: string): Promise<AssetStatus | undefined>;
+  ensureAssetStatus(name: string, color?: string): Promise<AssetStatus>;
   
   getServiceProviders(): Promise<any[]>;
   createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
@@ -1257,6 +1266,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Add this method to your DatabaseStorage class in storage.ts
+// Place it with the other ticket methods around line 1800+
+
+async deleteTicket(id: number): Promise<boolean> {
+  try {
+    const result = await db.delete(tickets).where(eq(tickets.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    return false;
+  }
+}
+
   async getAllTickets(): Promise<Ticket[]> {
     try {
       return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
@@ -1808,6 +1830,88 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Asset Status operations (flexible status system)
+  async getAssetStatuses(): Promise<AssetStatus[]> {
+    try {
+      const statuses = await db.select().from(assetStatuses).orderBy(asc(assetStatuses.name));
+      return statuses;
+    } catch (error) {
+      console.error('Error fetching asset statuses:', error);
+      return [];
+    }
+  }
+
+  async createAssetStatus(data: InsertAssetStatus): Promise<AssetStatus> {
+    try {
+      const [newStatus] = await db.insert(assetStatuses)
+        .values(data)
+        .returning();
+      return newStatus;
+    } catch (error) {
+      console.error('Error creating asset status:', error);
+      throw error;
+    }
+  }
+
+  async updateAssetStatus(id: number, data: Partial<InsertAssetStatus>): Promise<AssetStatus | undefined> {
+    try {
+      const [updated] = await db.update(assetStatuses)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(assetStatuses.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating asset status:', error);
+      return undefined;
+    }
+  }
+
+  async deleteAssetStatus(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(assetStatuses).where(eq(assetStatuses.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('Error deleting asset status:', error);
+      return false;
+    }
+  }
+
+  async getAssetStatusByName(name: string): Promise<AssetStatus | undefined> {
+    try {
+      const [status] = await db.select().from(assetStatuses).where(eq(assetStatuses.name, name));
+      return status;
+    } catch (error) {
+      console.error('Error fetching asset status by name:', error);
+      return undefined;
+    }
+  }
+
+  async ensureAssetStatus(name: string, color?: string): Promise<AssetStatus> {
+    try {
+      // Try to get existing status
+      const existing = await this.getAssetStatusByName(name);
+      if (existing) {
+        return existing;
+      }
+
+      // Create new status if it doesn't exist
+      const newStatusData: InsertAssetStatus = {
+        name,
+        color: color || '#6b7280', // Default gray color
+        isDefault: false,
+        description: `Custom status: ${name}`
+      };
+
+      return await this.createAssetStatus(newStatusData);
+    } catch (error) {
+      console.error('Error ensuring asset status:', error);
+      throw error;
+    }
+  }
+
   // Service Providers
   async getServiceProviders(): Promise<any[]> {
     try {
@@ -2128,7 +2232,7 @@ export class DatabaseStorage implements IStorage {
   async removeDemoData(): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        console.log('Starting demo data removal with proper foreign key handling...');
+        console.log('Starting demo data removal (excluding system configuration data)...');
         
         // Step 1: Remove dependent records first (proper cascade order)
         
@@ -2171,28 +2275,24 @@ export class DatabaseStorage implements IStorage {
         await tx.delete(activityLog);
         console.log('Activity logs removed');
         
-        // Remove custom data (no dependencies)
-        await tx.delete(customAssetTypes);
-        await tx.delete(customAssetBrands);
-        await tx.delete(customAssetStatuses);
-        await tx.delete(serviceProviders);
-        console.log('Custom data removed');
-        
         // Remove all users except admin (no dependencies)
         await tx.delete(users).where(
           sql`${users.id} > 1`
         );
         console.log('Non-admin users removed');
         
-        // Reset system config to defaults but keep custom settings
-        await tx.update(systemConfig).set({
-          assetIdPrefix: 'SIT-',
-          currency: 'USD'
-        });
-        console.log('System config reset to defaults');
+        // PRESERVE SYSTEM CONFIGURATION DATA:
+        // - DO NOT delete customAssetTypes (system config)
+        // - DO NOT delete customAssetBrands (system config)
+        // - DO NOT delete customAssetStatuses (system config)
+        // - DO NOT delete serviceProviders (system config)
+        // - DO NOT delete customRequestTypes (system config)
+        // - DO NOT modify systemConfig table (General, Employees, Assets, Tickets, Email, Users settings)
+        
+        console.log('System configuration data preserved (General, Employees, Assets, Tickets, Email, Users settings)');
       });
       
-      console.log('Demo data removal completed successfully');
+      console.log('Demo data removal completed successfully - system configuration preserved');
     } catch (error) {
       console.error('Error removing demo data:', error);
       throw error;
@@ -2569,6 +2669,20 @@ export class DatabaseStorage implements IStorage {
       // Handle date fields properly - only convert actual date fields
       if (updateData.dueDate && typeof updateData.dueDate === 'string') {
         updateData.dueDate = new Date(updateData.dueDate);
+      }
+      
+      // Handle slaTarget field properly - convert number to date or handle string dates
+      if (updateData.slaTarget !== undefined) {
+        if (typeof updateData.slaTarget === 'number') {
+          // If it's a number, treat it as days from now
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + updateData.slaTarget);
+          updateData.slaTarget = targetDate;
+        } else if (typeof updateData.slaTarget === 'string') {
+          // If it's a string, parse it as a date
+          updateData.slaTarget = new Date(updateData.slaTarget);
+        }
+        // If it's already a Date object, leave it as is
       }
       
       // Remove any undefined values that could cause type errors

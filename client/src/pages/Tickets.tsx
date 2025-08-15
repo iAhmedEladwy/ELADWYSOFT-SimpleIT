@@ -11,9 +11,11 @@ import TicketForm from '@/components/tickets/TicketForm';
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Settings, Zap, Edit3, Download } from 'lucide-react';
+import { Plus, RefreshCw, Settings, Zap, Edit3, Download, Trash2, UserCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { TicketFilters as TicketFiltersType } from '@shared/types';
 
@@ -26,6 +28,10 @@ export default function Tickets() {
   const [filters, setFilters] = useState<TicketFiltersType>({});
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  
+  // Bulk actions state
+  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   
   // Listen for the FAB create ticket event
@@ -71,6 +77,14 @@ export default function Tickets() {
     assignTicket: language === 'English' ? 'Assign Ticket' : 'تعيين التذكرة',
     ticketAssigned: language === 'English' ? 'Ticket assigned successfully' : 'تم تعيين التذكرة بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
+    bulkActions: language === 'English' ? 'Bulk Actions' : 'إجراءات مجمعة',
+    selectAll: language === 'English' ? 'Select All' : 'تحديد الكل',
+    deselectAll: language === 'English' ? 'Deselect All' : 'إلغاء تحديد الكل',
+    changeStatus: language === 'English' ? 'Change Status' : 'تغيير الحالة',
+    assignTo: language === 'English' ? 'Assign To' : 'تعيين إلى',
+    deleteSelected: language === 'English' ? 'Delete Selected' : 'حذف المحدد',
+    success: language === 'English' ? 'Success' : 'نجح',
+    noTicketsSelected: language === 'English' ? 'No tickets selected' : 'لم يتم تحديد تذاكر',
   };
 
   // Fetch tickets
@@ -221,6 +235,99 @@ export default function Tickets() {
     assignTicketMutation.mutate({ id: ticketId, userId });
   };
 
+  // Bulk action handlers
+  const handleSelectAllTickets = () => {
+    if (selectedTickets.length === filteredTickets.length) {
+      setSelectedTickets([]);
+    } else {
+      setSelectedTickets(filteredTickets.map((ticket: any) => ticket.id));
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedTickets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedTickets.map(id => 
+          apiRequest(`/api/tickets/${id}`, 'PUT', { status: newStatus })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: `${selectedTickets.length} tickets status updated to ${newStatus}`,
+      });
+      setSelectedTickets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to update ticket status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkAssign = async (userId: number) => {
+    if (selectedTickets.length === 0) return;
+    
+    try {
+      await Promise.all(
+        selectedTickets.map(id => 
+          apiRequest(`/api/tickets/${id}`, 'PUT', { assignedToId: userId })
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: `${selectedTickets.length} tickets assigned successfully`,
+      });
+      setSelectedTickets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to assign tickets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTickets.length === 0) return;
+    
+    if (!window.confirm(`Are you sure you want to delete ${selectedTickets.length} tickets? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await Promise.all(
+        selectedTickets.map(id => 
+          apiRequest(`/api/tickets/${id}`, 'DELETE')
+        )
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: `${selectedTickets.length} tickets deleted successfully`,
+      });
+      setSelectedTickets([]);
+      setShowBulkActions(false);
+    } catch (error) {
+      toast({
+        title: translations.error,
+        description: 'Failed to delete tickets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Show bulk actions when tickets are selected
+  useEffect(() => {
+    setShowBulkActions(selectedTickets.length > 0);
+  }, [selectedTickets]);
+
   // Filter tickets based on filters
   const filteredTickets = useMemo(() => {
     if (!Array.isArray(tickets)) return [];
@@ -366,16 +473,89 @@ export default function Tickets() {
         />
       </div>
 
+      {/* Bulk Actions Section */}
+      {showBulkActions && hasAccess(2) && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-blue-700">
+                {selectedTickets.length} {language === 'English' ? 'tickets selected' : 'تذاكر محددة'}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAllTickets}
+                className="text-blue-600 border-blue-300 hover:bg-blue-100"
+              >
+                <Checkbox 
+                  checked={selectedTickets.length === filteredTickets.length}
+                  onChange={() => {}}
+                  className="mr-2"
+                />
+                {selectedTickets.length === filteredTickets.length ? translations.deselectAll : translations.selectAll}
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Change Status */}
+              <Select onValueChange={handleBulkStatusChange}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder={translations.changeStatus} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">{translations.open}</SelectItem>
+                  <SelectItem value="In Progress">{translations.inProgress}</SelectItem>
+                  <SelectItem value="Resolved">{translations.resolved}</SelectItem>
+                  <SelectItem value="Closed">{translations.closed}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Assign To */}
+              <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder={translations.assignTo} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(users) && users.map((user: any) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Delete Selected */}
+              {hasAccess(3) && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="h-8"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {translations.deleteSelected}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Tickets Table */}
-      <TicketsTable 
-        tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
-        employees={Array.isArray(employees) ? employees : []}
-        assets={Array.isArray(assets) ? assets : []}
-        users={Array.isArray(users) ? users : []}
-        onStatusChange={handleStatusChange}
-        onAssign={handleAssignTicket}
-        onEdit={(ticket) => setSelectedTicket(ticket)}
-      />
+      <Card>
+        <TicketsTable 
+          tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
+          employees={Array.isArray(employees) ? employees : []}
+          assets={Array.isArray(assets) ? assets : []}
+          users={Array.isArray(users) ? users : []}
+          onStatusChange={handleStatusChange}
+          onAssign={handleAssignTicket}
+          onEdit={(ticket) => setSelectedTicket(ticket)}
+          selectedTickets={selectedTickets}
+          onSelectionChange={setSelectedTickets}
+        />
+      </Card>
 
 
 

@@ -39,13 +39,42 @@ interface FieldMappingInterfaceProps {
   onCancel: () => void;
 }
 
+const filterValidColumns = (columns: FileColumn[]): FileColumn[] => {
+  if (!columns || !Array.isArray(columns)) {
+    console.warn('Invalid columns array:', columns);
+    return [];
+  }
+  
+  const validColumns = columns.filter(col => {
+    if (!col) {
+      console.warn('Found null/undefined column:', col);
+      return false;
+    }
+    
+    if (!col.name || col.name.trim() === '') {
+      console.warn('Found column with empty name:', col);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  if (validColumns.length !== columns.length) {
+    console.warn(`Filtered ${columns.length - validColumns.length} invalid columns`);
+  }
+  
+  return validColumns;
+};
+
+
 export function FieldMappingInterface({
   entityType,
   fileData,
-  fileColumns,
+  fileColumns: rawFileColumns,
   onMappingComplete,
   onCancel
 }: FieldMappingInterfaceProps) {
+  const fileColumns = filterValidColumns(rawFileColumns);  
   const [databaseFields, setDatabaseFields] = useState<DatabaseField[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [validationSummary, setValidationSummary] = useState({
@@ -99,15 +128,35 @@ export function FieldMappingInterface({
     
     // Partial matches for common field patterns
     const patterns = {
-      'englishname': ['name', 'english name', 'full name', 'employee name'],
-      'email': ['email', 'email address', 'corporate email'],
-      'department': ['department', 'dept', 'division'],
-      'employmenttype': ['employment type', 'type', 'employment', 'status'],
-      'joiningdate': ['joining date', 'start date', 'hire date', 'date joined'],
+      'englishname': ['name', 'english name', 'english name*', 'full name', 'employee name'],
+      'arabicname': ['arabic name', 'arabic', 'name arabic'],
+      'email': ['email', 'email address', 'corporate email', 'personal email'],
+      'department': ['department', 'department*', 'dept', 'division'],
+      'idnumber': ['id number', 'id number*', 'national id', 'employee id'],
+      'title': ['title', 'title*', 'position', 'job title'],
+      'directmanager': ['direct manager', 'direct manager id', 'manager', 'manager id'],
+      'employmenttype': ['employment type', 'type', 'employment', 'contract type'],
+      'joiningdate': ['joining date', 'joining date*', 'start date', 'hire date', 'date joined'],
+      'personalmobile': ['personal mobile', 'mobile', 'phone', 'personal phone'],
+      'personalemail': ['personal email', 'email', 'personal mail'],
       'assetid': ['asset id', 'asset number', 'id'],
-      'type': ['type', 'asset type', 'category'],
-      'brand': ['brand', 'manufacturer', 'make'],
-      'serialnumber': ['serial number', 'serial', 'sn'],
+      'type': ['type', 'type*', 'asset type', 'category'],
+      'brand': ['brand', 'brand*', 'manufacturer', 'make'],
+      'modelnumber': ['model number', 'model no', 'model'],
+      'modelname': ['model name', 'name', 'product name'],
+      'serialnumber': ['serial number', 'serial number*', 'serial', 'sn'],
+      // ✅ FIXED - Separate patterns for each field:
+      'specs': ['specifications', 'specs', 'description'],  // Removed cpu, ram, storage
+      'cpu': ['cpu', 'processor', 'chip'],                  // ✅ NEW - CPU specific
+      'ram': ['ram', 'memory', 'ram memory'],               // ✅ NEW - RAM specific  
+      'storage': ['storage', 'disk', 'drive', 'ssd', 'hdd'], // ✅ NEW - Storage specific
+      'status': ['status', 'condition', 'state'],
+      'purchasedate': ['purchase date', 'buy date', 'date purchased'],
+      'buyprice': ['buy price', 'price', 'cost', 'purchase price'],
+      'warrantyexpirydate': ['warranty expiry date', 'warranty date', 'warranty end'],
+      'lifespan': ['life span', 'lifespan', 'expected life'],
+      'outofboxos': ['out of box os', 'os', 'operating system'],
+      'assignedemployeeid': ['assigned employee id', 'assigned to', 'employee'],
       'ticketid': ['ticket id', 'ticket number', 'id'],
       'summary': ['summary', 'title', 'subject', 'description'],
       'priority': ['priority', 'urgency', 'importance']
@@ -343,13 +392,15 @@ export function FieldMappingInterface({
                           <SelectTrigger className="h-8">
                             <SelectValue placeholder="Select column..." />
                           </SelectTrigger>
-                          <SelectContent>
+                         <SelectContent>
                             <SelectItem value="none">No mapping</SelectItem>
-                            {fileColumns.map(col => (
-                              <SelectItem key={col.name} value={col.name}>
-                                {col.name}
-                              </SelectItem>
-                            ))}
+                            {fileColumns
+                              .filter(col => col && col.name && col.name.trim() !== '')
+                              .map(col => (
+                                <SelectItem key={col.name} value={col.name}>
+                                  {col.name}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       )}

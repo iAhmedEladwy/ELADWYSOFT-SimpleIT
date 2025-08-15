@@ -1,2 +1,0 @@
-ticketId,summary,description,category,requestType,urgency,impact,priority,status,submittedById,assignedToId,relatedAssetId,dueDate,slaTarget,escalationLevel,tags,rootCause,workaround,resolution,resolutionNotes,privateNotes,createdAt,updatedAt
-"","Test Import Ticket","Testing ticket import","Incident","Hardware","Medium","Medium","Medium","Open","1082","","","","","","","","","","","","",""

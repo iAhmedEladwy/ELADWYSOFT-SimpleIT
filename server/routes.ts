@@ -35,19 +35,38 @@ const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNum
     let prefix: string;
     let nextNumber: number;
     
-    // Use reliable fallback prefixes to avoid database dependency issues during import
-    switch (entityType) {
-      case 'asset':
-        prefix = 'AST-';
-        break;
-      case 'employee':
-        prefix = 'EMP-';
-        break;
-      case 'ticket':
-        prefix = 'TKT-';
-        break;
-      default:
-        prefix = 'ID-';
+    // Get system config for prefixes
+    try {
+      const config = await storage.getSystemConfig();
+      switch (entityType) {
+        case 'asset':
+          prefix = config?.assetIdPrefix || 'AST-';
+          break;
+        case 'employee':
+          prefix = config?.empIdPrefix || 'EMP-';
+          break;
+        case 'ticket':
+          prefix = config?.ticketIdPrefix || 'TKT-';
+          break;
+        default:
+          prefix = 'ID-';
+      }
+    } catch (error) {
+      console.warn('Could not load system config for prefixes, using defaults:', error);
+      // Use reliable fallback prefixes to avoid database dependency issues during import
+      switch (entityType) {
+        case 'asset':
+          prefix = 'AST-';
+          break;
+        case 'employee':
+          prefix = 'EMP-';
+          break;
+        case 'ticket':
+          prefix = 'TKT-';
+          break;
+        default:
+          prefix = 'ID-';
+      }
     }
     
     console.log('generateId called with entityType:', entityType, 'prefix:', prefix);
@@ -1055,40 +1074,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (entity) {
         case 'assets':
           templateData = [{
-            'Type*': 'Laptop (Required: Laptop, Desktop, Monitor, Phone, Server, etc.)',
-            'Brand*': 'Dell (Required: Asset manufacturer)',
-            'Model Number': 'Latitude 5520 (Optional: Manufacturer model number)',
-            'Model Name': 'Dell Latitude 15 (Optional: Descriptive model name)',
-            'Serial Number*': 'DL123456789 (Required: Unique serial number)',
-            'Specifications': '16GB RAM, 512GB SSD, Intel i7 (Optional: Hardware specs)',
-            'CPU': 'Intel Core i7-11800H (Optional: Processor details)',
-            'RAM': '16GB DDR4 (Optional: Memory details)',
-            'Storage': '512GB NVMe SSD (Optional: Storage details)',
-            'Status': 'Available (Available, In Use, Maintenance, Retired)',
-            'Purchase Date': '2023-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
-            'Buy Price': '1200.00 (Optional: Purchase price in USD)',
-            'Warranty Expiry Date': '2025-01-15 (Format: YYYY-MM-DD or MM/DD/YYYY)',
-            'Life Span': '36 (Optional: Expected lifespan in months)',
-            'Out of Box OS': 'Windows 11 Pro (Optional: Operating system)',
-            'Assigned Employee ID': '1001 (Optional: Employee ID from employees table)'
+            'Type*': 'Laptop',
+            'Brand*': 'Dell',
+            'Model Number': 'Latitude 5520',
+            'Model Name': 'Dell Latitude 15',
+            'Serial Number*': 'DL123456789',
+            'Specifications': '16GB RAM, 512GB SSD, Intel Core i7-11800H',
+            'Status': 'Available',
+            'Purchase Date': '2023-01-15',
+            'Buy Price': '1200.00',
+            'Warranty Expiry Date': '2025-01-15',
+            'Life Span': '36',
+            'Out of Box OS': 'Windows 11 Pro',
+            'Assigned Employee ID': '1001'
           }];
           break;
         case 'employees':
           templateData = [{
-            'English Name*': 'John Smith (Required: Full name in English)',
-            'Arabic Name': 'جون سميث (Optional: Name in Arabic)',
-            'Department*': 'IT (Required: IT, HR, Finance, Marketing, etc.)',
-            'ID Number*': 'ID123456789 (Required: National/Company ID)',
-            'Title*': 'Software Engineer (Required: Job title)',
-            'Direct Manager ID': '1001 (Optional: Manager employee ID)',
-            'Employment Type': 'Full-time (Full-time, Part-time, Contract, Intern)',
-            'Joining Date*': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
-            'Exit Date': '2024-01-15 (Optional: Format YYYY-MM-DD, if applicable)',
-            'Status': 'Active (Active, Resigned, Terminated, On Leave)',
-            'Personal Mobile': '+1234567890 (Optional: Personal phone)',
-            'Work Mobile': '+1234567891 (Optional: Company phone)',
-            'Personal Email': 'john@personal.com (Optional: Personal email)',
-            'Corporate Email': 'john.smith@company.com (Optional: Work email)'
+            'englishName': 'John Smith (Required: Full name in English)',
+            'arabicName': 'جون سميث (Optional: Name in Arabic)',
+            'department': 'IT (Required: IT, HR, Finance, Marketing, etc.)',
+            'email': 'john.smith@company.com (Required: Work email address)',
+            'idNumber': 'ID123456789 (Required: National/Company ID)',
+            'title': 'Software Engineer (Required: Job title)',
+            'directManager': '1001 (Optional: Manager employee ID)',
+            'employmentType': 'Full-time (Full-time, Part-time, Contract, Intern)',
+            'joiningDate': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'status': 'Active (Active, Resigned, Terminated, On Leave)',
+            'personalMobile': '+1234567890 (Optional: Personal phone)',
+            'personalEmail': 'john@personal.com (Optional: Personal email)'
           }];
           break;
         case 'tickets':
@@ -1112,13 +1126,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Template not available for this entity" });
       }
 
-      const { content, headers } = await exportToCSV(templateData, `${entity}-template`, { headers: true });
-      
-      Object.entries(headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
+      // Generate CSV content directly using csv-stringify
+      csvStringify(templateData, { header: true }, (err, output) => {
+        if (err) {
+          throw new Error('Error generating CSV template');
+        }
+        
+        // Set proper headers for CSV download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${entity}-template.csv"`);
+        
+        // Send CSV content
+        res.send(output);
       });
-      
-      res.send(content);
     } catch (error: unknown) {
       console.error('Error generating template:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -1407,11 +1427,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Database will auto-generate asset_id, no need to generate manually
           const assetData: any = {
             // assetId removed - database will auto-generate
-            type: row['Type'] || row.type || null,
-            brand: row['Brand'] || row.brand || 'Unknown',
+            type: row['Type*'] || row['Type'] || row.type || null,
+            brand: row['Brand*'] || row['Brand'] || row.brand || 'Unknown',
             modelNumber: row['Model Number'] || row.modelNumber || null,
             modelName: row['Model Name'] || row.modelName || null,
-            serialNumber: row['Serial Number'] || row.serialNumber || 'N/A',
+            serialNumber: row['Serial Number*'] || row['Serial Number'] || row.serialNumber || 'N/A',
             specs: row['Specifications'] || row.specs || null,
             cpu: row['CPU'] || row.cpu || null,
             ram: row['RAM'] || row.ram || null,
@@ -1483,11 +1503,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             warnings.push(`Row ${index + 1}: Missing type, defaulted to "Other"`);
           }
 
-          // Validate status enum
-          const validStatuses = ['Available', 'In Use', 'Under Maintenance', 'Retired', 'Lost', 'Stolen'];
-          if (assetData.status && !validStatuses.includes(assetData.status)) {
-            warnings.push(`Row ${index + 1}: Invalid status "${assetData.status}", defaulting to "Available"`);
-            assetData.status = 'Available';
+          // Ensure asset status exists (flexible status system)
+          if (assetData.status && assetData.status.trim() !== '') {
+            try {
+              await storage.ensureAssetStatus(assetData.status);
+            } catch (error) {
+              console.warn(`Could not ensure status "${assetData.status}" for row ${index + 1}:`, error);
+              warnings.push(`Row ${index + 1}: Status "${assetData.status}" will be created if not exists`);
+            }
+          } else {
+            assetData.status = 'Available'; // Default fallback
+            warnings.push(`Row ${index + 1}: Missing status, defaulted to "Available"`);
           }
           
           const result = await storage.createAsset(assetData);
@@ -2031,6 +2057,276 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Process import data with mapping
+  app.post("/api/import/process", authenticateUser, hasAccess(3), upload.none(), async (req, res) => {
+    try {
+      console.log('Raw request body:', req.body);
+      console.log('Request headers:', req.headers);
+      
+      // Handle both JSON and FormData formats
+      let entityType, data, mapping;
+      
+      if (req.headers['content-type']?.includes('application/json')) {
+        ({ entityType, data, mapping } = req.body);
+      } else {
+        // Handle FormData format from the frontend
+        console.log('FormData fields available:', Object.keys(req.body));
+        entityType = req.body.entityType;
+        console.log('Raw entityType:', entityType);
+        console.log('Raw data field:', req.body.data);
+        console.log('Raw mapping field:', req.body.mapping);
+        
+        try {
+          data = req.body.data ? JSON.parse(req.body.data) : null;
+        } catch (e) {
+          console.error('Failed to parse data field:', e);
+          data = null;
+        }
+        
+        try {
+          mapping = req.body.mapping ? JSON.parse(req.body.mapping) : null;
+        } catch (e) {
+          console.error('Failed to parse mapping field:', e);
+          mapping = null;
+        }
+      }
+      
+      console.log('Parsed values:', { entityType, dataLength: data?.length, mapping });
+      
+      if (!entityType || !Array.isArray(data) || !mapping) {
+        return res.status(400).json({ 
+          message: "Missing required fields: entityType, data, or mapping",
+          received: {
+            entityType: !!entityType,
+            data: Array.isArray(data) ? `array with ${data.length} items` : typeof data,
+            mapping: !!mapping
+          }
+        });
+      }
+
+      console.log(`Processing import for ${entityType} with ${data.length} records`);
+      console.log('Sample record:', data[0]);
+      console.log('Mapping object:', mapping);
+      
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      
+      // Process each record with field mapping
+      for (const [index, record] of data.entries()) {
+        try {
+          // Apply field mapping to transform the record
+          const mappedRecord: any = {};
+          
+        Object.entries(mapping).forEach(([dbField, csvField]) => {
+          if (csvField && record[csvField as string] !== undefined) {
+           // For specifications field, preserve the complete content
+            if (dbField === 'specs' && csvField === 'Specifications') {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+            // For CPU, RAM, Storage - always map them if they have values
+           else if (['cpu', 'ram', 'storage'].includes(dbField)) {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+           else {
+            mappedRecord[dbField] = record[csvField as string];
+            console.log(`Mapped ${csvField} -> ${dbField}: ${record[csvField as string]}`);
+           }
+          }
+        });
+
+          // Process based on entity type
+          switch (entityType) {
+            case 'employees':
+              await storage.createEmployee({
+                englishName: mappedRecord.englishName || `Employee ${index + 1}`,
+                arabicName: mappedRecord.arabicName || null,
+                department: mappedRecord.department || 'General',
+                email: mappedRecord.email || `employee${index + 1}@company.com`,
+                idNumber: mappedRecord.idNumber || `ID${Date.now()}${index}`,
+                title: mappedRecord.title || 'Employee',
+                directManager: mappedRecord.directManager || null,
+                employmentType: mappedRecord.employmentType || 'Full-time',
+                joiningDate: mappedRecord.joiningDate || new Date().toISOString().split('T')[0],
+                status: mappedRecord.status || 'Active',
+                personalMobile: mappedRecord.personalMobile || null,
+                personalEmail: mappedRecord.personalEmail || null
+              });
+              break;
+
+            case 'assets':
+              // Helper function to parse dates safely
+              const parseDate = (dateStr: string): string | null => {
+                if (!dateStr || typeof dateStr !== 'string') return null;
+                dateStr = dateStr.trim();
+                if (dateStr === '' || dateStr.includes('(Optional') || dateStr.includes('Format:')) return null;
+                
+                // Try common date formats
+                const dateFormats = [
+                  /^\d{4}-\d{2}-\d{2}$/,  // YYYY-MM-DD
+                  /^\d{1,2}\/\d{1,2}\/\d{4}$/,  // MM/DD/YYYY or M/D/YYYY
+                  /^\d{1,2}-\d{1,2}-\d{4}$/   // MM-DD-YYYY
+                ];
+                
+                for (const format of dateFormats) {
+                  if (format.test(dateStr)) {
+                    try {
+                      const date = new Date(dateStr);
+                      if (!isNaN(date.getTime())) {
+                        return date.toISOString().split('T')[0];
+                      }
+                    } catch (e) {
+                      // Continue to next format
+                    }
+                  }
+                }
+                return null;
+              };
+
+              // Helper function to normalize asset type using system config
+              const normalizeAssetType = async (type: string): Promise<string> => {
+                if (!type || typeof type !== 'string') return type || 'Unknown';
+                
+                // Get available asset types from system config ONLY
+                const customTypes = await storage.getCustomAssetTypes();
+                const availableTypes = customTypes.map(t => t.name);
+                
+                // If no custom types are configured, use the input as-is
+                if (availableTypes.length === 0) {
+                  return type.trim();
+                }
+                
+                const normalized = type.trim();
+                
+                // First try exact match (case insensitive)
+                const exactMatch = availableTypes.find(t => 
+                  t.toLowerCase() === normalized.toLowerCase()
+                );
+                if (exactMatch) return exactMatch;
+                
+                // Then try common mappings only to configured types
+                const typeMapping: Record<string, string[]> = {
+                  'smartphone': ['Phone', 'Mobile', 'Device'],
+                  'mobile': ['Phone', 'Mobile', 'Device'],
+                  'router': ['Network', 'Router', 'Equipment'],
+                  'switch': ['Network', 'Switch', 'Equipment'],
+                  'keyboard': ['Accessories', 'Peripheral', 'Input'],
+                  'mouse': ['Accessories', 'Peripheral', 'Input'],
+                  'headset': ['Accessories', 'Audio', 'Peripheral'],
+                  'webcam': ['Accessories', 'Camera', 'Peripheral'],
+                  'laptop': ['Laptop', 'Computer', 'Device'],
+                  'desktop': ['Desktop', 'Computer', 'PC']
+                };
+                
+                const possibleMappings = typeMapping[normalized.toLowerCase()] || [];
+                for (const mapping of possibleMappings) {
+                  if (availableTypes.some(t => t.toLowerCase() === mapping.toLowerCase())) {
+                    return availableTypes.find(t => t.toLowerCase() === mapping.toLowerCase())!;
+                  }
+                }
+                
+                // If no mapping found, use the original input as-is (fully dynamic)
+                return normalized;
+              };
+
+              // Parse purchase price properly
+              const parseBuyPrice = (priceStr: string): number | null => {
+                if (!priceStr || typeof priceStr !== 'string') return null;
+                const cleanPrice = priceStr.replace(/[^\d.-]/g, ''); // Remove currency symbols and spaces
+                const price = parseFloat(cleanPrice);
+                return !isNaN(price) ? price : null;
+              };
+
+              console.log('Asset data being created:', {
+                type: await normalizeAssetType(mappedRecord.type),
+                brand: mappedRecord.brand || 'Unknown',
+                serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
+                specs: mappedRecord.specs || null,
+                buyPrice: parseBuyPrice(mappedRecord.buyPrice),
+                status: mappedRecord.status || 'Available'
+              });
+
+              await storage.createAsset({
+                type: await normalizeAssetType(mappedRecord.type),
+                brand: mappedRecord.brand || 'Unknown',
+                modelNumber: mappedRecord.modelNumber || null,
+                modelName: mappedRecord.modelName || null,
+                serialNumber: mappedRecord.serialNumber || `SN${Date.now()}${index}`,
+                specs: mappedRecord.specs || null,
+                cpu: mappedRecord.cpu || null, // Save individual CPU field if provided
+                ram: mappedRecord.ram || null, // Save individual RAM field if provided
+                storage: mappedRecord.storage || null, // Save individual Storage field if provided
+                status: mappedRecord.status || 'Available',
+                purchaseDate: parseDate(mappedRecord.purchaseDate),
+                buyPrice: parseBuyPrice(mappedRecord.buyPrice)?.toString() || null,
+                warrantyExpiryDate: parseDate(mappedRecord.warrantyExpiryDate),
+                lifeSpan: mappedRecord.lifeSpan && !isNaN(parseInt(mappedRecord.lifeSpan)) ? parseInt(mappedRecord.lifeSpan) : null,
+                outOfBoxOs: mappedRecord.outOfBoxOs || null,
+                assignedEmployeeId: mappedRecord.assignedEmployeeId && !isNaN(parseInt(mappedRecord.assignedEmployeeId)) ? parseInt(mappedRecord.assignedEmployeeId) : null
+              });
+              break;
+
+            case 'tickets':
+              // Find a default employee for submittedById
+              const employees = await storage.getAllEmployees();
+              const defaultEmployee = employees.find(emp => emp.status === 'Active') || employees[0];
+              
+              if (!defaultEmployee) {
+                throw new Error('No employees found to assign as ticket submitter');
+              }
+
+              await storage.createTicket({
+                summary: mappedRecord.summary || `Imported Ticket ${index + 1}`,
+                description: mappedRecord.description || 'No description provided',
+                category: mappedRecord.category || 'General',
+                requestType: mappedRecord.requestType || 'Other',
+                urgency: mappedRecord.urgency || 'Medium',
+                impact: mappedRecord.impact || 'Medium',
+                priority: mappedRecord.priority || 'Medium',
+                status: mappedRecord.status || 'Open',
+                submittedById: defaultEmployee.id,
+                assignedToId: mappedRecord.assignedToId ? parseInt(mappedRecord.assignedToId) : null,
+                relatedAssetId: mappedRecord.relatedAssetId ? parseInt(mappedRecord.relatedAssetId) : null,
+                dueDate: mappedRecord.dueDate || null,
+                slaTarget: mappedRecord.slaTarget || null,
+                escalationLevel: mappedRecord.escalationLevel ? parseInt(mappedRecord.escalationLevel) : 0,
+                tags: mappedRecord.tags ? JSON.parse(mappedRecord.tags) : null,
+                rootCause: mappedRecord.rootCause || null,
+                workaround: mappedRecord.workaround || null,
+                resolution: mappedRecord.resolution || null,
+                resolutionNotes: mappedRecord.resolutionNotes || null,
+                privateNotes: mappedRecord.privateNotes || null
+              });
+              break;
+
+            default:
+              throw new Error(`Unsupported entity type: ${entityType}`);
+          }
+
+          successful++;
+        } catch (error: any) {
+          failed++;
+          errors.push(`Row ${index + 1}: ${error.message}`);
+          console.error(`Import error for row ${index + 1}:`, error.message);
+        }
+      }
+
+      res.json({
+        total: data.length,
+        imported: successful,
+        failed,
+        errors: errors.slice(0, 10) // Limit to first 10 errors to avoid huge responses
+      });
+
+    } catch (error: any) {
+      console.error('Import process error:', error);
+      res.status(500).json({ error: "Import process failed", details: error.message });
+    }
+  });
+
   app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
@@ -2380,7 +2676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (asset.status === 'Under Maintenance') {
         const existingMaintenance = await storage.getMaintenanceForAsset(assetId);
         const activeMaintenance = existingMaintenance.find(m => 
-          m.maintenanceType !== 'Completed' && m.maintenanceType !== 'Cancelled'
+          m.type !== 'Completed' && m.type !== 'Cancelled'
         );
         
         if (activeMaintenance) {
@@ -2393,7 +2689,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let requestData = { ...req.body };
       if (requestData.cost === undefined || requestData.cost === null || requestData.cost === '') {
-        requestData.cost = 0;
+        requestData.cost = '0';
+      } else if (typeof requestData.cost === 'number') {
+        requestData.cost = requestData.cost.toString();
       }
       
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
@@ -2412,7 +2710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: maintenance.id,
           details: { 
             assetId: asset.assetId,
-            maintenanceType: maintenance.maintenanceType,
+            maintenanceType: maintenance.type,
             description: maintenance.description,
             statusChanged: asset.status !== 'Under Maintenance'
           }
@@ -3696,21 +3994,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const config = configs[size as keyof typeof configs] || configs.medium;
       
-      // Create demo users
+      // Create demo users with unique usernames using timestamp
+      const timestamp = Date.now();
       const userTemplates = [
-        { username: 'manager1', password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
-        { username: 'agent1', password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
-        { username: 'agent2', password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
-        { username: 'employee1', password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
-        { username: 'employee2', password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
-        { username: 'employee3', password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
-        { username: 'employee4', password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
-        { username: 'employee5', password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
+        { username: `manager_${timestamp}_1`, password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
+        { username: `agent_${timestamp}_1`, password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
+        { username: `agent_${timestamp}_2`, password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
+        { username: `employee_${timestamp}_1`, password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
+        { username: `employee_${timestamp}_2`, password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
+        { username: `employee_${timestamp}_3`, password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
+        { username: `employee_${timestamp}_4`, password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
+        { username: `employee_${timestamp}_5`, password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
       ];
 
       let createdUsers = 0;
       for (let i = 0; i < config.users && i < userTemplates.length; i++) {
         try {
+          console.log(`Creating demo user: ${userTemplates[i].username}`);
           await storage.createUser({
             username: userTemplates[i].username,
             password: userTemplates[i].password,
@@ -3720,9 +4020,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: `${userTemplates[i].username}@simpleit.com`,
             isActive: true
           });
+          console.log(`Successfully created user: ${userTemplates[i].username}`);
           createdUsers++;
-        } catch (error) {
-          // Skip if user already exists
+        } catch (error: any) {
+          console.error(`Failed to create user ${userTemplates[i].username}:`, error.message);
+          // Continue with next user
         }
       }
 
@@ -3749,10 +4051,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             department: department,
             idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
             title: position,
-            employmentType: 'Full-time', // Valid enum value
-            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-            status: 'Active', // Valid enum value
-            personalEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`,
+            employmentType: 'Full-time',
+            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            status: 'Active',
+            personalEmail: `${name.toLowerCase().replace(' ', '.')}@personal.com`,
             corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`
           };
           
@@ -3766,43 +4068,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create demo assets using valid enum values
-      const validAssetTypes = ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other'];
-      const validAssetStatuses = ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
+      // Create demo assets using dynamic types from system config
+      const systemConfig = await storage.getSystemConfig();
+      const validAssetTypes = systemConfig?.assetTypes || ['Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 'Printer', 'Network', 'Tablet', 'Accessories', 'Other'];
+      const flexibleAssetStatuses = systemConfig?.assetStatuses || ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
       const brands = ['Dell', 'HP', 'Lenovo', 'Apple', 'Samsung'];
       
       let createdAssets = 0;
       for (let i = 0; i < config.assets; i++) {
         const type = validAssetTypes[Math.floor(Math.random() * validAssetTypes.length)];
         const brand = brands[Math.floor(Math.random() * brands.length)];
-        const status = validAssetStatuses[Math.floor(Math.random() * validAssetStatuses.length)];
+        const status = flexibleAssetStatuses[Math.floor(Math.random() * flexibleAssetStatuses.length)];
         
         try {
-          // Generate unique asset ID with timestamp to avoid conflicts
-          const assetTimestamp = Date.now();
-          const uniqueAssetId = `SIT-${String(assetTimestamp + i).slice(-6)}`;
-          
-          await storage.createAsset({
-            assetId: uniqueAssetId,
-            name: `${brand} ${type} Model ${i + 1}`,
+          console.log(`Creating demo asset: ${brand} ${type} Model ${i + 1}`);
+          const result = await storage.createAsset({
             type: type,
             brand: brand,
             modelName: `${brand} ${type} Model ${i + 1}`,
             modelNumber: `${brand.substring(0, 3).toUpperCase()}${String(i + 1).padStart(4, '0')}`,
             serialNumber: `SN${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
             status: status,
-            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             buyPrice: Math.floor(Math.random() * 2000) + 500,
-            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000),
+            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             specs: JSON.stringify({ 
               cpu: 'Intel i5', 
               ram: '8GB', 
               storage: '256GB SSD' 
             })
           });
+          console.log(`Asset created successfully:`, result);
           createdAssets++;
-        } catch (error) {
-          // Skip if asset already exists
+        } catch (error: any) {
+          console.error(`Failed to create asset ${brand} ${type} Model ${i + 1}:`, error.message);
+          // Continue with next asset
         }
       }
       
@@ -3819,7 +4119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         message: `Demo data (${size} dataset) has been successfully created.`,
-        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`
+        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`,
+        users: createdUsers,
+        employees: createdEmployees,
+        assets: createdAssets
       });
       
     } catch (error: unknown) {
@@ -3876,21 +4179,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await storage.getAllEmployees();
       
       const csvData = data.map(item => ({
-        empId: item.empId || '',
         englishName: item.englishName || '',
         arabicName: item.arabicName || '',
         department: item.department || '',
-        idNumber: item.nationalId || '',
-        title: item.position || '',
-        directManager: item.managerId || '',
+        idNumber: item.idNumber || '',
+        title: item.title || '',
+        directManager: item.directManager || '',
         employmentType: item.employmentType || '',
-        joiningDate: item.startDate || '',
-        exitDate: '',
+        joiningDate: item.joiningDate || '',
         status: item.status || '',
-        personalMobile: item.phone || '',
-        workMobile: '',
-        personalEmail: item.email || '',
-        corporateEmail: ''
+        personalMobile: item.personalMobile || '',
+        personalEmail: item.personalEmail || ''
       }));
       
       const csv = [
@@ -4045,11 +4344,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             englishName: item.englishName,
             arabicName: item.arabicName || null,
             department: item.department || 'General',
-            nationalId: idNumber,
-            position: title,
-            managerId: item.directManager ? parseInt(item.directManager) : null,
+            idNumber: idNumber,
+            title: title,
+            directManager: item.directManager ? parseInt(item.directManager) : null,
             employmentType: item.employmentType || 'Full-time',
-            joiningDate: item.joiningDate || item.startDate || new Date().toISOString().split('T')[0],
+            joiningDate: item.joiningDate || new Date().toISOString().split('T')[0],
             status: item.status || 'Active',
             personalMobile: item.personalMobile || null,
             personalEmail: item.personalEmail || null
@@ -4747,6 +5046,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       console.error('Error deleting custom asset status:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  // Asset Status API routes (flexible status system)
+  app.get('/api/asset-statuses', authenticateUser, async (req, res) => {
+    try {
+      const statuses = await storage.getAssetStatuses();
+      res.json(statuses);
+    } catch (error: any) {
+      console.error('Error fetching asset statuses:', error);
+      res.status(500).json({ error: 'Failed to fetch asset statuses', details: error.message });
+    }
+  });
+
+  app.post('/api/asset-statuses', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { name, color, description } = req.body;
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Status name is required' });
+      }
+
+      const statusData = {
+        name: name.trim(),
+        color: color || '#6b7280',
+        description: description || `Custom status: ${name.trim()}`,
+        isDefault: false
+      };
+
+      const newStatus = await storage.createAssetStatus(statusData);
+      res.status(201).json(newStatus);
+    } catch (error: any) {
+      console.error('Error creating asset status:', error);
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        res.status(409).json({ error: 'Asset status with this name already exists' });
+      } else {
+        res.status(500).json({ error: 'Failed to create asset status', details: error.message });
+      }
+    }
+  });
+
+  app.put('/api/asset-statuses/:id', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid ID' });
+      }
+
+      const { name, color, description } = req.body;
+      
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Status name is required' });
+      }
+
+      const updateData = {
+        name: name.trim(),
+        color: color || '#6b7280',
+        description: description
+      };
+
+      const updatedStatus = await storage.updateAssetStatus(id, updateData);
+      if (updatedStatus) {
+        res.json(updatedStatus);
+      } else {
+        res.status(404).json({ error: 'Asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error updating asset status:', error);
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        res.status(409).json({ error: 'Asset status with this name already exists' });
+      } else {
+        res.status(500).json({ error: 'Failed to update asset status', details: error.message });
+      }
+    }
+  });
+
+  app.delete('/api/asset-statuses/:id', authenticateUser, hasAccess(4), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid ID' });
+      }
+
+      // Check if this is a default status
+      const status = await storage.getAssetStatuses();
+      const targetStatus = status.find(s => s.id === id);
+      
+      if (targetStatus?.isDefault) {
+        return res.status(400).json({ error: 'Cannot delete default asset status' });
+      }
+
+      const success = await storage.deleteAssetStatus(id);
+      if (success) {
+        res.json({ message: 'Asset status deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Asset status not found' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting asset status:', error);
+      res.status(500).json({ error: 'Failed to delete asset status', details: error.message });
     }
   });
   
@@ -5859,33 +6258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced ticket update endpoint
-  app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      if (isNaN(ticketId)) {
-        return res.status(400).json({ message: "Invalid ticket ID" });
-      }
-      
-      const userId = req.user.id;
-      const updateData = req.body;
-      
-      // Ensure requestType is valid text (not enum validation)
-      if (updateData.requestType && typeof updateData.requestType !== 'string') {
-        return res.status(400).json({ message: "Invalid request type format" });
-      }
-      
-      const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
-      if (!updatedTicket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json(updatedTicket);
-    } catch (error: unknown) {
-      console.error("Enhanced ticket update error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
 
   // Custom Request Types CRUD routes  
   app.get("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
@@ -5989,8 +6362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash password if provided
       if (userData.password) {
-        const bcrypt = require('bcryptjs');
-        userData.password = await bcrypt.hash(userData.password, 10);
+        userData.password = await hash(userData.password, 10);
       }
       
       const newUser = await storage.createUser(userData);
@@ -6014,8 +6386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash password if provided
       if (userData.password) {
-        const bcrypt = require('bcryptjs');
-        userData.password = await bcrypt.hash(userData.password, 10);
+        userData.password = await hash(userData.password, 10);
       }
       
       const updatedUser = await storage.updateUser(id, userData);

@@ -8,7 +8,7 @@ import EmployeesTable from '@/components/employees/EmployeesTable';
 import EmployeeForm from '@/components/employees/EmployeeForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck, Search } from 'lucide-react';
+import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck, UserX, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function Employees() {
   const { language } = useLanguage();
@@ -35,7 +36,7 @@ export default function Employees() {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
+
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   
@@ -272,7 +273,6 @@ export default function Employees() {
         title: `${selectedEmployees.length} employees deleted successfully`,
       });
       setSelectedEmployees([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -286,9 +286,15 @@ export default function Employees() {
     if (selectedEmployees.length === 0) return;
     
     try {
+      // Get the full employee data for each selected employee
+      const selectedEmployeeData = employees.filter((emp: any) => 
+        selectedEmployees.includes(emp.id)
+      );
+      
       await Promise.all(
-        selectedEmployees.map(id => 
-          apiRequest(`/api/employees/${id}`, 'PUT', { 
+        selectedEmployeeData.map((employee: any) => 
+          apiRequest(`/api/employees/${employee.id}`, 'PUT', {
+            ...employee, // Send all existing data
             status: newStatus,
             isActive: newStatus === 'Active'
           })
@@ -300,7 +306,6 @@ export default function Employees() {
         title: `${selectedEmployees.length} employees updated successfully`,
       });
       setSelectedEmployees([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -540,68 +545,70 @@ export default function Employees() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          {selectedEmployees.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {selectedEmployees.length} selected
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkActions(!showBulkActions)}
-              >
-                {translations.bulkActions}
-              </Button>
-            </div>
-          )}
+      {/* Employee count summary */}
+      {selectedEmployees.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm text-gray-600">
+            {selectedEmployees.length} {language === 'English' ? 'employees selected' : 'موظف محدد'}
+          </span>
         </div>
-      </div>
+      )}
 
       {/* Bulk Operations */}
-      {showBulkActions && selectedEmployees.length > 0 && (
-        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400 mb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSelectAll}
-          >
-            {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? (
-              <Square className="h-4 w-4 mr-2" />
-            ) : (
+      {selectedEmployees.length > 0 && (
+        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-blue-700">
+              {selectedEmployees.length} {language === 'English' ? 'employees selected' : 'موظف محدد'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
               <CheckSquare className="h-4 w-4 mr-2" />
-            )}
-            {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? 
-              translations.deselectAll : translations.selectAll}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleBulkStatusChange('Active')}
-          >
-            <UserCheck className="h-4 w-4 mr-2" />
-            Activate Selected
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleBulkStatusChange('Resigned')}
-          >
-            <Edit3 className="h-4 w-4 mr-2" />
-            Mark as Resigned
-          </Button>
-
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleBulkDelete}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {translations.deleteSelected}
-          </Button>
+              {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? 
+                translations.deselectAll : translations.selectAll}
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  {translations.bulkActions}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleBulkStatusChange('Active')}>
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  {language === 'English' ? 'Activate Selected' : 'تفعيل المحدد'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusChange('Resigned')}>
+                  <UserX className="h-4 w-4 mr-2" />
+                  {language === 'English' ? 'Mark as Resigned' : 'وضع علامة كمستقيل'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusChange('On Leave')}>
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  {language === 'English' ? 'Mark on Leave' : 'وضع علامة في إجازة'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkStatusChange('Terminated')}>
+                  <UserX className="h-4 w-4 mr-2" />
+                  {language === 'English' ? 'Mark as Terminated' : 'وضع علامة كمنهي الخدمة'}
+                </DropdownMenuItem>
+                {hasAccess(3) && (
+                  <DropdownMenuItem 
+                    onClick={handleBulkDelete}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {translations.deleteSelected}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       )}
 

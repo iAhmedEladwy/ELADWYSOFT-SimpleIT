@@ -89,21 +89,6 @@ export const assetValidationRules: CSVValidationRule[] = [
     transform: (value) => value ? new Date(value).toISOString().split('T')[0] : null
   },
   {
-    field: 'cpu',
-    required: false,
-    type: 'string'
-  },
-  {
-    field: 'ram',
-    required: false,
-    type: 'string'
-  },
-  {
-    field: 'storage',
-    required: false,
-    type: 'string'
-  },
-  {
     field: 'lifeSpan',
     required: false,
     type: 'string'

@@ -109,7 +109,25 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setReason('');
   };
 
-  const handleMaintenance = () => {
+  // Maintenance mutation
+  const maintenanceMutation = useMutation({
+    mutationFn: (maintenanceData: any) => apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', maintenanceData),
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Maintenance record added successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      setShowMaintenanceForm(false);
+    },
+    onError: (error: any) => {
+      console.error('Maintenance submission error:', error);
+      toast({ title: 'Error', description: error?.message || 'Failed to add maintenance record', variant: 'destructive' });
+    }
+  });
+
+  const handleMaintenance = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowMaintenanceForm(true);
   };
 
@@ -117,25 +135,45 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     setShowUpgradeForm(true);
   };
 
-  const handleViewHistory = () => {
+  const handleViewHistory = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowHistoryDialog(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (onEdit) {
       onEdit(asset);
     }
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowCheckOutDialog(true);
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowCheckInDialog(true);
   };
 
-  const handleViewDetails = () => {
+  const handleViewDetails = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setShowDetailsDialog(true);
   };
 
@@ -143,18 +181,33 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button 
+            variant="ghost" 
+            className="h-8 w-8 p-0"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={handleEdit}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleEdit();
+          }}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Asset
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handleViewDetails}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleViewDetails();
+          }}>
             <Eye className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
@@ -162,14 +215,22 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           <DropdownMenuSeparator />
           
           {asset.status === 'Available' && (
-            <DropdownMenuItem onClick={handleCheckOut}>
+            <DropdownMenuItem onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCheckOut();
+            }}>
               <LogOut className="mr-2 h-4 w-4" />
               Check Out
             </DropdownMenuItem>
           )}
           
           {asset.status === 'In Use' && (
-            <DropdownMenuItem onClick={handleCheckIn}>
+            <DropdownMenuItem onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCheckIn();
+            }}>
               <LogIn className="mr-2 h-4 w-4" />
               Check In
             </DropdownMenuItem>
@@ -177,14 +238,22 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={handleMaintenance}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMaintenance();
+          }}>
             <Wrench className="mr-2 h-4 w-4" />
             Schedule Maintenance
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem onClick={handleViewHistory}>
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleViewHistory();
+          }}>
             <FileText className="mr-2 h-4 w-4" />
             View History
           </DropdownMenuItem>
@@ -192,25 +261,38 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
       </DropdownMenu>
 
       {/* Maintenance Form Dialog - using a wrapper dialog */}
-      <Dialog open={showMaintenanceForm} onOpenChange={setShowMaintenanceForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showMaintenanceForm} onOpenChange={(open) => {
+        console.log('Maintenance dialog open state changed:', open);
+        setShowMaintenanceForm(open);
+        
+        // Prevent immediate row click after dialog closes
+        if (!open) {
+          setTimeout(() => {
+            // Small delay to prevent row click event after dialog closes
+          }, 100);
+        }
+      }}>
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-y-auto maintenance-dialog" 
+          data-dialog="maintenance"
+          onPointerDownOutside={(e) => {
+            // Prevent dialog from closing when clicking outside if it would trigger row click
+            e.preventDefault();
+            setShowMaintenanceForm(false);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Schedule Maintenance - {asset.assetId}</DialogTitle>
           </DialogHeader>
           <MaintenanceForm
             onSubmit={(data) => {
-              // Handle maintenance form submission
-              apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', data)
-                .then(() => {
-                  toast({ title: 'Success', description: 'Maintenance scheduled successfully' });
-                  queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-                  setShowMaintenanceForm(false);
-                })
-                .catch((error) => {
-                  toast({ title: 'Error', description: error?.message || 'Failed to schedule maintenance', variant: 'destructive' });
-                });
+              console.log('Maintenance form submission data:', data);
+              maintenanceMutation.mutate(data);
             }}
-            isSubmitting={false}
+            isSubmitting={maintenanceMutation.isPending}
             assetId={asset.id}
             assetName={`${asset.assetId} - ${asset.type}`}
           />

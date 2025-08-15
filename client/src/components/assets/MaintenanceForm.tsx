@@ -119,7 +119,7 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
       date: values.date,
       type: values.type,
       description: values.description,
-      cost: parseFloat(values.cost || '0'),
+      cost: values.cost || '0', // Keep as string for backend validation
       providerType: values.providerType,
       providerName: values.providerName,
       status: values.status || 'Completed'

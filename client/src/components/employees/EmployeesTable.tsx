@@ -210,21 +210,30 @@ export default function EmployeesTable({
         <TableBody>
           {employees.length > 0 ? (
             employees.map((employee) => (
-              <TableRow 
-                key={employee.id}
-                className="hover:bg-muted/50 cursor-pointer"
-                onClick={(e) => {
-                  // Prevent row click when clicking on checkbox or action buttons
-                  if (e.target instanceof HTMLElement && 
-                      (e.target.closest('input[type="checkbox"]') || 
-                       e.target.closest('button') || 
-                       e.target.closest('[role="button"]') ||
-                       e.target.closest('.dropdown-menu'))) {
-                    return;
-                  }
-                  onEdit(employee);
-                }}
-              >
+             <TableRow 
+              key={employee.id}
+              className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
+              onClick={(e) => {
+                // Prevent row click when clicking on interactive elements or dialog overlays
+                if (e.target instanceof HTMLElement && 
+                    (e.target.closest('input[type="checkbox"]') || 
+                    e.target.closest('button') || 
+                    e.target.closest('[role="button"]') ||
+                    e.target.closest('.dropdown-menu') ||
+                    e.target.closest('[data-radix-collection-item]') ||
+                    e.target.closest('[role="menuitem"]') ||
+                    e.target.closest('[data-state]') ||
+                    e.target.closest('[role="dialog"]') ||
+                    e.target.closest('[data-radix-dialog-overlay]') ||
+                    e.target.closest('[data-radix-dialog-content]') ||
+                    e.target.closest('[data-dialog]'))) {
+                  e.preventDefault();  
+                  e.stopPropagation();
+                  return;
+                }
+                onEdit(employee);
+              }}
+            >
                 {onSelectionChange && (
                   <TableCell className="w-12">
                     <Checkbox
@@ -250,38 +259,63 @@ export default function EmployeesTable({
                   {getStatusBadge(employee.status || (employee.isActive !== false ? 'Active' : 'Resigned'))}
                 </TableCell>
                 <TableCell>{formatDate(employee.joiningDate)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right"
+                 onClick={(e) => e.stopPropagation()}
+                >
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                   <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
                         <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(employee);
+                      }}>
                         <Edit className="h-4 w-4 mr-2" />
                         {translations.edit}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(employee);
+                      }}>
                         <Eye className="h-4 w-4 mr-2" />
                         {translations.viewDetails}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewAssets(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewAssets(employee);
+                      }}>
                         <Laptop className="h-4 w-4 mr-2" />
                         {translations.viewAssets}
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem onClick={() => handleViewTickets(employee)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewTickets(employee);
+                      }}>
                         <Ticket className="h-4 w-4 mr-2" />
                         {translations.viewTickets}
                       </DropdownMenuItem>
                       
                       {hasAccess(3) && (
                         <DropdownMenuItem 
-                          onClick={() => setEmployeeToDelete(employee)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmployeeToDelete(employee);
+                          }}
                           className="text-red-600 focus:text-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText } from 'lucide-react';
+import { Settings, Save, Globe, Loader2, Trash, Trash2, Plus, Edit, Check, X, Mail, Download, Upload, Search, Users, Ticket, Package, FileText, Database, Info as InfoIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import {
   Tabs,
@@ -125,6 +125,9 @@ function SystemConfig() {
   const [isAssetBrandDialogOpen, setIsAssetBrandDialogOpen] = useState(false);
   const [isAssetStatusDialogOpen, setIsAssetStatusDialogOpen] = useState(false);
   const [isServiceProviderDialogOpen, setIsServiceProviderDialogOpen] = useState(false);
+  
+  // Department dialog state
+  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
 
   // Asset Management search states
   const [assetTypeSearch, setAssetTypeSearch] = useState('');
@@ -182,6 +185,12 @@ function SystemConfig() {
   const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
   const [editedUserPassword, setEditedUserPassword] = useState('');
   const [editedUserIsActive, setEditedUserIsActive] = useState(true);
+  
+  // Password change states
+  const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false);
+  const [changePasswordUserId, setChangePasswordUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Data type options for import/export
   const DATA_TYPE_OPTIONS = [
@@ -521,6 +530,53 @@ function SystemConfig() {
     }
   });
 
+  // Demo data mutations
+  const createDemoDataMutation = useMutation({
+    mutationFn: async (size: 'small' | 'medium' | 'large') => {
+      return await apiRequest('/api/create-demo-data', 'POST', { size });
+    },
+    onSuccess: (data) => {
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Demo Data Created' : 'تم إنشاء البيانات التجريبية',
+        description: language === 'English' 
+          ? `Successfully created demo data: ${data.users || 0} users, ${data.employees || 0} employees, ${data.assets || 0} assets`
+          : `تم إنشاء البيانات التجريبية بنجاح: ${data.users || 0} مستخدمين، ${data.employees || 0} موظفين، ${data.assets || 0} أصول`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to create demo data' : 'فشل في إنشاء البيانات التجريبية'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const removeDemoDataMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/remove-demo-data', 'POST');
+    },
+    onSuccess: () => {
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries();
+      toast({
+        title: language === 'English' ? 'Demo Data Removed' : 'تم حذف البيانات التجريبية',
+        description: language === 'English' 
+          ? 'All demo data has been successfully removed'
+          : 'تم حذف جميع البيانات التجريبية بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to remove demo data' : 'فشل في حذف البيانات التجريبية'),
+        variant: 'destructive'
+      });
+    }
+  });
+
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
       console.log(`Deleting user ${id}`);
@@ -547,6 +603,221 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: error.message || (language === 'English' ? 'Failed to delete user' : 'فشل في حذف المستخدم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Asset Type Mutation
+  const deleteAssetTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-types/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type deleted successfully' : 'تم حذف نوع الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset type' : 'فشل حذف نوع الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Asset Brand Mutation  
+  const deleteAssetBrandMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-brands/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand deleted successfully' : 'تم حذف علامة الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset brand' : 'فشل حذف علامة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Asset Status Mutation
+  const deleteAssetStatusMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-asset-statuses/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status deleted successfully' : 'تم حذف حالة الأصل بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete asset status' : 'فشل حذف حالة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Request Type Mutation
+  const deleteRequestTypeMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-request-types/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete request type' : 'فشل حذف نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Delete Service Provider Mutation
+  const deleteServiceProviderMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/service-providers/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مقدم الخدمة'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // UPDATE MUTATIONS - Missing functionality
+  
+  // Update Asset Type Mutation
+  const updateAssetTypeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-asset-types/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset type updated successfully' : 'تم تحديث نوع الأصل بنجاح',
+      });
+      setEditingTypeId(null);
+      setEditedTypeName('');
+      setEditedTypeDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset type' : 'فشل تحديث نوع الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Asset Brand Mutation
+  const updateAssetBrandMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-asset-brands/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset brand updated successfully' : 'تم تحديث علامة الأصل بنجاح',
+      });
+      setEditingBrandId(null);
+      setEditedBrandName('');
+      setEditedBrandDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset brand' : 'فشل تحديث علامة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Asset Status Mutation
+  const updateAssetStatusMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string; color?: string } }) => 
+      apiRequest(`/api/custom-asset-statuses/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصل بنجاح',
+      });
+      setEditingStatusId(null);
+      setEditedStatusName('');
+      setEditedStatusDescription('');
+      setEditedStatusColor('#3B82F6');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update asset status' : 'فشل تحديث حالة الأصل'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Request Type Mutation
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-request-types/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+      });
+      setEditingRequestTypeId(null);
+      setEditedRequestTypeName('');
+      setEditedRequestTypeDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update request type' : 'فشل تحديث نوع الطلب'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Update Service Provider Mutation
+  const updateServiceProviderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; contactPerson?: string; phone?: string; email?: string } }) => 
+      apiRequest(`/api/service-providers/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'تم بنجاح',
+        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مقدم الخدمة بنجاح',
+      });
+      setEditingProviderId(null);
+      setEditedProviderName('');
+      setEditedProviderContact('');
+      setEditedProviderPhone('');
+      setEditedProviderEmail('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to update service provider' : 'فشل تحديث مقدم الخدمة'),
         variant: 'destructive'
       });
     }
@@ -581,24 +852,40 @@ function SystemConfig() {
 
   const handleDownloadTemplate = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      const response = await fetch(`/api/import/template/${type}`, {
+      // Use direct fetch with authentication since we need the raw CSV text
+      const response = await fetch(`/api/${type}/template`, {
         method: 'GET',
         credentials: 'include',
+        headers: {
+          'Accept': 'text/csv, application/csv, text/plain',
+        }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to download template');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Get the CSV text content
+      const csvContent = await response.text();
+      
+      // Create blob from the CSV content
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Trigger download
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = `${type}_template.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
+        description: language === 'English' ? `${type} template downloaded successfully` : `تم تنزيل قالب ${type} بنجاح`,
+      });
     } catch (error) {
       console.error('Download error:', error);
       toast({
@@ -611,24 +898,40 @@ function SystemConfig() {
 
   const handleExport = async (type: 'employees' | 'assets' | 'tickets') => {
     try {
-      const response = await fetch(`/api/export/${type}`, {
+      // Use direct fetch with authentication since we need the raw CSV text
+      const response = await fetch(`/api/${type}/export`, {
         method: 'GET',
         credentials: 'include',
+        headers: {
+          'Accept': 'text/csv, application/csv, text/plain',
+        }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export data');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Get the CSV text content
+      const csvContent = await response.text();
+      
+      // Create blob from the CSV content
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Trigger download
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
+        description: language === 'English' ? `${type} data exported successfully` : `تم تصدير بيانات ${type} بنجاح`,
+      });
     } catch (error) {
       console.error('Export error:', error);
       toast({
@@ -639,40 +942,93 @@ function SystemConfig() {
     }
   };
 
-  const parseCSV = (csvText: string) => {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      if (lines[i].trim()) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || '';
-        });
-        data.push(row);
-      }
+ const parseCSV = (csvText: string) => {
+  const lines = csvText.split('\n');
+  const headers = parseCSVLine(lines[0]);
+  const data = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim()) {
+      const values = parseCSVLine(lines[i]);
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      data.push(row);
     }
+  }
+  
+  return { headers, data };
+};
+
+// ✅ NEW: Proper CSV line parser that handles quotes
+const parseCSVLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
     
-    return { headers, data };
-  };
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // Handle escaped quotes ("") -> single quote
+        current += '"';
+        i++; // Skip the next quote
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // Only split on comma if we're not inside quotes
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim());
+  
+  return result;
+};
 
   const handleFileImport = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      console.log('No file selected for import');
+      return;
+    }
+
+    console.log('Starting file import for:', selectedFile.name, 'Selected data type:', selectedDataType);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const csvText = e.target?.result as string;
+        console.log('CSV text length:', csvText.length);
+        console.log('CSV preview:', csvText.substring(0, 200));
+        
         const { headers, data } = parseCSV(csvText);
+        console.log('Parsed headers:', headers);
+        console.log('Parsed data rows:', data.length);
+        console.log('First data row:', data[0]);
         
         setParsedFileData(data);
         setFileColumns(headers);
         setShowFieldMapping(true);
+        setImportError('');
+        
+        console.log('Field mapping dialog should now show');
       } catch (error) {
         console.error('File parsing error:', error);
-        setImportError(language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV');
+        const errorMessage = language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV';
+        setImportError(errorMessage);
+        toast({
+          title: language === 'English' ? 'Parse Error' : 'خطأ تحليل',
+          description: errorMessage,
+          variant: 'destructive',
+        });
       }
     };
     reader.readAsText(selectedFile);
@@ -682,9 +1038,29 @@ function SystemConfig() {
     // Extract mapped data and mapping from the interface format
     const mappedData = parsedFileData;
     const mapping = mappings.reduce((acc: Record<string, string>, m: any) => {
-      acc[m.fileColumn] = m.systemField;
+      if (m.sourceColumn && m.targetField) {
+        acc[m.targetField] = m.sourceColumn;
+      }
       return acc;
     }, {});
+    
+    // Validate required data before proceeding
+    if (!selectedDataType) {
+      throw new Error('No data type selected');
+    }
+    if (!mappedData || !Array.isArray(mappedData)) {
+      throw new Error('No parsed file data available');
+    }
+    if (!mapping || Object.keys(mapping).length === 0) {
+      throw new Error('No field mapping provided');
+    }
+    
+    console.log('Import validation:', { 
+      selectedDataType, 
+      mappedDataLength: mappedData.length, 
+      mappingKeys: Object.keys(mapping) 
+    });
+    
     setIsImporting(true);
     setImportProgress(0);
     setImportError('');
@@ -721,7 +1097,13 @@ function SystemConfig() {
 
     } catch (error: any) {
       console.error('Import error:', error);
-      setImportError(error.message);
+      const errorMessage = error?.message || error?.toString() || 'Unknown import error occurred';
+      setImportError(errorMessage);
+      toast({
+        title: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setIsImporting(false);
       setImportProgress(100);
@@ -808,6 +1190,307 @@ function SystemConfig() {
   const handleToggleUserStatus = (userId: number, newStatus: boolean) => {
     const userData = { isActive: newStatus };
     updateUserMutation.mutate({ id: userId, userData });
+  };
+
+  // Password change handlers
+  const handleChangePassword = (user: any) => {
+    setChangePasswordUserId(user.id);
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsPasswordChangeDialogOpen(true);
+  };
+
+  const handlePasswordUpdate = () => {
+    if (!changePasswordUserId) return;
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Passwords do not match' : 'كلمات المرور غير متطابقة',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: language === 'English' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const userData = { password: newPassword };
+    updateUserMutation.mutate({ 
+      id: changePasswordUserId, 
+      userData 
+    });
+    
+    setIsPasswordChangeDialogOpen(false);
+    setChangePasswordUserId(null);
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  // Handler functions for delete operations
+  const handleDeleteAssetType = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset type?' : 'هل أنت متأكد من حذف نوع الأصل هذا؟')) {
+      deleteAssetTypeMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteAssetBrand = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset brand?' : 'هل أنت متأكد من حذف علامة الأصل هذه؟')) {
+      deleteAssetBrandMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteAssetStatus = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset status?' : 'هل أنت متأكد من حذف حالة الأصل هذه؟')) {
+      deleteAssetStatusMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteRequestType = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this request type?' : 'هل أنت متأكد من حذف نوع الطلب هذا؟')) {
+      deleteRequestTypeMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteServiceProvider = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this service provider?' : 'هل أنت متأكد من حذف مقدم الخدمة هذا؟')) {
+      deleteServiceProviderMutation.mutate(id);
+    }
+  };
+
+  // Department handlers
+  const handleAddDepartment = () => {
+    if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
+      const updatedDepartments = [...departments, newDepartment.trim()];
+      setDepartments(updatedDepartments);
+      setNewDepartment('');
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
+  };
+
+  const handleEditDepartment = (index: number) => {
+    setEditingDeptIndex(index);
+    setEditedDeptName(departments[index]);
+  };
+
+  const handleSaveDepartmentEdit = () => {
+    if (editingDeptIndex !== null && editedDeptName.trim()) {
+      const updatedDepartments = departments.map((dept, index) => 
+        index === editingDeptIndex ? editedDeptName.trim() : dept
+      );
+      setDepartments(updatedDepartments);
+      setEditingDeptIndex(null);
+      setEditedDeptName('');
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
+  };
+
+  // EDIT HANDLER FUNCTIONS FOR CUSTOM FIELDS
+
+  // Asset Type Edit Handlers
+  const startEditAssetType = (type: any) => {
+    setEditingTypeId(type.id);
+    setEditedTypeName(type.name);
+    setEditedTypeDescription(type.description || '');
+  };
+
+  const handleSaveAssetType = () => {
+    if (editingTypeId && editedTypeName.trim()) {
+      updateAssetTypeMutation.mutate({
+        id: editingTypeId,
+        data: {
+          name: editedTypeName.trim(),
+          description: editedTypeDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetTypeEdit = () => {
+    setEditingTypeId(null);
+    setEditedTypeName('');
+    setEditedTypeDescription('');
+  };
+
+  // Asset Brand Edit Handlers
+  const startEditAssetBrand = (brand: any) => {
+    setEditingBrandId(brand.id);
+    setEditedBrandName(brand.name);
+    setEditedBrandDescription(brand.description || '');
+  };
+
+  const handleSaveAssetBrand = () => {
+    if (editingBrandId && editedBrandName.trim()) {
+      updateAssetBrandMutation.mutate({
+        id: editingBrandId,
+        data: {
+          name: editedBrandName.trim(),
+          description: editedBrandDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetBrandEdit = () => {
+    setEditingBrandId(null);
+    setEditedBrandName('');
+    setEditedBrandDescription('');
+  };
+
+  // Asset Status Edit Handlers
+  const startEditAssetStatus = (status: any) => {
+    setEditingStatusId(status.id);
+    setEditedStatusName(status.name);
+    setEditedStatusDescription(status.description || '');
+    setEditedStatusColor(status.color || '#3B82F6');
+  };
+
+  const handleSaveAssetStatus = () => {
+    if (editingStatusId && editedStatusName.trim()) {
+      updateAssetStatusMutation.mutate({
+        id: editingStatusId,
+        data: {
+          name: editedStatusName.trim(),
+          description: editedStatusDescription.trim(),
+          color: editedStatusColor
+        }
+      });
+    }
+  };
+
+  const handleCancelAssetStatusEdit = () => {
+    setEditingStatusId(null);
+    setEditedStatusName('');
+    setEditedStatusDescription('');
+    setEditedStatusColor('#3B82F6');
+  };
+
+  // Request Type Edit Handlers
+  const startEditRequestType = (requestType: any) => {
+    setEditingRequestTypeId(requestType.id);
+    setEditedRequestTypeName(requestType.name);
+    setEditedRequestTypeDescription(requestType.description || '');
+  };
+
+  const handleSaveRequestType = () => {
+    if (editingRequestTypeId && editedRequestTypeName.trim()) {
+      updateRequestTypeMutation.mutate({
+        id: editingRequestTypeId,
+        data: {
+          name: editedRequestTypeName.trim(),
+          description: editedRequestTypeDescription.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelRequestTypeEdit = () => {
+    setEditingRequestTypeId(null);
+    setEditedRequestTypeName('');
+    setEditedRequestTypeDescription('');
+  };
+
+  // Service Provider Edit Handlers
+  const startEditServiceProvider = (provider: any) => {
+    setEditingProviderId(provider.id);
+    setEditedProviderName(provider.name);
+    setEditedProviderContact(provider.contactPerson || '');
+    setEditedProviderPhone(provider.phone || '');
+    setEditedProviderEmail(provider.email || '');
+  };
+
+  const handleSaveServiceProvider = () => {
+    if (editingProviderId && editedProviderName.trim()) {
+      updateServiceProviderMutation.mutate({
+        id: editingProviderId,
+        data: {
+          name: editedProviderName.trim(),
+          contactPerson: editedProviderContact.trim(),
+          phone: editedProviderPhone.trim(),
+          email: editedProviderEmail.trim()
+        }
+      });
+    }
+  };
+
+  const handleCancelServiceProviderEdit = () => {
+    setEditingProviderId(null);
+    setEditedProviderName('');
+    setEditedProviderContact('');
+    setEditedProviderPhone('');
+    setEditedProviderEmail('');
+  };
+
+
+
+  const handleCancelDepartmentEdit = () => {
+    setEditingDeptIndex(null);
+    setEditedDeptName('');
+  };
+
+  const handleDeleteDepartment = (index: number) => {
+    if (window.confirm(language === 'English' ? `Delete department "${departments[index]}"?` : `حذف القسم "${departments[index]}"؟`)) {
+      const updatedDepartments = departments.filter((_, i) => i !== index);
+      setDepartments(updatedDepartments);
+      
+      // Save immediately to database
+      const configData = {
+        assetIdPrefix,
+        empIdPrefix,
+        ticketIdPrefix,
+        currency,
+        language: selectedLanguage === 'English' ? 'en' : 'ar',
+        departments: updatedDepartments,
+        emailHost,
+        emailPort: emailPort ? parseInt(emailPort) : 587,
+        emailUser,
+        emailPassword,
+        emailFromAddress,
+        emailFromName,
+        emailSecure,
+      };
+      updateConfigMutation.mutate(configData);
+    }
   };
 
   // If user doesn't have access to system configuration
@@ -994,6 +1677,125 @@ function SystemConfig() {
                     </>
                   )}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Demo Data Management Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'English' ? 'Demo Data Management' : 'إدارة البيانات التجريبية'}</CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Create sample data for testing and training purposes, or remove existing demo data.'
+                  : 'إنشاء بيانات تجريبية للاختبار والتدريب، أو حذف البيانات التجريبية الموجودة.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('small')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Users className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Small Demo Data' : 'بيانات تجريبية صغيرة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('medium')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Package className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Medium Demo Data' : 'بيانات تجريبية متوسطة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => createDemoDataMutation.mutate('large')}
+                  disabled={createDemoDataMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {createDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Creating...' : 'جارٍ الإنشاء...'}
+                    </>
+                  ) : (
+                    <>
+                      <Database className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Large Demo Data' : 'بيانات تجريبية كبيرة'}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    if (window.confirm(language === 'English' 
+                      ? 'Are you sure you want to remove all demo data? This will delete users, employees, assets, and tickets but will preserve all system configuration (General, Employees, Assets, Tickets, Email, Users settings). This action cannot be undone.'
+                      : 'هل أنت متأكد من حذف جميع البيانات التجريبية؟ سيؤدي هذا إلى حذف المستخدمين والموظفين والأصول والتذاكر ولكن سيحافظ على جميع إعدادات النظام (العامة، الموظفين، الأصول، التذاكر، البريد الإلكتروني، إعدادات المستخدمين). لا يمكن التراجع عن هذا الإجراء.')) {
+                      removeDemoDataMutation.mutate();
+                    }
+                  }}
+                  disabled={removeDemoDataMutation.isPending}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {removeDemoDataMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {language === 'English' ? 'Removing...' : 'جارٍ الحذف...'}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {language === 'English' ? 'Delete Demo Data' : 'حذف البيانات التجريبية)'}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start">
+                  <InfoIcon className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">
+                      {language === 'English' ? 'Demo Data Options:' : 'خيارات البيانات التجريبية:'}
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      <li>
+                        <strong>{language === 'English' ? 'Small:' : 'صغيرة:'}</strong> {language === 'English' ? '3 users, 8 employees, 12 assets' : '3 مستخدمين، 8 موظفين، 12 أصل'}
+                      </li>
+                      <li>
+                        <strong>{language === 'English' ? 'Medium:' : 'متوسطة:'}</strong> {language === 'English' ? '5 users, 15 employees, 25 assets' : '5 مستخدمين، 15 موظف، 25 أصل'}
+                      </li>
+                      <li>
+                        <strong>{language === 'English' ? 'Large:' : 'كبيرة:'}</strong> {language === 'English' ? '8 users, 25 employees, 50 assets' : '8 مستخدمين، 25 موظف، 50 أصل'}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1284,21 +2086,72 @@ function SystemConfig() {
                   <h3 className="text-lg font-medium">
                     {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
                   </h3>
-                  <Button
-                    onClick={() => {
-                      const newDept = prompt(language === 'English' ? 'Enter department name:' : 'أدخل اسم القسم:');
-                      if (newDept && newDept.trim()) {
-                        const updatedDepartments = [...departments, newDept.trim()];
-                        setDepartments(updatedDepartments);
-                        setPreservedTab('employees');
-                      }
-                    }}
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {language === 'English' ? 'Add Department' : 'إضافة قسم'}
-                  </Button>
+                  <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {language === 'English' ? 'Add Department' : 'إضافة قسم'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{language === 'English' ? 'Add Department' : 'إضافة قسم'}</DialogTitle>
+                        <DialogDescription>
+                          {language === 'English' ? 'Create a new department to organize employees.' : 'إنشاء قسم جديد لتنظيم الموظفين.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Department Name' : 'اسم القسم'}</Label>
+                          <Input 
+                            value={newDepartment} 
+                            onChange={(e) => setNewDepartment(e.target.value)}
+                            placeholder={language === 'English' ? 'e.g., IT, HR, Finance' : 'مثال: تقنية المعلومات، الموارد البشرية، المالية'}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="outline" onClick={() => {
+                            setIsDepartmentDialogOpen(false);
+                            setNewDepartment('');
+                          }}>
+                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
+                                const updatedDepartments = [...departments, newDepartment.trim()];
+                                setDepartments(updatedDepartments);
+                                setNewDepartment('');
+                                setIsDepartmentDialogOpen(false);
+                                setPreservedTab('employees');
+                                
+                                // Save immediately to database
+                                const configData = {
+                                  assetIdPrefix,
+                                  empIdPrefix,
+                                  ticketIdPrefix,
+                                  currency,
+                                  language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                  departments: updatedDepartments,
+                                  emailHost,
+                                  emailPort: emailPort ? parseInt(emailPort) : 587,
+                                  emailUser,
+                                  emailPassword,
+                                  emailFromAddress,
+                                  emailFromName,
+                                  emailSecure,
+                                };
+                                updateConfigMutation.mutate(configData);
+                              }
+                            }}
+                            disabled={!newDepartment.trim() || departments.includes(newDepartment.trim())}
+                          >
+                            {language === 'English' ? 'Add' : 'إضافة'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 
                 <div className="border rounded-lg bg-white shadow-sm">
@@ -1336,6 +2189,24 @@ function SystemConfig() {
                                       setEditingDeptIndex(null);
                                       setEditedDeptName('');
                                       setPreservedTab('employees');
+                                      
+                                      // Save immediately to database
+                                      const configData = {
+                                        assetIdPrefix,
+                                        empIdPrefix,
+                                        ticketIdPrefix,
+                                        currency,
+                                        language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                        departments: updatedDepartments,
+                                        emailHost,
+                                        emailPort: emailPort ? parseInt(emailPort) : 587,
+                                        emailUser,
+                                        emailPassword,
+                                        emailFromAddress,
+                                        emailFromName,
+                                        emailSecure,
+                                      };
+                                      updateConfigMutation.mutate(configData);
                                     }
                                   }}
                                   className="h-8"
@@ -1359,6 +2230,24 @@ function SystemConfig() {
                                         setEditingDeptIndex(null);
                                         setEditedDeptName('');
                                         setPreservedTab('employees');
+                                        
+                                        // Save immediately to database
+                                        const configData = {
+                                          assetIdPrefix,
+                                          empIdPrefix,
+                                          ticketIdPrefix,
+                                          currency,
+                                          language: selectedLanguage === 'English' ? 'en' : 'ar',
+                                          departments: updatedDepartments,
+                                          emailHost,
+                                          emailPort: emailPort ? parseInt(emailPort) : 587,
+                                          emailUser,
+                                          emailPassword,
+                                          emailFromAddress,
+                                          emailFromName,
+                                          emailSecure,
+                                        };
+                                        updateConfigMutation.mutate(configData);
                                       }}
                                       className="h-8 w-8 p-0"
                                     >
@@ -1392,13 +2281,7 @@ function SystemConfig() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => {
-                                        if (window.confirm(language === 'English' ? `Delete department "${dept}"?` : `حذف القسم "${dept}"؟`)) {
-                                          const updatedDepartments = departments.filter((_, i) => i !== index);
-                                          setDepartments(updatedDepartments);
-                                          setPreservedTab('employees');
-                                        }
-                                      }}
+                                      onClick={() => handleDeleteDepartment(index)}
                                       className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -1545,16 +2428,97 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetTypes.map((type: any) => (
                             <TableRow key={type.id}>
-                              <TableCell className="font-medium">{type.name}</TableCell>
-                              <TableCell className="text-gray-600">{type.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeName}
+                                    onChange={(e) => setEditedTypeName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetTypeMutation.mutate({
+                                          id: type.id,
+                                          data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  type.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingTypeId === type.id ? (
+                                  <Input
+                                    value={editedTypeDescription}
+                                    onChange={(e) => setEditedTypeDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetTypeMutation.mutate({
+                                          id: type.id,
+                                          data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  type.description
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingTypeId === type.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetTypeMutation.mutate({
+                                            id: type.id,
+                                            data: { name: editedTypeName.trim(), description: editedTypeDescription.trim() }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetTypeMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingTypeId(null);
+                                          setEditedTypeName('');
+                                          setEditedTypeDescription('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetType(type)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetType(type.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1659,16 +2623,97 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetBrands.map((brand: any) => (
                             <TableRow key={brand.id}>
-                              <TableCell className="font-medium">{brand.name}</TableCell>
-                              <TableCell className="text-gray-600">{brand.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandName}
+                                    onChange={(e) => setEditedBrandName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetBrandMutation.mutate({
+                                          id: brand.id,
+                                          data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  brand.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingBrandId === brand.id ? (
+                                  <Input
+                                    value={editedBrandDescription}
+                                    onChange={(e) => setEditedBrandDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetBrandMutation.mutate({
+                                          id: brand.id,
+                                          data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  brand.description
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingBrandId === brand.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetBrandMutation.mutate({
+                                            id: brand.id,
+                                            data: { name: editedBrandName.trim(), description: editedBrandDescription.trim() }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetBrandMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingBrandId(null);
+                                          setEditedBrandName('');
+                                          setEditedBrandDescription('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetBrand(brand)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetBrand(brand.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1783,25 +2828,119 @@ function SystemConfig() {
                         <TableBody>
                           {filteredAssetStatuses.map((status: any) => (
                             <TableRow key={status.id}>
-                              <TableCell className="font-medium">{status.name}</TableCell>
-                              <TableCell className="text-gray-600">{status.description}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusName}
+                                    onChange={(e) => setEditedStatusName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetStatusMutation.mutate({
+                                          id: status.id,
+                                          data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  status.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingStatusId === status.id ? (
+                                  <Input
+                                    value={editedStatusDescription}
+                                    onChange={(e) => setEditedStatusDescription(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateAssetStatusMutation.mutate({
+                                          id: status.id,
+                                          data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Description..."
+                                  />
+                                ) : (
+                                  status.description
+                                )}
+                              </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded border" 
-                                    style={{ backgroundColor: status.color }}
-                                  ></div>
-                                  <span className="text-xs text-gray-500">{status.color}</span>
-                                </div>
+                                {editingStatusId === status.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="color"
+                                      value={editedStatusColor}
+                                      onChange={(e) => setEditedStatusColor(e.target.value)}
+                                      className="h-8 w-16"
+                                    />
+                                    <span className="text-xs text-gray-500">{editedStatusColor}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded border" 
+                                      style={{ backgroundColor: status.color }}
+                                    ></div>
+                                    <span className="text-xs text-gray-500">{status.color}</span>
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingStatusId === status.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateAssetStatusMutation.mutate({
+                                            id: status.id,
+                                            data: { name: editedStatusName.trim(), description: editedStatusDescription.trim(), color: editedStatusColor }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateAssetStatusMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingStatusId(null);
+                                          setEditedStatusName('');
+                                          setEditedStatusDescription('');
+                                          setEditedStatusColor('#3B82F6');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditAssetStatus(status)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteAssetStatus(status.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -1926,18 +3065,165 @@ function SystemConfig() {
                         <TableBody>
                           {filteredServiceProviders.map((provider: any) => (
                             <TableRow key={provider.id}>
-                              <TableCell className="font-medium">{provider.name}</TableCell>
-                              <TableCell className="text-gray-600">{provider.contact}</TableCell>
-                              <TableCell className="text-gray-600">{provider.phone}</TableCell>
-                              <TableCell className="text-gray-600">{provider.email}</TableCell>
+                              <TableCell className="font-medium">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderName}
+                                    onChange={(e) => setEditedProviderName(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  provider.name
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderContact}
+                                    onChange={(e) => setEditedProviderContact(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Contact person..."
+                                  />
+                                ) : (
+                                  provider.contactPerson
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    value={editedProviderPhone}
+                                    onChange={(e) => setEditedProviderPhone(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Phone..."
+                                  />
+                                ) : (
+                                  provider.phone
+                                )}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {editingProviderId === provider.id ? (
+                                  <Input
+                                    type="email"
+                                    value={editedProviderEmail}
+                                    onChange={(e) => setEditedProviderEmail(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateServiceProviderMutation.mutate({
+                                          id: provider.id,
+                                          data: {
+                                            name: editedProviderName.trim(),
+                                            contactPerson: editedProviderContact.trim(),
+                                            phone: editedProviderPhone.trim(),
+                                            email: editedProviderEmail.trim()
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className="h-8"
+                                    placeholder="Email..."
+                                  />
+                                ) : (
+                                  provider.email
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  {editingProviderId === provider.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          updateServiceProviderMutation.mutate({
+                                            id: provider.id,
+                                            data: {
+                                              name: editedProviderName.trim(),
+                                              contactPerson: editedProviderContact.trim(),
+                                              phone: editedProviderPhone.trim(),
+                                              email: editedProviderEmail.trim()
+                                            }
+                                          });
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                        disabled={updateServiceProviderMutation.isPending}
+                                      >
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingProviderId(null);
+                                          setEditedProviderName('');
+                                          setEditedProviderContact('');
+                                          setEditedProviderPhone('');
+                                          setEditedProviderEmail('');
+                                        }}
+                                        className="h-7 w-7 p-0"
+                                      >
+                                        <X className="h-3 w-3 text-red-600" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => startEditServiceProvider(provider)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-red-600"
+                                        onClick={() => handleDeleteServiceProvider(provider.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2073,16 +3359,106 @@ function SystemConfig() {
                       <TableBody>
                         {filteredRequestTypes.map((requestType: any) => (
                           <TableRow key={requestType.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{requestType.name}</TableCell>
-                            <TableCell className="text-gray-600">{requestType.description}</TableCell>
+                            <TableCell className="font-medium">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeName}
+                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        data: {
+                                          name: editedRequestTypeName.trim(),
+                                          description: editedRequestTypeDescription.trim()
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="h-8"
+                                  autoFocus
+                                />
+                              ) : (
+                                requestType.name
+                              )}
+                            </TableCell>
+                            <TableCell className="text-gray-600">
+                              {editingRequestTypeId === requestType.id ? (
+                                <Input
+                                  value={editedRequestTypeDescription}
+                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateRequestTypeMutation.mutate({
+                                        id: requestType.id,
+                                        data: {
+                                          name: editedRequestTypeName.trim(),
+                                          description: editedRequestTypeDescription.trim()
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="h-8"
+                                  placeholder="Description..."
+                                />
+                              ) : (
+                                requestType.description
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {editingRequestTypeId === requestType.id ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        updateRequestTypeMutation.mutate({
+                                          id: requestType.id,
+                                          data: {
+                                            name: editedRequestTypeName.trim(),
+                                            description: editedRequestTypeDescription.trim()
+                                          }
+                                        });
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                      disabled={updateRequestTypeMutation.isPending}
+                                    >
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEditingRequestTypeId(null);
+                                        setEditedRequestTypeName('');
+                                        setEditedRequestTypeDescription('');
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => startEditRequestType(requestType)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleDeleteRequestType(requestType.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -2431,6 +3807,17 @@ function SystemConfig() {
                       <Edit className="h-3 w-3 mr-1" />
                       {language === 'English' ? 'Edit' : 'تعديل'}
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const user = allUsers.find(u => u.id === selectedUserId);
+                        if (user) handleChangePassword(user);
+                      }}
+                      className="h-8"
+                    >
+                      {language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'}
+                    </Button>
                     {selectedUserId !== 1 && (
                       <Button 
                         variant="outline" 
@@ -2633,6 +4020,61 @@ function SystemConfig() {
                           </>
                         ) : (
                           language === 'English' ? 'Update' : 'تحديث'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Password Change Dialog */}
+              <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'}</DialogTitle>
+                    <DialogDescription>
+                      {language === 'English' 
+                        ? `Change password for user: ${allUsers.find(u => u.id === changePasswordUserId)?.username || ''}`
+                        : `تغيير كلمة المرور للمستخدم: ${allUsers.find(u => u.id === changePasswordUserId)?.username || ''}`}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
+                      <Input 
+                        type="password"
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder={language === 'English' ? 'Enter new password' : 'أدخل كلمة مرور جديدة'}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'English' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === 'English' ? 'Confirm Password' : 'تأكيد كلمة المرور'}</Label>
+                      <Input 
+                        type="password"
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder={language === 'English' ? 'Confirm new password' : 'أكد كلمة المرور الجديدة'}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsPasswordChangeDialogOpen(false)}>
+                        {language === 'English' ? 'Cancel' : 'إلغاء'}
+                      </Button>
+                      <Button 
+                        onClick={handlePasswordUpdate}
+                        disabled={updateUserMutation.isPending || !newPassword.trim() || !confirmPassword.trim()}
+                      >
+                        {updateUserMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {language === 'English' ? 'Updating...' : 'جارٍ التحديث...'}
+                          </>
+                        ) : (
+                          language === 'English' ? 'Change Password' : 'تغيير كلمة المرور'
                         )}
                       </Button>
                     </div>

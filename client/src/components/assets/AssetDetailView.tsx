@@ -96,17 +96,31 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
     enabled: !!assetId && open && activeTab === 'transactions',
   });
 
-  // Helper for getting status badge color
+  // Fetch custom asset statuses for dynamic colors
+  const { data: assetStatuses = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-asset-statuses'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Helper for getting status badge color from custom statuses
   const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'Available': return 'bg-green-100 text-green-800';
-      case 'In Use': return 'bg-blue-100 text-blue-800';
-      case 'Damaged': return 'bg-red-100 text-red-800';
-      case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
-      case 'Sold': return 'bg-purple-100 text-purple-800';
-      case 'Retired': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+    const statusConfig = assetStatuses.find(s => s.name === status);
+    if (statusConfig?.color) {
+      // Convert hex color to Tailwind-compatible classes
+      const hexColor = statusConfig.color.replace('#', '');
+      return `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white`;
     }
+    // Fallback for unknown statuses
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  // Helper to get the background color style for custom colors
+  const getStatusStyle = (status: string) => {
+    const statusConfig = assetStatuses.find(s => s.name === status);
+    if (statusConfig?.color) {
+      return { backgroundColor: statusConfig.color };
+    }
+    return { backgroundColor: '#6b7280' }; // Default gray
   };
 
   if (!open) return null;
@@ -158,7 +172,12 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold">{asset.assetId}</h3>
-                    <Badge className={getStatusColor(asset.status)}>{asset.status}</Badge>
+                    <Badge 
+                      className={getStatusColor(asset.status)}
+                      style={getStatusStyle(asset.status)}
+                    >
+                      {asset.status}
+                    </Badge>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-y-2 text-sm">

@@ -83,10 +83,10 @@ export class MemoryStorage implements IStorage {
   }
 
   private initializeSystemConfig() {
-    // Initialize system config
+    // Initialize system config with English as default language
     this.systemConfig = {
       id: 1,
-      language: "en",
+      language: "en", // Default language: English
       assetIdPrefix: "AST",
       empIdPrefix: "EMP",
       ticketIdPrefix: "TKT",

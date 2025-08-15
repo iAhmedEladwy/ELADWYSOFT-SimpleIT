@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, decimal, date, jsonb, index, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, decimal, date, jsonb, index, pgEnum,pgSequence } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -6,9 +6,10 @@ import { z } from "zod";
 // Enums matching the current database
 export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
-export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern']);
+export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
-export const assetStatusEnum = pgEnum('asset_status', ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired']);
+export const pricingModeEnum = pgEnum('pricing_mode', ['total', 'individual']);
+// Asset statuses are now flexible - ENUM removed to allow custom statuses
 export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
@@ -19,6 +20,36 @@ export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medi
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
 export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
+
+// Add sequence definitions with increment: 1
+export const employeesIdSequence = pgSequence('employees_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const assetsIdSequence = pgSequence('assets_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const ticketsIdSequence = pgSequence('tickets_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
+export const assetSalesIdSequence = pgSequence('asset_sales_id_seq', {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  cache: 1
+});
+
 
 // Sessions table for authentication
 export const sessions = pgTable(
@@ -96,13 +127,13 @@ export const employees = pgTable("employees", {
 export const assets = pgTable("assets", {
   id: serial("id").primaryKey(),
   assetId: varchar("asset_id", { length: 20 }).notNull().unique().default(sql`concat('AST-', lpad((nextval('assets_id_seq'::regclass))::text, 5, '0'::text))`),
-  type: assetTypeEnum("type").notNull(),
+  type: varchar("type", { length: 100 }).notNull(),
   brand: varchar("brand", { length: 100 }).notNull(),
   modelNumber: varchar("model_number", { length: 100 }),
   modelName: varchar("model_name", { length: 100 }),
   serialNumber: varchar("serial_number", { length: 100 }).notNull(),
   specs: text("specs"),
-  status: assetStatusEnum("status").notNull().default('Available'),
+  status: varchar("status", { length: 100 }).notNull().default('Available'),
   purchaseDate: date("purchase_date"),
   buyPrice: decimal("buy_price", { precision: 10, scale: 2 }),
   warrantyExpiryDate: date("warranty_expiry_date"),
@@ -180,6 +211,11 @@ export const assetTransactions = pgTable("asset_transactions", {
 // Asset Sales table
 export const assetSales = pgTable("asset_sales", {
   id: serial("id").primaryKey(),
+  // ADD THESE 3 NEW FIELDS:
+  saleId: varchar("sale_id", { length: 20 }).notNull().unique().default(sql`concat('SALE-', to_char(CURRENT_DATE, 'YYYY'), '-', lpad((nextval('asset_sales_id_seq'::regclass))::text, 3, '0'::text))`),
+  pricingMode: pricingModeEnum("pricing_mode").notNull().default('total'),
+  createdById: integer("created_by_id").references(() => users.id),
+  // KEEP YOUR EXISTING FIELDS:
   buyer: varchar("buyer", { length: 100 }).notNull(),
   date: date("date").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
@@ -193,7 +229,23 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   id: serial("id").primaryKey(),
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  // CHANGE THIS: amount -> salePrice
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
+  // ADD THESE 2 NEW FIELDS:
+  assetCondition: varchar("asset_condition", { length: 100 }),
+  notes: text("notes"),
+  // KEEP EXISTING:
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Asset Statuses lookup table for defaults and custom statuses
+export const assetStatuses = pgTable("asset_statuses", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  color: varchar("color", { length: 7 }), // Hex color code
+  isDefault: boolean("is_default").default(false),
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -336,7 +388,7 @@ export const activityLog = pgTable("activity_log", {
 // System Configuration table
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
-  language: varchar("language", { length: 10 }).notNull().default('English'),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
   assetIdPrefix: varchar("asset_id_prefix", { length: 10 }).notNull().default('SIT-'),
   empIdPrefix: varchar("emp_id_prefix", { length: 10 }).notNull().default('EMP-'),
   ticketIdPrefix: varchar("ticket_id_prefix", { length: 10 }).notNull().default('TKT-'),
@@ -456,6 +508,20 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   assetSaleItems: many(assetSaleItems),
 }));
 
+export const assetSalesRelations = relations(assetSales, ({ one, many }) => ({
+  createdByUser: one(users, { fields: [assetSales.createdById], references: [users.id] }),
+  saleItems: many(assetSaleItems),
+}));
+
+export const assetSaleItemsRelations = relations(assetSaleItems, ({ one }) => ({
+  sale: one(assetSales, { fields: [assetSaleItems.saleId], references: [assetSales.id] }),
+  asset: one(assets, { fields: [assetSaleItems.assetId], references: [assets.id] }),
+}));
+
+export const assetStatusesRelations = relations(assetStatuses, ({ many }) => ({
+  // No direct relations needed as assets reference statuses by name, not ID
+}));
+
 export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedByEmployee: one(employees, { fields: [tickets.submittedById], references: [employees.id] }),
   assignedToUser: one(users, { fields: [tickets.assignedToId], references: [users.id] }),
@@ -514,3 +580,12 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 export type ChangeLog = typeof changesLog.$inferSelect;
 export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
+
+// Asset Status types
+export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type AssetStatus = typeof assetStatuses.$inferSelect;
+export type InsertAssetStatus = z.infer<typeof insertAssetStatusSchema>;

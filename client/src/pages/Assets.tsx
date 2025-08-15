@@ -33,8 +33,6 @@ export default function Assets() {
   const [editingAsset, setEditingAsset] = useState<any>(null);
   const [filters, setFilters] = useState<AssetFiltersType>({});
   const [searchInput, setSearchInput] = useState('');
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
@@ -65,7 +63,7 @@ export default function Assets() {
     bulkActions: language === 'Arabic' ? 'العمليات المجمعة' : 'Bulk Actions',
     deleteSelected: language === 'Arabic' ? 'حذف المحدد' : 'Delete Selected',
     changeStatus: language === 'Arabic' ? 'تغيير الحالة' : 'Change Status',
-    assignSelected: language === 'Arabic' ? 'تخصيص المحدد' : 'Assign Selected',
+
     export: language === 'Arabic' ? 'تصدير' : 'Export',
     import: language === 'Arabic' ? 'استيراد' : 'Import',
     refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
@@ -101,6 +99,11 @@ export default function Assets() {
 
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
+  });
+
+  const { data: assetStatuses = [] } = useQuery({
+  queryKey: ['/api/custom-asset-statuses'],
+  select: (data: any[]) => data.map(status => status.name)
   });
 
   // Mutations
@@ -339,7 +342,8 @@ export default function Assets() {
   };
 
   const handleUpdateAsset = (assetData: any) => {
-    updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
+  if (!editingAsset) return;
+  updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
   };
 
   const handleAssignAsset = (assetId: number, employeeId: number) => {
@@ -463,30 +467,7 @@ export default function Assets() {
     }
   };
 
-  const handleBulkAssign = async (employeeId: number) => {
-    if (selectedAssets.length === 0) return;
-    
-    try {
-      await Promise.all(
-        selectedAssets.map(assetId => 
-          apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId })
-        )
-      );
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: `${selectedAssets.length} assets assigned successfully`,
-      });
-      setSelectedAssets([]);
-      setShowBulkActions(false);
-    } catch (error) {
-      toast({
-        title: translations.error,
-        description: 'Failed to assign assets',
-        variant: 'destructive',
-      });
-    }
-  };
+
 
   // Enhanced export function for filtered data
   const handleExportFilteredAssets = () => {
@@ -646,10 +627,7 @@ export default function Assets() {
             <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
             <p className="text-gray-600">{translations.description}</p>
           </div>
-        <div className="flex gap-2">
-
-          
-
+        <div className="flex gap-2">        
           
           {hasAccess(2) && (
             <Button 
@@ -757,24 +735,22 @@ export default function Assets() {
 
             {/* Status Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select
-                value={filters.status || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Available">Available</SelectItem>
-                  <SelectItem value="In Use">In Use</SelectItem>
-                  <SelectItem value="Maintenance">Maintenance</SelectItem>
-                  <SelectItem value="Damaged">Damaged</SelectItem>
-                  <SelectItem value="Retired">Retired</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <label className="text-sm font-medium mb-2 block">Status</label>
+            <Select
+              value={filters.status || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {assetStatuses.map((status: string) => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+             </div> 
 
             {/* Brand Filter */}
             <div>
@@ -838,32 +814,17 @@ export default function Assets() {
               {selectedAssets.length === filteredAssets.length ? 
                 translations.deselectAll : translations.selectAll}
             </Button>
-            <Select onValueChange={handleBulkStatusChange}>
-              <SelectTrigger className="w-36 h-8 text-xs">
-                <SelectValue placeholder={translations.changeStatus} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Available">Available</SelectItem>
-                <SelectItem value="In Use">In Use</SelectItem>
-                <SelectItem value="Maintenance">Maintenance</SelectItem>
-                <SelectItem value="Damaged">Damaged</SelectItem>
-                <SelectItem value="Retired">Retired</SelectItem>
-              </SelectContent>
-            </Select>
-            {employees && Array.isArray(employees) && employees.length > 0 && (
-              <Select onValueChange={(value) => handleBulkAssign(parseInt(value))}>
+              <Select onValueChange={handleBulkStatusChange}>
                 <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue placeholder={translations.assignSelected} />
+                  <SelectValue placeholder={translations.changeStatus} />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map((employee: any) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName || employee.name}
-                    </SelectItem>
+                  {assetStatuses.map((status: string) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
+
             <Button
               size="sm"
               variant="destructive"
@@ -920,9 +881,11 @@ export default function Assets() {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingAsset ? translations.editAsset : translations.addAsset}
-            </DialogTitle>
+          <DialogTitle>
+            {editingAsset 
+              ? `${translations.editAsset} (${editingAsset.assetId})` 
+              : translations.addAsset}
+          </DialogTitle>
             <DialogDescription>
               {editingAsset 
                 ? 'Update the asset information below' 

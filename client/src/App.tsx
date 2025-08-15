@@ -12,7 +12,6 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
-import AssetImportExport from "@/pages/AssetImportExport";
 import Tickets from "@/pages/Tickets";
 import TicketDetails from "@/pages/TicketDetails";
 import Reports from "@/pages/Reports";
