@@ -39,13 +39,42 @@ interface FieldMappingInterfaceProps {
   onCancel: () => void;
 }
 
+const filterValidColumns = (columns: FileColumn[]): FileColumn[] => {
+  if (!columns || !Array.isArray(columns)) {
+    console.warn('Invalid columns array:', columns);
+    return [];
+  }
+  
+  const validColumns = columns.filter(col => {
+    if (!col) {
+      console.warn('Found null/undefined column:', col);
+      return false;
+    }
+    
+    if (!col.name || col.name.trim() === '') {
+      console.warn('Found column with empty name:', col);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  if (validColumns.length !== columns.length) {
+    console.warn(`Filtered ${columns.length - validColumns.length} invalid columns`);
+  }
+  
+  return validColumns;
+};
+
+
 export function FieldMappingInterface({
   entityType,
   fileData,
-  fileColumns,
+  fileColumns: rawFileColumns,
   onMappingComplete,
   onCancel
 }: FieldMappingInterfaceProps) {
+  const fileColumns = filterValidColumns(rawFileColumns);  
   const [databaseFields, setDatabaseFields] = useState<DatabaseField[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [validationSummary, setValidationSummary] = useState({
@@ -363,13 +392,15 @@ export function FieldMappingInterface({
                           <SelectTrigger className="h-8">
                             <SelectValue placeholder="Select column..." />
                           </SelectTrigger>
-                          <SelectContent>
+                         <SelectContent>
                             <SelectItem value="none">No mapping</SelectItem>
-                            {fileColumns.map(col => (
-                              <SelectItem key={col.name} value={col.name}>
-                                {col.name}
-                              </SelectItem>
-                            ))}
+                            {fileColumns
+                              .filter(col => col && col.name && col.name.trim() !== '')
+                              .map(col => (
+                                <SelectItem key={col.name} value={col.name}>
+                                  {col.name}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       )}
