@@ -2137,7 +2137,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 englishName: mappedRecord.englishName || `Employee ${index + 1}`,
                 arabicName: mappedRecord.arabicName || null,
                 department: mappedRecord.department || 'General',
-                email: mappedRecord.email || `employee${index + 1}@company.com`,
                 idNumber: mappedRecord.idNumber || `ID${Date.now()}${index}`,
                 title: mappedRecord.title || 'Employee',
                 directManager: mappedRecord.directManager || null,
@@ -2146,8 +2145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 exitDate: mappedRecord.exitDate || null,
                 status: mappedRecord.status || 'Active',
                 personalMobile: mappedRecord.personalMobile || null,
+                workMobile: mappedRecord.workMobile || null,
                 personalEmail: mappedRecord.personalEmail || null,
-                workMobile: mappedRecord.workMobile || null
+                corporateEmail: mappedRecord.corporateEmail || `employee${index + 1}@company.com`
+               
               });
               break;
 
