@@ -795,14 +795,8 @@ export class DatabaseStorage implements IStorage {
         userId: emp.user_id,
         createdAt: emp.created_at,
         updatedAt: emp.updated_at,
-        // Backward compatibility fields
-        name: emp.name || emp.english_name || 'Unknown',
-        email: emp.email || emp.personal_email || emp.corporate_email,
-        phone: emp.phone || emp.personal_mobile,
-        position: emp.position || emp.title
         };
         
-
         
         return transformed;
       });

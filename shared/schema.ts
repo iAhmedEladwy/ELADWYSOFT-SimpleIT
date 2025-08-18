@@ -115,12 +115,7 @@ export const employees = pgTable("employees", {
   corporateEmail: varchar("corporate_email", { length: 100 }),
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  // Compatibility columns (not generated to avoid PostgreSQL version issues)
-  name: varchar("name", { length: 100 }),
-  email: varchar("email", { length: 100 }),
-  phone: varchar("phone", { length: 20 }),
-  position: varchar("position", { length: 100 }),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
 
 // Assets table

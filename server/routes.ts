@@ -975,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: emp.isActive,
         joiningDate: emp.joiningDate || null,
         exitDate: emp.exitDate || null,
-        personalEmail: emp.personalEmail || emp.email,
+        personalEmail: emp.personalEmail,
         corporateEmail: emp.corporateEmail || null,
         personalMobile: emp.personalMobile || emp.phone,
         workMobile: emp.workMobile || null,
@@ -984,12 +984,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: emp.userId || null,
         createdAt: emp.createdAt,
         updatedAt: emp.updatedAt,
-        // Legacy fields for compatibility
-        name: emp.englishName || emp.name,
-        email: emp.personalEmail || emp.email,
-        phone: emp.personalMobile || emp.phone,
-        position: emp.title || emp.position,
-        employeeId: emp.empId || emp.employeeId
         };
         
 
@@ -1011,7 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Map to CSV format with all fields
       const csvData = employees.map(emp => ({
         'Employee ID': emp.employeeId || emp.empId,
-        'English Name': emp.name || emp.englishName,
+        'English Name': emp.englishName || '',
         'Arabic Name': emp.arabicName || '',
         'Department': emp.department,
         'Position': emp.position || emp.title,
@@ -1019,9 +1013,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Status': emp.status || (emp.isActive ? 'Active' : 'Inactive'),
         'Joining Date': emp.joiningDate || '',
         'Exit Date': emp.exitDate || '',
-        'Personal Email': emp.email || emp.personalEmail,
+        'Personal Email': emp.personal || '',
         'Corporate Email': emp.corporateEmail || '',
-        'Personal Mobile': emp.phone || emp.personalMobile,
+        'Personal Mobile': emp.personalMobile || '',
         'Work Mobile': emp.workMobile || '',
         'ID Number': emp.idNumber || '',
         'Direct Manager': emp.directManager || '',
@@ -1546,45 +1540,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employees Export/Import  
-  app.get("/api/employees/export", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const employees = await storage.getAllEmployees();
-      
-      const csvData = employees.map(emp => ({
-        'ID': emp.id,
-        'Employee ID': emp.empId,
-        'English Name': emp.englishName,
-        'Arabic Name': emp.arabicName || '',
-        'Email': emp.email,
-        'Phone': emp.phone || '',
-        'Department': emp.department || '',
-        'Position': emp.position || '',
-        'Employment Type': emp.employmentType || '',
-        'Start Date': emp.startDate || '',
-        'Salary': emp.salary || '',
-        'Status': emp.status,
-        'Address': emp.address || '',
-        'Emergency Contact': emp.emergencyContact || '',
-        'National ID': emp.nationalId || '',
-        'Manager ID': emp.managerId || '',
-        'Created At': emp.createdAt ? new Date(emp.createdAt).toISOString() : '',
-        'Updated At': emp.updatedAt ? new Date(emp.updatedAt).toISOString() : ''
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
   app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -5400,10 +5355,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Corporate Email': emp.corporateEmail || '', // New field
         'User ID': emp.userId || '', // New field
         'Direct Manager ID': emp.directManager || '', // New field
-        // Backward compatibility fields
-        'Email': emp.email || emp.corporateEmail || emp.personalEmail || '',
-        'Phone': emp.phone || emp.workMobile || emp.personalMobile || '',
-        'Position': emp.position || emp.title || '',
         'Created Date': emp.createdAt ? new Date(emp.createdAt).toISOString().split('T')[0] : '',
         'Last Updated': emp.updatedAt ? new Date(emp.updatedAt).toISOString().split('T')[0] : ''
       }));
