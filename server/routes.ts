@@ -2170,6 +2170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 directManager: mappedRecord.directManager || null,
                 employmentType: mappedRecord.employmentType || 'Full-time',
                 joiningDate: mappedRecord.joiningDate || new Date().toISOString().split('T')[0],
+                exitDate: mappedRecord.exitDate || null,
                 status: mappedRecord.status || 'Active',
                 personalMobile: mappedRecord.personalMobile || null,
                 personalEmail: mappedRecord.personalEmail || null
