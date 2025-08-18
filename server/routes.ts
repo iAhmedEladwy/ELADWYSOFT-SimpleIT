@@ -1100,6 +1100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'directManager': '1001 (Optional: Manager employee ID)',
             'employmentType': 'Full-time (Full-time, Part-time, Contract, Intern)',
             'joiningDate': '2023-01-15 (Required: Format YYYY-MM-DD or MM/DD/YYYY)',
+            'exitDate': '2024-01-15 (Optional: Format YYYY-MM-DD or MM/DD/YYYY)',
             'status': 'Active (Active, Resigned, Terminated, On Leave)',
             'personalMobile': '+1234567890 (Optional: Personal phone)',
             'personalEmail': 'john@personal.com (Optional: Personal email)'
@@ -1434,9 +1435,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             purchaseDate: row['Purchase Date'] || row.purchaseDate || null,
             buyPrice: row['Buy Price'] || row.buyPrice || null,
             warrantyExpiryDate: row['Warranty Expiry Date'] || row.warrantyExpiryDate || null,
-            lifeSpan: row['Life Span'] || row.lifeSpan || null,
-            outOfBoxOs: row['Out of Box OS'] || row.outOfBoxOs || null,
-            assignedEmployeeId: row['Assigned Employee ID'] || row.assignedEmployeeId || null
+            lifeSpan: row['Life Span'] || row['Life Span (months)'] || row.lifeSpan || row.life_span || null,
+            outOfBoxOs: row['Out of Box OS'] || row['Factory OS'] || row['Out-of-Box OS'] || row.outOfBoxOs || row.factory_os || row.out_of_box_os || null,
+            assignedEmployeeId: row['Assigned Employee ID'] || row['Assigned To ID'] || row['Assigned To'] || row.assignedEmployeeId || row.assigned_to || row.assignedTo || null
           };
 
           // Validate and clean data using enhanced parsing
@@ -1482,12 +1483,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (assetData.assignedEmployeeId && assetData.assignedEmployeeId !== '') {
             const employeeId = parseInt(assetData.assignedEmployeeId);
             if (!isNaN(employeeId) && employeeId > 0) {
-              assetData.assignedEmployeeId = employeeId;
+              // Optional: Verify employee exists
+              try {
+                const employees = await storage.getAllEmployees();
+                const employeeExists = employees.some(emp => emp.id === employeeId);
+                if (employeeExists) {
+                  assetData.assignedEmployeeId = employeeId;
+                } else {
+                  assetData.assignedEmployeeId = null;
+                  warnings.push(`Row ${index + 1}: Employee ID ${employeeId} not found, assignment cleared`);
+                }
+              } catch (error) {
+                assetData.assignedEmployeeId = employeeId; // Keep the ID even if validation fails
+                warnings.push(`Row ${index + 1}: Could not validate employee ID ${employeeId}`);
+              }
             } else {
               assetData.assignedEmployeeId = null;
               warnings.push(`Row ${index + 1}: Invalid employee ID "${assetData.assignedEmployeeId}", set to null`);
             }
-          } else {
+            } else {
             assetData.assignedEmployeeId = null;
           }
 
@@ -1604,6 +1618,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          const rawExitDate = row['Exit Date'] || row.exitDate || row['exit_date'] || '';
+          let exitDateStr = null;
+          if (rawExitDate && rawExitDate.trim() !== '') {
+            const parsedExitDate = parseDate(rawExitDate);
+            if (parsedExitDate) {
+              exitDateStr = parsedExitDate.toISOString().split('T')[0];
+            } else {
+              console.warn(`Invalid exit date format for employee ${row['English Name'] || row.englishName}: ${rawExitDate}`);
+            }
+          }
+
           // Debug: Log available columns and data (can be removed in production)
           // console.log('Available columns in row:', Object.keys(row));
           // console.log('Row data:', JSON.stringify(row, null, 2));
@@ -1674,7 +1699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             directManager: null,
             employmentType: cleanedEmploymentType,
             joiningDate: joiningDateStr, // Use validated date
-            exitDate: null,
+            exitDate: exitDateStr,
             status: row['Status'] || row.status || 'Active',
             personalMobile: row['Personal Mobile'] || row.personalMobile || row['Phone'] || row.phone || null,
             workMobile: row['Work Mobile'] || row.workMobile || null,
