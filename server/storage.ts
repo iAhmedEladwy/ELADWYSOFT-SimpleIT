@@ -99,8 +99,8 @@ export interface IStorage {
   getAssetTransactions(assetId: number): Promise<AssetTransaction[]>;
   getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]>;
   getAllAssetTransactions(): Promise<AssetTransaction[]>;
-  checkOutAsset(assetId: number, employeeId: number, notes?: string, type?: string): Promise<AssetTransaction>;
-  checkInAsset(assetId: number, notes?: string, type?: string): Promise<AssetTransaction>;
+  checkOutAsset(assetId: number, employeeId: number, notes?: string, type?: string,handledById?: number, deviceSpecs?: any): Promise<AssetTransaction>;
+  checkInAsset(assetId: number, notes?: string, type?: string,handledById?: number, deviceSpecs?: any): Promise<AssetTransaction>;
 
   // Asset Sales operations
   createAssetSale(sale: InsertAssetSale): Promise<AssetSale>;

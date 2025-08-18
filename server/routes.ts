@@ -3100,10 +3100,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      console.log("Checking out asset with data:", { assetId, employeeId, notes, type, req.user.id, deviceSpecs });
+      const handledById = req.user.id;
+      console.log("Checking out asset with data:", { assetId, employeeId, notes, type, handledById, deviceSpecs });
       
       // Pass the transaction type to the storage method
-      const transaction = await storage.checkOutAsset(assetId, employeeId, notes, type, req.user.id, deviceSpecs);
+      const transaction = await storage.checkOutAsset(assetId, employeeId, notes, type, handledById, deviceSpecs);
       
       // Log activity
       if (req.user) {
@@ -3146,10 +3147,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage: asset.storage, 
         specs: asset.specs
       };
-      console.log("Checking in asset with data:", { assetId, notes, type, type, req.user.id, deviceSpecs });
+
+      const handledById = req.user.id;
+
+      console.log("Checking in asset with data:", { assetId, notes, type, handledById, deviceSpecs });
       
       // Pass the transaction type to the storage method
-      const transaction = await storage.checkInAsset(assetId, notes, type, type, req.user.id, deviceSpecs);
+      const transaction = await storage.checkInAsset(assetId, notes, type, handledById, deviceSpecs);
       
       // Log activity
       if (req.user) {
