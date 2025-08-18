@@ -162,7 +162,6 @@ export function FieldMappingInterface({
     const patterns = {
       'englishname': ['name', 'english name', 'english name*', 'full name', 'employee name'],
       'arabicname': ['arabic name', 'arabic', 'name arabic'],
-      'email': ['email', 'email address', 'corporate email', 'personal email'],
       'department': ['department', 'department*', 'dept', 'division'],
       'idnumber': ['id number', 'id number*', 'national id', 'employee id'],
       'title': ['title', 'title*', 'position', 'job title'],

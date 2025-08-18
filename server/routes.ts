@@ -2157,6 +2157,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
 
+        if (entityType === 'employees') {
+  
+          // Parse exitDate if present
+          if (mappedRecord.exitDate) {
+            console.log(`Row ${index + 1} - Raw exitDate: "${mappedRecord.exitDate}"`);
+            const parsedExitDate = parseDate(mappedRecord.exitDate);
+            console.log(`Row ${index + 1} - Parsed exitDate:`, parsedExitDate);
+            
+            if (parsedExitDate) {
+              mappedRecord.exitDate = parsedExitDate.toISOString().split('T')[0];
+              console.log(`Row ${index + 1} - Final exitDate: "${mappedRecord.exitDate}"`);
+            } else {
+              console.warn(`Row ${index + 1} - Invalid exit date format "${mappedRecord.exitDate}"`);
+              mappedRecord.exitDate = null;
+            }
+          }
+        }
+
           // Process based on entity type
           switch (entityType) {
             case 'employees':
@@ -2173,7 +2191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 exitDate: mappedRecord.exitDate || null,
                 status: mappedRecord.status || 'Active',
                 personalMobile: mappedRecord.personalMobile || null,
-                personalEmail: mappedRecord.personalEmail || null
+                personalEmail: mappedRecord.personalEmail || null,
+                workMobile: mappedRecord.workMobile || null
               });
               break;
 
@@ -4188,9 +4207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             directManager: item.directManager ? parseInt(item.directManager) : null,
             employmentType: item.employmentType || 'Full-time',
             joiningDate: item.joiningDate || new Date().toISOString().split('T')[0],
+            exitDate: item.exitDate || null,
             status: item.status || 'Active',
             personalMobile: item.personalMobile || null,
-            personalEmail: item.personalEmail || null
+            personalEmail: item.personalEmail || null,
+            corporateEmail: item.workEmail || item.corporateEmail || null, 
+            workMobile: item.workMobile || null
           });
           successful++;
         } catch (error: any) {
