@@ -3086,16 +3086,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
       
+       // Build device specs object
+      const deviceSpecs = {
+        cpu: asset.cpu,
+        ram: asset.ram, 
+        storage: asset.storage,
+        specs: asset.specs
+      };
+      
       // Check if employee exists
       const employee = await storage.getEmployee(employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      console.log("Checking out asset with data:", { assetId, employeeId, notes, type });
+      console.log("Checking out asset with data:", { assetId, employeeId, notes, type,req.user.id, deviceSpecs });
       
       // Pass the transaction type to the storage method
-      const transaction = await storage.checkOutAsset(assetId, employeeId, notes, type);
+      const transaction = await storage.checkOutAsset(assetId, employeeId, notes, type,req.user.id, deviceSpecs);
       
       // Log activity
       if (req.user) {
@@ -3131,10 +3139,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
       
-      console.log("Checking in asset with data:", { assetId, notes, type });
+       // Build device specs object
+      const deviceSpecs = {
+        cpu: asset.cpu,
+        ram: asset.ram,
+        storage: asset.storage, 
+        specs: asset.specs
+      };
+      console.log("Checking in asset with data:", { assetId, notes, type, type,req.user.id, deviceSpecs });
       
       // Pass the transaction type to the storage method
-      const transaction = await storage.checkInAsset(assetId, notes, type);
+      const transaction = await storage.checkInAsset(assetId, notes, type, type,req.user.id, deviceSpecs);
       
       // Log activity
       if (req.user) {

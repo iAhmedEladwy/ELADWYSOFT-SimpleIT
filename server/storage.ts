@@ -2056,7 +2056,7 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  async checkOutAsset(assetId: number, employeeId: number, notes?: string, type: string = 'Check-Out'): Promise<AssetTransaction> {
+  async checkOutAsset(assetId: number, employeeId: number, notes?: string, type: string = 'Check-Out',handledById?: number, deviceSpecs?: any): Promise<AssetTransaction> {
     try {
       // First update the asset to set employeeId
       await this.updateAsset(assetId, { 
@@ -2069,8 +2069,10 @@ async deleteTicket(id: number): Promise<boolean> {
         type: type as any,
         assetId,
         employeeId,
+        handledById, 
         transactionDate: new Date(),
-        conditionNotes: notes || null
+        conditionNotes: notes || null,
+        deviceSpecs
       });
         
       return transaction;
@@ -2080,7 +2082,7 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  async checkInAsset(assetId: number, notes?: string, type: string = 'Check-In'): Promise<AssetTransaction> {
+  async checkInAsset(assetId: number, notes?: string, type: string = 'Check-In',handledById?: number,deviceSpecs?: any): Promise<AssetTransaction> {
     try {
       // Get asset to determine employee
       const asset = await this.getAsset(assetId);
@@ -2101,9 +2103,11 @@ async deleteTicket(id: number): Promise<boolean> {
         type: type as any,
         assetId,
         employeeId, // Keep track of who returned it
+        handledById,
         transactionDate: new Date(),
         actualReturnDate: new Date(),
-        conditionNotes: notes || null
+        conditionNotes: notes || null,
+        deviceSpecs
       });
         
       return transaction;
