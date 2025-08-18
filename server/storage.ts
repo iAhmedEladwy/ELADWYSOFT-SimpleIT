@@ -238,9 +238,6 @@ export interface IStorage {
   addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any>;
   mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any>;
   addTicketHistory(historyData: any): Promise<any>;
-  
-  // Remove Demo Data
-  removeDemoData(): Promise<void>;
 }
 
 // Implementation of Storage using a PostgreSQL database
@@ -2152,10 +2149,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  /**
-   * Removes all demo data from the database, keeping only the admin user
-   * and essential system configuration
-   */
   // Custom request types operations
   async getCustomRequestTypes(): Promise<CustomRequestType[]> {
     try {
@@ -2226,76 +2219,6 @@ async deleteTicket(id: number): Promise<boolean> {
       console.log('Default asset statuses initialized successfully');
     } catch (error) {
       console.error('Error initializing default asset statuses:', error);
-    }
-  }
-
-  async removeDemoData(): Promise<void> {
-    try {
-      await db.transaction(async (tx) => {
-        console.log('Starting demo data removal (excluding system configuration data)...');
-        
-        // Step 1: Remove dependent records first (proper cascade order)
-        
-        // Remove asset sale items first (depends on asset sales)
-        await tx.delete(assetSaleItems);
-        console.log('Asset sale items removed');
-        
-        // Remove asset sales
-        await tx.delete(assetSales);
-        console.log('Asset sales removed');
-        
-        // Remove asset transactions (depends on assets and employees)
-        await tx.delete(assetTransactions);
-        console.log('Asset transactions removed');
-        
-        // Remove asset maintenance records (depends on assets)
-        await tx.delete(assetMaintenance);
-        console.log('Asset maintenance records removed');
-        
-        // Remove ticket comments and history first (depends on tickets)
-        await tx.delete(ticketComments);
-        console.log('Ticket comments removed');
-        
-        await tx.delete(ticketHistory);
-        console.log('Ticket history removed');
-        
-        // Remove tickets (depends on employees for assignment)
-        await tx.delete(tickets);
-        console.log('Tickets removed');
-        
-        // Remove assets (depends on employees for assignment)
-        await tx.delete(assets);
-        console.log('Assets removed');
-        
-        // Remove employees (no dependencies)
-        await tx.delete(employees);
-        console.log('Employees removed');
-        
-        // Remove activity logs (no critical dependencies)
-        await tx.delete(activityLog);
-        console.log('Activity logs removed');
-        
-        // Remove all users except admin (no dependencies)
-        await tx.delete(users).where(
-          sql`${users.id} > 1`
-        );
-        console.log('Non-admin users removed');
-        
-        // PRESERVE SYSTEM CONFIGURATION DATA:
-        // - DO NOT delete customAssetTypes (system config)
-        // - DO NOT delete customAssetBrands (system config)
-        // - DO NOT delete customAssetStatuses (system config)
-        // - DO NOT delete serviceProviders (system config)
-        // - DO NOT delete customRequestTypes (system config)
-        // - DO NOT modify systemConfig table (General, Employees, Assets, Tickets, Email, Users settings)
-        
-        console.log('System configuration data preserved (General, Employees, Assets, Tickets, Email, Users settings)');
-      });
-      
-      console.log('Demo data removal completed successfully - system configuration preserved');
-    } catch (error) {
-      console.error('Error removing demo data:', error);
-      throw error;
     }
   }
 

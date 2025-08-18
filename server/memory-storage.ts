@@ -1320,25 +1320,6 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Duplicate implementations removed - using the ones above
-
-  async removeDemoData(): Promise<void> {
-    // Keep only admin user and system config
-    const adminUser = this.users.find(u => u.username === "admin");
-    this.users = adminUser ? [adminUser] : [];
-    this.employees = [];
-    this.assets = [];
-    this.tickets = [];
-    this.activityLogs = [];
-    this.changesLogs = [];
-    this.securityQuestions = [];
-    this.passwordResetTokens = [];
-    this.assetTransactions = [];
-    this.assetMaintenance = [];
-    this.assetSales = [];
-    this.assetSaleItems = [];
-  }
-
   // Custom Request Types operations (Feature 1: Change Category to Request Type)
   async getCustomRequestTypes(): Promise<schema.CustomRequestType[]> {
     return this.customRequestTypes.filter(type => type.isActive);

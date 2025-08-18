@@ -145,9 +145,9 @@ function validateBody<T>(zodSchema: ZodSchema<T>, data: unknown): T {
 // Authentication middleware
 const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   // Check emergency session first
-  if (req.session && 'user' in req.session) {
-    return next();
-  }
+  // if (req.session && 'user' in req.session) {
+  //   return next();
+  // }
   
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Not authenticated" });
@@ -168,10 +168,10 @@ import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission } from "./rbac";
 const hasAccess = (minRoleLevel: number) => {
   return (req: Request, res: Response, next: Function) => {
     // Check emergency session first
-    const emergencyUser = (req as any).session?.user;
-    if (emergencyUser && emergencyUser.role === 'admin') {
-      return next();
-    }
+    // const emergencyUser = (req as any).session?.user;
+    // if (emergencyUser && emergencyUser.role === 'admin') {
+    //   return next();
+    // }
     
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -476,38 +476,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Login attempt for username:', req.body.username);
     
     // Emergency authentication for Ubuntu server deployment
-    if (req.body.username === 'admin' && req.body.password === 'admin123') {
-      try {
-        const adminUser = await storage.getUserByUsername('admin');
-        if (adminUser) {
-          console.log('EMERGENCY: Direct admin authentication activated');
+    // if (req.body.username === 'admin' && req.body.password === 'admin123') {
+    //   try {
+    //     const adminUser = await storage.getUserByUsername('admin');
+    //     if (adminUser) {
+    //       console.log('EMERGENCY: Direct admin authentication activated');
           
-          // Manual session creation for emergency access
-          (req as any).session.userId = adminUser.id;
-          (req as any).session.user = adminUser;
-          (req as any).session.passport = { user: adminUser.id };
+    //       // Manual session creation for emergency access
+    //       (req as any).session.userId = adminUser.id;
+    //       (req as any).session.user = adminUser;
+    //       (req as any).session.passport = { user: adminUser.id };
           
-          // Save session immediately
-          (req as any).session.save((err: any) => {
-            if (err) {
-              console.error('Emergency session save error:', err);
-            } else {
-              console.log('Emergency session saved successfully');
-            }
-          });
+    //       // Save session immediately
+    //       (req as any).session.save((err: any) => {
+    //         if (err) {
+    //           console.error('Emergency session save error:', err);
+    //         } else {
+    //           console.log('Emergency session saved successfully');
+    //         }
+    //       });
           
-          console.log('EMERGENCY: Session created for admin user');
-          const { password: _, ...userWithoutPassword } = adminUser;
+    //       console.log('EMERGENCY: Session created for admin user');
+    //       const { password: _, ...userWithoutPassword } = adminUser;
           
-          return res.json({ 
-            message: "Emergency login successful", 
-            user: userWithoutPassword
-          });
-        }
-      } catch (emergencyError) {
-        console.error('Emergency authentication failed:', emergencyError);
-      }
-    }
+    //       return res.json({ 
+    //         message: "Emergency login successful", 
+    //         user: userWithoutPassword
+    //       });
+    //     }
+    //   } catch (emergencyError) {
+    //     console.error('Emergency authentication failed:', emergencyError);
+    //   }
+    // }
     
     // Standard passport authentication
     passport.authenticate("local", (err: any, user: any, info: any) => {
@@ -548,10 +548,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/me", (req, res) => {
     // Check emergency session first
-    if ((req as any).session?.user) {
-      const { password: _, ...userWithoutPassword } = (req as any).session.user;
-      return res.json(userWithoutPassword);
-    }
+    // if ((req as any).session?.user) {
+    //   const { password: _, ...userWithoutPassword } = (req as any).session.user;
+    //   return res.json(userWithoutPassword);
+    // }
     
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -1346,12 +1346,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     return statusMap[status] || 'Active';
   }
-
-  // Employee Import/Export - OLD ROUTE DISABLED (causing date parsing issues)
-  // The enhanced employee import route is below (line ~1591)
-
-
-
 
   // Assets Export/Import
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
@@ -3980,187 +3974,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create Demo Data route  
-  app.post("/api/create-demo-data", authenticateUser, hasAccess(4), async (req, res) => {
-    try {
-      const { size = 'medium' } = req.body;
-      
-      // Define size configurations
-      const configs = {
-        small: { users: 3, employees: 8, assets: 12 },
-        medium: { users: 5, employees: 15, assets: 25 },
-        large: { users: 8, employees: 25, assets: 50 }
-      };
-      
-      const config = configs[size as keyof typeof configs] || configs.medium;
-      
-      // Create demo users with unique usernames using timestamp
-      const timestamp = Date.now();
-      const userTemplates = [
-        { username: `manager_${timestamp}_1`, password: 'demo123', role: 'manager', firstName: 'John', lastName: 'Manager' },
-        { username: `agent_${timestamp}_1`, password: 'demo123', role: 'agent', firstName: 'Sarah', lastName: 'Agent' },
-        { username: `agent_${timestamp}_2`, password: 'demo123', role: 'agent', firstName: 'Mike', lastName: 'Support' },
-        { username: `employee_${timestamp}_1`, password: 'demo123', role: 'employee', firstName: 'Alice', lastName: 'User' },
-        { username: `employee_${timestamp}_2`, password: 'demo123', role: 'employee', firstName: 'Bob', lastName: 'Staff' },
-        { username: `employee_${timestamp}_3`, password: 'demo123', role: 'employee', firstName: 'Carol', lastName: 'Worker' },
-        { username: `employee_${timestamp}_4`, password: 'demo123', role: 'employee', firstName: 'David', lastName: 'Tech' },
-        { username: `employee_${timestamp}_5`, password: 'demo123', role: 'employee', firstName: 'Emma', lastName: 'Analyst' }
-      ];
-
-      let createdUsers = 0;
-      for (let i = 0; i < config.users && i < userTemplates.length; i++) {
-        try {
-          console.log(`Creating demo user: ${userTemplates[i].username}`);
-          await storage.createUser({
-            username: userTemplates[i].username,
-            password: userTemplates[i].password,
-            firstName: userTemplates[i].firstName,
-            lastName: userTemplates[i].lastName,
-            role: userTemplates[i].role,
-            email: `${userTemplates[i].username}@simpleit.com`,
-            isActive: true
-          });
-          console.log(`Successfully created user: ${userTemplates[i].username}`);
-          createdUsers++;
-        } catch (error: any) {
-          console.error(`Failed to create user ${userTemplates[i].username}:`, error.message);
-          // Continue with next user
-        }
-      }
-
-      // Create demo employees
-      const departments = ['IT', 'HR', 'Finance', 'Operations', 'Marketing'];
-      const positions = ['Analyst', 'Specialist', 'Coordinator', 'Manager', 'Assistant'];
-      
-      let createdEmployees = 0;
-      for (let i = 0; i < config.employees; i++) {
-        const names = ['Ahmed Ali', 'Fatma Hassan', 'Mohamed Salem', 'Nour Ibrahim', 'Omar Khaled', 'Aya Mohamed', 'Mahmoud Adel', 'Dina Mostafa', 'Sarah Ahmed', 'Tarek Mohamed'];
-        const name = names[i % names.length];
-        const department = departments[Math.floor(Math.random() * departments.length)];
-        const position = positions[Math.floor(Math.random() * positions.length)];
-        
-        // Generate unique employee ID with timestamp to avoid conflicts
-        const timestamp = Date.now();
-        const uniqueId = `DEMO${String(timestamp + i).slice(-6)}`;
-        
-        try {
-          const employeeData = {
-            empId: uniqueId,
-            englishName: name,
-            arabicName: name,
-            department: department,
-            idNumber: `2${String(Math.floor(Math.random() * 900000000) + 100000000).padStart(14, '0')}`,
-            title: position,
-            employmentType: 'Full-time',
-            joiningDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            status: 'Active',
-            personalEmail: `${name.toLowerCase().replace(' ', '.')}@personal.com`,
-            corporateEmail: `${name.toLowerCase().replace(' ', '.')}@simpleit.com`
-          };
-          
-          console.log(`Creating demo employee: ${name} (${uniqueId})`);
-          const newEmployee = await storage.createEmployee(employeeData);
-          console.log(`Successfully created employee: ${newEmployee.id}`);
-          createdEmployees++;
-        } catch (error: unknown) {
-          console.error(`Failed to create employee ${name}:`, error.message);
-          // Continue with next employee
-        }
-      }
-
-      // Create demo assets using dynamic types from system config
-      const systemConfig = await storage.getSystemConfig();
-      const validAssetTypes = systemConfig?.assetTypes || ['Laptop', 'Desktop', 'Monitor', 'Phone', 'Server', 'Printer', 'Network', 'Tablet', 'Accessories', 'Other'];
-      const flexibleAssetStatuses = systemConfig?.assetStatuses || ['Available', 'In Use', 'Damaged', 'Maintenance', 'Sold', 'Retired'];
-      const brands = ['Dell', 'HP', 'Lenovo', 'Apple', 'Samsung'];
-      
-      let createdAssets = 0;
-      for (let i = 0; i < config.assets; i++) {
-        const type = validAssetTypes[Math.floor(Math.random() * validAssetTypes.length)];
-        const brand = brands[Math.floor(Math.random() * brands.length)];
-        const status = flexibleAssetStatuses[Math.floor(Math.random() * flexibleAssetStatuses.length)];
-        
-        try {
-          console.log(`Creating demo asset: ${brand} ${type} Model ${i + 1}`);
-          const result = await storage.createAsset({
-            type: type,
-            brand: brand,
-            modelName: `${brand} ${type} Model ${i + 1}`,
-            modelNumber: `${brand.substring(0, 3).toUpperCase()}${String(i + 1).padStart(4, '0')}`,
-            serialNumber: `SN${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
-            status: status,
-            purchaseDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            buyPrice: Math.floor(Math.random() * 2000) + 500,
-            warrantyExpiryDate: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            specs: JSON.stringify({ 
-              cpu: 'Intel i5', 
-              ram: '8GB', 
-              storage: '256GB SSD' 
-            })
-          });
-          console.log(`Asset created successfully:`, result);
-          createdAssets++;
-        } catch (error: any) {
-          console.error(`Failed to create asset ${brand} ${type} Model ${i + 1}:`, error.message);
-          // Continue with next asset
-        }
-      }
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "CONFIG_CHANGE",
-          entityType: "SYSTEM_CONFIG",
-          details: { action: `Create Demo Data (${size})`, created: { users: createdUsers, employees: createdEmployees, assets: createdAssets } }
-        });
-      }
-      
-      res.json({ 
-        success: true, 
-        message: `Demo data (${size} dataset) has been successfully created.`,
-        details: `Generated ${createdUsers} users, ${createdEmployees} employees, ${createdAssets} assets`,
-        users: createdUsers,
-        employees: createdEmployees,
-        assets: createdAssets
-      });
-      
-    } catch (error: unknown) {
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  });
-
-  // Remove Demo Data
-  app.post("/api/remove-demo-data", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      // Implement a database transaction to ensure atomicity
-      await storage.removeDemoData();
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "CONFIG_CHANGE",
-          entityType: "SYSTEM_CONFIG",
-          details: { action: "Remove Demo Data" }
-        });
-      }
-      
-      res.json({ 
-        success: true, 
-        message: "All demo data has been successfully removed." 
-      });
-    } catch (error: unknown) {
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  });
-
   // Activity Log
   app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
     try {
