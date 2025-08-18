@@ -1004,11 +1004,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Map to CSV format with all fields
       const csvData = employees.map(emp => ({
-        'Employee ID': emp.employeeId || emp.empId,
+        'Employee ID': emp.empId,
         'English Name': emp.englishName || '',
         'Arabic Name': emp.arabicName || '',
         'Department': emp.department,
-        'Position': emp.position || emp.title,
+        'Position': emp.title,
         'Employment Type': emp.employmentType || 'Full-time',
         'Status': emp.status || (emp.isActive ? 'Active' : 'Inactive'),
         'Joining Date': emp.joiningDate || '',
