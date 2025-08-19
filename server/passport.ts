@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import bcrypt from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { storage } from './storage';
 
 // Configure Local Strategy for username/password authentication
@@ -25,14 +25,14 @@ passport.use(new LocalStrategy(
       console.log(`Password hash starts with: ${user.password.substring(0, 7)}`);
       
       // Verify password using bcrypt
-      console.log(`Attempting bcrypt.compare with password length: ${password.length}`);
+      console.log(`Attempting compare with password length: ${password.length}`);
       
       // Test with a fresh hash to verify bcrypt is working
-      const testHash = await bcrypt.hash(password, 10);
-      const testVerification = await bcrypt.compare(password, testHash);
+      const testHash = await hash(password, 10);
+      const testVerification = await compare(password, testHash);
       console.log(`Fresh hash test result: ${testVerification}`);
       
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      const isPasswordValid = await compare(password, user.password);
       console.log(`Stored password verification result: ${isPasswordValid}`);
       
       if (!isPasswordValid) {

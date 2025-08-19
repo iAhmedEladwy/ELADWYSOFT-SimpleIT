@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
-import bcrypt from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 
 // Storage interface for all CRUD operations
 // Define UpsertUser type for Replit Auth
@@ -477,8 +477,8 @@ export class DatabaseStorage implements IStorage {
   async createUser(userData: any): Promise<User> {
     try {
       const hashedPassword = userData.password 
-        ? await bcrypt.hash(userData.password, 10)
-        : await bcrypt.hash('defaultPassword123', 10);
+        ? await hash(userData.password, 10)
+        : await hash('defaultPassword123', 10);
 
       // Map to database schema (snake_case columns)
       const dbUserData = {

@@ -15,7 +15,6 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { compare, hash } from "bcrypt";
-import * as bcrypt from "bcrypt";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
@@ -388,8 +387,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Primary method: bcrypt
-        hashedPassword = await bcrypt.hash(newPassword, 10);
-        const verificationTest = await bcrypt.compare(newPassword, hashedPassword);
+        hashedPassword = await hash(newPassword, 10);
+        const verificationTest = await compare(newPassword, hashedPassword);
         if (!verificationTest) {
           throw new Error('bcrypt verification failed');
         }
@@ -443,8 +442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let bcryptWorking = false;
       
       try {
-        const testHash = await bcrypt.hash('test123', 10);
-        bcryptWorking = await bcrypt.compare('test123', testHash);
+        const testHash = await hash('test123', 10);
+        bcryptWorking = await compare('test123', testHash);
       } catch (e) {
         console.log('bcrypt test failed:', e.message);
       }
