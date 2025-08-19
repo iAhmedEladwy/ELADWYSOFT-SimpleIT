@@ -57,7 +57,12 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed top-[57px] bottom-0 left-0 w-64 bg-gradient-to-b from-white to-gray-50 shadow-md overflow-y-auto flex flex-col z-10 border-r border-gray-100 transition-all duration-300 ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'">
+    <aside className={`
+    fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
+    shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 transition-all duration-300
+    ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
+      `}
+      >
       <div className="pt-6 pb-2 px-4">
         <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
           {translations.ManageYourIT}
