@@ -57,7 +57,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed top-[57px] bottom-0 left-0 w-64 bg-gradient-to-b from-white to-gray-50 shadow-md overflow-y-auto flex flex-col z-10 border-r border-gray-100 transition-all duration-300">
+    <aside className="fixed top-[57px] bottom-0 left-0 w-64 bg-gradient-to-b from-white to-gray-50 shadow-md overflow-y-auto flex flex-col z-10 border-r border-gray-100 transition-all duration-300 ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'">
       <div className="pt-6 pb-2 px-4">
         <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
           {translations.ManageYourIT}
@@ -146,7 +146,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v2.3</span>
+            <span className="text-xs text-gray-500">SimpleIT v2.4</span>
           </div>
         </div>
       </div>
