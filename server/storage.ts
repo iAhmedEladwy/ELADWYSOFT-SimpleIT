@@ -475,32 +475,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: any): Promise<User> {
-    try {
-      const hashedPassword = userData.password 
-        ? await hash(userData.password, 10)
-        : await hash('defaultPassword123', 10);
+  try {
+    // Check if password is already hashed (starts with $2b$ or $2a$)
+    const isAlreadyHashed = userData.password && userData.password.match(/^\$2[abxy]\$/);
+    
+    const hashedPassword = isAlreadyHashed
+      ? userData.password  // Use as-is if already hashed
+      : userData.password 
+        ? await hash(userData.password, 10)  // Hash if plain text
+        : await hash('defaultPassword123', 10);  // Default
 
-      // Map to database schema (snake_case columns)
-      const dbUserData = {
-        username: userData.username,
-        email: userData.email,
-        password: hashedPassword,
-        accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
-        role: userData.role || 'employee',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+    // Rest of your code remains the same...
+    const dbUserData = {
+      username: userData.username,
+      email: userData.email,
+      password: hashedPassword,
+      accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
+      role: userData.role || 'employee',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
 
-      const [user] = await db
-        .insert(users)
-        .values(dbUserData)
-        .returning();
-      return this.mapUserFromDb(user);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
+    const [user] = await db
+      .insert(users)
+      .values(dbUserData)
+      .returning();
+    return this.mapUserFromDb(user);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
   }
+}
 
   private roleToAccessLevel(role: string): string {
     switch(role) {
