@@ -1,7 +1,9 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import { compare, hash } from 'bcrypt';
-import { storage } from './storage';
+import { compare } from 'bcrypt';
+import { getStorage } from './storage-factory';
+
+const storage = getStorage();
 
 // Configure Local Strategy for username/password authentication
 passport.use(new LocalStrategy(
@@ -11,65 +13,49 @@ passport.use(new LocalStrategy(
   },
   async (username: string, password: string, done) => {
     try {
-      console.log(`Attempting authentication for username: ${username}`);
+      console.log(`[AUTH] Login attempt for username: ${username}`);
       
       // Get user from database
       const user = await storage.getUserByUsername(username);
       if (!user) {
-        console.log(`User not found: ${username}`);
-        return done(null, false, { message: 'Invalid username or password' });
+        console.log(`[AUTH] User not found: ${username}`);
+        return done(null, false, { message: 'Incorrect username or password' });
       }
       
-      console.log(`User found: ${username}, verifying password`);
-      console.log(`Stored password hash length: ${user.password.length}`);
-      console.log(`Password hash starts with: ${user.password.substring(0, 7)}`);
+      console.log(`[AUTH] User found: ${username} (ID: ${user.id})`);
       
-      // Verify password using bcrypt
-      console.log(`Attempting compare with password length: ${password.length}`);
+      // Check if user is active
+      if (!user.isActive) {
+        console.log(`[AUTH] User is inactive: ${username}`);
+        return done(null, false, { message: 'Account is disabled' });
+      }
       
-      // Test with a fresh hash to verify bcrypt is working
-      const testHash = await hash(password, 10);
-      const testVerification = await compare(password, testHash);
-      console.log(`Fresh hash test result: ${testVerification}`);
+      // Verify password
+      if (!password || !user.password) {
+        console.log(`[AUTH] Missing password data for user: ${username}`);
+        return done(null, false, { message: 'Invalid credentials' });
+      }
+      
+      console.log(`[AUTH] Verifying password for user: ${username}`);
+      console.log(`[AUTH] Password length: ${password.length}`);
+      console.log(`[AUTH] Hash starts with: ${user.password.substring(0, 10)}...`);
       
       const isPasswordValid = await compare(password, user.password);
-      console.log(`Stored password verification result: ${isPasswordValid}`);
+      console.log(`[AUTH] Password verification result: ${isPasswordValid}`);
       
       if (!isPasswordValid) {
-        console.log(`Invalid password for user: ${username}`);
-        
-        // Production environment bcrypt compatibility fallback
-        if (username === 'admin' && password === 'admin123') {
-          console.log('Production fallback: Admin authentication bypass activated');
-          const { password: _, ...userWithoutPassword } = user;
-          return done(null, userWithoutPassword);
-        }
-        
-        // Try alternative bcrypt verification for production environments
-        try {
-          const altBcrypt = require('bcrypt');
-          const altValid = await compare(password, user.password);
-          console.log('Alternative bcrypt result:', altValid);
-          if (altValid) {
-            console.log('Alternative bcrypt verification successful');
-            const { password: _, ...userWithoutPassword } = user;
-            return done(null, userWithoutPassword);
-          }
-        } catch (altError) {
-          console.log('Alternative bcrypt not available:', altError.message);
-        }
-        
-        return done(null, false, { message: 'Incorrect password' });
+        console.log(`[AUTH] Authentication failed for user: ${username}`);
+        return done(null, false, { message: 'Incorrect username or password' });
       }
       
-      console.log(`Authentication successful for user: ${username}`);
+      console.log(`[AUTH] Authentication successful for user: ${username}`);
       
       // Remove password from user object before returning
       const { password: _, ...userWithoutPassword } = user;
       return done(null, userWithoutPassword);
       
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error('[AUTH] Authentication error:', error);
       return done(error);
     }
   }
@@ -77,26 +63,33 @@ passport.use(new LocalStrategy(
 
 // Serialize user for session storage
 passport.serializeUser((user: any, done) => {
-  console.log('Serializing user:', user.id);
+  console.log(`[AUTH] Serializing user: ${user.id}`);
   done(null, user.id);
 });
 
 // Deserialize user from session
 passport.deserializeUser(async (id: string | number, done) => {
   try {
-    console.log('Deserializing user:', id);
-    const user = await storage.getUser(id);
+    console.log(`[AUTH] Deserializing user: ${id}`);
+    const user = await storage.getUser(Number(id));
+    
     if (!user) {
-      console.log('User not found during deserialization:', id);
+      console.log(`[AUTH] User not found during deserialization: ${id}`);
+      return done(null, false);
+    }
+    
+    if (!user.isActive) {
+      console.log(`[AUTH] Inactive user during deserialization: ${id}`);
       return done(null, false);
     }
     
     // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
-    console.log('User deserialized successfully:', user.username);
+    console.log(`[AUTH] User deserialized successfully: ${user.username}`);
     done(null, userWithoutPassword);
+    
   } catch (error) {
-    console.error('Deserialization error:', error);
+    console.error('[AUTH] Deserialization error:', error);
     done(error);
   }
 });
