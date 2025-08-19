@@ -47,7 +47,6 @@
     "@tailwindcss/typography": "^0.5.10",
     "@tailwindcss/vite": "4.0.0-alpha.5",
     "@tanstack/react-query": "^5.8.4",
-    "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
@@ -90,7 +89,7 @@
     "zod-validation-error": "^1.5.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
+    "@types/"bcrypt": "^6.0.0",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/csv-parser": "^3.0.6",
     "@types/express": "^4.17.21",

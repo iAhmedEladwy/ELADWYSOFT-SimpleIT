@@ -1,6 +1,6 @@
 import { IStorage, UpsertUser } from "./storage";
 import * as schema from "@shared/schema";
-import { hash } from "bcryptjs";
+import { hash } from "bcrypt";
 
 // Temporary memory storage implementation to bypass database connection issues
 export class MemoryStorage implements IStorage {
@@ -86,7 +86,7 @@ export class MemoryStorage implements IStorage {
     // Initialize system config with English as default language
     this.systemConfig = {
       id: 1,
-      language: "en", // Default language: English
+      language: "English", // Default language: English
       assetIdPrefix: "AST",
       empIdPrefix: "EMP",
       ticketIdPrefix: "TKT",

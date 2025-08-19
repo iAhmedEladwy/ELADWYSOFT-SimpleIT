@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 // Storage interface for all CRUD operations
 // Define UpsertUser type for Replit Auth

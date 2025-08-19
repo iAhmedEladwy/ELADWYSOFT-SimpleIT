@@ -14,8 +14,8 @@ import type { UserResponse, EmployeeResponse, AssetResponse, TicketResponse } fr
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { compare, hash } from "bcryptjs";
-import * as bcrypt from "bcryptjs";
+import { compare, hash } from "bcrypt";
+import * as bcrypt from "bcrypt";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
@@ -384,16 +384,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try multiple bcrypt implementations for compatibility
       let hashedPassword;
-      let hashMethod = 'bcryptjs';
+      let hashMethod = 'bcrypt';
       
       try {
-        // Primary method: bcryptjs
+        // Primary method: bcrypt
         hashedPassword = await bcrypt.hash(newPassword, 10);
         const verificationTest = await bcrypt.compare(newPassword, hashedPassword);
         if (!verificationTest) {
-          throw new Error('bcryptjs verification failed');
+          throw new Error('bcrypt verification failed');
         }
-      } catch (bcryptjsError) {
+      } catch (bcryptError) {
         try {
           // Fallback method: native bcrypt
           const altBcrypt = require('bcrypt');
@@ -433,38 +433,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Production environment authentication status endpoint
+ // Production environment authentication status endpoint
   app.get("/api/auth/status", async (req, res) => {
     try {
       const adminUser = await storage.getUserByUsername('admin');
       const hasAdmin = !!adminUser;
       
-      // Test both bcrypt implementations
-      let bcryptjsWorking = false;
+      // Test bcrypt functionality
       let bcryptWorking = false;
       
       try {
         const testHash = await bcrypt.hash('test123', 10);
-        bcryptjsWorking = await bcrypt.compare('test123', testHash);
-      } catch (e) {
-        console.log('bcryptjs test failed:', e.message);
-      }
-      
-      try {
-        const altBcrypt = require('bcrypt');
-        const testHash = await altBcrypt.hash('test123', 10);
-        bcryptWorking = await altBcrypt.compare('test123', testHash);
+        bcryptWorking = await bcrypt.compare('test123', testHash);
       } catch (e) {
         console.log('bcrypt test failed:', e.message);
       }
       
       res.json({
         hasAdmin,
-        bcryptjsWorking,
         bcryptWorking,
         environment: process.env.NODE_ENV || 'development',
-        authenticationMethods: ['password', 'emergency-fallback'],
-        emergencyBypassActive: true
+        authenticationMethods: ['password'],
+        authenticationStatus: bcryptWorking ? 'healthy' : 'degraded'
       });
     } catch (error: unknown) {
       console.error('Auth status check error:', error);
