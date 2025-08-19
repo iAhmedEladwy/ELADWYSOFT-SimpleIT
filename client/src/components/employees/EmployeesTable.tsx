@@ -183,7 +183,7 @@ export default function EmployeesTable({
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
