@@ -570,10 +570,7 @@ export default function Employees() {
               {selectedEmployees.length === (filteredEmployees && Array.isArray(filteredEmployees) ? filteredEmployees.length : 0) ? 
                 translations.deselectAll : translations.selectAll}
             </Button>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                   <UserCheck className="h-4 w-4 mr-2" />
