@@ -770,7 +770,7 @@ export class DatabaseStorage implements IStorage {
             ELSE 'Active'
           END as status,
           personal_mobile, work_mobile, personal_email, corporate_email,
-          user_id, created_at, updated_at, name, email, phone, position
+          user_id, created_at, updated_at
         FROM employees 
         ORDER BY emp_id ASC
       `);
