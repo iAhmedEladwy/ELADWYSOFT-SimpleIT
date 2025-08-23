@@ -151,7 +151,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v2.4</span>
+            <span className="text-xs text-gray-500">SimpleIT v0.2.4</span>
           </div>
         </div>
       </div>
