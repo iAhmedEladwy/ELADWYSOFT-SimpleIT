@@ -47,16 +47,16 @@ import {
 
 // Ticket form schema with all ITIL-compliant fields - made flexible for better UX
 const ticketFormSchema = z.object({
-  submittedById: z.string().optional(), // Made optional - can be auto-filled
+  submittedById: z.string(), 
   assignedToId: z.string().optional(),
   relatedAssetId: z.string().optional(),
-  requestType: z.string().optional(), // Made optional
+  requestType: z.string(),
   category: z.string().default('Incident'),
-  priority: z.string().optional(), // Made optional
+  priority: z.string(), // Made optional
   urgency: z.string().default('Medium'),
   impact: z.string().default('Medium'),
   status: z.string().default('Open'),
-  summary: z.string().optional(), // Made optional
+  summary: z.string().min(1,"Summary is required").max(200,"Summary cannot exceed 200 characters"),
   description: z.string().min(1, "Description is required").max(2000, "Description cannot exceed 2000 characters"),
   resolution: z.string().optional(),
   dueDate: z.string().optional(),

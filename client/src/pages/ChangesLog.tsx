@@ -1,532 +1,298 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
+import { useLanguage } from '@/hooks/use-language';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { format } from 'date-fns';
-import { Plus, Search, Edit, Trash2, Calendar, Tag, FileText } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Sparkles, 
+  Bug, 
+  Shield, 
+  Zap, 
+  AlertTriangle,
+  ChevronDown, 
+  ChevronUp,
+  Calendar,
+  Tag,
+  ArrowRight,
+  CheckCircle2,
+  Info,
+  Star
+} from 'lucide-react';
+import { CHANGELOG_DATA, getLatestVersion, type ChangelogEntry } from '@/data/changelog-data';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 
-// Form schema for changes log
-const changeLogSchema = z.object({
-  version: z.string().min(1, 'Version is required'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  changeType: z.string().min(1, 'Change type is required'),
-  priority: z.string().default('Medium'),
-  affectedModules: z.array(z.string()).optional(),
-  status: z.string().default('Active'),
-});
+export default function UserChangelog() {
+  const { language } = useLanguage();
+  const [expandedVersions, setExpandedVersions] = useState<string[]>([CHANGELOG_DATA[0]?.version || '']);
+  const [filter, setFilter] = useState<'all' | 'features' | 'bugfixes' | 'security'>('all');
+  const [lastViewedVersion, setLastViewedVersion] = useState<string>('');
 
-type ChangeLogFormData = z.infer<typeof changeLogSchema>;
-
-interface ChangeLog {
-  id: number;
-  version: string;
-  title: string;
-  description: string;
-  changeType: string;
-  priority: string;
-  affectedModules: string[] | null;
-  status: string;
-  releaseDate: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export default function ChangesLog() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingChange, setEditingChange] = useState<ChangeLog | null>(null);
-  const [filters, setFilters] = useState({
-    version: '',
-    changeType: '',
-    status: '',
-    page: 1,
-    limit: 10
-  });
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch changes log
-  const { data: changesData, isLoading } = useQuery({
-    queryKey: ['/api/changes-log', filters],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
-      const queryString = params.toString();
-      return apiRequest(`/api/changes-log${queryString ? `?${queryString}` : ''}`);
+  // Load last viewed version from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('lastViewedChangelog');
+    if (stored) {
+      setLastViewedVersion(stored);
     }
-  });
+    // Update last viewed version
+    localStorage.setItem('lastViewedChangelog', getLatestVersion());
+  }, []);
 
-  // Form setup
-  const form = useForm<ChangeLogFormData>({
-    resolver: zodResolver(changeLogSchema),
-    defaultValues: {
-      version: '',
-      title: '',
-      description: '',
-      changeType: '',
-      priority: 'Medium',
-      affectedModules: [],
-      status: 'Active'
-    }
-  });
+  // Translations
+  const translations = {
+    title: language === 'English' ? "What's New" : 'ما الجديد',
+    subtitle: language === 'English' ? 'Latest updates and improvements' : 'آخر التحديثات والتحسينات',
+    features: language === 'English' ? 'Features' : 'المميزات',
+    improvements: language === 'English' ? 'Improvements' : 'التحسينات',
+    bugfixes: language === 'English' ? 'Bug Fixes' : 'إصلاح الأخطاء',
+    security: language === 'English' ? 'Security' : 'الأمان',
+    breaking: language === 'English' ? 'Breaking Changes' : 'تغييرات مهمة',
+    all: language === 'English' ? 'All Changes' : 'جميع التغييرات',
+    version: language === 'English' ? 'Version' : 'الإصدار',
+    released: language === 'English' ? 'Released' : 'تاريخ الإصدار',
+    new: language === 'English' ? 'NEW' : 'جديد',
+    latest: language === 'English' ? 'LATEST' : 'الأحدث',
+    major: language === 'English' ? 'Major Release' : 'إصدار رئيسي',
+    minor: language === 'English' ? 'Minor Release' : 'إصدار ثانوي',
+    patch: language === 'English' ? 'Patch Release' : 'إصدار تصحيحي',
+  };
 
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: (data: ChangeLogFormData) => apiRequest('/api/changes-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/changes-log'] });
-      setIsCreateDialogOpen(false);
-      form.reset();
-      toast({
-        title: 'Success',
-        description: 'Change log entry created successfully'
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create change log entry',
-        variant: 'destructive'
-      });
-    }
-  });
+  const toggleVersion = (version: string) => {
+    setExpandedVersions(prev =>
+      prev.includes(version)
+        ? prev.filter(v => v !== version)
+        : [...prev, version]
+    );
+  };
 
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<ChangeLogFormData> }) => 
-      apiRequest(`/api/changes-log/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/changes-log'] });
-      setEditingChange(null);
-      form.reset();
-      toast({
-        title: 'Success',
-        description: 'Change log entry updated successfully'
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update change log entry',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/changes-log/${id}`, {
-      method: 'DELETE'
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/changes-log'] });
-      toast({
-        title: 'Success',
-        description: 'Change log entry deleted successfully'
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete change log entry',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  const handleSubmit = (data: ChangeLogFormData) => {
-    if (editingChange) {
-      updateMutation.mutate({ id: editingChange.id, data });
-    } else {
-      createMutation.mutate(data);
+  const getIconForChangeType = (type: string) => {
+    switch (type) {
+      case 'features': return <Sparkles className="h-4 w-4" />;
+      case 'improvements': return <Zap className="h-4 w-4" />;
+      case 'bugfixes': return <Bug className="h-4 w-4" />;
+      case 'security': return <Shield className="h-4 w-4" />;
+      case 'breaking': return <AlertTriangle className="h-4 w-4" />;
+      default: return <Info className="h-4 w-4" />;
     }
   };
 
-  const handleEdit = (change: ChangeLog) => {
-    setEditingChange(change);
-    form.reset({
-      version: change.version,
-      title: change.title,
-      description: change.description,
-      changeType: change.changeType,
-      priority: change.priority,
-      affectedModules: change.affectedModules || [],
-      status: change.status
-    });
-    setIsCreateDialogOpen(true);
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this change log entry?')) {
-      deleteMutation.mutate(id);
+  const getVersionBadgeColor = (type: string) => {
+    switch (type) {
+      case 'major': return 'bg-red-100 text-red-800 border-red-200';
+      case 'minor': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'patch': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getChangeTypeBadgeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'feature': return 'bg-blue-100 text-blue-800';
-      case 'bug fix': return 'bg-red-100 text-red-800';
-      case 'enhancement': return 'bg-green-100 text-green-800';
-      case 'security': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filteredChangelog = CHANGELOG_DATA.filter(entry => {
+    if (filter === 'all') return true;
+    return entry.changes[filter as keyof typeof entry.changes]?.length > 0;
+  });
 
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const isNewVersion = (version: string) => {
+    if (!lastViewedVersion) return false;
+    const versionIndex = CHANGELOG_DATA.findIndex(entry => entry.version === version);
+    const lastViewedIndex = CHANGELOG_DATA.findIndex(entry => entry.version === lastViewedVersion);
+    return lastViewedIndex > versionIndex || lastViewedIndex === -1;
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Changes Log</h1>
-          <p className="text-muted-foreground">
-            Track system updates, features, and bug fixes
-          </p>
+    <div className="container mx-auto py-6 space-y-6 max-w-5xl">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          {translations.title}
+        </h1>
+        <p className="text-muted-foreground text-lg">{translations.subtitle}</p>
+        <div className="flex justify-center gap-2 pt-2">
+          <Badge variant="outline" className="text-sm">
+            <Tag className="h-3 w-3 mr-1" />
+            {translations.version} {getLatestVersion()}
+          </Badge>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Change
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingChange ? 'Edit Change Log Entry' : 'Add Change Log Entry'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingChange ? 'Update the change log entry details.' : 'Create a new change log entry to track system updates.'}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="version"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Version</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 1.2.0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="changeType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Change Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Feature">Feature</SelectItem>
-                            <SelectItem value="Bug Fix">Bug Fix</SelectItem>
-                            <SelectItem value="Enhancement">Enhancement</SelectItem>
-                            <SelectItem value="Security">Security</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Brief description of the change" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Detailed description of the change"
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="priority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Priority</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                            <SelectItem value="Critical">Critical</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Archived">Archived</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreateDialogOpen(false);
-                      setEditingChange(null);
-                      form.reset();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                  >
-                    {editingChange ? 'Update' : 'Create'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* Filters */}
+      {/* Filter Tabs */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Input
-                placeholder="Search version..."
-                value={filters.version}
-                onChange={(e) => setFilters(prev => ({ ...prev, version: e.target.value, page: 1 }))}
-                className="w-full"
-              />
-            </div>
-            <Select 
-              value={filters.changeType} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, changeType: value, page: 1 }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Change Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Feature">Feature</SelectItem>
-                <SelectItem value="Bug Fix">Bug Fix</SelectItem>
-                <SelectItem value="Enhancement">Enhancement</SelectItem>
-                <SelectItem value="Security">Security</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select 
-              value={filters.status} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, status: value, page: 1 }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button 
-              variant="outline" 
-              onClick={() => setFilters({
-                version: '',
-                changeType: '',
-                status: '',
-                page: 1,
-                limit: 10
-              })}
-            >
-              <Search className="h-4 w-4 mr-2" />
-              Clear Filters
-            </Button>
-          </div>
+        <CardContent className="pt-6">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all" className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                {translations.all}
+              </TabsTrigger>
+              <TabsTrigger value="features" className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                {translations.features}
+              </TabsTrigger>
+              <TabsTrigger value="bugfixes" className="flex items-center gap-1">
+                <Bug className="h-3 w-3" />
+                {translations.bugfixes}
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {translations.security}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardContent>
       </Card>
 
-      {/* Changes List */}
-      {isLoading ? (
-        <div className="text-center py-8">Loading changes log...</div>
-      ) : (
-        <div className="space-y-4">
-          {changesData?.data?.map((change: ChangeLog) => (
-            <Card key={change.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{change.version}</Badge>
-                      <Badge className={getChangeTypeBadgeColor(change.changeType)}>
-                        {change.changeType}
-                      </Badge>
-                      <Badge className={getPriorityBadgeColor(change.priority)}>
-                        {change.priority}
-                      </Badge>
-                      <Badge variant={change.status === 'Active' ? 'default' : 'secondary'}>
-                        {change.status}
-                      </Badge>
+      {/* Changelog Entries */}
+      <div className="space-y-4">
+        {filteredChangelog.map((entry, index) => (
+          <Card key={entry.version} className="overflow-hidden">
+            <Collapsible
+              open={expandedVersions.includes(entry.version)}
+              onOpenChange={() => toggleVersion(entry.version)}
+            >
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-xl">
+                            {entry.title}
+                          </CardTitle>
+                          {index === 0 && (
+                            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                              {translations.latest}
+                            </Badge>
+                          )}
+                          {isNewVersion(entry.version) && (
+                            <Badge variant="destructive">
+                              {translations.new}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
+                            v{entry.version}
+                          </Badge>
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(entry.date).toLocaleDateString()}
+                          </span>
+                          <Badge variant="secondary" className="text-xs">
+                            {translations[entry.type]}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <CardTitle className="text-xl">{change.title}</CardTitle>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(change)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(change.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="ghost" size="sm">
+                      {expandedVersions.includes(entry.version) ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(change.releaseDate), 'MMM dd, yyyy')}
-                  </div>
-                  {change.affectedModules && change.affectedModules.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Tag className="h-4 w-4" />
-                      {change.affectedModules.join(', ')}
+                </CardHeader>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <CardContent className="space-y-4 pt-0">
+                  <Separator />
+                  
+                  {/* Breaking Changes - Show prominently */}
+                  {entry.changes.breaking && entry.changes.breaking.length > 0 && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-red-800 font-semibold">
+                        <AlertTriangle className="h-4 w-4" />
+                        {translations.breaking}
+                      </div>
+                      <ul className="space-y-1 text-sm text-red-700">
+                        {entry.changes.breaking.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-2">
-                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <p className="text-sm leading-relaxed">{change.description}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          
-          {changesData?.data?.length === 0 && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-muted-foreground">No changes found matching your criteria.</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
 
-      {/* Pagination */}
-      {changesData?.pagination && changesData.pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
-            disabled={filters.page <= 1}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-3">
-            Page {filters.page} of {changesData.pagination.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
-            disabled={filters.page >= changesData.pagination.totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+                  {/* Features */}
+                  {entry.changes.features && entry.changes.features.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-blue-600 font-semibold">
+                        <Sparkles className="h-4 w-4" />
+                        {translations.features}
+                      </div>
+                      <ul className="space-y-1 text-sm ml-6">
+                        {entry.changes.features.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Improvements */}
+                  {entry.changes.improvements && entry.changes.improvements.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-green-600 font-semibold">
+                        <Zap className="h-4 w-4" />
+                        {translations.improvements}
+                      </div>
+                      <ul className="space-y-1 text-sm ml-6">
+                        {entry.changes.improvements.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Bug Fixes */}
+                  {entry.changes.bugfixes && entry.changes.bugfixes.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                        <Bug className="h-4 w-4" />
+                        {translations.bugfixes}
+                      </div>
+                      <ul className="space-y-1 text-sm ml-6">
+                        {entry.changes.bugfixes.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Security */}
+                  {entry.changes.security && entry.changes.security.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-purple-600 font-semibold">
+                        <Shield className="h-4 w-4" />
+                        {translations.security}
+                      </div>
+                      <ul className="space-y-1 text-sm ml-6">
+                        {entry.changes.security.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

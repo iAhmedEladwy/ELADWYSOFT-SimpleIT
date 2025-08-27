@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/hooks/use-language';
@@ -114,34 +114,38 @@ export default function AssetHistory() {
     clearFilters: language === 'English' ? 'Clear Filters' : 'مسح المرشحات',
   };
 
-  // Fetch transaction history
-  const { data: transactionsData, isLoading } = useQuery({
-    queryKey: ['/api/asset-transactions', filters, currentPage, pageSize],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+      // Fetch transaction history
+      const { data: transactionsData, isLoading, refetch } = useQuery({
+        queryKey: ['/api/asset-transactions', filters, currentPage, pageSize],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value) params.append(key, value);
+          });
+          params.append('page', currentPage.toString());
+          params.append('limit', pageSize.toString());
+          params.append('include', 'asset,employee');
+          
+          const response = await fetch(`/api/asset-transactions?${params.toString()}`, {
+            credentials: 'include'
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch transactions');
+          }
+          
+          const result = await response.json();
+          // Handle the enhanced route response format
+          return {
+            transactions: result.data || result,
+            pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
+          };
+        },
+        staleTime: 0, // Consider data immediately stale
+        gcTime: 0, // Don't cache the data
+        refetchOnWindowFocus: true, // Refetch when window gains focus
+        refetchOnMount: 'always' // Always refetch when component mounts
       });
-      params.append('page', currentPage.toString());
-      params.append('limit', pageSize.toString());
-      params.append('include', 'asset,employee');
-      
-      const response = await fetch(`/api/asset-transactions?${params.toString()}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch transactions');
-      }
-      
-      const result = await response.json();
-      // Handle the enhanced route response format
-      return {
-        transactions: result.data || result,
-        pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
-      };
-    }
-  });
 
   // Fetch assets for filter dropdown
   const { data: assets } = useQuery({
@@ -171,6 +175,11 @@ export default function AssetHistory() {
     }
   });
 
+   // Auto-refresh when component mounts or becomes visible
+  useEffect(() => {
+    refetch();
+  }, []); // Refetch on component mount
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({
       ...prev,
@@ -178,6 +187,8 @@ export default function AssetHistory() {
     }));
     setCurrentPage(1);
   };
+
+
 
   const clearFilters = () => {
     setFilters({
@@ -439,94 +450,127 @@ export default function AssetHistory() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Transaction Details</DialogTitle>
-                                  <DialogDescription>
-                                    Complete transaction information and device specifications
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-6">
-                                  {/* Transaction Info */}
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label className="text-sm font-medium">Transaction ID</Label>
-                                      <p className="text-sm text-gray-600">#{transaction.id}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Type</Label>
-                                      <Badge className={getTransactionTypeBadge(transaction.type)}>
-                                        {transaction.type}
-                                      </Badge>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Date</Label>
-                                      <p className="text-sm text-gray-600">
-                                        {transaction.date || transaction.transactionDate 
-                                          ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy HH:mm')
-                                          : '-'}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Asset</Label>
-                                      <p className="text-sm text-gray-600">
-                                        {transaction.asset?.assetId} - {transaction.asset?.type}
-                                      </p>
+                             <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Transaction Details</DialogTitle>
+                                <DialogDescription>
+                                  Complete transaction information and device specifications
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-6">
+                                {/* Transaction Info */}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label className="text-sm font-medium">Transaction ID</Label>
+                                    <p className="text-sm text-gray-600">#{transaction.id}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Type</Label>
+                                    <Badge className={getTransactionTypeBadge(transaction.type)}>
+                                      {transaction.type}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Date</Label>
+                                    <p className="text-sm text-gray-600">
+                                      {transaction.date || transaction.transactionDate 
+                                        ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy HH:mm')
+                                        : '-'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Employee</Label>
+                                    <p className="text-sm text-gray-600">
+                                      {transaction.employee 
+                                        ? `${transaction.employee.englishName || transaction.employee.arabicName || 'N/A'} - ${transaction.employee.department || 'N/A'}`
+                                        : 'Not assigned'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Asset and Device Info Side by Side */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                  {/* Asset Information */}
+                                  <div>
+                                    <h4 className="font-medium mb-3">Asset Information</h4>
+                                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Asset ID</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.assetId || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Type</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Brand & Model</Label>
+                                        <p className="text-sm font-medium">
+                                          {transaction.asset?.brand || '-'} {transaction.asset?.modelName ? `- ${transaction.asset.modelName}` : ''}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Serial Number</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.serialNumber || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Current Status</Label>
+                                        <Badge variant="outline">{transaction.asset?.status || '-'}</Badge>
+                                      </div>
                                     </div>
                                   </div>
 
                                   {/* Device Specifications */}
-                                  {transaction.deviceSpecs && (
-                                    <div>
-                                      <h4 className="font-medium mb-3">Device Specifications at Time of Change</h4>
-                                      <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                                        <div>
-                                          <Label className="text-sm font-medium">Serial Number</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.serialNumber || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Condition</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.condition || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Operating System</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.operatingSystem || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Processor</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.processor || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">RAM</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.ram || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Storage</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.storage || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Location</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.location || '-'}</p>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium">Status</Label>
-                                          <p className="text-sm text-gray-600">{transaction.deviceSpecs.status || '-'}</p>
-                                        </div>
+                                  <div>
+                                    <h4 className="font-medium mb-3">Device Specs at {transaction.type}</h4>
+                                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">CPU</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.cpu || transaction.asset?.cpu || '-'}</p>
                                       </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">RAM</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.ram || transaction.asset?.ram || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Storage</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.storage || transaction.asset?.storage || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Specifications</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.specs || transaction.asset?.specs || '-'}</p>
+                                      </div>
+                                      {transaction.asset?.operatingSystem && (
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Operating System</Label>
+                                          <p className="text-sm font-medium">{transaction.asset.operatingSystem}</p>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-
-                                  {/* Notes */}
-                                  {(transaction.notes || transaction.conditionNotes) && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Notes</Label>
-                                      <p className="text-sm text-gray-600 mt-1">
-                                        {transaction.notes || transaction.conditionNotes}
-                                      </p>
-                                    </div>
-                                  )}
+                                  </div>
                                 </div>
-                              </DialogContent>
+
+                                {/* Notes - Full Width */}
+                                {(transaction.notes || transaction.conditionNotes) && (
+                                  <div>
+                                    <h4 className="font-medium mb-3">Notes</h4>
+                                    <div className="p-4 bg-amber-50 rounded-lg space-y-2">
+                                      {transaction.conditionNotes && (
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Condition Notes</Label>
+                                          <p className="text-sm">{transaction.conditionNotes}</p>
+                                        </div>
+                                      )}
+                                      {transaction.notes && (
+                                        <div>
+                                          <Label className="text-xs text-gray-500">General Notes</Label>
+                                          <p className="text-sm">{transaction.notes}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </DialogContent>
                             </Dialog>
                           </TableCell>
                         </TableRow>

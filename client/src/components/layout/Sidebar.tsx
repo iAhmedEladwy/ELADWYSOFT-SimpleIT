@@ -13,13 +13,21 @@ import {
   History,
   FileText,
   User,
+  Pin,
+  PinOff,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
+  onHover?: (hovering: boolean) => void;
+  onPageSelect?: () => void;
+  isPinned?: boolean;
+  onPinToggle?: () => void;
 }
 
-export default function Sidebar({ isSidebarOpen }: SidebarProps) {
+export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned = false, onPinToggle }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -37,9 +45,9 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
+    PinSidebar: language === 'English' ? 'Pin Sidebar' : 'تثبيت الشريط الجانبي',
+    UnpinSidebar: language === 'English' ? 'Unpin Sidebar' : 'إلغاء تثبيت الشريط الجانبي',
   };
-
-  // Add any additional state or variables here
 
   // Get class for sidebar item based on active path
   const getLinkClass = (path: string) => {
@@ -51,70 +59,113 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
       : baseClass;
   };
 
-  // If sidebar is hidden on mobile, don't render anything
+  // Handle link click
+  const handleLinkClick = () => {
+    if (onPageSelect) {
+      onPageSelect();
+    }
+  };
+
+  // If sidebar is hidden, don't render anything
   if (!isSidebarOpen) {
     return null;
   }
 
   return (
-    <aside className={`
-    fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
-    shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 transition-all duration-300
-    ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
-      `}
+    <>
+      {/* Overlay backdrop when sidebar is open but not pinned (for mobile or hover mode) */}
+      {isSidebarOpen && !isPinned && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-10 lg:bg-transparent"
+          onClick={() => onPageSelect && onPageSelect()}
+        />
+      )}
+      
+      <aside 
+        onMouseEnter={() => onHover && onHover(true)}
+        onMouseLeave={() => onHover && onHover(false)}
+        className={`
+          fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
+          overflow-y-auto flex flex-col border-gray-100 
+          transition-all duration-300 ease-in-out
+          ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
+          ${isSidebarOpen ? 'translate-x-0' : language === 'Arabic' ? 'translate-x-full' : '-translate-x-full'}
+          ${!isPinned ? 'z-20 shadow-xl' : 'z-10 shadow-md'}
+        `}
       >
       <div className="pt-6 pb-2 px-4">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-          {translations.ManageYourIT}
-        </h2>
-        <div className="h-0.5 w-1/2 bg-gradient-to-r from-primary to-transparent mt-2"></div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            {translations.ManageYourIT}
+          </h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onPinToggle}
+                  className="h-8 w-8 text-gray-500 hover:text-primary"
+                >
+                  {isPinned ? (
+                    <PinOff className="h-4 w-4" />
+                  ) : (
+                    <Pin className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={language === 'Arabic' ? 'left' : 'right'}>
+                <p>{isPinned ? translations.UnpinSidebar : translations.PinSidebar}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className={`h-0.5 w-1/2 bg-gradient-to-r from-primary to-transparent mt-2 ${language === 'Arabic' ? 'mr-auto' : ''}`}></div>
       </div>
       
       <nav className="py-4 flex flex-col gap-2 px-3">
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/" className={getLinkClass('/')}>
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+          <Link href="/" className={getLinkClass('/')} onClick={handleLinkClick}>
             <Home className="h-5 w-5" />
             <span>{translations.Dashboard}</span>
           </Link>
         </div>
         
-
-        
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/employees" className={getLinkClass('/employees')}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/employees" className={getLinkClass('/employees')} onClick={handleLinkClick}>
               <UserPlus className="h-5 w-5" />
               <span>{translations.Employees}</span>
             </Link>
           </div>
         </RoleGuard>
         
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/assets" className={getLinkClass('/assets')}>
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+          <Link href="/assets" className={getLinkClass('/assets')} onClick={handleLinkClick}>
             <Laptop className="h-5 w-5" />
             <span>{translations.Assets}</span>
           </Link>
         </div>
         
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/asset-history" className={getLinkClass('/asset-history')}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/asset-history" className={getLinkClass('/asset-history')} onClick={handleLinkClick}>
               <History className="h-5 w-5" />
               <span>{translations.AssetHistory}</span>
             </Link>
           </div>
         </RoleGuard>
         
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/tickets" className={getLinkClass('/tickets')}>
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+          <Link href="/tickets" className={getLinkClass('/tickets')} onClick={handleLinkClick}>
             <Ticket className="h-5 w-5" />
             <span>{translations.Tickets}</span>
           </Link>
         </div>
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/reports" className={getLinkClass('/reports')}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/reports" className={getLinkClass('/reports')} onClick={handleLinkClick}>
               <BarChart2 className="h-5 w-5" />
               <span>{translations.Reports}</span>
             </Link>
@@ -122,8 +173,8 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <RoleGuard allowedRoles={['admin']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/system-config" className={getLinkClass('/system-config')}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
             </Link>
@@ -131,16 +182,16 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
-            <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/audit-logs" className={getLinkClass('/audit-logs')} onClick={handleLinkClick}>
               <FileText className="h-5 w-5" />
               <span>{translations.AuditLogs}</span>
             </Link>
           </div>
         </RoleGuard>
 
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
-          <Link href="/profile" className={getLinkClass('/profile')}>
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+          <Link href="/profile" className={getLinkClass('/profile')} onClick={handleLinkClick}>
             <User className="h-5 w-5" />
             <span>{translations.Profile}</span>
           </Link>
@@ -151,10 +202,11 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v0.2.4</span>
+            <span className="text-xs text-gray-500">SimpleIT v0.2.5</span>
           </div>
         </div>
       </div>
-    </aside>
+          </aside>
+    </>
   );
 }
