@@ -14,8 +14,7 @@ import {
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
   customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
-  notifications, type Notification, type InsertNotification,
-  changesLog, type ChangeLog, type InsertChangeLog
+  notifications, type Notification, type InsertNotification
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
@@ -156,27 +155,7 @@ export interface IStorage {
     entityType?: string;
     action?: string;
   }): Promise<number>; // Returns number of deleted logs
-  
-  // Changes Log operations
-  getChangesLog(options?: {
-    version?: string;
-    changeType?: string;
-    status?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<{
-    data: ChangeLog[];
-    pagination: {
-      totalItems: number;
-      totalPages: number;
-      currentPage: number;
-      pageSize: number;
-    }
-  }>;
-  createChangeLog(changeLog: InsertChangeLog): Promise<ChangeLog>;
-  updateChangeLog(id: number, changeLog: Partial<InsertChangeLog>): Promise<ChangeLog | undefined>;
-  deleteChangeLog(id: number): Promise<boolean>;
-  
+    
   // Custom Fields operations
   getCustomAssetTypes(): Promise<any[]>;
   createCustomAssetType(data: { name: string; description?: string }): Promise<any>;
@@ -2225,113 +2204,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // Changes Log operations
-  async getChangesLog(options: {
-    version?: string;
-    changeType?: string;
-    status?: string;
-    page?: number;
-    limit?: number;
-  } = {}): Promise<{
-    data: ChangeLog[];
-    pagination: {
-      totalItems: number;
-      totalPages: number;
-      currentPage: number;
-      pageSize: number;
-    }
-  }> {
-    const page = options.page || 1;
-    const limit = options.limit || 10;
-    const offset = (page - 1) * limit;
-
-    try {
-      let query = db.select().from(changesLog);
-      let countQuery = db.select({ count: sql<number>`count(*)` }).from(changesLog);
-
-      // Apply filters
-      const conditions = [];
-      if (options.version) {
-        conditions.push(like(changesLog.version, `%${options.version}%`));
-      }
-      if (options.changeType) {
-        conditions.push(eq(changesLog.changeType, options.changeType));
-      }
-      if (options.status) {
-        conditions.push(eq(changesLog.status, options.status));
-      }
-
-      if (conditions.length > 0) {
-        const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
-        query = query.where(whereCondition);
-        countQuery = countQuery.where(whereCondition);
-      }
-
-      // Get total count
-      const [{ count: totalItems }] = await countQuery;
-
-      // Get paginated data
-      const data = await query
-        .orderBy(desc(changesLog.releaseDate), desc(changesLog.createdAt))
-        .limit(limit)
-        .offset(offset);
-
-      return {
-        data,
-        pagination: {
-          totalItems,
-          totalPages: Math.ceil(totalItems / limit),
-          currentPage: page,
-          pageSize: limit,
-        }
-      };
-    } catch (error) {
-      console.error('Error fetching changes log:', error);
-      return {
-        data: [],
-        pagination: {
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: page,
-          pageSize: limit,
-        }
-      };
-    }
-  }
-
-  async createChangeLog(changeLog: InsertChangeLog): Promise<ChangeLog> {
-    try {
-      const [result] = await db.insert(changesLog).values(changeLog).returning();
-      return result;
-    } catch (error) {
-      console.error('Error creating change log:', error);
-      throw error;
-    }
-  }
-
-  async updateChangeLog(id: number, changeLog: Partial<InsertChangeLog>): Promise<ChangeLog | undefined> {
-    try {
-      const [result] = await db
-        .update(changesLog)
-        .set({ ...changeLog, updatedAt: new Date() })
-        .where(eq(changesLog.id, id))
-        .returning();
-      return result;
-    } catch (error) {
-      console.error('Error updating change log:', error);
-      throw error;
-    }
-  }
-
-  async deleteChangeLog(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(changesLog).where(eq(changesLog.id, id));
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
-      console.error('Error deleting change log:', error);
-      return false;
-    }
-  }
 
   // Enhanced Ticket operations with time tracking
   async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {

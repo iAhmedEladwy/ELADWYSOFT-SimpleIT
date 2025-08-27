@@ -450,18 +450,6 @@ export const customRequestTypes = pgTable("custom_request_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Changes Log table
-export const changesLog = pgTable("changes_log", {
-  id: serial("id").primaryKey(),
-  version: varchar("version", { length: 20 }).notNull(),
-  category: varchar("category", { length: 100 }).notNull(),
-  description: text("description").notNull(),
-  technicalDetails: text("technical_details"),
-  date: date("date").notNull().default(sql`CURRENT_DATE`),
-  author: varchar("author", { length: 100 }).notNull().default('System Administrator'),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-});
-
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
@@ -542,7 +530,6 @@ export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ id
 export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
-export const insertChangesLogSchema = createInsertSchema(changesLog).omit({ id: true, createdAt: true });
 
 // Type exports
 export type User = typeof users.$inferSelect;
@@ -573,8 +560,6 @@ export type SecurityQuestion = typeof securityQuestions.$inferSelect;
 export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
-export type ChangeLog = typeof changesLog.$inferSelect;
-export type InsertChangeLog = z.infer<typeof insertChangesLogSchema>;
 
 // Asset Status types
 export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({

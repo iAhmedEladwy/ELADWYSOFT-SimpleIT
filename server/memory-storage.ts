@@ -9,7 +9,6 @@ export class MemoryStorage implements IStorage {
   private assets: schema.Asset[] = [];
   private tickets: schema.Ticket[] = [];
   private activityLogs: schema.ActivityLog[] = [];
-  private changesLogs: schema.ChangeLog[] = [];
   private securityQuestions: schema.SecurityQuestion[] = [];
   private passwordResetTokens: schema.PasswordResetToken[] = [];
   private assetTransactions: schema.AssetTransaction[] = [];
@@ -36,7 +35,6 @@ export class MemoryStorage implements IStorage {
     assets: 1,
     tickets: 1,
     activityLogs: 1,
-    changesLogs: 1,
     securityQuestions: 1,
     passwordResetTokens: 1,
     assetTransactions: 1,
@@ -1151,76 +1149,8 @@ export class MemoryStorage implements IStorage {
 
   // Custom request types management - using enhanced implementations below
 
-  // Changes Log operations
-  async getChangesLog(options: any): Promise<any> {
-    let filtered = [...this.changesLogs];
 
-    if (options.version) {
-      filtered = filtered.filter(log => log.version === options.version);
-    }
-
-    if (options.changeType) {
-      filtered = filtered.filter(log => log.changeType === options.changeType);
-    }
-
-    if (options.status) {
-      filtered = filtered.filter(log => log.status === options.status);
-    }
-
-    const totalItems = filtered.length;
-    const page = options.page || 1;
-    const limit = options.limit || 50;
-    const totalPages = Math.ceil(totalItems / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-
-    const data = filtered
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(startIndex, endIndex);
-
-    return {
-      data,
-      pagination: {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        pageSize: limit
-      }
-    };
-  }
-
-  async createChangeLog(changeLog: schema.InsertChangeLog): Promise<schema.ChangeLog> {
-    const newChangeLog: schema.ChangeLog = {
-      id: this.idCounters.changesLogs++,
-      ...changeLog,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.changesLogs.push(newChangeLog);
-    return newChangeLog;
-  }
-
-  async updateChangeLog(id: number, changeLog: Partial<schema.InsertChangeLog>): Promise<schema.ChangeLog | undefined> {
-    const index = this.changesLogs.findIndex(c => c.id === id);
-    if (index === -1) return undefined;
-    
-    this.changesLogs[index] = {
-      ...this.changesLogs[index],
-      ...changeLog,
-      updatedAt: new Date()
-    };
-    return this.changesLogs[index];
-  }
-
-  async deleteChangeLog(id: number): Promise<boolean> {
-    const index = this.changesLogs.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    
-    this.changesLogs.splice(index, 1);
-    return true;
-  }
-
-  // Custom Fields operations - only user-defined data from System Configuration
+ // Custom Fields operations - only user-defined data from System Configuration
 
 
 
