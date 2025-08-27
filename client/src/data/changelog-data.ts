@@ -50,7 +50,8 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "📝 Fixed employee and asset import field mappings",
         "🎯 Resolved asset filtering by assigned employee",
         "🔄 Asset History page now auto-refreshes when navigating from other pages",
-        "📋 Transaction details modal now displays complete information including employee data, asset details, and all notes"
+        "📊 Corrected device specifications field mapping in transaction details",
+        "🎨 Improved transaction details dialog with side-by-side layout and better visual hierarchy"
       ]
     }
   },
