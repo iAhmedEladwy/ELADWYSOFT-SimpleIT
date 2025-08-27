@@ -139,11 +139,11 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
           />
         )}
         
-        {/* Updated main content with RTL support */}
+        {/* Updated main content - only adjust layout when pinned */}
         <main className={`
           flex-1 transition-all duration-300
-          ${!hideSidebar && isSidebarOpen && language === 'English' ? 'lg:ml-64' : ''}
-          ${!hideSidebar && isSidebarOpen && language === 'Arabic' ? 'lg:mr-64' : ''}
+          ${!hideSidebar && isPinned && isSidebarOpen && language === 'English' ? 'lg:ml-64' : ''}
+          ${!hideSidebar && isPinned && isSidebarOpen && language === 'Arabic' ? 'lg:mr-64' : ''}
           ${hideSidebar ? 'ml-0 mr-0' : ''}
         `}>
           {children}
