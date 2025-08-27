@@ -17,9 +17,11 @@ import {
 
 interface SidebarProps {
   isSidebarOpen: boolean;
+  onHover?: (hovering: boolean) => void;
+  onPageSelect?: () => void;
 }
 
-export default function Sidebar({ isSidebarOpen }: SidebarProps) {
+export default function Sidebar({ isSidebarOpen, onHover, onPageSelect }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -49,17 +51,30 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
       : baseClass;
   };
 
-  // If sidebar is hidden on mobile, don't render anything
+  // Handle link click
+  const handleLinkClick = () => {
+    if (onPageSelect) {
+      onPageSelect();
+    }
+  };
+
+  // If sidebar is hidden, don't render anything
   if (!isSidebarOpen) {
     return null;
   }
 
   return (
-    <aside className={`
-      fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
-      shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 transition-all duration-300
-      ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
-    `}>
+    <aside 
+      onMouseEnter={() => onHover && onHover(true)}
+      onMouseLeave={() => onHover && onHover(false)}
+      className={`
+        fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
+        shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 
+        transition-all duration-300 ease-in-out
+        ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
+        ${isSidebarOpen ? 'translate-x-0' : language === 'Arabic' ? 'translate-x-full' : '-translate-x-full'}
+      `}
+    >
       <div className="pt-6 pb-2 px-4">
         <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
           {translations.ManageYourIT}
@@ -69,7 +84,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
       
       <nav className="py-4 flex flex-col gap-2 px-3">
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-          <Link href="/" className={getLinkClass('/')}>
+          <Link href="/" className={getLinkClass('/')} onClick={handleLinkClick}>
             <Home className="h-5 w-5" />
             <span>{translations.Dashboard}</span>
           </Link>
@@ -77,7 +92,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/employees" className={getLinkClass('/employees')}>
+            <Link href="/employees" className={getLinkClass('/employees')} onClick={handleLinkClick}>
               <UserPlus className="h-5 w-5" />
               <span>{translations.Employees}</span>
             </Link>
@@ -85,7 +100,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-          <Link href="/assets" className={getLinkClass('/assets')}>
+          <Link href="/assets" className={getLinkClass('/assets')} onClick={handleLinkClick}>
             <Laptop className="h-5 w-5" />
             <span>{translations.Assets}</span>
           </Link>
@@ -93,7 +108,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/asset-history" className={getLinkClass('/asset-history')}>
+            <Link href="/asset-history" className={getLinkClass('/asset-history')} onClick={handleLinkClick}>
               <History className="h-5 w-5" />
               <span>{translations.AssetHistory}</span>
             </Link>
@@ -101,7 +116,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-          <Link href="/tickets" className={getLinkClass('/tickets')}>
+          <Link href="/tickets" className={getLinkClass('/tickets')} onClick={handleLinkClick}>
             <Ticket className="h-5 w-5" />
             <span>{translations.Tickets}</span>
           </Link>
@@ -109,7 +124,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/reports" className={getLinkClass('/reports')}>
+            <Link href="/reports" className={getLinkClass('/reports')} onClick={handleLinkClick}>
               <BarChart2 className="h-5 w-5" />
               <span>{translations.Reports}</span>
             </Link>
@@ -118,7 +133,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         
         <RoleGuard allowedRoles={['admin']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/system-config" className={getLinkClass('/system-config')}>
+            <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
             </Link>
@@ -127,7 +142,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
+            <Link href="/audit-logs" className={getLinkClass('/audit-logs')} onClick={handleLinkClick}>
               <FileText className="h-5 w-5" />
               <span>{translations.AuditLogs}</span>
             </Link>
@@ -135,7 +150,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
 
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-          <Link href="/profile" className={getLinkClass('/profile')}>
+          <Link href="/profile" className={getLinkClass('/profile')} onClick={handleLinkClick}>
             <User className="h-5 w-5" />
             <span>{translations.Profile}</span>
           </Link>
