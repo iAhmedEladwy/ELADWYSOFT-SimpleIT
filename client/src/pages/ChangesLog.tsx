@@ -1,4 +1,3 @@
-// client/src/pages/UserChangelog.tsx
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
