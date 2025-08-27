@@ -450,7 +450,7 @@ export default function AssetHistory() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                             <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Transaction Details</DialogTitle>
                                 <DialogDescription>
@@ -488,95 +488,84 @@ export default function AssetHistory() {
                                   </div>
                                 </div>
 
-                                {/* Asset Information */}
-                                <div>
-                                  <h4 className="font-medium mb-3">Asset Information</h4>
-                                  <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                                    <div>
-                                      <Label className="text-sm font-medium">Asset ID</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.assetId || '-'}</p>
+                                {/* Asset and Device Info Side by Side */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                  {/* Asset Information */}
+                                  <div>
+                                    <h4 className="font-medium mb-3">Asset Information</h4>
+                                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Asset ID</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.assetId || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Type</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Brand & Model</Label>
+                                        <p className="text-sm font-medium">
+                                          {transaction.asset?.brand || '-'} {transaction.asset?.modelName ? `- ${transaction.asset.modelName}` : ''}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Serial Number</Label>
+                                        <p className="text-sm font-medium">{transaction.asset?.serialNumber || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Current Status</Label>
+                                        <Badge variant="outline">{transaction.asset?.status || '-'}</Badge>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Type</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.type || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Brand</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.brand || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Model</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.modelName || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Current Status</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.status || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Serial Number</Label>
-                                      <p className="text-sm text-gray-600">{transaction.asset?.serialNumber || '-'}</p>
+                                  </div>
+
+                                  {/* Device Specifications */}
+                                  <div>
+                                    <h4 className="font-medium mb-3">Device Specs at {transaction.type}</h4>
+                                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">CPU</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.cpu || transaction.asset?.cpu || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">RAM</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.ram || transaction.asset?.ram || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Storage</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.storage || transaction.asset?.storage || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Specifications</Label>
+                                        <p className="text-sm font-medium">{transaction.deviceSpecs?.specs || transaction.asset?.specs || '-'}</p>
+                                      </div>
+                                      {transaction.asset?.operatingSystem && (
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Operating System</Label>
+                                          <p className="text-sm font-medium">{transaction.asset.operatingSystem}</p>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Notes */}
+                                {/* Notes - Full Width */}
                                 {(transaction.notes || transaction.conditionNotes) && (
                                   <div>
                                     <h4 className="font-medium mb-3">Notes</h4>
-                                    <div className="p-4 bg-gray-50 rounded-lg">
+                                    <div className="p-4 bg-amber-50 rounded-lg space-y-2">
                                       {transaction.conditionNotes && (
-                                        <div className="mb-2">
-                                          <Label className="text-sm font-medium">Condition Notes</Label>
-                                          <p className="text-sm text-gray-600">{transaction.conditionNotes}</p>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Condition Notes</Label>
+                                          <p className="text-sm">{transaction.conditionNotes}</p>
                                         </div>
                                       )}
                                       {transaction.notes && (
                                         <div>
-                                          <Label className="text-sm font-medium">General Notes</Label>
-                                          <p className="text-sm text-gray-600">{transaction.notes}</p>
+                                          <Label className="text-xs text-gray-500">General Notes</Label>
+                                          <p className="text-sm">{transaction.notes}</p>
                                         </div>
                                       )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Device Specifications */}
-                                {transaction.deviceSpecs && (
-                                  <div>
-                                    <h4 className="font-medium mb-3">Device Specifications at Time of {transaction.type}</h4>
-                                    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                                      <div>
-                                        <Label className="text-sm font-medium">Serial Number</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.serialNumber || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Condition</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.condition || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Operating System</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.operatingSystem || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Processor</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.processor || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">RAM</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.ram || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Storage</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.storage || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Location</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.location || '-'}</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-sm font-medium">Status at Time</Label>
-                                        <p className="text-sm text-gray-600">{transaction.deviceSpecs.status || '-'}</p>
-                                      </div>
                                     </div>
                                   </div>
                                 )}
