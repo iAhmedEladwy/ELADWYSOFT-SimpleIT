@@ -48,7 +48,9 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "🌍 Fixed Arabic RTL layout issues with sidebar positioning",
         "🔧 Corrected default language initialization to English",
         "📝 Fixed employee and asset import field mappings",
-        "🎯 Resolved asset filtering by assigned employee"
+        "🎯 Resolved asset filtering by assigned employee",
+        "🔄 Asset History page now auto-refreshes when navigating from other pages",
+        "📋 Transaction details modal now displays complete information including employee data, asset details, and all notes"
       ]
     }
   },
