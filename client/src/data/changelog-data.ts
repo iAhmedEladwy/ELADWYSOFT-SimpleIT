@@ -51,7 +51,8 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "🎯 Resolved asset filtering by assigned employee",
         "🔄 Asset History page now auto-refreshes when navigating from other pages",
         "📊 Corrected device specifications field mapping in transaction details",
-        "🎨 Improved transaction details dialog with side-by-side layout and better visual hierarchy"
+        "🎨 Improved transaction details dialog with side-by-side layout and better visual hierarchy",
+        "📊 Corrected required fields check before creating ticket",
       ]
     }
   },
