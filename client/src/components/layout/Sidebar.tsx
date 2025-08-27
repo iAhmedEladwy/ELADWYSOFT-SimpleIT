@@ -13,15 +13,21 @@ import {
   History,
   FileText,
   User,
+  Pin,
+  PinOff,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   onHover?: (hovering: boolean) => void;
   onPageSelect?: () => void;
+  isPinned?: boolean;
+  onPinToggle?: () => void;
 }
 
-export default function Sidebar({ isSidebarOpen, onHover, onPageSelect }: SidebarProps) {
+export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned = false, onPinToggle }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -39,6 +45,8 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect }: Sideba
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
+    PinSidebar: language === 'English' ? 'Pin Sidebar' : 'تثبيت الشريط الجانبي',
+    UnpinSidebar: language === 'English' ? 'Unpin Sidebar' : 'إلغاء تثبيت الشريط الجانبي',
   };
 
   // Get class for sidebar item based on active path
@@ -76,9 +84,32 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect }: Sideba
       `}
     >
       <div className="pt-6 pb-2 px-4">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-          {translations.ManageYourIT}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            {translations.ManageYourIT}
+          </h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onPinToggle}
+                  className="h-8 w-8 text-gray-500 hover:text-primary"
+                >
+                  {isPinned ? (
+                    <PinOff className="h-4 w-4" />
+                  ) : (
+                    <Pin className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={language === 'Arabic' ? 'left' : 'right'}>
+                <p>{isPinned ? translations.UnpinSidebar : translations.PinSidebar}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className={`h-0.5 w-1/2 bg-gradient-to-r from-primary to-transparent mt-2 ${language === 'Arabic' ? 'mr-auto' : ''}`}></div>
       </div>
       

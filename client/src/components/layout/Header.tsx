@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -66,15 +67,29 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           {!hideSidebar && (
-            <button 
-              onClick={isMobile ? toggleSidebar : undefined}
-              onMouseEnter={!isMobile && onMenuHover ? () => onMenuHover(true) : undefined}
-              onMouseLeave={!isMobile && onMenuHover ? () => onMenuHover(false) : undefined}
-              className="p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100 transition-colors"
-              aria-label={language === 'English' ? "Toggle menu" : "تبديل القائمة"}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={isMobile ? toggleSidebar : toggleSidebar}
+                    onMouseEnter={!isMobile && onMenuHover ? () => onMenuHover(true) : undefined}
+                    onMouseLeave={!isMobile && onMenuHover ? () => onMenuHover(false) : undefined}
+                    className="p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100 transition-colors"
+                    aria-label={language === 'English' ? "Toggle menu" : "تبديل القائمة"}
+                  >
+                    <Menu className="h-6 w-6" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side={language === 'Arabic' ? 'left' : 'right'}>
+                  <p>
+                    {isMobile 
+                      ? (language === 'English' ? 'Toggle menu' : 'تبديل القائمة')
+                      : (language === 'English' ? 'Click to pin/unpin • Hover to peek' : 'انقر للتثبيت • مرر للمعاينة')
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <div className="flex flex-col">
             <div className="flex items-center">

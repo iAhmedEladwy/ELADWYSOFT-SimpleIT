@@ -14,20 +14,38 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
   const isMobile = useMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [isPinned, setIsPinned] = useState(() => {
+    // Load pinned state from localStorage
+    const saved = localStorage.getItem('sidebarPinned');
+    return saved === 'true';
+  });
   const { user } = useAuth();
   const { language } = useLanguage();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize sidebar state based on pinned status
+  useEffect(() => {
+    if (isPinned && !isMobile) {
+      setIsSidebarOpen(true);
+    }
+  }, [isPinned, isMobile]);
+
+  // Save pinned state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarPinned', isPinned.toString());
+  }, [isPinned]);
 
   // Close sidebar on mobile when screen size changes
   useEffect(() => {
     if (isMobile) {
       setIsSidebarOpen(false);
+      setIsPinned(false);
     }
   }, [isMobile]);
 
   // Handle hamburger menu hover
   const handleMenuHover = (hovering: boolean) => {
-    if (!hideSidebar && !isMobile) {
+    if (!hideSidebar && !isMobile && !isPinned) {
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -49,7 +67,7 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
 
   // Handle sidebar hover
   const handleSidebarHover = (hovering: boolean) => {
-    if (!hideSidebar && !isMobile) {
+    if (!hideSidebar && !isMobile && !isPinned) {
       setIsHovering(hovering);
       
       if (timeoutRef.current) {
@@ -66,15 +84,31 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
 
   // Toggle sidebar for mobile (click instead of hover)
   const toggleSidebar = () => {
-    if (!hideSidebar && isMobile) {
-      setIsSidebarOpen(!isSidebarOpen);
+    if (!hideSidebar) {
+      if (isMobile) {
+        setIsSidebarOpen(!isSidebarOpen);
+      } else {
+        // On desktop, clicking hamburger toggles pinned state
+        setIsPinned(!isPinned);
+        setIsSidebarOpen(!isPinned);
+      }
     }
   };
 
-  // Close sidebar when a page is selected
+  // Close sidebar when a page is selected (only if not pinned)
   const handlePageSelect = () => {
-    setIsSidebarOpen(false);
-    setIsHovering(false);
+    if (!isPinned) {
+      setIsSidebarOpen(false);
+      setIsHovering(false);
+    }
+  };
+
+  // Handle pin toggle from sidebar
+  const handlePinToggle = () => {
+    setIsPinned(!isPinned);
+    if (!isPinned) {
+      setIsSidebarOpen(true);
+    }
   };
 
   // Cleanup timeout on unmount
@@ -100,6 +134,8 @@ export default function Layout({ children, hideSidebar = false }: LayoutProps) {
             isSidebarOpen={isSidebarOpen} 
             onHover={handleSidebarHover}
             onPageSelect={handlePageSelect}
+            isPinned={isPinned}
+            onPinToggle={handlePinToggle}
           />
         )}
         

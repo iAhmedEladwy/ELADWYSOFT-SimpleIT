@@ -21,7 +21,27 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Update language when config changes
   useEffect(() => {
     if (config && (config as any).language) {
-      const newLanguage = (config as any).language === 'en' ? 'English' : 'Arabic';
+      // The database stores "English" or "Arabic" as full words
+      // We need to check for these exact values
+      const dbLanguage = (config as any).language;
+      
+      // Handle both full names and potential abbreviations for backwards compatibility
+      let newLanguage: string;
+      
+      switch(dbLanguage) {
+        case 'English':
+        case 'en':
+          newLanguage = 'English';
+          break;
+        case 'Arabic':
+        case 'ar':
+          newLanguage = 'Arabic';
+          break;
+        default:
+          // Default to English if unknown value
+          newLanguage = 'English';
+      }
+      
       setLanguage(newLanguage);
     } else {
       // Default to English if no config is loaded yet
@@ -32,6 +52,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Update language mutation
   const updateLanguageMutation = useMutation({
     mutationFn: async (newLanguage: string) => {
+      // Always send the full language name to the database
       const res = await apiRequest('/api/system-config', 'PUT', { language: newLanguage });
       return res;
     },
@@ -44,6 +65,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // If a specific language is provided, use it; otherwise toggle
     const newLanguage = newLang || (language === 'English' ? 'Arabic' : 'English');
     setLanguage(newLanguage);
+    
+    // Send the full language name to the database
     updateLanguageMutation.mutate(newLanguage);
   };
 
