@@ -24,6 +24,21 @@ import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
 import AssetsTable from '@/components/assets/AssetsTable';
+import { Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export default function Assets() {
   const { language } = useLanguage();
@@ -34,6 +49,7 @@ export default function Assets() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
   const [filters, setFilters] = useState<AssetFiltersType>({});
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
@@ -689,10 +705,38 @@ export default function Assets() {
     });
   }, [assets, filters]);
 
+      // Process employees who have assets assigned
+    const employeesWithAssets = useMemo(() => {
+      if (!assets || !employees) return [];
+      
+      const assignedEmployeeIds = new Set(
+        assets
+          .filter((asset: any) => asset.assignedEmployeeId)
+          .map((asset: any) => asset.assignedEmployeeId)
+      );
+      
+      return employees.filter((emp: any) => 
+        assignedEmployeeIds.has(emp.id)
+      );
+    }, [assets, employees]);
+
+    // Check if there are unassigned assets
+    const hasUnassignedAssets = useMemo(() => {
+      return assets?.some((asset: any) => !asset.assignedEmployeeId) || false;
+    }, [assets]);
+
+    // Get display text for selected employee
+    const getEmployeeDisplay = (employeeId: string | undefined) => {
+      if (!employeeId || employeeId === 'all') return "All Assignments";
+      if (employeeId === 'unassigned') return "Unassigned";
+      const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
+      return employee ? (employee.englishName || employee.name) : "All Assignments";
+    };
+
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v1.3</title>
+        <title>{translations.title} | SimpleIT v0.2.5</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
@@ -846,27 +890,92 @@ export default function Assets() {
               </Select>
             </div>
 
-            {/* Assignment Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Assignment</label>
-              <Select
-                value={filters.assignedTo || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, assignedTo: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Assignments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Assignments</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {employees && Array.isArray(employees) ? employees.map((employee: any) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.englishName || employee.name}
-                    </SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Assignment Filter - Updated with Combobox */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Assignment</label>
+            <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={assignmentOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {getEmployeeDisplay(filters.assignedTo)}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search employees..." 
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>No employees found.</CommandEmpty>
+                    <CommandGroup>
+                      {/* All Assignments option */}
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setFilters({ ...filters, assignedTo: undefined });
+                          setAssignmentOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            !filters.assignedTo ? "opacity-100" : "opacity-0"
+                          }`}
+                        />
+                        All Assignments
+                      </CommandItem>
+                      
+                      {/* Unassigned option - only show if there are unassigned assets */}
+                      {hasUnassignedAssets && (
+                        <CommandItem
+                          value="unassigned"
+                          onSelect={() => {
+                            setFilters({ ...filters, assignedTo: 'unassigned' });
+                            setAssignmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          Unassigned
+                        </CommandItem>
+                      )}
+                      
+                      {/* Employee options - only show employees with assets */}
+                      {employeesWithAssets.map((employee: any) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={employee.englishName || employee.name || ''}
+                          onSelect={() => {
+                            setFilters({ ...filters, assignedTo: employee.id.toString() });
+                            setAssignmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filters.assignedTo === employee.id.toString() 
+                                ? "opacity-100" 
+                                : "opacity-0"
+                            }`}
+                          />
+                          {employee.englishName || employee.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
           </div>
 
 

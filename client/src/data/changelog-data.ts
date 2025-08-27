@@ -18,22 +18,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
-    version: "2.3.0",
-    date: "2024-01-20",
+    version: "0.2.5",
+    date: "2025-08-27",
     title: "Enhanced Navigation & RTL Support",
     type: "minor",
     changes: {
       features: [
         "🎯 Smart sidebar with hover-to-open and pin/unpin functionality",
         "📱 Responsive sidebar behavior for mobile and desktop",
-        "🔗 URL parameter support for direct asset filtering",
+        "🔗 URL parameter support for direct asset filtering by EmployeedID, Brand,Type and status",
         "💾 Persistent sidebar state using localStorage"
       ],
       improvements: [
         "⚡ Improved page load performance",
         "🎨 Better visual feedback for interactive elements",
         "📊 Enhanced data table filtering capabilities",
-        "🔄 Smoother transitions and animations"
+        "🔄 Smoother transitions and animations",
+        "🔄 Revamped Changelog design"
       ],
       bugfixes: [
         "🌍 Fixed Arabic RTL layout issues with sidebar positioning",
@@ -44,8 +45,8 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     }
   },
   {
-    version: "2.2.0",
-    date: "2024-01-15",
+    version: "0.2.4",
+    date: "2025-08-24",
     title: "Asset Management Improvements",
     type: "minor",
     changes: {
@@ -69,7 +70,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     }
   },
   {
-    version: "2.1.0",
+    version: "0.2.1",
     date: "2024-01-10",
     title: "Ticket System Enhancements",
     type: "minor",
@@ -93,8 +94,8 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     }
   },
   {
-    version: "2.0.0",
-    date: "2024-01-05",
+    version: "0.2.0",
+    date: "2025-8-01",
     title: "Major System Overhaul",
     type: "major",
     changes: {
@@ -119,10 +120,10 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     }
   },
   {
-    version: "1.5.0",
-    date: "2023-12-20",
+    version: "0.1.5",
+    date: "2025-7-10",
     title: "Import/Export Features",
-    type: "minor",
+    type: "major",
     changes: {
       features: [
         "📥 Bulk import from CSV files",
@@ -133,13 +134,12 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       improvements: [
         "⚡ Faster bulk operations",
         "📊 Better error reporting for imports",
-        "💾 Automatic backup before bulk operations"
       ]
     }
   },
   {
-    version: "1.0.0",
-    date: "2023-12-01",
+    version: "0.1.0",
+    date: "2025-05-17",
     title: "Initial Release",
     type: "major",
     changes: {
