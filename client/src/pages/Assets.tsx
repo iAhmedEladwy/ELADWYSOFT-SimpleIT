@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ export default function Assets() {
   const { language } = useLanguage();
   const { toast } = useToast();
   const { hasAccess } = useAuth();
+  const [location] = useLocation();
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
@@ -39,8 +41,81 @@ export default function Assets() {
   const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
   const [showBulkActions, setShowBulkActions] = useState(false);
 
-  
-
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    // Get query parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const urlFilters: AssetFilters = {};
+    
+    // Check for assignedTo parameter
+    const assignedTo = urlParams.get('assignedTo');
+    if (assignedTo) {
+      urlFilters.assignedTo = assignedTo;
+    }
+    
+    // Check for type parameter
+    const type = urlParams.get('type');
+    if (type) {
+      urlFilters.type = type;
+    }
+    
+    // Check for brand parameter
+    const brand = urlParams.get('brand');
+    if (brand) {
+      urlFilters.brand = brand;
+    }
+    
+    // Check for status parameter
+    const status = urlParams.get('status');
+    if (status) {
+      urlFilters.status = status;
+    }
+    
+    // Check for search parameter
+    const search = urlParams.get('search');
+    if (search) {
+      urlFilters.search = search;
+      setSearchInput(search); // Also update search input field
+    }
+    
+    // Update filters if any URL parameters were found
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+    }
+  }, []); // Empty dependency array means this runs once on mount
+   
+// Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    // Add each filter to URL params if it exists
+    if (filters.assignedTo) {
+      params.set('assignedTo', filters.assignedTo);
+    }
+    if (filters.type) {
+      params.set('type', filters.type);
+    }
+    if (filters.brand) {
+      params.set('brand', filters.brand);
+    }
+    if (filters.status) {
+      params.set('status', filters.status);
+    }
+    if (filters.search) {
+      params.set('search', filters.search);
+    }
+    
+    // Update URL without causing a page reload
+    const newUrl = params.toString() 
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    
+    // Only update if URL actually changed to avoid infinite loops
+    if (newUrl !== window.location.pathname + window.location.search) {
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [filters]);
   
   // Sell assets form state
   const [sellForm, setSellForm] = useState({
