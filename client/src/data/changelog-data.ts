@@ -23,12 +23,20 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     title: "Enhanced Navigation & RTL Support",
     type: "minor",
     changes: {
-      features: [
-        "🎯 Smart sidebar with hover-to-open and pin/unpin functionality",
-        "📱 Responsive sidebar behavior for mobile and desktop",
-        "🔗 URL parameter support for direct asset filtering by EmployeedID, Brand,Type and status",
-        "💾 Persistent sidebar state using localStorage"
-      ],
+       features: [
+      "🎯 Smart sidebar with hover-to-open and pin/unpin functionality",
+      "📱 Responsive sidebar behavior for mobile and desktop",
+      "🔗 URL parameter support for direct asset filtering by EmployeedID, Brand,Type and status",
+      "💾 Persistent sidebar state using localStorage",
+      "📝 Assets assignment filter field enhanced with searchable combobox:",
+      "   ✅ Searchable: Can type to search employees",
+      "   ✅ Filtered List: Only shows employees with assigned assets",
+      "   ✅ Unassigned Option: Only visible when unassigned assets exist",
+      "   ✅ Visual Feedback: Check marks show the selected option",
+      "   ✅ Auto-close: Dropdown closes after selection",
+      "   ✅ Keyboard Support: Can navigate with arrow keys and select with Enter",
+      "   ✅ Clear Selection: Can select 'All Assignments' to remove filter"
+    ],
       improvements: [
         "⚡ Improved page load performance",
         "🎨 Better visual feedback for interactive elements",
