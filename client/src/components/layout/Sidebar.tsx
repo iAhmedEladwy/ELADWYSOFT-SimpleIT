@@ -39,8 +39,6 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
   };
 
-  // Add any additional state or variables here
-
   // Get class for sidebar item based on active path
   const getLinkClass = (path: string) => {
     const baseClass = "flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-primary/10 hover:to-transparent hover:text-primary rounded-lg transition-all duration-300";
@@ -58,30 +56,27 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
 
   return (
     <aside className={`
-    fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
-    shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 transition-all duration-300
-    ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
-      `}
-      >
+      fixed top-[57px] bottom-0 w-64 bg-gradient-to-b from-white to-gray-50 
+      shadow-md overflow-y-auto flex flex-col z-10 border-gray-100 transition-all duration-300
+      ${language === 'Arabic' ? 'right-0 border-l' : 'left-0 border-r'}
+    `}>
       <div className="pt-6 pb-2 px-4">
         <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
           {translations.ManageYourIT}
         </h2>
-        <div className="h-0.5 w-1/2 bg-gradient-to-r from-primary to-transparent mt-2"></div>
+        <div className={`h-0.5 w-1/2 bg-gradient-to-r from-primary to-transparent mt-2 ${language === 'Arabic' ? 'mr-auto' : ''}`}></div>
       </div>
       
       <nav className="py-4 flex flex-col gap-2 px-3">
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/" className={getLinkClass('/')}>
             <Home className="h-5 w-5" />
             <span>{translations.Dashboard}</span>
           </Link>
         </div>
         
-
-        
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/employees" className={getLinkClass('/employees')}>
               <UserPlus className="h-5 w-5" />
               <span>{translations.Employees}</span>
@@ -89,7 +84,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </div>
         </RoleGuard>
         
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/assets" className={getLinkClass('/assets')}>
             <Laptop className="h-5 w-5" />
             <span>{translations.Assets}</span>
@@ -97,7 +92,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </div>
         
         <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/asset-history" className={getLinkClass('/asset-history')}>
               <History className="h-5 w-5" />
               <span>{translations.AssetHistory}</span>
@@ -105,7 +100,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </div>
         </RoleGuard>
         
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/tickets" className={getLinkClass('/tickets')}>
             <Ticket className="h-5 w-5" />
             <span>{translations.Tickets}</span>
@@ -113,7 +108,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </div>
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/reports" className={getLinkClass('/reports')}>
               <BarChart2 className="h-5 w-5" />
               <span>{translations.Reports}</span>
@@ -122,7 +117,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <RoleGuard allowedRoles={['admin']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/system-config" className={getLinkClass('/system-config')}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
@@ -131,7 +126,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
         </RoleGuard>
         
         <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className="transform hover:translate-x-1 transition-transform duration-200">
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/audit-logs" className={getLinkClass('/audit-logs')}>
               <FileText className="h-5 w-5" />
               <span>{translations.AuditLogs}</span>
@@ -139,7 +134,7 @@ export default function Sidebar({ isSidebarOpen }: SidebarProps) {
           </div>
         </RoleGuard>
 
-        <div className="transform hover:translate-x-1 transition-transform duration-200">
+        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/profile" className={getLinkClass('/profile')}>
             <User className="h-5 w-5" />
             <span>{translations.Profile}</span>
