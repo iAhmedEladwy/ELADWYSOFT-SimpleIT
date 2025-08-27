@@ -21,39 +21,33 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Update language when config changes
   useEffect(() => {
     if (config && (config as any).language) {
-      // The database stores "English" or "Arabic" as full words
-      // We need to check for these exact values
       const dbLanguage = (config as any).language;
       
-      // Handle both full names and potential abbreviations for backwards compatibility
+      // Handle both abbreviated codes (en/ar) and full names (English/Arabic)
       let newLanguage: string;
       
-      switch(dbLanguage) {
-        case 'English':
-        case 'en':
-          newLanguage = 'English';
-          break;
-        case 'Arabic':
-        case 'ar':
-          newLanguage = 'Arabic';
-          break;
-        default:
-          // Default to English if unknown value
-          newLanguage = 'English';
+      if (dbLanguage === 'en' || dbLanguage === 'English') {
+        newLanguage = 'English';
+      } else if (dbLanguage === 'ar' || dbLanguage === 'Arabic') {
+        newLanguage = 'Arabic';
+      } else {
+        // Default to English for any unknown value
+        newLanguage = 'English';
       }
       
       setLanguage(newLanguage);
-    } else {
-      // Default to English if no config is loaded yet
+    } else if (!isLoading) {
+      // Only set default when we're sure config has loaded but language is not set
       setLanguage('English');
     }
-  }, [config]);
+  }, [config, isLoading]);
 
   // Update language mutation
   const updateLanguageMutation = useMutation({
     mutationFn: async (newLanguage: string) => {
-      // Always send the full language name to the database
-      const res = await apiRequest('/api/system-config', 'PUT', { language: newLanguage });
+      // SystemConfig expects 'en' or 'ar' format
+      const languageCode = newLanguage === 'English' ? 'en' : 'ar';
+      const res = await apiRequest('/api/system-config', 'PUT', { language: languageCode });
       return res;
     },
     onSuccess: () => {
@@ -66,7 +60,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const newLanguage = newLang || (language === 'English' ? 'Arabic' : 'English');
     setLanguage(newLanguage);
     
-    // Send the full language name to the database
+    // Send the update to the backend
     updateLanguageMutation.mutate(newLanguage);
   };
 
