@@ -120,6 +120,12 @@ export default function TicketForm({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+  // Filter to show only active employees
+  const activeEmployees = useMemo(() => {
+    return employees.filter((employee: any) => 
+      employee.status === 'Active'
+    );
+  }, [employees]);
   const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
     queryKey: ['/api/assets'],
     staleTime: 5 * 60 * 1000,
@@ -439,11 +445,17 @@ export default function TicketForm({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {employees.map((employee) => (
-                                <SelectItem key={employee.id} value={employee.id.toString()}>
-                                  {employee.englishName || employee.name}
+                              {activeEmployees.length === 0 ? (
+                                <SelectItem value="no-active" disabled>
+                                  {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
                                 </SelectItem>
-                              ))}
+                              ) : (
+                                activeEmployees.map((employee) => (
+                                  <SelectItem key={employee.id} value={employee.id.toString()}>
+                                    {employee.englishName || employee.name} - {employee.idNumber}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -986,17 +998,21 @@ export default function TicketForm({
                                         <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
                                       </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
-                                      {isLoadingEmployees ? (
-                                        <SelectItem value="loading" disabled>Loading employees...</SelectItem>
-                                      ) : (
-                                        employees.map((employee: any) => (
-                                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                                            {employee.englishName || employee.name}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
+                                  <SelectContent>
+                                    {isLoadingEmployees ? (
+                                      <SelectItem value="loading" disabled>Loading employees...</SelectItem>
+                                    ) : activeEmployees.length === 0 ? (
+                                      <SelectItem value="no-active" disabled>
+                                        {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
+                                      </SelectItem>
+                                    ) : (
+                                      activeEmployees.map((employee: any) => (
+                                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                                          {employee.englishName || employee.name} - {employee.idNumber}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
                                   </Select>
                                   <FormMessage />
                                 </FormItem>
