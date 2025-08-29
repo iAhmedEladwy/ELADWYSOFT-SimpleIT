@@ -470,7 +470,25 @@ export default function TicketForm({
                             </FormControl>
                           </PopoverTrigger>
                           <PopoverContent className="w-full p-0" align="start">
-                            <Command>
+                            <Command filter={(value, search) => {
+                              // Custom filter function for accurate search
+                              const employee = activeEmployees.find(emp => 
+                                `${emp.englishName} ${emp.arabicName} ${emp.department}`.toLowerCase().includes(value.toLowerCase())
+                              );
+                              if (!employee) return 0;
+                              
+                              const searchLower = search.toLowerCase();
+                              const englishName = employee.englishName?.toLowerCase() || '';
+                              const arabicName = employee.arabicName?.toLowerCase() || '';
+                              const department = employee.department?.toLowerCase() || '';
+                              
+                              if (englishName.includes(searchLower) || 
+                                  arabicName.includes(searchLower) || 
+                                  department.includes(searchLower)) {
+                                return 1;
+                              }
+                              return 0;
+                            }}>
                               <CommandInput 
                                 placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
                                 className="h-9"
@@ -482,7 +500,7 @@ export default function TicketForm({
                                 {activeEmployees.map((employee) => (
                                   <CommandItem
                                     key={employee.id}
-                                    value={`${employee.englishName} ${employee.arabicName} ${employee.idNumber}`}
+                                    value={`${employee.englishName} ${employee.arabicName} ${employee.department}`}
                                     onSelect={() => {
                                       field.onChange(employee.id.toString());
                                       form.setValue('relatedAssetId', 'none');
@@ -499,7 +517,7 @@ export default function TicketForm({
                                     <div className="flex flex-col">
                                       <span>{employee.englishName || employee.name}</span>
                                       <span className="text-xs text-muted-foreground">
-                                        {employee.idNumber} • {employee.department}
+                                        {employee.department}
                                       </span>
                                     </div>
                                   </CommandItem>
@@ -543,7 +561,6 @@ export default function TicketForm({
                         </FormItem>
                       )}
                     />
-
                     {/* Related Asset */}
                     <FormField
                       control={form.control}
@@ -551,22 +568,39 @@ export default function TicketForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            value={field.value}
+                            disabled={!selectedEmployeeId || selectedEmployeeId === ''}
+                          >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'No asset' : 'لا يوجد أصل'} />
+                                <SelectValue placeholder={
+                                  !selectedEmployeeId 
+                                    ? (language === 'English' ? 'Select employee first' : 'اختر الموظف أولاً')
+                                    : (language === 'English' ? 'Select asset (optional)' : 'اختر الأصل (اختياري)')
+                                } />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
-                              {isLoadingAssets ? (
-                                <SelectItem value="loading" disabled>Loading assets...</SelectItem>
-                              ) : (
-                                allAssets.map((asset: any) => (
+                              <SelectItem value="none">
+                                {language === 'English' ? 'No Asset' : 'بدون أصل'}
+                              </SelectItem>
+                              {assets.length > 0 ? (
+                                assets.map((asset) => (
                                   <SelectItem key={asset.id} value={asset.id.toString()}>
-                                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
+                                    {asset.assetId} - {asset.name || asset.title || 'Unnamed'}
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({asset.type})
+                                    </span>
                                   </SelectItem>
                                 ))
+                              ) : (
+                                selectedEmployeeId && (
+                                  <SelectItem value="no-assets" disabled>
+                                    {language === 'English' ? 'No assets assigned to this employee' : 'لا توجد أصول مخصصة لهذا الموظف'}
+                                  </SelectItem>
+                                )
                               )}
                             </SelectContent>
                           </Select>
