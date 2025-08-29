@@ -442,7 +442,7 @@ export default function TicketForm({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-         {/* Submitted By with Search */}
+          {/* Submitted By with Search */}
                   <FormField
                     control={form.control}
                     name="submittedById"
@@ -535,6 +535,37 @@ export default function TicketForm({
                       );
                     }}
                   />
+
+                    {/* Assigned To */}
+                    <FormField
+                      control={form.control}
+                      name="assignedToId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{language === 'English' ? 'Assigned To' : 'مسند إلى'}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مسند'} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
+                              {isLoadingUsers ? (
+                                <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                              ) : (
+                                users.map((user: any) => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.username}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                    {/* Related Asset */}
                     <FormField
                       control={form.control}
