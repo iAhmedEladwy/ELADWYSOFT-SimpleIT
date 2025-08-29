@@ -592,11 +592,25 @@ export default function TicketForm({
                                 {language === 'English' ? 'No Asset' : 'بدون أصل'}
                               </SelectItem>
                               {assets.length > 0 ? (
-                                assets.map((asset) => (
-                                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                                    {asset.assetId}, {asset.type}{asset.brand ? ` ${asset.brand}` : ''}{asset.model ? ` ${asset.model}` : ''}
-                                  </SelectItem>
-                                ))
+                                assets.map((asset) => {
+                                  // Build the display string
+                                  const displayParts = [asset.assetId];
+                                  const deviceInfo = [];
+                                  
+                                  if (asset.type) deviceInfo.push(asset.type);
+                                  if (asset.brand) deviceInfo.push(asset.brand);
+                                  if (asset.modelName) deviceInfo.push(asset.modelName);
+                                  
+                                  const displayString = deviceInfo.length > 0 
+                                    ? `${asset.assetId}, ${deviceInfo.join(' ')}`
+                                    : asset.assetId;
+                                  
+                                  return (
+                                    <SelectItem key={asset.id} value={asset.id.toString()}>
+                                      {displayString}
+                                    </SelectItem>
+                                  );
+                                })
                               ) : (
                                 selectedEmployeeId && (
                                   <SelectItem value="no-assets" disabled>
