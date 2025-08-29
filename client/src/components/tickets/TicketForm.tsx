@@ -442,7 +442,7 @@ export default function TicketForm({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Submitted By with Search */}
+           {/* Submitted By with Search */}
                   <FormField
                     control={form.control}
                     name="submittedById"
@@ -456,7 +456,7 @@ export default function TicketForm({
                                 variant="outline"
                                 role="combobox"
                                 className={cn(
-                                  "justify-between",
+                                  "w-full justify-between",
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
@@ -469,15 +469,16 @@ export default function TicketForm({
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0">
+                          <PopoverContent className="w-full p-0" align="start">
                             <Command>
                               <CommandInput 
                                 placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
+                                className="h-9"
                               />
                               <CommandEmpty>
                                 {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
                               </CommandEmpty>
-                              <CommandGroup>
+                              <CommandGroup className="max-h-[200px] overflow-auto">
                                 {activeEmployees.map((employee) => (
                                   <CommandItem
                                     key={employee.id}
@@ -495,7 +496,12 @@ export default function TicketForm({
                                           : "opacity-0"
                                       )}
                                     />
-                                    {employee.englishName || employee.name} - {employee.idNumber}
+                                    <div className="flex flex-col">
+                                      <span>{employee.englishName || employee.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {employee.idNumber} • {employee.department}
+                                      </span>
+                                    </div>
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
