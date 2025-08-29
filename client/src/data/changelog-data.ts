@@ -17,6 +17,44 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
+
+  {
+  version: "0.2.6",
+  date: "2025-08-29",
+  title: "Bug Fixes & Maintenance Tracking",
+  type: "minor",
+  changes: {
+    features: [
+      "🛠️ Comprehensive Asset Maintenance Tracking System:",
+      "   ⏰ Visual maintenance indicators in assets table (overdue/due soon/scheduled)",
+      "   🎨 Color-coded row highlighting based on maintenance urgency",
+      "   🔍 New maintenance filter to view assets by maintenance status",
+      "   📊 Dashboard widget showing maintenance overview with counts",
+      "   🔗 Clickable dashboard cards for quick navigation to filtered views",
+      "🔍 Enhanced Ticket 'Submitted By' field with searchable combobox:",
+      "   ✅ Type-to-search functionality for finding employees",
+      "   ✅ Shows only active employees (filters out resigned/terminated)",
+      "   ✅ Displays employee department for context",
+      "   ✅ Auto-closes on selection for better workflow",
+      "   ✅ Consistent width with trigger button"
+    ],
+    improvements: [
+      "📋 Asset filter dropdowns now scrollable with consistent height (200px max)",
+      "🎯 Related Asset field shows only selected employee's assigned assets",
+      "📝 Improved asset display format: 'AssetID, Type Brand ModelName'",
+      "⚡ Better search accuracy in employee selection (no irrelevant results)",
+      "🎨 Enhanced visual hierarchy with maintenance status indicators",
+      "📊 Backend API enhanced with maintenance counts for dashboard"
+    ],
+    bugfixes: [
+      "🔧 Fixed ticket creation showing inactive employees in 'Submitted By' field",
+      "🎯 Corrected employee search filtering to prevent showing unrelated names",
+      "📐 Fixed combobox popover width to match trigger button properly",
+      "🔍 Resolved Related Asset field not filtering by selected employee",
+      "📝 Fixed asset display format in ticket forms (now shows model name correctly)"
+    ]
+  }
+},
   {
     version: "0.2.5",
     date: "2025-08-27",
