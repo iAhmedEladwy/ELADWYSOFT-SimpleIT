@@ -834,26 +834,26 @@ export default function Assets() {
           {/* Filter Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Type Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Type</label>
-              <Select
-                value={filters.type || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Type</label>
+            <Select
+              value={filters.type || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Types</SelectItem>
+                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                )) : null}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Status Filter */}
-            <div>
+          {/* Status Filter */}
+          <div>
             <label className="text-sm font-medium mb-2 block">Status</label>
             <Select
               value={filters.status || 'all'}
@@ -862,33 +862,33 @@ export default function Assets() {
               <SelectTrigger>
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px]">
                 <SelectItem value="all">All Statuses</SelectItem>
                 {assetStatuses.map((status: string) => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-             </div> 
+          </div>
 
-            {/* Brand Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Brand</label>
-              <Select
-                value={filters.brand || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Brands" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Brands</SelectItem>
-                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
-                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Brand Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Brand</label>
+            <Select
+              value={filters.brand || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Brands</SelectItem>
+                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                )) : null}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Assignment Filter - Updated with Combobox */}
           <div>
