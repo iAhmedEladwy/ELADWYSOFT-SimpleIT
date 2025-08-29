@@ -700,6 +700,37 @@ export default function Assets() {
           if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
         }
       }
+
+      // Maintenance filter
+      if (filters.maintenanceDue) {
+        const today = new Date();
+        const weekFromNow = new Date();
+        weekFromNow.setDate(today.getDate() + 7);
+        
+        // Check if asset has maintenance records
+        const lastMaintenance = asset.lastMaintenanceDate ? new Date(asset.lastMaintenanceDate) : null;
+        const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
+        
+        if (filters.maintenanceDue === 'overdue') {
+          if (!nextMaintenance || nextMaintenance < today) {
+            // Asset is overdue for maintenance
+          } else {
+            return false;
+          }
+        } else if (filters.maintenanceDue === 'dueSoon') {
+          if (nextMaintenance && nextMaintenance >= today && nextMaintenance <= weekFromNow) {
+            // Asset is due for maintenance this week
+          } else {
+            return false;
+          }
+        } else if (filters.maintenanceDue === 'scheduled') {
+          if (nextMaintenance && nextMaintenance > weekFromNow) {
+            // Asset has scheduled maintenance in the future
+          } else {
+            return false;
+          }
+        }
+      }
       
       return true;
     });
@@ -736,7 +767,7 @@ export default function Assets() {
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v0.2.5</title>
+        <title>{translations.title} | SimpleIT v0.2.6</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
@@ -760,37 +791,18 @@ export default function Assets() {
             </Button>
           )}
           
-          {hasAccess(2) && (
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogTrigger asChild>
-                  <Button 
-                    size="sm"
-                    onClick={() => {
-                      setEditingAsset(null); // Clear editing state for new asset
-                      setOpenDialog(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {translations.addAsset}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingAsset ? translations.editAsset : translations.addAsset}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingAsset ? 'Edit asset information and specifications' : 'Add a new asset to the inventory system'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AssetForm
-                    onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
-                    initialData={editingAsset}
-                    isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
-                  />
-                </DialogContent>
-              </Dialog>
-          )}
+            {hasAccess(2) && (
+          <Button 
+            size="sm"
+            onClick={() => {
+              setEditingAsset(null); // Clear editing state for new asset
+              setOpenDialog(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {translations.addAsset}
+          </Button>
+        )}
         </div>
         </div>
 
@@ -834,26 +846,26 @@ export default function Assets() {
           {/* Filter Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Type Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Type</label>
-              <Select
-                value={filters.type || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Type</label>
+            <Select
+              value={filters.type || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Types</SelectItem>
+                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                )) : null}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Status Filter */}
-            <div>
+          {/* Status Filter */}
+          <div>
             <label className="text-sm font-medium mb-2 block">Status</label>
             <Select
               value={filters.status || 'all'}
@@ -862,33 +874,33 @@ export default function Assets() {
               <SelectTrigger>
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px]">
                 <SelectItem value="all">All Statuses</SelectItem>
                 {assetStatuses.map((status: string) => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-             </div> 
+          </div>
 
-            {/* Brand Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Brand</label>
-              <Select
-                value={filters.brand || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Brands" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Brands</SelectItem>
-                  {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
-                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Brand Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Brand</label>
+            <Select
+              value={filters.brand || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Brands</SelectItem>
+                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                )) : null}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Assignment Filter - Updated with Combobox */}
           <div>
@@ -975,6 +987,36 @@ export default function Assets() {
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+          {/* Maintenance Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Maintenance</label>
+            <Select
+              value={filters.maintenanceDue || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, maintenanceDue: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Assets" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Assets</SelectItem>
+                <SelectItem value="overdue">
+                  <span className="flex items-center gap-2">
+                    <span className="text-red-500">⏰</span> Overdue
+                  </span>
+                </SelectItem>
+                <SelectItem value="dueSoon">
+                  <span className="flex items-center gap-2">
+                    <span className="text-yellow-500">🛠️</span> Due This Week
+                  </span>
+                </SelectItem>
+                <SelectItem value="scheduled">
+                  <span className="flex items-center gap-2">
+                    <span className="text-blue-500">📅</span> Scheduled
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           </div>
 

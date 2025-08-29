@@ -45,6 +45,21 @@ import {
   Loader2
 } from 'lucide-react';
 
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 // Ticket form schema with all ITIL-compliant fields - made flexible for better UX
 const ticketFormSchema = z.object({
   submittedById: z.string(), 
@@ -120,6 +135,12 @@ export default function TicketForm({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+  // Filter to show only active employees
+  const activeEmployees = useMemo(() => {
+    return employees.filter((employee: any) => 
+      employee.status === 'Active'
+    );
+  }, [employees]);
   const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
     queryKey: ['/api/assets'],
     staleTime: 5 * 60 * 1000,
@@ -421,35 +442,99 @@ export default function TicketForm({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Submitted By */}
-                    <FormField
-                      control={form.control}
-                      name="submittedById"
-                      render={({ field }) => (
-                        <FormItem>
+          {/* Submitted By with Search */}
+                  <FormField
+                    control={form.control}
+                    name="submittedById"
+                    render={({ field }) => {
+                      const [open, setOpen] = useState(false);
+                      
+                      return (
+                        <FormItem className="flex flex-col">
                           <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            // Clear related asset when employee changes
-                            form.setValue('relatedAssetId', 'none');
-                          }} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {employees.map((employee) => (
-                                <SelectItem key={employee.id} value={employee.id.toString()}>
-                                  {employee.englishName || employee.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={open}
+                                  className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value
+                                    ? activeEmployees.find(
+                                        (employee) => employee.id.toString() === field.value
+                                      )?.englishName || "Select employee..."
+                                    : language === 'English' ? "Select employee..." : "اختر الموظف..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+                              <Command filter={(value, search) => {
+                                const employee = activeEmployees.find(emp => 
+                                  `${emp.englishName} ${emp.arabicName} ${emp.department}`.toLowerCase().includes(value.toLowerCase())
+                                );
+                                if (!employee) return 0;
+                                
+                                const searchLower = search.toLowerCase();
+                                const englishName = employee.englishName?.toLowerCase() || '';
+                                const arabicName = employee.arabicName?.toLowerCase() || '';
+                                const department = employee.department?.toLowerCase() || '';
+                                
+                                if (englishName.includes(searchLower) || 
+                                    arabicName.includes(searchLower) || 
+                                    department.includes(searchLower)) {
+                                  return 1;
+                                }
+                                return 0;
+                              }}>
+                                <CommandInput 
+                                  placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
+                                  className="h-9"
+                                />
+                                <CommandEmpty>
+                                  {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
+                                </CommandEmpty>
+                                <CommandGroup className="max-h-[200px] overflow-auto">
+                                  {activeEmployees.map((employee) => (
+                                    <CommandItem
+                                      key={employee.id}
+                                      value={`${employee.englishName} ${employee.arabicName} ${employee.department}`}
+                                      onSelect={() => {
+                                        field.onChange(employee.id.toString());
+                                        form.setValue('relatedAssetId', 'none');
+                                        setOpen(false); // Close the popover
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === employee.id.toString()
+                                            ? "opacity-100"
+                                            : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{employee.englishName || employee.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {employee.department}
+                                        </span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      );
+                    }}
+                  />
 
                     {/* Assigned To */}
                     <FormField
@@ -481,30 +566,57 @@ export default function TicketForm({
                         </FormItem>
                       )}
                     />
-
-                    {/* Related Asset */}
+                   {/* Related Asset */}
                     <FormField
                       control={form.control}
                       name="relatedAssetId"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            value={field.value}
+                            disabled={!selectedEmployeeId || selectedEmployeeId === ''}
+                          >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'No asset' : 'لا يوجد أصل'} />
+                                <SelectValue placeholder={
+                                  !selectedEmployeeId 
+                                    ? (language === 'English' ? 'Select employee first' : 'اختر الموظف أولاً')
+                                    : (language === 'English' ? 'Select asset (optional)' : 'اختر الأصل (اختياري)')
+                                } />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">{language === 'English' ? 'No asset' : 'لا يوجد أصل'}</SelectItem>
-                              {isLoadingAssets ? (
-                                <SelectItem value="loading" disabled>Loading assets...</SelectItem>
+                              <SelectItem value="none">
+                                {language === 'English' ? 'No Asset' : 'بدون أصل'}
+                              </SelectItem>
+                              {assets.length > 0 ? (
+                                assets.map((asset) => {
+                                  // Build the display string
+                                  const displayParts = [asset.assetId];
+                                  const deviceInfo = [];
+                                  
+                                  if (asset.type) deviceInfo.push(asset.type);
+                                  if (asset.brand) deviceInfo.push(asset.brand);
+                                  if (asset.modelName) deviceInfo.push(asset.modelName);
+                                  
+                                  const displayString = deviceInfo.length > 0 
+                                    ? `${asset.assetId}, ${deviceInfo.join(' ')}`
+                                    : asset.assetId;
+                                  
+                                  return (
+                                    <SelectItem key={asset.id} value={asset.id.toString()}>
+                                      {displayString}
+                                    </SelectItem>
+                                  );
+                                })
                               ) : (
-                                allAssets.map((asset: any) => (
-                                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                                    {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
+                                selectedEmployeeId && (
+                                  <SelectItem value="no-assets" disabled>
+                                    {language === 'English' ? 'No assets assigned to this employee' : 'لا توجد أصول مخصصة لهذا الموظف'}
                                   </SelectItem>
-                                ))
+                                )
                               )}
                             </SelectContent>
                           </Select>
@@ -986,17 +1098,21 @@ export default function TicketForm({
                                         <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
                                       </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
-                                      {isLoadingEmployees ? (
-                                        <SelectItem value="loading" disabled>Loading employees...</SelectItem>
-                                      ) : (
-                                        employees.map((employee: any) => (
-                                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                                            {employee.englishName || employee.name}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
+                                  <SelectContent>
+                                    {isLoadingEmployees ? (
+                                      <SelectItem value="loading" disabled>Loading employees...</SelectItem>
+                                    ) : activeEmployees.length === 0 ? (
+                                      <SelectItem value="no-active" disabled>
+                                        {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
+                                      </SelectItem>
+                                    ) : (
+                                      activeEmployees.map((employee: any) => (
+                                        <SelectItem key={employee.id} value={employee.id.toString()}>
+                                          {employee.englishName || employee.name} - {employee.idNumber}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
                                   </Select>
                                   <FormMessage />
                                 </FormItem>

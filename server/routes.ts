@@ -4284,6 +4284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const [
         employees,
@@ -4310,8 +4311,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getAllTickets().catch(err => {
           console.error('All tickets fetch error:', err);
           return [];
-        })
+        }),
       ]);
+
+        // Calculate maintenance counts
+      const maintenanceCounts = {
+        overdue: 0,
+        dueThisWeek: 0,
+        scheduled: 0
+      };
+
+        // Process assets for maintenance status
+      assets.forEach(asset => {
+        if (asset.nextMaintenanceDate) {
+          const maintenanceDate = new Date(asset.nextMaintenanceDate);
+          
+          if (maintenanceDate < now) {
+            maintenanceCounts.overdue++;
+          } else if (maintenanceDate >= now && maintenanceDate <= weekFromNow) {
+            maintenanceCounts.dueThisWeek++;
+          } else {
+            maintenanceCounts.scheduled++;
+          }
+        }
+      });
       
       // Calculate historical comparisons
       const employeesOneYearAgo = employees.filter(emp => {
@@ -4393,6 +4416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           users: userCount.length,
           totalAssetValue
         },
+        maintenanceCounts,
         changes: {
           employees: calculatePercentageChange(currentEmployees, employeesOneYearAgo),
           assets: calculatePercentageChange(currentAssets, assetsOneMonthAgo),
