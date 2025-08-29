@@ -45,6 +45,21 @@ import {
   Loader2
 } from 'lucide-react';
 
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 // Ticket form schema with all ITIL-compliant fields - made flexible for better UX
 const ticketFormSchema = z.object({
   submittedById: z.string(), 
@@ -427,41 +442,70 @@ export default function TicketForm({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Submitted By */}
-                    <FormField
-                      control={form.control}
-                      name="submittedById"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            // Clear related asset when employee changes
-                            form.setValue('relatedAssetId', 'none');
-                          }} value={field.value}>
+                {/* Submitted By with Search */}
+                  <FormField
+                    control={form.control}
+                    name="submittedById"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
-                              </SelectTrigger>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value
+                                  ? activeEmployees.find(
+                                      (employee) => employee.id.toString() === field.value
+                                    )?.englishName || "Select employee..."
+                                  : language === 'English' ? "Select employee..." : "اختر الموظف..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
                             </FormControl>
-                            <SelectContent>
-                              {activeEmployees.length === 0 ? (
-                                <SelectItem value="no-active" disabled>
-                                  {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
-                                </SelectItem>
-                              ) : (
-                                activeEmployees.map((employee) => (
-                                  <SelectItem key={employee.id} value={employee.id.toString()}>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                              <CommandInput 
+                                placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
+                              />
+                              <CommandEmpty>
+                                {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {activeEmployees.map((employee) => (
+                                  <CommandItem
+                                    key={employee.id}
+                                    value={`${employee.englishName} ${employee.arabicName} ${employee.idNumber}`}
+                                    onSelect={() => {
+                                      field.onChange(employee.id.toString());
+                                      form.setValue('relatedAssetId', 'none');
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === employee.id.toString()
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
                                     {employee.englishName || employee.name} - {employee.idNumber}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                     {/* Assigned To */}
                     <FormField
