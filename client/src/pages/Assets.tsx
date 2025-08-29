@@ -791,37 +791,18 @@ export default function Assets() {
             </Button>
           )}
           
-          {hasAccess(2) && (
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogTrigger asChild>
-                  <Button 
-                    size="sm"
-                    onClick={() => {
-                      setEditingAsset(null); // Clear editing state for new asset
-                      setOpenDialog(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {translations.addAsset}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingAsset ? translations.editAsset : translations.addAsset}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingAsset ? 'Edit asset information and specifications' : 'Add a new asset to the inventory system'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AssetForm
-                    onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
-                    initialData={editingAsset}
-                    isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
-                  />
-                </DialogContent>
-              </Dialog>
-          )}
+            {hasAccess(2) && (
+          <Button 
+            size="sm"
+            onClick={() => {
+              setEditingAsset(null); // Clear editing state for new asset
+              setOpenDialog(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {translations.addAsset}
+          </Button>
+        )}
         </div>
         </div>
 
