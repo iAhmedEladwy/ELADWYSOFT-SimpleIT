@@ -293,24 +293,24 @@ export default function AssetsTable({
             assets.map((asset) => (
               <TableRow 
                 key={asset.id}
-                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
+                className={`group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 hover:border-l-blue-500 cursor-pointer ${
                   // Add maintenance status highlighting
-                      (() => {
-                        const today = new Date();
-                        const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
-                        const weekFromNow = new Date();
-                        weekFromNow.setDate(today.getDate() + 7);
-                        
-                        if (nextMaintenance) {
-                          if (nextMaintenance < today) {
-                            return 'border-l-red-400 bg-red-50/30'; // Overdue - red background
-                          } else if (nextMaintenance <= weekFromNow) {
-                            return 'border-l-yellow-400 bg-yellow-50/30'; // Due soon - yellow background
-                          }
-                        }
-                        return 'border-transparent';
-                      })()
-                    }`} 
+                  (() => {
+                    const today = new Date();
+                    const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
+                    const weekFromNow = new Date();
+                    weekFromNow.setDate(today.getDate() + 7);
+                    
+                    if (nextMaintenance) {
+                      if (nextMaintenance < today) {
+                        return 'border-l-red-400 bg-red-50/30'; // Overdue - red background
+                      } else if (nextMaintenance <= weekFromNow) {
+                        return 'border-l-yellow-400 bg-yellow-50/30'; // Due soon - yellow background
+                      }
+                    }
+                    return 'border-transparent';
+                  })()
+                }`}
                 onClick={(e) => {
                   // Prevent row click when clicking on interactive elements or dialog overlays
                   if (e.target instanceof HTMLElement && 
@@ -348,29 +348,29 @@ export default function AssetsTable({
                       e.stopPropagation();
                       onEdit(asset);
                     }}
-                      className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-2"
-                      >
-                        {/* Add maintenance indicators */}
-                        {(() => {
-                          const today = new Date();
-                          const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
-                          const weekFromNow = new Date();
-                          weekFromNow.setDate(today.getDate() + 7);
-                          
-                          if (nextMaintenance) {
-                            if (nextMaintenance < today) {
-                              // Overdue
-                              return <span title="Maintenance overdue!" className="text-red-500">⏰</span>;
-                            } else if (nextMaintenance <= weekFromNow) {
-                              // Due soon
-                              return <span title="Maintenance due this week" className="text-yellow-500">🛠️</span>;
-                            } else {
-                              // Scheduled
-                              return <span title="Maintenance scheduled" className="text-blue-500">📅</span>;
-                            }
-                          }
-                          return null;
-                        })()}
+                    className="text-gray-900 hover:text-gray-700 hover:bg-gray-50 px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-2"
+                  >
+                    {/* Add maintenance indicators */}
+                    {(() => {
+                      const today = new Date();
+                      const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
+                      const weekFromNow = new Date();
+                      weekFromNow.setDate(today.getDate() + 7);
+                      
+                      if (nextMaintenance) {
+                        if (nextMaintenance < today) {
+                          // Overdue
+                          return <span title="Maintenance overdue!" className="text-red-500">⏰</span>;
+                        } else if (nextMaintenance <= weekFromNow) {
+                          // Due soon
+                          return <span title="Maintenance due this week" className="text-yellow-500">🛠️</span>;
+                        } else {
+                          // Scheduled
+                          return <span title="Maintenance scheduled" className="text-blue-500">📅</span>;
+                        }
+                      }
+                      return null;
+                    })()}
                     {asset.assetId}
                   </button>
                 </TableCell>
@@ -402,7 +402,7 @@ export default function AssetsTable({
                     <div className="max-w-xs">
                       {asset.specs ? (
                         <div className="text-sm truncate" title={asset.specs}>
-        📋                {asset.specs}
+                          📋 {asset.specs}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -437,7 +437,7 @@ export default function AssetsTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={hasAccess(3) ? 10 : 9} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={hasAccess(3) ? 11 : 10} className="text-center h-24 text-muted-foreground">
                 {translations.noAssets}
               </TableCell>
             </TableRow>
@@ -509,8 +509,6 @@ export default function AssetsTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       {/* Asset Detail View */}
       <AssetDetailView 
