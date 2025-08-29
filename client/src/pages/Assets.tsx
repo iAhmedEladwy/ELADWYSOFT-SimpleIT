@@ -700,6 +700,37 @@ export default function Assets() {
           if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
         }
       }
+
+      // Maintenance filter
+      if (filters.maintenanceDue) {
+        const today = new Date();
+        const weekFromNow = new Date();
+        weekFromNow.setDate(today.getDate() + 7);
+        
+        // Check if asset has maintenance records
+        const lastMaintenance = asset.lastMaintenanceDate ? new Date(asset.lastMaintenanceDate) : null;
+        const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
+        
+        if (filters.maintenanceDue === 'overdue') {
+          if (!nextMaintenance || nextMaintenance < today) {
+            // Asset is overdue for maintenance
+          } else {
+            return false;
+          }
+        } else if (filters.maintenanceDue === 'dueSoon') {
+          if (nextMaintenance && nextMaintenance >= today && nextMaintenance <= weekFromNow) {
+            // Asset is due for maintenance this week
+          } else {
+            return false;
+          }
+        } else if (filters.maintenanceDue === 'scheduled') {
+          if (nextMaintenance && nextMaintenance > weekFromNow) {
+            // Asset has scheduled maintenance in the future
+          } else {
+            return false;
+          }
+        }
+      }
       
       return true;
     });
@@ -975,6 +1006,36 @@ export default function Assets() {
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+          {/* Maintenance Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Maintenance</label>
+            <Select
+              value={filters.maintenanceDue || 'all'}
+              onValueChange={(value) => setFilters({ ...filters, maintenanceDue: value === 'all' ? undefined : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Assets" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                <SelectItem value="all">All Assets</SelectItem>
+                <SelectItem value="overdue">
+                  <span className="flex items-center gap-2">
+                    <span className="text-red-500">⏰</span> Overdue
+                  </span>
+                </SelectItem>
+                <SelectItem value="dueSoon">
+                  <span className="flex items-center gap-2">
+                    <span className="text-yellow-500">🛠️</span> Due This Week
+                  </span>
+                </SelectItem>
+                <SelectItem value="scheduled">
+                  <span className="flex items-center gap-2">
+                    <span className="text-blue-500">📅</span> Scheduled
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           </div>
 
