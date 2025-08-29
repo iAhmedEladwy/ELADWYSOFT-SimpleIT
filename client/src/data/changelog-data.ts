@@ -49,8 +49,10 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     bugfixes: [
       "🔧 Fixed ticket creation showing inactive employees in 'Submitted By' field",
       "🎯 Corrected employee search filtering to prevent showing unrelated names",
+      "✅ Fixed overlapped asset edit form duplicated when click on purchase information",
       "📐 Fixed combobox popover width to match trigger button properly",
       "🔍 Resolved Related Asset field not filtering by selected employee",
+      "   Fixed asset_maintenance table missed status column migration script included",
       "📝 Fixed asset display format in ticket forms (now shows model name correctly)"
     ]
   }

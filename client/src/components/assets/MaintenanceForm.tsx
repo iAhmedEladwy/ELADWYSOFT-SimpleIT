@@ -90,9 +90,12 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
     providerName: language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة',
     providerNameDesc: language === 'English' ? 'Name of person/company who performed maintenance' : 'اسم الشخص/الشركة التي قامت بالصيانة',
     status: language === 'English' ? 'Status' : 'الحالة',
-    completed: language === 'English' ? 'Completed' : 'مكتمل',
-    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
-    scheduled: language === 'English' ? 'Scheduled' : 'مجدول',
+    statusCompleted: language === 'English' ? 'Completed' : 'مكتمل',
+    statusInProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
+    statusScheduled: language === 'English' ? 'Scheduled' : 'مجدول',
+    statusCancelled: language === 'English' ? 'Cancelled' : 'ملغى',
+    statusOnHold: language === 'English' ? 'On Hold' : 'معلق',
+    statusOverdue: language === 'English' ? 'Overdue' : 'متأخر',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     save: language === 'English' ? 'Save Maintenance Record' : 'حفظ سجل الصيانة',
     saving: language === 'English' ? 'Saving...' : 'جاري الحفظ...',
@@ -103,12 +106,12 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
       date: initialData?.date || new Date().toISOString().split('T')[0],
-      type: initialData?.type || 'Preventive',
+      type: initialData?.type || 'Repair',
+      status: initialData?.status || 'Scheduled',
       description: initialData?.description || '',
       cost: initialData?.cost || '0',
       providerType: initialData?.providerType || 'Internal',
       providerName: initialData?.providerName || 'IT Department',
-      status: initialData?.status || 'Completed'
     },
   });
 
@@ -286,9 +289,12 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Completed">{translations.completed}</SelectItem>
-                  <SelectItem value="In Progress">{translations.inProgress}</SelectItem>
-                  <SelectItem value="Scheduled">{translations.scheduled}</SelectItem>
+                  <SelectItem value="Completed">{translations.statusCompleted}</SelectItem>
+                  <SelectItem value="In Progress">{translations.statusInProgress}</SelectItem>
+                  <SelectItem value="Scheduled">{translations.statusScheduled}</SelectItem>
+                  <SelectItem value="Cancelled">{translations.statusCancelled}</SelectItem>
+                  <SelectItem value="On Hold">{translations.statusOnHold}</SelectItem>
+                  <SelectItem value="Overdue">{translations.statusOverdue}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

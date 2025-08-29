@@ -19,7 +19,9 @@ export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High
 export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
+export const maintenanceStatusEnum = pgEnum('maintenance_status', ['Scheduled','In Progress', 'Completed','Cancelled','On Hold','Overdue']);
 export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
+
 
 // Add sequence definitions with increment: 1
 export const employeesIdSequence = pgSequence('employees_id_seq', {
@@ -153,6 +155,7 @@ export const assetMaintenance = pgTable("asset_maintenance", {
   providerType: varchar("provider_type", { length: 100 }).notNull(),
   providerName: varchar("provider_name", { length: 100 }),
   type: maintenanceTypeEnum("type").notNull().default('Preventive'),
+  status: varchar("status", { length: 50 }).default('Completed'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -540,6 +543,7 @@ export type Asset = typeof assets.$inferSelect;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type MaintenanceStatus = typeof maintenanceStatusEnum.enumValues[number];
 export type AssetMaintenance = typeof assetMaintenance.$inferSelect;
 export type InsertAssetMaintenance = z.infer<typeof insertAssetMaintenanceSchema>;
 export type Notification = typeof notifications.$inferSelect;
@@ -560,6 +564,7 @@ export type SecurityQuestion = typeof securityQuestions.$inferSelect;
 export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+
 
 // Asset Status types
 export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({

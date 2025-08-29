@@ -56,16 +56,23 @@ export default function Notifications() {
     
     if (!assets || !tickets || !systemConfig) return notifications;
 
-    // Check for assets in maintenance
-    const maintenanceAssets = assets.filter(asset => asset.status === 'Maintenance');
+   // Check for assets with active maintenance
+    const maintenanceAssets = assets.filter(asset => 
+      asset.maintenanceStatus === 'Scheduled' || 
+      asset.maintenanceStatus === 'In Progress'
+    );
+
     if (maintenanceAssets.length > 0) {
+      const scheduledCount = maintenanceAssets.filter(a => a.maintenanceStatus === 'Scheduled').length;
+      const inProgressCount = maintenanceAssets.filter(a => a.maintenanceStatus === 'In Progress').length;
+      
       notifications.push({
         id: 'maintenance-alert',
         title: `${maintenanceAssets.length} Asset${maintenanceAssets.length > 1 ? 's' : ''} Under Maintenance`,
-        message: `${maintenanceAssets.length} asset${maintenanceAssets.length > 1 ? 's are' : ' is'} currently under maintenance and unavailable for assignment.`,
+        message: `${scheduledCount} scheduled, ${inProgressCount} in progress. Check maintenance schedule for details.`,
         time: '2 ' + translations.minsAgo,
         icon: <Wrench className="h-5 w-5 text-white" />,
-        iconColor: 'bg-warning',
+        iconColor: 'bg-blue-500',
         unread: true,
         primaryAction: translations.viewDetails,
       });
