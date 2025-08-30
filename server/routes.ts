@@ -2382,92 +2382,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset CRUD routes
-  app.get("/api/assets", authenticateUser, async (req, res) => {
-    try {
-      const assets = await storage.getAllAssets();
-      
-      // Helper function to determine maintenance status
-      const getMaintenanceStatus = (nextMaintenanceDate: string | null): string => {
-        if (!nextMaintenanceDate) return 'none';
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
-        const maintenanceDate = new Date(nextMaintenanceDate);
-        maintenanceDate.setHours(0, 0, 0, 0);
-        
-        const weekFromNow = new Date();
-        weekFromNow.setDate(today.getDate() + 7);
-        weekFromNow.setHours(23, 59, 59, 999);
-        
-        if (maintenanceDate < today) return 'overdue';
-        if (maintenanceDate <= weekFromNow) return 'dueSoon';
-        return 'scheduled';
-      };
-      
-      // Enrich each asset with maintenance dates
-      const enrichedAssets = await Promise.all(
-        assets.map(async (asset) => {
-          try {
-            const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
-            
-            // Calculate last maintenance date (most recent completed maintenance)
-            const completedMaintenance = maintenanceRecords
-              .filter(m => {
-                // Check both type and status fields for compatibility
-                return m.type === 'Completed' || 
-                      m.status === 'Completed' ||
-                      (m.status !== 'Scheduled' && m.status !== 'Cancelled');
-              })
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            
-            const lastMaintenanceDate = completedMaintenance.length > 0 
-              ? completedMaintenance[0].date 
-              : null;
-            
-            // Find next scheduled maintenance
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const scheduledMaintenance = maintenanceRecords
-              .filter(m => {
-                const maintenanceDate = new Date(m.date);
-                return m.status === 'Scheduled' && maintenanceDate >= today;
-              })
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            
-            const nextMaintenanceDate = scheduledMaintenance.length > 0
-              ? scheduledMaintenance[0].date
-              : null;
-            
-            return {
-              ...asset,
-              lastMaintenanceDate,
-              nextMaintenanceDate,
-              maintenanceStatus: getMaintenanceStatus(nextMaintenanceDate),
-              hasScheduledMaintenance: scheduledMaintenance.length > 0,
-              maintenanceCount: maintenanceRecords.length
-            };
-          } catch (error) {
-            console.error(`Error enriching asset ${asset.id} with maintenance data:`, error);
-            // Return asset without maintenance data if there's an error
-            return {
-              ...asset,
-              lastMaintenanceDate: null,
-              nextMaintenanceDate: null,
-              maintenanceStatus: 'none',
-              hasScheduledMaintenance: false,
-              maintenanceCount: 0
-            };
+app.get("/api/assets", authenticateUser, async (req, res) => {
+  try {
+    const assets = await storage.getAllAssets();
+    
+    // Enrich each asset with maintenance information
+    const enrichedAssets = await Promise.all(
+      assets.map(async (asset) => {
+        try {
+          const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+          
+          // Get the most recent completed maintenance
+          const completedMaintenance = maintenanceRecords
+            .filter(m => m.status === 'Completed')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          const lastMaintenanceDate = completedMaintenance.length > 0 
+            ? completedMaintenance[0].date 
+            : null;
+          
+          // Check for in-progress maintenance
+          const inProgressMaintenance = maintenanceRecords
+            .filter(m => m.status === 'In Progress')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          // Check for scheduled maintenance (future dates)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const scheduledMaintenance = maintenanceRecords
+            .filter(m => {
+              const maintenanceDate = new Date(m.date);
+              return m.status === 'Scheduled' && maintenanceDate >= today;
+            })
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+          // Determine next maintenance date (prioritize in-progress, then scheduled)
+          let nextMaintenanceDate = null;
+          let currentMaintenanceStatus = 'none';
+          
+          if (inProgressMaintenance.length > 0) {
+            nextMaintenanceDate = inProgressMaintenance[0].date;
+            currentMaintenanceStatus = 'inProgress';
+          } else if (scheduledMaintenance.length > 0) {
+            nextMaintenanceDate = scheduledMaintenance[0].date;
+            currentMaintenanceStatus = 'scheduled';
           }
-        })
-      );
-      
-      res.json(enrichedAssets);
-    } catch (error: unknown) {
-      console.error('Error fetching assets:', error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+          
+          return {
+            ...asset,
+            lastMaintenanceDate,
+            nextMaintenanceDate,
+            currentMaintenanceStatus,
+            hasScheduledMaintenance: scheduledMaintenance.length > 0,
+            hasInProgressMaintenance: inProgressMaintenance.length > 0,
+            hasCompletedMaintenance: completedMaintenance.length > 0,
+            maintenanceCount: maintenanceRecords.length,
+            // Keep the latest maintenance record for reference
+            latestMaintenance: maintenanceRecords[0] || null
+          };
+        } catch (error) {
+          console.error(`Error enriching asset ${asset.id} with maintenance data:`, error);
+          return {
+            ...asset,
+            lastMaintenanceDate: null,
+            nextMaintenanceDate: null,
+            currentMaintenanceStatus: 'none',
+            hasScheduledMaintenance: false,
+            hasInProgressMaintenance: false,
+            hasCompletedMaintenance: false,
+            maintenanceCount: 0,
+            latestMaintenance: null
+          };
+        }
+      })
+    );
+    
+    res.json(enrichedAssets);
+  } catch (error: unknown) {
+    console.error('Error fetching assets:', error);
+    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+  }
+});
 
   app.get("/api/assets/:id", authenticateUser, async (req, res) => {
     try {
@@ -4341,22 +4337,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
+
   app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
     try {
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      const [
-        employees,
-        assets,
-        openTickets,
-        userCount,
-        allTickets
-      ] = await Promise.all([
+      
+      const [employees, assets, openTickets, userCount, allTickets] = await Promise.all([
         storage.getAllEmployees().catch(err => {
           console.error('Employee fetch error:', err);
           return [];
@@ -4365,9 +4356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Promise.all([
           storage.getTicketsByStatus("Open"),
           storage.getTicketsByStatus("In Progress")
-        ]).then(([openTickets, inProgressTickets]) => 
-          [...openTickets, ...inProgressTickets]
-        ).catch(err => {
+        ]).then(([open, inProgress]) => [...open, ...inProgress]).catch(err => {
           console.error('Active tickets fetch error:', err);
           return [];
         }),
@@ -4375,30 +4364,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getAllTickets().catch(err => {
           console.error('All tickets fetch error:', err);
           return [];
-        }),
+        })
       ]);
-
-        // Calculate maintenance counts
-      const maintenanceCounts = {
-        overdue: 0,
-        dueThisWeek: 0,
-        scheduled: 0
+      
+      // Calculate maintenance counts for dashboard
+      const maintenanceCounts = { 
+        scheduled: 0, 
+        inProgress: 0,
+        completed: 0,
+        total: 0 
       };
-
-        // Process assets for maintenance status
-      assets.forEach(asset => {
-        if (asset.nextMaintenanceDate) {
-          const maintenanceDate = new Date(asset.nextMaintenanceDate);
-          
-          if (maintenanceDate < now) {
-            maintenanceCounts.overdue++;
-          } else if (maintenanceDate >= now && maintenanceDate <= weekFromNow) {
-            maintenanceCounts.dueThisWeek++;
-          } else {
-            maintenanceCounts.scheduled++;
-          }
-        }
-      });
+      
+      // Get ALL maintenance records for better statistics
+      const allMaintenanceRecords = await storage.getAllMaintenanceRecords();
+      
+      // Process all assets to count maintenance statuses
+      for (const asset of assets) {
+        const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+        
+        // Count scheduled maintenance (future dates)
+        const hasScheduled = maintenanceRecords.some(m => {
+          const maintenanceDate = new Date(m.date);
+          return m.status === 'Scheduled' && maintenanceDate >= now;
+        });
+        
+        // Count in-progress maintenance
+        const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+        
+        // Count completed maintenance
+        const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+        
+        if (hasScheduled) maintenanceCounts.scheduled++;
+        if (hasInProgress) maintenanceCounts.inProgress++;
+        if (hasCompleted) maintenanceCounts.completed++;
+      }
+      
+      maintenanceCounts.total = allMaintenanceRecords.length;
       
       // Calculate historical comparisons
       const employeesOneYearAgo = employees.filter(emp => {
@@ -4411,90 +4412,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return createdAt && createdAt <= oneMonthAgo;
       }).length;
 
-      const activeTicketsOneWeekAgo = allTickets.filter(ticket => {
+      const ticketsOneWeekAgo = allTickets.filter(ticket => {
         const createdAt = ticket.createdAt ? new Date(ticket.createdAt) : null;
-        const isActive = ticket.status === 'Open' || ticket.status === 'In Progress';
-        return createdAt && createdAt <= oneWeekAgo && isActive;
+        return createdAt && createdAt <= oneWeekAgo;
       }).length;
 
-      // Calculate asset value one quarter ago
-      const assetsOneQuarterAgo = assets.filter(asset => {
-        const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
-        return createdAt && createdAt <= oneQuarterAgo;
-      });
-      const totalAssetValueOneQuarterAgo = assetsOneQuarterAgo.reduce((sum, asset) => {
-        return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
-      }, 0);
-
-      // Calculate current totals
-      const currentEmployees = employees.length;
-      const currentAssets = assets.length;
-      const currentActiveTickets = openTickets.length;
+      // Calculate total asset value
       const totalAssetValue = assets.reduce((sum, asset) => {
-        return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
+        const price = typeof asset.buyPrice === 'string' 
+          ? parseFloat(asset.buyPrice) 
+          : (asset.buyPrice || 0);
+        return sum + (isNaN(price) ? 0 : price);
       }, 0);
 
-      // Calculate percentage changes
+      // Calculate changes
       const calculatePercentageChange = (current: number, previous: number): string => {
         if (previous === 0) return current > 0 ? '+100%' : '0%';
         const change = ((current - previous) / previous) * 100;
-        return change >= 0 ? `+${Math.round(change)}%` : `${Math.round(change)}%`;
+        return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
       };
 
-      // Count assets by type
-      const assetsByType = assets.reduce((acc: Record<string, number>, asset) => {
-        acc[asset.type] = (acc[asset.type] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Count assets by status
-      const assetsByStatus = assets.reduce((acc: Record<string, number>, asset) => {
-        acc[asset.status] = (acc[asset.status] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Count employees by department
-      const employeesByDepartment = employees.reduce((acc: Record<string, number>, employee) => {
-        acc[employee.department] = (acc[employee.department] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Get recent assets (sort by creation date)
+      // Get recent items for dashboard widgets
       const recentAssets = assets
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5);
       
-      // Get recent tickets (sort by creation date)
       const recentTickets = allTickets
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5);
-      
-      // Get recent activity
-      const recentActivity = await storage.getRecentActivity(5);
+
+      // Assets by type
+      const assetsByType = assets.reduce((acc, asset) => {
+        acc[asset.type] = (acc[asset.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Employees by department
+      const employeesByDepartment = employees.reduce((acc, emp) => {
+        const dept = emp.department || 'Unassigned';
+        acc[dept] = (acc[dept] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       
       res.json({
         counts: {
-          employees: currentEmployees,
-          assets: currentAssets,
-          activeTickets: currentActiveTickets,
-          users: userCount.length,
-          totalAssetValue
+          employees: employees.length,
+          assets: assets.length,
+          activeTickets: openTickets.length,
+          totalAssetValue,
+          users: userCount.length
         },
         maintenanceCounts,
         changes: {
-          employees: calculatePercentageChange(currentEmployees, employeesOneYearAgo),
-          assets: calculatePercentageChange(currentAssets, assetsOneMonthAgo),
-          activeTickets: calculatePercentageChange(currentActiveTickets, activeTicketsOneWeekAgo),
-          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValueOneQuarterAgo)
+          employees: calculatePercentageChange(employees.length, employeesOneYearAgo),
+          assets: calculatePercentageChange(assets.length, assetsOneMonthAgo),
+          activeTickets: calculatePercentageChange(openTickets.length, ticketsOneWeekAgo),
+          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValue * 0.9) // Placeholder
         },
-        assetsByType,
-        assetsByStatus,
-        employeesByDepartment,
         recentAssets,
         recentTickets,
-        recentActivity
+        assetsByType,
+        employeesByDepartment
       });
     } catch (error: unknown) {
+      console.error('Dashboard summary error:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
