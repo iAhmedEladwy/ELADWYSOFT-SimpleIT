@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/use-language';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +21,6 @@ interface RecentTicketsProps {
 
 export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentTicketsProps) {
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   // Translations
   const translations = {
@@ -64,7 +62,7 @@ export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentT
         <Button
           variant="ghost"
           size="sm"
-          onClick={onViewAll || (() => navigate('/tickets'))}
+          onClick={onViewAll || (() => window.location.href = '/tickets')}
         >
           {translations.viewAll}
         </Button>
@@ -91,7 +89,7 @@ export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentT
                 <TableRow 
                   key={ticket.id}
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => navigate(`/tickets?search=${ticket.ticketId}`)}
+                  onClick={() => window.location.href = `/tickets?search=${ticket.ticketId}`}
                 >
                   <TableCell className="font-medium">{ticket.ticketId}</TableCell>
                   <TableCell>

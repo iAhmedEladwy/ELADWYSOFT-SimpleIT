@@ -19,6 +19,13 @@ export default function AssetsByType({ assetsByType, isLoading }: AssetsByTypePr
     noData: language === 'English' ? 'No asset data available' : 'لا توجد بيانات أصول متاحة',
   };
 
+      const handleChartClick = (data: any) => {
+      if (onTypeClick && data.activeLabel) {
+        onTypeClick(data.activeLabel);
+      }
+    };
+
+
   // Calculate percentages if data exists
   const totalAssets = Object.values(assetsByType).reduce((sum, count) => sum + count, 0) || 1;
   

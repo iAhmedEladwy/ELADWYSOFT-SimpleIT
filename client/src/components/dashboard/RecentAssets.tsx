@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/hooks/use-language';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,59 +11,60 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Ticket } from 'lucide-react';
+import { Laptop } from 'lucide-react';
 
-interface RecentTicketsProps {
-  tickets: any[];
+interface RecentAssetsProps {
+  assets: any[];
   isLoading: boolean;
   onViewAll?: () => void;
 }
 
-export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentTicketsProps) {
+export default function RecentAssets({ assets, isLoading, onViewAll }: RecentAssetsProps) {
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   // Translations
   const translations = {
-    recentTickets: language === 'English' ? 'Recent Tickets' : 'التذاكر الحديثة',
-    ticketId: language === 'English' ? 'Ticket ID' : 'معرف التذكرة',
-    priority: language === 'English' ? 'Priority' : 'الأولوية',
+    recentAssets: language === 'English' ? 'Recent Assets' : 'الأصول الحديثة',
+    assetId: language === 'English' ? 'Asset ID' : 'معرف الأصل',
+    type: language === 'English' ? 'Type' : 'النوع',
     status: language === 'English' ? 'Status' : 'الحالة',
     viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    noTickets: language === 'English' ? 'No recent tickets' : 'لا توجد تذاكر حديثة',
+    noAssets: language === 'English' ? 'No recent assets' : 'لا توجد أصول حديثة',
   };
 
-  const getPriorityVariant = (priority: string): any => {
-    switch (priority) {
-      case 'Critical': return 'destructive';
-      case 'High': return 'warning';
-      case 'Medium': return 'secondary';
-      case 'Low': return 'default';
-      default: return 'default';
-    }
-  };
-
+  // Get status variant for badge
   const getStatusVariant = (status: string): any => {
     switch (status) {
-      case 'Open': return 'destructive';
-      case 'In Progress': return 'warning';
-      case 'Resolved': return 'success';
-      case 'Closed': return 'secondary';
+      case 'Available': return 'success';
+      case 'In Use': return 'secondary';
+      case 'Under Maintenance': return 'warning';
+      case 'Retired': return 'destructive';
       default: return 'default';
     }
+  };
+
+  // Get maintenance indicator badge
+  const getMaintenanceIndicator = (asset: any) => {
+    if (asset.currentMaintenanceStatus === 'inProgress') {
+      return <Badge variant="warning" className="text-xs ml-2">In Maintenance</Badge>;
+    }
+    if (asset.currentMaintenanceStatus === 'scheduled') {
+      return <Badge variant="secondary" className="text-xs ml-2">Scheduled</Badge>;
+    }
+    return null;
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
-          <Ticket className="h-5 w-5 text-accent" />
-          <CardTitle className="text-lg">{translations.recentTickets}</CardTitle>
+          <Laptop className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">{translations.recentAssets}</CardTitle>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={onViewAll || (() => navigate('/tickets'))}
+          onClick={onViewAll || (() => window.location.href = '/assets')}
         >
           {translations.viewAll}
         </Button>
@@ -76,33 +76,32 @@ export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentT
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : tickets && tickets.length > 0 ? (
+        ) : assets && assets.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{translations.ticketId}</TableHead>
-                <TableHead>{translations.priority}</TableHead>
+                <TableHead>{translations.assetId}</TableHead>
+                <TableHead>{translations.type}</TableHead>
                 <TableHead>{translations.status}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* ENHANCED TABLE BODY WITH CLICKABLE ROWS */}
-              {tickets.slice(0, 5).map((ticket) => (
+              {/* THIS IS WHERE THE TABLE BODY ENHANCEMENT GOES */}
+              {assets.slice(0, 5).map((asset) => (
                 <TableRow 
-                  key={ticket.id}
+                  key={asset.id} 
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => navigate(`/tickets?search=${ticket.ticketId}`)}
+                  onClick={() => window.location.href = `/assets?search=${asset.assetId}`}
                 >
-                  <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                  <TableCell className="font-medium">{asset.assetId}</TableCell>
+                  <TableCell>{asset.type}</TableCell>
                   <TableCell>
-                    <Badge variant={getPriorityVariant(ticket.priority)}>
-                      {ticket.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(ticket.status)}>
-                      {ticket.status}
-                    </Badge>
+                    <div className="flex items-center">
+                      <Badge variant={getStatusVariant(asset.status)}>
+                        {asset.status}
+                      </Badge>
+                      {getMaintenanceIndicator(asset)}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -110,7 +109,7 @@ export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentT
           </Table>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            {translations.noTickets}
+            {translations.noAssets}
           </div>
         )}
       </CardContent>

@@ -3,7 +3,6 @@ import { Wrench, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
-import { useNavigate } from 'react-router-dom';
 import StatsCard from '@/components/dashboard/StatsCard';
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
@@ -30,7 +29,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Dashboard() {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Get translations based on language
@@ -70,9 +68,9 @@ export default function Dashboard() {
     queryKey: ['/api/dashboard/summary'],
   });
 
-   // Navigation handlers for maintenance cards
+ // Navigation handlers for maintenance cards - using window.location
   const handleMaintenanceNavigation = (status: string) => {
-    navigate(`/assets?maintenanceDue=${status}`);
+    window.location.href = `/assets?maintenanceDue=${status}`;
   };
 
   return (
@@ -150,10 +148,10 @@ export default function Dashboard() {
                   <Wrench className="h-5 w-5 text-blue-600" />
                   <CardTitle className="text-lg">{translations.maintenanceOverview}</CardTitle>
                 </div>
-                <Button 
+                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => navigate('/maintenance')}
+                  onClick={() => window.location.href = '/maintenance'}
                 >
                   {translations.viewAll}
                 </Button>
@@ -250,12 +248,12 @@ export default function Dashboard() {
                 <RecentAssets 
                   assets={dashboardData?.recentAssets || []} 
                   isLoading={isLoading}
-                  onViewAll={() => navigate('/assets')}
+                  onViewAll={() => window.location.href = '/assets'}
                 />
                 <RecentTickets 
                   tickets={dashboardData?.recentTickets || []} 
                   isLoading={isLoading}
-                  onViewAll={() => navigate('/tickets')}
+                  onViewAll={() => window.location.href = '/tickets'}
                 />
               </div>
               {/* Assets by Type & Department Distribution - with enhancements */}
@@ -263,12 +261,12 @@ export default function Dashboard() {
                     <AssetsByType 
                       assetsByType={dashboardData?.assetsByType || {}} 
                       isLoading={isLoading}
-                      onTypeClick={(type) => navigate(`/assets?type=${type}`)}
+                      onTypeClick={(type) => window.location.href = `/assets?type=${type}`}
                     />
                     <DepartmentDistribution 
                       employeesByDepartment={dashboardData?.employeesByDepartment || {}} 
                       isLoading={isLoading}
-                      onDepartmentClick={(dept) => navigate(`/employees?department=${dept}`)}
+                      onDepartmentClick={(dept) => window.location.href = `/employees?department=${dept}`}
                     />
                   </div>
                 </TabsContent>
