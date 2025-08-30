@@ -2740,16 +2740,7 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
       
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
         schema.insertAssetMaintenanceSchema, 
-        { ...requestData, assetId, performedBy: (req.user as schema.User).id }
-      );
-
-      if (!requestData.status) {
-      requestData.status = 'Completed';
-       }
-
-       // Build maintenance data object
-    const maintenanceData = {
-      assetId: assetId,
+        {  assetId: assetId,
       date: requestData.date,
       type: requestData.type || 'Preventive', // type is maintenance type (Preventive, Corrective, etc.)
       description: requestData.description,
@@ -2758,7 +2749,12 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
       providerName: requestData.providerName,
       status: requestData.status, // status is Scheduled, In Progress, or Completed
       performedBy: (req.user as schema.User).id
-    };
+      }
+      );
+
+      if (!requestData.status) {
+      requestData.status = 'Completed';
+       }
 
     // Update asset status if maintenance is in progress
     if (requestData.status === 'In Progress') {
