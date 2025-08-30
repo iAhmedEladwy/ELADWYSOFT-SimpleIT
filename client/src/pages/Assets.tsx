@@ -1,10 +1,8 @@
-// client/src/pages/Assets.tsx
-
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
-import { apiRequest } from '@/lib/api';
+import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
 import AssetsTable from '@/components/assets/AssetsTable';
 import AssetForm from '@/components/assets/AssetForm';
