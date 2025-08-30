@@ -194,6 +194,14 @@ export default function Assets() {
     queryKey: ['/api/employees'],
   });
 
+  const { data: customAssetTypes = [] } = useQuery({
+  queryKey: ['/api/custom-asset-types'],
+  });
+
+  const { data: customAssetBrands = [] } = useQuery({
+    queryKey: ['/api/custom-asset-brands'],
+  });
+
   const { data: assetStatuses = [] } = useQuery({
     queryKey: ['/api/custom-asset-statuses'],
     select: (data: any[]) => data.map(status => status.name)
