@@ -2384,23 +2384,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Asset CRUD routes
   app.get("/api/assets", authenticateUser, async (req, res) => {
     try {
-      const user = req.user as schema.User;
-      const userRoleLevel = getUserRoleLevel(user);
+      const assets = await storage.getAllAssets();
       
-      // If user has level 1 access (Employee), only show assets that aren't being modified
-      if (userRoleLevel === 1) { // Employee role
-        const assets = await storage.getAllAssets();
-        // Filter out assets that are in maintenance, being sold, etc.
-        const filteredAssets = assets.filter(asset => 
-          asset.status === 'Available' || asset.status === 'In Use'
-        );
-        res.json(filteredAssets);
-      } else {
-        // Admin/Manager can see all assets
-        const assets = await storage.getAllAssets();
-        res.json(assets);
-      }
+      // Helper function to determine maintenance status
+      const getMaintenanceStatus = (nextMaintenanceDate: string | null): string => {
+        if (!nextMaintenanceDate) return 'none';
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+        const maintenanceDate = new Date(nextMaintenanceDate);
+        maintenanceDate.setHours(0, 0, 0, 0);
+        
+        const weekFromNow = new Date();
+        weekFromNow.setDate(today.getDate() + 7);
+        weekFromNow.setHours(23, 59, 59, 999);
+        
+        if (maintenanceDate < today) return 'overdue';
+        if (maintenanceDate <= weekFromNow) return 'dueSoon';
+        return 'scheduled';
+      };
+      
+      // Enrich each asset with maintenance dates
+      const enrichedAssets = await Promise.all(
+        assets.map(async (asset) => {
+          try {
+            const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+            
+            // Calculate last maintenance date (most recent completed maintenance)
+            const completedMaintenance = maintenanceRecords
+              .filter(m => {
+                // Check both type and status fields for compatibility
+                return m.type === 'Completed' || 
+                      m.status === 'Completed' ||
+                      (m.status !== 'Scheduled' && m.status !== 'Cancelled');
+              })
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            const lastMaintenanceDate = completedMaintenance.length > 0 
+              ? completedMaintenance[0].date 
+              : null;
+            
+            // Find next scheduled maintenance
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const scheduledMaintenance = maintenanceRecords
+              .filter(m => {
+                const maintenanceDate = new Date(m.date);
+                return m.status === 'Scheduled' && maintenanceDate >= today;
+              })
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            
+            const nextMaintenanceDate = scheduledMaintenance.length > 0
+              ? scheduledMaintenance[0].date
+              : null;
+            
+            return {
+              ...asset,
+              lastMaintenanceDate,
+              nextMaintenanceDate,
+              maintenanceStatus: getMaintenanceStatus(nextMaintenanceDate),
+              hasScheduledMaintenance: scheduledMaintenance.length > 0,
+              maintenanceCount: maintenanceRecords.length
+            };
+          } catch (error) {
+            console.error(`Error enriching asset ${asset.id} with maintenance data:`, error);
+            // Return asset without maintenance data if there's an error
+            return {
+              ...asset,
+              lastMaintenanceDate: null,
+              nextMaintenanceDate: null,
+              maintenanceStatus: 'none',
+              hasScheduledMaintenance: false,
+              maintenanceCount: 0
+            };
+          }
+        })
+      );
+      
+      res.json(enrichedAssets);
     } catch (error: unknown) {
+      console.error('Error fetching assets:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
