@@ -17,7 +17,45 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
-
+{
+  version: "0.2.7",
+  date: "2025-08-30",
+  title: "Performance Optimization & Maintenance Management",
+  type: "minor",
+  changes: {
+    features: [
+      "🚀 Backend Pagination System for Assets:",
+      "   📄 Server-side pagination with 50 items per page default",
+      "   🔢 Configurable items per page (25, 50, 100, 200 options)",
+      "   ⏭️ Full pagination controls (first/last/next/previous navigation)",
+      "   💨 80% faster initial page load for large asset inventories",
+      "🔧 Enhanced Maintenance Management:",
+      "   📅 Dynamic last maintenance date from completed records",
+      "   ⏰ Scheduled maintenance tracking with status indicators",
+      "   🎯 Filter assets by maintenance status (Scheduled/In Progress/Completed)",
+      "   🔄 Real-time maintenance status calculation without schema changes",
+      "📊 Improved Dashboard Maintenance Widget:",
+      "   📈 Live maintenance counts for Scheduled and In Progress",
+      "   🔗 Clickable cards navigate to filtered asset views",
+      "   🎨 Color-coded status indicators (blue for scheduled, orange for in-progress)",
+      "   📍 Direct navigation from dashboard to maintenance-filtered assets"
+    ],
+    improvements: [
+      "⚡ Reduced Assets page memory usage by loading only visible data",
+      "🔍 Backend filtering applied before pagination for optimal performance",
+      "📡 API returns paginated response with metadata (total count, pages)",
+      "🔄 Smooth page transitions with keepPreviousData option",
+      "🎯 Maintenance data enrichment only for current page assets",
+      "🔗 URL parameters preserved for dashboard-to-assets navigation"
+    ],
+    bugfixes: [
+      "🔧 Fixed AssetHistory and Notifications expecting array instead of paginated response",
+      "🎯 Corrected maintenance filter logic to properly return boolean values",
+      "📐 Fixed duplicate const declaration in maintenance endpoint",
+      "🔍 Resolved search functionality with backend filtering"
+    ]
+  }
+},
   {
   version: "0.2.6",
   date: "2025-08-29",

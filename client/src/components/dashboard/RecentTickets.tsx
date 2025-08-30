@@ -1,117 +1,117 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Link } from 'wouter';
+import { Ticket } from 'lucide-react';
 
 interface RecentTicketsProps {
   tickets: any[];
   isLoading: boolean;
+  onViewAll?: () => void;
 }
 
-export default function RecentTickets({ tickets, isLoading }: RecentTicketsProps) {
+export default function RecentTickets({ tickets, isLoading, onViewAll }: RecentTicketsProps) {
   const { language } = useLanguage();
 
   // Translations
   const translations = {
     recentTickets: language === 'English' ? 'Recent Tickets' : 'التذاكر الحديثة',
-    viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    id: language === 'English' ? 'ID' : 'المعرف',
-    issue: language === 'English' ? 'Issue' : 'المشكلة',
+    ticketId: language === 'English' ? 'Ticket ID' : 'معرف التذكرة',
     priority: language === 'English' ? 'Priority' : 'الأولوية',
     status: language === 'English' ? 'Status' : 'الحالة',
-    noData: language === 'English' ? 'No recent tickets' : 'لا توجد تذاكر حديثة',
+    viewAll: language === 'English' ? 'View All' : 'عرض الكل',
+    noTickets: language === 'English' ? 'No recent tickets' : 'لا توجد تذاكر حديثة',
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityVariant = (priority: string): any => {
     switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-error';
-      case 'Medium':
-        return 'bg-yellow-100 text-warning';
-      case 'Low':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-600';
+      case 'Critical': return 'destructive';
+      case 'High': return 'warning';
+      case 'Medium': return 'secondary';
+      case 'Low': return 'default';
+      default: return 'default';
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): any => {
     switch (status) {
-      case 'Open':
-        return 'bg-blue-100 text-info';
-      case 'In Progress':
-        return 'bg-yellow-100 text-warning';
-      case 'Resolved':
-        return 'bg-green-100 text-success';
-      case 'Closed':
-        return 'bg-gray-100 text-gray-600';
-      default:
-        return 'bg-gray-100 text-gray-600';
+      case 'Open': return 'destructive';
+      case 'In Progress': return 'warning';
+      case 'Resolved': return 'success';
+      case 'Closed': return 'secondary';
+      default: return 'default';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-semibold text-lg text-gray-900">{translations.recentTickets}</h3>
-        <Link href="/tickets" className="text-primary text-sm hover:underline">
-          {translations.viewAll}
-        </Link>
-      </div>
-      <div className="p-6">
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <Skeleton className="h-[216px] w-full" />
-          ) : tickets && tickets.length > 0 ? (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {translations.id}
-                  </th>
-                  <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {translations.issue}
-                  </th>
-                  <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {translations.priority}
-                  </th>
-                  <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {translations.status}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tickets.slice(0, 4).map((ticket) => (
-                  <tr key={ticket.id}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{ticket.ticketId}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {ticket.description.length > 30
-                        ? `${ticket.description.substring(0, 30)}...`
-                        : ticket.description}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Badge variant="outline" className={`px-2 py-1 ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Badge variant="outline" className={`px-2 py-1 ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="flex items-center justify-center h-[216px] text-gray-500">
-              {translations.noData}
-            </div>
-          )}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Ticket className="h-5 w-5 text-accent" />
+          <CardTitle className="text-lg">{translations.recentTickets}</CardTitle>
         </div>
-      </div>
-    </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onViewAll || (() => window.location.href = '/tickets')}
+        >
+          {translations.viewAll}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : tickets && tickets.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{translations.ticketId}</TableHead>
+                <TableHead>{translations.priority}</TableHead>
+                <TableHead>{translations.status}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* ENHANCED TABLE BODY WITH CLICKABLE ROWS */}
+              {tickets.slice(0, 5).map((ticket) => (
+                <TableRow 
+                  key={ticket.id}
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  onClick={() => window.location.href = `/tickets?search=${ticket.ticketId}`}
+                >
+                  <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+                  <TableCell>
+                    <Badge variant={getPriorityVariant(ticket.priority)}>
+                      {ticket.priority}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(ticket.status)}>
+                      {ticket.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            {translations.noTickets}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

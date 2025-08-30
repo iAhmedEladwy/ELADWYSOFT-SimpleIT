@@ -1,3 +1,5 @@
+// client/src/pages/Assets.tsx
+
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,14 +19,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-
-import { Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
 import AssetsTable from '@/components/assets/AssetsTable';
-import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -56,83 +56,13 @@ export default function Assets() {
   const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
   const [maintenanceAsset, setMaintenanceAsset] = useState<any>(null);
   const [showBulkActions, setShowBulkActions] = useState(false);
-
-  // Parse URL parameters on component mount
-  useEffect(() => {
-    // Get query parameters from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    const urlFilters: AssetFilters = {};
-    
-    // Check for assignedTo parameter
-    const assignedTo = urlParams.get('assignedTo');
-    if (assignedTo) {
-      urlFilters.assignedTo = assignedTo;
-    }
-    
-    // Check for type parameter
-    const type = urlParams.get('type');
-    if (type) {
-      urlFilters.type = type;
-    }
-    
-    // Check for brand parameter
-    const brand = urlParams.get('brand');
-    if (brand) {
-      urlFilters.brand = brand;
-    }
-    
-    // Check for status parameter
-    const status = urlParams.get('status');
-    if (status) {
-      urlFilters.status = status;
-    }
-    
-    // Check for search parameter
-    const search = urlParams.get('search');
-    if (search) {
-      urlFilters.search = search;
-      setSearchInput(search); // Also update search input field
-    }
-    
-    // Update filters if any URL parameters were found
-    if (Object.keys(urlFilters).length > 0) {
-      setFilters(urlFilters);
-    }
-  }, []); // Empty dependency array means this runs once on mount
-   
-// Update URL when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    
-    // Add each filter to URL params if it exists
-    if (filters.assignedTo) {
-      params.set('assignedTo', filters.assignedTo);
-    }
-    if (filters.type) {
-      params.set('type', filters.type);
-    }
-    if (filters.brand) {
-      params.set('brand', filters.brand);
-    }
-    if (filters.status) {
-      params.set('status', filters.status);
-    }
-    if (filters.search) {
-      params.set('search', filters.search);
-    }
-    
-    // Update URL without causing a page reload
-    const newUrl = params.toString() 
-      ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname;
-    
-    // Only update if URL actually changed to avoid infinite loops
-    if (newUrl !== window.location.pathname + window.location.search) {
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, [filters]);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
   // Sell assets form state
   const [sellForm, setSellForm] = useState({
     buyer: '',
@@ -154,7 +84,6 @@ export default function Assets() {
     bulkActions: language === 'Arabic' ? 'العمليات المجمعة' : 'Bulk Actions',
     deleteSelected: language === 'Arabic' ? 'حذف المحدد' : 'Delete Selected',
     changeStatus: language === 'Arabic' ? 'تغيير الحالة' : 'Change Status',
-
     export: language === 'Arabic' ? 'تصدير' : 'Export',
     import: language === 'Arabic' ? 'استيراد' : 'Import',
     refresh: language === 'Arabic' ? 'تحديث' : 'Refresh',
@@ -180,24 +109,110 @@ export default function Assets() {
     deleteConfirm: language === 'Arabic' ? 'هل أنت متأكد من حذف هذا الأصل؟' : 'Are you sure you want to delete this asset?',
     sellConfirm: language === 'Arabic' ? 'هل أنت متأكد من بيع الأصول المحددة؟' : 'Are you sure you want to sell the selected assets?',
     noAssetsSelected: language === 'Arabic' ? 'لم يتم تحديد أصول للبيع' : 'No assets selected for sale',
-    invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file'
+    invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file',
+    perPage: language === 'Arabic' ? 'لكل صفحة:' : 'Per page:',
+    showing: language === 'Arabic' ? 'عرض' : 'Showing',
+    of: language === 'Arabic' ? 'من' : 'of',
+    assets: language === 'Arabic' ? 'أصل' : 'assets',
+    page: language === 'Arabic' ? 'صفحة' : 'Page'
   };
 
-  // Fetch data
-  const { data: assets, isLoading, refetch } = useQuery({
-    queryKey: ['/api/assets'],
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFilters: AssetFiltersType = {};
+    
+    const assignedTo = urlParams.get('assignedTo');
+    if (assignedTo) urlFilters.assignedTo = assignedTo;
+    
+    const type = urlParams.get('type');
+    if (type) urlFilters.type = type;
+    
+    const brand = urlParams.get('brand');
+    if (brand) urlFilters.brand = brand;
+    
+    const status = urlParams.get('status');
+    if (status) urlFilters.status = status;
+    
+    const search = urlParams.get('search');
+    if (search) {
+      urlFilters.search = search;
+      setSearchInput(search);
+    }
+
+    const maintenanceDue = urlParams.get('maintenanceDue');
+    if (maintenanceDue && ['scheduled', 'inProgress', 'completed'].includes(maintenanceDue)) {
+      urlFilters.maintenanceDue = maintenanceDue as 'scheduled' | 'inProgress' | 'completed';
+    }
+    
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+    }
+  }, []);
+
+  // Build query parameters
+  const queryParams = useMemo(() => {
+    const params: any = {
+      page: currentPage.toString(),
+      limit: itemsPerPage.toString(),
+    };
+    
+    // Add filters to params
+    if (filters.search) params.search = filters.search;
+    if (filters.type) params.type = filters.type;
+    if (filters.brand) params.brand = filters.brand;
+    if (filters.model) params.model = filters.model;
+    if (filters.status) params.status = filters.status;
+    if (filters.assignedTo) params.assignedTo = filters.assignedTo;
+    if (filters.maintenanceDue) params.maintenanceDue = filters.maintenanceDue;
+    
+    return params;
+  }, [currentPage, itemsPerPage, filters]);
+
+  // Fetch assets with pagination
+  const { data: assetsResponse, isLoading, refetch } = useQuery({
+    queryKey: ['/api/assets', queryParams],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams(queryParams);
+      const response = await apiRequest(`/api/assets?${searchParams}`);
+      return response;
+    },
+    keepPreviousData: true,
   });
+
+  // Extract data and pagination info
+  const assets = assetsResponse?.data || [];
+  const pagination = assetsResponse?.pagination || {
+    page: 1,
+    limit: 50,
+    totalCount: 0,
+    totalPages: 0,
+    hasMore: false
+  };
 
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
   });
 
-  const { data: assetStatuses = [] } = useQuery({
-  queryKey: ['/api/custom-asset-statuses'],
-  select: (data: any[]) => data.map(status => status.name)
+  const { data: customAssetTypes = [] } = useQuery({
+  queryKey: ['/api/custom-asset-types'],
   });
 
-  // Mutations
+  const { data: customAssetBrands = [] } = useQuery({
+    queryKey: ['/api/custom-asset-brands'],
+  });
+
+  const { data: assetStatuses = [] } = useQuery({
+    queryKey: ['/api/custom-asset-statuses'],
+    select: (data: any[]) => data.map(status => status.name)
+  });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // All your mutations remain the same
   const addAssetMutation = useMutation({
     mutationFn: (assetData: any) => apiRequest('/api/assets', 'POST', assetData),
     onSuccess: () => {
@@ -210,7 +225,6 @@ export default function Assets() {
       });
     },
     onError: (error: any) => {
-      console.error('Add asset error:', error);
       toast({
         title: translations.error,
         description: error.message || 'Failed to add asset',
@@ -231,7 +245,6 @@ export default function Assets() {
       });
     },
     onError: (error: any) => {
-      console.error('Update asset error:', error);
       toast({
         title: translations.error,
         description: error.message || 'Failed to update asset',
@@ -323,18 +336,13 @@ export default function Assets() {
 
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      try {
-        const res = await fetch('/api/assets/import', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        });
-        if (!res.ok) throw new Error('Import failed');
-        return res.json();
-      } catch (error) {
-        console.error('Import error:', error);
-        throw error;
-      }
+      const res = await fetch('/api/assets/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Import failed');
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -355,57 +363,20 @@ export default function Assets() {
     }
   });
 
-  const exportMutation = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch('/api/assets/export', {
-          credentials: 'include'
-        });
-        if (!res.ok) throw new Error('Export failed');
-        return res.blob();
-      } catch (error) {
-        console.error('Export error:', error);
-        throw error;
-      }
-    },
-    onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `assets-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    },
-    onError: (error: any) => {
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  });
-
   const addMaintenanceMutation = useMutation({
     mutationFn: async (maintenanceData: any) => {
-      try {
-        const { assetId, ...data } = maintenanceData;
-        const res = await fetch(`/api/assets/${assetId}/maintenance`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(data)
-        });
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || 'Failed to add maintenance record');
-        }
-        return res.json();
-      } catch (error) {
-        console.error('Maintenance error:', error);
-        throw error;
+      const { assetId, ...data } = maintenanceData;
+      const res = await fetch(`/api/assets/${assetId}/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to add maintenance record');
       }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -419,13 +390,11 @@ export default function Assets() {
     onError: (error: any) => {
       toast({
         title: translations.error,
-        description: error.message || (language === 'Arabic' ? 'فشل في إضافة سجل الصيانة' : 'Failed to add maintenance record'),
+        description: error.message,
         variant: 'destructive',
       });
     }
   });
-
-
 
   // Event handlers
   const handleAddAsset = (assetData: any) => {
@@ -433,20 +402,12 @@ export default function Assets() {
   };
 
   const handleUpdateAsset = (assetData: any) => {
-  if (!editingAsset) return;
-  updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
-  };
-
-  const handleAssignAsset = (assetId: number, employeeId: number) => {
-    assignAssetMutation.mutate({ assetId, employeeId });
-  };
-
-  const handleUnassignAsset = (assetId: number) => {
-    unassignAssetMutation.mutate(assetId);
+    if (!editingAsset) return;
+    updateAssetMutation.mutate({ id: editingAsset.id, ...assetData });
   };
 
   const handleAddMaintenance = (assetId: number) => {
-    const asset = Array.isArray(assets) ? assets.find((a: any) => a.id === assetId) : null;
+    const asset = assets.find((a: any) => a.id === assetId);
     setMaintenanceAsset(asset);
     setOpenMaintenanceDialog(true);
   };
@@ -455,61 +416,18 @@ export default function Assets() {
     addMaintenanceMutation.mutate(maintenanceData);
   };
 
-
-
-
-
-  const handleUpgradeAsset = (assetId: number) => {
-    // Record asset upgrade
-    const upgradeDescription = prompt('Enter upgrade details (e.g., RAM upgrade, Storage upgrade):');
-    if (!upgradeDescription) return;
-    
-    const upgradeData = {
-      assetId: assetId,
-      date: new Date().toISOString().split('T')[0],
-      type: 'Upgrade',
-      description: upgradeDescription,
-      cost: parseFloat(prompt('Enter upgrade cost (optional):') || '0'),
-      providerType: 'Internal',
-      providerName: 'IT Department'
-    };
-    
-    // Call API to record upgrade
-    fetch('/api/maintenance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(upgradeData)
-    }).then(() => {
-      toast({
-        title: 'Success',
-        description: 'Asset upgrade recorded successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-    }).catch(() => {
-      toast({
-        title: 'Error',
-        description: 'Failed to record asset upgrade',
-        variant: 'destructive',
-      });
-    });
-  };
-
-  const handleExport = () => {
-    exportMutation.mutate();
-  };
-
-  // Bulk operations handlers
   const handleSelectAll = () => {
-    if (selectedAssets.length === filteredAssets.length) {
+    if (selectedAssets.length === assets.length) {
       setSelectedAssets([]);
     } else {
-      setSelectedAssets(filteredAssets.map((asset: any) => asset.id));
+      setSelectedAssets(assets.map((asset: any) => asset.id));
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedAssets.length === 0) return;
+    
+    if (!confirm(translations.deleteConfirm)) return;
     
     try {
       await Promise.all(
@@ -520,10 +438,10 @@ export default function Assets() {
       
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: `${selectedAssets.length} assets deleted successfully`,
+        title: translations.success,
+        description: `${selectedAssets.length} assets deleted successfully`,
       });
       setSelectedAssets([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -545,10 +463,10 @@ export default function Assets() {
       
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
-        title: `${selectedAssets.length} assets status updated to ${newStatus}`,
+        title: translations.success,
+        description: `${selectedAssets.length} assets status updated to ${newStatus}`,
       });
       setSelectedAssets([]);
-      setShowBulkActions(false);
     } catch (error) {
       toast({
         title: translations.error,
@@ -558,11 +476,8 @@ export default function Assets() {
     }
   };
 
-
-
-  // Enhanced export function for filtered data
   const handleExportFilteredAssets = () => {
-    if (filteredAssets.length === 0) {
+    if (assets.length === 0) {
       toast({
         title: translations.error,
         description: 'No assets to export',
@@ -571,12 +486,11 @@ export default function Assets() {
       return;
     }
     
-    // Create CSV content from filtered assets
     const headers = ['Asset ID', 'Type', 'Brand', 'Model', 'Serial Number', 'CPU', 'RAM', 'Storage', 'Status', 'Assigned To'];
     const csvContent = [
       headers.join(','),
-      ...filteredAssets.map((asset: any) => {
-        const assignedEmployee = Array.isArray(employees) ? employees.find((e: any) => e.id === asset.assignedEmployeeId) : null;
+      ...assets.map((asset: any) => {
+        const assignedEmployee = employees?.find((e: any) => e.id === asset.assignedEmployeeId);
         return [
           asset.assetId || '',
           asset.type || '',
@@ -592,12 +506,11 @@ export default function Assets() {
       })
     ].join('\n');
     
-    // Download CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `filtered-assets-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `assets-export-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -605,7 +518,7 @@ export default function Assets() {
     
     toast({
       title: translations.success,
-      description: `Exported ${filteredAssets.length} assets successfully`,
+      description: `Exported ${assets.length} assets successfully`,
     });
   };
 
@@ -644,130 +557,111 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-  // Filter assets based on filters
-  const filteredAssets = useMemo(() => {
-    if (!assets || !Array.isArray(assets)) return [];
+  // Process employees who have assets assigned
+  const employeesWithAssets = useMemo(() => {
+    if (!assets || !employees) return [];
     
-    return assets.filter((asset: any) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const searchFields = [
-          asset.assetId,
-          asset.type,
-          asset.brand,
-          asset.modelName,
-          asset.serialNumber,
-          asset.location,
-          asset.specs,
-          asset.cpu,
-          asset.ram,
-          asset.storage
-        ].filter(Boolean);
+    const assignedEmployeeIds = new Set(
+      assets
+        .filter((asset: any) => asset.assignedEmployeeId)
+        .map((asset: any) => asset.assignedEmployeeId)
+    );
+    
+    return employees.filter((emp: any) => 
+      assignedEmployeeIds.has(emp.id)
+    );
+  }, [assets, employees]);
+
+  const hasUnassignedAssets = useMemo(() => {
+    return assets?.some((asset: any) => !asset.assignedEmployeeId) || false;
+  }, [assets]);
+
+  const getEmployeeDisplay = (employeeId: string | undefined) => {
+    if (!employeeId || employeeId === 'all') return "All Assignments";
+    if (employeeId === 'unassigned') return "Unassigned";
+    const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
+    return employee ? (employee.englishName || employee.name) : "All Assignments";
+  };
+
+  // Pagination controls component
+  const PaginationControls = () => (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 bg-white dark:bg-gray-800 rounded-lg">
+      <div className="flex items-center space-x-4">
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          {translations.showing} {Math.min((currentPage - 1) * itemsPerPage + 1, pagination.totalCount)} - {' '}
+          {Math.min(currentPage * itemsPerPage, pagination.totalCount)} {translations.of} {' '}
+          {pagination.totalCount} {translations.assets}
+        </p>
+        <div className="flex items-center space-x-2">
+          <Label className="text-sm">{translations.perPage}</Label>
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => {
+              setItemsPerPage(parseInt(value));
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="200">200</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
         
-        if (!searchFields.some(field => 
-          field?.toLowerCase().includes(searchLower)
-        )) {
-          return false;
-        }
-      }
-      
-      // Type filter
-      if (filters.type && asset.type !== filters.type) {
-        return false;
-      }
-      
-      // Brand filter
-      if (filters.brand && asset.brand !== filters.brand) {
-        return false;
-      }
-      
-      // Model filter
-      if (filters.model && asset.modelName !== filters.model) {
-        return false;
-      }
-      
-      // Status filter
-      if (filters.status && asset.status !== filters.status) {
-        return false;
-      }
-      
-      // Assignment filter - Fixed to use proper field mapping
-      if (filters.assignedTo) {
-        if (filters.assignedTo === 'unassigned') {
-          if (asset.assignedEmployeeId) return false;
-        } else {
-          if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
-        }
-      }
-
-      // Maintenance filter
-      if (filters.maintenanceDue) {
-        const today = new Date();
-        const weekFromNow = new Date();
-        weekFromNow.setDate(today.getDate() + 7);
+        <div className="flex items-center gap-1 px-2">
+          <span className="text-sm font-medium">
+            {translations.page} {currentPage} {translations.of} {pagination.totalPages || 1}
+          </span>
+        </div>
         
-        // Check if asset has maintenance records
-        const lastMaintenance = asset.lastMaintenanceDate ? new Date(asset.lastMaintenanceDate) : null;
-        const nextMaintenance = asset.nextMaintenanceDate ? new Date(asset.nextMaintenanceDate) : null;
-        
-        if (filters.maintenanceDue === 'overdue') {
-          if (!nextMaintenance || nextMaintenance < today) {
-            // Asset is overdue for maintenance
-          } else {
-            return false;
-          }
-        } else if (filters.maintenanceDue === 'dueSoon') {
-          if (nextMaintenance && nextMaintenance >= today && nextMaintenance <= weekFromNow) {
-            // Asset is due for maintenance this week
-          } else {
-            return false;
-          }
-        } else if (filters.maintenanceDue === 'scheduled') {
-          if (nextMaintenance && nextMaintenance > weekFromNow) {
-            // Asset has scheduled maintenance in the future
-          } else {
-            return false;
-          }
-        }
-      }
-      
-      return true;
-    });
-  }, [assets, filters]);
-
-      // Process employees who have assets assigned
-    const employeesWithAssets = useMemo(() => {
-      if (!assets || !employees) return [];
-      
-      const assignedEmployeeIds = new Set(
-        assets
-          .filter((asset: any) => asset.assignedEmployeeId)
-          .map((asset: any) => asset.assignedEmployeeId)
-      );
-      
-      return employees.filter((emp: any) => 
-        assignedEmployeeIds.has(emp.id)
-      );
-    }, [assets, employees]);
-
-    // Check if there are unassigned assets
-    const hasUnassignedAssets = useMemo(() => {
-      return assets?.some((asset: any) => !asset.assignedEmployeeId) || false;
-    }, [assets]);
-
-    // Get display text for selected employee
-    const getEmployeeDisplay = (employeeId: string | undefined) => {
-      if (!employeeId || employeeId === 'all') return "All Assignments";
-      if (employeeId === 'unassigned') return "Unassigned";
-      const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
-      return employee ? (employee.englishName || employee.name) : "All Assignments";
-    };
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+          disabled={currentPage >= pagination.totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(pagination.totalPages)}
+          disabled={currentPage >= pagination.totalPages}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v0.2.6</title>
+        <title>{translations.title} | SimpleIT v0.2.7</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
@@ -777,269 +671,255 @@ export default function Assets() {
             <h1 className="text-2xl font-bold text-gray-900">{translations.title}</h1>
             <p className="text-gray-600">{translations.description}</p>
           </div>
-        <div className="flex gap-2">        
-          
-          {hasAccess(2) && (
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={handleExportFilteredAssets}
-              disabled={filteredAssets.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV ({filteredAssets.length})
-            </Button>
-          )}
-          
-            {hasAccess(2) && (
-          <Button 
-            size="sm"
-            onClick={() => {
-              setEditingAsset(null); // Clear editing state for new asset
-              setOpenDialog(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {translations.addAsset}
-          </Button>
-        )}
-        </div>
-        </div>
-
-      {/* ITIL-Compliant Filter & Search Card */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
-              {Object.values(filters).filter(Boolean).length > 0 && (
-                <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {filteredAssets.length} of {assets && Array.isArray(assets) ? assets.length : 0} assets
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* Search */}
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            setFilters({ ...filters, search: searchInput });
-          }} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by Asset ID, Type, Brand, Model, Serial Number, Specs, CPU, RAM, Storage..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Button type="submit" variant="outline">
-              Search
-            </Button>
-          </form>
-
-          {/* Filter Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Type Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Type</label>
-            <Select
-              value={filters.type || 'all'}
-              onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem value="all">All Types</SelectItem>
-                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.type).filter(Boolean))).map((type: string) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                )) : null}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Status</label>
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem value="all">All Statuses</SelectItem>
-                {assetStatuses.map((status: string) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Brand Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Brand</label>
-            <Select
-              value={filters.brand || 'all'}
-              onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Brands" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem value="all">All Brands</SelectItem>
-                {assets && Array.isArray(assets) ? Array.from(new Set(assets.map((a: any) => a.brand).filter(Boolean))).map((brand: string) => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                )) : null}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Assignment Filter - Updated with Combobox */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Assignment</label>
-            <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={assignmentOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  <span className="truncate">
-                    {getEmployeeDisplay(filters.assignedTo)}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search employees..." 
-                    className="h-9"
-                  />
-                  <CommandList>
-                    <CommandEmpty>No employees found.</CommandEmpty>
-                    <CommandGroup>
-                      {/* All Assignments option */}
-                      <CommandItem
-                        value="all"
-                        onSelect={() => {
-                          setFilters({ ...filters, assignedTo: undefined });
-                          setAssignmentOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${
-                            !filters.assignedTo ? "opacity-100" : "opacity-0"
-                          }`}
-                        />
-                        All Assignments
-                      </CommandItem>
-                      
-                      {/* Unassigned option - only show if there are unassigned assets */}
-                      {hasUnassignedAssets && (
-                        <CommandItem
-                          value="unassigned"
-                          onSelect={() => {
-                            setFilters({ ...filters, assignedTo: 'unassigned' });
-                            setAssignmentOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
-                            }`}
-                          />
-                          Unassigned
-                        </CommandItem>
-                      )}
-                      
-                      {/* Employee options - only show employees with assets */}
-                      {employeesWithAssets.map((employee: any) => (
-                        <CommandItem
-                          key={employee.id}
-                          value={employee.englishName || employee.name || ''}
-                          onSelect={() => {
-                            setFilters({ ...filters, assignedTo: employee.id.toString() });
-                            setAssignmentOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              filters.assignedTo === employee.id.toString() 
-                                ? "opacity-100" 
-                                : "opacity-0"
-                            }`}
-                          />
-                          {employee.englishName || employee.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          {/* Maintenance Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Maintenance</label>
-            <Select
-              value={filters.maintenanceDue || 'all'}
-              onValueChange={(value) => setFilters({ ...filters, maintenanceDue: value === 'all' ? undefined : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Assets" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                <SelectItem value="all">All Assets</SelectItem>
-                <SelectItem value="overdue">
-                  <span className="flex items-center gap-2">
-                    <span className="text-red-500">⏰</span> Overdue
-                  </span>
-                </SelectItem>
-                <SelectItem value="dueSoon">
-                  <span className="flex items-center gap-2">
-                    <span className="text-yellow-500">🛠️</span> Due This Week
-                  </span>
-                </SelectItem>
-                <SelectItem value="scheduled">
-                  <span className="flex items-center gap-2">
-                    <span className="text-blue-500">📅</span> Scheduled
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          </div>
-
-
-        </CardContent>
-      </Card>
-
-      {/* Bulk Actions for Selected Assets */}
-      {selectedAssets.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-          <span className="text-sm font-medium text-blue-700">
-            {selectedAssets.length} selected
-          </span>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleSelectAll}
-              className="text-xs"
-            >
-              {selectedAssets.length === filteredAssets.length ? 
-                translations.deselectAll : translations.selectAll}
-            </Button>
+            {hasAccess(2) && (
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={handleExportFilteredAssets}
+                disabled={assets.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV ({pagination.totalCount})
+              </Button>
+            )}
+            
+            {hasAccess(2) && (
+              <Button 
+                size="sm"
+                onClick={() => {
+                  setEditingAsset(null);
+                  setOpenDialog(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {translations.addAsset}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter & Search Card - keeping all original filters */}
+        <Card className="mb-6">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+                {Object.values(filters).filter(Boolean).length > 0 && (
+                  <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {pagination.totalCount} total assets
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Search */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setFilters({ ...filters, search: searchInput });
+            }} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by Asset ID, Type, Brand, Model, Serial Number..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Button type="submit" variant="outline">
+                Search
+              </Button>
+            </form>
+
+            {/* Filter Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             
+             {/* Type Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Type</label>
+              <Select
+                value={filters.type || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">All Types</SelectItem>
+                  {customAssetTypes.map((type: any) => (
+                    <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select
+                value={filters.status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {assetStatuses.map((status: string) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Brand Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <Select
+                value={filters.brand || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Brands" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {customAssetBrands.map((brand: any) => (
+                    <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+              {/* Assignment Filter with Combobox */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Assignment</label>
+                <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={assignmentOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className="truncate">
+                        {getEmployeeDisplay(filters.assignedTo)}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search employees..." 
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No employees found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="all"
+                            onSelect={() => {
+                              setFilters({ ...filters, assignedTo: undefined });
+                              setAssignmentOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${
+                                !filters.assignedTo ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                            All Assignments
+                          </CommandItem>
+                          
+                          {hasUnassignedAssets && (
+                            <CommandItem
+                              value="unassigned"
+                              onSelect={() => {
+                                setFilters({ ...filters, assignedTo: 'unassigned' });
+                                setAssignmentOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              Unassigned
+                            </CommandItem>
+                          )}
+                          
+                          {employeesWithAssets.map((employee: any) => (
+                            <CommandItem
+                              key={employee.id}
+                              value={employee.englishName || employee.name || ''}
+                              onSelect={() => {
+                                setFilters({ ...filters, assignedTo: employee.id.toString() });
+                                setAssignmentOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  filters.assignedTo === employee.id.toString() 
+                                    ? "opacity-100" 
+                                    : "opacity-0"
+                                }`}
+                              />
+                              {employee.englishName || employee.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Maintenance Filter */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Maintenance Status</label>
+                <Select 
+                  value={filters.maintenanceDue || 'all'} 
+                  onValueChange={(value) => setFilters({ 
+                    ...filters, 
+                    maintenanceDue: value === 'all' ? undefined : value 
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="inProgress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Actions */}
+        {selectedAssets.length > 0 && (
+          <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+            <span className="text-sm font-medium text-blue-700">
+              {selectedAssets.length} selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSelectAll}
+                className="text-xs"
+              >
+                {selectedAssets.length === assets.length ? 
+                  translations.deselectAll : translations.selectAll}
+              </Button>
               <Select onValueChange={handleBulkStatusChange}>
                 <SelectTrigger className="w-36 h-8 text-xs">
                   <SelectValue placeholder={translations.changeStatus} />
@@ -1050,110 +930,149 @@ export default function Assets() {
                   ))}
                 </SelectContent>
               </Select>
-
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={handleBulkDelete}
-              className="text-xs"
-            >
-              <Trash2 className="h-3 w-3 mr-1" />
-              {translations.deleteSelected}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* ITIL-Compliant Assets Data Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Asset Inventory ({filteredAssets.length})
-          </CardTitle>
-          <CardDescription>
-            Complete ITIL-compliant asset management with lifecycle tracking, hardware specifications, and change history
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleBulkDelete}
+                className="text-xs"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                {translations.deleteSelected}
+              </Button>
             </div>
-          ) : (
-            <AssetsTable 
-              assets={filteredAssets}
-              employees={Array.isArray(employees) ? employees : []}
-              selectedAssets={selectedAssets}
-              setSelectedAssets={setSelectedAssets}
-              onEdit={(asset) => {
-                setEditingAsset(asset);
-                setOpenDialog(true);
-              }}
-              onDelete={(assetId) => deleteAssetMutation.mutate(assetId)}
-              onAssign={(assetId, employeeId) => assignAssetMutation.mutate({ assetId, employeeId })}
-              onUnassign={(assetId) => unassignAssetMutation.mutate(assetId)}
-              onAddMaintenance={(assetId, maintenanceData) => {
-                handleAddMaintenance(assetId);
-              }}
+          </div>
+        )}
+
+        {/* Pagination Controls Top */}
+        {!isLoading && <PaginationControls />}
+
+        {/* Assets Table */}
+            {isLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : (
+              <AssetsTable 
+                assets={assets}
+                employees={Array.isArray(employees) ? employees : []}
+                selectedAssets={selectedAssets}
+                setSelectedAssets={setSelectedAssets}
+                onEdit={(asset) => {
+                  setEditingAsset(asset);
+                  setOpenDialog(true);
+                }}
+                onDelete={(assetId) => deleteAssetMutation.mutate(assetId)}
+                onAssign={(assetId, employeeId) => assignAssetMutation.mutate({ assetId, employeeId })}
+                onUnassign={(assetId) => unassignAssetMutation.mutate(assetId)}
+                onAddMaintenance={(assetId) => handleAddMaintenance(assetId)}
+              />
+            )}
+        
+        {/* Pagination Controls Bottom */}
+        {!isLoading && assets.length > 0 && <PaginationControls />}
+
+        {/* Add/Edit Asset Dialog */}
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAsset 
+                  ? `${translations.editAsset} (${editingAsset.assetId})` 
+                  : translations.addAsset}
+              </DialogTitle>
+              <DialogDescription>
+                {editingAsset 
+                  ? 'Update the asset information below' 
+                  : 'Fill in the details to add a new asset'}
+              </DialogDescription>
+            </DialogHeader>
+            <AssetForm
+              onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
+              initialData={editingAsset}
+              isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
             />
-          )}
-        </CardContent>
-      </Card>
+          </DialogContent>
+        </Dialog>
 
-      {/* Add/Edit Asset Dialog */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-          <DialogTitle>
-            {editingAsset 
-              ? `${translations.editAsset} (${editingAsset.assetId})` 
-              : translations.addAsset}
-          </DialogTitle>
-            <DialogDescription>
-              {editingAsset 
-                ? 'Update the asset information below' 
-                : 'Fill in the details to add a new asset'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          <AssetForm
-            onSubmit={editingAsset ? handleUpdateAsset : handleAddAsset}
-            initialData={editingAsset}
-            isSubmitting={addAssetMutation.isPending || updateAssetMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Maintenance Form Dialog */}
+        <Dialog open={openMaintenanceDialog} onOpenChange={setOpenMaintenanceDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5" />
+                Add Maintenance Record
+              </DialogTitle>
+              <DialogDescription>
+                Add a detailed maintenance record to track service work and repairs
+              </DialogDescription>
+            </DialogHeader>
+            {maintenanceAsset && (
+              <MaintenanceForm
+                onSubmit={handleMaintenanceSubmit}
+                isSubmitting={addMaintenanceMutation.isPending}
+                assetId={maintenanceAsset.id}
+                assetName={`${maintenanceAsset.type} - ${maintenanceAsset.brand} ${maintenanceAsset.modelName || ''}`.trim()}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
 
-      {/* Maintenance Form Dialog */}
-      <Dialog open={openMaintenanceDialog} onOpenChange={setOpenMaintenanceDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5" />
-              {language === 'Arabic' ? 'إضافة سجل صيانة' : 'Add Maintenance Record'}
-            </DialogTitle>
-            <DialogDescription>
-              {language === 'Arabic' 
-                ? 'أضف سجل صيانة مفصل لتتبع أعمال الصيانة والإصلاحات' 
-                : 'Add a detailed maintenance record to track service work and repairs'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          {maintenanceAsset && (
-            <MaintenanceForm
-              onSubmit={handleMaintenanceSubmit}
-              isSubmitting={addMaintenanceMutation.isPending}
-              assetId={maintenanceAsset.id}
-              assetName={`${maintenanceAsset.type} - ${maintenanceAsset.brand} ${maintenanceAsset.modelName || ''}`.trim()}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-
+        {/* Sell Assets Dialog */}
+        <Dialog open={openSellDialog} onOpenChange={setOpenSellDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{translations.sellSelected}</DialogTitle>
+              <DialogDescription>
+                Sell {selectedAssets.length} selected assets
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>{translations.buyer}</Label>
+                <Input
+                  value={sellForm.buyer}
+                  onChange={(e) => setSellForm({ ...sellForm, buyer: e.target.value })}
+                  placeholder="Enter buyer name"
+                />
+              </div>
+              <div>
+                <Label>{translations.saleDate}</Label>
+                <Input
+                  type="date"
+                  value={sellForm.saleDate}
+                  onChange={(e) => setSellForm({ ...sellForm, saleDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>{translations.totalAmount}</Label>
+                <Input
+                  type="number"
+                  value={sellForm.totalAmount}
+                  onChange={(e) => setSellForm({ ...sellForm, totalAmount: e.target.value })}
+                  placeholder="Enter total amount"
+                />
+              </div>
+              <div>
+                <Label>{translations.notes}</Label>
+                <Textarea
+                  value={sellForm.notes}
+                  onChange={(e) => setSellForm({ ...sellForm, notes: e.target.value })}
+                  placeholder="Optional notes"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setOpenSellDialog(false)}>
+                  {translations.cancel}
+                </Button>
+                <Button onClick={handleSellAssets}>
+                  {translations.sell}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );

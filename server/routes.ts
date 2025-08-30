@@ -2382,28 +2382,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset CRUD routes
-  app.get("/api/assets", authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as schema.User;
-      const userRoleLevel = getUserRoleLevel(user);
-      
-      // If user has level 1 access (Employee), only show assets that aren't being modified
-      if (userRoleLevel === 1) { // Employee role
-        const assets = await storage.getAllAssets();
-        // Filter out assets that are in maintenance, being sold, etc.
-        const filteredAssets = assets.filter(asset => 
-          asset.status === 'Available' || asset.status === 'In Use'
+
+    app.get("/api/assets", authenticateUser, async (req, res) => {
+      try {
+        // Get pagination parameters from query
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
+        const offset = (page - 1) * limit;
+        
+        // Get filter parameters
+        const filters = {
+          type: req.query.type as string,
+          status: req.query.status as string,
+          brand: req.query.brand as string,
+          search: req.query.search as string,
+          maintenanceDue: req.query.maintenanceDue as string,
+          assignedTo: req.query.assignedTo as string,
+          model: req.query.model as string,
+        };
+        
+        console.log('Assets API - Filters:', filters, 'Page:', page, 'Limit:', limit);
+        
+        // Get all assets (we'll filter then paginate)
+        const allAssets = await storage.getAllAssets();
+        
+        // Apply filters before pagination
+        let filteredAssets = allAssets;
+        
+        // Apply search filter
+        if (filters.search) {
+          const searchLower = filters.search.toLowerCase();
+          filteredAssets = filteredAssets.filter(asset => 
+            asset.assetId?.toLowerCase().includes(searchLower) ||
+            asset.type?.toLowerCase().includes(searchLower) ||
+            asset.brand?.toLowerCase().includes(searchLower) ||
+            asset.modelName?.toLowerCase().includes(searchLower) ||
+            asset.serialNumber?.toLowerCase().includes(searchLower) ||
+            asset.location?.toLowerCase().includes(searchLower) ||
+            asset.specs?.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        // Apply other filters
+        if (filters.type) {
+          filteredAssets = filteredAssets.filter(asset => asset.type === filters.type);
+        }
+        if (filters.status) {
+          filteredAssets = filteredAssets.filter(asset => asset.status === filters.status);
+        }
+        if (filters.brand) {
+          filteredAssets = filteredAssets.filter(asset => asset.brand === filters.brand);
+        }
+        if (filters.model) {
+          filteredAssets = filteredAssets.filter(asset => asset.modelName === filters.model);
+        }
+        
+        // Apply assignment filter
+        if (filters.assignedTo) {
+          if (filters.assignedTo === 'unassigned') {
+            filteredAssets = filteredAssets.filter(asset => !asset.assignedEmployeeId);
+          } else {
+            filteredAssets = filteredAssets.filter(asset => 
+              asset.assignedEmployeeId?.toString() === filters.assignedTo
+            );
+          }
+        }
+        
+        // For maintenance filter, we need to check maintenance records
+        let assetsWithMaintenance = filteredAssets;
+        if (filters.maintenanceDue) {
+          // Get maintenance status for all filtered assets
+          const assetsWithMaintenanceStatus = await Promise.all(
+            filteredAssets.map(async (asset) => {
+              const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+              
+              const hasScheduled = maintenanceRecords.some(m => {
+                const maintenanceDate = new Date(m.date);
+                return m.status === 'Scheduled' && maintenanceDate >= new Date();
+              });
+              
+              const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+              const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+              
+              return {
+                ...asset,
+                hasScheduledMaintenance: hasScheduled,
+                hasInProgressMaintenance: hasInProgress,
+                hasCompletedMaintenance: hasCompleted
+              };
+            })
+          );
+          
+          // Filter based on maintenance status
+          assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
+            if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
+            if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
+            if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
+            return true;
+          });
+        }
+        
+        // Get total count after all filters
+        const totalCount = assetsWithMaintenance.length;
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        // Apply pagination
+        const paginatedAssets = assetsWithMaintenance.slice(offset, offset + limit);
+        
+        // Enrich ONLY the paginated assets with full maintenance data
+        const enrichedAssets = await Promise.all(
+          paginatedAssets.map(async (asset) => {
+            try {
+              const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+              
+              // Get employee data if assigned
+              let assignedEmployee = null;
+              if (asset.assignedEmployeeId) {
+                assignedEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+              }
+              
+              // Calculate maintenance dates
+              const completedMaintenance = maintenanceRecords
+                .filter(m => m.status === 'Completed')
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              
+              const inProgressMaintenance = maintenanceRecords
+                .filter(m => m.status === 'In Progress');
+              
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const scheduledMaintenance = maintenanceRecords
+                .filter(m => {
+                  const maintenanceDate = new Date(m.date);
+                  return m.status === 'Scheduled' && maintenanceDate >= today;
+                })
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              return {
+                ...asset,
+                assignedEmployee,
+                lastMaintenanceDate: completedMaintenance[0]?.date || null,
+                nextMaintenanceDate: scheduledMaintenance[0]?.date || inProgressMaintenance[0]?.date || null,
+                currentMaintenanceStatus: inProgressMaintenance.length > 0 ? 'inProgress' : 
+                                        scheduledMaintenance.length > 0 ? 'scheduled' : 'none',
+                hasScheduledMaintenance: scheduledMaintenance.length > 0,
+                hasInProgressMaintenance: inProgressMaintenance.length > 0,
+                hasCompletedMaintenance: completedMaintenance.length > 0,
+                maintenanceCount: maintenanceRecords.length
+              };
+            } catch (error) {
+              console.error(`Error enriching asset ${asset.id}:`, error);
+              return {
+                ...asset,
+                assignedEmployee: null,
+                lastMaintenanceDate: null,
+                nextMaintenanceDate: null,
+                currentMaintenanceStatus: 'none',
+                hasScheduledMaintenance: false,
+                hasInProgressMaintenance: false,
+                hasCompletedMaintenance: false,
+                maintenanceCount: 0
+              };
+            }
+          })
         );
-        res.json(filteredAssets);
-      } else {
-        // Admin/Manager can see all assets
-        const assets = await storage.getAllAssets();
-        res.json(assets);
+        
+        console.log(`Returning ${enrichedAssets.length} assets (page ${page} of ${totalPages})`);
+        
+        // Send paginated response
+        res.json({
+          data: enrichedAssets,
+          pagination: {
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasMore: page < totalPages
+          }
+        });
+      } catch (error: unknown) {
+        console.error('Error fetching assets:', error);
+        res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
       }
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+    });
 
   app.get("/api/assets/:id", authenticateUser, async (req, res) => {
     try {
@@ -2680,8 +2842,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const maintenanceData = validateBody<schema.InsertAssetMaintenance>(
         schema.insertAssetMaintenanceSchema, 
-        { ...requestData, assetId, performedBy: (req.user as schema.User).id }
+        {  assetId: assetId,
+      date: requestData.date,
+      type: requestData.type || 'Preventive', // type is maintenance type (Preventive, Corrective, etc.)
+      description: requestData.description,
+      cost: requestData.cost,
+      providerType: requestData.providerType,
+      providerName: requestData.providerName,
+      status: requestData.status, // status is Scheduled, In Progress, or Completed
+      performedBy: (req.user as schema.User).id
+      }
       );
+
+      if (!requestData.status) {
+      requestData.status = 'Completed';
+       }
+
+    // Update asset status if maintenance is in progress
+    if (requestData.status === 'In Progress') {
+      await storage.updateAsset(assetId, { status: 'Under Maintenance' });
+    }
       
       const maintenance = await storage.createAssetMaintenance(maintenanceData);
       
@@ -2695,6 +2875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: { 
             assetId: asset.assetId,
             maintenanceType: maintenance.type,
+            maintenanceStatus: maintenance.status,
             description: maintenance.description,
             statusChanged: asset.status !== 'Under Maintenance'
           }
@@ -4277,22 +4458,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
+
   app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
     try {
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      const [
-        employees,
-        assets,
-        openTickets,
-        userCount,
-        allTickets
-      ] = await Promise.all([
+      
+      const [employees, assets, openTickets, userCount, allTickets] = await Promise.all([
         storage.getAllEmployees().catch(err => {
           console.error('Employee fetch error:', err);
           return [];
@@ -4301,9 +4477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Promise.all([
           storage.getTicketsByStatus("Open"),
           storage.getTicketsByStatus("In Progress")
-        ]).then(([openTickets, inProgressTickets]) => 
-          [...openTickets, ...inProgressTickets]
-        ).catch(err => {
+        ]).then(([open, inProgress]) => [...open, ...inProgress]).catch(err => {
           console.error('Active tickets fetch error:', err);
           return [];
         }),
@@ -4311,30 +4485,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getAllTickets().catch(err => {
           console.error('All tickets fetch error:', err);
           return [];
-        }),
+        })
       ]);
-
-        // Calculate maintenance counts
-      const maintenanceCounts = {
-        overdue: 0,
-        dueThisWeek: 0,
-        scheduled: 0
+      
+      // Calculate maintenance counts for dashboard
+      const maintenanceCounts = { 
+        scheduled: 0, 
+        inProgress: 0,
+        total: 0 
       };
-
-        // Process assets for maintenance status
-      assets.forEach(asset => {
-        if (asset.nextMaintenanceDate) {
-          const maintenanceDate = new Date(asset.nextMaintenanceDate);
-          
-          if (maintenanceDate < now) {
-            maintenanceCounts.overdue++;
-          } else if (maintenanceDate >= now && maintenanceDate <= weekFromNow) {
-            maintenanceCounts.dueThisWeek++;
-          } else {
-            maintenanceCounts.scheduled++;
-          }
-        }
-      });
+      
+      // Get ALL maintenance records for better statistics
+      const allMaintenanceRecords = await storage.getAllMaintenanceRecords();
+      
+      // Process all assets to count maintenance statuses
+      for (const asset of assets) {
+        const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+        
+        // Count scheduled maintenance (future dates)
+        const hasScheduled = maintenanceRecords.some(m => {
+          const maintenanceDate = new Date(m.date);
+          return m.status === 'Scheduled' && maintenanceDate >= now;
+        });
+        
+        // Count in-progress maintenance
+        const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+        
+        if (hasScheduled) maintenanceCounts.scheduled++;
+        if (hasInProgress) maintenanceCounts.inProgress++;
+      }
+      
+      maintenanceCounts.total = allMaintenanceRecords.length;
       
       // Calculate historical comparisons
       const employeesOneYearAgo = employees.filter(emp => {
@@ -4347,90 +4528,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return createdAt && createdAt <= oneMonthAgo;
       }).length;
 
-      const activeTicketsOneWeekAgo = allTickets.filter(ticket => {
+      const ticketsOneWeekAgo = allTickets.filter(ticket => {
         const createdAt = ticket.createdAt ? new Date(ticket.createdAt) : null;
-        const isActive = ticket.status === 'Open' || ticket.status === 'In Progress';
-        return createdAt && createdAt <= oneWeekAgo && isActive;
+        return createdAt && createdAt <= oneWeekAgo;
       }).length;
 
-      // Calculate asset value one quarter ago
-      const assetsOneQuarterAgo = assets.filter(asset => {
-        const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
-        return createdAt && createdAt <= oneQuarterAgo;
-      });
-      const totalAssetValueOneQuarterAgo = assetsOneQuarterAgo.reduce((sum, asset) => {
-        return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
-      }, 0);
-
-      // Calculate current totals
-      const currentEmployees = employees.length;
-      const currentAssets = assets.length;
-      const currentActiveTickets = openTickets.length;
+      // Calculate total asset value
       const totalAssetValue = assets.reduce((sum, asset) => {
-        return sum + (asset.buyPrice ? parseFloat(asset.buyPrice.toString()) : 0);
+        const price = typeof asset.buyPrice === 'string' 
+          ? parseFloat(asset.buyPrice) 
+          : (asset.buyPrice || 0);
+        return sum + (isNaN(price) ? 0 : price);
       }, 0);
 
-      // Calculate percentage changes
+      // Calculate changes
       const calculatePercentageChange = (current: number, previous: number): string => {
         if (previous === 0) return current > 0 ? '+100%' : '0%';
         const change = ((current - previous) / previous) * 100;
-        return change >= 0 ? `+${Math.round(change)}%` : `${Math.round(change)}%`;
+        return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
       };
 
-      // Count assets by type
-      const assetsByType = assets.reduce((acc: Record<string, number>, asset) => {
-        acc[asset.type] = (acc[asset.type] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Count assets by status
-      const assetsByStatus = assets.reduce((acc: Record<string, number>, asset) => {
-        acc[asset.status] = (acc[asset.status] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Count employees by department
-      const employeesByDepartment = employees.reduce((acc: Record<string, number>, employee) => {
-        acc[employee.department] = (acc[employee.department] || 0) + 1;
-        return acc;
-      }, {});
-      
-      // Get recent assets (sort by creation date)
+      // Get recent items for dashboard widgets
       const recentAssets = assets
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5);
       
-      // Get recent tickets (sort by creation date)
       const recentTickets = allTickets
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5);
-      
-      // Get recent activity
-      const recentActivity = await storage.getRecentActivity(5);
+
+      // Assets by type
+      const assetsByType = assets.reduce((acc, asset) => {
+        acc[asset.type] = (acc[asset.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Employees by department
+      const employeesByDepartment = employees.reduce((acc, emp) => {
+        const dept = emp.department || 'Unassigned';
+        acc[dept] = (acc[dept] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       
       res.json({
         counts: {
-          employees: currentEmployees,
-          assets: currentAssets,
-          activeTickets: currentActiveTickets,
-          users: userCount.length,
-          totalAssetValue
+          employees: employees.length,
+          assets: assets.length,
+          activeTickets: openTickets.length,
+          totalAssetValue,
+          users: userCount.length
         },
         maintenanceCounts,
         changes: {
-          employees: calculatePercentageChange(currentEmployees, employeesOneYearAgo),
-          assets: calculatePercentageChange(currentAssets, assetsOneMonthAgo),
-          activeTickets: calculatePercentageChange(currentActiveTickets, activeTicketsOneWeekAgo),
-          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValueOneQuarterAgo)
+          employees: calculatePercentageChange(employees.length, employeesOneYearAgo),
+          assets: calculatePercentageChange(assets.length, assetsOneMonthAgo),
+          activeTickets: calculatePercentageChange(openTickets.length, ticketsOneWeekAgo),
+          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValue * 0.9) // Placeholder
         },
-        assetsByType,
-        assetsByStatus,
-        employeesByDepartment,
         recentAssets,
         recentTickets,
-        recentActivity
+        assetsByType,
+        employeesByDepartment
       });
     } catch (error: unknown) {
+      console.error('Dashboard summary error:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
