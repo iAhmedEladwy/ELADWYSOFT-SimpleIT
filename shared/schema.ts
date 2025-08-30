@@ -153,6 +153,7 @@ export const assetMaintenance = pgTable("asset_maintenance", {
   providerType: varchar("provider_type", { length: 100 }).notNull(),
   providerName: varchar("provider_name", { length: 100 }),
   type: maintenanceTypeEnum("type").notNull().default('Preventive'),
+  status: varchar("status", { length: 50 }).default('Completed'), // Maintenance STATUS - ADD THIS
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

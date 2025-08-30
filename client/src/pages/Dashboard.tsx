@@ -203,25 +203,6 @@ export default function Dashboard() {
                       </p>
                     </div>
 
-                    {/* Completed Maintenance Card */}
-                    <div 
-                      className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 cursor-pointer hover:shadow-md transition-all"
-                      onClick={() => handleMaintenanceNavigation('completed')}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
-                        <span className="text-sm text-green-600 font-medium">
-                          {translations.viewCompleted} →
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {translations.completed}
-                      </p>
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                        {dashboardData.maintenanceCounts.completed || 0}
-                      </p>
-                    </div>
-
                     {/* Total Maintenance Records Card */}
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">

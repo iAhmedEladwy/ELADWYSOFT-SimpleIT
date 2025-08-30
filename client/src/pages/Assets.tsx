@@ -658,26 +658,77 @@ export default function Assets() {
   };
 
   // Filter assets based on filters
-const filteredAssets = useMemo(() => {
-  if (!assets || !Array.isArray(assets)) return [];
-  
-  return assets.filter((asset: any) => {
-    // ... other filters (search, type, brand, model, status, assignedTo) remain the same ...
-
-    // Maintenance filter - For Scheduled, In Progress, or Completed
-    if (filters.maintenanceDue) {
-      if (filters.maintenanceDue === 'scheduled') {
-        return asset.hasScheduledMaintenance === true;
-      } else if (filters.maintenanceDue === 'inProgress') {
-        return asset.hasInProgressMaintenance === true;
-      } else if (filters.maintenanceDue === 'completed') {
-        return asset.hasCompletedMaintenance === true;
-      }
-    }
+  const filteredAssets = useMemo(() => {
+    if (!assets || !Array.isArray(assets)) return [];
     
-    return true; // Asset passes all filters
-  });
-}, [assets, filters]);
+    return assets.filter((asset: any) => {
+      // Search filter - KEEP THIS
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const searchFields = [
+          asset.assetId,
+          asset.type,
+          asset.brand,
+          asset.modelName,
+          asset.serialNumber,
+          asset.location,
+          asset.specs,
+          asset.cpu,
+          asset.ram,
+          asset.storage
+        ].filter(Boolean);
+        
+        if (!searchFields.some(field => 
+          field?.toLowerCase().includes(searchLower)
+        )) {
+          return false;
+        }
+      }
+      
+      // Type filter
+      if (filters.type && asset.type !== filters.type) {
+        return false;
+      }
+      
+      // Brand filter
+      if (filters.brand && asset.brand !== filters.brand) {
+        return false;
+      }
+      
+      // Model filter
+      if (filters.model && asset.modelName !== filters.model) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status && asset.status !== filters.status) {
+        return false;
+      }
+      
+      // Assignment filter
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          if (asset.assignedEmployeeId) return false;
+        } else {
+          if (asset.assignedEmployeeId?.toString() !== filters.assignedTo) return false;
+        }
+      }
+
+      // Maintenance filter - Fixed for Scheduled, In Progress, Completed
+      if (filters.maintenanceDue) {
+        if (filters.maintenanceDue === 'scheduled') {
+          return asset.hasScheduledMaintenance === true;
+        } else if (filters.maintenanceDue === 'inProgress') {
+          return asset.hasInProgressMaintenance === true;
+        } else if (filters.maintenanceDue === 'completed') {
+          return asset.hasCompletedMaintenance === true;
+        }
+        return false; // If filter value doesn't match any option
+      }
+      
+      return true; // Asset passes all filters
+    });
+  }, [assets, filters]);
 
 // Also add the URL parameter reading
 useEffect(() => {

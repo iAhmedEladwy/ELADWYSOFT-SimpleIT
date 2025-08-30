@@ -2742,6 +2742,28 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
         schema.insertAssetMaintenanceSchema, 
         { ...requestData, assetId, performedBy: (req.user as schema.User).id }
       );
+
+      if (!requestData.status) {
+      requestData.status = 'Completed';
+       }
+
+       // Build maintenance data object
+    const maintenanceData = {
+      assetId: assetId,
+      date: requestData.date,
+      type: requestData.type || 'Preventive', // type is maintenance type (Preventive, Corrective, etc.)
+      description: requestData.description,
+      cost: requestData.cost,
+      providerType: requestData.providerType,
+      providerName: requestData.providerName,
+      status: requestData.status, // status is Scheduled, In Progress, or Completed
+      performedBy: (req.user as schema.User).id
+    };
+
+    // Update asset status if maintenance is in progress
+    if (requestData.status === 'In Progress') {
+      await storage.updateAsset(assetId, { status: 'Under Maintenance' });
+    }
       
       const maintenance = await storage.createAssetMaintenance(maintenanceData);
       
@@ -2755,6 +2777,7 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
           details: { 
             assetId: asset.assetId,
             maintenanceType: maintenance.type,
+            maintenanceStatus: maintenance.status,
             description: maintenance.description,
             statusChanged: asset.status !== 'Under Maintenance'
           }
@@ -4371,7 +4394,6 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
       const maintenanceCounts = { 
         scheduled: 0, 
         inProgress: 0,
-        completed: 0,
         total: 0 
       };
       
@@ -4391,12 +4413,8 @@ app.get("/api/assets", authenticateUser, async (req, res) => {
         // Count in-progress maintenance
         const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
         
-        // Count completed maintenance
-        const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
-        
         if (hasScheduled) maintenanceCounts.scheduled++;
         if (hasInProgress) maintenanceCounts.inProgress++;
-        if (hasCompleted) maintenanceCounts.completed++;
       }
       
       maintenanceCounts.total = allMaintenanceRecords.length;
