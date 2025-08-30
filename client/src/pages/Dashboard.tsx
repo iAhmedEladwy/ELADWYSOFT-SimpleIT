@@ -148,13 +148,6 @@ export default function Dashboard() {
                   <Wrench className="h-5 w-5 text-blue-600" />
                   <CardTitle className="text-lg">{translations.maintenanceOverview}</CardTitle>
                 </div>
-                 <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => window.location.href = '/maintenance'}
-                >
-                  {translations.viewAll}
-                </Button>
               </CardHeader>
               <CardContent>
                 {isLoading ? (

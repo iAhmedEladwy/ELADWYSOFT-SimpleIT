@@ -18,9 +18,10 @@ export default function Notifications() {
   const { language } = useLanguage();
 
   // Fetch real notification data
-  const { data: assets, isLoading: assetsLoading } = useQuery({
+  const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
   });
+  const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
     queryKey: ['/api/tickets'],
@@ -31,6 +32,8 @@ export default function Notifications() {
   });
 
   const isLoading = assetsLoading || ticketsLoading || configLoading;
+  const maintenanceAssets = assets.filter(asset => asset.status === 'Maintenance');
+
 
   // Translations
   const translations = {

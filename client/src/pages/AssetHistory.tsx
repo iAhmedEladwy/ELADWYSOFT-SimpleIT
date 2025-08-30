@@ -148,18 +148,19 @@ export default function AssetHistory() {
       });
 
   // Fetch assets for filter dropdown
-  const { data: assets } = useQuery({
-    queryKey: ['/api/assets'],
-    queryFn: async () => {
-      const response = await fetch('/api/assets', {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch assets');
-      }
-      return response.json();
+const { data: assetsResponse } = useQuery({
+  queryKey: ['/api/assets'],
+  queryFn: async () => {
+    const response = await fetch('/api/assets', {
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch assets');
     }
-  });
+    return response.json();
+  }
+});
+const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   // Fetch employees for filter dropdown
   const { data: employees } = useQuery({
