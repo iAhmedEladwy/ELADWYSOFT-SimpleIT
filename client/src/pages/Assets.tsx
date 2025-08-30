@@ -939,17 +939,6 @@ export default function Assets() {
         {!isLoading && <PaginationControls />}
 
         {/* Assets Table */}
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Asset Inventory ({pagination.totalCount})
-            </CardTitle>
-            <CardDescription>
-              Complete ITIL-compliant asset management with lifecycle tracking
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
             {isLoading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
@@ -972,9 +961,7 @@ export default function Assets() {
                 onAddMaintenance={(assetId) => handleAddMaintenance(assetId)}
               />
             )}
-          </CardContent>
-        </Card>
-
+        
         {/* Pagination Controls Bottom */}
         {!isLoading && assets.length > 0 && <PaginationControls />}
 
