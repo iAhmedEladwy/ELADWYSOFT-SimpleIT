@@ -148,7 +148,7 @@ export default function TicketForm({
   );
   }, [employeesData]);
 const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
-  queryKey: ['/api/assets/simple'],
+  queryKey: ['/api/assets'],
   staleTime: 5 * 60 * 1000,
   gcTime: 10 * 60 * 1000,
 });

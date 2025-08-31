@@ -2383,7 +2383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Asset CRUD routes with pagination
 
-    app.get("/api/assets", authenticateUser, async (req, res) => {
+    app.get("/api/assets/paginated", authenticateUser, async (req, res) => {
       try {
         // Get pagination parameters from query
         const page = parseInt(req.query.page as string) || 1;
@@ -2568,7 +2568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     // Assets without pagination
-    app.get("/api/assets/simple", authenticateUser, async (req, res) => {
+    app.get("/api/assets", authenticateUser, async (req, res) => {
       try {
         const user = req.user as schema.User;
         const userRoleLevel = getUserRoleLevel(user);
