@@ -2381,9 +2381,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asset CRUD routes
+  // Asset CRUD routes with pagination
 
-    app.get("/api/assets", authenticateUser, async (req, res) => {
+    app.get("/api/assets/paginated", authenticateUser, async (req, res) => {
       try {
         // Get pagination parameters from query
         const page = parseInt(req.query.page as string) || 1;
@@ -2563,6 +2563,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error: unknown) {
         console.error('Error fetching assets:', error);
+        res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+      }
+    });
+
+    // Assets without pagination
+    app.get("/api/assets", authenticateUser, async (req, res) => {
+      try {
+        const user = req.user as schema.User;
+        const userRoleLevel = getUserRoleLevel(user);
+        
+        let assets;
+        if (userRoleLevel === 1) { // Employee role
+          const allAssets = await storage.getAllAssets();
+          // Only show Available and In Use assets
+          assets = allAssets.filter(asset => 
+            asset.status === 'Available' || asset.status === 'In Use'
+          );
+        } else {
+          // Admin/Manager can see all assets
+          assets = await storage.getAllAssets();
+        }
+        
+        // Return simple array without pagination
+        res.json(assets);
+      } catch (error: unknown) {
         res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
       }
     });

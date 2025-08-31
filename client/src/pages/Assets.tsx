@@ -1,5 +1,3 @@
-// client/src/pages/Assets.tsx
-
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -168,13 +166,12 @@ export default function Assets() {
     
     return params;
   }, [currentPage, itemsPerPage, filters]);
-
   // Fetch assets with pagination
   const { data: assetsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/assets', queryParams],
+    queryKey: ['/api/assets/paginated', queryParams],
     queryFn: async () => {
       const searchParams = new URLSearchParams(queryParams);
-      const response = await apiRequest(`/api/assets?${searchParams}`);
+      const response = await apiRequest(`/api/assets/paginated?${searchParams}`);
       return response;
     },
     keepPreviousData: true,
@@ -234,7 +231,7 @@ export default function Assets() {
   });
 
   const updateAssetMutation = useMutation({
-    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets/${id}`, 'PUT', assetData),
+    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets${id}`, 'PUT', assetData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenDialog(false);
@@ -254,7 +251,7 @@ export default function Assets() {
   });
 
   const deleteAssetMutation = useMutation({
-    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}`, 'DELETE'),
+    mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
@@ -273,7 +270,7 @@ export default function Assets() {
 
   const assignAssetMutation = useMutation({
     mutationFn: ({ assetId, employeeId }: { assetId: number; employeeId: number }) =>
-      apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId }),
+      apiRequest(`/api/assets${assetId}/assign`, 'POST', { employeeId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
@@ -291,7 +288,7 @@ export default function Assets() {
   });
 
   const unassignAssetMutation = useMutation({
-    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}/unassign`, 'POST'),
+    mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}/unassign`, 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
@@ -309,7 +306,7 @@ export default function Assets() {
   });
 
   const sellAssetsMutation = useMutation({
-    mutationFn: (saleData: any) => apiRequest('/api/assets/sell', 'POST', saleData),
+    mutationFn: (saleData: any) => apiRequest('/api/assetssell', 'POST', saleData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenSellDialog(false);
@@ -334,39 +331,11 @@ export default function Assets() {
     }
   });
 
-  const importMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await fetch('/api/assets/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Import failed');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      setImportFile(null);
-      setIsImporting(false);
-      toast({
-        title: translations.success,
-        description: translations.assetsImported,
-      });
-    },
-    onError: (error: any) => {
-      setIsImporting(false);
-      toast({
-        title: translations.error,
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  });
 
   const addMaintenanceMutation = useMutation({
     mutationFn: async (maintenanceData: any) => {
       const { assetId, ...data } = maintenanceData;
-      const res = await fetch(`/api/assets/${assetId}/maintenance`, {
+      const res = await fetch(`/api/assets${assetId}/maintenance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -432,11 +401,11 @@ export default function Assets() {
     try {
       await Promise.all(
         selectedAssets.map(id => 
-          apiRequest(`/api/assets/${id}`, 'DELETE')
+          apiRequest(`/api/assets/paginated/${id}`, 'DELETE')
         )
       );
       
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       toast({
         title: translations.success,
         description: `${selectedAssets.length} assets deleted successfully`,
@@ -457,11 +426,11 @@ export default function Assets() {
     try {
       await Promise.all(
         selectedAssets.map(id => 
-          apiRequest(`/api/assets/${id}`, 'PUT', { status: newStatus })
+          apiRequest(`/api/assets/paginated/${id}`, 'PUT', { status: newStatus })
         )
       );
       
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       toast({
         title: translations.success,
         description: `${selectedAssets.length} assets status updated to ${newStatus}`,
@@ -557,24 +526,36 @@ export default function Assets() {
     sellAssetsMutation.mutate(saleData);
   };
 
-  // Process employees who have assets assigned
-  const employeesWithAssets = useMemo(() => {
-    if (!assets || !employees) return [];
-    
-    const assignedEmployeeIds = new Set(
-      assets
-        .filter((asset: any) => asset.assignedEmployeeId)
-        .map((asset: any) => asset.assignedEmployeeId)
-    );
-    
-    return employees.filter((emp: any) => 
-      assignedEmployeeIds.has(emp.id)
-    );
-  }, [assets, employees]);
+    // Process employees who have assets assigned - optimized version
+    const employeesWithAssets = useMemo(() => {
+      if (!assets || !Array.isArray(assets) || assets.length === 0) return [];
+      if (!employees || !Array.isArray(employees) || employees.length === 0) return [];
+      
+      // Create a Set for O(1) lookup instead of filtering arrays
+      const assignedEmployeeIds = new Set<number>();
+      
+      // Single pass through assets
+      for (const asset of assets) {
+        if (asset.assignedEmployeeId) {
+          assignedEmployeeIds.add(asset.assignedEmployeeId);
+        }
+      }
+      
+      // Early return if no assignments
+      if (assignedEmployeeIds.size === 0) return [];
+      
+      // Single pass through employees with Set lookup (O(1) per employee)
+      return employees.filter((emp: any) => 
+        assignedEmployeeIds.has(emp.id)
+      );
+    }, [assets, employees]);
 
-  const hasUnassignedAssets = useMemo(() => {
-    return assets?.some((asset: any) => !asset.assignedEmployeeId) || false;
-  }, [assets]);
+      const hasUnassignedAssets = useMemo(() => {
+      if (!assets || !Array.isArray(assets)) return false;
+      
+      // Use some() for early exit on first unassigned asset
+      return assets.some((asset: any) => !asset.assignedEmployeeId);
+     }, [assets]);
 
   const getEmployeeDisplay = (employeeId: string | undefined) => {
     if (!employeeId || employeeId === 'all') return "All Assignments";
