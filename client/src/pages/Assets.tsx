@@ -175,6 +175,8 @@ export default function Assets() {
       return response;
     },
     keepPreviousData: true,
+    staleTime: 1000 * 10, // Add this - 10 seconds
+    gcTime: 1000 * 60 * 2, // Add this - 2 minutes
   });
 
   // Extract data and pagination info
@@ -189,19 +191,27 @@ export default function Assets() {
 
   const { data: employees } = useQuery({
     queryKey: ['/api/employees'],
+    staleTime: 1000 * 60 * 5, // Add - 5 minutes
+    gcTime: 1000 * 60 * 10, // Add - 10 minutes
   });
 
   const { data: customAssetTypes = [] } = useQuery({
   queryKey: ['/api/custom-asset-types'],
+  staleTime: 1000 * 60 * 10, // Add - 10 minutes
+  gcTime: 1000 * 60 * 20, // Add - 20 minutes
   });
 
   const { data: customAssetBrands = [] } = useQuery({
     queryKey: ['/api/custom-asset-brands'],
+    staleTime: 1000 * 60 * 10, // Add - 10 minutes
+    gcTime: 1000 * 60 * 20, // Add - 20 minutes
   });
 
   const { data: assetStatuses = [] } = useQuery({
     queryKey: ['/api/custom-asset-statuses'],
-    select: (data: any[]) => data.map(status => status.name)
+    select: (data: any[]) => data.map(status => status.name),
+    staleTime: 1000 * 60 * 10, // Add - 10 minutes
+    gcTime: 1000 * 60 * 20, // Add - 20 minutes
   });
 
   // Reset page when filters change
@@ -213,6 +223,7 @@ export default function Assets() {
   const addAssetMutation = useMutation({
     mutationFn: (assetData: any) => apiRequest('/api/assets', 'POST', assetData),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenDialog(false);
       setEditingAsset(null);
@@ -233,6 +244,7 @@ export default function Assets() {
   const updateAssetMutation = useMutation({
     mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets${id}`, 'PUT', assetData),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenDialog(false);
       setEditingAsset(null);
@@ -253,6 +265,7 @@ export default function Assets() {
   const deleteAssetMutation = useMutation({
     mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}`, 'DELETE'),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
         title: translations.success,
@@ -272,6 +285,7 @@ export default function Assets() {
     mutationFn: ({ assetId, employeeId }: { assetId: number; employeeId: number }) =>
       apiRequest(`/api/assets${assetId}/assign`, 'POST', { employeeId }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
         title: translations.success,
@@ -290,6 +304,7 @@ export default function Assets() {
   const unassignAssetMutation = useMutation({
     mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}/unassign`, 'POST'),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
         title: translations.success,
@@ -308,6 +323,7 @@ export default function Assets() {
   const sellAssetsMutation = useMutation({
     mutationFn: (saleData: any) => apiRequest('/api/assetssell', 'POST', saleData),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenSellDialog(false);
       setSelectedAssets([]);
@@ -348,6 +364,7 @@ export default function Assets() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       setOpenMaintenanceDialog(false);
       setMaintenanceAsset(null);
@@ -406,6 +423,7 @@ export default function Assets() {
       );
       
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
         title: translations.success,
         description: `${selectedAssets.length} assets deleted successfully`,
@@ -429,8 +447,8 @@ export default function Assets() {
           apiRequest(`/api/assets/paginated/${id}`, 'PUT', { status: newStatus })
         )
       );
-      
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
       toast({
         title: translations.success,
         description: `${selectedAssets.length} assets status updated to ${newStatus}`,
