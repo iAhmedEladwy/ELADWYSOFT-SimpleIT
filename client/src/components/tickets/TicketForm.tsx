@@ -130,16 +130,22 @@ export default function TicketForm({
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
   });
-  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<any[]>({ 
-    queryKey: ['/api/employees'],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<any[]>({ 
+  queryKey: ['/api/employees'],
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
   });
   // Filter to show only active employees
   const activeEmployees = useMemo(() => {
-    return employees.filter((employee: any) => 
-      employee.status === 'Active'
-    );
+  // Ensure employees is an array before filtering
+  if (!Array.isArray(employees)) {
+    console.warn('Employees data is not an array:', employees);
+    return [];
+  }
+  
+  return employees.filter((employee: any) => 
+    employee && employee.status === 'Active'
+  );
   }, [employees]);
   const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
     queryKey: ['/api/assets'],
@@ -464,9 +470,9 @@ export default function TicketForm({
                                     !field.value && "text-muted-foreground"
                                   )}
                                 >
-                                  {field.value
+                                 {field.value && Array.isArray(activeEmployees)
                                     ? activeEmployees.find(
-                                        (employee) => employee.id.toString() === field.value
+                                        (employee) => employee && employee.id.toString() === field.value
                                       )?.englishName || "Select employee..."
                                     : language === 'English' ? "Select employee..." : "اختر الموظف..."}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -474,24 +480,30 @@ export default function TicketForm({
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-                              <Command filter={(value, search) => {
-                                const employee = activeEmployees.find(emp => 
-                                  `${emp.englishName} ${emp.arabicName} ${emp.department}`.toLowerCase().includes(value.toLowerCase())
-                                );
-                                if (!employee) return 0;
-                                
-                                const searchLower = search.toLowerCase();
-                                const englishName = employee.englishName?.toLowerCase() || '';
-                                const arabicName = employee.arabicName?.toLowerCase() || '';
-                                const department = employee.department?.toLowerCase() || '';
-                                
-                                if (englishName.includes(searchLower) || 
-                                    arabicName.includes(searchLower) || 
-                                    department.includes(searchLower)) {
-                                  return 1;
-                                }
-                                return 0;
-                              }}>
+                             <Command filter={(value, search) => {
+                                  // Ensure activeEmployees is an array
+                                  if (!Array.isArray(activeEmployees)) return 0;
+                                  
+                                  const employee = activeEmployees.find(emp => {
+                                    if (!emp) return false;
+                                    const searchString = `${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`.toLowerCase();
+                                    return searchString.includes(value.toLowerCase());
+                                  });
+                                  
+                                  if (!employee) return 0;
+                                  
+                                  const searchLower = search.toLowerCase();
+                                  const englishName = employee.englishName?.toLowerCase() || '';
+                                  const arabicName = employee.arabicName?.toLowerCase() || '';
+                                  const department = employee.department?.toLowerCase() || '';
+                                  
+                                  if (englishName.includes(searchLower) || 
+                                      arabicName.includes(searchLower) || 
+                                      department.includes(searchLower)) {
+                                    return 1;
+                                  }
+                                  return 0;
+                                }}>
                                 <CommandInput 
                                   placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
                                   className="h-9"
@@ -500,32 +512,40 @@ export default function TicketForm({
                                   {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
                                 </CommandEmpty>
                                 <CommandGroup className="max-h-[200px] overflow-auto">
-                                  {activeEmployees.map((employee) => (
-                                    <CommandItem
-                                      key={employee.id}
-                                      value={`${employee.englishName} ${employee.arabicName} ${employee.department}`}
-                                      onSelect={() => {
-                                        field.onChange(employee.id.toString());
-                                        form.setValue('relatedAssetId', 'none');
-                                        setOpen(false); // Close the popover
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === employee.id.toString()
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span>{employee.englishName || employee.name}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {employee.department}
-                                        </span>
-                                      </div>
+                                  {Array.isArray(activeEmployees) && activeEmployees.length > 0 ? (
+                                    activeEmployees.map((employee) => (
+                                      <CommandItem
+                                        key={employee.id}
+                                        value={`${employee.englishName || ''} ${employee.arabicName || ''} ${employee.department || ''}`}
+                                        onSelect={() => {
+                                          field.onChange(employee.id.toString());
+                                          form.setValue('relatedAssetId', 'none');
+                                          setOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value === employee.id.toString()
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex flex-col">
+                                          <span>{employee.englishName || employee.name || 'Unknown'}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {employee.department || 'No department'}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))
+                                  ) : (
+                                    <CommandItem disabled>
+                                      <span className="text-muted-foreground">
+                                        {isLoadingEmployees ? 'Loading employees...' : 'No active employees available'}
+                                      </span>
                                     </CommandItem>
-                                  ))}
+                                  )}
                                 </CommandGroup>
                               </Command>
                             </PopoverContent>
@@ -1098,21 +1118,21 @@ export default function TicketForm({
                                         <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
                                       </SelectTrigger>
                                     </FormControl>
-                                  <SelectContent>
-                                    {isLoadingEmployees ? (
-                                      <SelectItem value="loading" disabled>Loading employees...</SelectItem>
-                                    ) : activeEmployees.length === 0 ? (
-                                      <SelectItem value="no-active" disabled>
-                                        {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
+                                <SelectContent>
+                                  {isLoadingEmployees ? (
+                                    <SelectItem value="loading" disabled>Loading employees...</SelectItem>
+                                  ) : !Array.isArray(activeEmployees) || activeEmployees.length === 0 ? (
+                                    <SelectItem value="no-active" disabled>
+                                      {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
+                                    </SelectItem>
+                                  ) : (
+                                    activeEmployees.map((employee: any) => (
+                                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                                        {employee.englishName || employee.name || 'Unknown'} - {employee.idNumber || 'N/A'}
                                       </SelectItem>
-                                    ) : (
-                                      activeEmployees.map((employee: any) => (
-                                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                                          {employee.englishName || employee.name} - {employee.idNumber}
-                                        </SelectItem>
-                                      ))
-                                    )}
-                                  </SelectContent>
+                                    ))
+                                  )}
+                                </SelectContent>
                                   </Select>
                                   <FormMessage />
                                 </FormItem>
