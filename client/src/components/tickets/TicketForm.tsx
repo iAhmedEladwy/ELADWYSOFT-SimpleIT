@@ -138,15 +138,15 @@ export default function TicketForm({
   // Filter to show only active employees
   const activeEmployees = useMemo(() => {
   // Ensure employees is an array before filtering
-  if (!Array.isArray(employees)) {
-    console.warn('Employees data is not an array:', employees);
+  if (!Array.isArray(employeesData)) {
+    console.warn('Employees data is not an array:', employeesData);
     return [];
   }
   
-  return employees.filter((employee: any) => 
+  return employeesData.filter((employee: any) => 
     employee && employee.status === 'Active'
   );
-  }, [employees]);
+  }, [employeesData]);
   const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
     queryKey: ['/api/assets'],
     staleTime: 5 * 60 * 1000,
