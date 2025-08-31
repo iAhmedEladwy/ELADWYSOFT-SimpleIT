@@ -147,30 +147,12 @@ export default function TicketForm({
     employee && employee.status === 'Active'
   );
   }, [employeesData]);
- const { data: assetsResponse, isLoading: isLoadingAssets } = useQuery({ 
-  queryKey: ['/api/assets'],
+const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
+  queryKey: ['/api/assets/simple'],
   staleTime: 5 * 60 * 1000,
   gcTime: 10 * 60 * 1000,
 });
 
-// Extract the data array from paginated response
-const allAssets = useMemo(() => {
-  if (!assetsResponse) return [];
-  
-  // Handle both paginated and non-paginated responses
-  if (Array.isArray(assetsResponse)) {
-    // Direct array response (legacy)
-    return assetsResponse;
-  }
-  
-  if (assetsResponse.data && Array.isArray(assetsResponse.data)) {
-    // Paginated response - extract the data array
-    return assetsResponse.data;
-  }
-  
-  console.warn('Unexpected assets response format:', assetsResponse);
-  return [];
-}, [assetsResponse]) as AssetResponse[];
 
   const { data: requestTypes = [], isLoading: isLoadingRequestTypes } = useQuery<Array<{id: number, name: string}>>({ 
     queryKey: ['/api/custom-request-types'],
