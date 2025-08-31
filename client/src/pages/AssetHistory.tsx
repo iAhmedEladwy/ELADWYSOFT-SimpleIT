@@ -141,10 +141,10 @@ export default function AssetHistory() {
             pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
           };
         },
-        staleTime: 0, // Consider data immediately stale
-        gcTime: 0, // Don't cache the data
-        refetchOnWindowFocus: true, // Refetch when window gains focus
-        refetchOnMount: 'always' // Always refetch when component mounts
+        staleTime: 1000 * 30, // 30 seconds
+        gcTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+        refetchOnMount: true
       });
 
   // Fetch assets for filter dropdown
@@ -178,8 +178,11 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
 
    // Auto-refresh when component mounts or becomes visible
   useEffect(() => {
-    refetch();
-  }, []); // Refetch on component mount
+    const hasFilters = Object.values(filters).some(value => value);
+    if (hasFilters) {
+      refetch();
+    }
+  }, []);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({
