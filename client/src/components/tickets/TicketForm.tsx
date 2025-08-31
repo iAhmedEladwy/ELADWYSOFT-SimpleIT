@@ -270,34 +270,39 @@ export default function TicketForm({
   // Watch the submittedById field to dynamically filter assets
   const selectedEmployeeId = form.watch('submittedById');
   
-  // Filter assets based on selected employee - show assets assigned to that employee
-  const assets = useMemo(() => {
-    if (!selectedEmployeeId || selectedEmployeeId === '') {
-      return []; // No employee selected, show no assets
-    }
-    
-    const employeeIdNum = parseInt(selectedEmployeeId);
-    
-    return allAssets.filter((asset: any) => {
-      // Check multiple possible field names for assigned employee
-      // 1. Check assignedEmployee object (if populated from API)
-      if (asset.assignedEmployee && typeof asset.assignedEmployee === 'object') {
-        return asset.assignedEmployee.id === employeeIdNum;
-      }
-      
-      // 2. Check assignedToId (from AssetResponse type)
-      if (asset.assignedToId) {
-        return asset.assignedToId === employeeIdNum;
-      }
-      
-      // 3. Check assignedEmployeeId (from database schema - most common)
-      if (asset.assignedEmployeeId) {
-        return asset.assignedEmployeeId === employeeIdNum;
-      }
-      
-      return false;
-    });
-  }, [allAssets, selectedEmployeeId]);
+    // Filter assets based on selected employee - show assets assigned to that employee
+    const assets = useMemo(() => {
+        if (!selectedEmployeeId || selectedEmployeeId === '') {
+          return []; // No employee selected, show no assets
+        }
+        
+        if (!Array.isArray(allAssets)) {
+          console.warn('Assets data is not an array:', allAssets);
+          return [];
+        }
+        
+        const employeeIdNum = parseInt(selectedEmployeeId);
+        
+        return allAssets.filter((asset: any) => {
+          // Check multiple possible field names for assigned employee
+          // 1. Check assignedEmployee object (if populated from API)
+          if (asset.assignedEmployee && typeof asset.assignedEmployee === 'object') {
+            return asset.assignedEmployee.id === employeeIdNum;
+          }
+          
+          // 2. Check assignedToId (from AssetResponse type)
+          if (asset.assignedToId) {
+            return asset.assignedToId === employeeIdNum;
+          }
+          
+          // 3. Check assignedEmployeeId (from database schema - most common)
+          if (asset.assignedEmployeeId) {
+            return asset.assignedEmployeeId === employeeIdNum;
+          }
+          
+          return false;
+        });
+    }, [allAssets, selectedEmployeeId]);
 
   // Auto-save handler for edit mode
   const handleAutoSave = async (field: string, value: any) => {
