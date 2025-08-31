@@ -174,7 +174,7 @@ export default function Assets() {
       const response = await apiRequest(`/api/assets/paginated?${searchParams}`);
       return response;
     },
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 1000 * 10, // Add this - 10 seconds
     gcTime: 1000 * 60 * 2, // Add this - 2 minutes
   });
@@ -946,7 +946,7 @@ export default function Assets() {
         {!isLoading && <PaginationControls />}
 
         {/* Assets Table */}
-            {isLoading ? (
+            {isLoading && !assets.length ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
