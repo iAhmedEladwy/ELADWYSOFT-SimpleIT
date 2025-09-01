@@ -442,6 +442,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   const { toast } = useToast();
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<any>(null);
+  
   // Fetch asset transactions
   const { data: transactions = [] } = useQuery({
     queryKey: ['/api/asset-transactions', asset.id],
@@ -557,7 +558,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -595,6 +596,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
             </div>
           </div>
 
+          {/* Tabs for History and Maintenance */}
           <Tabs defaultValue="transactions" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="transactions">
@@ -605,146 +607,156 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="transactions" className="space-y-4">
-              <ScrollArea className="h-[400px]">
-                {transactions.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Notes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {transactions.map((transaction: any) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getTransactionIcon(transaction.type)}
-                              <span className="font-medium">{transaction.type}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-400" />
-                              {getEmployeeName(transaction.employeeId)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-400" />
-                              {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-600">
-                              {transaction.notes || '-'}
-                            </div>
-                          </TableCell>
+            {/* Transactions Tab Content */}
+            <TabsContent value="transactions" className="mt-4">
+              <div className="border rounded-lg p-4">
+                <ScrollArea className="h-[350px]">
+                  {transactions.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Notes</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                    <FileText className="h-8 w-8 mb-2" />
-                    <p>No transaction history found</p>
-                  </div>
-                )}
-              </ScrollArea>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map((transaction: any) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getTransactionIcon(transaction.type)}
+                                <span className="font-medium">{transaction.type}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-gray-400" />
+                                {getEmployeeName(transaction.employeeId)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-400" />
+                                {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-gray-600">
+                                {transaction.notes || '-'}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No transaction history found</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
             </TabsContent>
             
-            <TabsContent value="maintenance" className="space-y-4">
-              {/* Add Maintenance Button */}
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  Manage maintenance records for {asset.assetId}
-                </div>
-                <Button onClick={handleAddMaintenance} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Maintenance
-                </Button>
-              </div>
-              <ScrollArea className="h-[360px]">
-                {maintenanceRecords.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Cost</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {maintenanceRecords.map((record: any) => (
-                        <TableRow key={record.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getMaintenanceIcon(record.status)}
-                              <span className="font-medium">{record.status}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{record.type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="max-w-xs truncate" title={record.description}>
-                              {record.description}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-400" />
-                              {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {record.cost ? `$${Number(record.cost).toFixed(2)}` : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div className="font-medium">{record.providerName || 'N/A'}</div>
-                              <div className="text-gray-500">{record.providerType}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditMaintenance(record)}
-                                title="Edit maintenance record"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteMaintenance(record)}
-                                title="Delete maintenance record"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                    <Wrench className="h-8 w-8 mb-2" />
-                    <p>No maintenance records found</p>
+            {/* Maintenance Tab Content */}
+            <TabsContent value="maintenance" className="mt-4">
+              <div className="space-y-4">
+                {/* Add Maintenance Button */}
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Manage maintenance records for {asset.assetId}
                   </div>
-                )}
-              </ScrollArea>
+                  <Button onClick={handleAddMaintenance} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Maintenance
+                  </Button>
+                </div>
+                
+                {/* Maintenance Records Table */}
+                <div className="border rounded-lg p-4">
+                  <ScrollArea className="h-[320px]">
+                    {maintenanceRecords && maintenanceRecords.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Cost</TableHead>
+                            <TableHead>Provider</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {maintenanceRecords.map((record: any) => (
+                            <TableRow key={record.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getMaintenanceIcon(record.status)}
+                                  <span className="font-medium">{record.status}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{record.type}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="max-w-xs truncate" title={record.description}>
+                                  {record.description}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-gray-400" />
+                                  {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {record.cost ? `$${Number(record.cost).toFixed(2)}` : '-'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div className="font-medium">{record.providerName || 'N/A'}</div>
+                                  <div className="text-gray-500">{record.providerType}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditMaintenance(record)}
+                                    title="Edit maintenance record"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteMaintenance(record)}
+                                    title="Delete maintenance record"
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                        <Wrench className="h-8 w-8 mb-2" />
+                        <p>No maintenance records found</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
