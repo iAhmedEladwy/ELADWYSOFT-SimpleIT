@@ -2450,44 +2450,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // For maintenance filter, we need to check maintenance records
         let assetsWithMaintenance = filteredAssets;
-     if (filters.maintenanceDue) {
-        // Get maintenance status for all filtered assets
-        const assetsWithMaintenanceStatus = await Promise.all(
-          filteredAssets.map(async (asset) => {
-            const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+      if (filters.maintenanceDue) {
+      // Get maintenance status for all filtered assets
+      const assetsWithMaintenanceStatus = await Promise.all(
+        filteredAssets.map(async (asset) => {
+          const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+          
+          // Get today's date at start of day for proper comparison
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const hasScheduled = maintenanceRecords.some(m => {
+            if (m.status !== 'Scheduled') return false;
             
-            // Use case-insensitive comparison for maintenance status
-            const hasScheduled = maintenanceRecords.some(m => {
-              const maintenanceDate = new Date(m.date);
-              return m.status?.toLowerCase() === 'scheduled' && maintenanceDate >= new Date();
-            });
+            const maintenanceDate = new Date(m.date);
+            maintenanceDate.setHours(0, 0, 0, 0);
             
-            const hasInProgress = maintenanceRecords.some(m => 
-              m.status?.toLowerCase() === 'in progress' || 
-              m.status?.toLowerCase() === 'inprogress' // Handle both formats
-            );
-            
-            const hasCompleted = maintenanceRecords.some(m => 
-              m.status?.toLowerCase() === 'completed'
-            );
-            
-            return {
-              ...asset,
-              hasScheduledMaintenance: hasScheduled,
-              hasInProgressMaintenance: hasInProgress,
-              hasCompletedMaintenance: hasCompleted
-            };
-          })
-        );
-        
-        // Filter based on maintenance status
-        assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
-          if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
-          if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
-          if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
-          return true;
-        });
-      }
+            // Include maintenance scheduled for today or future dates
+            return maintenanceDate >= today;
+          });
+          
+          const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+          const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+          
+          return {
+            ...asset,
+            hasScheduledMaintenance: hasScheduled,
+            hasInProgressMaintenance: hasInProgress,
+            hasCompletedMaintenance: hasCompleted
+          };
+        })
+      );
+      
+      // Filter based on maintenance status
+      assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
+        if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
+        if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
+        if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
+        return true;
+      });
+    }
         
         // Get total count after all filters
         const totalCount = assetsWithMaintenance.length;
