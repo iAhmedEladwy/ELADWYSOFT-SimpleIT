@@ -18,6 +18,8 @@ import { format } from 'date-fns';
 import MaintenanceForm from './MaintenanceForm';
 import { UpgradeForm } from './UpgradeForm';
 import AssetDetailView from './AssetDetailView';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
+
 
 interface AssetActionsMenuProps {
   asset: {
@@ -313,7 +315,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
         }}
       />
 
-      {/* Check-out dialog */}
+     {/* Check-out dialog */}
       <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -322,18 +324,14 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="employee">Select Employee</Label>
-              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                <SelectTrigger id="employee">
-                  <SelectValue placeholder="Choose employee..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map(employee => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.empId} - {employee.englishName || employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ActiveEmployeeSelect
+                value={selectedEmployeeId}
+                onValueChange={setSelectedEmployeeId}
+                placeholder="Choose employee..."
+                showDepartment={true}
+                showPosition={false}
+                required={true}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="reason">Reason</Label>
@@ -371,6 +369,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       {/* Check-in dialog */}
       <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>

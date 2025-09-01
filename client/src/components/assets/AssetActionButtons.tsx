@@ -22,10 +22,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import ActiveEmployeeSelect from '@/components/shared/ActiveEmployeeSelect';
 
 interface AssetActionButtonsProps {
   asset: any;
-  employees: any[];
+  employees: any[]; // This prop is no longer needed but kept for compatibility
 }
 
 // Check-out reason options - matching AssetActionsMenu
@@ -90,8 +91,9 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       type: 'Check-Out'
     }),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Asset checked out successfully' });
+      toast({ title: 'Success', description: translations.checkOutSuccess });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
       setShowCheckOutDialog(false);
       resetForm();
     },
@@ -107,8 +109,9 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       type: 'Check-In'
     }),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Asset checked in successfully' });
+      toast({ title: 'Success', description: translations.checkInSuccess });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
       setShowCheckInDialog(false);
       resetForm();
     },
@@ -185,36 +188,24 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="employee">{translations.selectEmployee}</Label>
-              <Select 
-                value={selectedEmployeeId} 
+              <ActiveEmployeeSelect
+                value={selectedEmployeeId}
                 onValueChange={setSelectedEmployeeId}
-              >
-                <SelectTrigger id="employee">
-                  <SelectValue placeholder={translations.selectEmployee} />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map(employee => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.empId} - {employee.englishName || employee.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={translations.selectEmployee}
+                showDepartment={true}
+                showPosition={false}
+                required={true}
+              />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="check-out-reason">{translations.reasonLabel}</Label>
-              <Select 
-                value={reason} 
-                onValueChange={setReason}
-              >
-                <SelectTrigger id="check-out-reason">
+              <Label htmlFor="reason">{translations.reasonLabel}</Label>
+              <Select value={reason} onValueChange={setReason}>
+                <SelectTrigger id="reason">
                   <SelectValue placeholder={translations.selectReason} />
                 </SelectTrigger>
                 <SelectContent>
-                  {CHECK_OUT_REASONS.map(reason => (
-                    <SelectItem key={reason} value={reason}>
-                      {reason}
-                    </SelectItem>
+                  {CHECK_OUT_REASONS.map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -226,20 +217,24 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
                 placeholder={translations.optionalNotes}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCheckOutDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCheckOutDialog(false)}
+            >
               {translations.cancel}
             </Button>
             <Button 
-              onClick={handleCheckOutSubmit} 
-              disabled={checkOutMutation.isPending || !selectedEmployeeId}
+              onClick={handleCheckOutSubmit}
+              disabled={checkOutMutation.isPending || !selectedEmployeeId || !reason}
             >
               {checkOutMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {translations.processing}
                 </>
               ) : (
@@ -259,44 +254,43 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="check-in-reason">{translations.reasonLabel}</Label>
-              <Select 
-                value={reason} 
-                onValueChange={setReason}
-              >
-                <SelectTrigger id="check-in-reason">
+              <Label htmlFor="checkin-reason">{translations.reasonLabel}</Label>
+              <Select value={reason} onValueChange={setReason}>
+                <SelectTrigger id="checkin-reason">
                   <SelectValue placeholder={translations.selectReason} />
                 </SelectTrigger>
                 <SelectContent>
-                  {CHECK_IN_REASONS.map(reason => (
-                    <SelectItem key={reason} value={reason}>
-                      {reason}
-                    </SelectItem>
+                  {CHECK_IN_REASONS.map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="check-in-notes">{translations.notes}</Label>
+              <Label htmlFor="checkin-notes">{translations.notes}</Label>
               <Textarea
-                id="check-in-notes"
+                id="checkin-notes"
                 placeholder={translations.optionalNotes}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCheckInDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCheckInDialog(false)}
+            >
               {translations.cancel}
             </Button>
             <Button 
-              onClick={handleCheckInSubmit} 
-              disabled={checkInMutation.isPending}
+              onClick={handleCheckInSubmit}
+              disabled={checkInMutation.isPending || !reason}
             >
               {checkInMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {translations.processing}
                 </>
               ) : (

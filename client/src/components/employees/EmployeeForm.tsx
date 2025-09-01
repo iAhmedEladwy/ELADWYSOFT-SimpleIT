@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
 import {
   Form,
   FormControl,
@@ -330,30 +331,25 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                 )}
               />
 
-              <FormField
+             <FormField
                 control={form.control}
                 name="directManager"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{translations.directManager}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={translations.none} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">{translations.none}</SelectItem>
-                        {(employees as any[])?.map((employee: any) => (
-                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.name || employee.englishName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ActiveEmployeeSelect
+                        value={field.value || ''}
+                        onValueChange={(value) => {
+                          // Set to empty string if 'none' is selected, otherwise use the value
+                          field.onChange(value === 'none' ? '' : value);
+                        }}
+                        placeholder={translations.none}
+                        showDepartment={true}
+                        showPosition={true}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
                     <FormDescription>{translations.directManagerDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
