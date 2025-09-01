@@ -2450,37 +2450,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // For maintenance filter, we need to check maintenance records
         let assetsWithMaintenance = filteredAssets;
-        if (filters.maintenanceDue) {
-          // Get maintenance status for all filtered assets
-          const assetsWithMaintenanceStatus = await Promise.all(
-            filteredAssets.map(async (asset) => {
-              const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
-              
-              const hasScheduled = maintenanceRecords.some(m => {
-                const maintenanceDate = new Date(m.date);
-                return m.status === 'Scheduled' && maintenanceDate >= new Date();
-              });
-              
-              const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
-              const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
-              
-              return {
-                ...asset,
-                hasScheduledMaintenance: hasScheduled,
-                hasInProgressMaintenance: hasInProgress,
-                hasCompletedMaintenance: hasCompleted
-              };
-            })
-          );
+      if (filters.maintenanceDue) {
+      // Get maintenance status for all filtered assets
+      const assetsWithMaintenanceStatus = await Promise.all(
+        filteredAssets.map(async (asset) => {
+          const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
           
-          // Filter based on maintenance status
-          assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
-            if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
-            if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
-            if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
-            return true;
+          // Get today's date at start of day for proper comparison
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const hasScheduled = maintenanceRecords.some(m => {
+            if (m.status !== 'Scheduled') return false;
+            
+            const maintenanceDate = new Date(m.date);
+            maintenanceDate.setHours(0, 0, 0, 0);
+            
+            // Include maintenance scheduled for today or future dates
+            return maintenanceDate >= today;
           });
-        }
+          
+          const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+          const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+          
+          return {
+            ...asset,
+            hasScheduledMaintenance: hasScheduled,
+            hasInProgressMaintenance: hasInProgress,
+            hasCompletedMaintenance: hasCompleted
+          };
+        })
+      );
+      
+      // Filter based on maintenance status
+      assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
+        if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
+        if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
+        if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
+        return true;
+      });
+    }
         
         // Get total count after all filters
         const totalCount = assetsWithMaintenance.length;
