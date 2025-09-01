@@ -612,38 +612,42 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
               <div className="border rounded-lg p-4">
                 <ScrollArea className="h-[350px]">
                   {transactions.length > 0 ? (
-                    <Table>
+                    <Table className="table-fixed">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Notes</TableHead>
+                          <TableHead className="w-[120px]">Type</TableHead>
+                          <TableHead className="w-[180px]">Employee</TableHead>
+                          <TableHead className="w-[140px]">Date</TableHead>
+                          <TableHead className="w-[250px]">Notes</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {transactions.map((transaction: any) => (
                           <TableRow key={transaction.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                            <TableCell className="w-[120px]">
+                              <div className="flex items-center gap-1">
                                 {getTransactionIcon(transaction.type)}
-                                <span className="font-medium">{transaction.type}</span>
+                                <span className="font-medium text-sm">{transaction.type}</span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-gray-400" />
-                                {getEmployeeName(transaction.employeeId)}
+                            <TableCell className="w-[180px]">
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm truncate">
+                                  {getEmployeeName(transaction.employeeId)}
+                                </span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-gray-400" />
-                                {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
+                            <TableCell className="w-[140px]">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm">
+                                  {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
+                                </span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="text-sm text-gray-600">
+                            <TableCell className="w-[250px]">
+                              <div className="text-sm text-gray-600 truncate" title={transaction.notes || ''}>
                                 {transaction.notes || '-'}
                               </div>
                             </TableCell>
@@ -679,68 +683,77 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                 <div className="border rounded-lg p-4">
                   <ScrollArea className="h-[320px]">
                     {maintenanceRecords && maintenanceRecords.length > 0 ? (
-                      <Table>
+                      <Table className="table-fixed">
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Cost</TableHead>
-                            <TableHead>Provider</TableHead>
+                            <TableHead className="w-[120px]">Status</TableHead>
+                            <TableHead className="w-[100px]">Type</TableHead>
+                            <TableHead className="w-[200px]">Description</TableHead>
+                            <TableHead className="w-[110px]">Date</TableHead>
+                            <TableHead className="w-[80px]">Cost</TableHead>
+                            <TableHead className="w-[120px]">Provider</TableHead>
                             <TableHead className="w-[100px]">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {maintenanceRecords.map((record: any) => (
                             <TableRow key={record.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
+                              <TableCell className="w-[120px]">
+                                <div className="flex items-center gap-1">
                                   {getMaintenanceIcon(record.status)}
-                                  <span className="font-medium">{record.status}</span>
+                                  <span className="font-medium text-sm">{record.status}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{record.type}</Badge>
+                              <TableCell className="w-[100px]">
+                                <Badge variant="outline" className="text-xs">{record.type}</Badge>
                               </TableCell>
-                              <TableCell>
-                                <div className="max-w-xs truncate" title={record.description}>
+                              <TableCell className="w-[200px]">
+                                <div 
+                                  className="truncate text-sm" 
+                                  title={record.description}
+                                  style={{ maxWidth: '180px' }}
+                                >
                                   {record.description}
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-gray-400" />
-                                  {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
+                              <TableCell className="w-[110px]">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-gray-400" />
+                                  <span className="text-sm">
+                                    {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
+                                  </span>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                {record.cost ? `$${Number(record.cost).toFixed(2)}` : '-'}
+                              <TableCell className="w-[80px]">
+                                <span className="text-sm">
+                                  {record.cost ? `${Number(record.cost).toFixed(2)}` : '-'}
+                                </span>
                               </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <div className="font-medium">{record.providerName || 'N/A'}</div>
+                              <TableCell className="w-[120px]">
+                                <div className="text-xs">
+                                  <div className="font-medium truncate">{record.providerName || 'N/A'}</div>
                                   <div className="text-gray-500">{record.providerType}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="w-[100px]">
                                 <div className="flex items-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleEditMaintenance(record)}
                                     title="Edit maintenance record"
+                                    className="h-7 w-7 p-0"
                                   >
-                                    <Edit className="h-4 w-4" />
+                                    <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleDeleteMaintenance(record)}
                                     title="Delete maintenance record"
-                                    className="text-destructive hover:text-destructive"
+                                    className="text-destructive hover:text-destructive h-7 w-7 p-0"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </TableCell>
