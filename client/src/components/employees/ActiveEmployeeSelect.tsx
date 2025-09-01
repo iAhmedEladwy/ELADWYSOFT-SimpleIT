@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
@@ -54,14 +54,12 @@ export default function ActiveEmployeeSelect({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch employees data
   const { data: employeesData, isLoading } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Filter only active employees and apply search
   const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
@@ -86,44 +84,40 @@ export default function ActiveEmployeeSelect({
         );
       })
       .sort((a, b) => {
-        // Sort by name for better UX
         const nameA = language === 'Arabic' ? (a.arabicName || a.englishName) : a.englishName;
         const nameB = language === 'Arabic' ? (b.arabicName || b.englishName) : b.englishName;
         return nameA.localeCompare(nameB);
       });
   }, [employeesData, searchQuery, language]);
 
-  // Get selected employee details
   const selectedEmployee = useMemo(() => {
     if (!value) return null;
     return filteredEmployees.find(emp => emp.id.toString() === value.toString());
   }, [value, filteredEmployees]);
 
-  // Translations
   const translations = {
-    selectEmployee: language === 'English' ? 'Select employee...' : 'اختر موظف...',
-    searchPlaceholder: language === 'English' ? 'Search employees...' : 'البحث عن موظف...',
-    noResults: language === 'English' ? 'No active employees found.' : 'لا يوجد موظفين نشطين.',
-    loading: language === 'English' ? 'Loading...' : 'جاري التحميل...',
-    activeEmployees: language === 'English' ? 'Active Employees' : 'الموظفين النشطين',
+    selectEmployee: 'Select employee...',
+    searchPlaceholder: 'Search employees...',
+    noResults: 'No active employees found.',
+    loading: 'Loading...',
+    activeEmployees: 'Active Employees',
   };
 
   const displayPlaceholder = placeholder || translations.selectEmployee;
 
-  // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
     const name = language === 'Arabic' && employee.arabicName 
       ? employee.arabicName 
       : employee.englishName;
     
-    let display = `${employee.empId} - ${name}`;
+    let display = employee.empId + ' - ' + name;
     
     if (showDepartment && employee.department) {
-      display += ` (${employee.department})`;
+      display += ' (' + employee.department + ')';
     }
     
     if (showPosition && employee.position) {
-      display += ` - ${employee.position}`;
+      display += ' - ' + employee.position;
     }
     
     return display;
@@ -171,7 +165,7 @@ export default function ActiveEmployeeSelect({
                   onSelect={(currentValue) => {
                     onValueChange(currentValue === value ? '' : currentValue);
                     setOpen(false);
-                    setSearchQuery(''); // Clear search on selection
+                    setSearchQuery('');
                   }}
                   className="flex items-center justify-between"
                 >

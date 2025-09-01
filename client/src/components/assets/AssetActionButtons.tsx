@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import ActiveEmployeeSelect from '@/components/shared/ActiveEmployeeSelect';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
 
 interface AssetActionButtonsProps {
   asset: any;
