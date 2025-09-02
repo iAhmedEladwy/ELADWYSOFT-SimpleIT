@@ -2,23 +2,15 @@ import React from 'react';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface Employee {
   id: number;
@@ -54,15 +46,14 @@ export default function ActiveEmployeeSelect({
   required = false
 }: ActiveEmployeeSelectProps) {
   const { language } = useLanguage();
-  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Translations
   const translations = {
     selectEmployee: language === 'English' ? 'Select employee...' : 'اختر موظف...',
-    searchPlaceholder: language === 'English' ? 'Search employees...' : 'البحث عن موظف...',
-    noResults: language === 'English' ? 'No active employees found.' : 'لا يوجد موظفين نشطين.',
+    searchPlaceholder: language === 'English' ? 'Search...' : 'بحث...',
+    noResults: language === 'English' ? 'No employees found' : 'لا يوجد موظفين',
     loading: language === 'English' ? 'Loading...' : 'جاري التحميل...',
-    activeEmployees: language === 'English' ? 'Active Employees' : 'الموظفين النشطين',
     none: language === 'English' ? 'None' : 'لا يوجد',
   };
 
@@ -72,12 +63,30 @@ export default function ActiveEmployeeSelect({
     gcTime: 10 * 60 * 1000,
   });
 
-  // Filter only active employees
-  const activeEmployees = useMemo(() => {
+  // Filter active employees and apply search
+  const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
     return employeesData
       .filter(employee => employee && employee.status === 'Active')
+      .filter(employee => {
+        if (!searchQuery) return true;
+        
+        const query = searchQuery.toLowerCase();
+        const englishName = (employee.englishName || employee.name || '').toLowerCase();
+        const arabicName = (employee.arabicName || '').toLowerCase();
+        const empId = (employee.empId || '').toLowerCase();
+        const department = (employee.department || '').toLowerCase();
+        const position = (employee.position || employee.title || '').toLowerCase();
+
+        return (
+          englishName.includes(query) ||
+          arabicName.includes(query) ||
+          empId.includes(query) ||
+          department.includes(query) ||
+          position.includes(query)
+        );
+      })
       .sort((a, b) => {
         const nameA = language === 'Arabic' && a.arabicName 
           ? a.arabicName 
@@ -87,15 +96,9 @@ export default function ActiveEmployeeSelect({
           : (b.englishName || b.name || '');
         return nameA.localeCompare(nameB);
       });
-  }, [employeesData, language]);
+  }, [employeesData, searchQuery, language]);
 
-  const selectedEmployee = useMemo(() => {
-    if (!value || value === 'none') return null;
-    return activeEmployees.find(emp => emp.id.toString() === value.toString());
-  }, [value, activeEmployees]);
-
-  const displayPlaceholder = placeholder || translations.selectEmployee;
-
+  // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
     const name = language === 'Arabic' && employee.arabicName 
       ? employee.arabicName 
@@ -114,108 +117,62 @@ export default function ActiveEmployeeSelect({
     return display;
   };
 
-  const getEmployeeSearchValue = (employee: Employee) => {
-    // Create a searchable string that includes all relevant fields
-    const name = employee.englishName || employee.name || '';
-    const arabicName = employee.arabicName || '';
-    const dept = employee.department || '';
-    const pos = employee.position || employee.title || '';
-    return `${employee.empId} ${name} ${arabicName} ${dept} ${pos}`.toLowerCase();
-  };
+  if (isLoading) {
+    return (
+      <Select disabled>
+        <SelectTrigger className={className}>
+          <SelectValue placeholder={translations.loading} />
+        </SelectTrigger>
+      </Select>
+    );
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-required={required}
-          className={cn("w-full justify-between font-normal", className)}
-          disabled={disabled || isLoading}
-        >
-          <span className="truncate">
-            {isLoading 
-              ? translations.loading
-              : selectedEmployee 
-                ? formatEmployeeDisplay(selectedEmployee)
-                : displayPlaceholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput 
+    <Select 
+      value={value?.toString() || ''} 
+      onValueChange={onValueChange}
+      disabled={disabled}
+    >
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder || translations.selectEmployee} />
+      </SelectTrigger>
+      <SelectContent className="max-h-[300px]">
+        {/* Search input inside the dropdown */}
+        <div className="flex items-center px-2 pb-2 sticky top-0 bg-popover">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <Input
             placeholder={translations.searchPlaceholder}
-            className="h-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           />
-          <CommandList>
-            <CommandEmpty>{translations.noResults}</CommandEmpty>
-            <CommandGroup>
-              {/* Add None option if not required */}
-              {!required && (
-                <CommandItem
-                  value="none"
-                  onSelect={() => {
-                    onValueChange('');
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      !value || value === 'none' ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {translations.none}
-                </CommandItem>
-              )}
-              
-              {/* Employee list */}
-              {activeEmployees.map((employee) => {
-                const displayName = language === 'Arabic' && employee.arabicName 
-                  ? employee.arabicName 
-                  : (employee.englishName || employee.name || '');
-                
-                return (
-                  <CommandItem
-                    key={employee.id}
-                    value={getEmployeeSearchValue(employee)}
-                    onSelect={() => {
-                      onValueChange(employee.id.toString());
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === employee.id.toString() ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{employee.empId}</span>
-                        <span>{displayName}</span>
-                        {showDepartment && employee.department && (
-                          <Badge variant="secondary" className="text-xs ml-2">
-                            {employee.department}
-                          </Badge>
-                        )}
-                      </div>
-                      {showPosition && (employee.position || employee.title) && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {employee.position || employee.title}
-                        </div>
-                      )}
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </div>
+        
+        {/* None option for optional fields */}
+        {!required && (
+          <SelectItem value="none">
+            {translations.none}
+          </SelectItem>
+        )}
+        
+        {/* Employee list */}
+        {filteredEmployees.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            {translations.noResults}
+          </div>
+        ) : (
+          filteredEmployees.map((employee) => (
+            <SelectItem 
+              key={employee.id} 
+              value={employee.id.toString()}
+            >
+              {formatEmployeeDisplay(employee)}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
   );
 }
