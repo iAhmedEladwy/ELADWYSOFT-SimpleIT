@@ -17,7 +17,8 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
-version: "0.2.8",
+{
+  version: "0.2.8",
 date: "2025-09-02",
 title: "Enhanced Employee Selection & UI Improvements",
 type: "minor",
@@ -46,6 +47,7 @@ changes: {
     "🔄 Corrected dropdown positioning in forms",
     "📁 Resolved build issues with file extensions"
   ]
+}
 },
 {
   version: "0.2.7",
