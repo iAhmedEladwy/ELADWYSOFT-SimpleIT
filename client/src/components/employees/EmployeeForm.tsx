@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 import {
   Form,
   FormControl,
