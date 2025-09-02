@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,10 +41,6 @@ interface ActiveEmployeeSelectProps {
   showPosition?: boolean;
   className?: string;
   required?: boolean;
-  // Add new prop to control popover alignment
-  popoverAlign?: 'start' | 'center' | 'end';
-  // Add new prop to control popover side
-  popoverSide?: 'top' | 'bottom' | 'left' | 'right';
 }
 
 export default function ActiveEmployeeSelect({
@@ -55,13 +51,10 @@ export default function ActiveEmployeeSelect({
   showDepartment = true,
   showPosition = false,
   className,
-  required = false,
-  popoverAlign = 'start',
-  popoverSide = 'bottom'
+  required = false
 }: ActiveEmployeeSelectProps) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Translations
   const translations = {
@@ -79,31 +72,12 @@ export default function ActiveEmployeeSelect({
     gcTime: 10 * 60 * 1000,
   });
 
-  const filteredEmployees = useMemo(() => {
+  // Filter only active employees
+  const activeEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
     return employeesData
-      .filter(employee => {
-        return employee && employee.status === 'Active';
-      })
-      .filter(employee => {
-        if (!searchQuery) return true;
-        
-        const query = searchQuery.toLowerCase();
-        const englishName = (employee.englishName || employee.name || '').toLowerCase();
-        const arabicName = (employee.arabicName || '').toLowerCase();
-        const empId = (employee.empId || '').toLowerCase();
-        const department = (employee.department || '').toLowerCase();
-        const position = (employee.position || employee.title || '').toLowerCase();
-
-        return (
-          englishName.includes(query) ||
-          arabicName.includes(query) ||
-          empId.includes(query) ||
-          department.includes(query) ||
-          position.includes(query)
-        );
-      })
+      .filter(employee => employee && employee.status === 'Active')
       .sort((a, b) => {
         const nameA = language === 'Arabic' && a.arabicName 
           ? a.arabicName 
@@ -113,12 +87,12 @@ export default function ActiveEmployeeSelect({
           : (b.englishName || b.name || '');
         return nameA.localeCompare(nameB);
       });
-  }, [employeesData, searchQuery, language]);
+  }, [employeesData, language]);
 
   const selectedEmployee = useMemo(() => {
     if (!value || value === 'none') return null;
-    return filteredEmployees.find(emp => emp.id.toString() === value.toString());
-  }, [value, filteredEmployees]);
+    return activeEmployees.find(emp => emp.id.toString() === value.toString());
+  }, [value, activeEmployees]);
 
   const displayPlaceholder = placeholder || translations.selectEmployee;
 
@@ -140,6 +114,15 @@ export default function ActiveEmployeeSelect({
     return display;
   };
 
+  const getEmployeeSearchValue = (employee: Employee) => {
+    // Create a searchable string that includes all relevant fields
+    const name = employee.englishName || employee.name || '';
+    const arabicName = employee.arabicName || '';
+    const dept = employee.department || '';
+    const pos = employee.position || employee.title || '';
+    return `${employee.empId} ${name} ${arabicName} ${dept} ${pos}`.toLowerCase();
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -148,7 +131,7 @@ export default function ActiveEmployeeSelect({
           role="combobox"
           aria-expanded={open}
           aria-required={required}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between font-normal", className)}
           disabled={disabled || isLoading}
         >
           <span className="truncate">
@@ -161,41 +144,23 @@ export default function ActiveEmployeeSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-full p-0" 
-        align={popoverAlign}
-        side={popoverSide}
-        sideOffset={5}
-        // Add collision padding to prevent the popover from going off-screen
-        collisionPadding={10}
-        // Force the popover to be at least as wide as the trigger
-        style={{ minWidth: 'var(--radix-popover-trigger-width)' }}
-      >
-        <Command className="w-full">
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <input
-              className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder={translations.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          {/* Add explicit height and overflow to CommandList for scrolling */}
-          <CommandList className="max-h-[300px] overflow-y-auto overflow-x-hidden">
-            <CommandEmpty className="py-6 text-center text-sm">
-              {translations.noResults}
-            </CommandEmpty>
-            <CommandGroup heading={translations.activeEmployees}>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput 
+            placeholder={translations.searchPlaceholder}
+            className="h-9"
+          />
+          <CommandList>
+            <CommandEmpty>{translations.noResults}</CommandEmpty>
+            <CommandGroup>
+              {/* Add None option if not required */}
               {!required && (
                 <CommandItem
                   value="none"
                   onSelect={() => {
                     onValueChange('');
                     setOpen(false);
-                    setSearchQuery('');
                   }}
-                  className="cursor-pointer"
                 >
                   <Check
                     className={cn(
@@ -203,11 +168,12 @@ export default function ActiveEmployeeSelect({
                       !value || value === 'none' ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span>{translations.none}</span>
+                  {translations.none}
                 </CommandItem>
               )}
               
-              {filteredEmployees.map((employee) => {
+              {/* Employee list */}
+              {activeEmployees.map((employee) => {
                 const displayName = language === 'Arabic' && employee.arabicName 
                   ? employee.arabicName 
                   : (employee.englishName || employee.name || '');
@@ -215,41 +181,33 @@ export default function ActiveEmployeeSelect({
                 return (
                   <CommandItem
                     key={employee.id}
-                    value={employee.id.toString()}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue === value ? '' : currentValue);
+                    value={getEmployeeSearchValue(employee)}
+                    onSelect={() => {
+                      onValueChange(employee.id.toString());
                       setOpen(false);
-                      setSearchQuery('');
                     }}
-                    className="cursor-pointer flex items-center justify-between"
                   >
-                    <div className="flex items-center flex-1">
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          value === employee.id.toString() ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{employee.empId}</span>
-                          <span>{displayName}</span>
-                        </div>
-                        {(showDepartment || showPosition) && (
-                          <div className="flex items-center gap-2 mt-1">
-                            {showDepartment && employee.department && (
-                              <Badge variant="secondary" className="text-xs">
-                                {employee.department}
-                              </Badge>
-                            )}
-                            {showPosition && (employee.position || employee.title) && (
-                              <Badge variant="outline" className="text-xs">
-                                {employee.position || employee.title}
-                              </Badge>
-                            )}
-                          </div>
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === employee.id.toString() ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{employee.empId}</span>
+                        <span>{displayName}</span>
+                        {showDepartment && employee.department && (
+                          <Badge variant="secondary" className="text-xs ml-2">
+                            {employee.department}
+                          </Badge>
                         )}
                       </div>
+                      {showPosition && (employee.position || employee.title) && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {employee.position || employee.title}
+                        </div>
+                      )}
                     </div>
                   </CommandItem>
                 );
