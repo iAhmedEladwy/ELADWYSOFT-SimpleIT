@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import MaintenanceForm from './MaintenanceForm';
 import { UpgradeForm } from './UpgradeForm';
 import AssetDetailView from './AssetDetailView';
-import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
 
 interface AssetActionsMenuProps {

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
 import AssetDetailView from '@/components/assets/AssetDetailView';
 import { AssetActionsMenu } from '@/components/assets/AssetActionsMenu';
-import ActiveEmployeeSelect from '@/components/employees/ActiveEmployeeSelect';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
 import { 
   Table, 
