@@ -1,18 +1,10 @@
 import React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
@@ -56,6 +48,7 @@ export default function ActiveEmployeeSelect({
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Translations
   const translations = {
@@ -144,6 +137,20 @@ export default function ActiveEmployeeSelect({
     return placeholder || translations.selectEmployee;
   };
 
+  // Enable scroll on the scrollable div
+  useEffect(() => {
+    const scrollableDiv = scrollRef.current;
+    if (!scrollableDiv) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+      scrollableDiv.scrollTop += e.deltaY;
+    };
+
+    scrollableDiv.addEventListener('wheel', handleWheel, { passive: false });
+    return () => scrollableDiv.removeEventListener('wheel', handleWheel);
+  }, [open]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -164,11 +171,16 @@ export default function ActiveEmployeeSelect({
       <PopoverContent 
         className="w-[--radix-popover-trigger-width] p-0" 
         align="start"
+        side="bottom"
+        sideOffset={4}
+        alignOffset={0}
+        avoidCollisions={true}
+        collisionPadding={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="flex flex-col max-h-[400px]">
-          {/* Custom search input */}
-          <div className="flex items-center border-b px-3">
+        <div className="flex flex-col" style={{ maxHeight: '350px' }}>
+          {/* Search input - fixed at top */}
+          <div className="flex items-center border-b px-3 bg-popover">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <input
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -179,13 +191,17 @@ export default function ActiveEmployeeSelect({
             />
           </div>
           
-          {/* Scrollable list */}
+          {/* Scrollable employee list */}
           <div 
-            className="overflow-y-auto overflow-x-hidden max-h-[300px]"
+            ref={scrollRef}
+            className="overflow-y-auto"
             style={{ 
-              maxHeight: '300px',
+              maxHeight: '280px',
               overflowY: 'auto',
-              overscrollBehavior: 'contain'
+              overflowX: 'hidden'
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
             }}
           >
             {filteredEmployees.length === 0 ? (
@@ -197,7 +213,7 @@ export default function ActiveEmployeeSelect({
                 {/* None option for optional fields */}
                 {!required && (
                   <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
                     onClick={() => {
                       onValueChange('');
                       setOpen(false);
@@ -223,7 +239,7 @@ export default function ActiveEmployeeSelect({
                   return (
                     <div
                       key={employee.id}
-                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
                       onClick={() => {
                         onValueChange(employee.id.toString());
                         setOpen(false);
