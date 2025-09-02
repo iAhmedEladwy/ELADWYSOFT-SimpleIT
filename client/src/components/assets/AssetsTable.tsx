@@ -5,6 +5,8 @@ import { useAuth } from '@/lib/authContext';
 import AssetActionButtons from '@/components/assets/AssetActionButtons';
 import AssetDetailView from '@/components/assets/AssetDetailView';
 import { AssetActionsMenu } from '@/components/assets/AssetActionsMenu';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
+
 import { 
   Table, 
   TableBody, 
@@ -466,7 +468,7 @@ export default function AssetsTable({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Assign Asset Dialog */}
+     {/* Assignment Dialog */}
       <Dialog open={!!assetToAssign} onOpenChange={(open) => !open && setAssetToAssign(null)}>
         <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -476,23 +478,14 @@ export default function AssetsTable({
             <div className="space-y-4">
               <div>
                 <Label htmlFor="employee-select">{translations.selectEmployee}</Label>
-                <Select
+                <ActiveEmployeeSelect
                   value={employeeId}
                   onValueChange={setEmployeeId}
-                >
-                  <SelectTrigger id="employee-select">
-                    <SelectValue placeholder={translations.selectEmployee} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(employees || [])
-                      .filter((employee: any) => employee?.status === 'Active')
-                      .map((employee: any) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.englishName} ({employee.empId})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={translations.selectEmployee}
+                  showDepartment={true}
+                  showPosition={false}
+                  required={true}
+                />
               </div>
             </div>
           </div>

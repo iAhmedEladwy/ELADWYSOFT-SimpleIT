@@ -17,6 +17,36 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
+version: "0.2.8",
+date: "2025-09-02",
+title: "Enhanced Employee Selection & UI Improvements",
+type: "minor",
+changes: {
+  features: [
+    "🎯 New ActiveEmployeeSelect component for consistent employee selection:",
+    "   ✅ Filters to show only active employees across all forms",
+    "   ✅ Real-time search across ID, name, department, and position",
+    "   ✅ Rich display with department/position badges",
+    "   ✅ Scrollable dropdown with configurable height",
+    "   ✅ Bilingual support (English/Arabic)",
+    "📍 Integrated in asset management and employee forms",
+    "⚡ 5-minute data caching for improved performance"
+  ],
+  improvements: [
+    "🎨 Consistent employee selection UI across the application",
+    "📊 Better data filtering with active employee status",
+    "🔍 Improved search accuracy in employee selection",
+    "📱 Responsive dropdown sizing and positioning",
+    "⚙️ Reusable component architecture"
+  ],
+  bugfixes: [
+    "🔧 Fixed inactive employees appearing in selection lists",
+    "🎯 Resolved dropdown scrolling issues",
+    "📐 Fixed search returning incorrect multiple results",
+    "🔄 Corrected dropdown positioning in forms",
+    "📁 Resolved build issues with file extensions"
+  ]
+},
 {
   version: "0.2.7",
   date: "2025-08-30",

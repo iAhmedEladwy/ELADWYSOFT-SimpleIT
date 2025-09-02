@@ -242,7 +242,7 @@ export default function Assets() {
   });
 
   const updateAssetMutation = useMutation({
-    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets${id}`, 'PUT', assetData),
+    mutationFn: ({ id, ...assetData }: any) => apiRequest(`/api/assets/${id}`, 'PUT', assetData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -263,7 +263,7 @@ export default function Assets() {
   });
 
   const deleteAssetMutation = useMutation({
-    mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}`, 'DELETE'),
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -283,7 +283,7 @@ export default function Assets() {
 
   const assignAssetMutation = useMutation({
     mutationFn: ({ assetId, employeeId }: { assetId: number; employeeId: number }) =>
-      apiRequest(`/api/assets${assetId}/assign`, 'POST', { employeeId }),
+      apiRequest(`/api/assets/${assetId}/assign`, 'POST', { employeeId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -302,7 +302,7 @@ export default function Assets() {
   });
 
   const unassignAssetMutation = useMutation({
-    mutationFn: (assetId: number) => apiRequest(`/api/assets${assetId}/unassign`, 'POST'),
+    mutationFn: (assetId: number) => apiRequest(`/api/assets/${assetId}/unassign`, 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
@@ -351,7 +351,7 @@ export default function Assets() {
   const addMaintenanceMutation = useMutation({
     mutationFn: async (maintenanceData: any) => {
       const { assetId, ...data } = maintenanceData;
-      const res = await fetch(`/api/assets${assetId}/maintenance`, {
+      const res = await fetch(`/api/assets/${assetId}/maintenance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -660,7 +660,7 @@ export default function Assets() {
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v0.2.7</title>
+        <title>{translations.title} | SimpleIT v0.2.8</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
