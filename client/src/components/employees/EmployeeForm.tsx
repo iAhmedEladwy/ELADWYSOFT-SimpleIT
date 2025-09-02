@@ -347,6 +347,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                       disabled={isSubmitting}
                       popoverSide="bottom"  // Force downward opening
                       popoverAlign="start"  // Align to the start of the trigger
+                      classname="h-9"
                     />
                   </FormControl>
                   <FormDescription>{translations.directManagerDesc}</FormDescription>
