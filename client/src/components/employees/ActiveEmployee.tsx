@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,7 @@ export default function ActiveEmployeeSelect({
 }: ActiveEmployeeSelectProps) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Translations
   const translations = {
@@ -72,28 +73,49 @@ export default function ActiveEmployeeSelect({
     gcTime: 10 * 60 * 1000,
   });
 
-  // Filter only active employees
-  const activeEmployees = useMemo(() => {
+  // Filter active employees and apply manual search
+  const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
-    return employeesData
-      .filter(employee => employee && employee.status === 'Active')
-      .sort((a, b) => {
-        const nameA = language === 'Arabic' && a.arabicName 
-          ? a.arabicName 
-          : (a.englishName || a.name || '');
-        const nameB = language === 'Arabic' && b.arabicName 
-          ? b.arabicName 
-          : (b.englishName || b.name || '');
-        return nameA.localeCompare(nameB);
+    let filtered = employeesData.filter(employee => employee && employee.status === 'Active');
+
+    // Manual search filtering
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(employee => {
+        const englishName = (employee.englishName || employee.name || '').toLowerCase();
+        const arabicName = (employee.arabicName || '').toLowerCase();
+        const empId = (employee.empId || '').toLowerCase();
+        const department = (employee.department || '').toLowerCase();
+        const position = (employee.position || employee.title || '').toLowerCase();
+
+        return (
+          englishName.includes(query) ||
+          arabicName.includes(query) ||
+          empId.includes(query) ||
+          department.includes(query) ||
+          position.includes(query)
+        );
       });
-  }, [employeesData, language]);
+    }
+
+    // Sort
+    return filtered.sort((a, b) => {
+      const nameA = language === 'Arabic' && a.arabicName 
+        ? a.arabicName 
+        : (a.englishName || a.name || '');
+      const nameB = language === 'Arabic' && b.arabicName 
+        ? b.arabicName 
+        : (b.englishName || b.name || '');
+      return nameA.localeCompare(nameB);
+    });
+  }, [employeesData, searchQuery, language]);
 
   // Get selected employee details
   const selectedEmployee = useMemo(() => {
     if (!value || value === 'none') return null;
-    return activeEmployees.find(emp => emp.id.toString() === value.toString());
-  }, [value, activeEmployees]);
+    return employeesData?.find(emp => emp.id.toString() === value.toString());
+  }, [value, employeesData]);
 
   // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
@@ -122,15 +144,6 @@ export default function ActiveEmployeeSelect({
     return placeholder || translations.selectEmployee;
   };
 
-  // Create searchable value for CommandItem
-  const getEmployeeSearchValue = (employee: Employee) => {
-    const name = employee.englishName || employee.name || '';
-    const arabicName = employee.arabicName || '';
-    const dept = employee.department || '';
-    const pos = employee.position || employee.title || '';
-    return `${employee.empId} ${name} ${arabicName} ${dept} ${pos}`.toLowerCase();
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -148,89 +161,108 @@ export default function ActiveEmployeeSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput 
-            placeholder={translations.searchPlaceholder}
-            className="h-9"
-          />
-          {/* Add scrolling styles directly to CommandList */}
-          <CommandList 
-            className="max-h-[300px] overflow-y-auto overflow-x-hidden"
-            style={{ maxHeight: '300px', overflowY: 'auto' }}
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0" 
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="flex flex-col max-h-[400px]">
+          {/* Custom search input */}
+          <div className="flex items-center border-b px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <input
+              className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder={translations.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+          
+          {/* Scrollable list */}
+          <div 
+            className="overflow-y-auto overflow-x-hidden max-h-[300px]"
+            style={{ 
+              maxHeight: '300px',
+              overflowY: 'auto',
+              overscrollBehavior: 'contain'
+            }}
           >
-            <CommandEmpty className="py-6 text-center text-sm">
-              {translations.noResults}
-            </CommandEmpty>
-            <CommandGroup>
-              {/* None option for optional fields */}
-              {!required && (
-                <CommandItem
-                  value="none"
-                  onSelect={() => {
-                    onValueChange('');
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      (!value || value === 'none') ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span>{translations.none}</span>
-                </CommandItem>
-              )}
-              
-              {/* Employee list with rich display */}
-              {activeEmployees.map((employee) => {
-                const displayName = language === 'Arabic' && employee.arabicName 
-                  ? employee.arabicName 
-                  : (employee.englishName || employee.name || '');
-                
-                return (
-                  <CommandItem
-                    key={employee.id}
-                    value={getEmployeeSearchValue(employee)}
-                    onSelect={() => {
-                      onValueChange(employee.id.toString());
+            {filteredEmployees.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {translations.noResults}
+              </div>
+            ) : (
+              <div className="p-1">
+                {/* None option for optional fields */}
+                {!required && (
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => {
+                      onValueChange('');
                       setOpen(false);
+                      setSearchQuery('');
                     }}
-                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4 flex-shrink-0",
-                        value === employee.id.toString() ? "opacity-100" : "opacity-0"
+                        "mr-2 h-4 w-4",
+                        (!value || value === 'none') ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <div className="flex-1 flex items-start flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{employee.empId}</span>
-                        <span>{displayName}</span>
-                      </div>
-                      {(showDepartment || showPosition) && (
-                        <div className="flex items-center gap-2 mt-1">
-                          {showDepartment && employee.department && (
-                            <Badge variant="secondary" className="text-xs">
-                              {employee.department}
-                            </Badge>
-                          )}
-                          {showPosition && (employee.position || employee.title) && (
-                            <Badge variant="outline" className="text-xs">
-                              {employee.position || employee.title}
-                            </Badge>
-                          )}
+                    <span>{translations.none}</span>
+                  </div>
+                )}
+                
+                {/* Employee list */}
+                {filteredEmployees.map((employee) => {
+                  const displayName = language === 'Arabic' && employee.arabicName 
+                    ? employee.arabicName 
+                    : (employee.englishName || employee.name || '');
+                  
+                  return (
+                    <div
+                      key={employee.id}
+                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => {
+                        onValueChange(employee.id.toString());
+                        setOpen(false);
+                        setSearchQuery('');
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 flex-shrink-0",
+                          value === employee.id.toString() ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex-1 flex items-start flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{employee.empId}</span>
+                          <span>{displayName}</span>
                         </div>
-                      )}
+                        {(showDepartment || showPosition) && (
+                          <div className="flex items-center gap-2 mt-1">
+                            {showDepartment && employee.department && (
+                              <Badge variant="secondary" className="text-xs">
+                                {employee.department}
+                              </Badge>
+                            )}
+                            {showPosition && (employee.position || employee.title) && (
+                              <Badge variant="outline" className="text-xs">
+                                {employee.position || employee.title}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
