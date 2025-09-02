@@ -33,6 +33,7 @@ interface ActiveEmployeeSelectProps {
   showPosition?: boolean;
   className?: string;
   required?: boolean;
+  dropdownHeight?: 'compact' | 'normal';
 }
 
 export default function ActiveEmployeeSelect({
@@ -43,7 +44,8 @@ export default function ActiveEmployeeSelect({
   showDepartment = true,
   showPosition = false,
   className,
-  required = false
+  required = false,
+  dropdownHeight = 'normal'
 }: ActiveEmployeeSelectProps) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -173,12 +175,9 @@ export default function ActiveEmployeeSelect({
         align="start"
         side="bottom"
         sideOffset={4}
-        alignOffset={0}
-        avoidCollisions={true}
-        collisionPadding={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="flex flex-col" style={{ maxHeight: '350px' }}>
+        <div className="flex flex-col" style={{ maxHeight: dropdownHeight === 'compact' ? '250px' : '350px' }}>
           {/* Search input - fixed at top */}
           <div className="flex items-center border-b px-3 bg-popover">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -196,7 +195,7 @@ export default function ActiveEmployeeSelect({
             ref={scrollRef}
             className="overflow-y-auto"
             style={{ 
-              maxHeight: '280px',
+              maxHeight: dropdownHeight === 'compact' ? '180px' : '280px',
               overflowY: 'auto',
               overflowX: 'hidden'
             }}
