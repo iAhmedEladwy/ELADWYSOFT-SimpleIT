@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
@@ -27,6 +28,8 @@ interface Employee {
   department: string;
   status: string;
   position?: string;
+  title?: string;
+  name?: string;
 }
 
 interface ActiveEmployeeSelectProps {
@@ -54,26 +57,43 @@ export default function ActiveEmployeeSelect({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Translations - Following project pattern
+  const translations = {
+    selectEmployee: language === 'English' ? 'Select employee...' : 'اختر موظف...',
+    searchPlaceholder: language === 'English' ? 'Search employees...' : 'البحث عن موظف...',
+    noResults: language === 'English' ? 'No active employees found.' : 'لا يوجد موظفين نشطين.',
+    loading: language === 'English' ? 'Loading...' : 'جاري التحميل...',
+    activeEmployees: language === 'English' ? 'Active Employees' : 'الموظفين النشطين',
+    none: language === 'English' ? 'None' : 'لا يوجد',
+  };
+
+  // Fetch employees data
   const { data: employeesData, isLoading } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
+  // Filter only active employees and apply search
   const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
     return employeesData
-      .filter(employee => employee && employee.status === 'Active')
+      .filter(employee => {
+        // Check if employee exists and is active
+        return employee && employee.status === 'Active';
+      })
       .filter(employee => {
         if (!searchQuery) return true;
         
         const query = searchQuery.toLowerCase();
-        const englishName = (employee.englishName || '').toLowerCase();
+        
+        // Get employee name (handle different name fields)
+        const englishName = (employee.englishName || employee.name || '').toLowerCase();
         const arabicName = (employee.arabicName || '').toLowerCase();
         const empId = (employee.empId || '').toLowerCase();
         const department = (employee.department || '').toLowerCase();
-        const position = (employee.position || '').toLowerCase();
+        const position = (employee.position || employee.title || '').toLowerCase();
 
         return (
           englishName.includes(query) ||
@@ -84,40 +104,40 @@ export default function ActiveEmployeeSelect({
         );
       })
       .sort((a, b) => {
-        const nameA = language === 'Arabic' ? (a.arabicName || a.englishName) : a.englishName;
-        const nameB = language === 'Arabic' ? (b.arabicName || b.englishName) : b.englishName;
+        // Sort by name based on current language
+        const nameA = language === 'Arabic' && a.arabicName 
+          ? a.arabicName 
+          : (a.englishName || a.name || '');
+        const nameB = language === 'Arabic' && b.arabicName 
+          ? b.arabicName 
+          : (b.englishName || b.name || '');
         return nameA.localeCompare(nameB);
       });
   }, [employeesData, searchQuery, language]);
 
+  // Get selected employee details
   const selectedEmployee = useMemo(() => {
-    if (!value) return null;
+    if (!value || value === 'none') return null;
     return filteredEmployees.find(emp => emp.id.toString() === value.toString());
   }, [value, filteredEmployees]);
 
-  const translations = {
-    selectEmployee: 'Select employee...',
-    searchPlaceholder: 'Search employees...',
-    noResults: 'No active employees found.',
-    loading: 'Loading...',
-    activeEmployees: 'Active Employees',
-  };
-
+  // Use placeholder from props or default translation
   const displayPlaceholder = placeholder || translations.selectEmployee;
 
+  // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
     const name = language === 'Arabic' && employee.arabicName 
       ? employee.arabicName 
-      : employee.englishName;
+      : (employee.englishName || employee.name || '');
     
-    let display = employee.empId + ' - ' + name;
+    let display = `${employee.empId} - ${name}`;
     
     if (showDepartment && employee.department) {
-      display += ' (' + employee.department + ')';
+      display += ` (${employee.department})`;
     }
     
-    if (showPosition && employee.position) {
-      display += ' - ' + employee.position;
+    if (showPosition && (employee.position || employee.title)) {
+      display += ` - ${employee.position || employee.title}`;
     }
     
     return display;
@@ -158,49 +178,74 @@ export default function ActiveEmployeeSelect({
           <CommandList>
             <CommandEmpty>{translations.noResults}</CommandEmpty>
             <CommandGroup heading={translations.activeEmployees}>
-              {filteredEmployees.map((employee) => (
+              {/* Add None option if not required */}
+              {!required && (
                 <CommandItem
-                  key={employee.id}
-                  value={employee.id.toString()}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? '' : currentValue);
+                  value="none"
+                  onSelect={() => {
+                    onValueChange('');
                     setOpen(false);
                     setSearchQuery('');
                   }}
-                  className="flex items-center justify-between"
                 >
-                  <div className="flex items-center flex-1">
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === employee.id.toString() ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{employee.empId}</span>
-                        <span>{language === 'Arabic' && employee.arabicName 
-                          ? employee.arabicName 
-                          : employee.englishName}</span>
-                      </div>
-                      {(showDepartment || showPosition) && (
-                        <div className="flex items-center gap-2 mt-1">
-                          {showDepartment && employee.department && (
-                            <Badge variant="secondary" className="text-xs">
-                              {employee.department}
-                            </Badge>
-                          )}
-                          {showPosition && employee.position && (
-                            <Badge variant="outline" className="text-xs">
-                              {employee.position}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      !value || value === 'none' ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>{translations.none}</span>
                 </CommandItem>
-              ))}
+              )}
+              
+              {/* Employee list */}
+              {filteredEmployees.map((employee) => {
+                const displayName = language === 'Arabic' && employee.arabicName 
+                  ? employee.arabicName 
+                  : (employee.englishName || employee.name || '');
+                
+                return (
+                  <CommandItem
+                    key={employee.id}
+                    value={employee.id.toString()}
+                    onSelect={(currentValue) => {
+                      onValueChange(currentValue === value ? '' : currentValue);
+                      setOpen(false);
+                      setSearchQuery(''); // Clear search on selection
+                    }}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center flex-1">
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === employee.id.toString() ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{employee.empId}</span>
+                          <span>{displayName}</span>
+                        </div>
+                        {(showDepartment || showPosition) && (
+                          <div className="flex items-center gap-2 mt-1">
+                            {showDepartment && employee.department && (
+                              <Badge variant="secondary" className="text-xs">
+                                {employee.department}
+                              </Badge>
+                            )}
+                            {showPosition && (employee.position || employee.title) && (
+                              <Badge variant="outline" className="text-xs">
+                                {employee.position || employee.title}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
