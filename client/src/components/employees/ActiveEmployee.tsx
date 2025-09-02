@@ -41,6 +41,10 @@ interface ActiveEmployeeSelectProps {
   showPosition?: boolean;
   className?: string;
   required?: boolean;
+  // Add new prop to control popover alignment
+  popoverAlign?: 'start' | 'center' | 'end';
+  // Add new prop to control popover side
+  popoverSide?: 'top' | 'bottom' | 'left' | 'right';
 }
 
 export default function ActiveEmployeeSelect({
@@ -51,13 +55,15 @@ export default function ActiveEmployeeSelect({
   showDepartment = true,
   showPosition = false,
   className,
-  required = false
+  required = false,
+  popoverAlign = 'start',
+  popoverSide = 'bottom'
 }: ActiveEmployeeSelectProps) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Translations - Following project pattern
+  // Translations
   const translations = {
     selectEmployee: language === 'English' ? 'Select employee...' : 'اختر موظف...',
     searchPlaceholder: language === 'English' ? 'Search employees...' : 'البحث عن موظف...',
@@ -67,28 +73,23 @@ export default function ActiveEmployeeSelect({
     none: language === 'English' ? 'None' : 'لا يوجد',
   };
 
-  // Fetch employees data
   const { data: employeesData, isLoading } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Filter only active employees and apply search
   const filteredEmployees = useMemo(() => {
     if (!Array.isArray(employeesData)) return [];
 
     return employeesData
       .filter(employee => {
-        // Check if employee exists and is active
         return employee && employee.status === 'Active';
       })
       .filter(employee => {
         if (!searchQuery) return true;
         
         const query = searchQuery.toLowerCase();
-        
-        // Get employee name (handle different name fields)
         const englishName = (employee.englishName || employee.name || '').toLowerCase();
         const arabicName = (employee.arabicName || '').toLowerCase();
         const empId = (employee.empId || '').toLowerCase();
@@ -104,7 +105,6 @@ export default function ActiveEmployeeSelect({
         );
       })
       .sort((a, b) => {
-        // Sort by name based on current language
         const nameA = language === 'Arabic' && a.arabicName 
           ? a.arabicName 
           : (a.englishName || a.name || '');
@@ -115,16 +115,13 @@ export default function ActiveEmployeeSelect({
       });
   }, [employeesData, searchQuery, language]);
 
-  // Get selected employee details
   const selectedEmployee = useMemo(() => {
     if (!value || value === 'none') return null;
     return filteredEmployees.find(emp => emp.id.toString() === value.toString());
   }, [value, filteredEmployees]);
 
-  // Use placeholder from props or default translation
   const displayPlaceholder = placeholder || translations.selectEmployee;
 
-  // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
     const name = language === 'Arabic' && employee.arabicName 
       ? employee.arabicName 
@@ -164,8 +161,17 @@ export default function ActiveEmployeeSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
+      <PopoverContent 
+        className="w-full p-0" 
+        align={popoverAlign}
+        side={popoverSide}
+        sideOffset={5}
+        // Add collision padding to prevent the popover from going off-screen
+        collisionPadding={10}
+        // Force the popover to be at least as wide as the trigger
+        style={{ minWidth: 'var(--radix-popover-trigger-width)' }}
+      >
+        <Command className="w-full">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <input
@@ -175,10 +181,12 @@ export default function ActiveEmployeeSelect({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <CommandList>
-            <CommandEmpty>{translations.noResults}</CommandEmpty>
+          {/* Add explicit height and overflow to CommandList for scrolling */}
+          <CommandList className="max-h-[300px] overflow-y-auto overflow-x-hidden">
+            <CommandEmpty className="py-6 text-center text-sm">
+              {translations.noResults}
+            </CommandEmpty>
             <CommandGroup heading={translations.activeEmployees}>
-              {/* Add None option if not required */}
               {!required && (
                 <CommandItem
                   value="none"
@@ -187,6 +195,7 @@ export default function ActiveEmployeeSelect({
                     setOpen(false);
                     setSearchQuery('');
                   }}
+                  className="cursor-pointer"
                 >
                   <Check
                     className={cn(
@@ -198,7 +207,6 @@ export default function ActiveEmployeeSelect({
                 </CommandItem>
               )}
               
-              {/* Employee list */}
               {filteredEmployees.map((employee) => {
                 const displayName = language === 'Arabic' && employee.arabicName 
                   ? employee.arabicName 
@@ -211,9 +219,9 @@ export default function ActiveEmployeeSelect({
                     onSelect={(currentValue) => {
                       onValueChange(currentValue === value ? '' : currentValue);
                       setOpen(false);
-                      setSearchQuery(''); // Clear search on selection
+                      setSearchQuery('');
                     }}
-                    className="flex items-center justify-between"
+                    className="cursor-pointer flex items-center justify-between"
                   >
                     <div className="flex items-center flex-1">
                       <Check
