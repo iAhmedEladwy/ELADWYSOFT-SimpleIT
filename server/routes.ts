@@ -4494,10 +4494,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard Summary with Historical Comparisons
     app.get('/api/dashboard/summary', async (req, res) => {
       try {
-          const employees = await storage.getAllEmployees();
-          const assets = await storage.getAllAssets();
-          const allTickets = await storage.getAllTickets();
-          const users = await storage.getAllUsers();
+        const employees = await storage.getAllEmployees();
+        const assets = await storage.getAllAssets();
+        const allTickets = await storage.getAllTickets();
+        const users = await storage.getAllUsers();
         
         // Get current date references
         const now = new Date();
@@ -4604,10 +4604,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return acc;
           }, {} as Record<string, number>),
           assets: assets.reduce((acc, asset) => {
-            if (!excludedStatuses.includes(asset.status) && asset.assignedTo) {
-              const employee = employees.find(e => e.id === asset.assignedTo);
-              const dept = employee?.department || 'Unassigned';
-              acc[dept] = (acc[dept] || 0) + 1;
+            if (!excludedStatuses.includes(asset.status)) {
+              // Check both assignedTo and assignedEmployeeId fields for compatibility
+              const assignedId = asset.assignedTo || asset.assignedEmployeeId;
+              if (assignedId) {
+                const employee = employees.find(e => 
+                  e.id === assignedId || 
+                  e.empId === assignedId // Also check by empId in case it's stored that way
+                );
+                const dept = employee?.department || 'Unassigned';
+                acc[dept] = (acc[dept] || 0) + 1;
+              } else {
+                // Count unassigned assets separately
+                acc['Unassigned'] = (acc['Unassigned'] || 0) + 1;
+              }
             }
             return acc;
           }, {} as Record<string, number>)
