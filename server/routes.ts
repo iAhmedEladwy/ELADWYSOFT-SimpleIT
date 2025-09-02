@@ -4492,7 +4492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
-
     app.get('/api/dashboard/summary', async (req, res) => {
       try {
         const employees = await storage.getEmployees();
