@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Building2, Users, Package } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNavigate } from 'react-router-dom';
 
 interface DepartmentDistributionProps {
   data?: {
@@ -20,7 +19,6 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'
 
 export default function EnhancedDepartmentDistribution({ data, isLoading }: DepartmentDistributionProps) {
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   const translations = {
     departmentDistribution: language === 'English' ? 'Department Distribution' : 'توزيع الأقسام',
@@ -84,6 +82,14 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
     return null;
   };
 
+  const handleBarClick = (data: any, type: 'employees' | 'assets') => {
+    if (type === 'employees') {
+      window.location.href = `/employees?department=${data.department}`;
+    } else {
+      window.location.href = `/assets?department=${data.department}`;
+    }
+  };
+
   return (
     <Card className="col-span-1 md:col-span-2 hover:shadow-lg transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -129,14 +135,14 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
                     dataKey="employees" 
                     fill="#3B82F6" 
                     name={translations.employees}
-                    onClick={(data) => navigate(`/employees?department=${data.department}`)}
+                    onClick={(data) => handleBarClick(data, 'employees')}
                     className="cursor-pointer hover:opacity-80"
                   />
                   <Bar 
                     dataKey="assets" 
                     fill="#10B981" 
                     name={translations.assets}
-                    onClick={(data) => navigate(`/assets?department=${data.department}`)}
+                    onClick={(data) => handleBarClick(data, 'assets')}
                     className="cursor-pointer hover:opacity-80"
                   />
                 </BarChart>
@@ -167,7 +173,7 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
                         <Cell 
                           key={`cell-${index}`} 
                           fill={COLORS[index % COLORS.length]}
-                          onClick={() => navigate(`/employees?department=${entry.name}`)}
+                          onClick={() => window.location.href = `/employees?department=${entry.name}`}
                           className="cursor-pointer hover:opacity-80"
                         />
                       ))}
@@ -179,7 +185,7 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
                   {employeeData.map((dept, index) => (
                     <div
                       key={dept.name}
-                      onClick={() => navigate(`/employees?department=${dept.name}`)}
+                      onClick={() => window.location.href = `/employees?department=${dept.name}`}
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-2">
@@ -223,7 +229,7 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
                         <Cell 
                           key={`cell-${index}`} 
                           fill={COLORS[index % COLORS.length]}
-                          onClick={() => navigate(`/assets?department=${entry.name}`)}
+                          onClick={() => window.location.href = `/assets?department=${entry.name}`}
                           className="cursor-pointer hover:opacity-80"
                         />
                       ))}
@@ -235,7 +241,7 @@ export default function EnhancedDepartmentDistribution({ data, isLoading }: Depa
                   {assetData.map((dept, index) => (
                     <div
                       key={dept.name}
-                      onClick={() => navigate(`/assets?department=${dept.name}`)}
+                      onClick={() => window.location.href = `/assets?department=${dept.name}`}
                       className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-2">

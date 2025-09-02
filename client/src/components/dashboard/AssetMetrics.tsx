@@ -6,7 +6,6 @@ import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNavigate } from 'react-router-dom';
 
 interface AssetMetricsProps {
   data?: {
@@ -25,7 +24,6 @@ interface AssetMetricsProps {
 export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
-  const navigate = useNavigate();
 
   const translations = {
     assetOverview: language === 'English' ? 'Asset Overview' : 'نظرة عامة على الأصول',
@@ -70,7 +68,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
           {translations.assetOverview}
         </CardTitle>
         <button
-          onClick={() => navigate('/assets')}
+          onClick={() => window.location.href = '/assets'}
           className="text-sm text-primary hover:underline"
         >
           {translations.viewAll} →
@@ -79,7 +77,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
       <CardContent className="space-y-4">
         {/* Total Assets Card */}
         <div 
-          onClick={() => navigate('/assets')}
+          onClick={() => window.location.href = '/assets'}
           className="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 hover:shadow-md transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
@@ -102,7 +100,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
 
         {/* Total Value Card */}
         <div 
-          onClick={() => navigate('/assets')}
+          onClick={() => window.location.href = '/assets'}
           className="p-3 rounded-lg bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 hover:shadow-md transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
@@ -127,7 +125,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
           <Progress value={laptopAvailabilityPercent} className="h-2" />
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div 
-              onClick={() => navigate('/assets?type=Laptop&status=Available')}
+              onClick={() => window.location.href = '/assets?type=Laptop&status=Available'}
               className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 cursor-pointer transition-all"
             >
               <div className="flex items-center gap-2">
@@ -139,7 +137,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
               </span>
             </div>
             <div 
-              onClick={() => navigate('/assets?type=Laptop&status=Reserved')}
+              onClick={() => window.location.href = '/assets?type=Laptop&status=Reserved'}
               className="flex items-center justify-between p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 cursor-pointer transition-all"
             >
               <div className="flex items-center gap-2">
@@ -155,7 +153,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
 
         {/* Maintenance Status */}
         <div 
-          onClick={() => navigate('/assets?status=Under Maintenance')}
+          onClick={() => window.location.href = '/assets?status=Under Maintenance'}
           className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 cursor-pointer transition-all"
         >
           <div className="flex items-center justify-between">

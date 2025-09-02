@@ -1,10 +1,9 @@
 // client/src/components/dashboard/EmployeeMetrics.tsx
-import { Users, UserPlus, UserMinus, TrendingUp, Clock } from 'lucide-react';
+import { Users, UserPlus, UserMinus, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/use-language';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNavigate } from 'react-router-dom';
 
 interface EmployeeMetricsProps {
   data?: {
@@ -23,7 +22,6 @@ interface EmployeeMetricsProps {
 
 export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProps) {
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   const translations = {
     employeeOverview: language === 'English' ? 'Employee Overview' : 'نظرة عامة على الموظفين',
@@ -61,7 +59,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       change: data?.changes.monthly,
-      onClick: () => navigate('/employees'),
+      onClick: () => window.location.href = '/employees',
     },
     {
       label: translations.fullTime,
@@ -69,7 +67,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: Users,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      onClick: () => navigate('/employees?type=full-time'),
+      onClick: () => window.location.href = '/employees?type=full-time',
     },
     {
       label: translations.partTime,
@@ -77,7 +75,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      onClick: () => navigate('/employees?type=part-time'),
+      onClick: () => window.location.href = '/employees?type=part-time',
     },
     {
       label: translations.newThisMonth,
@@ -86,7 +84,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
       badge: data?.newThisMonth ? 'new' : undefined,
-      onClick: () => navigate('/employees?filter=new'),
+      onClick: () => window.location.href = '/employees?filter=new',
     },
     {
       label: translations.pendingOffboarding,
@@ -95,7 +93,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       badge: data?.pendingOffboarding && data.pendingOffboarding > 0 ? 'alert' : undefined,
-      onClick: () => navigate('/employees?status=offboarding'),
+      onClick: () => window.location.href = '/employees?status=offboarding',
     },
   ];
 
@@ -107,7 +105,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
           {translations.employeeOverview}
         </CardTitle>
         <button
-          onClick={() => navigate('/employees')}
+          onClick={() => window.location.href = '/employees'}
           className="text-sm text-primary hover:underline"
         >
           {translations.viewAll} →

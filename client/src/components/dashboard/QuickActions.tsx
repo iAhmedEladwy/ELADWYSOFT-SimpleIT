@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/use-language';
-import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface QuickActionsProps {
@@ -23,7 +22,6 @@ interface QuickActionsProps {
 
 export default function QuickActions({ data, isLoading }: QuickActionsProps) {
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   const translations = {
     quickActions: language === 'English' ? 'Quick Actions' : 'إجراءات سريعة',
@@ -40,7 +38,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.addEmployee,
       icon: UserPlus,
-      onClick: () => navigate('/employees/new'),
+      onClick: () => window.location.href = '/employees/new',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 hover:bg-blue-100',
       disabled: !data?.canAddEmployee,
@@ -48,7 +46,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.addAsset,
       icon: Plus,
-      onClick: () => navigate('/assets/new'),
+      onClick: () => window.location.href = '/assets/new',
       color: 'text-green-600',
       bgColor: 'bg-green-50 hover:bg-green-100',
       disabled: !data?.canAddAsset,
@@ -56,7 +54,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.openTicket,
       icon: Ticket,
-      onClick: () => navigate('/tickets/new'),
+      onClick: () => window.location.href = '/tickets/new',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 hover:bg-purple-100',
       disabled: !data?.canOpenTicket,
@@ -127,7 +125,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.employeesNeedingAssets > 0 && (
                 <div 
                   className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-                  onClick={() => navigate('/employees?needsAssets=true')}
+                  onClick={() => window.location.href = '/employees?needsAssets=true'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.employeesNeedingAssets} {translations.employeesNeedAssets}</span>
@@ -136,7 +134,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.assetsNeedingMaintenance > 0 && (
                 <div 
                   className="flex items-center gap-2 text-yellow-600 cursor-pointer hover:text-yellow-700"
-                  onClick={() => navigate('/assets?maintenanceDue=upcoming')}
+                  onClick={() => window.location.href = '/assets?maintenanceDue=upcoming'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.assetsNeedingMaintenance} {translations.assetsNeedMaintenance}</span>
@@ -145,7 +143,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.ticketsNearingSLA > 0 && (
                 <div 
                   className="flex items-center gap-2 text-red-600 cursor-pointer hover:text-red-700"
-                  onClick={() => navigate('/tickets?priority=high')}
+                  onClick={() => window.location.href = '/tickets?priority=high'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.ticketsNearingSLA} {translations.ticketsNearSLA}</span>
