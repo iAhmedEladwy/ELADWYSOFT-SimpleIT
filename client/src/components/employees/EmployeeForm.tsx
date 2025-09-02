@@ -348,8 +348,6 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                     </FormControl>
                     <FormDescription>{translations.directManagerDesc}</FormDescription>
                     <FormMessage />
-                    {/* Add some padding below to ensure space for dropdown */}
-                    <div className="h-[300px]" />
                   </FormItem>
                 )}
               />
