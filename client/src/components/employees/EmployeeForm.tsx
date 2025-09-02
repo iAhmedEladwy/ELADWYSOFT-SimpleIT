@@ -330,27 +330,30 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="directManager"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{translations.directManager}</FormLabel>
-                    <FormControl>
-                      <ActiveEmployeeSelect
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        placeholder={translations.none}
-                        showDepartment={true}
-                        showPosition={true}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormDescription>{translations.directManagerDesc}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
+           <FormField
+              control={form.control}
+              name="directManager"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{translations.directManager}</FormLabel>
+                  <FormControl>
+                    <ActiveEmployeeSelect
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      placeholder={translations.none}
+                      showDepartment={true}
+                      showPosition={true}
+                      disabled={isSubmitting}
+                      popoverSide="bottom"  // Force downward opening
+                      popoverAlign="start"  // Align to the start of the trigger
+                    />
+                  </FormControl>
+                  <FormDescription>{translations.directManagerDesc}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
               <FormField
                 control={form.control}
