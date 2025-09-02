@@ -4494,10 +4494,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard Summary with Historical Comparisons
     app.get('/api/dashboard/summary', async (req, res) => {
       try {
-        const employees = await storage.getEmployees();
-        const assets = await storage.getAssets();
-        const allTickets = await storage.getTickets();
-        const users = await storage.getUsers();
+          const employees = await storage.getAllEmployees();
+          const assets = await storage.getAllAssets();
+          const allTickets = await storage.getAllTickets();
+          const users = await storage.getAllUsers();
         
         // Get current date references
         const now = new Date();
