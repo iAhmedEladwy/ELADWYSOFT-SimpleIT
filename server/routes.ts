@@ -4492,307 +4492,318 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
-    app.get('/api/dashboard/summary', async (req, res) => {
-      try {
-        const employees = await storage.getAllEmployees();
-        const assets = await storage.getAllAssets();
-        const allTickets = await storage.getAllTickets();
-        const users = await storage.getAllUsers();
-        
-        // Get current date references
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+ // Debug logging
+    console.log('Dashboard API Debug:', {
+      totalEmployees: employees.length,
+      activeEmployees: activeEmployees.length,
+      pendingOffboarding: pendingOffboarding.length,
+      totalAssets: assets.length,
+      totalValidAssets: totalValidAssets.length,
+      maintenanceRecordsCount: allMaintenanceRecords.length,
+      maintenanceCounts,
+      activeTickets: activeTickets.length
+    });// Replace the existing /api/dashboard/summary endpoint with this enhanced version
+app.get('/api/dashboard/summary', async (req, res) => {
+  try {
+    const employees = await storage.getAllEmployees();
+    const assets = await storage.getAllAssets();
+    const allTickets = await storage.getAllTickets();
+    const users = await storage.getAllUsers();
+    
+    // Get current date references
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-        // Enhanced Employee Metrics
-        const fullTimeEmployees = employees.filter(emp => 
-          emp.employmentType === 'Full-time' && emp.status === 'Active'
-        );
-        const partTimeEmployees = employees.filter(emp => 
-          emp.employmentType === 'Part-time' && emp.status === 'Active'
-        );
-        const activeEmployees = employees.filter(emp => emp.status === 'Active');
-        
-        const newEmployeesThisMonth = employees.filter(emp => {
-          const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
-          return joiningDate && joiningDate >= startOfMonth;
-        });
-        
-        // Fixed: Employees pending offboarding - includes those with future exit dates or resigned/terminated with assets
-        const employeesWithAssets = new Set(
-          assets.filter(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
-            .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
-        );
-        
-        const pendingOffboarding = employees.filter(emp => {
-          // Check if employee has a future exit date (leaving soon but still active)
-          if (emp.exitDate) {
-            const exitDate = new Date(emp.exitDate);
-            if (exitDate >= now && exitDate <= thirtyDaysFromNow) {
-              return true;
-            }
-          }
-          // Check if resigned/terminated but still has assets
-          return (emp.status === 'Resigned' || emp.status === 'Terminated') && 
-                employeesWithAssets.has(emp.id);
-        });
-
-        // Enhanced Asset Metrics
-        const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
-        
-        const totalValidAssets = assets.filter(asset => 
-          !excludedStatuses.includes(asset.status)
-        );
-        
-        const availableLaptops = assets.filter(asset => 
-          asset.type === 'Laptop' && asset.status === 'Available'
-        );
-        
-        const reservedLaptops = assets.filter(asset => 
-          asset.type === 'Laptop' && asset.status === 'Reserved'
-        );
-        
-        // Fixed: Assets under maintenance - check actual status field
-        const assetsUnderMaintenance = assets.filter(asset => 
-          asset.status === 'Under Maintenance' || 
-          asset.status === 'Maintenance' ||
-          asset.status === 'Repairing'
-        );
-
-        // Recently updated assets (last 7 days)
-        const recentlyUpdatedAssets = assets
-          .filter(asset => {
-            const updatedAt = asset.updatedAt ? new Date(asset.updatedAt) : null;
-            return updatedAt && updatedAt >= oneWeekAgo;
-          })
-          .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-          .slice(0, 10);
-
-        // Enhanced Ticket Metrics
-        const activeTickets = allTickets.filter(ticket => 
-          ticket.status === 'Open' || ticket.status === 'In Progress'
-        );
-        
-        const resolvedTicketsThisMonth = allTickets.filter(ticket => {
-          const resolvedDate = ticket.updatedAt ? new Date(ticket.updatedAt) : null;
-          return (ticket.status === 'Resolved' || ticket.status === 'Closed') && 
-                resolvedDate && resolvedDate >= startOfMonth;
-        });
-
-        // Ticket breakdown by priority
-        const ticketsByPriority = {
-          critical: activeTickets.filter(t => t.priority === 'Critical').length,
-          high: activeTickets.filter(t => t.priority === 'High').length,
-          medium: activeTickets.filter(t => t.priority === 'Medium').length,
-          low: activeTickets.filter(t => t.priority === 'Low').length
-        };
-
-        // Fixed: Maintenance Counts - based on actual maintenance schedules or asset status
-        const maintenanceCounts = {
-          scheduled: assets.filter(a => {
-            // Assets with scheduled maintenance in the future
-            if (a.nextMaintenance) {
-              const nextDate = new Date(a.nextMaintenance);
-              return nextDate > now && nextDate <= sevenDaysFromNow;
-            }
-            return false;
-          }).length,
-          inProgress: assetsUnderMaintenance.length, // Currently under maintenance
-          overdue: assets.filter(a => {
-            if (!a.nextMaintenance) return false;
-            const nextDate = new Date(a.nextMaintenance);
-            return nextDate < now && a.status !== 'Under Maintenance';
-          }).length
-        };
-
-        // Calculate total asset value (excluding disposed assets)
-        const totalAssetValue = totalValidAssets.reduce((sum, asset) => {
-          const price = typeof asset.buyPrice === 'string' 
-            ? parseFloat(asset.buyPrice) 
-            : (asset.buyPrice || 0);
-          return sum + (isNaN(price) ? 0 : price);
-        }, 0);
-
-        // Fixed: Department Distribution with proper asset assignment
-        const departmentDistribution = {
-          employees: employees.reduce((acc, emp) => {
-            if (emp.status === 'Active') {
-              const dept = emp.department || 'Unassigned';
-              acc[dept] = (acc[dept] || 0) + 1;
-            }
-            return acc;
-          }, {} as Record<string, number>),
-          assets: assets.reduce((acc, asset) => {
-            if (!excludedStatuses.includes(asset.status)) {
-              // Check multiple possible assignment fields
-              const assignedId = asset.assignedTo || asset.assignedEmployeeId || asset.assignedToId;
-              if (assignedId) {
-                const employee = employees.find(e => 
-                  e.id === assignedId || 
-                  e.empId === String(assignedId) // Handle string/number mismatch
-                );
-                const dept = employee?.department || 'Unassigned';
-                acc[dept] = (acc[dept] || 0) + 1;
-              } else {
-                acc['Unassigned'] = (acc['Unassigned'] || 0) + 1;
-              }
-            }
-            return acc;
-          }, {} as Record<string, number>)
-        };
-
-        // Assets by type (excluding disposed)
-        const assetsByType = totalValidAssets.reduce((acc, asset) => {
-          acc[asset.type] = (acc[asset.type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        // Get recent items for dashboard widgets
-        const recentAssets = assets
-          .filter(a => !excludedStatuses.includes(a.status))
-          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-          .slice(0, 5);
-        
-        const recentTickets = allTickets
-          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-          .slice(0, 5);
-
-              // Fixed: Quick Actions availability with correct counts
-        const quickActions = {
-          canAddEmployee: true,
-          canAddAsset: true,
-          canOpenTicket: true,
-          pendingActions: {
-            // Employees who joined this month but don't have assets yet
-            employeesNeedingAssets: newEmployeesThisMonth.filter(emp => {
-              const empAssets = assets.filter(a => 
-                (a.assignedTo === emp.id) || 
-                (a.assignedEmployeeId === emp.id) || 
-                (a.assignedToId === emp.id) ||
-                (a.assignedTo === emp.empId) // Check by empId as well
-              );
-              return empAssets.length === 0;
-            }).length,
-            // Assets with scheduled maintenance not yet completed
-            assetsNeedingMaintenance: maintenanceRecords.filter(m => 
-              m.status === 'Scheduled' || m.status === 'scheduled'
-            ).length,
-            // Tickets approaching SLA (assuming 48 hour SLA)
-            ticketsNearingSLA: activeTickets.filter(t => {
-              const createdAt = new Date(t.createdAt || 0);
-              const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-              return hoursSinceCreation > 40 && hoursSinceCreation < 48;
-            }).length
-          }
-        };
-
-        // Calculate percentage changes
-        const calculatePercentageChange = (current: number, previous: number): string => {
-          if (previous === 0) return current > 0 ? '+100%' : '0%';
-          const change = ((current - previous) / previous) * 100;
-          return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-        };
-
-        // Get comparison data
-        const employeesLastMonth = employees.filter(emp => {
-          const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
-          return joiningDate && joiningDate < startOfMonth;
-        }).filter(emp => emp.status === 'Active').length;
-
-        const assetsLastMonth = assets.filter(asset => {
-          const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
-          return createdAt && createdAt < startOfMonth && !excludedStatuses.includes(asset.status);
-        }).length;
-
-        const ticketsLastWeek = allTickets.filter(t => {
-          const created = new Date(t.createdAt || 0);
-          return created < oneWeekAgo && (t.status === 'Open' || t.status === 'In Progress');
-        }).length;
-
-        res.json({
-          // Employee Metrics
-          employees: {
-            total: activeEmployees.length,
-            fullTime: fullTimeEmployees.length,
-            partTime: partTimeEmployees.length,
-            newThisMonth: newEmployeesThisMonth.length,
-            pendingOffboarding: pendingOffboarding.length,
-            byDepartment: departmentDistribution.employees,
-            changes: {
-              monthly: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
-              newHires: newEmployeesThisMonth.length
-            }
-          },
-          
-          // Asset Metrics
-          assets: {
-            total: totalValidAssets.length,
-            totalValue: totalAssetValue,
-            availableLaptops: availableLaptops.length,
-            reservedLaptops: reservedLaptops.length,
-            underMaintenance: assetsUnderMaintenance.length,
-            recentlyUpdated: recentlyUpdatedAssets,
-            byType: assetsByType,
-            byDepartment: departmentDistribution.assets,
-            changes: {
-              monthly: calculatePercentageChange(totalValidAssets.length, assetsLastMonth)
-            }
-          },
-          
-          // Ticket Metrics
-          tickets: {
-            active: activeTickets.length,
-            resolvedThisMonth: resolvedTicketsThisMonth.length,
-            byPriority: ticketsByPriority,
-            recent: recentTickets,
-            changes: {
-              weekly: calculatePercentageChange(activeTickets.length, ticketsLastWeek)
-            }
-          },
-          
-          // Maintenance Overview
-          maintenance: maintenanceCounts,
-          
-          // Quick Actions Data
-          quickActions,
-          
-          // Recent Items
-          recentAssets,
-          recentTickets,
-          
-          // Department Distribution
-          departmentDistribution,
-          
-          // Legacy fields for backward compatibility
-          counts: {
-            employees: activeEmployees.length,
-            assets: totalValidAssets.length,
-            activeTickets: activeTickets.length,
-            totalAssetValue,
-            users: users.length
-          },
-          maintenanceCounts,
-          changes: {
-            employees: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
-            assets: calculatePercentageChange(totalValidAssets.length, assetsLastMonth),
-            activeTickets: calculatePercentageChange(activeTickets.length, ticketsLastWeek),
-            totalAssetValue: '+5.2%' // Placeholder
-          },
-          assetsByType,
-          employeesByDepartment: departmentDistribution.employees
-        });
-      } catch (error: unknown) {
-        console.error('Dashboard summary error:', error);
-        res.status(500).json({ 
-          error: 'Failed to fetch dashboard summary',
-          message: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
+    // Enhanced Employee Metrics
+    const fullTimeEmployees = employees.filter(emp => 
+      emp.employmentType === 'Full-time' && emp.status === 'Active'
+    );
+    const partTimeEmployees = employees.filter(emp => 
+      emp.employmentType === 'Part-time' && emp.status === 'Active'
+    );
+    const activeEmployees = employees.filter(emp => emp.status === 'Active');
+    
+    const newEmployeesThisMonth = employees.filter(emp => {
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+      return joiningDate && joiningDate >= startOfMonth;
     });
+    
+    // Fixed: Employees pending offboarding - includes those with future exit dates or resigned/terminated with assets
+    const employeesWithAssets = new Set(
+      assets.filter(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
+        .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
+    );
+    
+    const pendingOffboarding = employees.filter(emp => {
+      // Check if employee has a future exit date (leaving soon but still active)
+      if (emp.exitDate) {
+        const exitDate = new Date(emp.exitDate);
+        if (exitDate >= now && exitDate <= thirtyDaysFromNow) {
+          return true;
+        }
+      }
+      // Check if resigned/terminated but still has assets
+      return (emp.status === 'Resigned' || emp.status === 'Terminated') && 
+             employeesWithAssets.has(emp.id);
+    });
+
+    // Enhanced Asset Metrics
+    const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
+    
+    const totalValidAssets = assets.filter(asset => 
+      !excludedStatuses.includes(asset.status)
+    );
+    
+    const availableLaptops = assets.filter(asset => 
+      asset.type === 'Laptop' && asset.status === 'Available'
+    );
+    
+    const reservedLaptops = assets.filter(asset => 
+      asset.type === 'Laptop' && asset.status === 'Reserved'
+    );
+    
+    // Fixed: Assets under maintenance - check actual status field
+    const assetsUnderMaintenance = assets.filter(asset => 
+      asset.status === 'Under Maintenance' || 
+      asset.status === 'Maintenance' ||
+      asset.status === 'Repairing'
+    );
+
+    // Recently updated assets (last 7 days)
+    const recentlyUpdatedAssets = assets
+      .filter(asset => {
+        const updatedAt = asset.updatedAt ? new Date(asset.updatedAt) : null;
+        return updatedAt && updatedAt >= oneWeekAgo;
+      })
+      .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+      .slice(0, 10);
+
+    // Enhanced Ticket Metrics
+    const activeTickets = allTickets.filter(ticket => 
+      ticket.status === 'Open' || ticket.status === 'In Progress'
+    );
+    
+    const resolvedTicketsThisMonth = allTickets.filter(ticket => {
+      const resolvedDate = ticket.updatedAt ? new Date(ticket.updatedAt) : null;
+      return (ticket.status === 'Resolved' || ticket.status === 'Closed') && 
+             resolvedDate && resolvedDate >= startOfMonth;
+    });
+
+    // Ticket breakdown by priority
+    const ticketsByPriority = {
+      critical: activeTickets.filter(t => t.priority === 'Critical').length,
+      high: activeTickets.filter(t => t.priority === 'High').length,
+      medium: activeTickets.filter(t => t.priority === 'Medium').length,
+      low: activeTickets.filter(t => t.priority === 'Low').length
+    };
+
+    // Fixed: Maintenance Counts - based on actual maintenance schedules or asset status
+    const maintenanceCounts = {
+      scheduled: assets.filter(a => {
+        // Assets with scheduled maintenance in the future
+        if (a.nextMaintenance) {
+          const nextDate = new Date(a.nextMaintenance);
+          return nextDate > now && nextDate <= sevenDaysFromNow;
+        }
+        return false;
+      }).length,
+      inProgress: assetsUnderMaintenance.length, // Currently under maintenance
+      overdue: assets.filter(a => {
+        if (!a.nextMaintenance) return false;
+        const nextDate = new Date(a.nextMaintenance);
+        return nextDate < now && a.status !== 'Under Maintenance';
+      }).length
+    };
+
+    // Calculate total asset value (excluding disposed assets)
+    const totalAssetValue = totalValidAssets.reduce((sum, asset) => {
+      const price = typeof asset.buyPrice === 'string' 
+        ? parseFloat(asset.buyPrice) 
+        : (asset.buyPrice || 0);
+      return sum + (isNaN(price) ? 0 : price);
+    }, 0);
+
+    // Fixed: Department Distribution with proper asset assignment
+    const departmentDistribution = {
+      employees: employees.reduce((acc, emp) => {
+        if (emp.status === 'Active') {
+          const dept = emp.department || 'Unassigned';
+          acc[dept] = (acc[dept] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>),
+      assets: assets.reduce((acc, asset) => {
+        if (!excludedStatuses.includes(asset.status)) {
+          // Check multiple possible assignment fields
+          const assignedId = asset.assignedTo || asset.assignedEmployeeId || asset.assignedToId;
+          if (assignedId) {
+            const employee = employees.find(e => 
+              e.id === assignedId || 
+              e.empId === String(assignedId) // Handle string/number mismatch
+            );
+            const dept = employee?.department || 'Unassigned';
+            acc[dept] = (acc[dept] || 0) + 1;
+          } else {
+            acc['Unassigned'] = (acc['Unassigned'] || 0) + 1;
+          }
+        }
+        return acc;
+      }, {} as Record<string, number>)
+    };
+
+    // Assets by type (excluding disposed)
+    const assetsByType = totalValidAssets.reduce((acc, asset) => {
+      acc[asset.type] = (acc[asset.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Get recent items for dashboard widgets
+    const recentAssets = assets
+      .filter(a => !excludedStatuses.includes(a.status))
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 5);
+    
+    const recentTickets = allTickets
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 5);
+
+          // Fixed: Quick Actions availability with correct counts
+    const quickActions = {
+      canAddEmployee: true,
+      canAddAsset: true,
+      canOpenTicket: true,
+      pendingActions: {
+        // Employees who joined this month but don't have assets yet
+        employeesNeedingAssets: newEmployeesThisMonth.filter(emp => {
+          const empAssets = assets.filter(a => 
+            (a.assignedTo === emp.id) || 
+            (a.assignedEmployeeId === emp.id) || 
+            (a.assignedToId === emp.id) ||
+            (a.assignedTo === emp.empId) // Check by empId as well
+          );
+          return empAssets.length === 0;
+        }).length,
+        // Assets with scheduled maintenance not yet completed
+        assetsNeedingMaintenance: maintenanceRecords.filter(m => 
+          m.status === 'Scheduled' || m.status === 'scheduled'
+        ).length,
+        // Tickets approaching SLA (assuming 48 hour SLA)
+        ticketsNearingSLA: activeTickets.filter(t => {
+          const createdAt = new Date(t.createdAt || 0);
+          const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+          return hoursSinceCreation > 40 && hoursSinceCreation < 48;
+        }).length
+      }
+    };
+
+    // Calculate percentage changes
+    const calculatePercentageChange = (current: number, previous: number): string => {
+      if (previous === 0) return current > 0 ? '+100%' : '0%';
+      const change = ((current - previous) / previous) * 100;
+      return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+    };
+
+    // Get comparison data
+    const employeesLastMonth = employees.filter(emp => {
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+      return joiningDate && joiningDate < startOfMonth;
+    }).filter(emp => emp.status === 'Active').length;
+
+    const assetsLastMonth = assets.filter(asset => {
+      const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
+      return createdAt && createdAt < startOfMonth && !excludedStatuses.includes(asset.status);
+    }).length;
+
+    const ticketsLastWeek = allTickets.filter(t => {
+      const created = new Date(t.createdAt || 0);
+      return created < oneWeekAgo && (t.status === 'Open' || t.status === 'In Progress');
+    }).length;
+
+    res.json({
+      // Employee Metrics
+      employees: {
+        total: activeEmployees.length,
+        fullTime: fullTimeEmployees.length,
+        partTime: partTimeEmployees.length,
+        newThisMonth: newEmployeesThisMonth.length,
+        pendingOffboarding: pendingOffboarding.length,
+        byDepartment: departmentDistribution.employees,
+        changes: {
+          monthly: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
+          newHires: newEmployeesThisMonth.length
+        }
+      },
+      
+      // Asset Metrics
+      assets: {
+        total: totalValidAssets.length,
+        totalValue: totalAssetValue,
+        availableLaptops: availableLaptops.length,
+        reservedLaptops: reservedLaptops.length,
+        underMaintenance: assetsUnderMaintenance.length,
+        recentlyUpdated: recentlyUpdatedAssets,
+        byType: assetsByType,
+        byDepartment: departmentDistribution.assets,
+        changes: {
+          monthly: calculatePercentageChange(totalValidAssets.length, assetsLastMonth)
+        }
+      },
+      
+      // Ticket Metrics
+      tickets: {
+        active: activeTickets.length,
+        resolvedThisMonth: resolvedTicketsThisMonth.length,
+        byPriority: ticketsByPriority,
+        recent: recentTickets,
+        changes: {
+          weekly: calculatePercentageChange(activeTickets.length, ticketsLastWeek)
+        }
+      },
+      
+      // Maintenance Overview
+      maintenance: maintenanceCounts,
+      
+      // Quick Actions Data
+      quickActions,
+      
+      // Recent Items
+      recentAssets,
+      recentTickets,
+      
+      // Department Distribution
+      departmentDistribution,
+      
+      // Legacy fields for backward compatibility
+      counts: {
+        employees: activeEmployees.length,
+        assets: totalValidAssets.length,
+        activeTickets: activeTickets.length,
+        totalAssetValue,
+        users: users.length
+      },
+      maintenanceCounts,
+      changes: {
+        employees: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
+        assets: calculatePercentageChange(totalValidAssets.length, assetsLastMonth),
+        activeTickets: calculatePercentageChange(activeTickets.length, ticketsLastWeek),
+        totalAssetValue: '+5.2%' // Placeholder
+      },
+      assetsByType,
+      employeesByDepartment: departmentDistribution.employees
+    });
+  } catch (error: unknown) {
+    console.error('Dashboard summary error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch dashboard summary',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
   // Asset Transactions with Enhanced Filtering
   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
