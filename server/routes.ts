@@ -4498,6 +4498,23 @@ app.get('/api/dashboard/summary', async (req, res) => {
     const assets = await storage.getAllAssets();
     const allTickets = await storage.getAllTickets();
     const users = await storage.getAllUsers();
+      // Get all maintenance records - ADD THIS SECTION
+    let allMaintenanceRecords = [];
+    try {
+      // Try to use getAllMaintenanceRecords if available
+      if (storage.getAllMaintenanceRecords) {
+        allMaintenanceRecords = await storage.getAllMaintenanceRecords();
+      } else {
+        // Fallback: collect maintenance for each asset
+        for (const asset of assets) {
+          const assetMaintenance = await storage.getMaintenanceForAsset(asset.id);
+          allMaintenanceRecords = allMaintenanceRecords.concat(assetMaintenance);
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching maintenance records:', error);
+      // Continue with empty array if maintenance fetch fails
+    }
     
     // Get current date references
     const now = new Date();
@@ -4591,21 +4608,21 @@ app.get('/api/dashboard/summary', async (req, res) => {
       low: activeTickets.filter(t => t.priority === 'Low').length
     };
 
-    // Fixed: Maintenance Counts - based on actual maintenance schedules or asset status
+   // Fixed: Maintenance Counts - based on actual maintenance table records
     const maintenanceCounts = {
-      scheduled: assets.filter(a => {
-        // Assets with scheduled maintenance in the future
-        if (a.nextMaintenance) {
-          const nextDate = new Date(a.nextMaintenance);
-          return nextDate > now && nextDate <= sevenDaysFromNow;
+      scheduled: allMaintenanceRecords.filter(m => 
+        m.status === 'Scheduled' || m.status === 'scheduled'
+      ).length,
+      inProgress: allMaintenanceRecords.filter(m => 
+        m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
+      ).length,
+      overdue: allMaintenanceRecords.filter(m => {
+        // Check if scheduled maintenance is overdue
+        if (m.status === 'Scheduled' || m.status === 'scheduled') {
+          const maintenanceDate = new Date(m.date);
+          return maintenanceDate < now;
         }
         return false;
-      }).length,
-      inProgress: assetsUnderMaintenance.length, // Currently under maintenance
-      overdue: assets.filter(a => {
-        if (!a.nextMaintenance) return false;
-        const nextDate = new Date(a.nextMaintenance);
-        return nextDate < now && a.status !== 'Under Maintenance';
       }).length
     };
 
@@ -4678,7 +4695,7 @@ app.get('/api/dashboard/summary', async (req, res) => {
           return empAssets.length === 0;
         }).length,
         // Assets with scheduled maintenance not yet completed
-        assetsNeedingMaintenance: maintenanceRecords.filter(m => 
+        assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
           m.status === 'Scheduled' || m.status === 'scheduled'
         ).length,
         // Tickets approaching SLA (assuming 48 hour SLA)
