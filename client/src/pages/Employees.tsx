@@ -487,7 +487,7 @@ export default function Employees() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter by Department" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent  className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="All">All Departments</SelectItem>
                   {departments.slice(1).map((dept: string) => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
