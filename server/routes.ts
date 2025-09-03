@@ -4523,7 +4523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         // Enhanced Asset Metrics
-        const validAssetStatuses = ['Available', 'In Use', 'Under Maintenance', 'Reserved'];
+        const validAssetStatuses = ['Available', 'In Use', 'Maintenance', 'Reserved'];
         const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
         
         const totalValidAssets = assets.filter(asset => 
@@ -4539,7 +4539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Assets under maintenance (various maintenance statuses)
-        const maintenanceStatuses = ['Pending Repair', 'In Repair', 'On Hold', 'Under Maintenance'];
+        const maintenanceStatuses = ['Pending Repair', 'In Repair', 'On Hold', 'Maintenance'];
         const assetsUnderMaintenance = assets.filter(asset => 
           maintenanceStatuses.includes(asset.status) ||
           asset.currentMaintenanceStatus === 'inProgress' ||
