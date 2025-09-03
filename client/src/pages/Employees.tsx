@@ -502,7 +502,7 @@ export default function Employees() {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter by Type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="All">All Types</SelectItem>
                   {employmentTypes.slice(1).map((type: string) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
