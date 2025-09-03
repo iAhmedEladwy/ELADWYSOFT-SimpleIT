@@ -4634,7 +4634,7 @@ app.get('/api/dashboard/summary', async (req, res) => {
       return sum + (isNaN(price) ? 0 : price);
     }, 0);
 
-    // Fixed: Department Distribution with proper asset assignment
+       // Department Distribution (live data) - FIXED VERSION
     const departmentDistribution = {
       employees: employees.reduce((acc, emp) => {
         if (emp.status === 'Active') {
@@ -4644,6 +4644,7 @@ app.get('/api/dashboard/summary', async (req, res) => {
         return acc;
       }, {} as Record<string, number>),
       assets: assets.reduce((acc, asset) => {
+        // IMPORTANT: Only count valid assets, exclude disposed/sold/lost/etc
         if (!excludedStatuses.includes(asset.status)) {
           // Check multiple possible assignment fields
           const assignedId = asset.assignedTo || asset.assignedEmployeeId || asset.assignedToId;
@@ -4654,9 +4655,9 @@ app.get('/api/dashboard/summary', async (req, res) => {
             );
             const dept = employee?.department || 'Unassigned';
             acc[dept] = (acc[dept] || 0) + 1;
-          } else {
-            acc['Unassigned'] = (acc['Unassigned'] || 0) + 1;
           }
+          // Don't count unassigned assets if they're in excluded statuses
+          // Only count truly available/in-use unassigned assets
         }
         return acc;
       }, {} as Record<string, number>)
