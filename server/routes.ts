@@ -4505,25 +4505,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
         // Enhanced Employee Metrics
-        const fullTimeEmployees = employees.filter(emp => emp.employmentType === 'Full-time' && emp.status === 'Active');
-        const partTimeEmployees = employees.filter(emp => emp.employmentType === 'Part-time' && emp.status === 'Active');
+        const fullTimeEmployees = employees.filter(emp => 
+          emp.employmentType === 'Full-time' && emp.status === 'Active'
+        );
+        const partTimeEmployees = employees.filter(emp => 
+          emp.employmentType === 'Part-time' && emp.status === 'Active'
+        );
         const activeEmployees = employees.filter(emp => emp.status === 'Active');
+        
         const newEmployeesThisMonth = employees.filter(emp => {
           const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
           return joiningDate && joiningDate >= startOfMonth;
         });
         
-        // Employees pending offboarding (resigned/terminated but still holding assets)
-        const employeesWithAssets = new Set(assets.filter(a => a.assignedTo).map(a => a.assignedTo));
-        const pendingOffboarding = employees.filter(emp => 
-          (emp.status === 'Resigned' || emp.status === 'Terminated') && 
-          employeesWithAssets.has(emp.id)
+        // Fixed: Employees pending offboarding - includes those with future exit dates or resigned/terminated with assets
+        const employeesWithAssets = new Set(
+          assets.filter(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
+            .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
         );
+        
+        const pendingOffboarding = employees.filter(emp => {
+          // Check if employee has a future exit date (leaving soon but still active)
+          if (emp.exitDate) {
+            const exitDate = new Date(emp.exitDate);
+            if (exitDate >= now && exitDate <= thirtyDaysFromNow) {
+              return true;
+            }
+          }
+          // Check if resigned/terminated but still has assets
+          return (emp.status === 'Resigned' || emp.status === 'Terminated') && 
+                employeesWithAssets.has(emp.id);
+        });
 
         // Enhanced Asset Metrics
-        const validAssetStatuses = ['Available', 'In Use', 'Maintenance', 'Reserved'];
         const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
         
         const totalValidAssets = assets.filter(asset => 
@@ -4538,12 +4556,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           asset.type === 'Laptop' && asset.status === 'Reserved'
         );
         
-        // Assets under maintenance (various maintenance statuses)
-        const maintenanceStatuses = ['Pending Repair', 'In Repair', 'On Hold', 'Maintenance'];
+        // Fixed: Assets under maintenance - check actual status field
         const assetsUnderMaintenance = assets.filter(asset => 
-          maintenanceStatuses.includes(asset.status) ||
-          asset.currentMaintenanceStatus === 'inProgress' ||
-          asset.currentMaintenanceStatus === 'scheduled'
+          asset.status === 'Under Maintenance' || 
+          asset.status === 'Maintenance' ||
+          asset.status === 'Repairing'
         );
 
         // Recently updated assets (last 7 days)
@@ -4574,15 +4591,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           low: activeTickets.filter(t => t.priority === 'Low').length
         };
 
-        // Enhanced Maintenance Counts
+        // Fixed: Maintenance Counts - based on actual maintenance schedules or asset status
         const maintenanceCounts = {
-          scheduled: assets.filter(a => a.currentMaintenanceStatus === 'scheduled').length,
-          inProgress: assets.filter(a => a.currentMaintenanceStatus === 'inProgress').length,
-          completed: assets.filter(a => a.currentMaintenanceStatus === 'completed').length,
+          scheduled: assets.filter(a => {
+            // Assets with scheduled maintenance in the future
+            if (a.nextMaintenance) {
+              const nextDate = new Date(a.nextMaintenance);
+              return nextDate > now && nextDate <= sevenDaysFromNow;
+            }
+            return false;
+          }).length,
+          inProgress: assetsUnderMaintenance.length, // Currently under maintenance
           overdue: assets.filter(a => {
             if (!a.nextMaintenance) return false;
             const nextDate = new Date(a.nextMaintenance);
-            return nextDate < now && a.currentMaintenanceStatus !== 'inProgress';
+            return nextDate < now && a.status !== 'Under Maintenance';
           }).length
         };
 
@@ -4594,7 +4617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + (isNaN(price) ? 0 : price);
         }, 0);
 
-        // Department Distribution (live data)
+        // Fixed: Department Distribution with proper asset assignment
         const departmentDistribution = {
           employees: employees.reduce((acc, emp) => {
             if (emp.status === 'Active') {
@@ -4605,17 +4628,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, {} as Record<string, number>),
           assets: assets.reduce((acc, asset) => {
             if (!excludedStatuses.includes(asset.status)) {
-              // Check both assignedTo and assignedEmployeeId fields for compatibility
-              const assignedId = asset.assignedTo || asset.assignedEmployeeId;
+              // Check multiple possible assignment fields
+              const assignedId = asset.assignedTo || asset.assignedEmployeeId || asset.assignedToId;
               if (assignedId) {
                 const employee = employees.find(e => 
                   e.id === assignedId || 
-                  e.empId === assignedId // Also check by empId in case it's stored that way
+                  e.empId === String(assignedId) // Handle string/number mismatch
                 );
                 const dept = employee?.department || 'Unassigned';
                 acc[dept] = (acc[dept] || 0) + 1;
               } else {
-                // Count unassigned assets separately
                 acc['Unassigned'] = (acc['Unassigned'] || 0) + 1;
               }
             }
@@ -4639,26 +4661,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
           .slice(0, 5);
 
-        // Quick Actions availability
+              // Fixed: Quick Actions availability with correct counts
         const quickActions = {
-          canAddEmployee: true, // Check based on user permissions if needed
+          canAddEmployee: true,
           canAddAsset: true,
           canOpenTicket: true,
           pendingActions: {
-            employeesNeedingAssets: newEmployeesThisMonth.filter(emp => 
-              !assets.some(a => a.assignedTo === emp.id)
-            ).length,
-            assetsNeedingMaintenance: assets.filter(a => {
-              if (!a.nextMaintenance) return false;
-              const nextDate = new Date(a.nextMaintenance);
-              const daysUntil = (nextDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-              return daysUntil <= 7 && daysUntil > 0;
+            // Employees who joined this month but don't have assets yet
+            employeesNeedingAssets: newEmployeesThisMonth.filter(emp => {
+              const empAssets = assets.filter(a => 
+                (a.assignedTo === emp.id) || 
+                (a.assignedEmployeeId === emp.id) || 
+                (a.assignedToId === emp.id) ||
+                (a.assignedTo === emp.empId) // Check by empId as well
+              );
+              return empAssets.length === 0;
             }).length,
+            // Assets with scheduled maintenance not yet completed
+            assetsNeedingMaintenance: maintenanceRecords.filter(m => 
+              m.status === 'Scheduled' || m.status === 'scheduled'
+            ).length,
+            // Tickets approaching SLA (assuming 48 hour SLA)
             ticketsNearingSLA: activeTickets.filter(t => {
-              // Assuming SLA is 48 hours for all tickets
               const createdAt = new Date(t.createdAt || 0);
               const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-              return hoursSinceCreation > 40 && hoursSinceCreation < 48; // Near SLA breach
+              return hoursSinceCreation > 40 && hoursSinceCreation < 48;
             }).length
           }
         };
@@ -4670,15 +4697,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
         };
 
-        // Get last month's data for comparison
+        // Get comparison data
         const employeesLastMonth = employees.filter(emp => {
           const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
           return joiningDate && joiningDate < startOfMonth;
-        }).length;
+        }).filter(emp => emp.status === 'Active').length;
 
         const assetsLastMonth = assets.filter(asset => {
           const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
-          return createdAt && createdAt < startOfMonth;
+          return createdAt && createdAt < startOfMonth && !excludedStatuses.includes(asset.status);
+        }).length;
+
+        const ticketsLastWeek = allTickets.filter(t => {
+          const created = new Date(t.createdAt || 0);
+          return created < oneWeekAgo && (t.status === 'Open' || t.status === 'In Progress');
         }).length;
 
         res.json({
@@ -4718,13 +4750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             byPriority: ticketsByPriority,
             recent: recentTickets,
             changes: {
-              weekly: calculatePercentageChange(
-                activeTickets.length, 
-                allTickets.filter(t => {
-                  const created = new Date(t.createdAt || 0);
-                  return created < oneWeekAgo && (t.status === 'Open' || t.status === 'In Progress');
-                }).length
-              )
+              weekly: calculatePercentageChange(activeTickets.length, ticketsLastWeek)
             }
           },
           
@@ -4753,7 +4779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           changes: {
             employees: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
             assets: calculatePercentageChange(totalValidAssets.length, assetsLastMonth),
-            activeTickets: calculatePercentageChange(activeTickets.length, activeTickets.length),
+            activeTickets: calculatePercentageChange(activeTickets.length, ticketsLastWeek),
             totalAssetValue: '+5.2%' // Placeholder
           },
           assetsByType,

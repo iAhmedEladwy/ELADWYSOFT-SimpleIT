@@ -125,7 +125,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.employeesNeedingAssets > 0 && (
                 <div 
                   className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-                  onClick={() => window.location.href = '/employees?needsAssets=true'}
+                  onClick={() => window.location.href = '/employees'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.employeesNeedingAssets} {translations.employeesNeedAssets}</span>
@@ -134,7 +134,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.assetsNeedingMaintenance > 0 && (
                 <div 
                   className="flex items-center gap-2 text-yellow-600 cursor-pointer hover:text-yellow-700"
-                  onClick={() => window.location.href = '/assets?maintenanceDue=upcoming'}
+                  onClick={() => window.location.href = '/assets?maintenanceDue=scheduled'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.assetsNeedingMaintenance} {translations.assetsNeedMaintenance}</span>
@@ -143,7 +143,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
               {data.pendingActions.ticketsNearingSLA > 0 && (
                 <div 
                   className="flex items-center gap-2 text-red-600 cursor-pointer hover:text-red-700"
-                  onClick={() => window.location.href = '/tickets?priority=high'}
+                  onClick={() => window.location.href = '/tickets?statusFilter=Open'}
                 >
                   <AlertCircle className="h-4 w-4" />
                   <span>{data.pendingActions.ticketsNearingSLA} {translations.ticketsNearSLA}</span>
