@@ -4492,17 +4492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
- // Debug logging
-    console.log('Dashboard API Debug:', {
-      totalEmployees: employees.length,
-      activeEmployees: activeEmployees.length,
-      pendingOffboarding: pendingOffboarding.length,
-      totalAssets: assets.length,
-      totalValidAssets: totalValidAssets.length,
-      maintenanceRecordsCount: allMaintenanceRecords.length,
-      maintenanceCounts,
-      activeTickets: activeTickets.length
-    });// Replace the existing /api/dashboard/summary endpoint with this enhanced version
 app.get('/api/dashboard/summary', async (req, res) => {
   try {
     const employees = await storage.getAllEmployees();
