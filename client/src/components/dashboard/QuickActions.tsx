@@ -19,7 +19,7 @@ interface QuickActionsProps {
   isLoading: boolean;
 }
 
-export default function QuickActions({ data, isLoading }: QuickActionsProps) {
+export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAsset, onOpenTicket }: QuickActionsProps) {
   const { language } = useLanguage();
 
   const translations = {
@@ -37,7 +37,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.addEmployee,
       icon: UserPlus,
-      onClick: () => onAddEmployee?.(),
+      onClick: onAddEmployee || (() => window.location.href = '/employees'),
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 hover:bg-blue-100',
       disabled: !data?.canAddEmployee || !onAddEmployee,
@@ -45,7 +45,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.addAsset,
       icon: Plus,
-      onClick: () => onAddAsset?.(),
+      onClick: onAddAsset || (() => window.location.href = '/assets'),
       color: 'text-green-600',
       bgColor: 'bg-green-50 hover:bg-green-100',
       disabled: !data?.canAddAsset || !onAddAsset,
@@ -53,7 +53,7 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.openTicket,
       icon: Ticket,
-      onClick: () => onOpenTicket?.(),
+      onClick: onOpenTicket || (() => window.location.href = '/tickets'),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 hover:bg-purple-100',
       disabled: !data?.canOpenTicket || !onOpenTicket,
