@@ -127,7 +127,7 @@ const totalPendingActions = data ?
             {data.pendingActions.employeesNeedToReturnAssets > 0 && (
               <div 
                 className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-                onClick={() => window.location.href = '/employees?statusFilter=Resigned'}
+                onClick={() => window.location.href = '/employees?customFilter=offboardedWithAssets'}
               >
                 <AlertCircle className="h-4 w-4" />
                 <span>{data.pendingActions.employeesNeedToReturnAssets} {translations.employeesNeedToReturn}</span>

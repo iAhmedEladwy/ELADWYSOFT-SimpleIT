@@ -7,6 +7,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import EmployeesTable from '@/components/employees/EmployeesTable';
 import EmployeeForm from '@/components/employees/EmployeeForm';
+import EmployeeCustomFilters, { CustomFilterType } from '@/components/employees/EmployeeCustomFilters';
+import { applyCustomEmployeeFilter } from '@/utils/employeeFilters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck, UserX, Search } from 'lucide-react';
@@ -39,7 +41,7 @@ export default function Employees() {
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  
+  const [customFilter, setCustomFilter] = useState<CustomFilterType>(null);
   const isInitialMount = useRef(true);
   const updateTimeoutRef = useRef<NodeJS.Timeout>(); 
 
@@ -93,6 +95,12 @@ export default function Employees() {
     staleTime: 0, // Always fetch fresh data
   });
 
+  // Fetch assets data (needed for asset-related filters)
+  const { data: assets = [] } = useQuery({
+    queryKey: ['/api/assets'],
+    staleTime: 5 * 60 * 1000,
+  });
+
     // Read URL parameters on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -102,6 +110,11 @@ export default function Employees() {
     const departmentParam = params.get('departmentFilter');
     const employmentTypeParam = params.get('employmentTypeFilter');
     const searchParam = params.get('search');
+    const customFilterParam = params.get('customFilter');
+      if (customFilterParam) {
+        setCustomFilter(customFilterParam as CustomFilterType);
+      }
+    }, []);
 
     // Update state based on URL params
     if (statusParam) setStatusFilter(statusParam);
@@ -164,8 +177,20 @@ export default function Employees() {
       }
     };
   }, []);
-
-  
+// Update URL when custom filter changes
+  useEffect(() => {
+    if (!isInitialMount.current && customFilter !== null) {
+      const params = new URLSearchParams(window.location.search);
+      if (customFilter) {
+        params.set('customFilter', customFilter);
+      } else {
+        params.delete('customFilter');
+      }
+      const newPath = params.toString() ? `/employees?${params.toString()}` : '/employees';
+      window.history.replaceState({}, '', newPath);
+    }
+  }, [customFilter]);
+    
 
   // Add employee mutation
   const addEmployeeMutation = useMutation({
@@ -394,7 +419,10 @@ export default function Employees() {
   // Enhanced filtering with multiple criteria and null safety
   const filteredEmployees = useMemo(() => {
     if (!employees || !Array.isArray(employees)) return [];
-    
+   
+    if (customFilter) {
+    filtered = applyCustomEmployeeFilter(filtered, customFilter, assets);
+  }
     return employees.filter((employee: any) => {
       // Null safety checks for all employee properties
       const safeEmployee = {
@@ -443,7 +471,7 @@ export default function Employees() {
       
       return matchesSearch && matchesStatus && matchesDepartment && matchesEmploymentType;
     });
-  }, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
+  }, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter,customFilter, assets]);
 
   // Count active filters for display
   const activeFilterCount = useMemo(() => {
@@ -524,33 +552,51 @@ export default function Employees() {
         </div>
       </div>
 
-      {/* Advanced Search and Filter Controls */}
+     {/* Filter Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            {language === 'English' ? 'Employee Filters' : 'مرشحات الموظفين'}
+            <Filter className="h-5 w-5" />
+            {translations.filters}
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="ml-2">{activeFilterCount}</Badge>
+            )}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-sm font-medium mb-2 block">{translations.search}</Label>
-              <Input
-                placeholder={translations.search}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
+        
+        <CardContent className="space-y-4">
+          {/* FIRST ROW: Search Bar (Full Width) */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder={translations.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+          
+          {/* SECOND ROW: All 4 Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* 1. Custom Filters Dropdown */}
+            <EmployeeCustomFilters
+              onFilterChange={setCustomFilter}
+              currentFilter={customFilter}
+              employeeCount={
+                customFilter ? 
+                applyCustomEmployeeFilter(employees, customFilter, assets).length : 
+                undefined
+              }
+              assetData={assets}
+            />
             
+            {/* 2. Status Filter */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">{language === 'English' ? 'Status' : 'الحالة'}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={translations.filterByStatus} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="All">{translations.all}</SelectItem>
                   <SelectItem value="Active">{translations.active}</SelectItem>
                   <SelectItem value="Resigned">{translations.resigned}</SelectItem>
@@ -559,14 +605,14 @@ export default function Employees() {
                 </SelectContent>
               </Select>
             </div>
-
+            
+            {/* 3. Department Filter */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">{translations.department}</Label>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter by Department" />
+                  <SelectValue placeholder="Department" />
                 </SelectTrigger>
-                <SelectContent  className="max-h-[200px] overflow-y-auto">
+                <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="All">All Departments</SelectItem>
                   {departments.slice(1).map((dept: string) => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
@@ -574,12 +620,12 @@ export default function Employees() {
                 </SelectContent>
               </Select>
             </div>
-
+            
+            {/* 4. Employment Type Filter */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">{translations.employmentType}</Label>
               <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter by Type" />
+                  <SelectValue placeholder="Employment Type" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="All">All Types</SelectItem>
@@ -591,8 +637,10 @@ export default function Employees() {
             </div>
           </div>
           
-          {(departmentFilter !== 'All' || employmentTypeFilter !== 'All' || statusFilter !== 'Active' || searchQuery) && (
-            <div className="mt-4 flex justify-end">
+          {/* Clear Filters Button - Show only when filters are active */}
+          {(customFilter || departmentFilter !== 'All' || employmentTypeFilter !== 'All' || 
+            statusFilter !== 'Active' || searchQuery) && (
+            <div className="flex justify-end">
               <Button
                 variant="outline"
                 size="sm"
@@ -601,6 +649,7 @@ export default function Employees() {
                   setEmploymentTypeFilter('All');
                   setStatusFilter('Active');
                   setSearchQuery('');
+                  setCustomFilter(null);
                 }}
               >
                 <X className="h-4 w-4 mr-2" />
@@ -610,7 +659,6 @@ export default function Employees() {
           )}
         </CardContent>
       </Card>
-
       {/* Filter Summary */}
       {activeFilterCount > 0 && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
