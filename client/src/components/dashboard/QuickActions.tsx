@@ -11,12 +11,15 @@ interface QuickActionsProps {
     canAddAsset: boolean;
     canOpenTicket: boolean;
     pendingActions: {
-      employeesNeedingAssets: number;
+      employeesNeedToReturnAssets: number; // New clear name
       assetsNeedingMaintenance: number;
       ticketsNearingSLA: number;
     };
   };
   isLoading: boolean;
+  onAddEmployee?: () => void;
+  onAddAsset?: () => void;
+  onOpenTicket?: () => void;
 }
 
 export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAsset, onOpenTicket }: QuickActionsProps) {
@@ -28,7 +31,7 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     addAsset: language === 'English' ? 'Add Asset' : 'إضافة أصل',
     openTicket: language === 'English' ? 'Open Ticket' : 'فتح تذكرة',
     pendingAlerts: language === 'English' ? 'Pending Alerts' : 'تنبيهات معلقة',
-    employeesNeedAssets: language === 'English' ? 'Employees need assets' : 'موظفون يحتاجون أصول',
+    employeesNeedToReturn: language === 'English' ? 'Employees must return assets' : 'موظفون يجب عليهم إرجاع الأصول',
     assetsNeedMaintenance: language === 'English' ? 'Assets need maintenance' : 'أصول تحتاج صيانة',
     ticketsNearSLA: language === 'English' ? 'Tickets near SLA' : 'تذاكر قريبة من SLA',
   };
@@ -60,10 +63,10 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     },
   ];
 
-  const totalPendingActions = data ? 
-    (data.pendingActions.employeesNeedingAssets + 
-     data.pendingActions.assetsNeedingMaintenance + 
-     data.pendingActions.ticketsNearingSLA) : 0;
+const totalPendingActions = data ? 
+  (data.pendingActions.employeesNeedToReturnAssets + 
+   data.pendingActions.assetsNeedingMaintenance + 
+   data.pendingActions.ticketsNearingSLA) : 0;
 
   if (isLoading) {
     return (
@@ -121,14 +124,14 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
         {data && totalPendingActions > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
             <div className="flex flex-wrap gap-4 text-sm">
-              {data.pendingActions.employeesNeedingAssets > 0 && (
-                <div 
-                  className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-                  onClick={() => window.location.href = '/employees'}
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{data.pendingActions.employeesNeedingAssets} {translations.employeesNeedAssets}</span>
-                </div>
+            {data.pendingActions.employeesNeedToReturnAssets > 0 && (
+              <div 
+                className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
+                onClick={() => window.location.href = '/employees?statusFilter=Resigned'}
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>{data.pendingActions.employeesNeedToReturnAssets} {translations.employeesNeedToReturn}</span>
+              </div>
               )}
               {data.pendingActions.assetsNeedingMaintenance > 0 && (
                 <div 

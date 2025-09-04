@@ -463,41 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/login", async (req, res, next) => {
     console.log('Login attempt for username:', req.body.username);
-    
-    // Emergency authentication for Ubuntu server deployment
-    // if (req.body.username === 'admin' && req.body.password === 'admin123') {
-    //   try {
-    //     const adminUser = await storage.getUserByUsername('admin');
-    //     if (adminUser) {
-    //       console.log('EMERGENCY: Direct admin authentication activated');
-          
-    //       // Manual session creation for emergency access
-    //       (req as any).session.userId = adminUser.id;
-    //       (req as any).session.user = adminUser;
-    //       (req as any).session.passport = { user: adminUser.id };
-          
-    //       // Save session immediately
-    //       (req as any).session.save((err: any) => {
-    //         if (err) {
-    //           console.error('Emergency session save error:', err);
-    //         } else {
-    //           console.log('Emergency session saved successfully');
-    //         }
-    //       });
-          
-    //       console.log('EMERGENCY: Session created for admin user');
-    //       const { password: _, ...userWithoutPassword } = adminUser;
-          
-    //       return res.json({ 
-    //         message: "Emergency login successful", 
-    //         user: userWithoutPassword
-    //       });
-    //     }
-    //   } catch (emergencyError) {
-    //     console.error('Emergency authentication failed:', emergencyError);
-    //   }
-    // }
-    
+       
     // Standard passport authentication
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -4595,6 +4561,23 @@ const pendingOffboarding = employees.filter(emp => {
       .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
       .slice(0, 10);
 
+      // Employees leaving who still have assets (need to return)
+const leavingEmployeesWithAssets = employees.filter(emp => {
+  // Check if employee is leaving (has exit date OR not active)
+  const hasExitDate = emp.exitDate !== null && emp.exitDate !== undefined;
+  const isNotActive = emp.status !== 'Active';
+  const isLeaving = hasExitDate || isNotActive;
+  
+  // Check if has assets assigned
+  const hasAssets = assets.some(asset => 
+    (asset.assignedTo === emp.id) || 
+    (asset.assignedEmployeeId === emp.id) || 
+    (asset.assignedToId === emp.id) ||
+    (asset.assignedTo === emp.empId)
+  );
+  
+  return isLeaving && hasAssets;
+});
     // Enhanced Ticket Metrics
     const activeTickets = allTickets.filter(ticket => 
       ticket.status === 'Open' || ticket.status === 'In Progress'
@@ -4686,23 +4669,22 @@ const pendingOffboarding = employees.filter(emp => {
       .slice(0, 5);
 
           // Fixed: Quick Actions availability with correct counts
-   const quickActions = {
-      canAddEmployee: hasAccess(2),
-      canAddAsset: hasAccess(2),
-      canOpenTicket: hasAccess(1),
-      pendingActions: {
-        // Update this line to use the new calculation:
-        employeesNeedingAssets: pendingOffboarding.length, // Or keep the existing calculation if different
-        assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
-          m.status === 'Scheduled' || m.status === 'scheduled'
-        ).length,
-        ticketsNearingSLA: activeTickets.filter(t => {
-          const createdAt = new Date(t.createdAt || 0);
-          const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-          return hoursSinceCreation > 40 && hoursSinceCreation < 48;
-        }).length
-      }
-    };
+        const quickActions = {
+          canAddEmployee: hasAccess(2),
+          canAddAsset: hasAccess(2),
+          canOpenTicket: hasAccess(1),
+          pendingActions: {
+            employeesNeedToReturnAssets: leavingEmployeesWithAssets.length, // Clear name
+            assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
+              m.status === 'Scheduled' || m.status === 'scheduled'
+            ).length,
+            ticketsNearingSLA: activeTickets.filter(t => {
+              const createdAt = new Date(t.createdAt || 0);
+              const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+              return hoursSinceCreation > 40 && hoursSinceCreation < 48;
+            }).length
+          }
+        };
 
     // Calculate percentage changes
     const calculatePercentageChange = (current: number, previous: number): string => {
