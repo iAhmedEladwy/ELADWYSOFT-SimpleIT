@@ -416,61 +416,66 @@ export default function Employees() {
   };
 
   // Enhanced filtering with multiple criteria and null safety
-  const filteredEmployees = useMemo(() => {
-    if (!employees || !Array.isArray(employees)) return [];
-   
-    if (customFilter) {
+ const filteredEmployees = useMemo(() => {
+  if (!employees || !Array.isArray(employees)) return [];
+  
+  // First, apply the standard filters
+  let filtered = employees.filter((employee: any) => {
+    // Null safety checks for all employee properties
+    const safeEmployee = {
+      englishName: employee?.englishName || '',
+      name: employee?.name || '',
+      arabicName: employee?.arabicName || '',
+      empId: employee?.empId || '',
+      employeeId: employee?.employeeId || '',
+      department: employee?.department || '',
+      title: employee?.title || '',
+      position: employee?.position || '',
+      personalEmail: employee?.personalEmail || '',
+      email: employee?.email || '',
+      corporateEmail: employee?.corporateEmail || '',
+      status: employee?.status || '',
+      isActive: employee?.isActive,
+      employmentType: employee?.employmentType || ''
+    };
+    
+    // Search filter - check all available name and identifier fields with null safety
+    const searchString = searchQuery.toLowerCase();
+    const matchesSearch = searchQuery === '' || (
+      safeEmployee.englishName.toLowerCase().includes(searchString) ||
+      safeEmployee.name.toLowerCase().includes(searchString) ||
+      safeEmployee.arabicName.toLowerCase().includes(searchString) ||
+      safeEmployee.empId.toLowerCase().includes(searchString) ||
+      safeEmployee.employeeId.toLowerCase().includes(searchString) ||
+      safeEmployee.department.toLowerCase().includes(searchString) ||
+      safeEmployee.title.toLowerCase().includes(searchString) ||
+      safeEmployee.position.toLowerCase().includes(searchString) ||
+      safeEmployee.personalEmail.toLowerCase().includes(searchString) ||
+      safeEmployee.email.toLowerCase().includes(searchString) ||
+      safeEmployee.corporateEmail.toLowerCase().includes(searchString)
+    );
+    
+    // Status filter - use enum status values only
+    const matchesStatus = statusFilter === 'All' || safeEmployee.status === statusFilter;
+    
+    // Department filter with null safety
+    const matchesDepartment = departmentFilter === 'All' || 
+      safeEmployee.department === departmentFilter;
+    
+    // Employment type filter with null safety
+    const matchesEmploymentType = employmentTypeFilter === 'All' || 
+      safeEmployee.employmentType === employmentTypeFilter;
+    
+    return matchesSearch && matchesStatus && matchesDepartment && matchesEmploymentType;
+  });
+
+  // Then, apply custom filter if it exists
+  if (customFilter) {
     filtered = applyCustomEmployeeFilter(filtered, customFilter, assets);
   }
-    return employees.filter((employee: any) => {
-      // Null safety checks for all employee properties
-      const safeEmployee = {
-        englishName: employee?.englishName || '',
-        name: employee?.name || '',
-        arabicName: employee?.arabicName || '',
-        empId: employee?.empId || '',
-        employeeId: employee?.employeeId || '',
-        department: employee?.department || '',
-        title: employee?.title || '',
-        position: employee?.position || '',
-        personalEmail: employee?.personalEmail || '',
-        email: employee?.email || '',
-        corporateEmail: employee?.corporateEmail || '',
-        status: employee?.status || '',
-        isActive: employee?.isActive,
-        employmentType: employee?.employmentType || ''
-      };
-      
-      // Search filter - check all available name and identifier fields with null safety
-      const searchString = searchQuery.toLowerCase();
-      const matchesSearch = searchQuery === '' || (
-        safeEmployee.englishName.toLowerCase().includes(searchString) ||
-        safeEmployee.name.toLowerCase().includes(searchString) ||
-        safeEmployee.arabicName.toLowerCase().includes(searchString) ||
-        safeEmployee.empId.toLowerCase().includes(searchString) ||
-        safeEmployee.employeeId.toLowerCase().includes(searchString) ||
-        safeEmployee.department.toLowerCase().includes(searchString) ||
-        safeEmployee.title.toLowerCase().includes(searchString) ||
-        safeEmployee.position.toLowerCase().includes(searchString) ||
-        safeEmployee.personalEmail.toLowerCase().includes(searchString) ||
-        safeEmployee.email.toLowerCase().includes(searchString) ||
-        safeEmployee.corporateEmail.toLowerCase().includes(searchString)
-      );
-      
-      // Status filter - use enum status values only
-      const matchesStatus = statusFilter === 'All' || safeEmployee.status === statusFilter;
-      
-      // Department filter with null safety
-      const matchesDepartment = departmentFilter === 'All' || 
-        safeEmployee.department === departmentFilter;
-      
-      // Employment type filter with null safety
-      const matchesEmploymentType = employmentTypeFilter === 'All' || 
-        safeEmployee.employmentType === employmentTypeFilter;
-      
-      return matchesSearch && matchesStatus && matchesDepartment && matchesEmploymentType;
-    });
-  }, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter,customFilter, assets]);
+
+  return filtered;
+}, [employees, searchQuery, statusFilter, departmentFilter, employmentTypeFilter, customFilter, assets]);
 
   // Count active filters for display
   const activeFilterCount = useMemo(() => {
