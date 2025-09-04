@@ -86,10 +86,10 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
       <CardContent className="space-y-4">
         {/* Active Tickets */}
         <div className="grid grid-cols-2 gap-3">
-          <div 
-            onClick={() => window.location.href = '/tickets?status=open'}
-            className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 hover:shadow-md transition-all cursor-pointer"
-          >
+            <div 
+              onClick={() => window.location.href = '/tickets?statusFilter=Open'}  // Changed from ?status=active
+              className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 hover:shadow-md transition-all cursor-pointer"
+            >
             <div className="flex items-center justify-between mb-1">
               <AlertTriangle className="h-4 w-4 text-red-600" />
               {data?.changes.weekly && (
@@ -104,10 +104,10 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
             </p>
           </div>
           
-          <div 
-            onClick={() => window.location.href = '/tickets?status=resolved'}
-            className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 hover:shadow-md transition-all cursor-pointer"
-          >
+              <div 
+              onClick={() => window.location.href = '/tickets?statusFilter=Resolved'}  // Changed from ?status=resolved
+              className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 hover:shadow-md transition-all cursor-pointer"
+            >
             <div className="flex items-center justify-between mb-1">
               <CheckCircle className="h-4 w-4 text-green-600" />
               {resolutionRate > 0 && (
@@ -163,10 +163,13 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
         </div>
 
         {/* Critical Alert */}
-        {data?.byPriority.critical && data.byPriority.critical > 0 && (
-          <div 
-            onClick={() => window.location.href = '/tickets?priority=${priority}`}
-            className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 animate-pulse cursor-pointer"
+        {Object.entries(data?.byPriority || {}).map(([priority, count]) => {
+        const colors = priorityColors[priority as keyof typeof priorityColors];
+        return (
+          <div
+            key={priority}
+            onClick={() => window.location.href = `/tickets?priorityFilter=${priority}`}  // Changed from ?priority=
+            className={`p-2 rounded-lg ${colors.bg} hover:opacity-90 cursor-pointer transition-all`}
           >
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
