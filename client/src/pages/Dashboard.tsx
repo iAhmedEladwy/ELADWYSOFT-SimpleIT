@@ -1,4 +1,3 @@
-// client/src/pages/Dashboard.tsx
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
@@ -40,6 +39,7 @@ import AssetsByType from '@/components/dashboard/AssetsByType';
 export default function Dashboard() {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -477,4 +477,4 @@ export default function Dashboard() {
       </Tabs>
     </div>
   );
-}
+} 

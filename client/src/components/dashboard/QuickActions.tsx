@@ -38,26 +38,26 @@ export default function QuickActions({ data, isLoading }: QuickActionsProps) {
     {
       label: translations.addEmployee,
       icon: UserPlus,
-      onClick: () => window.location.href = '/employees/new',
+      onClick: () => onAddEmployee?.(),
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 hover:bg-blue-100',
-      disabled: !data?.canAddEmployee,
+      disabled: !data?.canAddEmployee || !onAddEmployee,
     },
     {
       label: translations.addAsset,
       icon: Plus,
-      onClick: () => window.location.href = '/assets/new',
+      onClick: () => onAddAsset?.(),
       color: 'text-green-600',
       bgColor: 'bg-green-50 hover:bg-green-100',
-      disabled: !data?.canAddAsset,
+      disabled: !data?.canAddAsset || !onAddAsset,
     },
     {
       label: translations.openTicket,
       icon: Ticket,
-      onClick: () => window.location.href = '/tickets/new',
+      onClick: () => onOpenTicket?.(),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 hover:bg-purple-100',
-      disabled: !data?.canOpenTicket,
+      disabled: !data?.canOpenTicket || !onOpenTicket,
     },
   ];
 
