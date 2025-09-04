@@ -1,9 +1,12 @@
-// client/src/pages/Dashboard.tsx
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
-import { useToast } from '@/hooks/use-toast'; // ADD THIS IMPORT
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import EmployeeForm from '@/components/employees/EmployeeForm';
+import AssetForm from '@/components/assets/AssetForm';
+import TicketForm from '@/components/tickets/TicketForm';
 import { 
   Tabs,
   TabsContent, 
@@ -14,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // ADD THIS
 import {
   LayoutDashboard,
   Bell,
@@ -39,20 +41,13 @@ import Notifications from '@/components/dashboard/Notifications';
 import StatsCard from '@/components/dashboard/StatsCard';
 import AssetsByType from '@/components/dashboard/AssetsByType';
 
-// Import form components for dialogs - ADD THESE
-import EmployeeForm from '@/components/employees/EmployeeForm';
-import AssetForm from '@/components/assets/AssetForm';
-import TicketForm from '@/components/tickets/TicketForm';
-
 export default function Dashboard() {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
-  const { toast } = useToast(); // ADD THIS
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false);
-  
-  // ADD THESE STATE VARIABLES FOR DIALOGS
   const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const [showAssetDialog, setShowAssetDialog] = useState(false);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
@@ -76,27 +71,20 @@ export default function Dashboard() {
     departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
     assetDistribution: language === 'English' ? 'Asset Distribution' : 'توزيع الأصول',
     maintenanceSchedule: language === 'English' ? 'Maintenance Schedule' : 'جدول الصيانة',
-    noData: language === 'English' ? 'No data available' : 'لا توجد بيانات متاحة',
-    viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    showMore: language === 'English' ? 'Show More' : 'عرض المزيد',
-    // ADD THESE TRANSLATIONS
-    addEmployee: language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد',
-    addAsset: language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد',
-    createTicket: language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة',
-    success: language === 'English' ? 'Success' : 'نجح',
-    employeeAdded: language === 'English' ? 'Employee added successfully' : 'تمت إضافة الموظف بنجاح',
-    assetAdded: language === 'English' ? 'Asset added successfully' : 'تمت إضافة الأصل بنجاح',
-    ticketCreated: language === 'English' ? 'Ticket created successfully' : 'تم إنشاء التذكرة بنجاح',
+    upcomingMaintenance: language === 'English' ? 'Upcoming Maintenance' : 'الصيانة القادمة',
+    overdueMaintenance: language === 'English' ? 'Overdue Maintenance' : 'صيانة متأخرة',
+    today: language === 'English' ? 'Today' : 'اليوم',
+    thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
+    thisMonth: language === 'English' ? 'This Month' : 'هذا الشهر',
   };
 
-  // Fetch dashboard data with proper error handling
-  const { data: dashboardData, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/dashboard'],
-    refetchInterval: autoRefresh ? 30000 : false,
-    retry: 3,
+  // Fetch dashboard data with enhanced endpoint
+  const { data: dashboardData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/dashboard/summary'],
+    refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
-  // ADD THESE HANDLER FUNCTIONS
+   // ADD THESE HANDLER FUNCTIONS
   const handleAddEmployee = () => {
     setShowEmployeeDialog(true);
   };
@@ -109,87 +97,107 @@ export default function Dashboard() {
     setShowTicketDialog(true);
   };
   
-  const handleEmployeeSubmit = async () => {
-    setShowEmployeeDialog(false);
-    toast({
-      title: translations.success,
-      description: translations.employeeAdded,
-    });
-    refetch(); // Refresh dashboard data
-  };
-  
-  const handleAssetSubmit = async () => {
-    setShowAssetDialog(false);
-    toast({
-      title: translations.success,
-      description: translations.assetAdded,
-    });
-    refetch(); // Refresh dashboard data
-  };
-  
-  const handleTicketSubmit = async () => {
-    setShowTicketDialog(false);
-    toast({
-      title: translations.success,
-      description: translations.ticketCreated,
-    });
-    refetch(); // Refresh dashboard data
-  };
-
-  // Update last refresh time whenever data is fetched
-  useEffect(() => {
-    if (dashboardData) {
-      setLastRefresh(new Date());
+  // ADD THESE SUBMIT HANDLERS
+  const handleEmployeeSubmit = async (data: any) => {
+    try {
+      // The EmployeeForm component handles the actual submission
+      setShowEmployeeDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Employee added successfully' 
+          : 'تمت إضافة الموظف بنجاح',
+      });
+    } catch (error) {
+      console.error('Error adding employee:', error);
     }
-  }, [dashboardData]);
+  };
+  
+  const handleAssetSubmit = async (data: any) => {
+    try {
+      // The AssetForm component handles the actual submission
+      setShowAssetDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Asset added successfully' 
+          : 'تمت إضافة الأصل بنجاح',
+      });
+    } catch (error) {
+      console.error('Error adding asset:', error);
+    }
+  };
+  
+  const handleTicketSubmit = async (data: any) => {
+    try {
+      // The TicketForm component handles the actual submission
+      setShowTicketDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Ticket created successfully' 
+          : 'تم إنشاء التذكرة بنجاح',
+      });
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+    }
+  };
 
-  // Auto refresh effect
+  // Handle auto-refresh
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         refetch();
-      }, 30000); // Refresh every 30 seconds
-
+        setLastRefresh(new Date());
+      }, 30000); // 30 seconds
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refetch]);
 
+  // Handle manual refresh
   const handleRefresh = () => {
     refetch();
+    setLastRefresh(new Date());
   };
 
+  // Handle export data
   const handleExportData = () => {
-    // TODO: Implement export functionality
-    console.log('Exporting dashboard data...');
+    const dataStr = JSON.stringify(dashboardData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `dashboard-data-${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   };
 
-  // Format last refresh time
-  const formatRefreshTime = () => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - lastRefresh.getTime()) / 1000);
-    
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
+  // Format time since last update
+  const formatTimeSince = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ago`;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
+    <div className="p-6 space-y-6">
+      {/* Dashboard Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
             {translations.dashboard}
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {translations.welcome}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{translations.welcome}</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {translations.lastUpdated}: {formatRefreshTime()}
-          </span>
+        {/* Dashboard Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {translations.lastUpdated}: {formatTimeSince(lastRefresh)}
+          </Badge>
           <Button
             variant="outline"
             size="sm"
@@ -221,14 +229,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions Bar - UPDATE WITH CALLBACKS */}
-      <QuickActions 
-        data={dashboardData?.quickActions} 
-        isLoading={isLoading}
-        onAddEmployee={handleAddEmployee}
-        onAddAsset={handleAddAsset}
-        onOpenTicket={handleOpenTicket}
-      />
+      {/* Quick Actions Bar */}
+      <QuickActions data={dashboardData?.quickActions} isLoading={isLoading} onAddEmployee={handleAddEmployee} onAddAsset={handleAddAsset} onOpenTicket={handleOpenTicket}/>
 
       {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -276,7 +278,7 @@ export default function Dashboard() {
               {translations.departmentInsights}
             </h2>
             <EnhancedDepartmentDistribution 
-              data={dashboardData?.departments} 
+              data={dashboardData?.departmentDistribution} 
               isLoading={isLoading} 
             />
           </div>
@@ -287,24 +289,54 @@ export default function Dashboard() {
               {translations.recentActivity}
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RecentAssets data={dashboardData?.recentAssets} isLoading={isLoading} />
-              <RecentTickets data={dashboardData?.recentTickets} isLoading={isLoading} />
+              <RecentAssets 
+                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
+                isLoading={isLoading}
+              />
+              <RecentTickets 
+                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
+                isLoading={isLoading}
+              />
             </div>
           </div>
 
-          {/* Maintenance Schedule */}
+          {/* Maintenance Overview */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+              <CardTitle className="text-lg font-semibold">
                 {translations.maintenanceSchedule}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* TODO: Add maintenance schedule component */}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {translations.noData}
-              </p>
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {Object.entries(dashboardData?.maintenance || {}).map(([status, count]) => (
+                    <div
+                      key={status}
+                      className={`p-4 rounded-lg cursor-pointer transition-all hover:shadow-md
+                        ${status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' :
+                          status === 'scheduled' ? 'bg-blue-50 dark:bg-blue-900/20' :
+                          status === 'inProgress' ? 'bg-orange-50 dark:bg-orange-900/20' :
+                          'bg-green-50 dark:bg-green-900/20'}`}
+                      onClick={() => window.location.href = `/assets?maintenanceStatus=${status}`}
+                    >
+                      <p className="text-sm font-medium capitalize">{status}</p>
+                      <p className="text-2xl font-bold mt-1">{count as number}</p>
+                      {status === 'overdue' && (count as number) > 0 && (
+                        <Badge variant="destructive" className="mt-2 animate-pulse">
+                          Action Required
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -312,49 +344,212 @@ export default function Dashboard() {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Legacy components for backward compatibility */}
-            <StatsCard 
-              title="Asset Distribution by Type"
-              data={dashboardData?.assetsByType}
-              isLoading={isLoading}
-            />
+            {/* Asset Distribution by Type */}
             <AssetsByType 
-              data={dashboardData?.assetsByType} 
+              assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
               isLoading={isLoading}
             />
+            
+            {/* Enhanced Stats Cards */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Key Performance Indicators</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {isLoading ? (
+                    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <span className="text-sm font-medium">Asset Utilization Rate</span>
+                        <Badge variant="secondary">
+                          {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
+                            ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
+                            : '0%'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <span className="text-sm font-medium">Ticket Resolution Rate</span>
+                        <Badge variant="secondary">
+                          {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
+                            ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
+                            : '0%'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <span className="text-sm font-medium">New Hire Onboarding</span>
+                        <Badge variant="secondary">
+                          {dashboardData?.employees?.newThisMonth || 0} this month
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <span className="text-sm font-medium">Assets Needing Attention</span>
+                        <Badge variant={dashboardData?.maintenance?.overdue > 0 ? 'destructive' : 'secondary'}>
+                          {(dashboardData?.maintenance?.overdue || 0) + (dashboardData?.assets?.underMaintenance || 0)}
+                        </Badge>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
+
+          {/* Department Distribution (repeated for analytics) */}
+          <EnhancedDepartmentDistribution 
+            data={dashboardData?.departmentDistribution} 
+            isLoading={isLoading} 
+          />
         </TabsContent>
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
-          <RecentAssets 
-            data={dashboardData?.recentAssets} 
-            isLoading={isLoading} 
-            showAll 
-          />
-          <RecentTickets 
-            data={dashboardData?.recentTickets} 
-            isLoading={isLoading}
-            showAll
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Assets with more details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Recently Updated Assets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(dashboardData?.assets?.recentlyUpdated || []).slice(0, 10).map((asset: any) => (
+                      <div
+                        key={asset.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                        onClick={() => window.location.href = `/assets/${asset.id}`}
+                      >
+                        <div>
+                          <p className="font-medium">{asset.assetId}</p>
+                          <p className="text-sm text-gray-500">{asset.type} - {asset.status}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {new Date(asset.updatedAt).toLocaleDateString()}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Tickets with more details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Recent Ticket Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(dashboardData?.tickets?.recent || dashboardData?.recentTickets || []).map((ticket: any) => (
+                      <div
+                        key={ticket.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                        onClick={() => window.location.href = `/tickets/${ticket.id}`}
+                      >
+                        <div>
+                          <p className="font-medium">#{ticket.ticketId}</p>
+                          <p className="text-sm text-gray-500">{ticket.priority} - {ticket.status}</p>
+                        </div>
+                        <Badge 
+                          variant={
+                            ticket.priority === 'Critical' ? 'destructive' :
+                            ticket.priority === 'High' ? 'warning' :
+                            'secondary'
+                          }
+                          className="text-xs"
+                        >
+                          {ticket.priority}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Activity Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Activity Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                ) : (
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                    {/* Sample timeline items - you can populate with real data */}
+                    <div className="space-y-4">
+                      {dashboardData?.employees?.newThisMonth > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.employees.newThisMonth} new employees joined</p>
+                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.tickets?.resolvedThisMonth > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.tickets.resolvedThisMonth} tickets resolved</p>
+                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.maintenance?.overdue > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.maintenance.overdue} assets have overdue maintenance</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Notifications Tab */}
         <TabsContent value="notifications">
-          <Notifications 
-            data={dashboardData?.notifications} 
-            isLoading={isLoading}
-          />
+          <Notifications />
         </TabsContent>
       </Tabs>
-      
-      {/* ADD DIALOGS AT THE END */}
-      
-      {/* Employee Dialog */}
+
+       {/* Employee Dialog */}
       <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{translations.addEmployee}</DialogTitle>
+            <DialogTitle>
+              {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
+            </DialogTitle>
           </DialogHeader>
           <EmployeeForm
             onSubmit={handleEmployeeSubmit}
@@ -367,7 +562,9 @@ export default function Dashboard() {
       <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{translations.addAsset}</DialogTitle>
+            <DialogTitle>
+              {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
+            </DialogTitle>
           </DialogHeader>
           <AssetForm
             onSubmit={handleAssetSubmit}
@@ -380,7 +577,9 @@ export default function Dashboard() {
       <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{translations.createTicket}</DialogTitle>
+            <DialogTitle>
+              {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
+            </DialogTitle>
           </DialogHeader>
           <TicketForm
             mode="create"
@@ -391,4 +590,4 @@ export default function Dashboard() {
       </Dialog>
     </div>
   );
-}
+} 
