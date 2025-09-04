@@ -163,22 +163,25 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
         </div>
 
         {/* Critical Alert */}
-        {Object.entries(data?.byPriority || {}).map(([priority, count]) => {
+       {Object.entries(data?.byPriority || {}).map(([priority, count]) => {
         const colors = priorityColors[priority as keyof typeof priorityColors];
         return (
           <div
             key={priority}
-            onClick={() => window.location.href = `/tickets?priorityFilter=${priority}`}  // Changed from ?priority=
+            onClick={() => window.location.href = `/tickets?priorityFilter=${priority}`}
             className={`p-2 rounded-lg ${colors.bg} hover:opacity-90 cursor-pointer transition-all`}
           >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="text-sm font-medium text-red-700 dark:text-red-400">
-                {data.byPriority.critical} Critical tickets need immediate attention
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-medium capitalize ${colors.text}`}>
+                {priority}
+              </span>
+              <span className={`text-lg font-bold ${colors.text}`}>
+                {count}
               </span>
             </div>
           </div>
-        )}
+        );
+      })}
       </CardContent>
     </Card>
   );
