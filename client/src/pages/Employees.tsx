@@ -114,7 +114,6 @@ export default function Employees() {
       if (customFilterParam) {
         setCustomFilter(customFilterParam as CustomFilterType);
       }
-    }, []);
 
     // Update state based on URL params
     if (statusParam) setStatusFilter(statusParam);
