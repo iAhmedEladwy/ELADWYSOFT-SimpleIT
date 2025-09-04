@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo,useCallback, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -36,10 +37,11 @@ export default function Employees() {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
-
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   
+  const isInitialMount = useRef(true);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>(); 
 
 
   // Translations
@@ -90,6 +92,80 @@ export default function Employees() {
     queryKey: ['/api/employees'],
     staleTime: 0, // Always fetch fresh data
   });
+
+    // Read URL parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Read filters from URL
+    const statusParam = params.get('statusFilter');
+    const departmentParam = params.get('departmentFilter');
+    const employmentTypeParam = params.get('employmentTypeFilter');
+    const searchParam = params.get('search');
+
+    // Update state based on URL params
+    if (statusParam) setStatusFilter(statusParam);
+    if (departmentParam) setDepartmentFilter(departmentParam);
+    if (employmentTypeParam) setEmploymentTypeFilter(employmentTypeParam);
+    if (searchParam) setSearchQuery(searchParam);
+
+    // Mark that initial mount is complete
+    isInitialMount.current = false;
+  }, []); // Only run on mount
+
+  // Function to update URL when filters change
+  const updateURL = useCallback(() => {
+    // Clear any pending timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    // Debounce URL updates (500ms)
+    updateTimeoutRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+
+      // Add parameters
+      if (statusFilter !== 'Active') {
+        params.set('statusFilter', statusFilter);
+      }
+      if (departmentFilter !== 'All') {
+        params.set('departmentFilter', departmentFilter);
+      }
+      if (employmentTypeFilter !== 'All') {
+        params.set('employmentTypeFilter', employmentTypeFilter);
+      }
+      if (searchQuery) {
+        params.set('search', searchQuery);
+      }
+
+      // Construct the new URL
+      const newSearch = params.toString();
+      const newPath = newSearch ? `/employees?${newSearch}` : '/employees';
+
+      // Update the URL without triggering a re-render
+      if (window.location.pathname + window.location.search !== newPath) {
+        window.history.replaceState({}, '', newPath);
+      }
+    }, 500);
+  }, [statusFilter, departmentFilter, employmentTypeFilter, searchQuery]);
+
+   // Update URL whenever filters change (but not on initial mount)
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      updateURL();
+    }
+  }, [statusFilter, departmentFilter, employmentTypeFilter, searchQuery, updateURL]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  
 
   // Add employee mutation
   const addEmployeeMutation = useMutation({
@@ -378,6 +454,9 @@ export default function Employees() {
     if (employmentTypeFilter !== 'All') count++;
     return count;
   }, [searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
+
+  // Add this useEffect to read URL parameters on mount
+
 
   return (
     <div className="p-6">
