@@ -4545,19 +4545,25 @@ app.get('/api/dashboard/summary', async (req, res) => {
         .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
     );
     
-    const pendingOffboarding = employees.filter(emp => {
-      // Check if employee has a future exit date (leaving soon but still active)
-      if (emp.exitDate) {
-        const exitDate = new Date(emp.exitDate);
-        if (exitDate >= now && exitDate <= thirtyDaysFromNow) {
-          return true;
-        }
-      }
-      // Check if resigned/terminated but still has assets
-      return (emp.status === 'Resigned' || emp.status === 'Terminated') && 
-             employeesWithAssets.has(emp.id);
-    });
-
+   // Pending offboarding employees calculation
+const pendingOffboarding = employees.filter(emp => {
+  // Check if employee has an exit date set
+  const hasExitDate = emp.exitDate !== null && emp.exitDate !== undefined;
+  
+  // Check if employee has assigned assets
+  const hasAssignedAssets = assets.some(asset => 
+    (asset.assignedTo === emp.id) || 
+    (asset.assignedEmployeeId === emp.id) || 
+    (asset.assignedToId === emp.id) ||
+    (asset.assignedTo === emp.empId)
+  );
+  
+  // Pending offboarding if:
+  // 1. Has exit date AND status is Active (still working but leaving soon)
+  // 2. OR status is not Active (Resigned/Terminated) AND still has assets
+  return (hasExitDate && emp.status === 'Active') || 
+         (emp.status !== 'Active' && hasAssignedAssets);
+});
     // Enhanced Asset Metrics
     const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
     
@@ -4680,26 +4686,16 @@ app.get('/api/dashboard/summary', async (req, res) => {
       .slice(0, 5);
 
           // Fixed: Quick Actions availability with correct counts
-    const quickActions = {
-      canAddEmployee: true,
-      canAddAsset: true,
-      canOpenTicket: true,
+   const quickActions = {
+      canAddEmployee: hasAccess(2),
+      canAddAsset: hasAccess(2),
+      canOpenTicket: hasAccess(1),
       pendingActions: {
-        // Employees who joined this month but don't have assets yet
-        employeesNeedingAssets: newEmployeesThisMonth.filter(emp => {
-          const empAssets = assets.filter(a => 
-            (a.assignedTo === emp.id) || 
-            (a.assignedEmployeeId === emp.id) || 
-            (a.assignedToId === emp.id) ||
-            (a.assignedTo === emp.empId) // Check by empId as well
-          );
-          return empAssets.length === 0;
-        }).length,
-        // Assets with scheduled maintenance not yet completed
+        // Update this line to use the new calculation:
+        employeesNeedingAssets: pendingOffboarding.length, // Or keep the existing calculation if different
         assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
           m.status === 'Scheduled' || m.status === 'scheduled'
         ).length,
-        // Tickets approaching SLA (assuming 48 hour SLA)
         ticketsNearingSLA: activeTickets.filter(t => {
           const createdAt = new Date(t.createdAt || 0);
           const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);

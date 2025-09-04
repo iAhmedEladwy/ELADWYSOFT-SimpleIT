@@ -87,7 +87,7 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
         {/* Active Tickets */}
         <div className="grid grid-cols-2 gap-3">
           <div 
-            onClick={() => window.location.href = '/tickets?status=active'}
+            onClick={() => window.location.href = '/tickets?status=open'}
             className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 hover:shadow-md transition-all cursor-pointer"
           >
             <div className="flex items-center justify-between mb-1">
@@ -165,7 +165,7 @@ export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
         {/* Critical Alert */}
         {data?.byPriority.critical && data.byPriority.critical > 0 && (
           <div 
-            onClick={() => window.location.href = '/tickets?priority=critical'}
+            onClick={() => window.location.href = '/tickets?priority=${priority}`}
             className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 animate-pulse cursor-pointer"
           >
             <div className="flex items-center gap-2">

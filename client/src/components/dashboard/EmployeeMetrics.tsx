@@ -67,7 +67,8 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: Users,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      onClick: () => window.location.href = '/employees?type=full-time',
+      // CHANGE THIS LINE:
+      onClick: () => window.location.href = '/employees?employmentTypeFilter=Full-time',
     },
     {
       label: translations.partTime,
@@ -75,7 +76,8 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      onClick: () => window.location.href = '/employees?type=part-time',
+      // CHANGE THIS LINE:
+      onClick: () => window.location.href = '/employees?employmentTypeFilter=Part-time',
     },
     {
       label: translations.newThisMonth,
@@ -83,8 +85,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: UserPlus,
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
-      badge: data?.newThisMonth ? 'new' : undefined,
-      onClick: () => window.location.href = '/employees?filter=new',
+      onClick: () => window.location.href = '/employees',
     },
     {
       label: translations.pendingOffboarding,
@@ -92,8 +93,8 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       icon: UserMinus,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
-      badge: data?.pendingOffboarding && data.pendingOffboarding > 0 ? 'alert' : undefined,
-      onClick: () => window.location.href = '/employees?status=offboarding',
+      // This can stay as is, or change to show employees with exitDate:
+      onClick: () => window.location.href = '/employees?statusFilter=Resigned',
     },
   ];
 
