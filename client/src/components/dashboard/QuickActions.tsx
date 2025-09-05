@@ -56,7 +56,7 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     {
       label: translations.openTicket,
       icon: Ticket,
-      onClick: onOpenTicket?.(),
+      onClick: () => onOpenTicket?.(),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 hover:bg-purple-100',
       disabled: !data?.canOpenTicket || !onOpenTicket,
