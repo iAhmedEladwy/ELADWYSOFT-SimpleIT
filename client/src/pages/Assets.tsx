@@ -107,6 +107,10 @@ export default function Assets() {
     deleteConfirm: language === 'Arabic' ? 'هل أنت متأكد من حذف هذا الأصل؟' : 'Are you sure you want to delete this asset?',
     sellConfirm: language === 'Arabic' ? 'هل أنت متأكد من بيع الأصول المحددة؟' : 'Are you sure you want to sell the selected assets?',
     noAssetsSelected: language === 'Arabic' ? 'لم يتم تحديد أصول للبيع' : 'No assets selected for sale',
+    scheduled: language === 'Arabic' ? 'مجدول' : 'Scheduled',
+    inProgress: language === 'Arabic' ? 'قيد التنفيذ' : 'In Progress',
+    completed: language === 'Arabic' ? 'مكتمل' : 'Completed',
+    overdue: language === 'Arabic' ? 'متأخر' : 'Overdue', 
     invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file',
     perPage: language === 'Arabic' ? 'لكل صفحة:' : 'Per page:',
     showing: language === 'Arabic' ? 'عرض' : 'Showing',
@@ -878,27 +882,27 @@ export default function Assets() {
                 </Popover>
               </div>
 
-              {/* Maintenance Filter */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Maintenance Status</label>
-                <Select 
-                  value={filters.maintenanceDue || 'all'} 
-                  onValueChange={(value) => setFilters({ 
-                    ...filters, 
-                    maintenanceDue: value === 'all' ? undefined : value 
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="inProgress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+           {/* Maintenance Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                {translations.maintenanceStatus || 'Maintenance Status'}
+              </label>
+              <Select
+                value={filters.maintenanceDue || 'all'}
+                onValueChange={(value) => updateFilter('maintenanceDue', value === 'all' ? undefined : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={translations.allStatuses || 'All Statuses'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{translations.all || 'All'}</SelectItem>
+                  <SelectItem value="scheduled">{translations.scheduled || 'Scheduled'}</SelectItem>
+                  <SelectItem value="inProgress">{translations.inProgress || 'In Progress'}</SelectItem>
+                  <SelectItem value="completed">{translations.completed || 'Completed'}</SelectItem>
+                  <SelectItem value="overdue">{translations.overdue || 'Overdue'}</SelectItem>  {/* ADD THIS LINE */}
+                </SelectContent>
+              </Select>
+            </div>
             </div>
           </CardContent>
         </Card>
