@@ -76,6 +76,7 @@ export default function Employees() {
     addEmployee: language === 'English' ? 'Add Employee' : 'إضافة موظف',
     editEmployee: language === 'English' ? 'Edit Employee' : 'تعديل الموظف',
     refresh: language === 'English' ? 'Refresh' : 'تحديث',
+    status: language === 'English' ? 'Status' : 'الحالة',
     search: language === 'English' ? 'Search...' : 'بحث...',
     import: language === 'English' ? 'Import' : 'استيراد',
     export: language === 'English' ? 'Export' : 'تصدير',
@@ -586,19 +587,27 @@ export default function Employees() {
           {/* SECOND ROW: All 4 Filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {/* 1. Custom Filters Dropdown */}
-            <EmployeeCustomFilters
-              onFilterChange={setCustomFilter}
-              currentFilter={customFilter}
-              employeeCount={
-                customFilter ? 
-                applyCustomEmployeeFilter(employees, customFilter, assets).length : 
-                undefined
-              }
-              assetData={assets}
-            />
+            <div>
+              <Label className="text-sm font-medium mb-1 block">
+                {language === 'English' ? 'Quick Filters' : 'الفلاتر السريعة'}
+              </Label>
+              <EmployeeCustomFilters
+                onFilterChange={setCustomFilter}
+                currentFilter={customFilter}
+                employeeCount={
+                  customFilter ? 
+                  filteredEmployees.length :  // Use the already filtered employees count
+                  undefined
+                }
+                assetData={assets}
+              />
+            </div>
             
             {/* 2. Status Filter */}
             <div>
+              <Label className="text-sm font-medium mb-1 block">
+                {translations.status || 'Status'}
+              </Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={translations.filterByStatus} />
@@ -613,37 +622,42 @@ export default function Employees() {
               </Select>
             </div>
             
-           {/* 3. Department Filter */}
-          <div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={translations.department} />  {/* USE TRANSLATION */}
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px] overflow-y-auto">
-                <SelectItem value="All">{translations.allDepartments}</SelectItem>
-                {departments.slice(1).map((dept: string) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* 3. Department Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-1 block">
+                {translations.department}
+              </Label>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={translations.department} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="All">{translations.allDepartments}</SelectItem>
+                  {departments.slice(1).map((dept: string) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* 4. Employment Type Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-1 block">
+                {translations.employmentType}
+              </Label>
+              <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={translations.employmentType} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectItem value="All">{translations.allTypes}</SelectItem>
+                  {employmentTypes.slice(1).map((type: string) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          {/* 4. Employment Type Filter */}
-          <div>
-            <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={translations.employmentType} />  {/* USE TRANSLATION */}
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px] overflow-y-auto">
-                <SelectItem value="All">{translations.allTypes}</SelectItem>
-                {employmentTypes.slice(1).map((type: string) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          </div>
-          
           {/* Clear Filters Button - Show only when filters are active */}
           {(customFilter || departmentFilter !== 'All' || employmentTypeFilter !== 'All' || 
             statusFilter !== 'Active' || searchQuery) && (

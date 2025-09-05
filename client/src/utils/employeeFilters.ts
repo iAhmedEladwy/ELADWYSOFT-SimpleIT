@@ -33,6 +33,25 @@ export function applyCustomEmployeeFilter(
       });
 
     case 'offboardedWithAssets':
+    // Resigned or Terminated employees who still have assets
+    return employees.filter(emp => {
+        // Check if employee is resigned or terminated
+        const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
+        
+        // Check if employee has assets assigned
+        const hasAssets = assets ? assets.some(asset => {
+        // Check multiple possible fields for assignment
+        return (
+            (asset.assignedTo && asset.assignedTo === emp.id) ||
+            (asset.assignedEmployeeId && asset.assignedEmployeeId === emp.id) ||
+            (asset.assignedToId && asset.assignedToId === emp.id) ||
+            (asset.assignedTo && asset.assignedTo === emp.empId) ||
+            (asset.assignedEmployee && asset.assignedEmployee === emp.id)
+        );
+        }) : false;
+        
+        return isOffboarded && hasAssets;
+  });
       // Not active but still has assets
       return employees.filter(emp => {
         const isInactive = emp.status !== 'Active';
