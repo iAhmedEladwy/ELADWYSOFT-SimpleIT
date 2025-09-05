@@ -2415,70 +2415,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // For maintenance filter, we need to check maintenance records
-        let assetsWithMaintenance = filteredAssets;
-      if (filters.maintenanceDue) {
-      // Get maintenance status for all filtered assets
-      // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
-      const assetsWithMaintenance = await Promise.all(
-        assets.map(async (asset) => {
-          const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
-          
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          // Check for scheduled maintenance (future dates)
-          const hasScheduled = maintenanceRecords.some(m => {
-            if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
-            const maintenanceDate = new Date(m.date);
-            maintenanceDate.setHours(0, 0, 0, 0);
-            return maintenanceDate >= today; // Future or today
-          });
-          
-          // Check for in-progress maintenance
-          const hasInProgress = maintenanceRecords.some(m => 
-            m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
-          );
-          
-          // Check for overdue maintenance
-          const hasOverdue = maintenanceRecords.some(m => {
-            if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
-            const maintenanceDate = new Date(m.date);
-            maintenanceDate.setHours(0, 0, 0, 0);
-            return maintenanceDate < today; // Past date but still scheduled
-          });
-          
-          return {
-            assetId: asset.id,
-            hasScheduled,
-            hasInProgress,
-            hasOverdue
-          };
-        })
-      );
+        // For maintenance filter, we need to check maintenance records
+        let assetsAfterMaintenanceFilter = filteredAssets; // Changed variable name
 
-// Count unique assets with each maintenance status
-const maintenanceCounts = {
-  scheduled: assetsWithMaintenance.filter(a => a.hasScheduled).length,
-  inProgress: assetsWithMaintenance.filter(a => a.hasInProgress).length,
-  overdue: assetsWithMaintenance.filter(a => a.hasOverdue).length
-};
-      
+        if (filters.maintenanceDue) {
+          // Get maintenance status for all filtered assets
+          const assetsWithMaintenanceStatus = await Promise.all(
+            filteredAssets.map(async (asset) => {  // Use filteredAssets instead of assets
+              const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+              
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const hasScheduled = maintenanceRecords.some(m => {
+                if (m.status !== 'Scheduled') return false;
+                
+                const maintenanceDate = new Date(m.date);
+                maintenanceDate.setHours(0, 0, 0, 0);
+                
+                // Include maintenance scheduled for today or future dates
+                return maintenanceDate >= today;
+              });
+              
+              const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+              const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+              
+              // Check for overdue (scheduled but past date)
+              const hasOverdue = maintenanceRecords.some(m => {
+                if (m.status !== 'Scheduled') return false;
+                const maintenanceDate = new Date(m.date);
+                maintenanceDate.setHours(0, 0, 0, 0);
+                return maintenanceDate < today;
+              });
+              
+              return {
+                ...asset,
+                hasScheduledMaintenance: hasScheduled,
+                hasInProgressMaintenance: hasInProgress,
+                hasCompletedMaintenance: hasCompleted,
+                hasOverdueMaintenance: hasOverdue
+              };
+            })
+          );
+
       // Filter based on maintenance status
-      assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
-        if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
-        if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
-        if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
-        return true;
-      });
-    }
+        assetsAfterMaintenanceFilter = assetsWithMaintenanceStatus.filter(asset => {
+          if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
+          if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
+          if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
+          if (filters.maintenanceDue === 'overdue') return asset.hasOverdueMaintenance;
+          return true;
+        });
+      }
         
         // Get total count after all filters
         const totalCount = assetsWithMaintenance.length;
         const totalPages = Math.ceil(totalCount / limit);
-        
         // Apply pagination
-        const paginatedAssets = assetsWithMaintenance.slice(offset, offset + limit);
-        
+        const paginatedAssets = assetsAfterMaintenanceFilter.slice(offset, offset + limit); 
+               
         // Enrich ONLY the paginated assets with full maintenance data
         const enrichedAssets = await Promise.all(
           paginatedAssets.map(async (asset) => {
