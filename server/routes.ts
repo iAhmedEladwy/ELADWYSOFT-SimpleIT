@@ -4604,22 +4604,58 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       low: activeTickets.filter(t => t.priority === 'Low').length
     };
 
-   // Fixed: Maintenance Counts - based on actual maintenance table records
-    const maintenanceCounts = {
-      scheduled: allMaintenanceRecords.filter(m => 
-        m.status === 'Scheduled' || m.status === 'scheduled'
-      ).length,
-      inProgress: allMaintenanceRecords.filter(m => 
-        m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
-      ).length,
-      overdue: allMaintenanceRecords.filter(m => {
-        // Check if scheduled maintenance is overdue
-        if (m.status === 'Scheduled' || m.status === 'scheduled') {
-          const maintenanceDate = new Date(m.date);
-          return maintenanceDate < now;
+ // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
+    const assetsMaintenanceStatus = await Promise.all(
+      assets.map(async (asset) => {
+        const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+        
+        // Skip assets with no maintenance records
+        if (!maintenanceRecords || maintenanceRecords.length === 0) {
+          return null;
         }
-        return false;
-      }).length
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Check for scheduled maintenance (future dates)
+        const hasScheduled = maintenanceRecords.some(m => {
+          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+          const maintenanceDate = new Date(m.date);
+          maintenanceDate.setHours(0, 0, 0, 0);
+          return maintenanceDate >= today; // Future or today
+        });
+        
+        // Check for in-progress maintenance
+        const hasInProgress = maintenanceRecords.some(m => 
+          m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
+        );
+        
+        // Check for overdue maintenance
+        const hasOverdue = maintenanceRecords.some(m => {
+          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+          const maintenanceDate = new Date(m.date);
+          maintenanceDate.setHours(0, 0, 0, 0);
+          return maintenanceDate < today; // Past date but still scheduled
+        });
+        
+        return {
+          assetId: asset.id,
+          hasScheduled,
+          hasInProgress,
+          hasOverdue,
+          hasAnyMaintenance: true
+        };
+      })
+    );
+
+    // Filter out nulls (assets without maintenance) and count
+    const assetsWithMaintenance = assetsMaintenanceStatus.filter(a => a !== null);
+
+    // Count unique assets with each maintenance status
+    const maintenanceCounts = {
+      scheduled: assetsWithMaintenance.filter(a => a.hasScheduled).length,
+      inProgress: assetsWithMaintenance.filter(a => a.hasInProgress).length,
+      overdue: assetsWithMaintenance.filter(a => a.hasOverdue).length
     };
 
     // Calculate total asset value (excluding disposed assets)
