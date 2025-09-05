@@ -11,6 +11,7 @@ import EmployeeCustomFilters, { CustomFilterType } from '@/components/employees/
 import { applyCustomEmployeeFilter } from '@/utils/employeeFilters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Plus, RefreshCw, Download, Upload, Filter, X, CheckSquare, Square, Trash2, Edit3, UserCheck, UserX, Search } from 'lucide-react';
 import {
   Dialog,
@@ -59,6 +60,7 @@ export default function Employees() {
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
     onLeave: language === 'English' ? 'On Leave' : 'في إجازة',
     filterByStatus: language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة',
+    filters: language === 'English' ? 'Filters' : 'الفلاتر',  // ADD THIS
     advancedFilters: language === 'English' ? 'Advanced Filters' : 'فلاتر متقدمة',
     department: language === 'English' ? 'Department' : 'القسم',
     employmentType: language === 'English' ? 'Employment Type' : 'نوع التوظيف',
@@ -484,8 +486,9 @@ export default function Employees() {
     if (statusFilter !== 'Active') count++;
     if (departmentFilter !== 'All') count++;
     if (employmentTypeFilter !== 'All') count++;
+    if (customFilter) count++;
     return count;
-  }, [searchQuery, statusFilter, departmentFilter, employmentTypeFilter]);
+  }, [searchQuery, statusFilter, departmentFilter, employmentTypeFilter,customFilter]);
 
   // Add this useEffect to read URL parameters on mount
 
@@ -610,35 +613,35 @@ export default function Employees() {
               </Select>
             </div>
             
-            {/* 3. Department Filter */}
-            <div>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="All">All Departments</SelectItem>
-                  {departments.slice(1).map((dept: string) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* 4. Employment Type Filter */}
-            <div>
-              <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Employment Type" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="All">All Types</SelectItem>
-                  {employmentTypes.slice(1).map((type: string) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+           {/* 3. Department Filter */}
+          <div>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={translations.department} />  {/* USE TRANSLATION */}
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectItem value="All">{translations.allDepartments}</SelectItem>
+                {departments.slice(1).map((dept: string) => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 4. Employment Type Filter */}
+          <div>
+            <Select value={employmentTypeFilter} onValueChange={setEmploymentTypeFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={translations.employmentType} />  {/* USE TRANSLATION */}
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectItem value="All">{translations.allTypes}</SelectItem>
+                {employmentTypes.slice(1).map((type: string) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           </div>
           
           {/* Clear Filters Button - Show only when filters are active */}
