@@ -2469,7 +2469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
         
         // Get total count after all filters
-        const totalCount = assetsWithMaintenance.length;
+        const totalCount = assetsAfterMaintenanceFilter.length;
         const totalPages = Math.ceil(totalCount / limit);
         // Apply pagination
         const paginatedAssets = assetsAfterMaintenanceFilter.slice(offset, offset + limit); 
