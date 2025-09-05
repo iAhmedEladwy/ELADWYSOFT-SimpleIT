@@ -40,7 +40,7 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     {
       label: translations.addEmployee,
       icon: UserPlus,
-      onClick: onAddEmployee || (() => window.location.href = '/employees'),
+      onClick: () => onAddEmployee?.(),
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 hover:bg-blue-100',
       disabled: !data?.canAddEmployee || !onAddEmployee,
@@ -48,7 +48,7 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     {
       label: translations.addAsset,
       icon: Plus,
-      onClick: onAddAsset || (() => window.location.href = '/assets'),
+      onClick: () => onAddAsset?.(),
       color: 'text-green-600',
       bgColor: 'bg-green-50 hover:bg-green-100',
       disabled: !data?.canAddAsset || !onAddAsset,
@@ -56,7 +56,7 @@ export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAss
     {
       label: translations.openTicket,
       icon: Ticket,
-      onClick: onOpenTicket || (() => window.location.href = '/tickets'),
+      onClick: onOpenTicket?.(),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 hover:bg-purple-100',
       disabled: !data?.canOpenTicket || !onOpenTicket,
@@ -127,7 +127,7 @@ const totalPendingActions = data ?
             {data.pendingActions.employeesNeedToReturnAssets > 0 && (
               <div 
                 className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-                onClick={() => window.location.href = '/employees?customFilter=offboardedWithAssets'}
+              onClick={() => window.location.href = '/employees?customFilter=offboardedWithAssets'}
               >
                 <AlertCircle className="h-4 w-4" />
                 <span>{data.pendingActions.employeesNeedToReturnAssets} {translations.employeesNeedToReturn}</span>
