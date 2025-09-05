@@ -665,7 +665,7 @@ export default function Assets() {
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v0.2.8</title>
+        <title>{translations.title} | SimpleIT v0.3.0</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
