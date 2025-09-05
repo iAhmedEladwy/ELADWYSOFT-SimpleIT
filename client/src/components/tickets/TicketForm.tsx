@@ -1,3 +1,5 @@
+// TicketForm Component - Updated to remove nested Cards
+// Last modified: Date.now()
 import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
