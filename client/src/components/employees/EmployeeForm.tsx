@@ -362,7 +362,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                     <FormLabel>{translations.employmentType}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -419,7 +419,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                     <FormLabel>{translations.status}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
