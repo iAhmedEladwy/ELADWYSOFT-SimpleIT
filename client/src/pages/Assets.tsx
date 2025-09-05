@@ -111,6 +111,7 @@ export default function Assets() {
     inProgress: language === 'Arabic' ? 'قيد التنفيذ' : 'In Progress',
     completed: language === 'Arabic' ? 'مكتمل' : 'Completed',
     overdue: language === 'Arabic' ? 'متأخر' : 'Overdue', 
+    all: language === 'Arabic' ? 'الكل' : 'All',
     invalidFile: language === 'Arabic' ? 'يرجى اختيار ملف CSV صالح' : 'Please select a valid CSV file',
     perPage: language === 'Arabic' ? 'لكل صفحة:' : 'Per page:',
     showing: language === 'Arabic' ? 'عرض' : 'Showing',
@@ -889,7 +890,7 @@ export default function Assets() {
               </label>
               <Select
                 value={filters.maintenanceDue || 'all'}
-                onValueChange={(value) => updateFilter('maintenanceDue', value === 'all' ? undefined : value)}
+                onValueChange={(value) => setFilters({ ...filters, maintenanceDue: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={translations.allStatuses || 'All Statuses'} />
