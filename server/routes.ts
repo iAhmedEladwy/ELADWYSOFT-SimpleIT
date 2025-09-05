@@ -4713,9 +4713,9 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 
           // Fixed: Quick Actions availability with correct counts
         const quickActions = {
-          canAddEmployee: hasAccess(2),
-          canAddAsset: hasAccess(2),
-          canOpenTicket: hasAccess(1),
+          canAddEmployee: getUserRoleLevel(req.user) >= 2,
+          canAddAsset: getUserRoleLevel(req.user) >= 2,
+          canOpenTicket: getUserRoleLevel(req.user) >= 1,
           pendingActions: {
             employeesNeedToReturnAssets: leavingEmployeesWithAssets.length, // Clear name
             assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
