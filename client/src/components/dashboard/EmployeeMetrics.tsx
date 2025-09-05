@@ -94,7 +94,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       // This can stay as is, or change to show employees with exitDate:
-      onClick: () => window.location.href = '/employees?statusFilter=Resigned',
+      onClick: () => window.location.href = '/employees?customFilter=offboardedWithAssets',
     },
   ];
 

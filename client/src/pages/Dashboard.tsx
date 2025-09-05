@@ -324,7 +324,7 @@ export default function Dashboard() {
                           status === 'scheduled' ? 'bg-blue-50 dark:bg-blue-900/20' :
                           status === 'inProgress' ? 'bg-orange-50 dark:bg-orange-900/20' :
                           'bg-green-50 dark:bg-green-900/20'}`}
-                      onClick={() => window.location.href = `/assets?maintenanceStatus=${status}`}
+                      onClick={() => window.location.href = `/assets?maintenanceDue=${status}`}
                     >
                       <p className="text-sm font-medium capitalize">{status}</p>
                       <p className="text-2xl font-bold mt-1">{count as number}</p>

@@ -2418,35 +2418,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let assetsWithMaintenance = filteredAssets;
       if (filters.maintenanceDue) {
       // Get maintenance status for all filtered assets
-      const assetsWithMaintenanceStatus = await Promise.all(
-        filteredAssets.map(async (asset) => {
+      // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
+      const assetsWithMaintenance = await Promise.all(
+        assets.map(async (asset) => {
           const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
           
-          // Get today's date at start of day for proper comparison
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
+          // Check for scheduled maintenance (future dates)
           const hasScheduled = maintenanceRecords.some(m => {
-            if (m.status !== 'Scheduled') return false;
-            
+            if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
             const maintenanceDate = new Date(m.date);
             maintenanceDate.setHours(0, 0, 0, 0);
-            
-            // Include maintenance scheduled for today or future dates
-            return maintenanceDate >= today;
+            return maintenanceDate >= today; // Future or today
           });
           
-          const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
-          const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+          // Check for in-progress maintenance
+          const hasInProgress = maintenanceRecords.some(m => 
+            m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
+          );
+          
+          // Check for overdue maintenance
+          const hasOverdue = maintenanceRecords.some(m => {
+            if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+            const maintenanceDate = new Date(m.date);
+            maintenanceDate.setHours(0, 0, 0, 0);
+            return maintenanceDate < today; // Past date but still scheduled
+          });
           
           return {
-            ...asset,
-            hasScheduledMaintenance: hasScheduled,
-            hasInProgressMaintenance: hasInProgress,
-            hasCompletedMaintenance: hasCompleted
+            assetId: asset.id,
+            hasScheduled,
+            hasInProgress,
+            hasOverdue
           };
         })
       );
+
+// Count unique assets with each maintenance status
+const maintenanceCounts = {
+  scheduled: assetsWithMaintenance.filter(a => a.hasScheduled).length,
+  inProgress: assetsWithMaintenance.filter(a => a.hasInProgress).length,
+  overdue: assetsWithMaintenance.filter(a => a.hasOverdue).length
+};
       
       // Filter based on maintenance status
       assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
@@ -4511,25 +4526,22 @@ app.get('/api/dashboard/summary', async (req, res) => {
         .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
     );
     
-   // Pending offboarding employees calculation
-const pendingOffboarding = employees.filter(emp => {
-  // Check if employee has an exit date set
-  const hasExitDate = emp.exitDate !== null && emp.exitDate !== undefined;
-  
-  // Check if employee has assigned assets
-  const hasAssignedAssets = assets.some(asset => 
-    (asset.assignedTo === emp.id) || 
-    (asset.assignedEmployeeId === emp.id) || 
-    (asset.assignedToId === emp.id) ||
-    (asset.assignedTo === emp.empId)
-  );
-  
-  // Pending offboarding if:
-  // 1. Has exit date AND status is Active (still working but leaving soon)
-  // 2. OR status is not Active (Resigned/Terminated) AND still has assets
-  return (hasExitDate && emp.status === 'Active') || 
-         (emp.status !== 'Active' && hasAssignedAssets);
-});
+    // Pending offboarding employees calculation - match custom filter logic
+    const pendingOffboarding = employees.filter(emp => {
+      // Check if employee has assigned assets
+      const hasAssignedAssets = assets.some(asset => 
+        (asset.assignedTo === emp.id) || 
+        (asset.assignedEmployeeId === emp.id) || 
+        (asset.assignedToId === emp.id) ||
+        (asset.assignedTo === emp.empId)
+      );
+      
+      // Match the "offboardedWithAssets" filter logic:
+      // Resigned or Terminated employees who still have assets
+      const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
+      
+      return isOffboarded && hasAssignedAssets;
+    });
     // Enhanced Asset Metrics
     const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
     
