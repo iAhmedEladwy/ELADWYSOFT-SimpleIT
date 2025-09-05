@@ -31,18 +31,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Clock, 
-  User, 
-  MessageSquare, 
-  History, 
-  Paperclip, 
+import {
+  Clock,
+  User,
+  MessageSquare,
+  History,
+  Paperclip,
   X,
   Save,
-  AlertCircle,
   Edit3,
   Send,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 
 import {
@@ -123,6 +122,20 @@ export default function TicketForm({
   const [activeTab, setActiveTab] = useState('details');
   const [commentText, setCommentText] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
+
+  /**
+   * Local UI state for the Submitted By popover
+   *
+   * The original implementation created a new useState inside the
+   * render callback of the `FormField` for the submittedById field. React
+   * hooks must always be called at the top level of a component or within
+   * custom hooks. Calling useState inside the render function breaks the
+   * rules of hooks and can lead to unpredictable behaviour and even nested
+   * Card components being rendered repeatedly. To resolve this, we hoist
+   * the popover open state to the parent component so that it remains
+   * stable across renders.
+   */
+  const [submittedByPopoverOpen, setSubmittedByPopoverOpen] = useState(false);
 
   // Fetch data with improved caching and loading states
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<UserResponse[]>({ 
@@ -431,17 +444,8 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
 
   return (
     <div className={isCreateMode ? "overflow-y-auto max-h-[75vh]" : "pt-4"}>
-      {isCreateMode && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="h-5 w-5 text-blue-500" />
-            <h2 className="text-2xl font-bold">{language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}</h2>
-          </div>
-          <p className="text-gray-600">
-            {language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة'}
-          </p>
-        </div>
-      )}
+      {/* In create mode, the modal header is provided by the parent component (e.g., a dialog).  
+          Do not render an additional header here to avoid nested card wrappers and duplicated headings. */}
       
 
 
@@ -461,108 +465,130 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                   <FormField
                     control={form.control}
                     name="submittedById"
-                    render={({ field }) => {
-                      const [open, setOpen] = useState(false);
-                      
-                      return (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  aria-expanded={open}
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                 {field.value && Array.isArray(activeEmployees)
-                                    ? activeEmployees.find(
-                                        (employee) => employee && employee.id.toString() === field.value
-                                      )?.englishName || "Select employee..."
-                                    : language === 'English' ? "Select employee..." : "اختر الموظف..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-                             <Command filter={(value, search) => {
-                                  // Ensure activeEmployees is an array
-                                  if (!Array.isArray(activeEmployees)) return 0;
-                                  
-                                  const employee = activeEmployees.find(emp => {
-                                    if (!emp) return false;
-                                    const searchString = `${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`.toLowerCase();
-                                    return searchString.includes(value.toLowerCase());
-                                  });
-                                  
-                                  if (!employee) return 0;
-                                  
-                                  const searchLower = search.toLowerCase();
-                                  const englishName = employee.englishName?.toLowerCase() || '';
-                                  const arabicName = employee.arabicName?.toLowerCase() || '';
-                                  const department = employee.department?.toLowerCase() || '';
-                                  
-                                  if (englishName.includes(searchLower) || 
-                                      arabicName.includes(searchLower) || 
-                                      department.includes(searchLower)) {
-                                    return 1;
-                                  }
-                                  return 0;
-                                }}>
-                                <CommandInput 
-                                  placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
-                                  className="h-9"
-                                />
-                                <CommandEmpty>
-                                  {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
-                                </CommandEmpty>
-                                <CommandGroup className="max-h-[200px] overflow-auto">
-                                  {Array.isArray(activeEmployees) && activeEmployees.length > 0 ? (
-                                    activeEmployees.map((employee) => (
-                                      <CommandItem
-                                        key={employee.id}
-                                        value={`${employee.englishName || ''} ${employee.arabicName || ''} ${employee.department || ''}`}
-                                        onSelect={() => {
-                                          field.onChange(employee.id.toString());
-                                          form.setValue('relatedAssetId', 'none');
-                                          setOpen(false);
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            field.value === employee.id.toString()
-                                              ? "opacity-100"
-                                              : "opacity-0"
-                                          )}
-                                        />
-                                        <div className="flex flex-col">
-                                          <span>{employee.englishName || employee.name || 'Unknown'}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {employee.department || 'No department'}
-                                          </span>
-                                        </div>
-                                      </CommandItem>
-                                    ))
-                                  ) : (
-                                    <CommandItem disabled>
-                                      <span className="text-muted-foreground">
-                                        {isLoadingEmployees ? 'Loading employees...' : 'No active employees available'}
-                                      </span>
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
+                        <Popover
+                          open={submittedByPopoverOpen}
+                          onOpenChange={setSubmittedByPopoverOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={submittedByPopoverOpen}
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value && Array.isArray(activeEmployees)
+                                  ? activeEmployees.find(
+                                      (employee) => employee && employee.id.toString() === field.value
+                                    )?.englishName ||
+                                    (language === 'English'
+                                      ? 'Select employee...'
+                                      : 'اختر الموظف...')
+                                  : language === 'English'
+                                  ? 'Select employee...'
+                                  : 'اختر الموظف...'}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="p-0"
+                            style={{ width: 'var(--radix-popover-trigger-width)' }}
+                          >
+                            <Command
+                              filter={(value, search) => {
+                                // Ensure activeEmployees is an array
+                                if (!Array.isArray(activeEmployees)) return 0;
+
+                                const employee = activeEmployees.find((emp) => {
+                                  if (!emp) return false;
+                                  const searchString = `${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`.toLowerCase();
+                                  return searchString.includes(value.toLowerCase());
+                                });
+
+                                if (!employee) return 0;
+
+                                const searchLower = search.toLowerCase();
+                                const englishName = employee.englishName?.toLowerCase() || '';
+                                const arabicName = employee.arabicName?.toLowerCase() || '';
+                                const department = employee.department?.toLowerCase() || '';
+
+                                if (
+                                  englishName.includes(searchLower) ||
+                                  arabicName.includes(searchLower) ||
+                                  department.includes(searchLower)
+                                ) {
+                                  return 1;
+                                }
+                                return 0;
+                              }}
+                            >
+                              <CommandInput
+                                placeholder={
+                                  language === 'English'
+                                    ? 'Search employee...'
+                                    : 'البحث عن موظف...'
+                                }
+                                className="h-9"
+                              />
+                              <CommandEmpty>
+                                {language === 'English'
+                                  ? 'No employee found.'
+                                  : 'لم يتم العثور على موظف.'}
+                              </CommandEmpty>
+                              <CommandGroup className="max-h-[200px] overflow-auto">
+                                {Array.isArray(activeEmployees) && activeEmployees.length > 0 ? (
+                                  activeEmployees.map((employee) => (
+                                    <CommandItem
+                                      key={employee.id}
+                                      value={`${employee.englishName || ''} ${employee.arabicName || ''} ${employee.department || ''}`}
+                                      onSelect={() => {
+                                        field.onChange(employee.id.toString());
+                                        form.setValue('relatedAssetId', 'none');
+                                        // close the popover after selection
+                                        setSubmittedByPopoverOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          'mr-2 h-4 w-4',
+                                          field.value === employee.id.toString()
+                                            ? 'opacity-100'
+                                            : 'opacity-0'
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>
+                                          {employee.englishName || employee.name || 'Unknown'}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {employee.department || 'No department'}
+                                        </span>
+                                      </div>
                                     </CommandItem>
-                                  )}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
+                                  ))
+                                ) : (
+                                  <CommandItem disabled>
+                                    <span className="text-muted-foreground">
+                                      {isLoadingEmployees
+                                        ? 'Loading employees...'
+                                        : 'No active employees available'}
+                                    </span>
+                                  </CommandItem>
+                                )}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
 
                     {/* Assigned To */}
