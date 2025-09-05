@@ -143,8 +143,8 @@ export default function Assets() {
     }
 
     const maintenanceDue = urlParams.get('maintenanceDue');
-    if (maintenanceDue && ['scheduled', 'inProgress', 'completed'].includes(maintenanceDue)) {
-      urlFilters.maintenanceDue = maintenanceDue as 'scheduled' | 'inProgress' | 'completed';
+    if (maintenanceDue && ['scheduled', 'inProgress', 'completed', 'overdue'].includes(maintenanceDue)) {
+      urlFilters.maintenanceDue = maintenanceDue as 'scheduled' | 'inProgress' | 'completed' | 'overdue';
     }
     
     if (Object.keys(urlFilters).length > 0) {
