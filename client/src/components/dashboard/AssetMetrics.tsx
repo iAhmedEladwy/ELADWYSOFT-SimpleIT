@@ -1,178 +1,219 @@
 // client/src/components/dashboard/AssetMetrics.tsx
-import { Laptop, Package, Wrench, DollarSign, Shield, Clock } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useLanguage } from '@/hooks/use-language';
-import { useCurrency } from '@/lib/currencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Package, 
+  Laptop, 
+  Monitor,
+  HardDrive,
+  Wrench,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle
+} from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
 
 interface AssetMetricsProps {
-  data?: {
-    total: number;
-    totalValue: number;
-    availableLaptops: number;
-    reservedLaptops: number;
-    underMaintenance: number;
-    changes: {
-      monthly: string;
-    };
-  };
+  data: any;
   isLoading: boolean;
 }
 
 export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
   const { language } = useLanguage();
-  const { formatCurrency } = useCurrency();
-
+  
   const translations = {
-    assetOverview: language === 'English' ? 'Asset Overview' : 'نظرة عامة على الأصول',
+    assets: language === 'English' ? 'Assets' : 'الأصول',
     totalAssets: language === 'English' ? 'Total Assets' : 'إجمالي الأصول',
-    totalValue: language === 'English' ? 'Total Value' : 'القيمة الإجمالية',
-    laptopStatus: language === 'English' ? 'Laptop Status' : 'حالة الحواسيب المحمولة',
     available: language === 'English' ? 'Available' : 'متاح',
-    reserved: language === 'English' ? 'Reserved' : 'محجوز',
-    underMaintenance: language === 'English' ? 'Under Maintenance' : 'تحت الصيانة',
+    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
+    maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
+    laptops: language === 'English' ? 'Laptops' : 'أجهزة محمولة',
+    desktops: language === 'English' ? 'Desktops' : 'أجهزة مكتبية',
     viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    laptops: language === 'English' ? 'Laptops' : 'حواسيب محمولة',
-    fromLastMonth: language === 'English' ? 'from last month' : 'من الشهر الماضي',
+    critical: language === 'English' ? 'Critical' : 'حرج',
   };
+
+  // Calculate utilization rate
+  const utilizationRate = data?.total ? 
+    Math.round(((data.total - (data.available || 0)) / data.total) * 100) : 0;
+
+  // Determine health status
+  const getHealthStatus = () => {
+    if (data?.underMaintenance > 5) return 'warning';
+    if (data?.critical > 0) return 'critical';
+    if (utilizationRate > 90) return 'high';
+    return 'good';
+  };
+
+  const healthStatus = getHealthStatus();
 
   if (isLoading) {
     return (
-      <Card className="col-span-1 md:col-span-2 lg:col-span-1">
-        <CardHeader>
-          <Skeleton className="h-6 w-40" />
+      <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+        <CardHeader className="bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20 rounded-t-2xl">
+          <Skeleton className="h-6 w-32 rounded-full" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+            <Skeleton className="h-12 w-24 rounded-xl" />
+            <Skeleton className="h-4 w-full rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full rounded-xl" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const totalLaptops = (data?.availableLaptops || 0) + (data?.reservedLaptops || 0);
-  const laptopAvailabilityPercent = totalLaptops > 0 
-    ? Math.round((data?.availableLaptops || 0) / totalLaptops * 100) 
-    : 0;
-
   return (
-    <Card className="col-span-1 md:col-span-2 lg:col-span-1 hover:shadow-lg transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Package className="h-5 w-5 text-secondary" />
-          {translations.assetOverview}
+    <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300 group hover:scale-[1.02]">
+      <CardHeader className="bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20 rounded-t-2xl">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-secondary-500 flex items-center justify-center shadow-md3-1 group-hover:scale-110 transition-transform duration-300">
+              <Package className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-title-medium">{translations.assets}</span>
+          </div>
+          {healthStatus !== 'good' && (
+            <Badge 
+              variant={healthStatus === 'critical' ? 'destructive' : 'secondary'}
+              className="rounded-full px-2 py-1 flex items-center gap-1 animate-pulse"
+            >
+              <AlertCircle className="h-3 w-3" />
+              {healthStatus === 'critical' ? translations.critical : utilizationRate + '%'}
+            </Badge>
+          )}
         </CardTitle>
-        <button
-          onClick={() => window.location.href = '/assets'}
-          className="text-sm text-primary hover:underline"
-        >
-          {translations.viewAll} →
-        </button>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Total Assets Card */}
+      <CardContent className="p-6 space-y-4">
+        {/* Main Metric */}
         <div 
+          className="cursor-pointer group/main"
           onClick={() => window.location.href = '/assets'}
-          className="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 hover:shadow-md transition-all cursor-pointer"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{translations.totalAssets}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {data?.total || 0}
-                </p>
-                {data?.changes.monthly && (
-                  <Badge variant={data.changes.monthly.startsWith('+') ? 'success' : 'destructive'}>
-                    {data.changes.monthly}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <Package className="h-8 w-8 text-blue-600" />
-          </div>
-        </div>
-
-        {/* Total Value Card */}
-        <div 
-          onClick={() => window.location.href = '/assets'}
-          className="p-3 rounded-lg bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 hover:shadow-md transition-all cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{translations.totalValue}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {formatCurrency(data?.totalValue || 0)}
-              </p>
-            </div>
-            <DollarSign className="h-8 w-8 text-green-600" />
-          </div>
-        </div>
-
-        {/* Laptop Availability */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{translations.laptopStatus}</span>
-            <span className="text-gray-600 dark:text-gray-400">
-              {data?.availableLaptops || 0} / {totalLaptops} {translations.available}
+          <div className="flex items-baseline gap-2">
+            <span className="text-display-small font-bold text-gray-900 dark:text-white group-hover/main:text-secondary-600 transition-colors">
+              {data?.total || 0}
             </span>
+            <span className="text-body-small text-gray-500">{translations.totalAssets}</span>
           </div>
-          <Progress value={laptopAvailabilityPercent} className="h-2" />
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div 
-              onClick={() => window.location.href = '/assets?type=Laptop&status=Available'}
-              className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-green-600" />
-                <span className="text-sm">{translations.available}</span>
-              </div>
-              <span className="font-bold text-green-700 dark:text-green-400">
-                {data?.availableLaptops || 0}
-              </span>
+          
+          {/* Utilization Bar */}
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Utilization</span>
+              <span>{utilizationRate}%</span>
             </div>
-            <div 
-              onClick={() => window.location.href = '/assets?type=Laptop&status=Reserved'}
-              className="flex items-center justify-between p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-yellow-600" />
-                <span className="text-sm">{translations.reserved}</span>
-              </div>
-              <span className="font-bold text-yellow-700 dark:text-yellow-400">
-                {data?.reservedLaptops || 0}
-              </span>
+            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-700 ease-out ${
+                  utilizationRate > 90 ? 'bg-gradient-to-r from-error to-error-dark' :
+                  utilizationRate > 70 ? 'bg-gradient-to-r from-warning to-warning-dark' :
+                  'bg-gradient-to-r from-secondary-400 to-secondary-600'
+                }`}
+                style={{ width: `${utilizationRate}%` }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Maintenance Status */}
-        <div 
-          onClick={() => window.location.href = '/assets?status=Under Maintenance'}
-          className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 cursor-pointer transition-all"
-        >
-          <div className="flex items-center justify-between">
+        {/* Status Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Available */}
+          <div 
+            className="p-3 bg-surface-container-low rounded-xl hover:bg-success-light/50 dark:hover:bg-success/10 transition-all duration-200 cursor-pointer group/item"
+            onClick={() => window.location.href = '/assets?status=Available'}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-label-medium text-gray-600 dark:text-gray-400">
+                {translations.available}
+              </span>
+            </div>
+            <p className="text-title-large font-semibold text-gray-900 dark:text-white">
+              {data?.available || 0}
+            </p>
+          </div>
+
+          {/* In Use */}
+          <div 
+            className="p-3 bg-surface-container-low rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all duration-200 cursor-pointer group/item"
+            onClick={() => window.location.href = '/assets?status=In Use'}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-primary-500" />
+              <span className="text-label-medium text-gray-600 dark:text-gray-400">
+                {translations.inUse}
+              </span>
+            </div>
+            <p className="text-title-large font-semibold text-gray-900 dark:text-white">
+              {data?.inUse || 0}
+            </p>
+          </div>
+        </div>
+
+        {/* Asset Types */}
+        <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          {/* Laptops */}
+          <div 
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-tertiary-50 dark:hover:bg-tertiary-900/10 transition-all duration-200 cursor-pointer"
+            onClick={() => window.location.href = '/assets?type=Laptop'}
+          >
             <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-medium">{translations.underMaintenance}</span>
+              <Laptop className="h-4 w-4 text-tertiary-600" />
+              <span className="text-body-medium">{translations.laptops}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-orange-700 dark:text-orange-400">
-                {data?.underMaintenance || 0}
-              </span>
-              {data?.underMaintenance && data.underMaintenance > 5 && (
-                <Badge variant="destructive" className="animate-pulse text-xs">
-                  HIGH
+              <span className="text-title-medium font-semibold">{data?.laptops || 0}</span>
+              {data?.availableLaptops > 0 && (
+                <Badge variant="secondary" className="rounded-full text-xs">
+                  {data.availableLaptops} free
                 </Badge>
               )}
             </div>
           </div>
+
+          {/* Desktops */}
+          <div 
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all duration-200 cursor-pointer"
+            onClick={() => window.location.href = '/assets?type=Desktop'}
+          >
+            <div className="flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-indigo-600" />
+              <span className="text-body-medium">{translations.desktops}</span>
+            </div>
+            <span className="text-title-medium font-semibold">{data?.desktops || 0}</span>
+          </div>
+
+          {/* Under Maintenance */}
+          {(data?.underMaintenance || 0) > 0 && (
+            <div 
+              className="flex items-center justify-between p-2 rounded-xl bg-warning-light/50 dark:bg-warning/10 hover:bg-warning-light dark:hover:bg-warning/20 transition-all duration-200 cursor-pointer"
+              onClick={() => window.location.href = '/assets?status=Maintenance'}
+            >
+              <div className="flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-warning-text animate-pulse" />
+                <span className="text-body-medium">{translations.maintenance}</span>
+              </div>
+              <Badge variant="secondary" className="rounded-full bg-warning-light text-warning-text">
+                {data?.underMaintenance || 0}
+              </Badge>
+            </div>
+          )}
         </div>
+
+        {/* View All Link */}
+        <button
+          onClick={() => window.location.href = '/assets'}
+          className="w-full mt-4 py-2 text-center text-secondary-600 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-300 text-label-large font-medium rounded-xl hover:bg-secondary-50 dark:hover:bg-secondary-900/10 transition-all duration-200"
+        >
+          {translations.viewAll} →
+        </button>
       </CardContent>
     </Card>
   );

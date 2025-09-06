@@ -1,187 +1,218 @@
 // client/src/components/dashboard/TicketMetrics.tsx
-import { Ticket, AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useLanguage } from '@/hooks/use-language';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Ticket, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
+  Zap
+} from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
 
 interface TicketMetricsProps {
-  data?: {
-    active: number;
-    resolvedThisMonth: number;
-    byPriority: {
-      critical: number;
-      high: number;
-      medium: number;
-      low: number;
-    };
-    changes: {
-      weekly: string;
-    };
-  };
+  data: any;
   isLoading: boolean;
 }
 
 export default function TicketMetrics({ data, isLoading }: TicketMetricsProps) {
   const { language } = useLanguage();
-
+  
   const translations = {
-    ticketOverview: language === 'English' ? 'Ticket Overview' : 'نظرة عامة على التذاكر',
+    tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     activeTickets: language === 'English' ? 'Active Tickets' : 'التذاكر النشطة',
-    resolvedThisMonth: language === 'English' ? 'Resolved This Month' : 'تم حلها هذا الشهر',
-    byPriority: language === 'English' ? 'By Priority' : 'حسب الأولوية',
+    open: language === 'English' ? 'Open' : 'مفتوح',
+    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
+    resolved: language === 'English' ? 'Resolved' : 'محلول',
     critical: language === 'English' ? 'Critical' : 'حرج',
     high: language === 'English' ? 'High' : 'عالي',
     medium: language === 'English' ? 'Medium' : 'متوسط',
     low: language === 'English' ? 'Low' : 'منخفض',
+    resolvedThisMonth: language === 'English' ? 'Resolved This Month' : 'تم حلها هذا الشهر',
+    avgResolutionTime: language === 'English' ? 'Avg Resolution' : 'متوسط الحل',
     viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    fromLastWeek: language === 'English' ? 'from last week' : 'من الأسبوع الماضي',
-    resolutionRate: language === 'English' ? 'Resolution Rate' : 'معدل الحل',
+    hours: language === 'English' ? 'hrs' : 'ساعة',
+  };
+
+  // Calculate resolution rate
+  const resolutionRate = (data?.active && data?.resolvedThisMonth) ? 
+    Math.round((data.resolvedThisMonth / (data.active + data.resolvedThisMonth)) * 100) : 0;
+
+  // Get priority distribution
+  const getPriorityBadge = (priority: string, count: number) => {
+    const variants: Record<string, any> = {
+      critical: { variant: 'destructive', icon: XCircle, animate: true },
+      high: { variant: 'secondary', icon: AlertTriangle, animate: true },
+      medium: { variant: 'outline', icon: Clock, animate: false },
+      low: { variant: 'secondary', icon: CheckCircle, animate: false }
+    };
+    
+    return variants[priority.toLowerCase()] || variants.medium;
   };
 
   if (isLoading) {
     return (
-      <Card className="col-span-1 md:col-span-2 lg:col-span-1">
-        <CardHeader>
-          <Skeleton className="h-6 w-40" />
+      <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+        <CardHeader className="bg-gradient-to-r from-tertiary-50 to-tertiary-100 dark:from-tertiary-900/20 dark:to-tertiary-800/20 rounded-t-2xl">
+          <Skeleton className="h-6 w-32 rounded-full" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+            <Skeleton className="h-12 w-24 rounded-xl" />
+            <Skeleton className="h-4 w-full rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full rounded-xl" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const totalTickets = data?.active || 0;
-  const resolutionRate = totalTickets > 0 && data?.resolvedThisMonth
-    ? Math.round((data.resolvedThisMonth / (totalTickets + data.resolvedThisMonth)) * 100)
-    : 0;
-
-  const priorityColors = {
-    critical: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600', badge: 'destructive' },
-    high: { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600', badge: 'warning' },
-    medium: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600', badge: 'secondary' },
-    low: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600', badge: 'default' },
-  };
-
   return (
-    <Card className="col-span-1 md:col-span-2 lg:col-span-1 hover:shadow-lg transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Ticket className="h-5 w-5 text-accent" />
-          {translations.ticketOverview}
+    <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300 group hover:scale-[1.02]">
+      <CardHeader className="bg-gradient-to-r from-tertiary-50 to-tertiary-100 dark:from-tertiary-900/20 dark:to-tertiary-800/20 rounded-t-2xl">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-tertiary-500 flex items-center justify-center shadow-md3-1 group-hover:scale-110 transition-transform duration-300">
+              <Ticket className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-title-medium">{translations.tickets}</span>
+          </div>
+          {resolutionRate > 0 && (
+            <Badge 
+              variant="secondary"
+              className="rounded-full px-2 py-1 flex items-center gap-1 bg-success-light text-success-text"
+            >
+              <CheckCircle className="h-3 w-3" />
+              {resolutionRate}%
+            </Badge>
+          )}
         </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 space-y-4">
+        {/* Main Metric */}
+        <div 
+          className="cursor-pointer group/main"
+          onClick={() => window.location.href = '/tickets?statusFilter=Open'}
+        >
+          <div className="flex items-baseline gap-2">
+            <span className="text-display-small font-bold text-gray-900 dark:text-white group-hover/main:text-tertiary-600 transition-colors">
+              {data?.active || 0}
+            </span>
+            <span className="text-body-small text-gray-500">{translations.activeTickets}</span>
+          </div>
+          
+          {/* Resolution Progress */}
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Resolution Rate</span>
+              <span>{resolutionRate}%</span>
+            </div>
+            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-tertiary-400 to-tertiary-600 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${resolutionRate}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Priority Distribution */}
+        <div className="grid grid-cols-2 gap-2">
+          {['Critical', 'High', 'Medium', 'Low'].map((priority) => {
+            const count = data?.byPriority?.[priority.toLowerCase()] || 0;
+            const config = getPriorityBadge(priority, count);
+            const Icon = config.icon;
+            
+            return (
+              <div
+                key={priority}
+                className={`p-2 rounded-xl border cursor-pointer transition-all duration-200 hover:scale-105 ${
+                  priority === 'Critical' ? 'border-error-border bg-error-light/30 hover:bg-error-light' :
+                  priority === 'High' ? 'border-warning-border bg-warning-light/30 hover:bg-warning-light' :
+                  priority === 'Medium' ? 'border-primary-200 bg-primary-50/30 hover:bg-primary-50' :
+                  'border-gray-200 bg-gray-50/30 hover:bg-gray-50'
+                } dark:bg-opacity-10`}
+                onClick={() => window.location.href = `/tickets?priorityFilter=${priority}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Icon className={`h-3 w-3 ${
+                      priority === 'Critical' ? 'text-error' :
+                      priority === 'High' ? 'text-warning-text' :
+                      priority === 'Medium' ? 'text-primary-600' :
+                      'text-gray-500'
+                    } ${config.animate ? 'animate-pulse' : ''}`} />
+                    <span className="text-label-small">{translations[priority.toLowerCase() as keyof typeof translations] || priority}</span>
+                  </div>
+                  <span className={`text-title-medium font-bold ${
+                    priority === 'Critical' ? 'text-error' :
+                    priority === 'High' ? 'text-warning-text' :
+                    priority === 'Medium' ? 'text-primary-600' :
+                    'text-gray-700'
+                  }`}>
+                    {count}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Additional Stats */}
+        <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          {/* Resolved This Month */}
+          <div 
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-success-light/50 dark:hover:bg-success/10 transition-all duration-200 cursor-pointer"
+            onClick={() => window.location.href = '/tickets?statusFilter=Resolved'}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <span className="text-body-medium">{translations.resolvedThisMonth}</span>
+            </div>
+            <Badge variant="secondary" className="rounded-full bg-success-light text-success-text">
+              {data?.resolvedThisMonth || 0}
+            </Badge>
+          </div>
+
+          {/* Average Resolution Time */}
+          {data?.avgResolutionTime && (
+            <div className="flex items-center justify-between p-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all duration-200">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-indigo-600" />
+                <span className="text-body-medium">{translations.avgResolutionTime}</span>
+              </div>
+              <Badge variant="outline" className="rounded-full">
+                {data.avgResolutionTime} {translations.hours}
+              </Badge>
+            </div>
+          )}
+
+          {/* Urgent Indicator */}
+          {(data?.byPriority?.critical || 0) > 0 && (
+            <div className="mt-2 p-2 bg-error-light dark:bg-error/10 rounded-xl flex items-center gap-2 animate-pulse">
+              <Zap className="h-4 w-4 text-error" />
+              <span className="text-label-medium text-error-text font-medium">
+                {data.byPriority.critical} critical tickets need attention
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* View All Link */}
         <button
           onClick={() => window.location.href = '/tickets'}
-          className="text-sm text-primary hover:underline"
+          className="w-full mt-4 py-2 text-center text-tertiary-600 hover:text-tertiary-700 dark:text-tertiary-400 dark:hover:text-tertiary-300 text-label-large font-medium rounded-xl hover:bg-tertiary-50 dark:hover:bg-tertiary-900/10 transition-all duration-200"
         >
           {translations.viewAll} →
         </button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Active Tickets */}
-        <div className="grid grid-cols-2 gap-3">
-            <div 
-              onClick={() => window.location.href = '/tickets?statusFilter=Open'}  // Changed from ?status=active
-              className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 hover:shadow-md transition-all cursor-pointer"
-            >
-            <div className="flex items-center justify-between mb-1">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              {data?.changes.weekly && (
-                <span className={`text-xs font-semibold ${data.changes.weekly.startsWith('+') ? 'text-red-600' : 'text-green-600'}`}>
-                  {data.changes.weekly}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{translations.activeTickets}</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {data?.active || 0}
-            </p>
-          </div>
-          
-              <div 
-              onClick={() => window.location.href = '/tickets?statusFilter=Resolved'}  // Changed from ?status=resolved
-              className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 hover:shadow-md transition-all cursor-pointer"
-            >
-            <div className="flex items-center justify-between mb-1">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              {resolutionRate > 0 && (
-                <span className="text-xs font-semibold text-green-600">
-                  {resolutionRate}%
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{translations.resolvedThisMonth}</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {data?.resolvedThisMonth || 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Resolution Rate Progress */}
-        {resolutionRate > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{translations.resolutionRate}</span>
-              <span className="font-semibold">{resolutionRate}%</span>
-            </div>
-            <Progress value={resolutionRate} className="h-2" />
-          </div>
-        )}
-
-        {/* Priority Breakdown */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {translations.byPriority}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(data?.byPriority || {}).map(([priority, count]) => {
-              const colors = priorityColors[priority as keyof typeof priorityColors];
-              return (
-                <div
-                  key={priority}
-                  onClick={() => window.location.href = `/tickets?priority=${priority}`}
-                  className={`p-2 rounded-lg ${colors.bg} hover:opacity-90 cursor-pointer transition-all`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${colors.text}`}>
-                      {translations[priority as keyof typeof translations]}
-                    </span>
-                    <Badge variant={colors.badge as any} className="text-xs">
-                      {count}
-                    </Badge>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Critical Alert */}
-       {Object.entries(data?.byPriority || {}).map(([priority, count]) => {
-        const colors = priorityColors[priority as keyof typeof priorityColors];
-        return (
-          <div
-            key={priority}
-            onClick={() => window.location.href = `/tickets?priorityFilter=${priority}`}
-            className={`p-2 rounded-lg ${colors.bg} hover:opacity-90 cursor-pointer transition-all`}
-          >
-            <div className="flex items-center justify-between">
-              <span className={`text-xs font-medium capitalize ${colors.text}`}>
-                {priority}
-              </span>
-              <span className={`text-lg font-bold ${colors.text}`}>
-                {count}
-              </span>
-            </div>
-          </div>
-        );
-      })}
       </CardContent>
     </Card>
   );

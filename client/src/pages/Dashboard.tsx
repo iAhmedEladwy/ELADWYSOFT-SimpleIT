@@ -24,7 +24,9 @@ import {
   Activity,
   RefreshCw,
   Download,
-  Calendar
+  Calendar,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 // Import new dashboard components
@@ -40,6 +42,9 @@ import Notifications from '@/components/dashboard/Notifications';
 // Import legacy components for backward compatibility
 import StatsCard from '@/components/dashboard/StatsCard';
 import AssetsByType from '@/components/dashboard/AssetsByType';
+
+// Import MD3 styles
+import { MD3 } from '@/styles/material-design';
 
 export default function Dashboard() {
   const { language } = useLanguage();
@@ -84,7 +89,7 @@ export default function Dashboard() {
     refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
-   // ADD THESE HANDLER FUNCTIONS
+  // Handler functions for quick actions
   const handleAddEmployee = () => {
     setShowEmployeeDialog(true);
   };
@@ -97,10 +102,9 @@ export default function Dashboard() {
     setShowTicketDialog(true);
   };
   
-  // ADD THESE SUBMIT HANDLERS
+  // Submit handlers
   const handleEmployeeSubmit = async (data: any) => {
     try {
-      // The EmployeeForm component handles the actual submission
       setShowEmployeeDialog(false);
       toast({
         title: language === 'English' ? 'Success' : 'نجح',
@@ -108,6 +112,7 @@ export default function Dashboard() {
           ? 'Employee added successfully' 
           : 'تمت إضافة الموظف بنجاح',
       });
+      refetch();
     } catch (error) {
       console.error('Error adding employee:', error);
     }
@@ -115,7 +120,6 @@ export default function Dashboard() {
   
   const handleAssetSubmit = async (data: any) => {
     try {
-      // The AssetForm component handles the actual submission
       setShowAssetDialog(false);
       toast({
         title: language === 'English' ? 'Success' : 'نجح',
@@ -123,6 +127,7 @@ export default function Dashboard() {
           ? 'Asset added successfully' 
           : 'تمت إضافة الأصل بنجاح',
       });
+      refetch();
     } catch (error) {
       console.error('Error adding asset:', error);
     }
@@ -130,464 +135,512 @@ export default function Dashboard() {
   
   const handleTicketSubmit = async (data: any) => {
     try {
-      // The TicketForm component handles the actual submission
       setShowTicketDialog(false);
       toast({
         title: language === 'English' ? 'Success' : 'نجح',
         description: language === 'English' 
-          ? 'Ticket created successfully' 
-          : 'تم إنشاء التذكرة بنجاح',
+          ? 'Ticket opened successfully' 
+          : 'تم فتح التذكرة بنجاح',
       });
+      refetch();
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      console.error('Error opening ticket:', error);
     }
   };
 
-  // Handle auto-refresh
+  const handleRefresh = () => {
+    refetch();
+    setLastRefresh(new Date());
+    toast({
+      title: language === 'English' ? 'Dashboard Refreshed' : 'تم تحديث لوحة التحكم',
+      description: language === 'English' 
+        ? 'All data has been updated' 
+        : 'تم تحديث جميع البيانات',
+    });
+  };
+
+  const handleExportData = () => {
+    toast({
+      title: language === 'English' ? 'Exporting Data' : 'تصدير البيانات',
+      description: language === 'English' 
+        ? 'Preparing your dashboard report...' 
+        : 'جاري إعداد تقرير لوحة التحكم...',
+    });
+  };
+
+  // Auto-refresh effect
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         refetch();
         setLastRefresh(new Date());
-      }, 30000); // 30 seconds
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refetch]);
 
-  // Handle manual refresh
-  const handleRefresh = () => {
-    refetch();
-    setLastRefresh(new Date());
-  };
-
-  // Handle export data
-  const handleExportData = () => {
-    const dataStr = JSON.stringify(dashboardData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `dashboard-data-${new Date().toISOString().split('T')[0]}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
-  // Format time since last update
-  const formatTimeSince = (date: Date) => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ago`;
-  };
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
-            {translations.dashboard}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">{translations.welcome}</p>
-        </div>
-        
-        {/* Dashboard Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {translations.lastUpdated}: {formatTimeSince(lastRefresh)}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {translations.refresh}
-          </Button>
-          <Button
-            variant={autoRefresh ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className="gap-2"
-          >
-            <Activity className="h-4 w-4" />
-            {translations.autoRefresh}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportData}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {translations.exportData}
-          </Button>
-        </div>
-      </div>
-
-      {/* Quick Actions Bar */}
-      <QuickActions data={dashboardData?.quickActions} isLoading={isLoading} onAddEmployee={handleAddEmployee} onAddAsset={handleAddAsset} onOpenTicket={handleOpenTicket}/>
-
-      {/* Main Dashboard Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview" className="gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            {translations.overview}
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <TrendingUp className="h-4 w-4" />
-            {translations.analytics}
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="gap-2">
-            <Activity className="h-4 w-4" />
-            {translations.activity}
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            {translations.notifications}
-            {dashboardData?.notifications?.unread > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
-                {dashboardData.notifications.unread}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Main Metrics Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.mainMetrics}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EmployeeMetrics data={dashboardData?.employees} isLoading={isLoading} />
-              <AssetMetrics data={dashboardData?.assets} isLoading={isLoading} />
-              <TicketMetrics data={dashboardData?.tickets} isLoading={isLoading} />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="p-6 space-y-6 animate-fadeIn">
+        {/* Enhanced Header with MD3 Styling */}
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-md3-2 p-6 backdrop-blur-sm bg-opacity-95">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-display-small font-medium bg-gradient-to-r from-indigo-600 to-pink-600 gradient-text">
+                {translations.dashboard}
+              </h1>
+              <p className="text-body-large text-gray-600 dark:text-gray-400 mt-1">
+                {translations.welcome}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-gray-500 dark:text-gray-400 bg-surface-container-low rounded-full px-4 py-2">
+                <Calendar className="inline h-4 w-4 mr-2" />
+                {translations.lastUpdated}: {lastRefresh.toLocaleTimeString()}
+              </div>
+              <Button
+                onClick={handleRefresh}
+                size="sm"
+                className="rounded-full shadow-md3-1 hover:shadow-md3-3 transition-all duration-300 hover:scale-105"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                {translations.refresh}
+              </Button>
+              <Button
+                variant={autoRefresh ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className="rounded-full shadow-md3-1 hover:shadow-md3-3 transition-all duration-300"
+              >
+                <Activity className="h-4 w-4 mr-2" />
+                {translations.autoRefresh}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportData}
+                className="rounded-full shadow-md3-1 hover:shadow-md3-3 transition-all duration-300"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {translations.exportData}
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Department Distribution */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.departmentInsights}
-            </h2>
+        {/* Quick Actions Bar with MD3 Styling */}
+        <div className="animate-slideIn" style={{ animationDelay: '100ms' }}>
+          <QuickActions 
+            data={dashboardData?.quickActions} 
+            isLoading={isLoading} 
+            onAddEmployee={handleAddEmployee} 
+            onAddAsset={handleAddAsset} 
+            onOpenTicket={handleOpenTicket}
+          />
+        </div>
+
+        {/* Main Dashboard Tabs with MD3 Styling */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-surface-container-low rounded-full p-1 inline-flex gap-1 shadow-md3-1">
+            <TabsTrigger 
+              value="overview" 
+              className="rounded-full px-6 py-2.5 transition-all duration-300 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-md3-2 data-[state=inactive]:hover:bg-gray-200 dark:data-[state=inactive]:hover:bg-gray-700"
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              {translations.overview}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="rounded-full px-6 py-2.5 transition-all duration-300 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-md3-2 data-[state=inactive]:hover:bg-gray-200 dark:data-[state=inactive]:hover:bg-gray-700"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              {translations.analytics}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="activity" 
+              className="rounded-full px-6 py-2.5 transition-all duration-300 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-md3-2 data-[state=inactive]:hover:bg-gray-200 dark:data-[state=inactive]:hover:bg-gray-700"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              {translations.activity}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications" 
+              className="relative rounded-full px-6 py-2.5 transition-all duration-300 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-md3-2 data-[state=inactive]:hover:bg-gray-200 dark:data-[state=inactive]:hover:bg-gray-700"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              {translations.notifications}
+              {dashboardData?.notifications?.unread > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs rounded-full animate-bounceIn"
+                >
+                  {dashboardData.notifications.unread}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab with MD3 Enhancements */}
+          <TabsContent value="overview" className="space-y-6 animate-fadeIn">
+            {/* Main Metrics Section */}
+            <div className="bg-surface-container rounded-3xl p-6">
+              <h2 className="text-headline-medium font-medium mb-6 text-gray-800 dark:text-gray-200">
+                {translations.mainMetrics}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="animate-slideIn" style={{ animationDelay: '200ms' }}>
+                  <EmployeeMetrics data={dashboardData?.employees} isLoading={isLoading} />
+                </div>
+                <div className="animate-slideIn" style={{ animationDelay: '300ms' }}>
+                  <AssetMetrics data={dashboardData?.assets} isLoading={isLoading} />
+                </div>
+                <div className="animate-slideIn" style={{ animationDelay: '400ms' }}>
+                  <TicketMetrics data={dashboardData?.tickets} isLoading={isLoading} />
+                </div>
+              </div>
+            </div>
+
+            {/* Department Distribution */}
+            <div className="animate-slideIn" style={{ animationDelay: '500ms' }}>
+              <EnhancedDepartmentDistribution 
+                data={dashboardData?.departmentDistribution} 
+                isLoading={isLoading} 
+              />
+            </div>
+
+            {/* Recent Activity Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="animate-slideIn" style={{ animationDelay: '600ms' }}>
+                <RecentAssets 
+                  assets={dashboardData?.recentAssets || dashboardData?.assets?.recent} 
+                  isLoading={isLoading} 
+                />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '700ms' }}>
+                <RecentTickets 
+                  tickets={dashboardData?.recentTickets || dashboardData?.tickets?.recent} 
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* Maintenance Overview with MD3 Card Styling */}
+            {dashboardData?.maintenance && (
+              <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300 animate-slideIn" style={{ animationDelay: '800ms' }}>
+                <CardHeader className="bg-gradient-to-r from-indigo-50 to-pink-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl">
+                  <CardTitle className="text-title-large">{translations.maintenanceSchedule}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full rounded-xl animate-gentlePulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {Object.entries(dashboardData.maintenance).map(([status, count], index) => (
+                        <div
+                          key={status}
+                          className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md3-3 animate-scaleIn ${
+                            status === 'overdue' ? 'bg-error-light dark:bg-red-900/20' :
+                            status === 'scheduled' ? 'bg-primary-100 dark:bg-primary-900/20' :
+                            status === 'inProgress' ? 'bg-warning-light dark:bg-orange-900/20' :
+                            'bg-success-light dark:bg-green-900/20'
+                          }`}
+                          style={{ animationDelay: `${index * 100}ms` }}
+                          onClick={() => window.location.href = `/assets?maintenanceDue=${status}`}
+                        >
+                          <p className="text-label-large font-medium capitalize">{status}</p>
+                          <p className="text-display-small font-bold mt-2">{count as number}</p>
+                          {status === 'overdue' && (count as number) > 0 && (
+                            <Badge variant="destructive" className="mt-3 animate-pulse rounded-full">
+                              Action Required
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Analytics Tab with MD3 Enhancements */}
+          <TabsContent value="analytics" className="space-y-6 animate-fadeIn">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Asset Distribution by Type */}
+              <div className="animate-slideIn">
+                <AssetsByType 
+                  assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
+                  isLoading={isLoading}
+                />
+              </div>
+              
+              {/* Enhanced Stats Cards with MD3 */}
+              <div className="space-y-4">
+                <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+                  <CardHeader className="bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl">
+                    <CardTitle className="text-title-large">Key Performance Indicators</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 p-6">
+                    {isLoading ? (
+                      [...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl hover:shadow-md3-1 transition-all">
+                          <span className="text-body-medium font-medium">Asset Utilization Rate</span>
+                          <Badge className="rounded-full bg-primary-100 text-primary-700">
+                            {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
+                              ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
+                              : '0%'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-success-light dark:bg-green-900/20 rounded-2xl hover:shadow-md3-1 transition-all">
+                          <span className="text-body-medium font-medium">Ticket Resolution Rate</span>
+                          <Badge className="rounded-full bg-success-light text-success-text">
+                            {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
+                              ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
+                              : '0%'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-tertiary-100 dark:bg-teal-900/20 rounded-2xl hover:shadow-md3-1 transition-all">
+                          <span className="text-body-medium font-medium">New Hire Onboarding</span>
+                          <Badge className="rounded-full bg-tertiary-100 text-tertiary-700">
+                            {dashboardData?.employees?.newThisMonth || 0} this month
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-warning-light dark:bg-orange-900/20 rounded-2xl hover:shadow-md3-1 transition-all">
+                          <span className="text-body-medium font-medium">Assets Needing Attention</span>
+                          <Badge 
+                            variant={dashboardData?.maintenance?.overdue > 0 ? 'destructive' : 'secondary'}
+                            className="rounded-full"
+                          >
+                            {(dashboardData?.maintenance?.overdue || 0) + (dashboardData?.assets?.underMaintenance || 0)}
+                          </Badge>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Department Distribution for Analytics */}
             <EnhancedDepartmentDistribution 
               data={dashboardData?.departmentDistribution} 
               isLoading={isLoading} 
             />
-          </div>
+          </TabsContent>
 
-          {/* Recent Activity Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.recentActivity}
-            </h2>
+          {/* Activity Tab with MD3 Timeline */}
+          <TabsContent value="activity" className="space-y-6 animate-fadeIn">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RecentAssets 
-                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
-                isLoading={isLoading}
-              />
-              <RecentTickets 
-                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* Maintenance Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">
-                {translations.maintenanceSchedule}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-24 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {Object.entries(dashboardData?.maintenance || {}).map(([status, count]) => (
-                    <div
-                      key={status}
-                      className={`p-4 rounded-lg cursor-pointer transition-all hover:shadow-md
-                        ${status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' :
-                          status === 'scheduled' ? 'bg-blue-50 dark:bg-blue-900/20' :
-                          status === 'inProgress' ? 'bg-orange-50 dark:bg-orange-900/20' :
-                          'bg-green-50 dark:bg-green-900/20'}`}
-                      onClick={() => window.location.href = `/assets?maintenanceDue=${status}`}
-                    >
-                      <p className="text-sm font-medium capitalize">{status}</p>
-                      <p className="text-2xl font-bold mt-1">{count as number}</p>
-                      {status === 'overdue' && (count as number) > 0 && (
-                        <Badge variant="destructive" className="mt-2 animate-pulse">
-                          Action Required
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Asset Distribution by Type */}
-            <AssetsByType 
-              assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
-              isLoading={isLoading}
-            />
-            
-            {/* Enhanced Stats Cards */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Key Performance Indicators</CardTitle>
+              {/* Recent Assets with enhanced styling */}
+              <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+                <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl">
+                  <CardTitle className="text-title-large">Recently Updated Assets</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="p-6">
                   {isLoading ? (
-                    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                    <div className="space-y-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                      ))}
+                    </div>
+                  ) : dashboardData?.recentAssets?.length > 0 ? (
+                    <div className="space-y-3">
+                      {dashboardData.recentAssets.slice(0, 5).map((asset: any, index: number) => (
+                        <div 
+                          key={asset.id} 
+                          className="p-4 bg-surface-container-low rounded-2xl hover:shadow-md3-2 transition-all duration-300 cursor-pointer hover:scale-[1.02] animate-slideIn"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                          onClick={() => window.location.href = `/assets/${asset.id}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-body-large">{asset.assetTag}</p>
+                              <p className="text-body-small text-gray-500">{asset.type} - {asset.brand}</p>
+                            </div>
+                            <Badge 
+                              className="rounded-full"
+                              variant={
+                                asset.status === 'Available' ? 'default' :
+                                asset.status === 'In Use' ? 'secondary' :
+                                'outline'
+                              }
+                            >
+                              {asset.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <>
-                      <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Asset Utilization Rate</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
-                            ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
-                            : '0%'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Ticket Resolution Rate</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
-                            ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
-                            : '0%'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <span className="text-sm font-medium">New Hire Onboarding</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.employees?.newThisMonth || 0} this month
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Assets Needing Attention</span>
-                        <Badge variant={dashboardData?.maintenance?.overdue > 0 ? 'destructive' : 'secondary'}>
-                          {(dashboardData?.maintenance?.overdue || 0) + (dashboardData?.assets?.underMaintenance || 0)}
-                        </Badge>
-                      </div>
-                    </>
+                    <p className="text-center text-gray-500 py-8">No recent assets</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Tickets with enhanced styling */}
+              <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+                <CardHeader className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl">
+                  <CardTitle className="text-title-large">Recent Tickets</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                      ))}
+                    </div>
+                  ) : dashboardData?.recentTickets?.length > 0 ? (
+                    <div className="space-y-3">
+                      {dashboardData.recentTickets.slice(0, 5).map((ticket: any, index: number) => (
+                        <div 
+                          key={ticket.id} 
+                          className="p-4 bg-surface-container-low rounded-2xl hover:shadow-md3-2 transition-all duration-300 cursor-pointer hover:scale-[1.02] animate-slideIn"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                          onClick={() => window.location.href = `/tickets/${ticket.id}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="font-medium text-body-large">{ticket.title}</p>
+                              <p className="text-body-small text-gray-500">{ticket.category}</p>
+                            </div>
+                            <Badge 
+                              variant={
+                                ticket.priority === 'Critical' ? 'destructive' :
+                                ticket.priority === 'High' ? 'warning' :
+                                'secondary'
+                              }
+                              className="rounded-full ml-2"
+                            >
+                              {ticket.priority}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-8">No recent tickets</p>
                   )}
                 </CardContent>
               </Card>
             </div>
-          </div>
 
-          {/* Department Distribution (repeated for analytics) */}
-          <EnhancedDepartmentDistribution 
-            data={dashboardData?.departmentDistribution} 
-            isLoading={isLoading} 
-          />
-        </TabsContent>
-
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Assets with more details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recently Updated Assets</CardTitle>
+            {/* Activity Timeline with MD3 Styling */}
+            <Card className="rounded-2xl shadow-md3-2 hover:shadow-md3-3 transition-all duration-300">
+              <CardHeader className="bg-gradient-to-r from-tertiary-50 to-teal-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl">
+                <CardTitle className="text-title-large">Activity Timeline</CardTitle>
               </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(dashboardData?.assets?.recentlyUpdated || []).slice(0, 10).map((asset: any) => (
-                      <div
-                        key={asset.id}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => window.location.href = `/assets/${asset.id}`}
-                      >
-                        <div>
-                          <p className="font-medium">{asset.assetId}</p>
-                          <p className="text-sm text-gray-500">{asset.type} - {asset.status}</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {new Date(asset.updatedAt).toLocaleDateString()}
-                        </Badge>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-200 via-secondary-200 to-tertiary-200"></div>
+                      <div className="space-y-6">
+                        {dashboardData?.employees?.newThisMonth > 0 && (
+                          <div className="flex gap-4 animate-slideIn">
+                            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center shadow-md3-1">
+                              <div className="w-3 h-3 rounded-full bg-primary-500 animate-pulse"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-body-large">{dashboardData.employees.newThisMonth} new employees joined</p>
+                              <p className="text-body-small text-gray-500">{translations.thisMonth}</p>
+                            </div>
+                          </div>
+                        )}
+                        {dashboardData?.tickets?.resolvedThisMonth > 0 && (
+                          <div className="flex gap-4 animate-slideIn" style={{ animationDelay: '100ms' }}>
+                            <div className="w-8 h-8 rounded-full bg-success-light dark:bg-green-900 flex items-center justify-center shadow-md3-1">
+                              <div className="w-3 h-3 rounded-full bg-success animate-pulse"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-body-large">{dashboardData.tickets.resolvedThisMonth} tickets resolved</p>
+                              <p className="text-body-small text-gray-500">{translations.thisMonth}</p>
+                            </div>
+                          </div>
+                        )}
+                        {dashboardData?.maintenance?.overdue > 0 && (
+                          <div className="flex gap-4 animate-slideIn" style={{ animationDelay: '200ms' }}>
+                            <div className="w-8 h-8 rounded-full bg-error-light dark:bg-red-900 flex items-center justify-center shadow-md3-1">
+                              <div className="w-3 h-3 rounded-full bg-error animate-pulse"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-body-large">{dashboardData.maintenance.overdue} assets overdue for maintenance</p>
+                              <p className="text-body-small text-gray-500">Immediate attention required</p>
+                            </div>
+                          </div>
+                        )}
+                        {dashboardData?.assets?.newThisMonth > 0 && (
+                          <div className="flex gap-4 animate-slideIn" style={{ animationDelay: '300ms' }}>
+                            <div className="w-8 h-8 rounded-full bg-tertiary-100 dark:bg-teal-900 flex items-center justify-center shadow-md3-1">
+                              <div className="w-3 h-3 rounded-full bg-tertiary-500 animate-pulse"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-body-large">{dashboardData.assets.newThisMonth} new assets added</p>
+                              <p className="text-body-small text-gray-500">{translations.thisMonth}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent Tickets with more details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recent Ticket Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(dashboardData?.tickets?.recent || dashboardData?.recentTickets || []).map((ticket: any) => (
-                      <div
-                        key={ticket.id}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => window.location.href = `/tickets/${ticket.id}`}
-                      >
-                        <div>
-                          <p className="font-medium">#{ticket.ticketId}</p>
-                          <p className="text-sm text-gray-500">{ticket.priority} - {ticket.status}</p>
-                        </div>
-                        <Badge 
-                          variant={
-                            ticket.priority === 'Critical' ? 'destructive' :
-                            ticket.priority === 'High' ? 'warning' :
-                            'secondary'
-                          }
-                          className="text-xs"
-                        >
-                          {ticket.priority}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Activity Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Activity Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                ) : (
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    {/* Sample timeline items - you can populate with real data */}
-                    <div className="space-y-4">
-                      {dashboardData?.employees?.newThisMonth > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.employees.newThisMonth} new employees joined</p>
-                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.tickets?.resolvedThisMonth > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.tickets.resolvedThisMonth} tickets resolved</p>
-                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.maintenance?.overdue > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.maintenance.overdue} assets have overdue maintenance</p>
-                            <p className="text-sm text-gray-500">{translations.today}</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <Notifications />
-        </TabsContent>
-      </Tabs>
+          {/* Notifications Tab with MD3 Styling */}
+          <TabsContent value="notifications" className="animate-fadeIn">
+            <Notifications 
+              notifications={dashboardData?.notifications} 
+              isLoading={isLoading} 
+            />
+          </TabsContent>
+        </Tabs>
 
-       {/* Employee Dialog */}
-      <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
-            </DialogTitle>
-          </DialogHeader>
-          <EmployeeForm
-            onSubmit={handleEmployeeSubmit}
-            onCancel={() => setShowEmployeeDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Asset Dialog */}
-      <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
-            </DialogTitle>
-          </DialogHeader>
-          <AssetForm
-            onSubmit={handleAssetSubmit}
-            onCancel={() => setShowAssetDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Ticket Dialog */}
-      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
-            </DialogTitle>
-          </DialogHeader>
-          <TicketForm
-            mode="create"
-            onSubmit={handleTicketSubmit}
-            onCancel={() => setShowTicketDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Dialogs for Quick Actions - Preserved Original Functionality */}
+        <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
+          <DialogContent className="rounded-3xl shadow-md3-4">
+            <DialogHeader>
+              <DialogTitle className="text-headline-small">Add New Employee</DialogTitle>
+            </DialogHeader>
+            <EmployeeForm 
+              onSubmit={handleEmployeeSubmit}
+              onCancel={() => setShowEmployeeDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
+          <DialogContent className="rounded-3xl shadow-md3-4">
+            <DialogHeader>
+              <DialogTitle className="text-headline-small">Add New Asset</DialogTitle>
+            </DialogHeader>
+            <AssetForm 
+              onSubmit={handleAssetSubmit}
+              onCancel={() => setShowAssetDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
+          <DialogContent className="rounded-3xl shadow-md3-4">
+            <DialogHeader>
+              <DialogTitle className="text-headline-small">Open New Ticket</DialogTitle>
+            </DialogHeader>
+            <TicketForm 
+              onSubmit={handleTicketSubmit}
+              onCancel={() => setShowTicketDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
-} 
+}

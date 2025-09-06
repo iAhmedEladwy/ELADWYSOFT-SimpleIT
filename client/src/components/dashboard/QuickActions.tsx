@@ -1,160 +1,238 @@
-import { Plus, Ticket, UserPlus, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+// client/src/components/dashboard/QuickActions.tsx
+
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/hooks/use-language';
 import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  UserPlus, 
+  Package, 
+  TicketPlus,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
 
 interface QuickActionsProps {
-  data?: {
-    canAddEmployee: boolean;
-    canAddAsset: boolean;
-    canOpenTicket: boolean;
-    pendingActions: {
-      employeesNeedToReturnAssets: number; // New clear name
-      assetsNeedingMaintenance: number;
-      ticketsNearingSLA: number;
-    };
-  };
+  data?: any;
   isLoading: boolean;
   onAddEmployee?: () => void;
   onAddAsset?: () => void;
   onOpenTicket?: () => void;
 }
 
-export default function QuickActions({ data, isLoading,  onAddEmployee, onAddAsset, onOpenTicket }: QuickActionsProps) {
+export default function QuickActions({ 
+  data, 
+  isLoading,
+  onAddEmployee,
+  onAddAsset,
+  onOpenTicket 
+}: QuickActionsProps) {
   const { language } = useLanguage();
-
+  
   const translations = {
     quickActions: language === 'English' ? 'Quick Actions' : 'إجراءات سريعة',
     addEmployee: language === 'English' ? 'Add Employee' : 'إضافة موظف',
     addAsset: language === 'English' ? 'Add Asset' : 'إضافة أصل',
     openTicket: language === 'English' ? 'Open Ticket' : 'فتح تذكرة',
-    pendingAlerts: language === 'English' ? 'Pending Alerts' : 'تنبيهات معلقة',
-    employeesNeedToReturn: language === 'English' ? 'Employees must return assets' : 'موظفون يجب عليهم إرجاع الأصول',
-    assetsNeedMaintenance: language === 'English' ? 'Assets need maintenance' : 'أصول تحتاج صيانة',
-    ticketsNearSLA: language === 'English' ? 'Tickets near SLA' : 'تذاكر قريبة من SLA',
+    pendingActions: language === 'English' ? 'Pending Actions' : 'إجراءات معلقة',
+    approvals: language === 'English' ? 'Approvals' : 'الموافقات',
+    maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
+    reviews: language === 'English' ? 'Reviews' : 'المراجعات',
+    new: language === 'English' ? 'New' : 'جديد',
+    urgent: language === 'English' ? 'Urgent' : 'عاجل',
+    pending: language === 'English' ? 'Pending' : 'معلق',
   };
 
-  const actions = [
+  const quickActionItems = [
     {
-      label: translations.addEmployee,
+      id: 'add-employee',
+      title: translations.addEmployee,
       icon: UserPlus,
-      onClick: () => onAddEmployee?.(),
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100',
-      disabled: !data?.canAddEmployee || !onAddEmployee,
+      color: 'primary',
+      gradient: 'from-primary-400 to-primary-600',
+      bgHover: 'hover:bg-primary-50 dark:hover:bg-primary-900/20',
+      onClick: onAddEmployee || (() => {}),
+      badge: translations.new,
+      badgeColor: 'bg-primary-100 text-primary-700'
     },
     {
-      label: translations.addAsset,
-      icon: Plus,
-      onClick: () => onAddAsset?.(),
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 hover:bg-green-100',
-      disabled: !data?.canAddAsset || !onAddAsset,
+      id: 'add-asset',
+      title: translations.addAsset,
+      icon: Package,
+      color: 'secondary',
+      gradient: 'from-secondary-400 to-secondary-600',
+      bgHover: 'hover:bg-secondary-50 dark:hover:bg-secondary-900/20',
+      onClick: onAddAsset || (() => {}),
+      badge: null
     },
     {
-      label: translations.openTicket,
-      icon: Ticket,
-      onClick: () => onOpenTicket?.(),
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 hover:bg-purple-100',
-      disabled: !data?.canOpenTicket || !onOpenTicket,
-    },
+      id: 'open-ticket',
+      title: translations.openTicket,
+      icon: TicketPlus,
+      color: 'tertiary',
+      gradient: 'from-tertiary-400 to-tertiary-600',
+      bgHover: 'hover:bg-tertiary-50 dark:hover:bg-tertiary-900/20',
+      onClick: onOpenTicket || (() => {}),
+      badge: null
+    }
   ];
 
-const totalPendingActions = data ? 
-  (data.pendingActions.employeesNeedToReturnAssets + 
-   data.pendingActions.assetsNeedingMaintenance + 
-   data.pendingActions.ticketsNearingSLA) : 0;
+  const pendingActionItems = [
+    {
+      id: 'approvals',
+      title: translations.approvals,
+      count: data?.pendingApprovals || 0,
+      icon: CheckCircle,
+      color: 'warning',
+      url: '/tickets?status=pending-approval',
+      urgent: (data?.pendingApprovals || 0) > 5
+    },
+    {
+      id: 'maintenance',
+      title: translations.maintenance,
+      count: data?.pendingMaintenance || 0,
+      icon: Clock,
+      color: 'error',
+      url: '/assets?maintenanceDue=overdue',
+      urgent: (data?.pendingMaintenance || 0) > 0
+    },
+    {
+      id: 'reviews',
+      title: translations.reviews,
+      count: data?.pendingReviews || 0,
+      icon: AlertCircle,
+      color: 'info',
+      url: '/tickets?status=review',
+      urgent: false
+    }
+  ];
 
   if (isLoading) {
     return (
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-8 w-32" />
-            <div className="flex gap-2">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-10 w-32" />
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-32 rounded-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="mb-6 border-none shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {translations.quickActions}
-            </h3>
-            {totalPendingActions > 0 && (
-              <Badge variant="destructive" className="animate-pulse">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                {totalPendingActions} {translations.pendingAlerts}
-              </Badge>
-            )}
-          </div>
+    <div className="space-y-4">
+      {/* Section Title */}
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-primary-500 animate-pulse" />
+        <h2 className="text-headline-small font-medium text-gray-800 dark:text-gray-200">
+          {translations.quickActions}
+        </h2>
+      </div>
+
+      {/* Quick Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {quickActionItems.map((action, index) => {
+          const Icon = action.icon;
+          return (
+            <Card
+              key={action.id}
+              className={`relative overflow-hidden rounded-2xl border-0 shadow-md3-1 hover:shadow-md3-3 transition-all duration-300 cursor-pointer hover:scale-[1.02] animate-slideIn ${action.bgHover}`}
+              style={{ animationDelay: `${index * 100}ms` }}
+              onClick={action.onClick}
+            >
+              {/* Background Gradient */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-5`} />
+              
+              {/* Content */}
+              <div className="relative p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md3-2 transform transition-transform duration-300 hover:scale-110 hover:rotate-3`}>
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  {action.badge && (
+                    <Badge className={`rounded-full text-xs ${action.badgeColor} animate-bounceIn`}>
+                      {action.badge}
+                    </Badge>
+                  )}
+                </div>
+                
+                <h3 className="text-title-medium font-medium text-gray-900 dark:text-white mb-2">
+                  {action.title}
+                </h3>
+                
+                <div className="flex items-center gap-1 text-body-small text-gray-500 dark:text-gray-400 group">
+                  <span>Click to {action.title.toLowerCase()}</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </div>
+              </div>
+              
+              {/* Hover Effect Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Pending Actions Section */}
+      {pendingActionItems.some(item => item.count > 0) && (
+        <div className="mt-6 space-y-3">
+          <h3 className="text-title-medium font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-warning" />
+            {translations.pendingActions}
+          </h3>
           
-          <div className="flex flex-wrap gap-2">
-            {actions.map((action, index) => {
-              const Icon = action.icon;
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {pendingActionItems.map((item, index) => {
+              if (item.count === 0) return null;
+              
+              const Icon = item.icon;
               return (
-                <Button
-                  key={index}
-                  onClick={action.onClick}
-                  disabled={action.disabled}
-                  className={`${action.bgColor} ${action.color} border-none hover:shadow-md transition-all`}
-                  variant="outline"
+                <div
+                  key={item.id}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md3-2 animate-slideIn ${
+                    item.urgent 
+                      ? 'border-error-border bg-error-light/30 dark:bg-error/5' 
+                      : 'border-gray-200 bg-white dark:bg-gray-800'
+                  }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => window.location.href = item.url}
                 >
-                  <Icon className="h-4 w-4 mr-2" />
-                  {action.label}
-                </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        item.urgent 
+                          ? 'bg-error-light dark:bg-error/20' 
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}>
+                        <Icon className={`h-5 w-5 ${
+                          item.urgent ? 'text-error animate-pulse' : 'text-gray-600 dark:text-gray-400'
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="text-label-large font-medium text-gray-900 dark:text-white">
+                          {item.title}
+                        </p>
+                        <p className="text-body-small text-gray-500 dark:text-gray-400">
+                          {item.count} {translations.pending.toLowerCase()}
+                        </p>
+                      </div>
+                    </div>
+                    {item.urgent && (
+                      <Badge variant="destructive" className="rounded-full animate-pulse">
+                        {translations.urgent}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
-
-        {/* Pending Actions Alert Bar */}
-        {data && totalPendingActions > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex flex-wrap gap-4 text-sm">
-            {data.pendingActions.employeesNeedToReturnAssets > 0 && (
-              <div 
-                className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
-              onClick={() => window.location.href = '/employees?customFilter=offboardedWithAssets'}
-              >
-                <AlertCircle className="h-4 w-4" />
-                <span>{data.pendingActions.employeesNeedToReturnAssets} {translations.employeesNeedToReturn}</span>
-              </div>
-              )}
-              {data.pendingActions.assetsNeedingMaintenance > 0 && (
-                <div 
-                  className="flex items-center gap-2 text-yellow-600 cursor-pointer hover:text-yellow-700"
-                  onClick={() => window.location.href = '/assets?maintenanceDue=scheduled'}
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{data.pendingActions.assetsNeedingMaintenance} {translations.assetsNeedMaintenance}</span>
-                </div>
-              )}
-              {data.pendingActions.ticketsNearingSLA > 0 && (
-                <div 
-                  className="flex items-center gap-2 text-red-600 cursor-pointer hover:text-red-700"
-                  onClick={() => window.location.href = '/tickets?statusFilter=Open'}
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{data.pendingActions.ticketsNearingSLA} {translations.ticketsNearSLA}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }
