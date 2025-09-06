@@ -402,26 +402,6 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Upcoming Onboardings Card */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Upcoming Onboardings</p>
-                      <p className="text-2xl font-bold mt-1">
-                        {isLoading ? '...' : dashboardData?.employees?.upcomingOnboardings || 0}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        Next 30 days
-                      </p>
-                    </div>
-                    <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                      <CalendarCheck className="h-6 w-6 text-indigo-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
 
