@@ -24,7 +24,8 @@ import {
   Activity,
   RefreshCw,
   Download,
-  Calendar
+  Calendar,
+  BarChart3
 } from 'lucide-react';
 
 // Import new dashboard components
@@ -59,6 +60,7 @@ export default function Dashboard() {
       ? 'IT Asset Management System - Real-time Overview' 
       : 'نظام إدارة أصول تكنولوجيا المعلومات - نظرة عامة في الوقت الفعلي',
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
+    insights: language === 'English' ? 'Insights' : 'رؤى',
     analytics: language === 'English' ? 'Analytics' : 'التحليلات',
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
     activity: language === 'English' ? 'Activity' : 'النشاط',
@@ -76,6 +78,9 @@ export default function Dashboard() {
     today: language === 'English' ? 'Today' : 'اليوم',
     thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
     thisMonth: language === 'English' ? 'This Month' : 'هذا الشهر',
+    quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
+    keyPerformanceIndicators: language === 'English' ? 'Key Performance Indicators' : 'مؤشرات الأداء الرئيسية',
+    activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
   };
 
   // Fetch dashboard data with enhanced endpoint
@@ -84,7 +89,7 @@ export default function Dashboard() {
     refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
-   // ADD THESE HANDLER FUNCTIONS
+  // ADD THESE HANDLER FUNCTIONS
   const handleAddEmployee = () => {
     setShowEmployeeDialog(true);
   };
@@ -143,66 +148,58 @@ export default function Dashboard() {
     }
   };
 
-  // Handle auto-refresh
+  // Handle refresh
+  const handleRefresh = () => {
+    setLastRefresh(new Date());
+    refetch();
+    toast({
+      title: language === 'English' ? 'Refreshed' : 'تم التحديث',
+      description: language === 'English' 
+        ? 'Dashboard data has been updated' 
+        : 'تم تحديث بيانات لوحة التحكم',
+    });
+  };
+
+  // Handle export
+  const handleExportData = () => {
+    // TODO: Implement export functionality
+    toast({
+      title: language === 'English' ? 'Export' : 'تصدير',
+      description: language === 'English' 
+        ? 'Export feature coming soon' 
+        : 'ميزة التصدير قادمة قريباً',
+    });
+  };
+
+  // Auto-refresh effect
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
-        refetch();
         setLastRefresh(new Date());
-      }, 30000); // 30 seconds
+        refetch();
+      }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refetch]);
 
-  // Handle manual refresh
-  const handleRefresh = () => {
-    refetch();
-    setLastRefresh(new Date());
-  };
-
-  // Handle export data
-  const handleExportData = () => {
-    const dataStr = JSON.stringify(dashboardData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `dashboard-data-${new Date().toISOString().split('T')[0]}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
-  // Format time since last update
-  const formatTimeSince = (date: Date) => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ago`;
-  };
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="flex flex-col gap-6 animate-fadeIn">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
-            {translations.dashboard}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">{translations.welcome}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{translations.dashboard}</h1>
+          <p className="text-muted-foreground mt-1">
+            {translations.welcome}
+          </p>
         </div>
-        
-        {/* Dashboard Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {translations.lastUpdated}: {formatTimeSince(lastRefresh)}
-          </Badge>
+        <div className="flex flex-wrap gap-2">
+          <div className="text-sm text-muted-foreground">
+            {translations.lastUpdated}: {lastRefresh.toLocaleTimeString()}
+          </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isLoading}
             className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -230,22 +227,24 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions Bar */}
-      <QuickActions data={dashboardData?.quickActions} isLoading={isLoading} onAddEmployee={handleAddEmployee} onAddAsset={handleAddAsset} onOpenTicket={handleOpenTicket}/>
+      <QuickActions 
+        data={dashboardData?.quickActions} 
+        isLoading={isLoading} 
+        onAddEmployee={handleAddEmployee} 
+        onAddAsset={handleAddAsset} 
+        onOpenTicket={handleOpenTicket}
+      />
 
-      {/* Main Dashboard Tabs */}
+      {/* Main Dashboard Tabs - Updated with new structure */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             {translations.overview}
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <TrendingUp className="h-4 w-4" />
-            {translations.analytics}
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="gap-2">
-            <Activity className="h-4 w-4" />
-            {translations.activity}
+          <TabsTrigger value="insights" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            {translations.insights}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
@@ -258,49 +257,184 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
+        {/* New Overview Tab - Simple summary view */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Main Metrics Section */}
+          {/* Quick Summary Section */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.mainMetrics}
+              {translations.quickSummary}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <EmployeeMetrics data={dashboardData?.employees} isLoading={isLoading} />
-              <AssetMetrics data={dashboardData?.assets} isLoading={isLoading} />
-              <TicketMetrics data={dashboardData?.tickets} isLoading={isLoading} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Total Employees Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.employees?.total || 0}
+                      </p>
+                      {dashboardData?.employees?.newThisMonth > 0 && (
+                        <p className="text-xs text-green-600 mt-1">
+                          +{dashboardData.employees.newThisMonth} this month
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Total Assets Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Assets</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.assets?.total || 0}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {dashboardData?.assets?.availableLaptops || 0} available
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Active Tickets Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Active Tickets</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.tickets?.active || 0}
+                      </p>
+                      <p className="text-xs text-orange-600 mt-1">
+                        {dashboardData?.tickets?.critical || 0} critical
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Maintenance Due Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : (dashboardData?.maintenance?.overdue || 0) + (dashboardData?.maintenance?.scheduled || 0)}
+                      </p>
+                      {dashboardData?.maintenance?.overdue > 0 && (
+                        <p className="text-xs text-red-600 mt-1">
+                          {dashboardData.maintenance.overdue} overdue
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* Department Distribution */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.departmentInsights}
-            </h2>
-            <EnhancedDepartmentDistribution 
-              data={dashboardData?.departmentDistribution} 
-              isLoading={isLoading} 
+          {/* Key Performance Indicators */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">{translations.keyPerformanceIndicators}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Asset Utilization</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{
+                          width: `${dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
+                            ? Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
+                        ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
+                        : '0%'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Ticket Resolution</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{
+                          width: `${dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
+                            ? Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
+                        ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
+                        : '0%'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Department Coverage</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-purple-600 h-2 rounded-full"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {dashboardData?.departmentDistribution?.length || 0} Depts
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">System Health</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-orange-600 h-2 rounded-full"
+                        style={{ width: '85%' }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">85%</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RecentAssets 
+              assets={dashboardData?.assets?.recentlyUpdated?.slice(0, 3) || dashboardData?.recentAssets?.slice(0, 3) || []} 
+              isLoading={isLoading}
+            />
+            <RecentTickets 
+              tickets={dashboardData?.tickets?.recent?.slice(0, 3) || dashboardData?.recentTickets?.slice(0, 3) || []} 
+              isLoading={isLoading}
             />
           </div>
+        </TabsContent>
 
-          {/* Recent Activity Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.recentActivity}
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RecentAssets 
-                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
-                isLoading={isLoading}
-              />
-              <RecentTickets 
-                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* Maintenance Overview */}
+        {/* Insights Tab (formerly Overview) - Detailed view */}
+        <TabsContent value="insights" className="space-y-6">
+          {/* Maintenance Overview - Moved to top */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">
@@ -339,153 +473,37 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
+          {/* Main Metrics Section */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.mainMetrics}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <EmployeeMetrics data={dashboardData?.employees} isLoading={isLoading} />
+              <AssetMetrics data={dashboardData?.assets} isLoading={isLoading} />
+              <TicketMetrics data={dashboardData?.tickets} isLoading={isLoading} />
+            </div>
+          </div>
+
+          {/* Asset Distribution by Type - Moved from Analytics */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Asset Distribution by Type */}
             <AssetsByType 
               assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
               isLoading={isLoading}
             />
             
-            {/* Enhanced Stats Cards */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Key Performance Indicators</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {isLoading ? (
-                    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                  ) : (
-                    <>
-                      <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Asset Utilization Rate</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
-                            ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
-                            : '0%'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Ticket Resolution Rate</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
-                            ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
-                            : '0%'}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <span className="text-sm font-medium">New Hire Onboarding</span>
-                        <Badge variant="secondary">
-                          {dashboardData?.employees?.newThisMonth || 0} this month
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <span className="text-sm font-medium">Assets Needing Attention</span>
-                        <Badge variant={dashboardData?.maintenance?.overdue > 0 ? 'destructive' : 'secondary'}>
-                          {(dashboardData?.maintenance?.overdue || 0) + (dashboardData?.assets?.underMaintenance || 0)}
-                        </Badge>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            {/* Department Distribution */}
+            <EnhancedDepartmentDistribution 
+              data={dashboardData?.departmentDistribution} 
+              isLoading={isLoading} 
+            />
           </div>
 
-          {/* Department Distribution (repeated for analytics) */}
-          <EnhancedDepartmentDistribution 
-            data={dashboardData?.departmentDistribution} 
-            isLoading={isLoading} 
-          />
-        </TabsContent>
-
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Assets with more details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recently Updated Assets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(dashboardData?.assets?.recentlyUpdated || []).slice(0, 10).map((asset: any) => (
-                      <div
-                        key={asset.id}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => window.location.href = `/assets/${asset.id}`}
-                      >
-                        <div>
-                          <p className="font-medium">{asset.assetId}</p>
-                          <p className="text-sm text-gray-500">{asset.type} - {asset.status}</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {new Date(asset.updatedAt).toLocaleDateString()}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent Tickets with more details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recent Ticket Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(dashboardData?.tickets?.recent || dashboardData?.recentTickets || []).map((ticket: any) => (
-                      <div
-                        key={ticket.id}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                        onClick={() => window.location.href = `/tickets/${ticket.id}`}
-                      >
-                        <div>
-                          <p className="font-medium">#{ticket.ticketId}</p>
-                          <p className="text-sm text-gray-500">{ticket.priority} - {ticket.status}</p>
-                        </div>
-                        <Badge 
-                          variant={
-                            ticket.priority === 'Critical' ? 'destructive' :
-                            ticket.priority === 'High' ? 'warning' :
-                            'secondary'
-                          }
-                          className="text-xs"
-                        >
-                          {ticket.priority}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Activity Timeline */}
+          {/* Activity Timeline - Moved from Activity tab */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Activity Timeline</CardTitle>
+              <CardTitle className="text-lg">{translations.activityTimeline}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -494,7 +512,6 @@ export default function Dashboard() {
                 ) : (
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    {/* Sample timeline items - you can populate with real data */}
                     <div className="space-y-4">
                       {dashboardData?.employees?.newThisMonth > 0 && (
                         <div className="flex gap-4">
@@ -524,7 +541,29 @@ export default function Dashboard() {
                             <div className="w-2 h-2 rounded-full bg-red-600"></div>
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium">{dashboardData.maintenance.overdue} assets have overdue maintenance</p>
+                            <p className="font-medium">{dashboardData.maintenance.overdue} assets overdue for maintenance</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.assets?.underMaintenance > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-orange-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.assets.underMaintenance} assets under maintenance</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.tickets?.critical > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-purple-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.tickets.critical} critical tickets pending</p>
                             <p className="text-sm text-gray-500">{translations.today}</p>
                           </div>
                         </div>
@@ -535,59 +574,78 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Recent Activity Section */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.recentActivity}
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RecentAssets 
+                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
+                isLoading={isLoading}
+              />
+              <RecentTickets 
+                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
         </TabsContent>
 
-        {/* Notifications Tab */}
+        {/* Notifications Tab - Unchanged */}
         <TabsContent value="notifications">
-          <Notifications />
+          <Notifications 
+            notifications={dashboardData?.notifications?.items || []} 
+            isLoading={isLoading}
+          />
         </TabsContent>
       </Tabs>
 
-       {/* Employee Dialog */}
+      {/* Employee Dialog */}
       <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
             </DialogTitle>
           </DialogHeader>
           <EmployeeForm
-            onSubmit={handleEmployeeSubmit}
+            onSuccess={handleEmployeeSubmit}
             onCancel={() => setShowEmployeeDialog(false)}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Asset Dialog */}
       <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
             </DialogTitle>
           </DialogHeader>
           <AssetForm
-            onSubmit={handleAssetSubmit}
+            onSuccess={handleAssetSubmit}
             onCancel={() => setShowAssetDialog(false)}
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Ticket Dialog */}
       <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
             </DialogTitle>
           </DialogHeader>
           <TicketForm
-            mode="create"
-            onSubmit={handleTicketSubmit}
+            onSuccess={handleTicketSubmit}
             onCancel={() => setShowTicketDialog(false)}
           />
         </DialogContent>
       </Dialog>
     </div>
   );
-} 
+}
