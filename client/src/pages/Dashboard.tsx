@@ -31,7 +31,7 @@ import {
   Ticket
 } from 'lucide-react';
 
-// Import new dashboard components
+// Import dashboard components
 import EmployeeMetrics from '@/components/dashboard/EmployeeMetrics';
 import AssetMetrics from '@/components/dashboard/AssetMetrics';
 import TicketMetrics from '@/components/dashboard/TicketMetrics';
@@ -91,7 +91,7 @@ export default function Dashboard() {
     refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
-  // ADD THESE HANDLER FUNCTIONS
+  // Handler Functions
   const handleAddEmployee = () => {
     setShowEmployeeDialog(true);
   };
@@ -104,7 +104,7 @@ export default function Dashboard() {
     setShowTicketDialog(true);
   };
   
-  // ADD THESE SUBMIT HANDLERS
+  // Submit Handlers
   const handleEmployeeSubmit = async (data: any) => {
     try {
       // The EmployeeForm component handles the actual submission
@@ -185,7 +185,7 @@ export default function Dashboard() {
   }, [autoRefresh, refetch]);
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6 animate-fadeIn p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -194,7 +194,42 @@ export default function Dashboard() {
             {translations.welcome}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Quick Action Buttons - Compact Style */}
+          <div className="flex gap-1 mr-2 border-r pr-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddEmployee}
+              className="gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              disabled={!dashboardData?.quickActions?.canAddEmployee}
+            >
+              <UserPlus className="h-4 w-4 text-blue-600" />
+              <span className="hidden lg:inline">Employee</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddAsset}
+              className="gap-1 hover:bg-green-50 dark:hover:bg-green-900/20"
+              disabled={!dashboardData?.quickActions?.canAddAsset}
+            >
+              <Plus className="h-4 w-4 text-green-600" />
+              <span className="hidden lg:inline">Asset</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenTicket}
+              className="gap-1 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              disabled={!dashboardData?.quickActions?.canOpenTicket}
+            >
+              <Ticket className="h-4 w-4 text-purple-600" />
+              <span className="hidden lg:inline">Ticket</span>
+            </Button>
+          </div>
+          
+          {/* Existing Control Buttons */}
           <div className="text-sm text-muted-foreground">
             {translations.lastUpdated}: {lastRefresh.toLocaleTimeString()}
           </div>
@@ -228,16 +263,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions Bar */}
-      <QuickActions 
-        data={dashboardData?.quickActions} 
-        isLoading={isLoading} 
-        onAddEmployee={handleAddEmployee} 
-        onAddAsset={handleAddAsset} 
-        onOpenTicket={handleOpenTicket}
-      />
-
-      {/* Main Dashboard Tabs - Updated with new structure */}
+      {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
@@ -266,7 +292,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
               {translations.quickSummary}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {/* Total Employees Card */}
               <Card>
                 <CardContent className="p-6">
@@ -368,6 +394,23 @@ export default function Dashboard() {
                           {dashboardData.tickets.critical} critical
                         </p>
                       )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Upcoming Onboardings Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Upcoming Onboardings</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.employees?.upcomingOnboardings || 0}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Next 30 days
+                      </p>
                     </div>
                   </div>
                 </CardContent>
