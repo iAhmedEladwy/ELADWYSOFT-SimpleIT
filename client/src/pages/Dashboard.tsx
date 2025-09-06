@@ -23,12 +23,17 @@ import {
   TrendingUp,
   Activity,
   RefreshCw,
-  Download,
   Calendar,
   BarChart3,
   UserPlus,
   Plus,
-  Ticket
+  Ticket,
+  Users,
+  UserX,
+  Package,
+  Laptop,
+  AlertCircle,
+  CalendarCheck
 } from 'lucide-react';
 
 // Import dashboard components
@@ -113,6 +118,7 @@ export default function Dashboard() {
           ? 'Employee added successfully' 
           : 'تمت إضافة الموظف بنجاح',
       });
+      refetch();
     } catch (error) {
       console.error('Error adding employee:', error);
     }
@@ -128,6 +134,7 @@ export default function Dashboard() {
           ? 'Asset added successfully' 
           : 'تمت إضافة الأصل بنجاح',
       });
+      refetch();
     } catch (error) {
       console.error('Error adding asset:', error);
     }
@@ -143,6 +150,7 @@ export default function Dashboard() {
           ? 'Ticket created successfully' 
           : 'تم إنشاء التذكرة بنجاح',
       });
+      refetch();
     } catch (error) {
       console.error('Error creating ticket:', error);
     }
@@ -157,17 +165,6 @@ export default function Dashboard() {
       description: language === 'English' 
         ? 'Dashboard data has been updated' 
         : 'تم تحديث بيانات لوحة التحكم',
-    });
-  };
-
-  // Handle export
-  const handleExportData = () => {
-    // TODO: Implement export functionality
-    toast({
-      title: language === 'English' ? 'Export' : 'تصدير',
-      description: language === 'English' 
-        ? 'Export feature coming soon' 
-        : 'ميزة التصدير قادمة قريباً',
     });
   };
 
@@ -193,37 +190,37 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          {/* Quick Action Buttons - Compact Style */}
-          <div className="flex gap-1 mr-2 border-r pr-2">
+          {/* Quick Action Buttons - Improved Style */}
+          <div className="flex gap-2 mr-3 border-r pr-3">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="default"
               onClick={handleAddEmployee}
-              className="gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              className="gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 hover:border-blue-400"
               disabled={!dashboardData?.quickActions?.canAddEmployee}
             >
               <UserPlus className="h-4 w-4 text-blue-600" />
-              <span className="hidden lg:inline">Employee</span>
+              <span className="hidden sm:inline">Add Employee</span>
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="default"
               onClick={handleAddAsset}
-              className="gap-1 hover:bg-green-50 dark:hover:bg-green-900/20"
+              className="gap-2 hover:bg-green-50 dark:hover:bg-green-900/20 border-green-200 hover:border-green-400"
               disabled={!dashboardData?.quickActions?.canAddAsset}
             >
               <Plus className="h-4 w-4 text-green-600" />
-              <span className="hidden lg:inline">Asset</span>
+              <span className="hidden sm:inline">Add Asset</span>
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="default"
               onClick={handleOpenTicket}
-              className="gap-1 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              className="gap-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-purple-200 hover:border-purple-400"
               disabled={!dashboardData?.quickActions?.canOpenTicket}
             >
               <Ticket className="h-4 w-4 text-purple-600" />
-              <span className="hidden lg:inline">Ticket</span>
+              <span className="hidden sm:inline">Open Ticket</span>
             </Button>
           </div>
           
@@ -248,15 +245,6 @@ export default function Dashboard() {
           >
             <Activity className="h-4 w-4" />
             {translations.autoRefresh}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportData}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {translations.exportData}
           </Button>
         </div>
       </div>
@@ -283,7 +271,7 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* New Overview Tab - Simple summary view */}
+        {/* New Overview Tab - Simple summary view WITH ICONS */}
         <TabsContent value="overview" className="space-y-6">
           {/* Main Summary Cards */}
           <div>
@@ -295,9 +283,9 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.total || 0}
                       </p>
                       {dashboardData?.employees?.active > 0 && (
@@ -305,6 +293,9 @@ export default function Dashboard() {
                           {dashboardData.employees.active} active
                         </p>
                       )}
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -314,14 +305,17 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Pending Offboarding</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.pendingOffboarding || 0}
                       </p>
                       <p className="text-xs text-orange-600 mt-1">
                         Assets to be returned
                       </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                      <UserX className="h-6 w-6 text-orange-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -331,14 +325,17 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Offboarded with Assets</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.offboardedWithAssets || 0}
                       </p>
                       <p className="text-xs text-red-600 mt-1">
                         Requires attention
                       </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-red-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -348,14 +345,17 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Assets in Use</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.assets?.inUse || 0}
                       </p>
                       <p className="text-xs text-blue-600 mt-1">
                         {dashboardData?.assets?.total || 0} total assets
                       </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                      <Package className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -365,14 +365,17 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Available Laptops</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.assets?.availableLaptops || 0}
                       </p>
                       <p className="text-xs text-green-600 mt-1">
                         Ready for assignment
                       </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      <Laptop className="h-6 w-6 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -382,9 +385,9 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Open Tickets</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.tickets?.active || 0}
                       </p>
                       {dashboardData?.tickets?.critical > 0 && (
@@ -392,6 +395,9 @@ export default function Dashboard() {
                           {dashboardData.tickets.critical} critical
                         </p>
                       )}
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                      <Ticket className="h-6 w-6 text-purple-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -401,14 +407,17 @@ export default function Dashboard() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Upcoming Onboardings</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.upcomingOnboardings || 0}
                       </p>
                       <p className="text-xs text-blue-600 mt-1">
                         Next 30 days
                       </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                      <CalendarCheck className="h-6 w-6 text-indigo-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -599,9 +608,9 @@ export default function Dashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Employee Dialog */}
+      {/* Employee Dialog - FIXED SIZE */}
       <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
@@ -614,9 +623,9 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Asset Dialog */}
+      {/* Asset Dialog - FIXED SIZE */}
       <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
@@ -629,9 +638,9 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Ticket Dialog */}
+      {/* Ticket Dialog - FIXED SIZE */}
       <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
