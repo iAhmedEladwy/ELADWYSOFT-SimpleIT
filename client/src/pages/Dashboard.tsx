@@ -25,11 +25,13 @@ import {
   RefreshCw,
   Download,
   Calendar,
-  BarChart3
+  BarChart3,
+  UserPlus,
+  Plus,
+  Ticket
 } from 'lucide-react';
 
 // Import new dashboard components
-import QuickActions from '@/components/dashboard/QuickActions';
 import EmployeeMetrics from '@/components/dashboard/EmployeeMetrics';
 import AssetMetrics from '@/components/dashboard/AssetMetrics';
 import TicketMetrics from '@/components/dashboard/TicketMetrics';
@@ -259,12 +261,12 @@ export default function Dashboard() {
 
         {/* New Overview Tab - Simple summary view */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Quick Summary Section */}
+          {/* Main Summary Cards */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
               {translations.quickSummary}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Total Employees Card */}
               <Card>
                 <CardContent className="p-6">
@@ -274,9 +276,9 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold">
                         {isLoading ? '...' : dashboardData?.employees?.total || 0}
                       </p>
-                      {dashboardData?.employees?.newThisMonth > 0 && (
+                      {dashboardData?.employees?.active > 0 && (
                         <p className="text-xs text-green-600 mt-1">
-                          +{dashboardData.employees.newThisMonth} this month
+                          {dashboardData.employees.active} active
                         </p>
                       )}
                     </div>
@@ -284,52 +286,86 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Total Assets Card */}
+              {/* Pending Offboarding Card */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Assets</p>
+                      <p className="text-sm font-medium text-muted-foreground">Pending Offboarding</p>
                       <p className="text-2xl font-bold">
-                        {isLoading ? '...' : dashboardData?.assets?.total || 0}
+                        {isLoading ? '...' : dashboardData?.employees?.pendingOffboarding || 0}
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        {dashboardData?.assets?.availableLaptops || 0} available
+                      <p className="text-xs text-orange-600 mt-1">
+                        Assets to be returned
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Active Tickets Card */}
+              {/* Offboarded with Assets Card */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Active Tickets</p>
+                      <p className="text-sm font-medium text-muted-foreground">Offboarded with Assets</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.employees?.offboardedWithAssets || 0}
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Requires attention
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Assets in Use Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Assets in Use</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.assets?.inUse || 0}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {dashboardData?.assets?.total || 0} total assets
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Available Laptops Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Available Laptops</p>
+                      <p className="text-2xl font-bold">
+                        {isLoading ? '...' : dashboardData?.assets?.availableLaptops || 0}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Ready for assignment
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Open Tickets Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Open Tickets</p>
                       <p className="text-2xl font-bold">
                         {isLoading ? '...' : dashboardData?.tickets?.active || 0}
                       </p>
-                      <p className="text-xs text-orange-600 mt-1">
-                        {dashboardData?.tickets?.critical || 0} critical
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Maintenance Due Card */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
-                      <p className="text-2xl font-bold">
-                        {isLoading ? '...' : (dashboardData?.maintenance?.overdue || 0) + (dashboardData?.maintenance?.scheduled || 0)}
-                      </p>
-                      {dashboardData?.maintenance?.overdue > 0 && (
+                      {dashboardData?.tickets?.critical > 0 && (
                         <p className="text-xs text-red-600 mt-1">
-                          {dashboardData.maintenance.overdue} overdue
+                          {dashboardData.tickets.critical} critical
                         </p>
                       )}
                     </div>
@@ -338,86 +374,6 @@ export default function Dashboard() {
               </Card>
             </div>
           </div>
-
-          {/* Key Performance Indicators */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{translations.keyPerformanceIndicators}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Asset Utilization</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{
-                          width: `${dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
-                            ? Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)
-                            : 0}%`
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {dashboardData?.assets?.total && dashboardData?.assets?.availableLaptops
-                        ? `${Math.round(((dashboardData.assets.total - dashboardData.assets.availableLaptops) / dashboardData.assets.total) * 100)}%`
-                        : '0%'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Ticket Resolution</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full"
-                        style={{
-                          width: `${dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
-                            ? Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)
-                            : 0}%`
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {dashboardData?.tickets?.resolvedThisMonth && dashboardData?.tickets?.active
-                        ? `${Math.round((dashboardData.tickets.resolvedThisMonth / (dashboardData.tickets.active + dashboardData.tickets.resolvedThisMonth)) * 100)}%`
-                        : '0%'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Department Coverage</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-purple-600 h-2 rounded-full"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {dashboardData?.departmentDistribution?.length || 0} Depts
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">System Health</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-orange-600 h-2 rounded-full"
-                        style={{ width: '85%' }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">85%</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Recent Activity Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
