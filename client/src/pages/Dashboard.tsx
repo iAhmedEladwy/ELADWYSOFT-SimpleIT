@@ -94,6 +94,41 @@ export default function Dashboard() {
     refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
+  // Fetch employees and assets for custom calculations
+  const { data: employees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+  });
+
+  const { data: assets = [] } = useQuery({
+    queryKey: ['/api/assets'],
+  });
+
+  // Calculate offboarded with assets (matching EmployeeCustomFilters logic)
+  const offboardedWithAssets = employees.filter((emp: any) => {
+    const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
+    const hasAssets = assets.some((asset: any) => 
+      (asset.assignedTo && asset.assignedTo === emp.id) ||
+      (asset.assignedEmployeeId && asset.assignedEmployeeId === emp.id) ||
+      (asset.assignedToId && asset.assignedToId === emp.id) ||
+      (asset.assignedTo && asset.assignedTo === emp.empId) ||
+      (asset.assignedEmployee && asset.assignedEmployee === emp.id)
+    );
+    return isOffboarded && hasAssets;
+  });
+
+  // Calculate recently added (joined within 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const recentlyAdded = employees.filter((emp: any) => {
+    if (!emp.joiningDate) return false;
+    const joiningDate = new Date(emp.joiningDate);
+    return joiningDate >= thirtyDaysAgo;
+  });
+
+  // Calculate assets in use (status === "In Use")
+  const assetsInUse = assets.filter((asset: any) => asset.status === 'In Use');
+
   // Handler Functions
   const handleAddEmployee = () => {
     setShowEmployeeDialog(true);
@@ -271,7 +306,7 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* New Overview Tab - Simple summary view WITH ICONS */}
+        {/* New Overview Tab - Simple summary view WITH ICONS AND CUSTOM CALCULATIONS */}
         <TabsContent value="overview" className="space-y-6">
           {/* Main Summary Cards */}
           <div>
@@ -288,11 +323,9 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.total || 0}
                       </p>
-                      {dashboardData?.employees?.active > 0 && (
-                        <p className="text-xs text-green-600 mt-1">
-                          {dashboardData.employees.active} active
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData?.employees?.active || 0} active
+                      </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
                       <Users className="h-6 w-6 text-blue-600" />
@@ -310,7 +343,7 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.pendingOffboarding || 0}
                       </p>
-                      <p className="text-xs text-orange-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Assets to be returned
                       </p>
                     </div>
@@ -321,16 +354,16 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Offboarded with Assets Card */}
+              {/* Offboarded with Assets Card - Using custom calculation from filters */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Offboarded with Assets</p>
                       <p className="text-2xl font-bold mt-1">
-                        {isLoading ? '...' : dashboardData?.employees?.offboardedWithAssets || 0}
+                        {isLoading ? '...' : offboardedWithAssets.length}
                       </p>
-                      <p className="text-xs text-red-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Requires attention
                       </p>
                     </div>
@@ -341,17 +374,37 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Assets in Use Card */}
+              {/* Recently Added Employees Card - Using custom calculation */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Recently Added</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : recentlyAdded.length}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Last 30 days
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                      <UserPlus className="h-6 w-6 text-emerald-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Assets in Use Card - Using status === "In Use" */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-muted-foreground">Assets in Use</p>
                       <p className="text-2xl font-bold mt-1">
-                        {isLoading ? '...' : dashboardData?.assets?.inUse || 0}
+                        {isLoading ? '...' : assetsInUse.length}
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        {dashboardData?.assets?.total || 0} total assets
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {assets.length} total assets
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
@@ -370,7 +423,7 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.assets?.availableLaptops || 0}
                       </p>
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Ready for assignment
                       </p>
                     </div>
@@ -390,11 +443,9 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.tickets?.active || 0}
                       </p>
-                      {dashboardData?.tickets?.critical > 0 && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {dashboardData.tickets.critical} critical
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData?.tickets?.critical || 0} critical
+                      </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
                       <Ticket className="h-6 w-6 text-purple-600" />
