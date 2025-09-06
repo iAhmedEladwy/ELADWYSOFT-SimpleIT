@@ -69,7 +69,6 @@ export default function Dashboard() {
     lastUpdated: language === 'English' ? 'Last updated' : 'آخر تحديث',
     refresh: language === 'English' ? 'Refresh' : 'تحديث',
     autoRefresh: language === 'English' ? 'Auto-refresh' : 'تحديث تلقائي',
-    exportData: language === 'English' ? 'Export Data' : 'تصدير البيانات',
     mainMetrics: language === 'English' ? 'Main Metrics' : 'المقاييس الرئيسية',
     recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
     departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
@@ -81,7 +80,6 @@ export default function Dashboard() {
     thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
     thisMonth: language === 'English' ? 'This Month' : 'هذا الشهر',
     quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
-    keyPerformanceIndicators: language === 'English' ? 'Key Performance Indicators' : 'مؤشرات الأداء الرئيسية',
     activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
   };
 
