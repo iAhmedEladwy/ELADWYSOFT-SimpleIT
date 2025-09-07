@@ -495,185 +495,185 @@ export default function Dashboard() {
         {/* Insights Tab (formerly Overview) - Detailed view */}
         <TabsContent value="insights" className="space-y-6">
           {/* Maintenance Overview - Enhanced with Total and Icons */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {translations.maintenanceSchedule}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full" />
-                ))}
+       <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            {translations.maintenanceSchedule}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Total Maintenance Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                onClick={() => window.location.href = `/assets?status=Maintenance`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Package className="h-5 w-5 text-gray-500" />
+                  <Badge variant="secondary" className="text-xs">Total</Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total in Maintenance
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {((dashboardData?.maintenance?.scheduled || 0) + 
+                    (dashboardData?.maintenance?.inProgress || 0) + 
+                    (dashboardData?.maintenance?.overdue || 0))}
+                </p>
+                <div className="mt-3">
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                    <div 
+                      className="bg-gray-400 h-1.5 rounded-full transition-all"
+                      style={{ 
+                        width: `${Math.min(100, ((dashboardData?.maintenance?.scheduled || 0) + 
+                          (dashboardData?.maintenance?.inProgress || 0) + 
+                          (dashboardData?.maintenance?.overdue || 0)) * 2)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">All maintenance activities</p>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Total Maintenance Card */}
-                <div
-                  className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/30 dark:to-gray-800/30 border-2 border-gray-200 dark:border-gray-700"
-                  onClick={() => window.location.href = `/assets?status=Maintenance`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Package className="h-6 w-6 text-gray-600" />
-                    <Badge variant="secondary" className="text-xs">Total</Badge>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Total in Maintenance
-                  </p>
-                  <p className="text-3xl font-bold mt-2">
-                    {((dashboardData?.maintenance?.scheduled || 0) + 
-                      (dashboardData?.maintenance?.inProgress || 0) + 
-                      (dashboardData?.maintenance?.overdue || 0))}
-                  </p>
-                  <div className="mt-3">
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-gray-500 h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${Math.min(100, ((dashboardData?.maintenance?.scheduled || 0) + 
-                            (dashboardData?.maintenance?.inProgress || 0) + 
-                            (dashboardData?.maintenance?.overdue || 0)) * 2)}%` 
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">All maintenance activities</p>
-                  </div>
-                </div>
-                
-                {/* Overdue Card */}
-                <div
-                  className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-200 dark:border-red-800"
-                  onClick={() => window.location.href = `/assets?maintenanceDue=overdue`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <AlertCircle className="h-6 w-6 text-red-600" />
-                    {(dashboardData?.maintenance?.overdue || 0) > 0 && (
-                      <Badge variant="destructive" className="animate-pulse text-xs">
-                        Action Required
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                    Overdue
-                  </p>
-                  <p className="text-3xl font-bold mt-2 text-red-600">
-                    {dashboardData?.maintenance?.overdue || 0}
-                  </p>
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 text-xs text-red-600">
-                      <TrendingUp className="h-3 w-3" />
-                      <span>Requires immediate attention</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scheduled Card */}
-                <div
-                  className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-200 dark:border-blue-800"
-                  onClick={() => window.location.href = `/assets?maintenanceDue=scheduled`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Calendar className="h-6 w-6 text-blue-600" />
-                    <Badge variant="outline" className="text-xs border-blue-600 text-blue-600">
-                      Planned
+              
+              {/* Overdue Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=overdue`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  {(dashboardData?.maintenance?.overdue || 0) > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      Action Required
                     </Badge>
-                  </div>
-                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                    Scheduled
-                  </p>
-                  <p className="text-3xl font-bold mt-2 text-blue-600">
-                    {dashboardData?.maintenance?.scheduled || 0}
-                  </p>
-                  <div className="mt-3">
-                    <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${Math.min(100, (dashboardData?.maintenance?.scheduled || 0) * 10)}%` 
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2">Upcoming maintenance</p>
-                  </div>
+                  )}
                 </div>
-
-                {/* In Progress Card */}
-                <div
-                  className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-2 border-orange-200 dark:border-orange-800"
-                  onClick={() => window.location.href = `/assets?maintenanceDue=inProgress`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <Activity className="h-6 w-6 text-orange-600" />
-                    <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-300">
-                      Active
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-semibold text-orange-700 dark:text-orange-300">
-                    In Progress
-                  </p>
-                  <p className="text-3xl font-bold mt-2 text-orange-600">
-                    {dashboardData?.maintenance?.inProgress || 0}
-                  </p>
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 text-xs text-orange-600">
-                      <Clock className="h-3 w-3" />
-                      <span>Currently being serviced</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Completed Card */}
-                <div
-                  className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-2 border-green-200 dark:border-green-800"
-                  onClick={() => window.location.href = `/assets?maintenanceDue=completed`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <CalendarCheck className="h-6 w-6 text-green-600" />
-                    <Badge className="text-xs bg-green-100 text-green-700 border-green-300">
-                      Done
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-semibold text-green-700 dark:text-green-300">
-                    Completed
-                  </p>
-                  <p className="text-3xl font-bold mt-2 text-green-600">
-                    {dashboardData?.maintenance?.completed || 0}
-                  </p>
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 text-xs text-green-600">
-                      <CheckCircle className="h-3 w-3" />
-                      <span>This month</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Upcoming This Week Card */}
-                <div className="p-5 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-2 border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <TrendingUp className="h-6 w-6 text-purple-600" />
-                    <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-300">
-                      Trend
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-                    Due This Week
-                  </p>
-                  <p className="text-3xl font-bold mt-2 text-purple-600">
-                    {Math.max(0, (dashboardData?.maintenance?.scheduled || 0) - 2)}
-                  </p>
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 text-xs text-purple-600">
-                      <ArrowRight className="h-3 w-3" />
-                      <span>Next 7 days</span>
-                    </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Overdue
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.overdue || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-red-500">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>Requires immediate attention</span>
                   </div>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {/* Scheduled Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-blue-50/30 dark:bg-blue-950/10 border border-blue-200 dark:border-blue-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=scheduled`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600">
+                    Planned
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Scheduled
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.scheduled || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-1.5">
+                    <div 
+                      className="bg-blue-400 h-1.5 rounded-full transition-all"
+                      style={{ 
+                        width: `${Math.min(100, (dashboardData?.maintenance?.scheduled || 0) * 10)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-500 mt-2">Upcoming maintenance</p>
+                </div>
+              </div>
+
+              {/* In Progress Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=inProgress`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Activity className="h-5 w-5 text-amber-500" />
+                  <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                    Active
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  In Progress
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.inProgress || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-amber-500">
+                    <Clock className="h-3 w-3" />
+                    <span>Currently being serviced</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Completed Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=completed`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <CalendarCheck className="h-5 w-5 text-emerald-500" />
+                  <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-300">
+                    Done
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Completed
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.completed || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-emerald-500">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>This month</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upcoming This Week Card */}
+              <div className="p-5 rounded-lg bg-violet-50/30 dark:bg-violet-950/10 border border-violet-200 dark:border-violet-900">
+                <div className="flex items-center justify-between mb-3">
+                  <TrendingUp className="h-5 w-5 text-violet-500" />
+                  <Badge className="text-xs bg-violet-100 text-violet-700 border-violet-300">
+                    Trend
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Due This Week
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {Math.max(0, (dashboardData?.maintenance?.scheduled || 0) - 2)}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-violet-500">
+                    <ArrowRight className="h-3 w-3" />
+                    <span>Next 7 days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
           {/* Main Metrics Section */}
           <div>
