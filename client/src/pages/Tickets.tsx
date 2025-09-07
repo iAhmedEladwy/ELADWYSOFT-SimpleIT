@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +33,10 @@ export default function Tickets() {
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
 
+  const isInitialMount = useRef(true);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+
+  
   
   // Listen for the FAB create ticket event
   useEffect(() => {
@@ -96,6 +100,92 @@ export default function Tickets() {
     queryKey: ['/api/tickets'],
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
+
+  // Read URL parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Read filters from URL
+    const statusParam = params.get('statusFilter');
+    const priorityParam = params.get('priorityFilter');
+    const assignedToParam = params.get('assignedTo');
+    const searchParam = params.get('search');
+    const requestTypeParam = params.get('requestType');
+
+    // Build initial filters object from URL
+    const initialFilters: any = {};
+    
+    if (statusParam) initialFilters.status = statusParam;
+    if (priorityParam) initialFilters.priority = priorityParam;
+    if (assignedToParam) initialFilters.assignedTo = assignedToParam;
+    if (searchParam) initialFilters.search = searchParam;
+    if (requestTypeParam) initialFilters.requestType = requestTypeParam;
+
+    // Only update if we have filters from URL
+    if (Object.keys(initialFilters).length > 0) {
+      setFilters(initialFilters);
+    }
+
+    // Mark that initial mount is complete
+    isInitialMount.current = false;
+  }, []); // Only run on mount
+
+  // ===== ADD THIS CALLBACK FUNCTION HERE =====
+  // Function to update URL when filters change
+  const updateURL = useCallback(() => {
+    // Clear any pending timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    // Debounce URL updates (500ms)
+    updateTimeoutRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+
+      // Add parameters
+      if (filters.status) {
+        params.set('statusFilter', filters.status);
+      }
+      if (filters.priority) {
+        params.set('priorityFilter', filters.priority);
+      }
+      if (filters.assignedTo) {
+        params.set('assignedTo', filters.assignedTo);
+      }
+      if (filters.search) {
+        params.set('search', filters.search);
+      }
+      if (filters.requestType) {
+        params.set('requestType', filters.requestType);
+      }
+
+      // Construct the new URL
+      const newSearch = params.toString();
+      const newPath = newSearch ? `/tickets?${newSearch}` : '/tickets';
+
+      // Update the URL without triggering a re-render
+      if (window.location.pathname + window.location.search !== newPath) {
+        window.history.replaceState({}, '', newPath);
+      }
+    }, 500);
+  }, [filters]);
+
+  // ===== ADD THESE TWO useEffects HERE =====
+  // Update URL whenever filters change (but not on initial mount)
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      updateURL();
+    }
+  }, [filters, updateURL]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Fetch employees for submitter dropdown
   const { 

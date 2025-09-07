@@ -17,6 +17,57 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
+  {
+  version: "0.3.0",
+  date: "2025-09-07",
+  title: "Dashboard Overhaul & Enhanced Metrics",
+  type: "minor",
+  changes: {
+    features: [
+      "🎨 Complete Dashboard Redesign:",
+      "   📊 New Overview tab with 8 key metric cards for quick insights",
+      "   📈 Renamed 'Overview' to 'Insights' for detailed analytics",
+      "   🔄 Moved Activity Timeline from separate tab to Insights section",
+      "   📦 Moved Assets by Type from Analytics tab to Insights",
+      "   ❌ Removed Analytics and Activity tabs for cleaner navigation",
+      "🔧 Enhanced Maintenance Schedule:",
+      "   📊 Added Total Maintenance card showing combined metrics",
+      "   🎯 Visual icons for each maintenance status (Overdue, Scheduled, In Progress)",
+      "   🎨 Color-coded cards with hover effects",
+      "   📍 5-column layout including total count",
+      "📊 New Dashboard Metrics:",
+      "   👥 Offboarded with Assets - tracks resigned/terminated employees with assets",
+      "   🆕 Recently Added Employees - shows last 30 days hires",
+      "   📦 Assets in Use - filters assets with 'In Use' status",
+      "   ✅ Resolved This Month - tracks closed tickets",
+      "   📈 Top Departments by Assets - ranking visualization",
+      "🎯 Quick Actions Improvements:",
+      "   🔘 Larger, more visible action buttons with colored borders",
+      "   📝 Full text labels (Add Employee, Add Asset, Open Ticket)",
+      "   🔧 Proper dialog sizing (max-w-4xl) matching original forms",
+      "   ❌ Removed Export Data button for cleaner interface"
+    ],
+    improvements: [
+      "⚡ Real-time calculations for employee and asset metrics",
+      "🎨 Consistent card design with title, number, and description hierarchy",
+      "📱 Better responsive layout with proper grid columns",
+      "🔄 Activity Timeline moved to end of Insights for better flow",
+      "📊 Department asset distribution shown as ranked list",
+      "🎯 All metric cards now have visual icons with color coding",
+      "💾 Custom filter logic matching Employees page Quick Filters",
+      "📐 Dashboard padding fixed (p-6) for proper edge spacing",
+      "🎨 Unified color scheme across all status indicators"
+    ],
+    bugfixes: [
+      "🔧 Fixed 'Offboarded with Assets' calculation to match filter logic",
+      "🎯 Corrected 'Assets in Use' to filter by status instead of calculation",
+      "📊 Fixed 'Recently Added' to show employees joined in last 30 days",
+      "🔍 Resolved dashboard data fetching for custom calculations",
+      "📐 Fixed dialog sizing issues for Add Employee/Asset/Ticket forms",
+      "🎨 Corrected card description colors to use muted-foreground"
+    ]
+  }
+},
 {
   version: "0.2.8",
 date: "2025-09-02",

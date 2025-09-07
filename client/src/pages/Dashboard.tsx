@@ -1,242 +1,934 @@
-import { useState } from 'react';
-import { Wrench, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
-import StatsCard from '@/components/dashboard/StatsCard';
-import RecentAssets from '@/components/dashboard/RecentAssets';
-import RecentTickets from '@/components/dashboard/RecentTickets';
-import AssetsByType from '@/components/dashboard/AssetsByType';
-import DepartmentDistribution from '@/components/dashboard/DepartmentDistribution';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-
-import Notifications from '@/components/dashboard/Notifications';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import EmployeeForm from '@/components/employees/EmployeeForm';
+import AssetForm from '@/components/assets/AssetForm';
+import TicketForm from '@/components/tickets/TicketForm';
 import { 
-  Tabs, 
+  Tabs,
   TabsContent, 
   TabsList, 
   TabsTrigger 
 } from '@/components/ui/tabs';
-import { 
-  Users, 
-  Laptop, 
-  Ticket, 
-  DollarSign 
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  LayoutDashboard,
+  Bell,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  ArrowRight,
+  Activity,
+  RefreshCw,
+  Calendar,
+  BarChart3,
+  UserPlus,
+  Plus,
+  Ticket,
+  Users,
+  UserX,
+  Package,
+  Laptop,
+  AlertCircle,
+  CalendarCheck
+} from 'lucide-react';
+
+// Import dashboard components
+import EmployeeMetrics from '@/components/dashboard/EmployeeMetrics';
+import AssetMetrics from '@/components/dashboard/AssetMetrics';
+import TicketMetrics from '@/components/dashboard/TicketMetrics';
+import EnhancedDepartmentDistribution from '@/components/dashboard/EnhancedDepartmentDistribution';
+import RecentAssets from '@/components/dashboard/RecentAssets';
+import RecentTickets from '@/components/dashboard/RecentTickets';
+import Notifications from '@/components/dashboard/Notifications';
+
+// Import legacy components for backward compatibility
+import StatsCard from '@/components/dashboard/StatsCard';
+import AssetsByType from '@/components/dashboard/AssetsByType';
 
 export default function Dashboard() {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
+  const [showAssetDialog, setShowAssetDialog] = useState(false);
+  const [showTicketDialog, setShowTicketDialog] = useState(false);
 
   // Get translations based on language
   const translations = {
     dashboard: language === 'English' ? 'Dashboard' : 'لوحة التحكم',
     welcome: language === 'English' 
-      ? 'Welcome to SimpleIT - IT Asset Management System' 
-      : 'مرحبًا بك في SimpleIT - نظام إدارة أصول تكنولوجيا المعلومات',
+      ? 'IT Asset Management System - Real-time Overview' 
+      : 'نظام إدارة أصول تكنولوجيا المعلومات - نظرة عامة في الوقت الفعلي',
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
-
+    insights: language === 'English' ? 'Insights' : 'رؤى',
+    analytics: language === 'English' ? 'Analytics' : 'التحليلات',
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
-    totalEmployees: language === 'English' ? 'Total Employees' : 'إجمالي الموظفين',
-    totalAssets: language === 'English' ? 'Total Assets' : 'إجمالي الأصول',
-    activeTickets: language === 'English' ? 'Active Tickets' : 'التذاكر النشطة',
-    assetValue: language === 'English' ? 'Asset Value' : 'قيمة الأصول',
-    fromLastYear: language === 'English' ? 'from last year' : 'من العام الماضي',
-    fromLastMonth: language === 'English' ? 'from last month' : 'من الشهر الماضي',
-    fromLastWeek: language === 'English' ? 'from last week' : 'من الأسبوع الماضي',
-    fromLastQuarter: language === 'English' ? 'from last quarter' : 'من الربع الأخير',
-    maintenanceDue: language === 'English' ? 'Maintenance Due' : 'الصيانة المستحقة',
-    overdue: language === 'English' ? 'Overdue' : 'متأخر',
-    dueThisWeek: language === 'English' ? 'Due This Week' : 'مستحق هذا الأسبوع',
-    viewAll: language === 'English' ? 'View All' : 'عرض الكل',
-    maintenanceOverview: language === 'English' ? 'Maintenance Overview' : 'نظرة عامة على الصيانة',
-    scheduled: language === 'English' ? 'Scheduled' : 'مجدول',
-    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
-    completed: language === 'English' ? 'Completed' : 'مكتمل',
-    totalRecords: language === 'English' ? 'Total Records' : 'إجمالي السجلات',
-    viewScheduled: language === 'English' ? 'View Scheduled' : 'عرض المجدول',
-    viewInProgress: language === 'English' ? 'View In Progress' : 'عرض قيد التنفيذ',
-    viewCompleted: language === 'English' ? 'View Completed' : 'عرض المكتمل',
-    noData: language === 'English' ? 'No data available' : 'لا توجد بيانات متاحة',
+    activity: language === 'English' ? 'Activity' : 'النشاط',
+    lastUpdated: language === 'English' ? 'Last updated' : 'آخر تحديث',
+    refresh: language === 'English' ? 'Refresh' : 'تحديث',
+    autoRefresh: language === 'English' ? 'Auto-refresh' : 'تحديث تلقائي',
+    mainMetrics: language === 'English' ? 'Main Metrics' : 'المقاييس الرئيسية',
+    recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
+    departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
+    assetDistribution: language === 'English' ? 'Asset Distribution' : 'توزيع الأصول',
+    maintenanceSchedule: language === 'English' ? 'Maintenance Schedule' : 'جدول الصيانة',
+    upcomingMaintenance: language === 'English' ? 'Upcoming Maintenance' : 'الصيانة القادمة',
+    overdueMaintenance: language === 'English' ? 'Overdue Maintenance' : 'صيانة متأخرة',
+    today: language === 'English' ? 'Today' : 'اليوم',
+    thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
+    thisMonth: language === 'English' ? 'This Month' : 'هذا الشهر',
+    quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
+    activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
   };
 
-  // Fetch dashboard data
-  const { data: dashboardData, isLoading } = useQuery({
+  // Fetch dashboard data with enhanced endpoint
+  const { data: dashboardData, isLoading, refetch } = useQuery({
     queryKey: ['/api/dashboard/summary'],
+    refetchInterval: autoRefresh ? 30000 : false, // Auto-refresh every 30 seconds if enabled
   });
 
- // Navigation handlers for maintenance cards - using window.location
-  const handleMaintenanceNavigation = (status: string) => {
-    window.location.href = `/assets?maintenanceDue=${status}`;
+  // Fetch employees and assets for custom calculations
+  const { data: employees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+  });
+
+  const { data: assets = [] } = useQuery({
+    queryKey: ['/api/assets'],
+  });
+
+  // Calculate offboarded with assets (matching EmployeeCustomFilters logic)
+  const offboardedWithAssets = employees.filter((emp: any) => {
+    const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
+    const hasAssets = assets.some((asset: any) => 
+      (asset.assignedTo && asset.assignedTo === emp.id) ||
+      (asset.assignedEmployeeId && asset.assignedEmployeeId === emp.id) ||
+      (asset.assignedToId && asset.assignedToId === emp.id) ||
+      (asset.assignedTo && asset.assignedTo === emp.empId) ||
+      (asset.assignedEmployee && asset.assignedEmployee === emp.id)
+    );
+    return isOffboarded && hasAssets;
+  });
+
+  // Calculate recently added (joined within 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const recentlyAdded = employees.filter((emp: any) => {
+    if (!emp.joiningDate) return false;
+    const joiningDate = new Date(emp.joiningDate);
+    return joiningDate >= thirtyDaysAgo;
+  });
+
+  // Calculate assets in use (status === "In Use")
+  const assetsInUse = assets.filter((asset: any) => asset.status === 'In Use');
+
+  // Handler Functions
+  const handleAddEmployee = () => {
+    setShowEmployeeDialog(true);
+  };
+  
+  const handleAddAsset = () => {
+    setShowAssetDialog(true);
+  };
+  
+  const handleOpenTicket = () => {
+    setShowTicketDialog(true);
+  };
+  
+  // Submit Handlers
+  const handleEmployeeSubmit = async (data: any) => {
+    try {
+      // The EmployeeForm component handles the actual submission
+      setShowEmployeeDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Employee added successfully' 
+          : 'تمت إضافة الموظف بنجاح',
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error adding employee:', error);
+    }
+  };
+  
+  const handleAssetSubmit = async (data: any) => {
+    try {
+      // The AssetForm component handles the actual submission
+      setShowAssetDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Asset added successfully' 
+          : 'تمت إضافة الأصل بنجاح',
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error adding asset:', error);
+    }
+  };
+  
+  const handleTicketSubmit = async (data: any) => {
+    try {
+      // The TicketForm component handles the actual submission
+      setShowTicketDialog(false);
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: language === 'English' 
+          ? 'Ticket created successfully' 
+          : 'تم إنشاء التذكرة بنجاح',
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+    }
   };
 
+  // Handle refresh
+  const handleRefresh = () => {
+    setLastRefresh(new Date());
+    refetch();
+    toast({
+      title: language === 'English' ? 'Refreshed' : 'تم التحديث',
+      description: language === 'English' 
+        ? 'Dashboard data has been updated' 
+        : 'تم تحديث بيانات لوحة التحكم',
+    });
+  };
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        setLastRefresh(new Date());
+        refetch();
+      }, 30000); // Refresh every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, refetch]);
+
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{translations.dashboard}</h1>
-        <p className="text-gray-600">{translations.welcome}</p>
+    <div className="flex flex-col gap-6 animate-fadeIn p-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{translations.dashboard}</h1>
+          <p className="text-muted-foreground mt-1">
+            {translations.welcome}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Quick Action Buttons - Improved Style */}
+          <div className="flex gap-2 mr-3 border-r pr-3">
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleAddEmployee}
+              className="gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 hover:border-blue-400"
+              disabled={!dashboardData?.quickActions?.canAddEmployee}
+            >
+              <UserPlus className="h-4 w-4 text-blue-600" />
+              <span className="hidden sm:inline">Add Employee</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleAddAsset}
+              className="gap-2 hover:bg-green-50 dark:hover:bg-green-900/20 border-green-200 hover:border-green-400"
+              disabled={!dashboardData?.quickActions?.canAddAsset}
+            >
+              <Plus className="h-4 w-4 text-green-600" />
+              <span className="hidden sm:inline">Add Asset</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleOpenTicket}
+              className="gap-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-purple-200 hover:border-purple-400"
+              disabled={!dashboardData?.quickActions?.canOpenTicket}
+            >
+              <Ticket className="h-4 w-4 text-purple-600" />
+              <span className="hidden sm:inline">Open Ticket</span>
+            </Button>
+          </div>
+          
+          {/* Existing Control Buttons */}
+          <div className="text-sm text-muted-foreground">
+            {translations.lastUpdated}: {lastRefresh.toLocaleTimeString()}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {translations.refresh}
+          </Button>
+          <Button
+            variant={autoRefresh ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className="gap-2"
+          >
+            <Activity className="h-4 w-4" />
+            {translations.autoRefresh}
+          </Button>
+        </div>
       </div>
 
-      {/* Dashboard Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="overview">{translations.overview}</TabsTrigger>
-          <TabsTrigger value="notifications">{translations.notifications}</TabsTrigger>
+      {/* Main Dashboard Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="overview" className="gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            {translations.overview}
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            {translations.insights}
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Bell className="h-4 w-4" />
+            {translations.notifications}
+            {dashboardData?.notifications?.unread > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
+                {dashboardData.notifications.unread}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-8">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-32 w-full" />
-              </>
-            ) : (
-              <>
-                <StatsCard
-                  title={translations.totalEmployees}
-                  value={dashboardData?.counts?.employees || 0}
-                  icon={<Users className="h-6 w-6" />}
-                  change={dashboardData?.changes?.employees || '0%'}
-                  changeLabel={translations.fromLastYear}
-                  changeColor={dashboardData?.changes?.employees?.startsWith('-') ? 'error' : 'success'}
-                  iconColor="primary"
-                />
-                <StatsCard
-                  title={translations.totalAssets}
-                  value={dashboardData?.counts?.assets || 0}
-                  icon={<Laptop className="h-6 w-6" />}
-                  change={dashboardData?.changes?.assets || '0%'}
-                  changeLabel={translations.fromLastMonth}
-                  changeColor={dashboardData?.changes?.assets?.startsWith('-') ? 'error' : 'success'}
-                  iconColor="secondary"
-                />
-                <StatsCard
-                  title={translations.activeTickets}
-                  value={dashboardData?.counts?.activeTickets || 0}
-                  icon={<Ticket className="h-6 w-6" />}
-                  change={dashboardData?.changes?.activeTickets || '0%'}
-                  changeLabel={translations.fromLastWeek}
-                  changeColor={dashboardData?.changes?.activeTickets?.startsWith('-') ? 'success' : 'warning'}
-                  iconColor="accent"
-                />
-                <StatsCard
-                  title={translations.assetValue}
-                  value={dashboardData?.counts?.totalAssetValue || 0}
-                  icon={<DollarSign className="h-6 w-6" />}
-                  change={dashboardData?.changes?.totalAssetValue || '0%'}
-                  changeLabel={translations.fromLastQuarter}
-                  changeColor={dashboardData?.changes?.totalAssetValue?.startsWith('-') ? 'error' : 'success'}
-                  iconColor="warning"
-                  isCurrency={true}
-                />
-              </>
-            )}
+        {/* New Overview Tab - Simple summary view WITH ICONS AND CUSTOM CALCULATIONS */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Main Summary Cards */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.quickSummary}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Total Employees Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.employees?.total || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData?.employees?.active || 0} active
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pending Offboarding Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Pending Offboarding</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.employees?.pendingOffboarding || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Assets to be returned
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                      <UserX className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Offboarded with Assets Card - Using custom calculation from filters */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Offboarded with Assets</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : offboardedWithAssets.length}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Requires attention
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-red-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recently Added Employees Card - Using custom calculation */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Recently Added</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : recentlyAdded.length}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Last 30 days
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                      <UserPlus className="h-6 w-6 text-emerald-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Assets in Use Card - Using status === "In Use" */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Assets in Use</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : assetsInUse.length}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {assets.length} total assets
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                      <Package className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Available Laptops Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Available Laptops</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.assets?.availableLaptops || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ready for assignment
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      <Laptop className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Open Tickets Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Open Tickets</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.tickets?.active || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {dashboardData?.tickets?.critical || 0} critical
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                      <Ticket className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Resolved This Month Card - 8th Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Resolved This Month</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.tickets?.resolvedThisMonth || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tickets closed
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      <CalendarCheck className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
+          {/* Recent Activity Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RecentAssets 
+              assets={dashboardData?.assets?.recentlyUpdated?.slice(0, 3) || dashboardData?.recentAssets?.slice(0, 3) || []} 
+              isLoading={isLoading}
+            />
+            <RecentTickets 
+              tickets={dashboardData?.tickets?.recent?.slice(0, 3) || dashboardData?.recentTickets?.slice(0, 3) || []} 
+              isLoading={isLoading}
+            />
+          </div>
+        </TabsContent>
 
-          {/* Enhanced Maintenance Overview Widget */}
-            <Card className="col-span-1 md:col-span-3">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">{translations.maintenanceOverview}</CardTitle>
+        {/* Insights Tab (formerly Overview) - Detailed view */}
+        <TabsContent value="insights" className="space-y-6">
+          {/* Maintenance Overview - Enhanced with Total and Icons */}
+       <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            {translations.maintenanceSchedule}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Total Maintenance Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                onClick={() => window.location.href = `/assets?status=Maintenance`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Package className="h-5 w-5 text-gray-500" />
+                  <Badge variant="secondary" className="text-xs">Total</Badge>
                 </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total in Maintenance
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {((dashboardData?.maintenance?.scheduled || 0) + 
+                    (dashboardData?.maintenance?.inProgress || 0) + 
+                    (dashboardData?.maintenance?.overdue || 0))}
+                </p>
+                <div className="mt-3">
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                    <div 
+                      className="bg-gray-400 h-1.5 rounded-full transition-all"
+                      style={{ 
+                        width: `${Math.min(100, ((dashboardData?.maintenance?.scheduled || 0) + 
+                          (dashboardData?.maintenance?.inProgress || 0) + 
+                          (dashboardData?.maintenance?.overdue || 0)) * 2)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">All maintenance activities</p>
+                </div>
+              </div>
+              
+              {/* Overdue Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=overdue`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  {(dashboardData?.maintenance?.overdue || 0) > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      Action Required
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Overdue
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.overdue || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-red-500">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>Requires immediate attention</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scheduled Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-blue-50/30 dark:bg-blue-950/10 border border-blue-200 dark:border-blue-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=scheduled`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600">
+                    Planned
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Scheduled
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.scheduled || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="w-full bg-blue-100 dark:bg-blue-900/30 rounded-full h-1.5">
+                    <div 
+                      className="bg-blue-400 h-1.5 rounded-full transition-all"
+                      style={{ 
+                        width: `${Math.min(100, (dashboardData?.maintenance?.scheduled || 0) * 10)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-500 mt-2">Upcoming maintenance</p>
+                </div>
+              </div>
+
+              {/* In Progress Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=inProgress`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Activity className="h-5 w-5 text-amber-500" />
+                  <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                    Active
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  In Progress
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.inProgress || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-amber-500">
+                    <Clock className="h-3 w-3" />
+                    <span>Currently being serviced</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Completed Card */}
+              <div
+                className="p-5 rounded-lg cursor-pointer transition-all hover:shadow-md bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900"
+                onClick={() => window.location.href = `/assets?maintenanceDue=completed`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <CalendarCheck className="h-5 w-5 text-emerald-500" />
+                  <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-300">
+                    Done
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Completed
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {dashboardData?.maintenance?.completed || 0}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-emerald-500">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>This month</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upcoming This Week Card */}
+              <div className="p-5 rounded-lg bg-violet-50/30 dark:bg-violet-950/10 border border-violet-200 dark:border-violet-900">
+                <div className="flex items-center justify-between mb-3">
+                  <TrendingUp className="h-5 w-5 text-violet-500" />
+                  <Badge className="text-xs bg-violet-100 text-violet-700 border-violet-300">
+                    Trend
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Due This Week
+                </p>
+                <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                  {Math.max(0, (dashboardData?.maintenance?.scheduled || 0) - 2)}
+                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-xs text-violet-500">
+                    <ArrowRight className="h-3 w-3" />
+                    <span>Next 7 days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+          {/* Main Metrics Section */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.mainMetrics}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <EmployeeMetrics data={dashboardData?.employees} isLoading={isLoading} />
+              <AssetMetrics data={dashboardData?.assets} isLoading={isLoading} />
+              <TicketMetrics data={dashboardData?.tickets} isLoading={isLoading} />
+            </div>
+          </div>
+
+          {/* Asset Distribution and Department Stats - Side by Side - MOVED UP */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Asset Distribution by Type */}
+            <AssetsByType 
+              assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
+              isLoading={isLoading}
+            />
+            
+            {/* Department with Most Tickets - REPLACED */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-primary" />
+                  Departments by Ticket Volume
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} className="h-24 w-full" />
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
                     ))}
                   </div>
-                ) : dashboardData?.maintenanceCounts ? (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Scheduled Maintenance Card */}
-                    <div 
-                      className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 cursor-pointer hover:shadow-md transition-all"
-                      onClick={() => handleMaintenanceNavigation('scheduled')}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <Clock className="h-8 w-8 text-blue-600" />
-                        <span className="text-sm text-blue-600 font-medium">
-                          {translations.viewScheduled} →
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {translations.scheduled}
-                      </p>
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
-                        {dashboardData.maintenanceCounts.scheduled || 0}
-                      </p>
-                    </div>
-
-                    {/* In Progress Maintenance Card */}
-                    <div 
-                      className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 cursor-pointer hover:shadow-md transition-all"
-                      onClick={() => handleMaintenanceNavigation('inProgress')}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <AlertCircle className="h-8 w-8 text-orange-600" />
-                        <span className="text-sm text-orange-600 font-medium">
-                          {translations.viewInProgress} →
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {translations.inProgress}
-                      </p>
-                      <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">
-                        {dashboardData.maintenanceCounts.inProgress || 0}
-                      </p>
-                    </div>
-
-                  </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    {translations.noData}
+                  <div className="space-y-3">
+                    {(() => {
+                      // Use real data from backend
+                      const ticketsByDept = dashboardData?.tickets?.byDepartment || {};
+                      
+                      // Sort and get top 5
+                      const sortedDepts = Object.entries(ticketsByDept)
+                        .sort(([,a], [,b]) => (b as number) - (a as number))
+                        .slice(0, 5);
+                      
+                      // If no data, show message
+                      if (sortedDepts.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            No ticket data available
+                          </div>
+                        );
+                      }
+                      
+                      // Get max count for percentage calculation
+                      const maxCount = Math.max(...sortedDepts.map(([, count]) => count as number));
+                      
+                      return sortedDepts.map(([dept, count], index) => (
+                        <div key={dept} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                          onClick={() => window.location.href = `/tickets?department=${encodeURIComponent(dept)}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm
+                              ${count > 15 ? 'bg-red-500' : 
+                                count > 10 ? 'bg-orange-500' : 
+                                count > 5 ? 'bg-yellow-500' : 
+                                count > 0 ? 'bg-blue-500' : 'bg-gray-400'}`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{dept}</p>
+                              <p className="text-xs text-gray-500">
+                                {count === 1 ? '1 ticket' : `${count} tickets`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-24">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all
+                                    ${count > 15 ? 'bg-red-500' : 
+                                      count > 10 ? 'bg-orange-500' : 
+                                      count > 5 ? 'bg-yellow-500' : 
+                                      count > 0 ? 'bg-blue-500' : 'bg-gray-400'}`}
+                                  style={{ width: `${(count / maxCount) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                            <Badge variant={count > 10 ? "destructive" : count > 5 ? "default" : "secondary"}>
+                              {count}
+                            </Badge>
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </CardContent>
             </Card>
+          </div>
 
-               {/* Recent Assets and Tickets - with enhancements */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentAssets 
-                  assets={dashboardData?.recentAssets || []} 
-                  isLoading={isLoading}
-                  onViewAll={() => window.location.href = '/assets'}
-                />
-                <RecentTickets 
-                  tickets={dashboardData?.recentTickets || []} 
-                  isLoading={isLoading}
-                  onViewAll={() => window.location.href = '/tickets'}
-                />
-              </div>
-              {/* Assets by Type & Department Distribution - with enhancements */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <AssetsByType 
-                      assetsByType={dashboardData?.assetsByType || {}} 
-                      isLoading={isLoading}
-                      onTypeClick={(type) => window.location.href = `/assets?type=${type}`}
-                    />
-                    <DepartmentDistribution 
-                      employeesByDepartment={dashboardData?.employeesByDepartment || {}} 
-                      isLoading={isLoading}
-                      onDepartmentClick={(dept) => window.location.href = `/employees?department=${dept}`}
-                    />
+          {/* Department Distribution - Full Width */}
+          <EnhancedDepartmentDistribution 
+            data={dashboardData?.departmentDistribution} 
+            isLoading={isLoading} 
+          />
+
+          {/* Recent Activity Section */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.recentActivity}
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RecentAssets 
+                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
+                isLoading={isLoading}
+              />
+              <RecentTickets 
+                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
+
+          {/* Activity Timeline - MOVED TO END */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">{translations.activityTimeline}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                ) : (
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="space-y-4">
+                      {dashboardData?.employees?.newThisMonth > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.employees.newThisMonth} new employees joined</p>
+                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.tickets?.resolvedThisMonth > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.tickets.resolvedThisMonth} tickets resolved</p>
+                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.maintenance?.overdue > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.maintenance.overdue} assets overdue for maintenance</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.assets?.underMaintenance > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-orange-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.assets.underMaintenance} assets under maintenance</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                      {dashboardData?.tickets?.critical > 0 && (
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-purple-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{dashboardData.tickets.critical} critical tickets pending</p>
+                            <p className="text-sm text-gray-500">{translations.today}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </TabsContent>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
+        {/* Notifications Tab - Unchanged */}
         <TabsContent value="notifications">
-          <Notifications />
+          <Notifications 
+            notifications={dashboardData?.notifications?.items || []} 
+            isLoading={isLoading}
+          />
         </TabsContent>
       </Tabs>
+
+      {/* Employee Dialog - FIXED SIZE */}
+      <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
+            </DialogTitle>
+          </DialogHeader>
+          <EmployeeForm
+            onSuccess={handleEmployeeSubmit}
+            onCancel={() => setShowEmployeeDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Asset Dialog - FIXED SIZE */}
+      <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
+            </DialogTitle>
+          </DialogHeader>
+          <AssetForm
+            onSuccess={handleAssetSubmit}
+            onCancel={() => setShowAssetDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Ticket Dialog - FIXED SIZE */}
+      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
+            </DialogTitle>
+          </DialogHeader>
+          <TicketForm
+            onSuccess={handleTicketSubmit}
+            onCancel={() => setShowTicketDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

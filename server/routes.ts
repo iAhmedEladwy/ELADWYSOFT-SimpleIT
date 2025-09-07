@@ -463,41 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/login", async (req, res, next) => {
     console.log('Login attempt for username:', req.body.username);
-    
-    // Emergency authentication for Ubuntu server deployment
-    // if (req.body.username === 'admin' && req.body.password === 'admin123') {
-    //   try {
-    //     const adminUser = await storage.getUserByUsername('admin');
-    //     if (adminUser) {
-    //       console.log('EMERGENCY: Direct admin authentication activated');
-          
-    //       // Manual session creation for emergency access
-    //       (req as any).session.userId = adminUser.id;
-    //       (req as any).session.user = adminUser;
-    //       (req as any).session.passport = { user: adminUser.id };
-          
-    //       // Save session immediately
-    //       (req as any).session.save((err: any) => {
-    //         if (err) {
-    //           console.error('Emergency session save error:', err);
-    //         } else {
-    //           console.log('Emergency session saved successfully');
-    //         }
-    //       });
-          
-    //       console.log('EMERGENCY: Session created for admin user');
-    //       const { password: _, ...userWithoutPassword } = adminUser;
-          
-    //       return res.json({ 
-    //         message: "Emergency login successful", 
-    //         user: userWithoutPassword
-    //       });
-    //     }
-    //   } catch (emergencyError) {
-    //     console.error('Emergency authentication failed:', emergencyError);
-    //   }
-    // }
-    
+       
     // Standard passport authentication
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -2449,55 +2415,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // For maintenance filter, we need to check maintenance records
-        let assetsWithMaintenance = filteredAssets;
-      if (filters.maintenanceDue) {
-      // Get maintenance status for all filtered assets
-      const assetsWithMaintenanceStatus = await Promise.all(
-        filteredAssets.map(async (asset) => {
-          const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
-          
-          // Get today's date at start of day for proper comparison
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const hasScheduled = maintenanceRecords.some(m => {
-            if (m.status !== 'Scheduled') return false;
-            
-            const maintenanceDate = new Date(m.date);
-            maintenanceDate.setHours(0, 0, 0, 0);
-            
-            // Include maintenance scheduled for today or future dates
-            return maintenanceDate >= today;
-          });
-          
-          const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
-          const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
-          
-          return {
-            ...asset,
-            hasScheduledMaintenance: hasScheduled,
-            hasInProgressMaintenance: hasInProgress,
-            hasCompletedMaintenance: hasCompleted
-          };
-        })
-      );
-      
+        // For maintenance filter, we need to check maintenance records
+        let assetsAfterMaintenanceFilter = filteredAssets; // Changed variable name
+
+        if (filters.maintenanceDue) {
+          // Get maintenance status for all filtered assets
+          const assetsWithMaintenanceStatus = await Promise.all(
+            filteredAssets.map(async (asset) => {  // Use filteredAssets instead of assets
+              const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
+              
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const hasScheduled = maintenanceRecords.some(m => {
+                if (m.status !== 'Scheduled') return false;
+                
+                const maintenanceDate = new Date(m.date);
+                maintenanceDate.setHours(0, 0, 0, 0);
+                
+                // Include maintenance scheduled for today or future dates
+                return maintenanceDate >= today;
+              });
+              
+              const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+              const hasCompleted = maintenanceRecords.some(m => m.status === 'Completed');
+              
+              // Check for overdue (scheduled but past date)
+              const hasOverdue = maintenanceRecords.some(m => {
+                if (m.status !== 'Scheduled') return false;
+                const maintenanceDate = new Date(m.date);
+                maintenanceDate.setHours(0, 0, 0, 0);
+                return maintenanceDate < today;
+              });
+              
+              return {
+                ...asset,
+                hasScheduledMaintenance: hasScheduled,
+                hasInProgressMaintenance: hasInProgress,
+                hasCompletedMaintenance: hasCompleted,
+                hasOverdueMaintenance: hasOverdue
+              };
+            })
+          );
+
       // Filter based on maintenance status
-      assetsWithMaintenance = assetsWithMaintenanceStatus.filter(asset => {
-        if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
-        if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
-        if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
-        return true;
-      });
-    }
+        assetsAfterMaintenanceFilter = assetsWithMaintenanceStatus.filter(asset => {
+          if (filters.maintenanceDue === 'scheduled') return asset.hasScheduledMaintenance;
+          if (filters.maintenanceDue === 'inProgress') return asset.hasInProgressMaintenance;
+          if (filters.maintenanceDue === 'completed') return asset.hasCompletedMaintenance;
+          if (filters.maintenanceDue === 'overdue') return asset.hasOverdueMaintenance;
+          return true;
+        });
+      }
         
         // Get total count after all filters
-        const totalCount = assetsWithMaintenance.length;
+        const totalCount = assetsAfterMaintenanceFilter.length;
         const totalPages = Math.ceil(totalCount / limit);
-        
         // Apply pagination
-        const paginatedAssets = assetsWithMaintenance.slice(offset, offset + limit);
-        
+        const paginatedAssets = assetsAfterMaintenanceFilter.slice(offset, offset + limit); 
+               
         // Enrich ONLY the paginated assets with full maintenance data
         const enrichedAssets = await Promise.all(
           paginatedAssets.map(async (asset) => {
@@ -4492,143 +4468,397 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard Summary with Historical Comparisons
-
-  app.get("/api/dashboard/summary", authenticateUser, async (req, res) => {
+app.get('/api/dashboard/summary', async (req, res) => {
+  try {
+    const employees = await storage.getAllEmployees();
+    const assets = await storage.getAllAssets();
+    const allTickets = await storage.getAllTickets();
+    const users = await storage.getAllUsers();
+      // Get all maintenance records - ADD THIS SECTION
+    let allMaintenanceRecords = [];
     try {
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
-      const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const oneQuarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      // Try to use getAllMaintenanceRecords if available
+      if (storage.getAllMaintenanceRecords) {
+        allMaintenanceRecords = await storage.getAllMaintenanceRecords();
+      } else {
+        // Fallback: collect maintenance for each asset
+        for (const asset of assets) {
+          const assetMaintenance = await storage.getMaintenanceForAsset(asset.id);
+          allMaintenanceRecords = allMaintenanceRecords.concat(assetMaintenance);
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching maintenance records:', error);
+      // Continue with empty array if maintenance fetch fails
+    }
+    
+    // Get current date references
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Enhanced Employee Metrics
+    const fullTimeEmployees = employees.filter(emp => 
+      emp.employmentType === 'Full-time' && emp.status === 'Active'
+    );
+    const partTimeEmployees = employees.filter(emp => 
+      emp.employmentType === 'Part-time' && emp.status === 'Active'
+    );
+    const activeEmployees = employees.filter(emp => emp.status === 'Active');
+    
+    const newEmployeesThisMonth = employees.filter(emp => {
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+      return joiningDate && joiningDate >= startOfMonth;
+    });
+    
+    // Fixed: Employees pending offboarding - includes those with future exit dates or resigned/terminated with assets
+    const employeesWithAssets = new Set(
+      assets.filter(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
+        .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
+    );
+    
+    // Pending offboarding employees calculation - match custom filter logic
+    const pendingOffboarding = employees.filter(emp => {
+      // Check if employee has assigned assets
+      const hasAssignedAssets = assets.some(asset => 
+        (asset.assignedTo === emp.id) || 
+        (asset.assignedEmployeeId === emp.id) || 
+        (asset.assignedToId === emp.id) ||
+        (asset.assignedTo === emp.empId)
+      );
       
-      const [employees, assets, openTickets, userCount, allTickets] = await Promise.all([
-        storage.getAllEmployees().catch(err => {
-          console.error('Employee fetch error:', err);
-          return [];
-        }),
-        storage.getAllAssets(),
-        Promise.all([
-          storage.getTicketsByStatus("Open"),
-          storage.getTicketsByStatus("In Progress")
-        ]).then(([open, inProgress]) => [...open, ...inProgress]).catch(err => {
-          console.error('Active tickets fetch error:', err);
-          return [];
-        }),
-        storage.getAllUsers(),
-        storage.getAllTickets().catch(err => {
-          console.error('All tickets fetch error:', err);
-          return [];
-        })
-      ]);
+      // Match the "offboardedWithAssets" filter logic:
+      // Resigned or Terminated employees who still have assets
+      const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
       
-      // Calculate maintenance counts for dashboard
-      const maintenanceCounts = { 
-        scheduled: 0, 
-        inProgress: 0,
-        total: 0 
-      };
-      
-      // Get ALL maintenance records for better statistics
-      const allMaintenanceRecords = await storage.getAllMaintenanceRecords();
-      
-      // Process all assets to count maintenance statuses
-      for (const asset of assets) {
+      return isOffboarded && hasAssignedAssets;
+    });
+    // Enhanced Asset Metrics
+    const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
+    
+    const totalValidAssets = assets.filter(asset => 
+      !excludedStatuses.includes(asset.status)
+    );
+    
+    const availableLaptops = assets.filter(asset => 
+      asset.type === 'Laptop' && asset.status === 'Available'
+    );
+    
+    const reservedLaptops = assets.filter(asset => 
+      asset.type === 'Laptop' && asset.status === 'Reserved'
+    );
+    
+    // Fixed: Assets under maintenance - check actual status field
+    const assetsUnderMaintenance = assets.filter(asset => 
+      asset.status === 'Under Maintenance' || 
+      asset.status === 'Maintenance' ||
+      asset.status === 'Repairing'
+    );
+
+    // Recently updated assets (last 7 days)
+    const recentlyUpdatedAssets = assets
+      .filter(asset => {
+        const updatedAt = asset.updatedAt ? new Date(asset.updatedAt) : null;
+        return updatedAt && updatedAt >= oneWeekAgo;
+      })
+      .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+      .slice(0, 10);
+
+      // Employees leaving who still have assets (need to return)
+const leavingEmployeesWithAssets = employees.filter(emp => {
+  // Check if employee is leaving (has exit date OR not active)
+  const hasExitDate = emp.exitDate !== null && emp.exitDate !== undefined;
+  const isNotActive = emp.status !== 'Active';
+  const isLeaving = hasExitDate || isNotActive;
+  
+  // Check if has assets assigned
+  const hasAssets = assets.some(asset => 
+    (asset.assignedTo === emp.id) || 
+    (asset.assignedEmployeeId === emp.id) || 
+    (asset.assignedToId === emp.id) ||
+    (asset.assignedTo === emp.empId)
+  );
+  
+  return isLeaving && hasAssets;
+});
+    // Enhanced Ticket Metrics
+    const activeTickets = allTickets.filter(ticket => 
+      ticket.status === 'Open' || ticket.status === 'In Progress'
+    );
+    
+    const resolvedTicketsThisMonth = allTickets.filter(ticket => {
+      const resolvedDate = ticket.updatedAt ? new Date(ticket.updatedAt) : null;
+      return (ticket.status === 'Resolved' || ticket.status === 'Closed') && 
+             resolvedDate && resolvedDate >= startOfMonth;
+    });
+
+    // Ticket breakdown by priority
+    const ticketsByPriority = {
+      critical: activeTickets.filter(t => t.priority === 'Critical').length,
+      high: activeTickets.filter(t => t.priority === 'High').length,
+      medium: activeTickets.filter(t => t.priority === 'Medium').length,
+      low: activeTickets.filter(t => t.priority === 'Low').length
+    };
+
+      const ticketsByDepartment: Record<string, number> = {};
+    
+    // Initialize all departments with 0 tickets
+    const allDepartments = new Set<string>();
+    employees.forEach(emp => {
+      if (emp.department) {
+        allDepartments.add(emp.department);
+        ticketsByDepartment[emp.department] = 0;
+      }
+    });
+    
+    // Count tickets by the department of the employee who submitted them
+    allTickets.forEach(ticket => {
+      // Only count active tickets (Open or In Progress)
+      if (ticket.status === 'Open' || ticket.status === 'In Progress') {
+        // Find the employee who submitted the ticket
+        const submittedBy = employees.find(emp => emp.id === ticket.submittedById);
+        if (submittedBy && submittedBy.department) {
+          ticketsByDepartment[submittedBy.department] = (ticketsByDepartment[submittedBy.department] || 0) + 1;
+        } else {
+          // Count tickets without department as "Unassigned"
+          ticketsByDepartment['Unassigned'] = (ticketsByDepartment['Unassigned'] || 0) + 1;
+        }
+      }
+    });
+
+ // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
+    const assetsMaintenanceStatus = await Promise.all(
+      assets.map(async (asset) => {
         const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
         
-        // Count scheduled maintenance (future dates)
+        // Skip assets with no maintenance records
+        if (!maintenanceRecords || maintenanceRecords.length === 0) {
+          return null;
+        }
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Check for scheduled maintenance (future dates)
         const hasScheduled = maintenanceRecords.some(m => {
+          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
           const maintenanceDate = new Date(m.date);
-          return m.status === 'Scheduled' && maintenanceDate >= now;
+          maintenanceDate.setHours(0, 0, 0, 0);
+          return maintenanceDate >= today; // Future or today
         });
         
-        // Count in-progress maintenance
-        const hasInProgress = maintenanceRecords.some(m => m.status === 'In Progress');
+        // Check for in-progress maintenance
+        const hasInProgress = maintenanceRecords.some(m => 
+          m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
+        );
         
-        if (hasScheduled) maintenanceCounts.scheduled++;
-        if (hasInProgress) maintenanceCounts.inProgress++;
-      }
-      
-      maintenanceCounts.total = allMaintenanceRecords.length;
-      
-      // Calculate historical comparisons
-      const employeesOneYearAgo = employees.filter(emp => {
-        const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
-        return joiningDate && joiningDate <= oneYearAgo;
-      }).length;
+        // Check for overdue maintenance
+        const hasOverdue = maintenanceRecords.some(m => {
+          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+          const maintenanceDate = new Date(m.date);
+          maintenanceDate.setHours(0, 0, 0, 0);
+          return maintenanceDate < today; // Past date but still scheduled
+        });
+        
+        return {
+          assetId: asset.id,
+          hasScheduled,
+          hasInProgress,
+          hasOverdue,
+          hasAnyMaintenance: true
+        };
+      })
+    );
 
-      const assetsOneMonthAgo = assets.filter(asset => {
-        const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
-        return createdAt && createdAt <= oneMonthAgo;
-      }).length;
+    // Filter out nulls (assets without maintenance) and count
+    const assetsWithMaintenance = assetsMaintenanceStatus.filter(a => a !== null);
 
-      const ticketsOneWeekAgo = allTickets.filter(ticket => {
-        const createdAt = ticket.createdAt ? new Date(ticket.createdAt) : null;
-        return createdAt && createdAt <= oneWeekAgo;
-      }).length;
+    // Count unique assets with each maintenance status
+    const maintenanceCounts = {
+      scheduled: assetsWithMaintenance.filter(a => a.hasScheduled).length,
+      inProgress: assetsWithMaintenance.filter(a => a.hasInProgress).length,
+      overdue: assetsWithMaintenance.filter(a => a.hasOverdue).length
+    };
 
-      // Calculate total asset value
-      const totalAssetValue = assets.reduce((sum, asset) => {
-        const price = typeof asset.buyPrice === 'string' 
-          ? parseFloat(asset.buyPrice) 
-          : (asset.buyPrice || 0);
-        return sum + (isNaN(price) ? 0 : price);
-      }, 0);
+    // Calculate total asset value (excluding disposed assets)
+    const totalAssetValue = totalValidAssets.reduce((sum, asset) => {
+      const price = typeof asset.buyPrice === 'string' 
+        ? parseFloat(asset.buyPrice) 
+        : (asset.buyPrice || 0);
+      return sum + (isNaN(price) ? 0 : price);
+    }, 0);
 
-      // Calculate changes
-      const calculatePercentageChange = (current: number, previous: number): string => {
-        if (previous === 0) return current > 0 ? '+100%' : '0%';
-        const change = ((current - previous) / previous) * 100;
-        return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-      };
-
-      // Get recent items for dashboard widgets
-      const recentAssets = assets
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-        .slice(0, 5);
-      
-      const recentTickets = allTickets
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-        .slice(0, 5);
-
-      // Assets by type
-      const assetsByType = assets.reduce((acc, asset) => {
-        acc[asset.type] = (acc[asset.type] || 0) + 1;
+       // Department Distribution (live data) - FIXED VERSION
+    const departmentDistribution = {
+      employees: employees.reduce((acc, emp) => {
+        if (emp.status === 'Active') {
+          const dept = emp.department || 'Unassigned';
+          acc[dept] = (acc[dept] || 0) + 1;
+        }
         return acc;
-      }, {} as Record<string, number>);
-
-      // Employees by department
-      const employeesByDepartment = employees.reduce((acc, emp) => {
-        const dept = emp.department || 'Unassigned';
-        acc[dept] = (acc[dept] || 0) + 1;
+      }, {} as Record<string, number>),
+      assets: assets.reduce((acc, asset) => {
+        // IMPORTANT: Only count valid assets, exclude disposed/sold/lost/etc
+        if (!excludedStatuses.includes(asset.status)) {
+          // Check multiple possible assignment fields
+          const assignedId = asset.assignedTo || asset.assignedEmployeeId || asset.assignedToId;
+          if (assignedId) {
+            const employee = employees.find(e => 
+              e.id === assignedId || 
+              e.empId === String(assignedId) // Handle string/number mismatch
+            );
+            const dept = employee?.department || 'Unassigned';
+            acc[dept] = (acc[dept] || 0) + 1;
+          }
+          // Don't count unassigned assets if they're in excluded statuses
+          // Only count truly available/in-use unassigned assets
+        }
         return acc;
-      }, {} as Record<string, number>);
-      
-      res.json({
-        counts: {
-          employees: employees.length,
-          assets: assets.length,
-          activeTickets: openTickets.length,
-          totalAssetValue,
-          users: userCount.length
-        },
-        maintenanceCounts,
+      }, {} as Record<string, number>)
+    };
+
+    // Assets by type (excluding disposed)
+    const assetsByType = totalValidAssets.reduce((acc, asset) => {
+      acc[asset.type] = (acc[asset.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Get recent items for dashboard widgets
+    const recentAssets = assets
+      .filter(a => !excludedStatuses.includes(a.status))
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 5);
+    
+    const recentTickets = allTickets
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      .slice(0, 5);
+
+          // Fixed: Quick Actions availability with correct counts
+        const quickActions = {
+          canAddEmployee: getUserRoleLevel(req.user) >= 2,
+          canAddAsset: getUserRoleLevel(req.user) >= 2,
+          canOpenTicket: getUserRoleLevel(req.user) >= 1,
+          pendingActions: {
+            employeesNeedToReturnAssets: leavingEmployeesWithAssets.length, // Clear name
+            assetsNeedingMaintenance: allMaintenanceRecords.filter(m => 
+              m.status === 'Scheduled' || m.status === 'scheduled'
+            ).length,
+            ticketsNearingSLA: activeTickets.filter(t => {
+              const createdAt = new Date(t.createdAt || 0);
+              const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+              return hoursSinceCreation > 40 && hoursSinceCreation < 48;
+            }).length
+          }
+        };
+
+    // Calculate percentage changes
+    const calculatePercentageChange = (current: number, previous: number): string => {
+      if (previous === 0) return current > 0 ? '+100%' : '0%';
+      const change = ((current - previous) / previous) * 100;
+      return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+    };
+
+    // Get comparison data
+    const employeesLastMonth = employees.filter(emp => {
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+      return joiningDate && joiningDate < startOfMonth;
+    }).filter(emp => emp.status === 'Active').length;
+
+    const assetsLastMonth = assets.filter(asset => {
+      const createdAt = asset.createdAt ? new Date(asset.createdAt) : null;
+      return createdAt && createdAt < startOfMonth && !excludedStatuses.includes(asset.status);
+    }).length;
+
+    const ticketsLastWeek = allTickets.filter(t => {
+      const created = new Date(t.createdAt || 0);
+      return created < oneWeekAgo && (t.status === 'Open' || t.status === 'In Progress');
+    }).length;
+
+    res.json({
+      // Employee Metrics
+      employees: {
+        total: activeEmployees.length,
+        fullTime: fullTimeEmployees.length,
+        partTime: partTimeEmployees.length,
+        newThisMonth: newEmployeesThisMonth.length,
+        pendingOffboarding: pendingOffboarding.length,
+        byDepartment: departmentDistribution.employees,
         changes: {
-          employees: calculatePercentageChange(employees.length, employeesOneYearAgo),
-          assets: calculatePercentageChange(assets.length, assetsOneMonthAgo),
-          activeTickets: calculatePercentageChange(openTickets.length, ticketsOneWeekAgo),
-          totalAssetValue: calculatePercentageChange(totalAssetValue, totalAssetValue * 0.9) // Placeholder
-        },
-        recentAssets,
-        recentTickets,
-        assetsByType,
-        employeesByDepartment
-      });
-    } catch (error: unknown) {
-      console.error('Dashboard summary error:', error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+          monthly: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
+          newHires: newEmployeesThisMonth.length
+        }
+      },
+      
+      // Asset Metrics
+      assets: {
+        total: totalValidAssets.length,
+        totalValue: totalAssetValue,
+        availableLaptops: availableLaptops.length,
+        reservedLaptops: reservedLaptops.length,
+        underMaintenance: assetsUnderMaintenance.length,
+        recentlyUpdated: recentlyUpdatedAssets,
+        byType: assetsByType,
+        byDepartment: departmentDistribution.assets,
+        changes: {
+          monthly: calculatePercentageChange(totalValidAssets.length, assetsLastMonth)
+        }
+      },
+      
+      // Ticket Metrics
+      tickets: {
+        active: activeTickets.length,
+        resolvedThisMonth: resolvedTicketsThisMonth.length,
+        byPriority: ticketsByPriority,
+        byDepartment: ticketsByDepartment,  
+        recent: recentTickets,
+        changes: {
+          weekly: calculatePercentageChange(activeTickets.length, ticketsLastWeek)
+        }
+      },
+      
+      // Maintenance Overview
+      maintenance: maintenanceCounts,
+      
+      // Quick Actions Data
+      quickActions,
+      
+      // Recent Items
+      recentAssets,
+      recentTickets,
+      
+      // Department Distribution
+      departmentDistribution,
+      
+      // Legacy fields for backward compatibility
+      counts: {
+        employees: activeEmployees.length,
+        assets: totalValidAssets.length,
+        activeTickets: activeTickets.length,
+        totalAssetValue,
+        users: users.length
+      },
+      maintenanceCounts,
+      changes: {
+        employees: calculatePercentageChange(activeEmployees.length, employeesLastMonth),
+        assets: calculatePercentageChange(totalValidAssets.length, assetsLastMonth),
+        activeTickets: calculatePercentageChange(activeTickets.length, ticketsLastWeek),
+        totalAssetValue: '+5.2%' // Placeholder
+      },
+      assetsByType,
+      employeesByDepartment: departmentDistribution.employees
+    });
+  } catch (error: unknown) {
+    console.error('Dashboard summary error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch dashboard summary',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
   // Asset Transactions with Enhanced Filtering
   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
