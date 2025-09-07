@@ -68,6 +68,7 @@ interface TransactionWithRelations {
 
 export default function AssetHistory() {
   const { language } = useLanguage();
+  const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: '',
     type: '',
