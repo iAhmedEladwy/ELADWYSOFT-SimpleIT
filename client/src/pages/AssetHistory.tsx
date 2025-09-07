@@ -18,6 +18,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+const [assetSearchOpen, setAssetSearchOpen] = useState(false);
+const [assetSearchValue, setAssetSearchValue] = useState('');
+const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+const [employeeSearchValue, setEmployeeSearchValue] = useState('');
+
 interface Asset {
   id: number;
   assetId: string;
@@ -116,6 +121,13 @@ export default function AssetHistory() {
     status: language === 'English' ? 'Status' : 'الحالة',
     export: language === 'English' ? 'Export' : 'تصدير',
     clearFilters: language === 'English' ? 'Clear Filters' : 'مسح المرشحات',
+    exportSuccess: language === 'English' ? 'Data exported successfully' : 'تم تصدير البيانات بنجاح',
+    exportError: language === 'English' ? 'Failed to export data' : 'فشل تصدير البيانات',
+    noDataToExport: language === 'English' ? 'No data to export' : 'لا توجد بيانات للتصدير',
+    searchAssets: language === 'English' ? 'Search assets...' : 'البحث عن الأصول...',
+    searchEmployees: language === 'English' ? 'Search employees...' : 'البحث عن الموظفين...',
+    noAssetsFound: language === 'English' ? 'No assets found' : 'لم يتم العثور على أصول',
+    noEmployeesFound: language === 'English' ? 'No employees found' : 'لم يتم العثور على موظفين',
   };
 
       // Fetch transaction history
@@ -221,6 +233,103 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
+      const handleExport = () => {
+      // Get the transactions to export (use filtered if available)
+      const dataToExport = filteredTransactions || transactions || [];
+      
+      if (dataToExport.length === 0) {
+        toast({
+          title: translations.noDataToExport,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      try {
+        // CSV Headers - including ALL columns even hidden ones
+        const headers = [
+          'Transaction ID',
+          'Transaction Type',
+          'Transaction Date',
+          'Asset ID',
+          'Asset Type',
+          'Asset Brand',
+          'Asset Model',
+          'Serial Number',
+          'Employee ID',
+          'Employee Name (English)',
+          'Employee Name (Arabic)',
+          'Employee Department',
+          'Notes',
+          'Condition Notes',
+          // Device Specs
+          'Device Condition',
+          'Operating System',
+          'Processor',
+          'RAM',
+          'Storage',
+          'Location',
+          'Status',
+        ];
+
+        // Build CSV rows with all data
+        const csvRows = [headers.join(',')];
+        
+        dataToExport.forEach((transaction: TransactionWithRelations) => {
+          const row = [
+            transaction.id || '',
+            transaction.type || '',
+            transaction.date || transaction.transactionDate ? 
+              format(new Date(transaction.date || transaction.transactionDate!), 'yyyy-MM-dd HH:mm:ss') : '',
+            transaction.asset?.assetId || '',
+            transaction.asset?.type || '',
+            transaction.asset?.brand || '',
+            transaction.asset?.modelName || '',
+            transaction.asset?.serialNumber || '',
+            transaction.employee?.id || '',
+            transaction.employee?.englishName || '',
+            transaction.employee?.arabicName || '',
+            transaction.employee?.department || '',
+            `"${(transaction.notes || '').replace(/"/g, '""')}"`, // Escape quotes in notes
+            `"${(transaction.conditionNotes || '').replace(/"/g, '""')}"`,
+            // Device Specs
+            transaction.deviceSpecs?.condition || transaction.asset?.condition || '',
+            transaction.deviceSpecs?.operatingSystem || transaction.asset?.operatingSystem || '',
+            transaction.deviceSpecs?.processor || transaction.asset?.processor || '',
+            transaction.deviceSpecs?.ram || transaction.asset?.ram || '',
+            transaction.deviceSpecs?.storage || transaction.asset?.storage || '',
+            transaction.deviceSpecs?.location || transaction.asset?.location || '',
+            transaction.deviceSpecs?.status || transaction.asset?.status || '',
+          ];
+          
+          csvRows.push(row.join(','));
+        });
+
+        // Create and download CSV file
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `asset-history-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: translations.exportSuccess,
+          description: `Exported ${dataToExport.length} transactions`,
+        });
+      } catch (error) {
+        console.error('Export error:', error);
+        toast({
+          title: translations.exportError,
+          variant: 'destructive',
+        });
+      }
+    };
+
   return (
     <>
       <Helmet>
@@ -239,8 +348,8 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
             <Button variant="outline" onClick={clearFilters}>
               {translations.clearFilters}
             </Button>
-            <Button variant="outline">
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button onClick={handleExport} className="gap-2">
+              <FileDown className="h-4 w-4" />
               {translations.export}
             </Button>
           </div>
@@ -291,40 +400,172 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                 </Select>
               </div>
 
-              {/* Asset Filter */}
+              {/* Searchable Asset Filter */}
               <div className="space-y-2">
                 <Label>{translations.asset}</Label>
-                <Select value={filters.assetId || 'all'} onValueChange={(value) => handleFilterChange('assetId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={translations.all} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{translations.all}</SelectItem>
-                    {assets?.map((asset: Asset) => (
-                      <SelectItem key={asset.id} value={asset.id.toString()}>
-                        {asset.assetId} - {asset.type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={assetSearchOpen} onOpenChange={setAssetSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={assetSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {filters.assetId && filters.assetId !== 'all'
+                        ? assets.find((asset: any) => asset.id.toString() === filters.assetId)?.assetId +
+                          ' - ' + assets.find((asset: any) => asset.id.toString() === filters.assetId)?.type
+                        : translations.all}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder={translations.searchAssets}
+                        value={assetSearchValue}
+                        onValueChange={setAssetSearchValue}
+                      />
+                      <CommandEmpty>{translations.noAssetsFound}</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            handleFilterChange('assetId', 'all');
+                            setAssetSearchOpen(false);
+                            setAssetSearchValue('');
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!filters.assetId || filters.assetId === 'all') ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {translations.all}
+                        </CommandItem>
+                        {assets
+                          .filter((asset: any) => {
+                            const searchLower = assetSearchValue.toLowerCase();
+                            return !assetSearchValue || 
+                              asset.assetId?.toLowerCase().includes(searchLower) ||
+                              asset.type?.toLowerCase().includes(searchLower) ||
+                              asset.brand?.toLowerCase().includes(searchLower) ||
+                              asset.modelName?.toLowerCase().includes(searchLower);
+                          })
+                          .map((asset: any) => (
+                            <CommandItem
+                              key={asset.id}
+                              value={`${asset.assetId} ${asset.type} ${asset.brand || ''}`}
+                              onSelect={() => {
+                                handleFilterChange('assetId', asset.id.toString());
+                                setAssetSearchOpen(false);
+                                setAssetSearchValue('');
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.assetId === asset.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{asset.assetId} - {asset.type}</span>
+                                {asset.brand && (
+                                  <span className="text-xs text-muted-foreground">{asset.brand} {asset.modelName || ''}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {/* Employee Filter */}
+             {/* Searchable Employee Filter */}
               <div className="space-y-2">
                 <Label>{translations.employee}</Label>
-                <Select value={filters.employeeId || 'all'} onValueChange={(value) => handleFilterChange('employeeId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={translations.all} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{translations.all}</SelectItem>
-                    {employees?.map((employee: Employee) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
-                        {employee.englishName || employee.arabicName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={employeeSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {filters.employeeId && filters.employeeId !== 'all'
+                        ? (() => {
+                            const emp = employees.find((e: any) => e.id.toString() === filters.employeeId);
+                            return emp ? `${emp.englishName || emp.arabicName}` : translations.all;
+                          })()
+                        : translations.all}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder={translations.searchEmployees}
+                        value={employeeSearchValue}
+                        onValueChange={setEmployeeSearchValue}
+                      />
+                      <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            handleFilterChange('employeeId', 'all');
+                            setEmployeeSearchOpen(false);
+                            setEmployeeSearchValue('');
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!filters.employeeId || filters.employeeId === 'all') ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {translations.all}
+                        </CommandItem>
+                        {employees
+                          .filter((emp: any) => {
+                            const searchLower = employeeSearchValue.toLowerCase();
+                            return !employeeSearchValue || 
+                              emp.englishName?.toLowerCase().includes(searchLower) ||
+                              emp.arabicName?.toLowerCase().includes(searchLower) ||
+                              emp.empId?.toLowerCase().includes(searchLower) ||
+                              emp.department?.toLowerCase().includes(searchLower);
+                          })
+                          .map((emp: any) => (
+                            <CommandItem
+                              key={emp.id}
+                              value={`${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`}
+                              onSelect={() => {
+                                handleFilterChange('employeeId', emp.id.toString());
+                                setEmployeeSearchOpen(false);
+                                setEmployeeSearchValue('');
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.employeeId === emp.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{emp.englishName || emp.arabicName}</span>
+                                {emp.department && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {emp.empId} • {emp.department}
+                                  </span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Date From */}
