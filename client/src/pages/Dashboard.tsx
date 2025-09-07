@@ -453,6 +453,26 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Resolved This Month Card - 8th Card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Resolved This Month</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {isLoading ? '...' : dashboardData?.tickets?.resolvedThisMonth || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tickets closed
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      <CalendarCheck className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
