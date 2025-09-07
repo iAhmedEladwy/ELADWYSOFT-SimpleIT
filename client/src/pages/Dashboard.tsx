@@ -75,9 +75,7 @@ export default function Dashboard() {
     // Tab Labels
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
     insights: language === 'English' ? 'Insights' : 'رؤى',
-    analytics: language === 'English' ? 'Analytics' : 'التحليلات',
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
-    activity: language === 'English' ? 'Activity' : 'النشاط',
     
     // Header Actions
     lastUpdated: language === 'English' ? 'Last updated' : 'آخر تحديث',
@@ -89,13 +87,8 @@ export default function Dashboard() {
     // Section Titles
     quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
     mainMetrics: language === 'English' ? 'Main Metrics' : 'المقاييس الرئيسية',
-    recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
     activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
-    departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
-    assetDistribution: language === 'English' ? 'Asset Distribution' : 'توزيع الأصول',
     maintenanceOverview: language === 'English' ? 'Maintenance Overview' : 'نظرة عامة على الصيانة',
-    upcomingMaintenance: language === 'English' ? 'Upcoming Maintenance' : 'الصيانة القادمة',
-    overdueMaintenance: language === 'English' ? 'Overdue Maintenance' : 'صيانة متأخرة',
     
     // Quick Summary Card Titles
     totalEmployees: language === 'English' ? 'Total Employees' : 'إجمالي الموظفين',
@@ -149,10 +142,6 @@ export default function Dashboard() {
     employeeAddedSuccess: language === 'English' ? 'Employee added successfully' : 'تمت إضافة الموظف بنجاح',
     assetAddedSuccess: language === 'English' ? 'Asset added successfully' : 'تمت إضافة الأصل بنجاح',
     ticketCreatedSuccess: language === 'English' ? 'Ticket created successfully' : 'تم إنشاء التذكرة بنجاح',
-    
-    // Time-related
-    today: language === 'English' ? 'Today' : 'اليوم',
-    thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
   };
 
   // Fetch dashboard data with enhanced endpoint
