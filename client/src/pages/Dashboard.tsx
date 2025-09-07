@@ -47,6 +47,7 @@ import EnhancedDepartmentDistribution from '@/components/dashboard/EnhancedDepar
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
 import Notifications from '@/components/dashboard/Notifications';
+import QuickActions from '@/components/dashboard/QuickActions';
 
 // Import legacy components for backward compatibility
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -63,32 +64,95 @@ export default function Dashboard() {
   const [showAssetDialog, setShowAssetDialog] = useState(false);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
 
-  // Get translations based on language
+  // Comprehensive translations based on language
   const translations = {
+    // Main Dashboard
     dashboard: language === 'English' ? 'Dashboard' : 'لوحة التحكم',
     welcome: language === 'English' 
       ? 'IT Asset Management System - Real-time Overview' 
       : 'نظام إدارة أصول تكنولوجيا المعلومات - نظرة عامة في الوقت الفعلي',
+    
+    // Tab Labels
     overview: language === 'English' ? 'Overview' : 'نظرة عامة',
     insights: language === 'English' ? 'Insights' : 'رؤى',
     analytics: language === 'English' ? 'Analytics' : 'التحليلات',
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
     activity: language === 'English' ? 'Activity' : 'النشاط',
+    
+    // Header Actions
     lastUpdated: language === 'English' ? 'Last updated' : 'آخر تحديث',
     refresh: language === 'English' ? 'Refresh' : 'تحديث',
+    refreshed: language === 'English' ? 'Refreshed' : 'تم التحديث',
     autoRefresh: language === 'English' ? 'Auto-refresh' : 'تحديث تلقائي',
+    dashboardUpdated: language === 'English' ? 'Dashboard data has been updated' : 'تم تحديث بيانات لوحة التحكم',
+    
+    // Section Titles
+    quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
     mainMetrics: language === 'English' ? 'Main Metrics' : 'المقاييس الرئيسية',
     recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
+    activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
     departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
     assetDistribution: language === 'English' ? 'Asset Distribution' : 'توزيع الأصول',
     maintenanceOverview: language === 'English' ? 'Maintenance Overview' : 'نظرة عامة على الصيانة',
     upcomingMaintenance: language === 'English' ? 'Upcoming Maintenance' : 'الصيانة القادمة',
     overdueMaintenance: language === 'English' ? 'Overdue Maintenance' : 'صيانة متأخرة',
+    
+    // Quick Summary Card Titles
+    totalEmployees: language === 'English' ? 'Total Employees' : 'إجمالي الموظفين',
+    pendingOffboarding: language === 'English' ? 'Pending Offboarding' : 'في انتظار المغادرة',
+    offboardedWithAssets: language === 'English' ? 'Offboarded with Assets' : 'غادروا مع أصول',
+    recentlyAdded: language === 'English' ? 'Recently Added' : 'أضيف مؤخراً',
+    assetsInUse: language === 'English' ? 'Assets in Use' : 'الأصول قيد الاستخدام',
+    availableLaptops: language === 'English' ? 'Available Laptops' : 'أجهزة محمولة متاحة',
+    openTickets: language === 'English' ? 'Open Tickets' : 'تذاكر مفتوحة',
+    resolvedThisMonth: language === 'English' ? 'Resolved This Month' : 'تم حلها هذا الشهر',
+    
+    // Card Descriptions
+    active: language === 'English' ? 'active' : 'نشط',
+    assetsToBeReturned: language === 'English' ? 'Assets to be returned' : 'أصول يجب إرجاعها',
+    requiresAttention: language === 'English' ? 'Requires attention' : 'يتطلب الانتباه',
+    lastThirtyDays: language === 'English' ? 'Last 30 days' : 'آخر 30 يوم',
+    totalAssets: language === 'English' ? 'total assets' : 'إجمالي الأصول',
+    inInventory: language === 'English' ? 'in inventory' : 'في المخزون',
+    highPriority: language === 'English' ? 'high priority' : 'أولوية عالية',
+    ticketsClosed: language === 'English' ? 'Tickets closed' : 'تذاكر مغلقة',
+    
+    // Maintenance Card Labels
+    total: language === 'English' ? 'Total' : 'الإجمالي',
+    overdue: language === 'English' ? 'Overdue' : 'متأخر',
+    scheduled: language === 'English' ? 'Scheduled' : 'مجدول',
+    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
+    completed: language === 'English' ? 'Completed' : 'مكتمل',
+    
+    // Maintenance Descriptions
+    allMaintenance: language === 'English' ? 'All maintenance' : 'جميع الصيانات',
+    needAttention: language === 'English' ? 'Need attention' : 'تحتاج انتباه',
+    planned: language === 'English' ? 'Planned' : 'مخطط',
+    beingServiced: language === 'English' ? 'Being serviced' : 'قيد الخدمة',
+    thisMonth: language === 'English' ? 'This month' : 'هذا الشهر',
+    
+    // Department Section
+    departmentsByTicketVolume: language === 'English' ? 'Departments by Ticket Volume' : 'الأقسام حسب حجم التذاكر',
+    
+    // Quick Actions
+    addEmployee: language === 'English' ? 'Add Employee' : 'إضافة موظف',
+    addAsset: language === 'English' ? 'Add Asset' : 'إضافة أصل',
+    openTicket: language === 'English' ? 'Open Ticket' : 'فتح تذكرة',
+    
+    // Dialog Titles
+    addNewEmployee: language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد',
+    addNewAsset: language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد',
+    createNewTicket: language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة',
+    
+    // Success Messages
+    success: language === 'English' ? 'Success' : 'نجح',
+    employeeAddedSuccess: language === 'English' ? 'Employee added successfully' : 'تمت إضافة الموظف بنجاح',
+    assetAddedSuccess: language === 'English' ? 'Asset added successfully' : 'تمت إضافة الأصل بنجاح',
+    ticketCreatedSuccess: language === 'English' ? 'Ticket created successfully' : 'تم إنشاء التذكرة بنجاح',
+    
+    // Time-related
     today: language === 'English' ? 'Today' : 'اليوم',
     thisWeek: language === 'English' ? 'This Week' : 'هذا الأسبوع',
-    thisMonth: language === 'English' ? 'This Month' : 'هذا الشهر',
-    quickSummary: language === 'English' ? 'Quick Summary' : 'ملخص سريع',
-    activityTimeline: language === 'English' ? 'Activity Timeline' : 'الجدول الزمني للنشاط',
   };
 
   // Fetch dashboard data with enhanced endpoint
@@ -151,10 +215,8 @@ export default function Dashboard() {
       // The EmployeeForm component handles the actual submission
       setShowEmployeeDialog(false);
       toast({
-        title: language === 'English' ? 'Success' : 'نجح',
-        description: language === 'English' 
-          ? 'Employee added successfully' 
-          : 'تمت إضافة الموظف بنجاح',
+        title: translations.success,
+        description: translations.employeeAddedSuccess,
       });
       refetch();
     } catch (error) {
@@ -167,10 +229,8 @@ export default function Dashboard() {
       // The AssetForm component handles the actual submission
       setShowAssetDialog(false);
       toast({
-        title: language === 'English' ? 'Success' : 'نجح',
-        description: language === 'English' 
-          ? 'Asset added successfully' 
-          : 'تمت إضافة الأصل بنجاح',
+        title: translations.success,
+        description: translations.assetAddedSuccess,
       });
       refetch();
     } catch (error) {
@@ -183,10 +243,8 @@ export default function Dashboard() {
       // The TicketForm component handles the actual submission
       setShowTicketDialog(false);
       toast({
-        title: language === 'English' ? 'Success' : 'نجح',
-        description: language === 'English' 
-          ? 'Ticket created successfully' 
-          : 'تم إنشاء التذكرة بنجاح',
+        title: translations.success,
+        description: translations.ticketCreatedSuccess,
       });
       refetch();
     } catch (error) {
@@ -199,10 +257,8 @@ export default function Dashboard() {
     setLastRefresh(new Date());
     refetch();
     toast({
-      title: language === 'English' ? 'Refreshed' : 'تم التحديث',
-      description: language === 'English' 
-        ? 'Dashboard data has been updated' 
-        : 'تم تحديث بيانات لوحة التحكم',
+      title: translations.refreshed,
+      description: translations.dashboardUpdated,
     });
   };
 
@@ -238,7 +294,7 @@ export default function Dashboard() {
               disabled={!dashboardData?.quickActions?.canAddEmployee}
             >
               <UserPlus className="h-4 w-4 text-blue-600" />
-              <span className="hidden sm:inline">Add Employee</span>
+              <span className="hidden sm:inline">{translations.addEmployee}</span>
             </Button>
             <Button
               variant="outline"
@@ -248,7 +304,7 @@ export default function Dashboard() {
               disabled={!dashboardData?.quickActions?.canAddAsset}
             >
               <Plus className="h-4 w-4 text-green-600" />
-              <span className="hidden sm:inline">Add Asset</span>
+              <span className="hidden sm:inline">{translations.addAsset}</span>
             </Button>
             <Button
               variant="outline"
@@ -258,7 +314,7 @@ export default function Dashboard() {
               disabled={!dashboardData?.quickActions?.canOpenTicket}
             >
               <Ticket className="h-4 w-4 text-purple-600" />
-              <span className="hidden sm:inline">Open Ticket</span>
+              <span className="hidden sm:inline">{translations.openTicket}</span>
             </Button>
           </div>
           
@@ -286,6 +342,15 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Quick Actions Component */}
+      <QuickActions 
+        data={dashboardData?.quickActions}
+        isLoading={isLoading}
+        onAddEmployee={handleAddEmployee}
+        onAddAsset={handleAddAsset}
+        onOpenTicket={handleOpenTicket}
+      />
 
       {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -322,12 +387,12 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.totalEmployees}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.total || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {dashboardData?.employees?.active || 0} active
+                        {dashboardData?.employees?.active || 0} {translations.active}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
@@ -342,12 +407,12 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Pending Offboarding</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.pendingOffboarding}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.employees?.pendingOffboarding || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Assets to be returned
+                        {translations.assetsToBeReturned}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
@@ -362,12 +427,12 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Offboarded with Assets</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.offboardedWithAssets}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : offboardedWithAssets.length}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Requires attention
+                        {translations.requiresAttention}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
@@ -382,12 +447,12 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Recently Added</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.recentlyAdded}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : recentlyAdded.length}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Last 30 days
+                        {translations.lastThirtyDays}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
@@ -402,12 +467,12 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Assets in Use</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.assetsInUse}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : assetsInUse.length}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {assets.length} total assets
+                        {assets.length} {translations.totalAssets}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
@@ -422,16 +487,16 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Available Laptops</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.availableLaptops}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.assets?.availableLaptops || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ready for assignment
+                        {translations.inInventory}
                       </p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                      <Laptop className="h-6 w-6 text-green-600" />
+                    <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                      <Laptop className="h-6 w-6 text-purple-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -442,32 +507,32 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Open Tickets</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.openTickets}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.tickets?.active || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {dashboardData?.tickets?.critical || 0} critical
+                        {dashboardData?.tickets?.byPriority?.high || 0} {translations.highPriority}
                       </p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                      <Ticket className="h-6 w-6 text-purple-600" />
+                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                      <Ticket className="h-6 w-6 text-amber-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Resolved This Month Card - 8th Card */}
+              {/* Resolved This Month Card */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Resolved This Month</p>
+                      <p className="text-sm font-medium text-muted-foreground">{translations.resolvedThisMonth}</p>
                       <p className="text-2xl font-bold mt-1">
                         {isLoading ? '...' : dashboardData?.tickets?.resolvedThisMonth || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Tickets closed
+                        {translations.ticketsClosed}
                       </p>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
@@ -494,141 +559,141 @@ export default function Dashboard() {
 
         {/* Insights Tab (formerly Overview) - Detailed view */}
         <TabsContent value="insights" className="space-y-6">
-        {/* Maintenance Overview - Without Parent Card Container */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-            {translations.maintenanceOverview}
-          </h2>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              
-              {/* Total Maintenance Card */}
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/assets?status=Maintenance`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Total</p>
-                      <p className="text-3xl font-bold mt-2">
-                        {((dashboardData?.maintenance?.scheduled || 0) + 
-                          (dashboardData?.maintenance?.inProgress || 0) + 
-                          (dashboardData?.maintenance?.overdue || 0))}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        All maintenance
-                      </p>
+          {/* Maintenance Overview - Without Parent Card Container */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+              {translations.maintenanceOverview}
+            </h2>
+            
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                
+                {/* Total Maintenance Card */}
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => window.location.href = `/assets?status=Maintenance`}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">{translations.total}</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {((dashboardData?.maintenance?.scheduled || 0) + 
+                            (dashboardData?.maintenance?.inProgress || 0) + 
+                            (dashboardData?.maintenance?.overdue || 0))}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {translations.allMaintenance}
+                        </p>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
+                        <Package className="h-6 w-6 text-gray-600" />
+                      </div>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-900/20 flex items-center justify-center">
-                      <Package className="h-6 w-6 text-gray-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Overdue Card */}
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/assets?maintenanceDue=overdue`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                      <p className="text-3xl font-bold mt-2">
-                        {dashboardData?.maintenance?.overdue || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Need attention
-                      </p>
+                {/* Overdue Card */}
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => window.location.href = `/assets?maintenanceDue=overdue`}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">{translations.overdue}</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {dashboardData?.maintenance?.overdue || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {translations.needAttention}
+                        </p>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-red-600" />
+                      </div>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                      <AlertCircle className="h-6 w-6 text-red-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Scheduled Card */}
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/assets?maintenanceDue=scheduled`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                      <p className="text-3xl font-bold mt-2">
-                        {dashboardData?.maintenance?.scheduled || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Planned
-                      </p>
+                {/* Scheduled Card */}
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => window.location.href = `/assets?maintenanceDue=scheduled`}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">{translations.scheduled}</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {dashboardData?.maintenance?.scheduled || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {translations.planned}
+                        </p>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                        <Calendar className="h-6 w-6 text-blue-600" />
+                      </div>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* In Progress Card */}
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/assets?maintenanceDue=in-progress`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                      <p className="text-3xl font-bold mt-2">
-                        {dashboardData?.maintenance?.inProgress || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Being serviced
-                      </p>
+                {/* In Progress Card */}
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => window.location.href = `/assets?maintenanceDue=in-progress`}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">{translations.inProgress}</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {dashboardData?.maintenance?.inProgress || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {translations.beingServiced}
+                        </p>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                        <Clock className="h-6 w-6 text-amber-600" />
+                      </div>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-amber-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Completed Card */}
-              <Card 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/assets?maintenanceDue=completed`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                      <p className="text-3xl font-bold mt-2">
-                        {dashboardData?.maintenance?.completed || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        This month
-                      </p>
+                {/* Completed Card */}
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => window.location.href = `/assets?maintenanceDue=completed`}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">{translations.completed}</p>
+                        <p className="text-3xl font-bold mt-2">
+                          {dashboardData?.maintenance?.completed || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {translations.thisMonth}
+                        </p>
+                      </div>
+                      <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                        <CalendarCheck className="h-6 w-6 text-emerald-600" />
+                      </div>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
-                      <CalendarCheck className="h-6 w-6 text-emerald-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
 
           {/* Main Metrics Section */}
           <div>
@@ -655,93 +720,43 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Ticket className="h-5 w-5 text-primary" />
-                  Departments by Ticket Volume
+                  {translations.departmentsByTicketVolume}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
                   <div className="space-y-3">
                     {[...Array(5)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
+                      <Skeleton key={i} className="h-8 w-full" />
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {(() => {
-                      // Use real data from backend
-                      const ticketsByDept = dashboardData?.tickets?.byDepartment || {};
-                      
-                      // Sort and get top 5
-                      const sortedDepts = Object.entries(ticketsByDept)
-                        .sort(([,a], [,b]) => (b as number) - (a as number))
-                        .slice(0, 5);
-                      
-                      // If no data, show message
-                      if (sortedDepts.length === 0) {
-                        return (
-                          <div className="text-center py-8 text-gray-500">
-                            No ticket data available
+                    {Object.entries(dashboardData?.tickets?.byDepartment || {})
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .slice(0, 5)
+                      .map(([dept, count], index) => (
+                        <div key={dept} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                            <span className="text-sm font-medium">{dept}</span>
                           </div>
-                        );
-                      }
-                      
-                      // Get max count for percentage calculation
-                      const maxCount = Math.max(...sortedDepts.map(([, count]) => count as number));
-                      
-                      return sortedDepts.map(([dept, count], index) => (
-                        <div key={dept} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                          onClick={() => window.location.href = `/tickets?department=${encodeURIComponent(dept)}`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm
-                              ${count > 15 ? 'bg-red-500' : 
-                                count > 10 ? 'bg-orange-500' : 
-                                count > 5 ? 'bg-yellow-500' : 
-                                count > 0 ? 'bg-blue-500' : 'bg-gray-400'}`}>
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{dept}</p>
-                              <p className="text-xs text-gray-500">
-                                {count === 1 ? '1 ticket' : `${count} tickets`}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-24">
-                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all
-                                    ${count > 15 ? 'bg-red-500' : 
-                                      count > 10 ? 'bg-orange-500' : 
-                                      count > 5 ? 'bg-yellow-500' : 
-                                      count > 0 ? 'bg-blue-500' : 'bg-gray-400'}`}
-                                  style={{ width: `${(count / maxCount) * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                            <Badge variant={count > 10 ? "destructive" : count > 5 ? "default" : "secondary"}>
-                              {count}
-                            </Badge>
-                          </div>
+                          <Badge variant={index === 0 ? "destructive" : "secondary"}>
+                            {count as number} tickets
+                          </Badge>
                         </div>
-                      ));
-                    })()}
+                      ))
+                    }
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Department Distribution - Full Width */}
-          <EnhancedDepartmentDistribution 
-            data={dashboardData?.departmentDistribution} 
-            isLoading={isLoading} 
-          />
-
-          {/* Recent Activity Section */}
+          {/* Activity Timeline - Moved to the end */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.recentActivity}
+              {translations.activityTimeline}
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentAssets 
@@ -754,132 +769,48 @@ export default function Dashboard() {
               />
             </div>
           </div>
-
-          {/* Activity Timeline - MOVED TO END */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{translations.activityTimeline}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-                ) : (
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="space-y-4">
-                      {dashboardData?.employees?.newThisMonth > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.employees.newThisMonth} new employees joined</p>
-                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.tickets?.resolvedThisMonth > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-green-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.tickets.resolvedThisMonth} tickets resolved</p>
-                            <p className="text-sm text-gray-500">{translations.thisMonth}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.maintenance?.overdue > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.maintenance.overdue} assets overdue for maintenance</p>
-                            <p className="text-sm text-gray-500">{translations.today}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.assets?.underMaintenance > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-orange-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.assets.underMaintenance} assets under maintenance</p>
-                            <p className="text-sm text-gray-500">{translations.today}</p>
-                          </div>
-                        </div>
-                      )}
-                      {dashboardData?.tickets?.critical > 0 && (
-                        <div className="flex gap-4">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-purple-600"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{dashboardData.tickets.critical} critical tickets pending</p>
-                            <p className="text-sm text-gray-500">{translations.today}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        {/* Notifications Tab - Unchanged */}
+        {/* Notifications Tab */}
         <TabsContent value="notifications">
-          <Notifications 
-            notifications={dashboardData?.notifications?.items || []} 
-            isLoading={isLoading}
-          />
+          <Notifications notifications={dashboardData?.notifications} isLoading={isLoading} />
         </TabsContent>
       </Tabs>
 
-      {/* Employee Dialog - FIXED SIZE */}
+      {/* Dialog for Add Employee */}
       <Dialog open={showEmployeeDialog} onOpenChange={setShowEmployeeDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Add New Employee' : 'إضافة موظف جديد'}
-            </DialogTitle>
+            <DialogTitle>{translations.addNewEmployee}</DialogTitle>
           </DialogHeader>
-          <EmployeeForm
-            onSuccess={handleEmployeeSubmit}
+          <EmployeeForm 
+            onSubmit={handleEmployeeSubmit} 
             onCancel={() => setShowEmployeeDialog(false)}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Asset Dialog - FIXED SIZE */}
+      {/* Dialog for Add Asset */}
       <Dialog open={showAssetDialog} onOpenChange={setShowAssetDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Add New Asset' : 'إضافة أصل جديد'}
-            </DialogTitle>
+            <DialogTitle>{translations.addNewAsset}</DialogTitle>
           </DialogHeader>
-          <AssetForm
-            onSuccess={handleAssetSubmit}
+          <AssetForm 
+            onSubmit={handleAssetSubmit} 
             onCancel={() => setShowAssetDialog(false)}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Ticket Dialog - FIXED SIZE */}
+      {/* Dialog for Open Ticket */}
       <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}
-            </DialogTitle>
+            <DialogTitle>{translations.createNewTicket}</DialogTitle>
           </DialogHeader>
-          <TicketForm
-            onSuccess={handleTicketSubmit}
+          <TicketForm 
+            onSubmit={handleTicketSubmit} 
             onCancel={() => setShowTicketDialog(false)}
           />
         </DialogContent>
