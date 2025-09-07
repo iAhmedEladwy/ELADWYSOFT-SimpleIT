@@ -153,7 +153,7 @@ export default function AssetMetrics({ data, isLoading }: AssetMetricsProps) {
 
         {/* Maintenance Status */}
         <div 
-          onClick={() => window.location.href = '/assets?status=Under Maintenance'}
+          onClick={() => window.location.href = '/assets?status=Maintenance'}
           className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 cursor-pointer transition-all"
         >
           <div className="flex items-center justify-between">

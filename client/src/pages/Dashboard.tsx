@@ -81,7 +81,7 @@ export default function Dashboard() {
     recentActivity: language === 'English' ? 'Recent Activity' : 'النشاط الأخير',
     departmentInsights: language === 'English' ? 'Department Insights' : 'رؤى الأقسام',
     assetDistribution: language === 'English' ? 'Asset Distribution' : 'توزيع الأصول',
-    maintenanceSchedule: language === 'English' ? 'Maintenance Schedule' : 'جدول الصيانة',
+    maintenanceOverview: language === 'English' ? 'Maintenance Overview' : 'نظرة عامة على الصيانة',
     upcomingMaintenance: language === 'English' ? 'Upcoming Maintenance' : 'الصيانة القادمة',
     overdueMaintenance: language === 'English' ? 'Overdue Maintenance' : 'صيانة متأخرة',
     today: language === 'English' ? 'Today' : 'اليوم',
@@ -498,7 +498,7 @@ export default function Dashboard() {
        <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">
-            {translations.maintenanceSchedule}
+            {translations.maintenanceOverview}
           </CardTitle>
         </CardHeader>
         <CardContent>
