@@ -491,7 +491,7 @@ export default function Dashboard() {
 
         {/* Insights Tab (formerly Overview) - Detailed view */}
         <TabsContent value="insights" className="space-y-6">
-          {/* Maintenance Overview - Moved to top */}
+          {/* Maintenance Overview - Enhanced with Total and Icons */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">
@@ -500,13 +500,32 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {[...Array(4)].map((_, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  {[...Array(5)].map((_, i) => (
                     <Skeleton key={i} className="h-24 w-full" />
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  {/* Total Maintenance Card - NEW */}
+                  <div
+                    className="p-4 rounded-lg cursor-pointer transition-all hover:shadow-md bg-gray-50 dark:bg-gray-900/20 border-2 border-gray-200 dark:border-gray-700"
+                    onClick={() => window.location.href = `/assets?status=Maintenance`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Package className="h-5 w-5 text-gray-600" />
+                      <Badge variant="secondary">Total</Badge>
+                    </div>
+                    <p className="text-sm font-medium">Total in Maintenance</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {((dashboardData?.maintenance?.scheduled || 0) + 
+                        (dashboardData?.maintenance?.inProgress || 0) + 
+                        (dashboardData?.maintenance?.overdue || 0))}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">All maintenance</p>
+                  </div>
+                  
+                  {/* Individual Status Cards with Icons */}
                   {Object.entries(dashboardData?.maintenance || {}).map(([status, count]) => (
                     <div
                       key={status}
@@ -517,10 +536,16 @@ export default function Dashboard() {
                           'bg-green-50 dark:bg-green-900/20'}`}
                       onClick={() => window.location.href = `/assets?maintenanceDue=${status}`}
                     >
+                      <div className="flex items-center justify-between mb-2">
+                        {status === 'overdue' && <AlertCircle className="h-5 w-5 text-red-600" />}
+                        {status === 'scheduled' && <Calendar className="h-5 w-5 text-blue-600" />}
+                        {status === 'inProgress' && <Activity className="h-5 w-5 text-orange-600" />}
+                        {status === 'completed' && <CalendarCheck className="h-5 w-5 text-green-600" />}
+                      </div>
                       <p className="text-sm font-medium capitalize">{status}</p>
                       <p className="text-2xl font-bold mt-1">{count as number}</p>
                       {status === 'overdue' && (count as number) > 0 && (
-                        <Badge variant="destructive" className="mt-2 animate-pulse">
+                        <Badge variant="destructive" className="mt-1 text-xs animate-pulse">
                           Action Required
                         </Badge>
                       )}
@@ -543,21 +568,82 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Asset Distribution by Type - Moved from Analytics */}
+          {/* Asset Distribution and Department Stats - Side by Side - MOVED UP */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Asset Distribution by Type */}
             <AssetsByType 
               assetsByType={dashboardData?.assets?.byType || dashboardData?.assetsByType || {}} 
               isLoading={isLoading}
             />
             
-            {/* Department Distribution */}
-            <EnhancedDepartmentDistribution 
-              data={dashboardData?.departmentDistribution} 
-              isLoading={isLoading} 
-            />
+            {/* Top Departments by Assets - NEW ADDITION */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Top Departments by Assets
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(dashboardData?.departmentDistribution?.assets || {})
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .slice(0, 5)
+                      .map(([dept, count], index) => (
+                        <div key={dept} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm
+                              ${index === 0 ? 'bg-yellow-500' : 
+                                index === 1 ? 'bg-gray-400' : 
+                                index === 2 ? 'bg-orange-600' : 
+                                'bg-blue-500'}`}>
+                              {index + 1}
+                            </div>
+                            <span className="font-medium">{dept}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold">{count}</span>
+                            <span className="text-sm text-muted-foreground">assets</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Activity Timeline - Moved from Activity tab */}
+          {/* Department Distribution - Full Width */}
+          <EnhancedDepartmentDistribution 
+            data={dashboardData?.departmentDistribution} 
+            isLoading={isLoading} 
+          />
+
+          {/* Recent Activity Section */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+              {translations.recentActivity}
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RecentAssets 
+                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
+                isLoading={isLoading}
+              />
+              <RecentTickets 
+                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
+
+          {/* Activity Timeline - MOVED TO END */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">{translations.activityTimeline}</CardTitle>
@@ -631,23 +717,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Recent Activity Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-              {translations.recentActivity}
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RecentAssets 
-                assets={dashboardData?.assets?.recentlyUpdated || dashboardData?.recentAssets || []} 
-                isLoading={isLoading}
-              />
-              <RecentTickets 
-                tickets={dashboardData?.tickets?.recent || dashboardData?.recentTickets || []} 
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
         </TabsContent>
 
         {/* Notifications Tab - Unchanged */}
