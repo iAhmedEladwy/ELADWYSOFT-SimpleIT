@@ -164,19 +164,19 @@ export default function AssetHistory() {
       });
 
   // Fetch assets for filter dropdown
-const { data: assetsResponse } = useQuery({
-  queryKey: ['/api/assets'],
-  queryFn: async () => {
-    const response = await fetch('/api/assets', {
-      credentials: 'include'
+    const { data: assetsResponse } = useQuery({
+      queryKey: ['/api/assets'],
+      queryFn: async () => {
+        const response = await fetch('/api/assets', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch assets');
+        }
+        return response.json();
+      }
     });
-    if (!response.ok) {
-      throw new Error('Failed to fetch assets');
-    }
-    return response.json();
-  }
-});
-const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
+    const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   // Fetch employees for filter dropdown
   const { data: employees } = useQuery({
@@ -191,6 +191,28 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
       return response.json();
     }
   });
+
+    const transactions = transactionsData?.transactions || [];
+    const pagination = transactionsData?.pagination;
+
+    
+    // Filter transactions locally for display
+    const filteredTransactions = transactions.filter((transaction: TransactionWithRelations) => {
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          transaction.id?.toString().includes(searchLower) ||
+          transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
+          transaction.asset?.type?.toLowerCase().includes(searchLower) ||
+          transaction.asset?.brand?.toLowerCase().includes(searchLower) ||
+          transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
+          transaction.employee?.arabicName?.toLowerCase().includes(searchLower) ||
+          transaction.notes?.toLowerCase().includes(searchLower) ||
+          transaction.conditionNotes?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+      return true;
+    });
 
    // Auto-refresh when component mounts or becomes visible
   useEffect(() => {
