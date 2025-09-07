@@ -18,10 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-const [assetSearchOpen, setAssetSearchOpen] = useState(false);
-const [assetSearchValue, setAssetSearchValue] = useState('');
-const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
-const [employeeSearchValue, setEmployeeSearchValue] = useState('');
+
 
 interface Asset {
   id: number;
@@ -82,7 +79,10 @@ export default function AssetHistory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
-  
+  const [assetSearchOpen, setAssetSearchOpen] = useState(false);
+  const [assetSearchValue, setAssetSearchValue] = useState('');
+  const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+  const [employeeSearchValue, setEmployeeSearchValue] = useState('');
   // Translations
   const translations = {
     title: language === 'English' ? 'Asset History' : 'سجل الأصول',
