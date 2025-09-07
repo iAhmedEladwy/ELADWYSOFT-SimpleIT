@@ -625,30 +625,6 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* Due This Week Card */}
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => window.location.href = `/assets?maintenanceDue=week`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground">This Week</p>
-                        <p className="text-2xl font-bold mt-1">
-                          {Math.max(0, (dashboardData?.maintenance?.scheduled || 0) - 2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Next 7 days
-                        </p>
-                      </div>
-                      <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/20 flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-violet-600" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
               </div>
             )}
           </div>
