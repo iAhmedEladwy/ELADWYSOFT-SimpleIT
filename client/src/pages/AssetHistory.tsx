@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+
 interface Asset {
   id: number;
   assetId: string;
@@ -734,7 +735,173 @@ export default function AssetHistory() {
                 Complete transaction information and device specifications
               </DialogDescription>
             </DialogHeader>
-            {/* Add the full transaction details view here */}
+            <div className="space-y-6 mt-4">
+              {/* Transaction Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Transaction Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Transaction ID</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">#{selectedTransaction.id}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Type</Label>
+                    <Badge className={getTransactionTypeBadge(selectedTransaction.type)}>
+                      {selectedTransaction.type}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Date</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedTransaction.date || selectedTransaction.transactionDate 
+                        ? format(new Date(selectedTransaction.date || selectedTransaction.transactionDate!), 'PPP pp')
+                        : 'Not specified'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Notes</Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedTransaction.notes || selectedTransaction.conditionNotes || 'No notes'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Asset Information */}
+              {selectedTransaction.asset && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Asset Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Asset ID</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.assetId}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Type</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.type}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Brand</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.brand || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Model</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.modelName || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Serial Number</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.serialNumber || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Status</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.asset.status || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Employee Information */}
+              {selectedTransaction.employee && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Employee Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Name (English)</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.employee.englishName || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Name (Arabic)</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.employee.arabicName || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Department</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.employee.department || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Employee ID</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        #{selectedTransaction.employee.id}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Device Specifications */}
+              {selectedTransaction.deviceSpecs && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">{translations.deviceSpecs}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">{translations.serialNumber}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.serialNumber || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.condition}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.condition || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.operatingSystem}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.operatingSystem || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.processor}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.processor || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.ram}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.ram || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.storage}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.storage || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.location}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.location || 'Not specified'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">{translations.status}</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedTransaction.deviceSpecs.status || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       )}
