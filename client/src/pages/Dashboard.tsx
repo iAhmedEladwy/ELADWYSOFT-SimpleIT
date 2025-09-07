@@ -343,15 +343,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions Component */}
-      <QuickActions 
-        data={dashboardData?.quickActions}
-        isLoading={isLoading}
-        onAddEmployee={handleAddEmployee}
-        onAddAsset={handleAddAsset}
-        onOpenTicket={handleOpenTicket}
-      />
-
       {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
