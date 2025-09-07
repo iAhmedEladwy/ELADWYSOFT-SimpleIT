@@ -4604,6 +4604,32 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       low: activeTickets.filter(t => t.priority === 'Low').length
     };
 
+      const ticketsByDepartment: Record<string, number> = {};
+    
+    // Initialize all departments with 0 tickets
+    const allDepartments = new Set<string>();
+    employees.forEach(emp => {
+      if (emp.department) {
+        allDepartments.add(emp.department);
+        ticketsByDepartment[emp.department] = 0;
+      }
+    });
+    
+    // Count tickets by the department of the employee who submitted them
+    allTickets.forEach(ticket => {
+      // Only count active tickets (Open or In Progress)
+      if (ticket.status === 'Open' || ticket.status === 'In Progress') {
+        // Find the employee who submitted the ticket
+        const submittedBy = employees.find(emp => emp.id === ticket.submittedById);
+        if (submittedBy && submittedBy.department) {
+          ticketsByDepartment[submittedBy.department] = (ticketsByDepartment[submittedBy.department] || 0) + 1;
+        } else {
+          // Count tickets without department as "Unassigned"
+          ticketsByDepartment['Unassigned'] = (ticketsByDepartment['Unassigned'] || 0) + 1;
+        }
+      }
+    });
+
  // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
     const assetsMaintenanceStatus = await Promise.all(
       assets.map(async (asset) => {
@@ -4787,6 +4813,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         active: activeTickets.length,
         resolvedThisMonth: resolvedTicketsThisMonth.length,
         byPriority: ticketsByPriority,
+        byDepartment: ticketsByDepartment,  
         recent: recentTickets,
         changes: {
           weekly: calculatePercentageChange(activeTickets.length, ticketsLastWeek)
