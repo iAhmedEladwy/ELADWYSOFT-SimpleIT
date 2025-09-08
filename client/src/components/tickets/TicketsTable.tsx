@@ -375,7 +375,7 @@ export default function TicketsTable({
             {safeTickets.map((ticket: any) => (
               <TableRow 
                 key={ticket.id}
-                className="cursor-pointer group border-l-4 !border-l-transparent hover:!border-l-blue-500 transition-colors [&:last-child]:!border-l-transparent [&:last-child]:hover:!border-l-blue-500"
+                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   if (
