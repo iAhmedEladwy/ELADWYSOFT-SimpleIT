@@ -80,8 +80,6 @@ export default function TicketsTable({
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
-  const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
-  const [editValue, setEditValue] = useState('');
   const [resolutionDialog, setResolutionDialog] = useState<{
     open: boolean;
     ticketId: number | null;
@@ -101,43 +99,6 @@ export default function TicketsTable({
       }
     };
 
-
-  // Start editing function
-  const startEditing = (ticketId: number, field: string, currentValue: string) => {
-    setEditingField({ ticketId, field });
-    setEditValue(currentValue);
-  };
-
-  // Handle inline edit
-  const handleInlineEdit = (ticketId: number, field: string, value: string) => {
-  // Handle different fields appropriately
-  switch(field) {
-    case 'status':
-      onStatusChange(ticketId, value);
-      break;
-    case 'assignedTo':
-      const userId = value === 'unassigned' ? null : parseInt(value);
-      if (userId) {
-        onAssign(ticketId, userId);
-      }
-      break;
-    case 'dueDate':
-      // You'll need to add a prop for this or handle it
-      // For now, you can make an API call directly
-      updateTicketMutation.mutate({ 
-        id: ticketId, 
-        updates: { dueDate: value } 
-      });
-      break;
-    default:
-      break;
-  }
-  
-  // Clear editing state
-  setEditingField(null);
-  setEditValue('');
-};
-
   // Fetch request types from system configuration with loading state
   const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
     queryKey: ['/api/custom-request-types'],
@@ -155,20 +116,19 @@ export default function TicketsTable({
   // Update ticket mutation
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      const response = await apiRequest(`/api/tickets/${id}`, 'PATCH', updates);
-      return response.json();
+      return apiRequest(`/api/tickets/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'نجح',
-        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
-      });
+      // No toast on success - too noisy for inline edits
     },
     onError: (error: any) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message,
+        title: language === 'English' ? 'Error updating ticket' : 'خطأ في تحديث التذكرة',
+        description: error.message || 'Please try again',
         variant: 'destructive',
       });
     },
@@ -387,259 +347,224 @@ export default function TicketsTable({
           {safeTickets.map((ticket: any) => (
             <TableRow 
               key={ticket.id}
-              className="hhover:bg-transparent cursor-pointer relative group"
+              className="hover:bg-transparent cursor-pointer relative group"
               onClick={(e) => {
-                // Prevent row click when clicking on action buttons, dropdowns, or inline edit elements
-                 if (e.target instanceof HTMLElement && 
-                    (e.target.closest('button') || 
-                    e.target.closest('[role="button"]') ||
-                    e.target.closest('.inline-edit-element') ||
-                    e.target.closest('input[type="checkbox"]'))) {
+                // Prevent opening edit form when clicking on interactive elements
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest('.inline-edit-cell') ||
+                  target.closest('button') ||
+                  target.closest('[role="button"]') ||
+                  target.closest('input') ||
+                  target.closest('[role="combobox"]') ||
+                  target.tagName === 'SELECT' ||
+                  target.closest('[type="checkbox"]')
+                ) {
                   return;
                 }
-                try {
-                  // Use same edit form as action button
-                  if (onEdit && ticket && ticket.id) {
-                    onEdit(ticket);
-                  } else {
-                    console.error('Invalid ticket data or missing onEdit callback:', ticket);
-                  }
-                } catch (error) {
-                  console.error('Row click error:', error);
-                  toast({
-                    title: language === 'English' ? 'Error' : 'خطأ',
-                    description: language === 'English' ? 'Unable to open ticket for editing' : 'تعذر فتح التذكرة للتعديل',
-                    variant: 'destructive',
-                  });
+                
+                // Only open edit form when clicking on non-editable areas
+                if (onEdit && ticket) {
+                  onEdit(ticket);
                 }
               }}
             >
-               <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              {/* Blue hover indicator */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              
+              {/* Checkbox column if bulk actions enabled */}
               {onSelectionChange && (
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedTickets.includes(ticket.id)}
                     onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
                   />
                 </TableCell>
               )}
-              <TableCell className="font-medium">{ticket.ticketId}</TableCell>
+              
+              {/* Ticket ID - Non-editable */}
+              <TableCell className="font-medium">
+                {ticket.ticketId}
+              </TableCell>
+              
+              {/* Date Created - Non-editable */}
               <TableCell>
                 {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
               </TableCell>
+              
+              {/* Summary - Non-editable */}
               <TableCell className="max-w-xs truncate" title={ticket.summary}>
                 {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
               </TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'requestType', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {isLoadingRequestTypes ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
-                          requestTypes.map((type: any) => (
-                            <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
-                              {type.name || 'Hardware'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="Hardware">Hardware</SelectItem>
-                            <SelectItem value="Software">Software</SelectItem>
-                            <SelectItem value="Network">Network</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <span 
-                    className="cursor-pointer relative inline-edit-element"
-                    title="Click to change"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'requestType', ticket.requestType || 'Hardware');
-                    }}
-                  >
-                    {ticket.requestType || "Hardware"}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'priority' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'priority', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-24 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <Badge 
-                    variant={getPriorityBadgeVariant(ticket.priority)}
-                    className="cursor-pointer hover:opacity-80 transition-opacity inline-edit-element"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'priority', ticket.priority || 'Medium');
-                    }}
-                  >
-                    {ticket.priority}
-                  </Badge>
-                )}
-              </TableCell>
-              {/* Status with inline editing */}
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'status' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        if (value === 'Resolved' || value === 'Closed') {
-                          // Open resolution dialog for these statuses
-                          setResolutionDialog({ 
-                            open: true, 
-                            ticketId: ticket.id, 
-                            newStatus: value 
-                          });
-                          setEditingField(null);
-                          setEditValue('');
-                        } else {
-                          // Direct update for other statuses
-                          handleInlineEdit(ticket.id, 'status', value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-32 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAvailableStatuses(ticket.status).map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status === 'Open' ? translations.open :
-                            status === 'In Progress' ? translations.inProgress :
-                            status === 'Resolved' ? translations.resolved :
-                            translations.closed}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <Badge 
-                    className={`cursor-pointer hover:opacity-80 transition-opacity inline-edit-element ${
-                      ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' :
-                      ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                      ticket.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'status', ticket.status || 'Open');
-                    }}
-                  >
-                    {ticket.status || translations.open}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}</TableCell>
-              {/* Assigned To with inline editing */}
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'assignedTo' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'assignedTo', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-40 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">
-                          <span className="text-gray-400">{translations.unassigned}</span>
+              
+              {/* Request Type - Direct dropdown */}
+              <TableCell className="inline-edit-cell" onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={ticket.requestType || 'Hardware'}
+                  onValueChange={(value) => {
+                    updateTicketMutation.mutate({ 
+                      id: ticket.id, 
+                      updates: { requestType: value } 
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-32 h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingRequestTypes ? (
+                      <SelectItem value="loading" disabled>Loading...</SelectItem>
+                    ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
+                      requestTypes.map((type: any) => (
+                        <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
+                          {type.name || 'Hardware'}
                         </SelectItem>
-                        {users?.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.firstName && user.lastName 
-                              ? `${user.firstName} ${user.lastName}` 
-                              : user.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <span 
-                      className="cursor-pointer relative inline-edit-element"
-                      title="Click to change"  
-                      onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'assignedTo', ticket.assignedToId?.toString() || 'unassigned');
-                    }}
-                  >
-                    {ticket.assignedToId ? getUserName(ticket.assignedToId) : (
-                      <span className="text-gray-400">{translations.unassigned}</span>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Hardware">Hardware</SelectItem>
+                        <SelectItem value="Software">Software</SelectItem>
+                        <SelectItem value="Network">Network</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </>
                     )}
-                  </span>
-                )}
+                  </SelectContent>
+                </Select>
               </TableCell>
-              {/* Due Date column - with inline editing capability */}
+              
+              {/* Priority - Direct dropdown with badge */}
+              <TableCell className="inline-edit-cell" onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={ticket.priority || 'Medium'}
+                  onValueChange={(value) => {
+                    updateTicketMutation.mutate({ 
+                      id: ticket.id, 
+                      updates: { priority: value } 
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-28 h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
+                    <Badge 
+                      variant={getPriorityBadgeVariant(ticket.priority)}
+                      className="w-full justify-between cursor-pointer"
+                    >
+                      {ticket.priority || 'Medium'}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">{translations.low}</SelectItem>
+                    <SelectItem value="Medium">{translations.medium}</SelectItem>
+                    <SelectItem value="High">{translations.high}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              
+              {/* Status - Direct dropdown with badge and resolution dialog */}
+              <TableCell className="inline-edit-cell" onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={ticket.status || 'Open'}
+                  onValueChange={(value) => {
+                    if (value === 'Resolved' || value === 'Closed') {
+                      setResolutionDialog({ 
+                        open: true, 
+                        ticketId: ticket.id, 
+                        newStatus: value 
+                      });
+                    } else {
+                      onStatusChange(ticket.id, value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-32 h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
+                    <Badge 
+                      className={`w-full justify-between cursor-pointer ${
+                        ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' :
+                        ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                        ticket.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {ticket.status === 'Open' ? translations.open :
+                      ticket.status === 'In Progress' ? translations.inProgress :
+                      ticket.status === 'Resolved' ? translations.resolved :
+                      ticket.status === 'Closed' ? translations.closed :
+                      ticket.status}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableStatuses(ticket.status).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status === 'Open' ? translations.open :
+                        status === 'In Progress' ? translations.inProgress :
+                        status === 'Resolved' ? translations.resolved :
+                        translations.closed}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              
+              {/* Submitted By - Non-editable */}
               <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'dueDate' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Input
-                      type="date"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => handleInlineEdit(ticket.id, 'dueDate', editValue)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleInlineEdit(ticket.id, 'dueDate', editValue);
-                        }
-                      }}
-                      className="w-32 h-8"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div 
-                      className="flex items-center space-x-1 text-sm cursor-pointer hover:text-blue-600 inline-edit-element"
-                      title="Click to change"
-                      onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'dueDate', ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : '');
-                    }}
-                  >
-                    <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="hover:underline">
-                      {ticket.dueDate ? 
-                        format(new Date(ticket.dueDate), 'MM/dd/yyyy') : 
-                        <span className="text-gray-400">{translations.setDate}</span>
+                {ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}
+              </TableCell>
+              
+              {/* Assigned To - Direct dropdown */}
+              <TableCell className="inline-edit-cell" onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={ticket.assignedToId?.toString() || 'unassigned'}
+                  onValueChange={(value) => {
+                    if (value === 'unassigned') {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { assignedToId: null } 
+                      });
+                    } else {
+                      const userId = parseInt(value);
+                      onAssign(ticket.id, userId);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-40 h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                    <SelectValue>
+                      {ticket.assignedToId ? 
+                        getUserName(ticket.assignedToId) : 
+                        <span className="text-gray-400">{translations.unassigned}</span>
                       }
-                    </span>
-                  </div>
-                )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">
+                      <span className="text-gray-400">{translations.unassigned}</span>
+                    </SelectItem>
+                    {users?.map((user: any) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.firstName && user.lastName 
+                          ? `${user.firstName} ${user.lastName}` 
+                          : user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              
+              {/* Due Date - Direct date input */}
+              <TableCell className="inline-edit-cell" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center space-x-1 text-sm">
+                  <Calendar className="h-3 w-3 text-gray-400" />
+                  <Input
+                    type="date"
+                    value={ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { dueDate: e.target.value || null } 
+                      });
+                    }}
+                    className="border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-1 h-auto cursor-pointer"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
               </TableCell>
             </TableRow>
           ))}
