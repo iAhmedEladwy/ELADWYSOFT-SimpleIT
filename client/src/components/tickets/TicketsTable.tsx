@@ -585,6 +585,49 @@ export default function TicketsTable({
             ))}
           </TableBody>
         </Table>
+              <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+          setResolutionNotes('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{translations.addResolutionNotes}</DialogTitle>
+            <DialogDescription>
+              Please provide resolution notes before marking this ticket as {resolutionDialog.newStatus}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="resolution">{translations.resolutionNotes}</Label>
+              <Textarea
+                id="resolution"
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder="Enter resolution details..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+                setResolutionNotes('');
+              }}
+            >
+              {translations.cancel}
+            </Button>
+            <Button onClick={() => handleResolutionSubmit()}>
+              {translations.save}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </>
     );
 }
