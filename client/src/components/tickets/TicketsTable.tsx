@@ -99,6 +99,24 @@ export default function TicketsTable({
       }
     };
 
+    // Handle resolution dialog submit
+  const handleResolutionSubmit = () => {
+    if (resolutionDialog.ticketId) {
+      onStatusChange(resolutionDialog.ticketId, resolutionDialog.newStatus, resolutionNotes);
+      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+      setResolutionNotes('');
+    }
+  };
+
+  // Handle status update from dialog
+  const handleStatusUpdate = () => {
+    if (selectedTicket && selectedStatus) {
+      onStatusChange(selectedTicket.id, selectedStatus);
+      setOpenStatusDialog(false);
+      setSelectedStatus('');
+      setSelectedTicket(null);
+    }
+  };
   // Fetch request types from system configuration with loading state
   const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
     queryKey: ['/api/custom-request-types'],

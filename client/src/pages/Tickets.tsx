@@ -282,7 +282,7 @@ const myTicketsCount = useMemo(() => {
   // Update ticket status mutation
   const updateTicketStatusMutation = useMutation({
     mutationFn: async ({ id, status, resolutionNotes }: { id: number; status: string; resolutionNotes?: string }) => {
-      const res = await apiRequest('POST', `/api/tickets/${id}/status`, { status, resolutionNotes });
+  const res = await apiRequest(`/api/tickets/${id}/status`, 'POST', { status, resolutionNotes });
       return res.json();
     },
     onSuccess: () => {
@@ -303,7 +303,7 @@ const myTicketsCount = useMemo(() => {
   // Assign ticket mutation
   const assignTicketMutation = useMutation({
     mutationFn: async ({ id, userId }: { id: number; userId: number }) => {
-      const res = await apiRequest('POST', `/api/tickets/${id}/assign`, { userId });
+      const res = await apiRequest(`/api/tickets/${id}/assign`, 'POST', { userId });
       return res.json();
     },
     onSuccess: () => {
