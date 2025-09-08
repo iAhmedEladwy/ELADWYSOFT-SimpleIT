@@ -663,6 +663,7 @@ const myTicketsCount = useMemo(() => {
       )}
 
        {/* Statistics Bar */}
+       <Card>
             <div className="flex items-center divide-x divide-gray-200">
               <div className="flex items-center space-x-3 pr-6">
                 <div className="w-1 h-10 bg-blue-500 rounded-full"></div>
@@ -686,6 +687,7 @@ const myTicketsCount = useMemo(() => {
                 </div>
               </div>
             </div>
+        </Card>
 
       {/* Main Tickets Table */}
       <Card>
