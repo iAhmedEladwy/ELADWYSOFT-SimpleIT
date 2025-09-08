@@ -227,6 +227,10 @@ export default function TicketsTable({
     }
   };
 
+    const getTicketById = (ticketId: number) => {
+    return tickets.find((t: any) => t.id === ticketId);
+  };
+
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" | "destructive" | null | undefined => {
     switch (status) {
       case 'Open':
@@ -602,6 +606,14 @@ export default function TicketsTable({
                 {resolutionNotes ? 'Update Resolution' : 'Add Resolution Details'}
               </DialogTitle>
               <DialogDescription>
+               {resolutionDialog.ticketId && (
+                  <>
+                    <p className="font-medium">
+                      Ticket: {getTicketById(resolutionDialog.ticketId)?.title || getTicketById(resolutionDialog.ticketId)?.ticketId}
+                    </p>
+                    <br />
+                  </>
+                )}
                 {resolutionNotes 
                   ? `Review or update the resolution before marking this ticket as ${resolutionDialog.newStatus}.`
                   : `Please provide resolution details before marking this ticket as ${resolutionDialog.newStatus}.`
