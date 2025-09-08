@@ -161,8 +161,6 @@ export default function TicketsTable({
     },
   });
 
-
-
   // Translations
   const translations = {
     ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
@@ -185,6 +183,7 @@ export default function TicketsTable({
     selectStatus: language === 'English' ? 'Select Status' : 'اختر الحالة',
     noTickets: language === 'English' ? 'No tickets found' : 'لم يتم العثور على تذاكر',
     open: language === 'English' ? 'Open' : 'مفتوح',
+    save: language === 'English' ? 'Save' : 'حفظ',
     inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
     resolved: language === 'English' ? 'Resolved' : 'تم الحل',
     closed: language === 'English' ? 'Closed' : 'مغلق',
