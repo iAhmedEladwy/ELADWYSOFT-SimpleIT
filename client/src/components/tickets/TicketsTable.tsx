@@ -114,12 +114,14 @@ export default function TicketsTable({
   const requestTypes = customRequestTypes.filter((type: any) => type.isActive !== false);
 
   // Update ticket mutation
-  const updateTicketMutation = useMutation({
+    const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      return apiRequest(`/api/tickets/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+      // Fix: apiRequest expects separate parameters, not an object
+      return apiRequest(
+        `/api/tickets/${id}`,  // url
+        'PATCH',                // method
+        updates                 // data
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -347,7 +349,7 @@ export default function TicketsTable({
             {safeTickets.map((ticket: any) => (
               <TableRow 
                 key={ticket.id}
-                className="cursor-pointer group border-l-4 border-l-transparent hover:border-l-blue-500 transition-colors"
+                className="cursor-pointer group border-l-4 !border-l-transparent hover:!border-l-blue-500 transition-colors [&:last-child]:!border-l-transparent [&:last-child]:hover:!border-l-blue-500"
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   if (
