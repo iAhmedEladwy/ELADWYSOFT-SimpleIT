@@ -313,7 +313,7 @@ export default function TicketsTable({
     return <div className="text-center py-8 text-gray-500">{translations.noTickets}</div>;
   }
 
-    return (
+   return (
     <>
       <Table>
         <TableHeader>
@@ -565,98 +565,6 @@ export default function TicketsTable({
           ))}
         </TableBody>
       </Table>
-
-      {/* Resolution Dialog */}
-      <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
-        if (!open) {
-          setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.addResolutionNotes}</DialogTitle>
-            <DialogDescription>
-              Please provide resolution notes before marking this ticket as {resolutionDialog.newStatus}.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="resolution">{translations.resolutionNotes}</Label>
-              <Textarea
-                id="resolution"
-                value={resolutionNotes}
-                onChange={(e) => setResolutionNotes(e.target.value)}
-                placeholder="Enter resolution details..."
-                className="min-h-[100px]"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-                setResolutionNotes('');
-              }}
-            >
-              {translations.cancel}
-            </Button>
-            <Button
-              onClick={() => handleResolutionSubmit()}
-            >
-              {translations.save}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Update Status Dialog (for other status changes if needed) */}
-      <Dialog open={openStatusDialog} onOpenChange={setOpenStatusDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.updateStatus}</DialogTitle>
-            <DialogDescription>
-              Update the status of the selected ticket
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="status">{translations.status}</Label>
-              <Select
-                value={selectedStatus}
-                onValueChange={setSelectedStatus}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder={translations.selectStatus} />
-                </SelectTrigger>
-                <SelectContent className="relative z-50">
-                  {selectedTicket && Array.isArray(getAvailableStatuses(selectedTicket.status)) && 
-                   getAvailableStatuses(selectedTicket.status).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status === 'Open' ? translations.open :
-                       status === 'In Progress' ? translations.inProgress :
-                       status === 'Resolved' ? translations.resolved :
-                       translations.closed}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenStatusDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button onClick={handleStatusUpdate}>
-              {translations.updateStatus}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
