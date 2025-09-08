@@ -101,19 +101,18 @@ export default function TicketsTable({
 
     // Handle resolution dialog submit
   const handleResolutionSubmit = () => {
-  if (resolutionDialog.ticketId) {
-    // Pass the resolution notes as 'resolution' instead of 'resolutionNotes'
-    updateTicketMutation.mutate({ 
-      id: resolutionDialog.ticketId, 
-      updates: { 
-        status: resolutionDialog.newStatus,
-        resolution: resolutionNotes  // Changed from resolutionNotes to resolution
-      } 
-    });
-    setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-    setResolutionNotes('');
-  }
-};
+    if (resolutionDialog.ticketId && resolutionNotes.trim()) {
+      updateTicketMutation.mutate({ 
+        id: resolutionDialog.ticketId, 
+        updates: { 
+          status: resolutionDialog.newStatus,
+          resolution: resolutionNotes
+        } 
+      });
+      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+      setResolutionNotes('');
+    }
+  };
 
   // Handle status update from dialog
   const handleStatusUpdate = () => {
@@ -485,6 +484,7 @@ export default function TicketsTable({
                     value={ticket.status || 'Open'}
                     onValueChange={(value) => {
                       if (value === 'Resolved' || value === 'Closed') {
+                        setResolutionNotes(ticket.resolution || '');
                         setResolutionDialog({ 
                           open: true, 
                           ticketId: ticket.id, 
@@ -590,49 +590,65 @@ export default function TicketsTable({
             ))}
           </TableBody>
         </Table>
-              <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
-        if (!open) {
-          setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-          setResolutionNotes('');
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.resolutionDetails}</DialogTitle>
-            <DialogDescription>
-              Please provide resolution notes before marking this ticket as {resolutionDialog.newStatus}.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="resolution">{translations.resolutionDetails}</Label>
-              <Textarea
-                id="resolution"
-                value={resolutionNotes}
-                onChange={(e) => setResolutionNotes(e.target.value)}
-                placeholder="Enter resolution details..."
-                className="min-h-[100px]"
-              />
+      <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
+          if (!open) {
+            setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+            setResolutionNotes('');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {resolutionNotes ? 'Update Resolution' : 'Add Resolution Details'}
+              </DialogTitle>
+              <DialogDescription>
+                {resolutionNotes 
+                  ? `Review or update the resolution before marking this ticket as ${resolutionDialog.newStatus}.`
+                  : `Please provide resolution details before marking this ticket as ${resolutionDialog.newStatus}.`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="resolution">
+                  Resolution {!resolutionNotes && <span className="text-red-500">*</span>}
+                </Label>
+                <Textarea
+                  id="resolution"
+                  value={resolutionNotes}
+                  onChange={(e) => setResolutionNotes(e.target.value)}
+                  placeholder="Enter how this ticket was resolved..."
+                  className="min-h-[100px]"
+                  autoFocus
+                />
+                {resolutionNotes && (
+                  <p className="text-sm text-muted-foreground">
+                    Tip: You can update the resolution or leave it as is.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-                setResolutionNotes('');
-              }}
-            >
-              {translations.cancel}
-            </Button>
-            <Button onClick={() => handleResolutionSubmit()}>
-              {translations.save}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+                  setResolutionNotes('');
+                }}
+              >
+                {translations.cancel}
+              </Button>
+              <Button 
+                onClick={() => handleResolutionSubmit()}
+                disabled={!resolutionNotes.trim()} // Require resolution text
+              >
+                {resolutionNotes ? 'Update & Save' : translations.save}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     );
 }
