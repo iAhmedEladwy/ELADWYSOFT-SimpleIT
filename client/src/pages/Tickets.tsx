@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import TicketForm from '@/components/tickets/TicketForm';
+import TicketForm from '@/components/tickets/EnhancedTicketTable';
 
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
