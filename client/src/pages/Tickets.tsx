@@ -665,6 +665,7 @@ export default function Tickets() {
           selectedTickets={selectedTickets}
           onSelectionChange={setSelectedTickets}
         />
+        )}
       </Card>
 
 
