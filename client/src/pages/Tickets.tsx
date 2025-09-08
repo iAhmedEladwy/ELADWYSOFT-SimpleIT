@@ -618,6 +618,7 @@ const myTicketsCount = useMemo(() => {
           onFiltersChange={setFilters}
           totalCount={Array.isArray(tickets) ? tickets.length : 0}
           filteredCount={Array.isArray(filteredTickets) ? filteredTickets.length : 0}
+          tickets={tickets}
         />
       </div>
 

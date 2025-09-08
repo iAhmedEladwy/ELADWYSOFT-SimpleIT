@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,13 +21,15 @@ interface TicketFiltersProps {
   onFiltersChange: (filters: TicketFilters) => void;
   totalCount: number;
   filteredCount: number;
+  tickets?: any[];
 }
 
 export default function TicketFilters({
   filters,
   onFiltersChange,
   totalCount,
-  filteredCount
+  filteredCount,
+  tickets = []
 }: TicketFiltersProps) {
   const { language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
