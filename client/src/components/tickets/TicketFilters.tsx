@@ -33,14 +33,7 @@ export default function TicketFilters({
 }: TicketFiltersProps) {
   const { language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const statusCounts = useMemo(() => {
-    if (!Array.isArray(tickets)) return {};
-    
-    return ticketStatuses.reduce((acc, status) => {
-      acc[status] = tickets.filter(t => t.status === status).length;
-      return acc;
-    }, {} as Record<string, number>);
-  }, [tickets]);
+  
 
   // Fetch data for filter options
   const { data: users } = useQuery({
@@ -76,6 +69,17 @@ export default function TicketFilters({
   const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
   const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
   const ticketCategories = ['Hardware', 'Software', 'Network', 'Security', 'Access Control', 'General'];
+
+   const statusCounts = useMemo(() => {
+    if (!Array.isArray(tickets)) return {};
+    
+    return ticketStatuses.reduce((acc, status) => {
+      acc[status] = tickets.filter(t => t.status === status).length;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [tickets, ticketStatuses]); 
+
+
   const { data: requestTypesData } = useQuery({
     queryKey: ['/api/custom-request-types'],
   });
