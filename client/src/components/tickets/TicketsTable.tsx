@@ -101,12 +101,19 @@ export default function TicketsTable({
 
     // Handle resolution dialog submit
   const handleResolutionSubmit = () => {
-    if (resolutionDialog.ticketId) {
-      onStatusChange(resolutionDialog.ticketId, resolutionDialog.newStatus, resolutionNotes);
-      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-      setResolutionNotes('');
-    }
-  };
+  if (resolutionDialog.ticketId) {
+    // Pass the resolution notes as 'resolution' instead of 'resolutionNotes'
+    updateTicketMutation.mutate({ 
+      id: resolutionDialog.ticketId, 
+      updates: { 
+        status: resolutionDialog.newStatus,
+        resolution: resolutionNotes  // Changed from resolutionNotes to resolution
+      } 
+    });
+    setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+    setResolutionNotes('');
+  }
+};
 
   // Handle status update from dialog
   const handleStatusUpdate = () => {
@@ -171,7 +178,6 @@ export default function TicketsTable({
     updateStatus: language === 'English' ? 'Update Status' : 'تحديث الحالة',
     assignTicket: language === 'English' ? 'Assign Ticket' : 'تعيين التذكرة',
     viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
-    resolutionNotes: language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل',
     update: language === 'English' ? 'Update' : 'تحديث',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     assign: language === 'English' ? 'Assign' : 'تعيين',
@@ -593,7 +599,7 @@ export default function TicketsTable({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{translations.addResolutionNotes}</DialogTitle>
+            <DialogTitle>{translations.resolutionDetails}</DialogTitle>
             <DialogDescription>
               Please provide resolution notes before marking this ticket as {resolutionDialog.newStatus}.
             </DialogDescription>
@@ -601,7 +607,7 @@ export default function TicketsTable({
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="resolution">{translations.resolutionNotes}</Label>
+              <Label htmlFor="resolution">{translations.resolutionDetails}</Label>
               <Textarea
                 id="resolution"
                 value={resolutionNotes}
