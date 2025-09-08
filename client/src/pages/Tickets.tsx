@@ -231,18 +231,16 @@ const myTicketsCount = useMemo(() => {
 }, [tickets, user]);
 
   // Create ticket mutation using standard API
-  const createTicketMutation = useMutation({
+   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      console.log('Creating ticket with data:', ticketData);
-      
-      // Ensure data format is correct for backend
+      // Convert data types properly
       const formattedData = {
-        submittedById: Number(ticketData.submittedById),
+        submittedById: ticketData.submittedById ? Number(ticketData.submittedById) : null,
         assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null,
         relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
-        requestType: String(ticketData.requestType), // Ensure it's a string, not enum
+        requestType: String(ticketData.requestType),
         priority: String(ticketData.priority),
-        status: 'Open', // Always start as Open for new tickets
+        status: 'Open',
         summary: String(ticketData.summary),
         description: String(ticketData.description),
         dueDate: ticketData.dueDate ? new Date(ticketData.dueDate).toISOString() : null,
@@ -250,12 +248,11 @@ const myTicketsCount = useMemo(() => {
       };
       
       console.log('Formatted ticket data:', formattedData);
-      const response = await apiRequest('/api/tickets', 'POST', formattedData);
-      return response;
+      // FIX: Correct parameter order and no .json() call
+      return await apiRequest('/api/tickets', 'POST', formattedData);
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
-      // Force a complete refetch of the tickets
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
       
@@ -265,7 +262,6 @@ const myTicketsCount = useMemo(() => {
       });
       setOpenDialog(false);
       
-      // Force reload after a short delay to ensure UI updates
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
       }, 500);
@@ -282,8 +278,9 @@ const myTicketsCount = useMemo(() => {
   // Update ticket status mutation
   const updateTicketStatusMutation = useMutation({
     mutationFn: async ({ id, status, resolutionNotes }: { id: number; status: string; resolutionNotes?: string }) => {
-  const res = await apiRequest(`/api/tickets/${id}/status`, 'POST', { status, resolutionNotes });
-      return res.json();
+      // FIX 1: Correct parameter order (url, method, data)
+      // FIX 2: Don't call .json() - apiRequest already returns parsed JSON
+      return await apiRequest(`/api/tickets/${id}/status`, 'POST', { status, resolutionNotes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -301,10 +298,11 @@ const myTicketsCount = useMemo(() => {
   });
 
   // Assign ticket mutation
-  const assignTicketMutation = useMutation({
+   const assignTicketMutation = useMutation({
     mutationFn: async ({ id, userId }: { id: number; userId: number }) => {
-      const res = await apiRequest(`/api/tickets/${id}/assign`, 'POST', { userId });
-      return res.json();
+      // FIX 1: Correct parameter order (url, method, data)
+      // FIX 2: Don't call .json() - apiRequest already returns parsed JSON
+      return await apiRequest(`/api/tickets/${id}/assign`, 'POST', { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
