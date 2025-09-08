@@ -484,7 +484,7 @@ export default function Employees() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchQuery) count++;
-    if (statusFilter !== 'Active') count++;
+    if (statusFilter !== 'All') count++;
     if (departmentFilter !== 'All') count++;
     if (employmentTypeFilter !== 'All') count++;
     if (customFilter) count++;
