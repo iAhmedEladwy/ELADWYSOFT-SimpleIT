@@ -376,13 +376,12 @@ export default function TicketsTable({
               <TableRow 
                 key={ticket.id}
                 className="
-                    group 
-                    relative z-10 hover:z-20
-                    hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 
-                    transition-all duration-300 
-                    hover:shadow-lg hover:-translate-y-1 
-                    border-l-4 border-transparent hover:border-l-blue-500 
+                    group
+                    hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50
+                    transition-all duration-300
+                    hover:shadow-lg hover:-translate-y-1
                     cursor-pointer
+                    relative z-10 hover:z-20
                   "
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
