@@ -660,7 +660,7 @@ export default function Employees() {
           </div>
           {/* Clear Filters Button - Show only when filters are active */}
           {(customFilter || departmentFilter !== 'All' || employmentTypeFilter !== 'All' || 
-            statusFilter !== 'Active' || searchQuery) && (
+            statusFilter !== 'All' || searchQuery) && (
             <div className="flex justify-end">
               <Button
                 variant="outline"
@@ -668,7 +668,7 @@ export default function Employees() {
                 onClick={() => {
                   setDepartmentFilter('All');
                   setEmploymentTypeFilter('All');
-                  setStatusFilter('Active');
+                  setStatusFilter('All');
                   setSearchQuery('');
                   setCustomFilter(null);
                 }}
