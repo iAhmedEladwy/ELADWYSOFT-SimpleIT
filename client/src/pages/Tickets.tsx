@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
-import TicketForm from '@/components/tickets/EnhancedTicketTable';
+import TicketForm from '@/components/tickets/TicketForm';
 
 import TicketFilters from '@/components/tickets/TicketFilters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,6 +36,7 @@ export default function Tickets() {
   const isInitialMount = useRef(true);
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
+  const [useEnhancedTable, setUseEnhancedTable] = useState(false);
   
   
   // Listen for the FAB create ticket event
@@ -533,6 +534,15 @@ export default function Tickets() {
             <Download className="h-4 w-4 mr-2" />
             {language === 'English' ? 'Export' : 'تصدير'}
           </Button>
+
+          {/* Add this toggle button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setUseEnhancedTable(!useEnhancedTable)}
+          >
+            {useEnhancedTable ? 'Use Simple Table' : 'Use Enhanced Table'}
+          </Button>
           
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogTrigger asChild>
@@ -634,6 +644,16 @@ export default function Tickets() {
 
       {/* Main Tickets Table */}
       <Card>
+        {useEnhancedTable ? (
+          <EnhancedTicketTable 
+            tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
+            employees={Array.isArray(employees) ? employees : []}
+            assets={Array.isArray(assets) ? assets : []}
+            users={Array.isArray(users) ? users : []}
+            isLoading={isLoading}
+            onTicketSelect={(ticket) => setSelectedTicket(ticket)}
+          />
+        ) : (
         <TicketsTable 
           tickets={Array.isArray(filteredTickets) ? filteredTickets : []} 
           employees={Array.isArray(employees) ? employees : []}
