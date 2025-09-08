@@ -89,7 +89,6 @@ export default function Tickets() {
     success: language === 'English' ? 'Success' : 'نجح',
     noTicketsSelected: language === 'English' ? 'No tickets selected' : 'لم يتم تحديد تذاكر',
     openTickets: language === 'English' ? 'Open Tickets' : 'التذاكر المفتوحة',
-    myTickets: language === 'English' ? 'My Tickets' : 'تذاكري',
     all: language === 'English' ? 'All' : 'الكل',
   };
 
