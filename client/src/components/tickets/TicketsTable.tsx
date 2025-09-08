@@ -396,7 +396,7 @@ export default function TicketsTable({
           {safeTickets.map((ticket: any) => (
             <TableRow 
               key={ticket.id}
-              className="hover:bg-muted/50 cursor-pointer"
+              className="hhover:bg-transparent cursor-pointer relative group"
               onClick={(e) => {
                 // Prevent row click when clicking on action buttons, dropdowns, or inline edit elements
                  if (e.target instanceof HTMLElement && 
@@ -633,7 +633,7 @@ export default function TicketsTable({
                   </div>
                 ) : (
                   <div 
-                      className="cursor-pointer relative inline-edit-element"
+                      className="flex items-center space-x-1 text-sm cursor-pointer hover:text-blue-600 inline-edit-element"
                       title="Click to change"
                       onClick={(e) => {
                       e.stopPropagation();
@@ -685,73 +685,6 @@ export default function TicketsTable({
                     </span>
                   </div>
                 )}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>{translations.actions}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        try {
-                          // Prefetch ticket details data for faster loading
-                          queryClient.prefetchQuery({
-                            queryKey: ['/api/tickets', ticket.id.toString()],
-                            queryFn: () => apiRequest(`/api/tickets/${ticket.id}`, 'GET'),
-                            staleTime: 1000 * 60 * 5,
-                          });
-                          navigate(`/tickets/${ticket.id}`);
-                        } catch (error) {
-                          console.error('Navigation error:', error);
-                          // Fallback navigation without prefetch
-                          navigate(`/tickets/${ticket.id}`);
-                        }
-                      }}
-                    >
-{language === 'English' ? 'View Details' : 'عرض التفاصيل'}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onEdit) {
-                          onEdit(ticket);
-                        }
-                      }}
-                    >
-{language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة'}
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedTicket(ticket);
-                        setSelectedStatus('');
-                        setOpenStatusDialog(true);
-                      }}
-                    >
-                      {translations.updateStatus}
-                    </DropdownMenuItem>
-                    
-                    {user && ['admin', 'manager', 'agent'].includes(user.role) && (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedTicket(ticket);
-                          setSelectedUserId('');
-                          setOpenAssignDialog(true);
-                        }}
-                      >
-                        {translations.assignTicket}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}

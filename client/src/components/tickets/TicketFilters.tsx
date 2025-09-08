@@ -127,10 +127,6 @@ export default function TicketFilters({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {translations.showingResults}: {filteredCount} / {totalCount}
-            </span>
-
             {activeFiltersCount > 0 && (
               <Button variant="outline" size="sm" onClick={clearAllFilters}>
                 <X className="h-4 w-4 mr-2" />
@@ -164,30 +160,30 @@ export default function TicketFilters({
           <div>
             <Label className="text-xs">{translations.status}</Label>
           <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder={translations.allStatuses} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder={translations.allStatuses} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              <div className="flex items-center justify-between w-full">
+                <span>{translations.allStatuses}</span>
+                <Badge variant="secondary" className="ml-2 min-w-[24px] text-center">
+                  {tickets?.length || 0}
+                </Badge>
+              </div>
+            </SelectItem>
+            {ticketStatuses?.map(status => (
+              <SelectItem key={status} value={status}>
                 <div className="flex items-center justify-between w-full">
-                  <span>{translations.allStatuses}</span>
-                  <Badge variant="secondary" className="ml-2">
-                    {tickets?.length || 0}
+                  <span>{status}</span>
+                  <Badge variant="secondary" className="ml-2 min-w-[24px] text-center">
+                    {statusCounts[status] || 0}
                   </Badge>
                 </div>
               </SelectItem>
-              {ticketStatuses?.map(status => (
-                <SelectItem key={status} value={status}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{status}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {statusCounts[status] || 0}
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            ))}
+          </SelectContent>
+        </Select>
           </div>
 
           <div>
