@@ -507,7 +507,6 @@ const myTicketsCount = useMemo(() => {
         'Submitted By': employees?.find(e => e.id === ticket.submittedById)?.name || 'Unknown',
         'Assigned To': users?.find(u => u.id === ticket.assignedToId)?.username || 'Unassigned',
         'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'MM/dd/yyyy') : '',
-        'Time Spent': ticket.timeSpent ? `${ticket.timeSpent}h` : '0h',
         'Created': format(new Date(ticket.createdAt), 'MM/dd/yyyy HH:mm'),
       }));
 
@@ -663,31 +662,35 @@ const myTicketsCount = useMemo(() => {
       )}
 
        {/* Statistics Bar */}
-       <Card>
-            <div className="flex items-center divide-x divide-gray-200">
-              <div className="flex items-center space-x-3 pr-6">
-                <div className="w-1 h-10 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{translations.openTickets}</p>
-                  <p className="text-2xl font-bold">{openTicketsCount}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3 px-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">{translations.all}</p>
-                  <p className="text-2xl font-bold">{allTicketsCount}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3 pl-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">{translations.myTickets}</p>
-                  <p className="text-2xl font-bold">{myTicketsCount}</p>
-                </div>
-              </div>
+       <div className="mb-6 bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-1 h-8 bg-blue-500 rounded"></div>
+            <div>
+              <span className="text-sm text-gray-600">{translations.openTickets}</span>
+              <span className="ml-2 font-semibold text-lg">{openTicketsCount}</span>
             </div>
-        </Card>
+          </div>
+          
+          <div className="text-gray-300">|</div>
+          
+          <div className="flex items-center space-x-2">
+            <div>
+              <span className="text-sm text-gray-600">{translations.all}:</span>
+              <span className="ml-2 font-semibold text-lg">{allTicketsCount}</span>
+            </div>
+          </div>
+          
+          <div className="text-gray-300">|</div>
+          
+          <div className="flex items-center space-x-2">
+            <div>
+              <span className="text-sm text-gray-600">{translations.myTickets}:</span>
+              <span className="ml-2 font-semibold text-lg">{myTicketsCount}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Tickets Table */}
       <Card>

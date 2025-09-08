@@ -129,13 +129,6 @@ export default function TicketsTable({
         updates: { dueDate: value } 
       });
       break;
-    case 'timeSpent':
-      // Same as above
-      updateTicketMutation.mutate({ 
-        id: ticketId, 
-        updates: { timeSpent: parseFloat(value) || 0 } 
-      });
-      break;
     default:
       break;
   }
@@ -219,7 +212,6 @@ export default function TicketsTable({
     none: language === 'English' ? 'None' : 'لا يوجد',
     unassigned: language === 'English' ? 'Unassigned' : 'غير معين',
     dueDate: language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق',
-    timeSpent: language === 'English' ? 'Time Spent' : 'الوقت المستغرق',
     resolveTicket: language === 'English' ? 'Resolve Ticket' : 'حل التذكرة',
     closeTicket: language === 'English' ? 'Close Ticket' : 'إغلاق التذكرة',
     resolutionType: language === 'English' ? 'Resolution Type' : 'نوع الحل',
@@ -389,7 +381,6 @@ export default function TicketsTable({
             <TableHead>{translations.submittedBy}</TableHead>
             <TableHead>{translations.assignedTo}</TableHead>
             <TableHead>{translations.dueDate}</TableHead>
-          <TableHead>{translations.timeSpent}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -650,42 +641,6 @@ export default function TicketsTable({
                   </div>
                 )}
               </TableCell>
-
-              {/* Time Spent column */}
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'timeSpent' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Input
-                      type="number"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => handleInlineEdit(ticket.id, 'timeSpent', editValue)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleInlineEdit(ticket.id, 'timeSpent', editValue);
-                        }
-                      }}
-                      className="w-20 h-8"
-                      placeholder="0"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div 
-                      className="cursor-pointer relative inline-edit-element"
-                      title="Click to change"
-                      onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'timeSpent', ticket.timeSpent?.toString() || '0');
-                    }}
-                  >
-                    <Clock className="h-3 w-3 text-gray-400" />
-                    <span className="hover:underline">
-                      {ticket.timeSpent ? `${ticket.timeSpent}h` : '0h'}
-                    </span>
-                  </div>
-                )}
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -752,53 +707,6 @@ export default function TicketsTable({
         </DialogContent>
       </Dialog>
 
-      {/* Assign Ticket Dialog */}
-      <Dialog open={openAssignDialog} onOpenChange={setOpenAssignDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.assignTicket}</DialogTitle>
-            <DialogDescription>
-              Assign this ticket to a user for processing
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="user">{translations.assignedTo}</Label>
-              <Select
-                value={selectedUserId.toString()}
-                onValueChange={(val) => setSelectedUserId(parseInt(val))}
-              >
-                <SelectTrigger id="user">
-                  <SelectValue placeholder={translations.selectUser} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      <div className="flex items-center">
-                        <UserCircle2 className="h-4 w-4 mr-2" />
-                        {user.username} ({user.email})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpenAssignDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button
-              onClick={handleAssignTicket}
-              disabled={selectedUserId === ''}
-            >
-              {translations.assign}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
  {/* ADD THE NEW RESOLUTION DIALOG HERE */}
       <Dialog 
         open={resolutionDialog.open} 
