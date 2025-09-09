@@ -69,7 +69,7 @@ interface TransactionWithRelations {
 
 export default function AssetHistory() {
   const { language } = useLanguage();
-  const { currency } = useCurrency();
+  const { formatCurrency, currency } = useCurrency();
   const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: '',
@@ -731,7 +731,7 @@ export default function AssetHistory() {
                                 return (
                                   <div className="text-sm space-y-1">
                                     <p className="font-medium text-gray-900">Type: {metadata.maintenanceType}</p>
-                                    {metadata.cost && <p className="text-gray-600">Cost: {currency} {metadata.cost}</p>}
+                                    {metadata.cost && <p className="text-gray-600">Cost: {formatCurrency(metadata.cost)}</p>}
                                     {metadata.provider && <p className="text-gray-600">Provider: {metadata.provider}</p>}
                                     {metadata.status && <p className="text-gray-600">Status: {metadata.status}</p>}
                                   </div>
@@ -909,7 +909,7 @@ export default function AssetHistory() {
                                         </div>
                                         <div>
                                           <Label className="text-xs text-gray-500">Sale Price</Label>
-                                          <p className="text-sm font-medium">{currency} {metadata.salePrice || metadata.totalAmount || '-'}</p>
+                                        <p className="text-gray-600">Price: {formatCurrency(metadata.salePrice || metadata.totalAmount || 0)}</p>
                                         </div>
                                         {metadata.notes && (
                                           <div className="col-span-2">
@@ -963,7 +963,7 @@ export default function AssetHistory() {
                                         </div>
                                         <div>
                                           <Label className="text-xs text-gray-500">Cost</Label>
-                                          <p className="text-sm font-medium">{currency} {metadata.cost || '-'}</p>
+                                          <p className="text-sm font-medium">{formatCurrency(metadata.cost || 0)}</p>
                                         </div>
                                         <div>
                                           <Label className="text-xs text-gray-500">Provider</Label>

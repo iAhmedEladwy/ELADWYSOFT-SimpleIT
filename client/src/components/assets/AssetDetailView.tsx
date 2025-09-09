@@ -430,7 +430,7 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                       </div>
                       <div>
                         <span className="text-gray-600">Sale Price:</span>
-                        <p className="font-medium">{currency} {saleInfo.salePrice || saleInfo.totalAmount || 'N/A'}</p>
+                        <p className="font-medium">{formatCurrency(saleInfo.salePrice || saleInfo.totalAmount || 0)}</p>
                       </div>
                       {saleInfo.notes && (
                         <div className="col-span-2">
