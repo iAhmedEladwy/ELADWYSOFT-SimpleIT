@@ -111,13 +111,21 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
   });
 
   // Fetch asset transactions
-  const { data: transactions, isLoading: transactionsLoading } = useQuery({
-    queryKey: ['/api/assets/transactions', assetId],
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['/api/asset-transactions', assetId],
     queryFn: async () => {
       if (!assetId) return [];
-      const response = await fetch(`/api/assets/${assetId}/transactions`);
-      if (!response.ok) throw new Error('Failed to fetch transactions');
-      return response.json();
+      // Use the correct endpoint with query parameter
+      const response = await fetch(`/api/asset-transactions?assetId=${assetId}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        console.error('Failed to fetch transactions');
+        return [];
+      }
+      const data = await response.json();
+      // Handle both array and object response formats
+      return Array.isArray(data) ? data : (data?.data || data?.transactions || []);
     },
     enabled: !!assetId && open && activeTab === 'transactions',
   });
