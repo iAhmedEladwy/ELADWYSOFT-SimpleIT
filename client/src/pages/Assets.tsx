@@ -192,7 +192,7 @@ export default function Assets() {
       : 'تفاصيل إضافية حول السحب...',
     confirmRetirement: language === 'English' ? 'Confirm Retirement' : 'تأكيد السحب',
     provideRetirementReason: language === 'English' ? 'Please provide a retirement reason' : 'يرجى تقديم سبب السحب',
-    fillRequiredFields: language === 'English' ? 'Please fill in all required fields' : 'يرجى ملء جميع الحقول المطلوبة'
+    fillRequiredFields: language === 'English' ? 'Please fill in all required fields' : 'يرجى ملء جميع الحقول المطلوبة',
   };
 
   // Parse URL parameters on component mount
