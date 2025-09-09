@@ -29,7 +29,7 @@ interface AssetDetailViewProps {
 
 export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDetailViewProps) {
   const { language } = useLanguage();
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('general');
 
   // Translations
