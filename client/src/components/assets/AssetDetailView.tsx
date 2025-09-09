@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Laptop, Wrench, Receipt, History } from 'lucide-react';
+import { Laptop, Wrench, Receipt, History,DollarSign, Package } from 'lucide-react';
 
 interface AssetDetailViewProps {
   assetId: number | null;
@@ -302,7 +302,7 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                   {asset.lifeSpan && (
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">{translations.lifespan}:</span>
-                      <span className="text-sm">{asset.lifeSpan} {translations.years}</span>
+                      <span className="text-sm">{asset.lifeSpan} {translations.months}</span>
                     </div>
                   )}
                 </div>
@@ -396,6 +396,82 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                 </div>
               </div>
             </div>
+
+            {/* Sale Information - Only show if asset is sold */}
+            {asset.status === 'Sold' && transactions && transactions.length > 0 && (() => {
+              const saleTransaction = transactions.find(t => t.type === 'Sale');
+              const saleInfo = saleTransaction?.deviceSpecs as any;
+              
+              if (saleTransaction && saleInfo) {
+                return (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Sale Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Buyer:</span>
+                        <p className="font-medium">{saleInfo.buyer || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Sale Date:</span>
+                        <p className="font-medium">
+                          {saleInfo.saleDate ? format(new Date(saleInfo.saleDate), 'MMM dd, yyyy') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Sale Price:</span>
+                        <p className="font-medium">{currency} {saleInfo.salePrice || saleInfo.totalAmount || 'N/A'}</p>
+                      </div>
+                      {saleInfo.notes && (
+                        <div className="col-span-2">
+                          <span className="text-gray-600">Notes:</span>
+                          <p className="font-medium">{saleInfo.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Retirement Information - Only show if asset is retired */}
+            {asset.status === 'Retired' && transactions && transactions.length > 0 && (() => {
+              const retireTransaction = transactions.find(t => t.type === 'Retirement');
+              const retireInfo = retireTransaction?.deviceSpecs as any;
+              
+              if (retireTransaction && retireInfo) {
+                return (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Retirement Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Retirement Reason:</span>
+                        <p className="font-medium">{retireInfo.retirementReason || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Retirement Date:</span>
+                        <p className="font-medium">
+                          {retireInfo.retirementDate ? format(new Date(retireInfo.retirementDate), 'MMM dd, yyyy') : 'N/A'}
+                        </p>
+                      </div>
+                      {retireInfo.notes && (
+                        <div className="col-span-2">
+                          <span className="text-gray-600">Notes:</span>
+                          <p className="font-medium">{retireInfo.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Assignment Details Card */}
             <div className="bg-muted/30 rounded-lg p-4">

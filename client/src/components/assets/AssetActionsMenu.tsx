@@ -442,13 +442,6 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [editingMaintenance, setEditingMaintenance] = useState<any>(null);
   
-  // Fetch asset transactions
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['/api/asset-transactions', asset.id],
-    queryFn: () => apiRequest(`/api/asset-transactions?assetId=${asset.id}`),
-    enabled: open
-  });
-
   // Fetch asset maintenance records
   const { data: maintenanceRecords = [], refetch: refetchMaintenance } = useQuery({
     queryKey: ['/api/assets', asset.id, 'maintenance'],
@@ -535,16 +528,6 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
     }
   };
 
-  const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'Check Out': return <LogOut className="h-4 w-4 text-blue-500" />;
-      case 'Check In': return <LogIn className="h-4 w-4 text-green-500" />;
-      case 'Assignment': return <User className="h-4 w-4 text-purple-500" />;
-      case 'Maintenance': return <Wrench className="h-4 w-4 text-orange-500" />;
-      case 'Upgrade': return <ArrowUp className="h-4 w-4 text-indigo-500" />;
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
-    }
-  };
 
   const getMaintenanceIcon = (status: string) => {
     switch (status) {
@@ -595,77 +578,20 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
             </div>
           </div>
 
-          {/* Tabs for History and Maintenance */}
-          <Tabs defaultValue="transactions" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="transactions">
-                Check-In/Out History ({transactions.length})
-              </TabsTrigger>
-              <TabsTrigger value="maintenance">
-                Maintenance Records ({maintenanceRecords.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            {/* Transactions Tab Content */}
-            <TabsContent value="transactions" className="mt-4">
-              <div className="border rounded-lg p-4">
-                <ScrollArea className="h-[350px]">
-                  {transactions.length > 0 ? (
-                    <Table className="table-fixed">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[120px]">Type</TableHead>
-                          <TableHead className="w-[180px]">Employee</TableHead>
-                          <TableHead className="w-[140px]">Date</TableHead>
-                          <TableHead className="w-[250px]">Notes</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {transactions.map((transaction: any) => (
-                          <TableRow key={transaction.id}>
-                            <TableCell className="w-[120px]">
-                              <div className="flex items-center gap-1">
-                                {getTransactionIcon(transaction.type)}
-                                <span className="font-medium text-sm">{transaction.type}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="w-[180px]">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3 text-gray-400" />
-                                <span className="text-sm truncate">
-                                  {getEmployeeName(transaction.employeeId)}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="w-[140px]">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-gray-400" />
-                                <span className="text-sm">
-                                  {transaction.date ? format(new Date(transaction.date), 'MMM dd, yyyy HH:mm') : '-'}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="w-[250px]">
-                              <div className="text-sm text-gray-600 truncate" title={transaction.notes || ''}>
-                                {transaction.notes || '-'}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                      <FileText className="h-8 w-8 mb-2" />
-                      <p>No transaction history found</p>
-                    </div>
-                  )}
-                </ScrollArea>
+            {/* Single section for Maintenance Records */}
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  Maintenance Records ({maintenanceRecords.length})
+                </h3>
+                <Button onClick={handleAddMaintenance} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Maintenance
+                </Button>
               </div>
-            </TabsContent>
+            
             
             {/* Maintenance Tab Content */}
-            <TabsContent value="maintenance" className="mt-4">
               <div className="space-y-4">
                 {/* Add Maintenance Button */}
                 <div className="flex justify-between items-center">
@@ -769,7 +695,6 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
                   </ScrollArea>
                 </div>
               </div>
-            </TabsContent>
           </Tabs>
         </div>
         

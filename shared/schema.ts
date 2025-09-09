@@ -19,7 +19,7 @@ export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High
 export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
-export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
+export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In', 'Maintenance','Sale','Retirement']);
 
 // Add sequence definitions with increment: 1
 export const employeesIdSequence = pgSequence('employees_id_seq', {

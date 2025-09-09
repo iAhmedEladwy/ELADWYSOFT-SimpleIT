@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/lib/currencyContext';
 
 
 
@@ -68,6 +69,7 @@ interface TransactionWithRelations {
 
 export default function AssetHistory() {
   const { language } = useLanguage();
+  const { currency } = useCurrency();
   const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: '',
@@ -106,6 +108,10 @@ export default function AssetHistory() {
     checkOut: language === 'English' ? 'Check Out' : 'تسجيل الخروج',
     assignment: language === 'English' ? 'Assignment' : 'تخصيص',
     maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
+    sale: language === 'English' ? 'Sale' : 'بيع',
+    retirement: language === 'English' ? 'Retirement' : 'تقاعد',
+    sold: language === 'English' ? 'Sold' : 'مباع',
+    retired: language === 'English' ? 'Retired' : 'متقاعد',
     id: language === 'English' ? 'ID' : 'المعرف',
     type: language === 'English' ? 'Type' : 'النوع',
     date: language === 'English' ? 'Date' : 'التاريخ',
@@ -247,11 +253,11 @@ export default function AssetHistory() {
 
   const getTransactionTypeBadge = (type: string) => {
     const colors = {
-      'Check In': 'bg-green-100 text-green-800',
-      'Check Out': 'bg-red-100 text-red-800',
-      'Assignment': 'bg-blue-100 text-blue-800',
+      'Check-In': 'bg-green-100 text-green-800',
+      'Check-Out': 'bg-red-100 text-red-800',
       'Maintenance': 'bg-yellow-100 text-yellow-800',
-      'Transfer': 'bg-purple-100 text-purple-800',
+      'Sale': 'bg-purple-100 text-purple-800',
+      'Retirement': 'bg-orange-100 text-orange-800',
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
@@ -417,8 +423,11 @@ export default function AssetHistory() {
                     <SelectItem value="all">{translations.all}</SelectItem>
                     <SelectItem value="Check In">{translations.checkIn}</SelectItem>
                     <SelectItem value="Check Out">{translations.checkOut}</SelectItem>
-                    <SelectItem value="Assignment">{translations.assignment}</SelectItem>
                     <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
+                    <SelectItem value="Assignment">{translations.sale}</SelectItem>
+                    <SelectItem value="Assignment">{translations.retirement}</SelectItem>
+
+
                   </SelectContent>
                 </Select>
               </div>
@@ -696,9 +705,46 @@ export default function AssetHistory() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="max-w-xs truncate" title={transaction.notes || transaction.conditionNotes}>
-                              {transaction.notes || transaction.conditionNotes || '-'}
-                            </div>
+                            {(() => {
+                              const metadata = transaction.deviceSpecs as any;
+                              
+                              if (transaction.type === 'Sale' && metadata?.buyer) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Buyer: {metadata.buyer}</p>
+                                    <p className="text-gray-600">Price: {currency} {metadata.salePrice || metadata.totalAmount || 'N/A'}</p>
+                                    {transaction.notes && <p className="text-gray-500 text-xs mt-1 truncate">{transaction.notes}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              if (transaction.type === 'Retirement' && metadata?.retirementReason) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Reason: {metadata.retirementReason}</p>
+                                    {metadata.notes && <p className="text-gray-500 text-xs mt-1 truncate">{metadata.notes}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              if (transaction.type === 'Maintenance' && metadata?.maintenanceType) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Type: {metadata.maintenanceType}</p>
+                                    {metadata.cost && <p className="text-gray-600">Cost: {currency} {metadata.cost}</p>}
+                                    {metadata.provider && <p className="text-gray-600">Provider: {metadata.provider}</p>}
+                                    {metadata.status && <p className="text-gray-600">Status: {metadata.status}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              // Default display for Check-In/Check-Out
+                              return (
+                                <div className="max-w-xs truncate" title={transaction.notes || transaction.conditionNotes}>
+                                  <span className="text-sm text-gray-600">{transaction.notes || transaction.conditionNotes || '-'}</span>
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {transaction.deviceSpecs ? (
@@ -842,6 +888,95 @@ export default function AssetHistory() {
                                   </div>
                                 )}
                               </div>
+                              {/* Enhanced metadata display based on transaction type */}
+                              {selectedTransaction && (() => {
+                                const metadata = selectedTransaction.deviceSpecs as any;
+                                
+                                if (selectedTransaction.type === 'Sale' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">Sale Details</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Buyer</Label>
+                                          <p className="text-sm font-medium">{metadata.buyer || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Sale Date</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.saleDate ? format(new Date(metadata.saleDate), 'MMM dd, yyyy') : '-'}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Sale Price</Label>
+                                          <p className="text-sm font-medium">{currency} {metadata.salePrice || metadata.totalAmount || '-'}</p>
+                                        </div>
+                                        {metadata.notes && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">Notes</Label>
+                                            <p className="text-sm">{metadata.notes}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                if (selectedTransaction.type === 'Retirement' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">Retirement Details</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Retirement Reason</Label>
+                                          <p className="text-sm font-medium">{metadata.retirementReason || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Retirement Date</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.retirementDate ? format(new Date(metadata.retirementDate), 'MMM dd, yyyy') : '-'}
+                                          </p>
+                                        </div>
+                                        {metadata.notes && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">Notes</Label>
+                                            <p className="text-sm">{metadata.notes}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                if (selectedTransaction.type === 'Maintenance' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">Maintenance Details</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Maintenance Type</Label>
+                                          <p className="text-sm font-medium">{metadata.maintenanceType || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Status</Label>
+                                          <p className="text-sm font-medium">{metadata.status || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Cost</Label>
+                                          <p className="text-sm font-medium">{currency} {metadata.cost || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Provider</Label>
+                                          <p className="text-sm font-medium">{metadata.provider || '-'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                return null;
+                              })()}
+
                             </DialogContent>
                             </Dialog>
                           </TableCell>

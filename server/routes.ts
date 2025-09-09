@@ -2829,7 +2829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Prevent creating maintenance if asset is already under maintenance
-      if (asset.status === 'Under Maintenance') {
+      if (asset.status === 'Maintenance') {
         const existingMaintenance = await storage.getMaintenanceForAsset(assetId);
         const activeMaintenance = existingMaintenance.find(m => 
           m.type !== 'Completed' && m.type !== 'Cancelled'
@@ -2875,6 +2875,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const maintenance = await storage.createAssetMaintenance(maintenanceData);
       
+      // Create a transaction record for the maintenance
+      await storage.createAssetTransaction({
+        assetId: assetId,
+        type: 'Maintenance',
+        employeeId: null, // Maintenance doesn't need employee assignment
+        transactionDate: new Date(requestData.date),
+        handledById: (req.user as schema.User).id,
+        conditionNotes: `${requestData.type}: ${requestData.description}`,
+        deviceSpecs: {
+          maintenanceId: maintenance.id,
+          maintenanceType: requestData.type,
+          cost: requestData.cost,
+          provider: requestData.providerName,
+          status: requestData.status
+        }
+      });
+
       // Log activity
       if (req.user) {
         await storage.logActivity({
@@ -2887,7 +2904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maintenanceType: maintenance.type,
             maintenanceStatus: maintenance.status,
             description: maintenance.description,
-            statusChanged: asset.status !== 'Under Maintenance'
+            statusChanged: asset.status !== 'Maintenance'
           }
         });
       }
@@ -6632,6 +6649,23 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         });
         
         updatedAssets.push(updatedAsset);
+
+        // Create transaction record for the sale
+        await storage.createAssetTransaction({
+          assetId: assetId,
+          type: 'Sale',
+          employeeId: null,
+          transactionDate: new Date(saleDate),
+          handledById: (req.user as schema.User).id,
+          conditionNotes: `Sold to ${buyer}`,
+          deviceSpecs: {
+            buyer: buyer,
+            saleDate: saleDate,
+            salePrice: totalAmount / assetIds.length, // Divided equally
+            totalAmount: totalAmount,
+            notes: notes
+          }
+        });
         
         // Log activity
         if (req.user) {
@@ -6684,6 +6718,21 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         });
         
         updatedAssets.push(updatedAsset);
+
+        // Create transaction record for retirement
+        await storage.createAssetTransaction({
+          assetId: assetId,
+          type: 'Retirement',
+          employeeId: null,
+          transactionDate: new Date(retirementDate),
+          handledById: (req.user as schema.User).id,
+          conditionNotes: `Retired: ${reason}`,
+          deviceSpecs: {
+            retirementReason: reason,
+            retirementDate: retirementDate,
+            notes: notes || null
+          }
+        });
         
         // Log activity
         if (req.user) {
