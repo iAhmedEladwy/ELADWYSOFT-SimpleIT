@@ -449,58 +449,34 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
     enabled: open
   });
 
-  // Fetch employees for name lookup
-  const { data: employees = [] } = useQuery({
-    queryKey: ['/api/employees'],
-    enabled: open
-  });
-
-  const getEmployeeName = (employeeId: number) => {
-    const employee = (employees as any[]).find((e: any) => e.id === employeeId);
-    return employee ? employee.englishName || employee.name : 'Unknown';
-  };
-
-  // Maintenance mutations
+  // Add maintenance mutation
   const addMaintenanceMutation = useMutation({
-    mutationFn: async (maintenanceData: any) => {
-      return apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', maintenanceData);
-    },
+    mutationFn: (data: any) => apiRequest(`/api/assets/${asset.id}/maintenance`, 'POST', data),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Maintenance record added successfully' });
+      toast({ title: 'Success', description: 'Maintenance record added' });
       refetchMaintenance();
       setShowMaintenanceForm(false);
       setEditingMaintenance(null);
-    },
-    onError: (error: any) => {
-      toast({ title: 'Error', description: error?.message || 'Failed to add maintenance record', variant: 'destructive' });
     }
   });
 
+  // Update maintenance mutation
   const updateMaintenanceMutation = useMutation({
-    mutationFn: async ({ id, ...data }: any) => {
-      return apiRequest(`/api/maintenance/${id}`, 'PUT', data);
-    },
+    mutationFn: (data: any) => apiRequest(`/api/maintenance/${data.id}`, 'PUT', data),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Maintenance record updated successfully' });
+      toast({ title: 'Success', description: 'Maintenance record updated' });
       refetchMaintenance();
       setShowMaintenanceForm(false);
       setEditingMaintenance(null);
-    },
-    onError: (error: any) => {
-      toast({ title: 'Error', description: error?.message || 'Failed to update maintenance record', variant: 'destructive' });
     }
   });
 
+  // Delete maintenance mutation
   const deleteMaintenanceMutation = useMutation({
-    mutationFn: async (maintenanceId: number) => {
-      return apiRequest(`/api/maintenance/${maintenanceId}`, 'DELETE');
-    },
+    mutationFn: (id: number) => apiRequest(`/api/maintenance/${id}`, 'DELETE'),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Maintenance record deleted successfully' });
+      toast({ title: 'Success', description: 'Maintenance record deleted' });
       refetchMaintenance();
-    },
-    onError: (error: any) => {
-      toast({ title: 'Error', description: error?.message || 'Failed to delete maintenance record', variant: 'destructive' });
     }
   });
 
@@ -528,7 +504,6 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
     }
   };
 
-
   const getMaintenanceIcon = (status: string) => {
     switch (status) {
       case 'Completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -544,7 +519,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Asset History - {asset.assetId}
+            Maintenance History - {asset.assetId}
           </DialogTitle>
         </DialogHeader>
         
@@ -578,124 +553,107 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
             </div>
           </div>
 
-            {/* Single section for Maintenance Records */}
-            <div className="w-full">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">
-                  Maintenance Records ({maintenanceRecords.length})
-                </h3>
-                <Button onClick={handleAddMaintenance} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Maintenance
-                </Button>
-              </div>
+          {/* Maintenance Records Section */}
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Maintenance Records ({maintenanceRecords.length})
+              </h3>
+              <Button onClick={handleAddMaintenance} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Maintenance
+              </Button>
+            </div>
             
-            
-            {/* Maintenance Tab Content */}
-              <div className="space-y-4">
-                {/* Add Maintenance Button */}
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
-                    Manage maintenance records for {asset.assetId}
+            {/* Maintenance Records Table */}
+            <div className="border rounded-lg p-4">
+              <ScrollArea className="h-[400px]">
+                {maintenanceRecords && maintenanceRecords.length > 0 ? (
+                  <Table className="table-fixed">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[120px]">Type</TableHead>
+                        <TableHead className="w-[200px]">Description</TableHead>
+                        <TableHead className="w-[120px]">Date</TableHead>
+                        <TableHead className="w-[80px]">Cost</TableHead>
+                        <TableHead className="w-[120px]">Provider</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {maintenanceRecords.map((record: any) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="w-[100px]">
+                            <div className="flex items-center gap-1">
+                              {getMaintenanceIcon(record.status)}
+                              <span className="text-sm font-medium">{record.status}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <Badge variant="outline" className="text-xs">
+                              {record.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[200px]">
+                            <div className="text-sm truncate" title={record.description}>
+                              {record.description}
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-gray-400" />
+                              <span className="text-sm">
+                                {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[80px]">
+                            <span className="text-sm">
+                              {record.cost ? `${Number(record.cost).toFixed(2)}` : '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <div className="text-xs">
+                              <div className="font-medium truncate">{record.providerName || 'N/A'}</div>
+                              <div className="text-gray-500">{record.providerType}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[100px]">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditMaintenance(record)}
+                                title="Edit maintenance record"
+                                className="h-7 w-7 p-0"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMaintenance(record)}
+                                title="Delete maintenance record"
+                                className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                    <Wrench className="h-8 w-8 mb-2" />
+                    <p>No maintenance records found</p>
                   </div>
-                  <Button onClick={handleAddMaintenance} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Maintenance
-                  </Button>
-                </div>
-                
-                {/* Maintenance Records Table */}
-                <div className="border rounded-lg p-4">
-                  <ScrollArea className="h-[320px]">
-                    {maintenanceRecords && maintenanceRecords.length > 0 ? (
-                      <Table className="table-fixed">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[120px]">Status</TableHead>
-                            <TableHead className="w-[100px]">Type</TableHead>
-                            <TableHead className="w-[200px]">Description</TableHead>
-                            <TableHead className="w-[110px]">Date</TableHead>
-                            <TableHead className="w-[80px]">Cost</TableHead>
-                            <TableHead className="w-[120px]">Provider</TableHead>
-                            <TableHead className="w-[100px]">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {maintenanceRecords.map((record: any) => (
-                            <TableRow key={record.id}>
-                              <TableCell className="w-[120px]">
-                                <div className="flex items-center gap-1">
-                                  {getMaintenanceIcon(record.status)}
-                                  <span className="font-medium text-sm">{record.status}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="w-[100px]">
-                                <Badge variant="outline" className="text-xs">{record.type}</Badge>
-                              </TableCell>
-                              <TableCell className="w-[200px]">
-                                <div 
-                                  className="truncate text-sm" 
-                                  title={record.description}
-                                  style={{ maxWidth: '180px' }}
-                                >
-                                  {record.description}
-                                </div>
-                              </TableCell>
-                              <TableCell className="w-[110px]">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm">
-                                    {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : '-'}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="w-[80px]">
-                                <span className="text-sm">
-                                  {record.cost ? `${Number(record.cost).toFixed(2)}` : '-'}
-                                </span>
-                              </TableCell>
-                              <TableCell className="w-[120px]">
-                                <div className="text-xs">
-                                  <div className="font-medium truncate">{record.providerName || 'N/A'}</div>
-                                  <div className="text-gray-500">{record.providerType}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="w-[100px]">
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditMaintenance(record)}
-                                    title="Edit maintenance record"
-                                    className="h-7 w-7 p-0"
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteMaintenance(record)}
-                                    title="Delete maintenance record"
-                                    className="text-destructive hover:text-destructive h-7 w-7 p-0"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                        <Wrench className="h-8 w-8 mb-2" />
-                        <p>No maintenance records found</p>
-                      </div>
-                    )}
-                  </ScrollArea>
-                </div>
-              </div>
-          </Tabs>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
         </div>
         
         <DialogFooter>
