@@ -424,8 +424,8 @@ export default function AssetHistory() {
                     <SelectItem value="Check In">{translations.checkIn}</SelectItem>
                     <SelectItem value="Check Out">{translations.checkOut}</SelectItem>
                     <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
-                    <SelectItem value="Assignment">{translations.sale}</SelectItem>
-                    <SelectItem value="Assignment">{translations.retirement}</SelectItem>
+                    <SelectItem value="Sale">{translations.sale}</SelectItem>
+                    <SelectItem value="Retirement">{translations.retirement}</SelectItem>
 
 
                   </SelectContent>
