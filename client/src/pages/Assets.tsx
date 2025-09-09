@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useCurrency } from '@/lib/currencyContext';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
@@ -17,7 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2, Check, ChevronsUpDown } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,CalendarIcon , Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
@@ -56,7 +58,7 @@ export default function Assets() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  
+  const { formatCurrency } = useCurrency();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -68,6 +70,34 @@ export default function Assets() {
     totalAmount: '',
     notes: ''
   });
+
+// Bulk operation dialogs state
+  const [showBulkSellDialog, setShowBulkSellDialog] = useState(false);
+  const [showBulkRetireDialog, setShowBulkRetireDialog] = useState(false);
+  const [pricingMethod, setPricingMethod] = useState<'total' | 'individual'>('total');
+  const [individualPrices, setIndividualPrices] = useState<Record<number, string>>({});
+  const [bulkSellData, setBulkSellData] = useState({
+    buyer: '',
+    saleDate: new Date(),
+    totalAmount: '',
+    notes: ''
+  });
+  const [bulkRetireData, setBulkRetireData] = useState({
+    reason: '',
+    retirementDate: new Date(),
+    notes: ''
+  });
+
+  // Initialize individual prices when dialog opens
+  useEffect(() => {
+    if (showBulkSellDialog && pricingMethod === 'individual') {
+      const initialPrices: Record<number, string> = {};
+      selectedAssets.forEach(id => {
+        initialPrices[id] = individualPrices[id] || '';
+      });
+      setIndividualPrices(initialPrices);
+    }
+  }, [showBulkSellDialog, pricingMethod, selectedAssets]);
 
   const translations = {
     title: language === 'Arabic' ? 'إدارة الأصول' : 'Assets Management',
@@ -117,7 +147,52 @@ export default function Assets() {
     showing: language === 'Arabic' ? 'عرض' : 'Showing',
     of: language === 'Arabic' ? 'من' : 'of',
     assets: language === 'Arabic' ? 'أصل' : 'assets',
-    page: language === 'Arabic' ? 'صفحة' : 'Page'
+    page: language === 'Arabic' ? 'صفحة' : 'Page',
+    sellAssets: language === 'English' ? 'Sell Assets' : 'بيع الأصول',
+    sellAssetsDesc: language === 'English' 
+      ? `You are about to sell ${selectedAssets.length} assets. Please provide the sale details.`
+      : `أنت على وشك بيع ${selectedAssets.length} أصل. يرجى تقديم تفاصيل البيع.`,
+    buyerName: language === 'English' ? 'Buyer Name' : 'اسم المشتري',
+    enterBuyerName: language === 'English' ? 'Enter buyer name' : 'أدخل اسم المشتري',
+    pickDate: language === 'English' ? 'Pick a date' : 'اختر التاريخ',
+    pricingMethod: language === 'English' ? 'Pricing Method' : 'طريقة التسعير',
+    totalPricing: language === 'English' ? 'Total Amount for All' : 'المبلغ الإجمالي للجميع',
+    individualPricing: language === 'English' ? 'Individual Pricing' : 'التسعير الفردي',
+    totalSaleAmount: language === 'English' ? 'Total Sale Amount' : 'إجمالي مبلغ البيع',
+    enterAmount: language === 'English' ? 'Enter amount' : 'أدخل المبلغ',
+    pricePerAsset: language === 'English' ? 'Price' : 'السعر',
+    notesOptional: language === 'English' ? 'Notes (Optional)' : 'ملاحظات (اختياري)',
+    additionalNotesSale: language === 'English' 
+      ? 'Additional notes about this sale...' 
+      : 'ملاحظات إضافية حول هذا البيع...',
+    selectedAssetsPreview: language === 'English' ? 'Selected Assets:' : 'الأصول المحددة:',
+    andMore: language === 'English' ? 'and' : 'و',
+    more: language === 'English' ? 'more' : 'أكثر',
+    confirmSale: language === 'English' ? 'Confirm Sale' : 'تأكيد البيع',
+    totalCalculated: language === 'English' ? 'Total:' : 'المجموع:',
+    fillAllPrices: language === 'English' ? 'Please fill in all asset prices' : 'يرجى ملء جميع أسعار الأصول',
+    
+    // Bulk Retire Dialog translations
+    retireAssets: language === 'English' ? 'Retire Assets' : 'سحب الأصول',
+    retireAssetsDesc: language === 'English' 
+      ? `You are about to retire ${selectedAssets.length} assets. Please provide the retirement details.`
+      : `أنت على وشك سحب ${selectedAssets.length} أصل. يرجى تقديم تفاصيل السحب.`,
+    retirementReason: language === 'English' ? 'Retirement Reason' : 'سبب السحب',
+    selectReason: language === 'English' ? 'Select a reason' : 'اختر السبب',
+    obsolete: language === 'English' ? 'Obsolete/End of Life' : 'قديم/نهاية العمر',
+    damagedBeyondRepair: language === 'English' ? 'Damaged Beyond Repair' : 'تالف بشكل لا يمكن إصلاحه',
+    lostOrStolen: language === 'English' ? 'Lost or Stolen' : 'مفقود أو مسروق',
+    donated: language === 'English' ? 'Donated' : 'تبرع',
+    replacedByNew: language === 'English' ? 'Replaced by New Asset' : 'استبدل بأصل جديد',
+    other: language === 'English' ? 'Other' : 'آخر',
+    retirementDate: language === 'English' ? 'Retirement Date' : 'تاريخ السحب',
+    additionalNotes: language === 'English' ? 'Additional Notes (Optional)' : 'ملاحظات إضافية (اختياري)',
+    additionalDetailsRetirement: language === 'English' 
+      ? 'Additional details about the retirement...' 
+      : 'تفاصيل إضافية حول السحب...',
+    confirmRetirement: language === 'English' ? 'Confirm Retirement' : 'تأكيد السحب',
+    provideRetirementReason: language === 'English' ? 'Please provide a retirement reason' : 'يرجى تقديم سبب السحب',
+    fillRequiredFields: language === 'English' ? 'Please fill in all required fields' : 'يرجى ملء جميع الحقول المطلوبة'
   };
 
   // Parse URL parameters on component mount
@@ -415,29 +490,168 @@ export default function Assets() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedAssets.length === 0) return;
-    
-    if (!confirm(translations.deleteConfirm)) return;
-    
-    try {
-      await Promise.all(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/paginated/${id}`, 'DELETE')
-        )
+  // Handler for bulk sell confirmation
+  const handleBulkSellConfirm = async () => {
+    // Validation based on pricing method
+    if (pricingMethod === 'total') {
+      if (!bulkSellData.buyer || !bulkSellData.totalAmount) {
+        toast({
+          title: translations.error,
+          description: translations.fillRequiredFields,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!bulkSellData.buyer) {
+        toast({
+          title: translations.error,
+          description: translations.fillRequiredFields,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check if all individual prices are filled
+      const allPricesFilled = selectedAssets.every(id => 
+        individualPrices[id] && parseFloat(individualPrices[id]) > 0
       );
       
-      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      if (!allPricesFilled) {
+        toast({
+          title: translations.error,
+          description: translations.fillAllPrices,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    try {
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Selling ${selectedAssets.length} assets...`,
+      });
+
+      // Calculate total amount based on pricing method
+      let totalAmount = 0;
+      let saleNotes = bulkSellData.notes || `Bulk sale to ${bulkSellData.buyer}`;
+      
+      if (pricingMethod === 'total') {
+        totalAmount = parseFloat(bulkSellData.totalAmount);
+      } else {
+        // Sum up individual prices
+        totalAmount = selectedAssets.reduce((sum, id) => {
+          return sum + parseFloat(individualPrices[id] || '0');
+        }, 0);
+        
+        // Add individual pricing details to notes
+        const pricingDetails = assets
+          .filter((asset: any) => selectedAssets.includes(asset.id))
+          .map((asset: any) => `${asset.assetId}: ${formatCurrency(parseFloat(individualPrices[asset.id]))}`)
+          .join(', ');
+        
+        saleNotes = `${saleNotes}\nIndividual Pricing: ${pricingDetails}`;
+      }
+
+      const response = await apiRequest('/api/assets/sell', 'POST', {
+        assetIds: selectedAssets,
+        buyer: bulkSellData.buyer,
+        saleDate: bulkSellData.saleDate.toISOString().split('T')[0],
+        totalAmount: totalAmount,
+        notes: saleNotes,
+        pricingMethod: pricingMethod,
+        individualPrices: pricingMethod === 'individual' ? individualPrices : undefined
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      await refetch();
+
       toast({
         title: translations.success,
-        description: `${selectedAssets.length} assets deleted successfully`,
+        description: response.message || `Successfully sold ${selectedAssets.length} assets`,
       });
+
+      // Reset everything
       setSelectedAssets([]);
-    } catch (error) {
+      setShowBulkSellDialog(false);
+      setPricingMethod('total');
+      setIndividualPrices({});
+      setBulkSellData({
+        buyer: '',
+        saleDate: new Date(),
+        totalAmount: '',
+        notes: ''
+      });
+
+    } catch (error: any) {
+      console.error('Bulk sell error:', error);
       toast({
         title: translations.error,
-        description: 'Failed to delete assets',
+        description: error.message || 'Failed to sell assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+
+  // Handler for bulk retire confirmation
+  const handleBulkRetireConfirm = async () => {
+    if (!bulkRetireData.reason) {
+      toast({
+        title: translations.error || 'Error',
+        description: 'Please provide a retirement reason',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Retiring ${selectedAssets.length} assets...`,
+      });
+
+      const response = await apiRequest('/api/assets/retire', 'POST', {
+        assetIds: selectedAssets,
+        reason: bulkRetireData.reason,
+        retirementDate: bulkRetireData.retirementDate.toISOString(),
+        notes: bulkRetireData.notes
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      await refetch();
+
+      toast({
+        title: translations.success,
+        description: response.message || `Successfully retired ${selectedAssets.length} assets`,
+      });
+
+      setSelectedAssets([]);
+      setShowBulkRetireDialog(false);
+      setBulkRetireData({
+        reason: '',
+        retirementDate: new Date(),
+        notes: ''
+      });
+
+    } catch (error: any) {
+      console.error('Bulk retire error:', error);
+      toast({
+        title: translations.error,
+        description: error.message || 'Failed to retire assets',
         variant: 'destructive',
       });
     }
@@ -446,23 +660,127 @@ export default function Assets() {
   const handleBulkStatusChange = async (newStatus: string) => {
     if (selectedAssets.length === 0) return;
     
+    // For Sell and Retire, open dialogs instead of processing immediately
+    if (newStatus === 'Sold') {
+      setShowBulkSellDialog(true);
+      return;
+    }
+    
+    if (newStatus === 'Retired') {
+      setShowBulkRetireDialog(true);
+      return;
+    }
+    
+    // For other statuses, process immediately
     try {
-      await Promise.all(
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Updating ${selectedAssets.length} assets to ${newStatus}...`,
+      });
+
+      const results = await Promise.allSettled(
         selectedAssets.map(id => 
           apiRequest(`/api/assets/paginated/${id}`, 'PUT', { status: newStatus })
         )
       );
-      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      toast({
-        title: translations.success,
-        description: `${selectedAssets.length} assets status updated to ${newStatus}`,
-      });
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      await refetch();
+      
+      if (failed === 0) {
+        toast({
+          title: translations.success,
+          description: `Successfully updated ${succeeded} assets to ${newStatus}`,
+        });
+      } else if (succeeded > 0) {
+        toast({
+          title: 'Partial Success',
+          description: `Updated ${succeeded} assets to ${newStatus}, ${failed} failed`,
+        });
+      } else {
+        throw new Error(`Failed to update all ${failed} assets`);
+      }
+      
       setSelectedAssets([]);
-    } catch (error) {
+      
+    } catch (error: any) {
+      console.error('Bulk status update error:', error);
       toast({
         title: translations.error,
-        description: 'Failed to update asset status',
+        description: error.message || 'Failed to update asset status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedAssets.length === 0) return;
+    
+    if (!confirm(translations.deleteConfirm || `Are you sure you want to delete ${selectedAssets.length} assets?`)) return;
+    
+    try {
+      // Show loading state
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Deleting ${selectedAssets.length} assets...`,
+      });
+
+      // Use the bulk delete endpoint if available, otherwise delete individually
+      const results = await Promise.allSettled(
+        selectedAssets.map(id => 
+          apiRequest(`/api/assets/paginated/${id}`, 'DELETE')
+        )
+      );
+      
+      // Count successes and failures
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      // Invalidate queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      // Force refetch
+      await refetch();
+      
+      // Show result message
+      if (failed === 0) {
+        toast({
+          title: translations.success,
+          description: `${succeeded} assets deleted successfully`,
+        });
+      } else if (succeeded > 0) {
+        toast({
+          title: 'Partial Success',
+          description: `Deleted ${succeeded} assets, ${failed} failed`,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: translations.error,
+          description: `Failed to delete all ${failed} assets`,
+          variant: 'destructive',
+        });
+      }
+      
+      setSelectedAssets([]);
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast({
+        title: translations.error,
+        description: 'Failed to delete assets',
         variant: 'destructive',
       });
     }
@@ -1078,6 +1396,292 @@ export default function Assets() {
           </DialogContent>
         </Dialog>
       </div>
+      {/* Bulk Sell Dialog */}
+      <Dialog open={showBulkSellDialog} onOpenChange={(open) => {
+        setShowBulkSellDialog(open);
+        if (!open) {
+          setPricingMethod('total');
+          setIndividualPrices({});
+        }
+      }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{translations.sellAssets}</DialogTitle>
+            <DialogDescription>{translations.sellAssetsDesc}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="buyer" className="required">
+                {translations.buyerName} *
+              </Label>
+              <Input
+                id="buyer"
+                value={bulkSellData.buyer}
+                onChange={(e) => setBulkSellData({ ...bulkSellData, buyer: e.target.value })}
+                placeholder={translations.enterBuyerName}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="saleDate" className="required">
+                {translations.saleDate} *
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !bulkSellData.saleDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {bulkSellData.saleDate ? format(bulkSellData.saleDate, "PPP") : translations.pickDate}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={bulkSellData.saleDate}
+                    onSelect={(date) => date && setBulkSellData({ ...bulkSellData, saleDate: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            {/* Pricing Method Selection */}
+            <div className="grid gap-2">
+              <Label>{translations.pricingMethod}</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pricingMethod"
+                    value="total"
+                    checked={pricingMethod === 'total'}
+                    onChange={() => setPricingMethod('total')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{translations.totalPricing}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pricingMethod"
+                    value="individual"
+                    checked={pricingMethod === 'individual'}
+                    onChange={() => setPricingMethod('individual')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{translations.individualPricing}</span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Pricing Input based on method */}
+            {pricingMethod === 'total' ? (
+              <div className="grid gap-2">
+                <Label htmlFor="totalAmount" className="required">
+                  {translations.totalSaleAmount} *
+                </Label>
+                <Input
+                  id="totalAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={bulkSellData.totalAmount}
+                  onChange={(e) => setBulkSellData({ ...bulkSellData, totalAmount: e.target.value })}
+                  placeholder={translations.enterAmount}
+                />
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <Label>{translations.individualPricing} *</Label>
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
+                  <div className="space-y-2">
+                    {assets
+                      .filter((asset: any) => selectedAssets.includes(asset.id))
+                      .map((asset: any) => (
+                        <div key={asset.id} className="flex items-center gap-2">
+                          <span className="text-sm flex-1">
+                            {asset.assetId} - {asset.type} ({asset.brand})
+                          </span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={individualPrices[asset.id] || ''}
+                            onChange={(e) => setIndividualPrices({
+                              ...individualPrices,
+                              [asset.id]: e.target.value
+                            })}
+                            placeholder={translations.pricePerAsset}
+                            className="w-32"
+                          />
+                        </div>
+                      ))}
+                  </div>
+                  {pricingMethod === 'individual' && selectedAssets.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex justify-between items-center font-medium">
+                        <span>{translations.totalCalculated}</span>
+                        <span>
+                          {formatCurrency(
+                            selectedAssets.reduce((sum, id) => {
+                              return sum + parseFloat(individualPrices[id] || '0');
+                            }, 0)
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="grid gap-2">
+              <Label htmlFor="saleNotes">{translations.notesOptional}</Label>
+              <Textarea
+                id="saleNotes"
+                value={bulkSellData.notes}
+                onChange={(e) => setBulkSellData({ ...bulkSellData, notes: e.target.value })}
+                placeholder={translations.additionalNotesSale}
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBulkSellDialog(false);
+                setPricingMethod('total');
+                setIndividualPrices({});
+              }}
+            >
+              {translations.cancel}
+            </Button>
+            <Button
+              onClick={handleBulkSellConfirm}
+              disabled={
+                !bulkSellData.buyer || 
+                (pricingMethod === 'total' && !bulkSellData.totalAmount) ||
+                (pricingMethod === 'individual' && !selectedAssets.every(id => individualPrices[id]))
+              }
+            >
+              {translations.confirmSale}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Retire Dialog */}
+      <Dialog open={showBulkRetireDialog} onOpenChange={setShowBulkRetireDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{translations.retireAssets}</DialogTitle>
+            <DialogDescription>{translations.retireAssetsDesc}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="retireReason" className="required">
+                {translations.retirementReason} *
+              </Label>
+              <Select
+                value={bulkRetireData.reason}
+                onValueChange={(value) => setBulkRetireData({ ...bulkRetireData, reason: value })}
+              >
+                <SelectTrigger id="retireReason">
+                  <SelectValue placeholder={translations.selectReason} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Obsolete">{translations.obsolete}</SelectItem>
+                  <SelectItem value="Damaged">{translations.damagedBeyondRepair}</SelectItem>
+                  <SelectItem value="Lost">{translations.lostOrStolen}</SelectItem>
+                  <SelectItem value="Donated">{translations.donated}</SelectItem>
+                  <SelectItem value="Replaced">{translations.replacedByNew}</SelectItem>
+                  <SelectItem value="Other">{translations.other}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="retirementDate" className="required">
+                {translations.retirementDate} *
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !bulkRetireData.retirementDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {bulkRetireData.retirementDate ? format(bulkRetireData.retirementDate, "PPP") : translations.pickDate}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={bulkRetireData.retirementDate}
+                    onSelect={(date) => date && setBulkRetireData({ ...bulkRetireData, retirementDate: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="retireNotes">{translations.additionalNotes}</Label>
+              <Textarea
+                id="retireNotes"
+                value={bulkRetireData.notes}
+                onChange={(e) => setBulkRetireData({ ...bulkRetireData, notes: e.target.value })}
+                placeholder={translations.additionalDetailsRetirement}
+                rows={3}
+              />
+            </div>
+            
+            {/* Selected assets preview */}
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-sm font-medium mb-2">{translations.selectedAssetsPreview}</p>
+              <div className="max-h-32 overflow-y-auto">
+                {assets
+                  .filter((asset: any) => selectedAssets.includes(asset.id))
+                  .slice(0, 5)
+                  .map((asset: any) => (
+                    <div key={asset.id} className="text-sm text-muted-foreground">
+                      • {asset.assetId} - {asset.type} ({asset.brand})
+                    </div>
+                  ))}
+                {selectedAssets.length > 5 && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    ...{translations.andMore} {selectedAssets.length - 5} {translations.more}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkRetireDialog(false)}>
+              {translations.cancel}
+            </Button>
+            <Button
+              onClick={handleBulkRetireConfirm}
+              disabled={!bulkRetireData.reason}
+            >
+              {translations.confirmRetirement}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
