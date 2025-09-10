@@ -3061,164 +3061,315 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ITIL-Compliant Asset Upgrade Management API Routes
-  app.post('/api/assets/:id/upgrade', authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const assetId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      
-      const upgradeData = {
-        ...req.body,
-        assetId,
-        requestedById: user.id
-      };
-      
-      const upgrade = await storage.createAssetUpgrade(upgradeData);
-      res.json(upgrade);
-    } catch (error: unknown) {
-      console.error('Error creating asset upgrade:', error);
-      res.status(500).json({ message: 'Error creating upgrade request' });
-    }
-  });
+// ============================================
+// SIMPLIFIED ASSET UPGRADE ROUTES
+// ============================================
 
-  app.get('/api/upgrades', authenticateUser, async (req, res) => {
-    try {
-      const upgrades = await storage.getAllAssetUpgrades();
-      res.json(upgrades);
-    } catch (error: unknown) {
-      console.error('Error fetching asset upgrades:', error);
-      res.status(500).json({ message: 'Error fetching upgrade requests' });
+// Create upgrade request
+app.post('/api/assets/:id/upgrade', authenticateUser, async (req, res) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    const user = req.user as schema.User;
+    
+    // Validate asset exists
+    const asset = await storage.getAsset(assetId);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
     }
-  });
-
-  app.get('/api/upgrades/:id', authenticateUser, async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const upgrade = await storage.getAssetUpgrade(upgradeId);
-      
-      if (!upgrade) {
-        return res.status(404).json({ message: 'Upgrade request not found' });
+    
+    // Create upgrade request
+    const upgradeData = {
+      assetId,
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      upgradeType: req.body.upgradeType,
+      priority: req.body.priority,
+      scheduledDate: req.body.scheduledDate,
+      purchaseRequired: req.body.purchaseRequired || false,
+      estimatedCost: req.body.estimatedCost || null,
+      justification: req.body.justification,
+      approvedById: req.body.approvedById || null,
+      approvalDate: req.body.approvalDate || null,
+      status: req.body.approvedById ? 'Approved' : 'Pending Approval',
+      createdById: user.id,
+      updatedById: user.id,
+    };
+    
+    const upgrade = await storage.createAssetUpgrade(upgradeData);
+    
+    // Add to asset history
+    await storage.createAssetHistory({
+      assetId,
+      action: 'UPGRADE_REQUESTED',
+      description: `Upgrade requested: ${req.body.title}`,
+      performedById: user.id,
+      performedAt: new Date(),
+      metadata: {
+        upgradeId: upgrade.id,
+        category: req.body.category,
+        type: req.body.upgradeType,
+        priority: req.body.priority
       }
-      
-      res.json(upgrade);
-    } catch (error: unknown) {
-      console.error('Error fetching upgrade request:', error);
-      res.status(500).json({ message: 'Error fetching upgrade request' });
-    }
-  });
+    });
+    
+    res.json(upgrade);
+  } catch (error: unknown) {
+    console.error('Error creating upgrade request:', error);
+    res.status(500).json({ message: 'Error creating upgrade request' });
+  }
+});
 
-  app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      const updateData = req.body;
-      
-      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
-      
-      if (!updatedUpgrade) {
-        return res.status(404).json({ message: 'Upgrade request not found' });
+// Get all upgrades
+app.get('/api/upgrades', authenticateUser, async (req, res) => {
+  try {
+    const { status, category, assetId } = req.query;
+    
+    let query = `
+      SELECT 
+        u.*,
+        a.asset_id as asset_code,
+        a.type as asset_type,
+        a.brand as asset_brand,
+        a.model_name as asset_model,
+        creator.username as created_by_name,
+        approver.name as approved_by_name
+      FROM asset_upgrades u
+      LEFT JOIN assets a ON u.asset_id = a.id
+      LEFT JOIN users creator ON u.created_by_id = creator.id
+      LEFT JOIN employees approver ON u.approved_by_id = approver.id
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    let paramCount = 0;
+    
+    if (status) {
+      paramCount++;
+      query += ` AND u.status = $${paramCount}`;
+      params.push(status);
+    }
+    
+    if (category) {
+      paramCount++;
+      query += ` AND u.category = $${paramCount}`;
+      params.push(category);
+    }
+    
+    if (assetId) {
+      paramCount++;
+      query += ` AND u.asset_id = $${paramCount}`;
+      params.push(assetId);
+    }
+    
+    query += ' ORDER BY u.created_at DESC';
+    
+    const result = await storage.pool.query(query, params);
+    res.json(result.rows);
+  } catch (error: unknown) {
+    console.error('Error fetching upgrades:', error);
+    res.status(500).json({ message: 'Error fetching upgrades' });
+  }
+});
+
+// Get single upgrade
+app.get('/api/upgrades/:id', authenticateUser, async (req, res) => {
+  try {
+    const upgradeId = parseInt(req.params.id);
+    
+    const query = `
+      SELECT 
+        u.*,
+        a.asset_id as asset_code,
+        a.type as asset_type,
+        a.brand as asset_brand,
+        a.model_name as asset_model,
+        creator.username as created_by_name,
+        approver.name as approved_by_name
+      FROM asset_upgrades u
+      LEFT JOIN assets a ON u.asset_id = a.id
+      LEFT JOIN users creator ON u.created_by_id = creator.id
+      LEFT JOIN employees approver ON u.approved_by_id = approver.id
+      WHERE u.id = $1
+    `;
+    
+    const result = await storage.pool.query(query, [upgradeId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Upgrade not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error: unknown) {
+    console.error('Error fetching upgrade:', error);
+    res.status(500).json({ message: 'Error fetching upgrade' });
+  }
+});
+
+// Update upgrade
+app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const upgradeId = parseInt(req.params.id);
+    const user = req.user as schema.User;
+    
+    // Check if upgrade exists
+    const existingQuery = 'SELECT * FROM asset_upgrades WHERE id = $1';
+    const existingResult = await storage.pool.query(existingQuery, [upgradeId]);
+    
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Upgrade not found' });
+    }
+    
+    const existing = existingResult.rows[0];
+    
+    // Check if status allows editing
+    if (!['Draft', 'Pending Approval'].includes(existing.status) && !req.body.status) {
+      return res.status(400).json({ message: 'Cannot edit upgrade in current status' });
+    }
+    
+    // Build update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 0;
+    
+    const allowedFields = [
+      'title', 'description', 'category', 'upgradeType', 'priority',
+      'scheduledDate', 'purchaseRequired', 'estimatedCost', 'justification',
+      'approvedById', 'approvalDate', 'status'
+    ];
+    
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        paramCount++;
+        updates.push(`${field.replace(/([A-Z])/g, '_$1').toLowerCase()} = $${paramCount}`);
+        values.push(req.body[field]);
       }
-      
-      res.json(updatedUpgrade);
-    } catch (error: unknown) {
-      console.error('Error updating upgrade request:', error);
-      res.status(500).json({ message: 'Error updating upgrade request' });
     }
-  });
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+    
+    paramCount++;
+    updates.push(`updated_by_id = $${paramCount}`);
+    values.push(user.id);
+    
+    updates.push('updated_at = NOW()');
+    
+    paramCount++;
+    values.push(upgradeId);
+    
+    const updateQuery = `
+      UPDATE asset_upgrades 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `;
+    
+    const result = await storage.pool.query(updateQuery, values);
+    
+    // Add to asset history if status changed
+    if (req.body.status && req.body.status !== existing.status) {
+      await storage.createAssetHistory({
+        assetId: existing.asset_id,
+        action: 'UPGRADE_STATUS_CHANGED',
+        description: `Upgrade status changed from ${existing.status} to ${req.body.status}`,
+        performedById: user.id,
+        performedAt: new Date(),
+        metadata: {
+          upgradeId,
+          oldStatus: existing.status,
+          newStatus: req.body.status
+        }
+      });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error: unknown) {
+    console.error('Error updating upgrade:', error);
+    res.status(500).json({ message: 'Error updating upgrade' });
+  }
+});
 
-  app.get('/api/upgrades/:id/history', authenticateUser, async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const history = await storage.getUpgradeHistory(upgradeId);
-      res.json(history);
-    } catch (error: unknown) {
-      console.error('Error fetching upgrade history:', error);
-      res.status(500).json({ message: 'Error fetching upgrade history' });
+// Delete upgrade (only drafts)
+app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const upgradeId = parseInt(req.params.id);
+    const user = req.user as schema.User;
+    
+    // Check if upgrade exists and is a draft
+    const checkQuery = 'SELECT * FROM asset_upgrades WHERE id = $1';
+    const checkResult = await storage.pool.query(checkQuery, [upgradeId]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Upgrade not found' });
     }
-  });
+    
+    if (checkResult.rows[0].status !== 'Draft') {
+      return res.status(400).json({ message: 'Can only delete draft upgrades' });
+    }
+    
+    // Delete upgrade
+    await storage.pool.query('DELETE FROM asset_upgrades WHERE id = $1', [upgradeId]);
+    
+    // Add to asset history
+    await storage.createAssetHistory({
+      assetId: checkResult.rows[0].asset_id,
+      action: 'UPGRADE_DELETED',
+      description: `Draft upgrade deleted: ${checkResult.rows[0].title}`,
+      performedById: user.id,
+      performedAt: new Date(),
+      metadata: { upgradeId }
+    });
+    
+    res.json({ message: 'Upgrade deleted successfully' });
+  } catch (error: unknown) {
+    console.error('Error deleting upgrade:', error);
+    res.status(500).json({ message: 'Error deleting upgrade' });
+  }
+});
 
-  // Upgrade approval workflow
-  app.post('/api/upgrades/:id/approve', authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      const { approvalNotes } = req.body;
-      
-      const updateData = {
-        status: 'Approved',
-        approvedById: user.id,
-        approvalDate: new Date().toISOString(),
-        approvalNotes
-      };
-      
-      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
-      res.json(updatedUpgrade);
-    } catch (error: unknown) {
-      console.error('Error approving upgrade:', error);
-      res.status(500).json({ message: 'Error approving upgrade request' });
+// Quick status update
+app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const upgradeId = parseInt(req.params.id);
+    const user = req.user as schema.User;
+    const { status, notes } = req.body;
+    
+    const validStatuses = ['Draft', 'Pending Approval', 'Approved', 'In Progress', 'Completed', 'Cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
     }
-  });
-
-  app.post('/api/upgrades/:id/reject', authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      const { rejectionReason } = req.body;
-      
-      const updateData = {
-        status: 'Cancelled',
-        approvalNotes: `REJECTED: ${rejectionReason}`
-      };
-      
-      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
-      res.json(updatedUpgrade);
-    } catch (error: unknown) {
-      console.error('Error rejecting upgrade:', error);
-      res.status(500).json({ message: 'Error rejecting upgrade request' });
+    
+    const query = `
+      UPDATE asset_upgrades 
+      SET status = $1, updated_by_id = $2, updated_at = NOW()
+      WHERE id = $3
+      RETURNING *
+    `;
+    
+    const result = await storage.pool.query(query, [status, user.id, upgradeId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Upgrade not found' });
     }
-  });
-
-  app.post('/api/upgrades/:id/start-implementation', authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      
-      const updateData = {
-        status: 'In Progress',
-        implementedById: user.id,
-        actualStartDate: new Date().toISOString()
-      };
-      
-      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
-      res.json(updatedUpgrade);
-    } catch (error: unknown) {
-      console.error('Error starting upgrade implementation:', error);
-      res.status(500).json({ message: 'Error starting upgrade implementation' });
-    }
-  });
-
-  app.post('/api/upgrades/:id/complete', authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const upgradeId = parseInt(req.params.id);
-      const user = req.user as schema.User;
-      const { implementationNotes, actualCost, postUpgradeValidation } = req.body;
-      
-      const updateData = {
-        status: 'Completed',
-        actualEndDate: new Date().toISOString(),
-        implementationNotes,
-        actualCost,
-        postUpgradeValidation
-      };
-      
-      const updatedUpgrade = await storage.updateAssetUpgrade(upgradeId, updateData, user.id);
-      res.json(updatedUpgrade);
-    } catch (error: unknown) {
-      console.error('Error completing upgrade:', error);
-      res.status(500).json({ message: 'Error completing upgrade' });
-    }
-  });
-  
+    
+    // Add to asset history
+    await storage.createAssetHistory({
+      assetId: result.rows[0].asset_id,
+      action: 'UPGRADE_STATUS_UPDATED',
+      description: notes || `Upgrade status updated to ${status}`,
+      performedById: user.id,
+      performedAt: new Date(),
+      metadata: { upgradeId, status }
+    });
+    
+    res.json(result.rows[0]);
+  } catch (error: unknown) {
+    console.error('Error updating upgrade status:', error);
+    res.status(500).json({ message: 'Error updating upgrade status' });
+  }
+});
   // Asset Transaction APIs
   app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
     try {

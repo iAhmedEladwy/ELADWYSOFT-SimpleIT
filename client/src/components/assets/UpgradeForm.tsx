@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, DollarSign, Check } from 'lucide-react';
+import { CalendarIcon, Loader2, DollarSign, Check ,Circle, AlertTriangle, AlertCircle} from 'lucide-react';
 
 // UI Components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -298,24 +298,26 @@ export function UpgradeForm({
                       <Button
                         type="button"
                         variant={field.value === 'Hardware' ? 'default' : 'outline'}
-                        className="flex-1"
+                        className="flex-1 flex items-center justify-center gap-2"
                         onClick={() => {
                           field.onChange('Hardware');
                           form.setValue('upgradeType', '');
                         }}
                       >
-                        🖥️ {translations.hardware}
+                        <Cpu className="w-4 h-4" />
+                        {translations.hardware}
                       </Button>
                       <Button
                         type="button"
                         variant={field.value === 'Software' ? 'default' : 'outline'}
-                        className="flex-1"
+                        className="flex-1 flex items-center justify-center gap-2"
                         onClick={() => {
                           field.onChange('Software');
                           form.setValue('upgradeType', '');
                         }}
                       >
-                        💾 {translations.software}
+                        <Code2 className="w-4 h-4" />
+                        {translations.software}
                       </Button>
                     </div>
                   </FormControl>
@@ -403,9 +405,9 @@ export function UpgradeForm({
                           )}
                           onClick={() => field.onChange(priority)}
                         >
-                          {priority === 'Low' && '🟢'} 
-                          {priority === 'Medium' && '🟡'} 
-                          {priority === 'High' && '🔴'} 
+                          {priority === 'Low' && <Circle className="text-green-500" size={18} />}
+                          {priority === 'Medium' && <AlertTriangle className="text-yellow-500" size={18} />}
+                          {priority === 'High' && <AlertCircle className="text-red-500" size={18} />}
                           {' '}
                           {translations[priority.toLowerCase() as 'low' | 'medium' | 'high']}
                         </Button>
@@ -576,7 +578,7 @@ export function UpgradeForm({
                       <span className="text-muted-foreground ml-1">({translations.optional})</span>
                     </FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value === 'none' ? undefined : parseInt(value))}
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
                       value={field.value?.toString() || ''}
                     >
                       <FormControl>
@@ -585,7 +587,7 @@ export function UpgradeForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="">None</SelectItem>
                         {users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username} - {user.role}
