@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, DollarSign, Check ,Circle, AlertTriangle, AlertCircle} from 'lucide-react';
+import { CalendarIcon, Loader2, DollarSign, Check } from 'lucide-react';
 
 // UI Components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -304,7 +304,7 @@ export function UpgradeForm({
                           form.setValue('upgradeType', '');
                         }}
                       >
-                        <Cpu className="w-4 h-4" />
+                        <HardDrive className="w-4 h-4" />
                         {translations.hardware}
                       </Button>
                       <Button
@@ -316,7 +316,7 @@ export function UpgradeForm({
                           form.setValue('upgradeType', '');
                         }}
                       >
-                        <Code2 className="w-4 h-4" />
+                        <Code className="w-4 h-4" />
                         {translations.software}
                       </Button>
                     </div>
@@ -405,9 +405,9 @@ export function UpgradeForm({
                           )}
                           onClick={() => field.onChange(priority)}
                         >
-                          {priority === 'Low' && <Circle className="text-green-500" size={18} />}
-                          {priority === 'Medium' && <AlertTriangle className="text-yellow-500" size={18} />}
-                          {priority === 'High' && <AlertCircle className="text-red-500" size={18} />}
+                          {priority === 'Low' && '🟢'} 
+                          {priority === 'Medium' && '🟡'} 
+                          {priority === 'High' && '🔴'} 
                           {' '}
                           {translations[priority.toLowerCase() as 'low' | 'medium' | 'high']}
                         </Button>
