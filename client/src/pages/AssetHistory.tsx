@@ -816,7 +816,7 @@ export default function AssetHistory() {
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">{translations.employee}}</Label>
+                                    <Label className="text-sm font-medium">{translations.employee}</Label>
                                     <p className="text-sm text-gray-600">
                                       {transaction.employee 
                                         ? `${transaction.employee.englishName || transaction.employee.arabicName || 'N/A'} - ${transaction.employee.department || 'N/A'}`
@@ -836,7 +836,7 @@ export default function AssetHistory() {
                                         <p className="text-sm font-medium">{transaction.asset?.assetId || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">{translations.type}}</Label>
+                                        <Label className="text-xs text-gray-500">{translations.type}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
                                       </div>
                                       <div>
@@ -970,7 +970,7 @@ export default function AssetHistory() {
                                 if (selectedTransaction.type === 'Maintenance' && metadata) {
                                   return (
                                     <div className="space-y-4">
-                                      <h4 className="font-medium">{translations.maintenanceDetails</h4>
+                                      <h4 className="font-medium">{translations.maintenanceDetails}</h4>
                                       <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg">
                                         <div>
                                           <Label className="text-xs text-gray-500">{translations.maintenanceType}</Label>
