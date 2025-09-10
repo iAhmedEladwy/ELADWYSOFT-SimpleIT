@@ -405,9 +405,9 @@ export function UpgradeForm({
                           )}
                           onClick={() => field.onChange(priority)}
                         >
-                          {priority === 'Low' && '🟢'} 
-                          {priority === 'Medium' && '🟡'} 
-                          {priority === 'High' && '🔴'} 
+                          {priority === 'Low' && '◻️'} 
+                          {priority === 'Medium' && '🔷'} 
+                          {priority === 'High' && '⬛'} 
                           {' '}
                           {translations[priority.toLowerCase() as 'low' | 'medium' | 'high']}
                         </Button>
