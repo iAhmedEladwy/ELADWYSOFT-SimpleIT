@@ -981,7 +981,7 @@ export default function AssetHistory() {
                                           <p className="text-sm font-medium">{metadata.status || '-'}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">{translations.maintenanceCost</Label>
+                                          <Label className="text-xs text-gray-500">{translations.maintenanceCost}</Label>
                                           <p className="text-sm font-medium">{formatCurrency(metadata.cost || 0)}</p>
                                         </div>
                                         <div>
