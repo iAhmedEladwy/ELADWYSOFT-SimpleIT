@@ -576,7 +576,7 @@ export function UpgradeForm({
                       <span className="text-muted-foreground ml-1">({translations.optional})</span>
                     </FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                      onValueChange={(value) => field.onChange(value === 'none' ? undefined : parseInt(value))}
                       value={field.value?.toString() || ''}
                     >
                       <FormControl>
@@ -585,7 +585,7 @@ export function UpgradeForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username} - {user.role}
