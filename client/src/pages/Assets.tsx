@@ -1297,7 +1297,7 @@ export default function Assets() {
 
         {/* Add/Edit Asset Dialog */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"> 
             <DialogHeader>
               <DialogTitle>
                 {editingAsset 
@@ -1320,7 +1320,7 @@ export default function Assets() {
 
         {/* Maintenance Form Dialog */}
         <Dialog open={openMaintenanceDialog} onOpenChange={setOpenMaintenanceDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Wrench className="h-5 w-5" />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useLanguage } from '@/hooks/use-language';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -35,11 +36,13 @@ interface AssetActionsMenuProps {
   onEdit?: (asset: any) => void;
 }
 
+
+
 export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActionsMenuProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const { language } = useLanguage();
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
@@ -49,6 +52,24 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
+
+    const translations = {
+    assetHistory: language === 'English' ? 'Asset History' : 'سجل الأصول',
+    maintenanceHistory: language === 'English' ? 'Maintenance History' : 'سجل الصيانة',
+    noTransactionHistory: language === 'English' ? 'No transaction history found' : 'لم يتم العثور على سجل المعاملات',
+    noMaintenanceRecords: language === 'English' ? 'No maintenance records found' : 'لم يتم العثور على سجلات الصيانة',
+    editMaintenanceRecord: language === 'English' ? 'Edit maintenance record' : 'تحرير سجل الصيانة',
+    deleteMaintenanceRecord: language === 'English' ? 'Delete maintenance record' : 'حذف سجل الصيانة',
+    addMaintenance: language === 'English' ? 'Add Maintenance' : 'إضافة صيانة',
+    close: language === 'English' ? 'Close' : 'إغلاق',
+    status: language === 'English' ? 'Status' : 'الحالة',
+    type: language === 'English' ? 'Type' : 'النوع',
+    description: language === 'English' ? 'Description' : 'الوصف',
+    date: language === 'English' ? 'Date' : 'التاريخ',
+    cost: language === 'English' ? 'Cost' : 'التكلفة',
+    actions: language === 'English' ? 'Actions' : 'الإجراءات',
+  };
+
 
   // Check-out reasons
   const checkOutReasons = [
@@ -528,7 +549,7 @@ function AssetHistoryDialog({ open, onOpenChange, asset }: {
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="font-medium text-gray-600">Type:</span>
+                <span className="font-medium text-gray-600"></span>
                 <div>{asset.type}</div>
               </div>
               <div>

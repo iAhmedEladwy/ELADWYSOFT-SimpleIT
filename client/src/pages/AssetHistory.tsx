@@ -69,7 +69,7 @@ interface TransactionWithRelations {
 
 export default function AssetHistory() {
   const { language } = useLanguage();
-  const { formatCurrency, currency } = useCurrency();
+  const { formatCurrency } = useCurrency();
   const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: '',
@@ -96,10 +96,14 @@ export default function AssetHistory() {
       ? 'Track and manage all asset check-in and check-out activities with detailed history and device specifications' 
       : 'تتبع وإدارة جميع أنشطة تسجيل الوصول والمغادرة للأصول مع سجل تفصيلي ومواصفات الجهاز',
     filterSearch: language === 'English' ? 'Filter & Search Asset History' : 'تصفية وبحث سجل الأصول',
+    show: language === 'English' ? 'Show:' : 'عرض:',
     transactionHistory: language === 'English' ? 'Transaction History' : 'تاريخ المعاملات',
     search: language === 'English' ? 'Search transactions...' : 'البحث في المعاملات...',
     transactionType: language === 'English' ? 'Transaction Type' : 'نوع المعاملة',
+    transactionDetails: language === 'English' ? 'Transaction Type' : 'تفاصيل المعاملة',
+    transactionID: language === 'English' ? 'Transaction Type' : 'رقم المعاملة',
     asset: language === 'English' ? 'Asset' : 'الأصل',
+    assetId: language == 'English' ? 'Asset ID' : 'رقم الأصل',
     employee: language === 'English' ? 'Employee' : 'الموظف',
     dateFrom: language === 'English' ? 'Date From' : 'التاريخ من',
     dateTo: language === 'English' ? 'Date To' : 'التاريخ إلى',
@@ -135,6 +139,18 @@ export default function AssetHistory() {
     searchEmployees: language === 'English' ? 'Search employees...' : 'البحث عن الموظفين...',
     noAssetsFound: language === 'English' ? 'No assets found' : 'لم يتم العثور على أصول',
     noEmployeesFound: language === 'English' ? 'No employees found' : 'لم يتم العثور على موظفين',
+    saleDetails: language === 'English' ? 'Sale Details' : 'تفاصيل البيع',
+    retirementDetails: language === 'English' ? 'Retirement Details' : 'تفاصيل التقاعد',
+    maintenanceDetails: language === 'English' ? 'Maintenance Details' : 'تفاصيل الصيانة',
+    buyer: language === 'English' ? 'Buyer' : 'المشتري',
+    saleDate: language === 'English' ? 'Sale Date' : 'تاريخ البيع',
+    salePrice: language === 'English' ? 'Sale Price' : 'سعر البيع',
+    retirementReason: language === 'English' ? 'Retirement Reason' : 'سبب التقاعد',
+    retirementDate: language === 'English' ? 'Retirement Date' : 'تاريخ التقاعد',
+    maintenanceType: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
+    maintenanceCost: language === 'English' ? 'Cost' : 'التكلفة',
+    provider: language === 'English' ? 'Provider' : 'المزود',
+    generalNotes: language === 'English' ? 'General Notes' : 'ملاحظات عامة',
   };
 
       // Fetch transaction history
@@ -251,16 +267,19 @@ export default function AssetHistory() {
     setCurrentPage(1);
   };
 
-  const getTransactionTypeBadge = (type: string) => {
-    const colors = {
-      'Check-In': 'bg-green-100 text-green-800',
-      'Check-Out': 'bg-red-100 text-red-800',
-      'Maintenance': 'bg-yellow-100 text-yellow-800',
-      'Sale': 'bg-purple-100 text-purple-800',
-      'Retirement': 'bg-orange-100 text-orange-800',
+      const TRANSACTION_BADGE_CONFIG = {
+      'Check-In': { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
+      'Check-Out': { bg: 'bg-red-100', text: 'text-red-800', icon: '→' },
+      'Maintenance': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '🔧' },
+      'Sale': { bg: 'bg-purple-100', text: 'text-purple-800', icon: '💰' },
+      'Retirement': { bg: 'bg-orange-100', text: 'text-orange-800', icon: '🗑️' },
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
-  };
+
+
+      const getTransactionTypeBadge = (type: string) => {
+        const config = TRANSACTION_BADGE_CONFIG[type];
+        return config ? `${config.bg} ${config.text}` : 'bg-gray-100 text-gray-800';
+      };
 
       const handleExport = () => {
       // Get the transactions to export (use filtered if available)
@@ -712,7 +731,7 @@ export default function AssetHistory() {
                                 return (
                                   <div className="text-sm space-y-1">
                                     <p className="font-medium text-gray-900">Buyer: {metadata.buyer}</p>
-                                    <p className="text-gray-600">Price: {currency} {metadata.salePrice || metadata.totalAmount || 'N/A'}</p>
+                                    <p className="text-gray-600">Price: {formatCurrency (metadata.salePrice || metadata.totalAmount || 'N/A')}</p>
                                     {transaction.notes && <p className="text-gray-500 text-xs mt-1 truncate">{transaction.notes}</p>}
                                   </div>
                                 );
@@ -770,7 +789,7 @@ export default function AssetHistory() {
                               </DialogTrigger>
                              <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Transaction Details</DialogTitle>
+                                <DialogTitle>{translations.transactionDetails}</DialogTitle>
                                 <DialogDescription>
                                   Complete transaction information and device specifications
                                 </DialogDescription>
@@ -779,17 +798,17 @@ export default function AssetHistory() {
                                 {/* Transaction Info */}
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <Label className="text-sm font-medium">Transaction ID</Label>
+                                    <Label className="text-sm font-medium">{translations.transactionID}</Label>
                                     <p className="text-sm text-gray-600">#{transaction.id}</p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Type</Label>
+                                    <Label className="text-sm font-medium">{translations.type}</Label>
                                     <Badge className={getTransactionTypeBadge(transaction.type)}>
                                       {transaction.type}
                                     </Badge>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Date</Label>
+                                    <Label className="text-sm font-medium">{translations.date}</Label>
                                     <p className="text-sm text-gray-600">
                                       {transaction.date || transaction.transactionDate 
                                         ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy HH:mm')
@@ -797,7 +816,7 @@ export default function AssetHistory() {
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Employee</Label>
+                                    <Label className="text-sm font-medium">{translations.employee}}</Label>
                                     <p className="text-sm text-gray-600">
                                       {transaction.employee 
                                         ? `${transaction.employee.englishName || transaction.employee.arabicName || 'N/A'} - ${transaction.employee.department || 'N/A'}`
@@ -813,11 +832,11 @@ export default function AssetHistory() {
                                     <h4 className="font-medium mb-3">Asset Information</h4>
                                     <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
                                       <div>
-                                        <Label className="text-xs text-gray-500">Asset ID</Label>
+                                        <Label className="text-xs text-gray-500">{translations.assetId}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.assetId || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Type</Label>
+                                        <Label className="text-xs text-gray-500">{translations.type}}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
                                       </div>
                                       <div>
@@ -827,7 +846,7 @@ export default function AssetHistory() {
                                         </p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Serial Number</Label>
+                                        <Label className="text-xs text-gray-500">{translations.serialNumber}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.serialNumber || '-'}</p>
                                       </div>
                                       <div>
@@ -846,20 +865,20 @@ export default function AssetHistory() {
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.cpu || transaction.asset?.cpu || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">RAM</Label>
+                                        <Label className="text-xs text-gray-500">{translations.ram}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.ram || transaction.asset?.ram || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Storage</Label>
+                                        <Label className="text-xs text-gray-500">{translations.storage}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.storage || transaction.asset?.storage || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Specifications</Label>
+                                        <Label className="text-xs text-gray-500">{translations.deviceSpecs}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.specs || transaction.asset?.specs || '-'}</p>
                                       </div>
                                       {transaction.asset?.operatingSystem && (
                                         <div>
-                                          <Label className="text-xs text-gray-500">Operating System</Label>
+                                          <Label className="text-xs text-gray-500">{translations.operatingSystem}</Label>
                                           <p className="text-sm font-medium">{transaction.asset.operatingSystem}</p>
                                         </div>
                                       )}
@@ -880,7 +899,7 @@ export default function AssetHistory() {
                                       )}
                                       {transaction.notes && (
                                         <div>
-                                          <Label className="text-xs text-gray-500">General Notes</Label>
+                                          <Label className="text-xs text-gray-500">{translations.generalNotes}</Label>
                                           <p className="text-sm">{transaction.notes}</p>
                                         </div>
                                       )}
@@ -895,25 +914,25 @@ export default function AssetHistory() {
                                 if (selectedTransaction.type === 'Sale' && metadata) {
                                   return (
                                     <div className="space-y-4">
-                                      <h4 className="font-medium">Sale Details</h4>
+                                      <h4 className="font-medium">{translations.saleDetails}</h4>
                                       <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-lg">
                                         <div>
-                                          <Label className="text-xs text-gray-500">Buyer</Label>
+                                          <Label className="text-xs text-gray-500">{translations.buyer}</Label>
                                           <p className="text-sm font-medium">{metadata.buyer || '-'}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Sale Date</Label>
+                                          <Label className="text-xs text-gray-500">{translations.saleDate}</Label>
                                           <p className="text-sm font-medium">
                                             {metadata.saleDate ? format(new Date(metadata.saleDate), 'MMM dd, yyyy') : '-'}
                                           </p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Sale Price</Label>
+                                          <Label className="text-xs text-gray-500">{translations.salePrice}</Label>
                                         <p className="text-gray-600">Price: {formatCurrency(metadata.salePrice || metadata.totalAmount || 0)}</p>
                                         </div>
                                         {metadata.notes && (
                                           <div className="col-span-2">
-                                            <Label className="text-xs text-gray-500">Notes</Label>
+                                            <Label className="text-xs text-gray-500">{translations.generalNotes}</Label>
                                             <p className="text-sm">{metadata.notes}</p>
                                           </div>
                                         )}
@@ -925,14 +944,14 @@ export default function AssetHistory() {
                                 if (selectedTransaction.type === 'Retirement' && metadata) {
                                   return (
                                     <div className="space-y-4">
-                                      <h4 className="font-medium">Retirement Details</h4>
+                                      <h4 className="font-medium">{translations.retirementDetails}</h4>
                                       <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
                                         <div>
-                                          <Label className="text-xs text-gray-500">Retirement Reason</Label>
+                                          <Label className="text-xs text-gray-500">{translations.retirementReason}</Label>
                                           <p className="text-sm font-medium">{metadata.retirementReason || '-'}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Retirement Date</Label>
+                                          <Label className="text-xs text-gray-500">{translations.retirementDate}</Label>
                                           <p className="text-sm font-medium">
                                             {metadata.retirementDate ? format(new Date(metadata.retirementDate), 'MMM dd, yyyy') : '-'}
                                           </p>
@@ -951,22 +970,22 @@ export default function AssetHistory() {
                                 if (selectedTransaction.type === 'Maintenance' && metadata) {
                                   return (
                                     <div className="space-y-4">
-                                      <h4 className="font-medium">Maintenance Details</h4>
+                                      <h4 className="font-medium">{translations.maintenanceDetails</h4>
                                       <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg">
                                         <div>
-                                          <Label className="text-xs text-gray-500">Maintenance Type</Label>
+                                          <Label className="text-xs text-gray-500">{translations.maintenanceType}</Label>
                                           <p className="text-sm font-medium">{metadata.maintenanceType || '-'}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Status</Label>
+                                          <Label className="text-xs text-gray-500">{translations.status}</Label>
                                           <p className="text-sm font-medium">{metadata.status || '-'}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Cost</Label>
+                                          <Label className="text-xs text-gray-500">{translations.maintenanceCost</Label>
                                           <p className="text-sm font-medium">{formatCurrency(metadata.cost || 0)}</p>
                                         </div>
                                         <div>
-                                          <Label className="text-xs text-gray-500">Provider</Label>
+                                          <Label className="text-xs text-gray-500">{translations.provider}</Label>
                                           <p className="text-sm font-medium">{metadata.provider || '-'}</p>
                                         </div>
                                       </div>
@@ -1019,7 +1038,7 @@ export default function AssetHistory() {
 
                 {/* Page Size Selector */}
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="pageSize" className="text-sm">Show:</Label>
+                  <Label htmlFor="pageSize" className="text-sm">{translations.show}</Label>
                   <Select value={pageSize.toString()} onValueChange={(value) => {
                     setPageSize(parseInt(value));
                     setCurrentPage(1);

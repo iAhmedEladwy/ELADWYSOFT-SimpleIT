@@ -26,7 +26,6 @@ import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
 interface AssetActionButtonsProps {
   asset: any;
-  employees: any[]; // This prop is no longer needed but kept for compatibility
 }
 
 // Check-out reason options - matching AssetActionsMenu
@@ -49,7 +48,7 @@ const CHECK_IN_REASONS = [
   'Loan period ended'
 ];
 
-export default function AssetActionButtons({ asset, employees }: AssetActionButtonsProps) {
+export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();

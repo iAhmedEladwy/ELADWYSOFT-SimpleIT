@@ -29,7 +29,7 @@ interface AssetDetailViewProps {
 
 export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDetailViewProps) {
   const { language } = useLanguage();
-  const { formatCurrency, currency } = useCurrency();
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('general');
 
   // Translations
@@ -59,31 +59,39 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
     noTransactions: language === 'English' ? 'No transaction history found' : 'لم يتم العثور على سجل معاملات',
     operatingSystem: language === 'English' ? 'Operating System' : 'نظام التشغيل',
       // Additional field translations
-  basicInformation: language === 'English' ? 'Basic Information' : 'المعلومات الأساسية',
-  technicalSpecs: language === 'English' ? 'Technical Specifications' : 'المواصفات الفنية',
-  purchaseInformation: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
-  assignmentDetails: language === 'English' ? 'Assignment Details' : 'تفاصيل التخصيص',
-  systemInformation: language === 'English' ? 'System Information' : 'معلومات النظام',
-  
-  // Additional fields
-  assetAge: language === 'English' ? 'Asset Age' : 'عمر الأصل',
-  lifespan: language === 'English' ? 'Expected Lifespan' : 'العمر المتوقع',
-  cpu: language === 'English' ? 'Processor (CPU)' : 'المعالج',
-  ram: language === 'English' ? 'Memory (RAM)' : 'الذاكرة',
-  storage: language === 'English' ? 'Storage' : 'التخزين',
-  createdAt: language === 'English' ? 'Created' : 'تاريخ الإنشاء',
-  updatedAt: language === 'English' ? 'Last Updated' : 'آخر تحديث',
-  department: language === 'English' ? 'Department' : 'القسم',
-  employeeId: language === 'English' ? 'Employee ID' : 'معرف الموظف',
-  employeeName: language === 'English' ? 'Employee Name' : 'اسم الموظف',
-  unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
-  years: language === 'English' ? 'years' : 'سنوات',
-  months: language === 'English' ? 'months' : 'شهور',
-  days: language === 'English' ? 'days' : 'أيام',
-  warrantyStatus: language === 'English' ? 'Warranty Status' : 'حالة الضمان',
-  activeWarranty: language === 'English' ? 'Active' : 'نشط',
-  expiredWarranty: language === 'English' ? 'Expired' : 'منتهي',
-  remainingWarranty: language === 'English' ? 'Remaining' : 'متبقي',
+    basicInformation: language === 'English' ? 'Basic Information' : 'المعلومات الأساسية',
+    technicalSpecs: language === 'English' ? 'Technical Specifications' : 'المواصفات الفنية',
+    purchaseInformation: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
+    assignmentDetails: language === 'English' ? 'Assignment Details' : 'تفاصيل التخصيص',
+    systemInformation: language === 'English' ? 'System Information' : 'معلومات النظام',
+    
+    // Additional fields
+    assetAge: language === 'English' ? 'Asset Age' : 'عمر الأصل',
+    lifespan: language === 'English' ? 'Expected Lifespan' : 'العمر المتوقع',
+    cpu: language === 'English' ? 'Processor (CPU)' : 'المعالج',
+    ram: language === 'English' ? 'Memory (RAM)' : 'الذاكرة',
+    storage: language === 'English' ? 'Storage' : 'التخزين',
+    createdAt: language === 'English' ? 'Created' : 'تاريخ الإنشاء',
+    updatedAt: language === 'English' ? 'Last Updated' : 'آخر تحديث',
+    department: language === 'English' ? 'Department' : 'القسم',
+    employeeId: language === 'English' ? 'Employee ID' : 'معرف الموظف',
+    employeeName: language === 'English' ? 'Employee Name' : 'اسم الموظف',
+    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
+    years: language === 'English' ? 'years' : 'سنوات',
+    months: language === 'English' ? 'months' : 'شهور',
+    days: language === 'English' ? 'days' : 'أيام',
+    warrantyStatus: language === 'English' ? 'Warranty Status' : 'حالة الضمان',
+    activeWarranty: language === 'English' ? 'Active' : 'نشط',
+    expiredWarranty: language === 'English' ? 'Expired' : 'منتهي',
+    remainingWarranty: language === 'English' ? 'Remaining' : 'متبقي',
+    saleInformation: language === 'English' ? 'Sale Information' : 'معلومات البيع',
+    retirementInformation: language === 'English' ? 'Retirement Information' : 'معلومات التقاعد',
+    buyer: language === 'English' ? 'Buyer' : 'المشتري',
+    saleDate: language === 'English' ? 'Sale Date' : 'تاريخ البيع',
+    salePrice: language === 'English' ? 'Sale Price' : 'سعر البيع',
+    retirementReason: language === 'English' ? 'Retirement Reason' : 'سبب التقاعد',
+    retirementDate: language === 'English' ? 'Retirement Date' : 'تاريخ التقاعد',
+    notes: language === 'English' ? 'Notes' : 'ملاحظات',
   };
 
   // Fetch asset data

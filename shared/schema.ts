@@ -225,12 +225,9 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   id: serial("id").primaryKey(),
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  // CHANGE THIS: amount -> salePrice
   salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
-  // ADD THESE 2 NEW FIELDS:
   assetCondition: varchar("asset_condition", { length: 100 }),
   notes: text("notes"),
-  // KEEP EXISTING:
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
