@@ -2536,57 +2536,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // ITIL-Compliant Asset Upgrade Management Methods
-  async createAssetUpgrade(upgradeData: any): Promise<any> {
-    try {
-      const upgradeId = `UPG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      
-      const query = `
-        INSERT INTO asset_upgrades (
-          upgrade_id, asset_id, requested_by_id, title, description, 
-          business_justification, upgrade_type, priority, risk, 
-          current_configuration, new_configuration, impact_assessment, 
-          backout_plan, success_criteria, estimated_cost, 
-          planned_start_date, planned_end_date, downtime_required, 
-          estimated_downtime
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-        RETURNING *
-      `;
-      
-      const values = [
-        upgradeId,
-        upgradeData.assetId,
-        upgradeData.requestedById,
-        upgradeData.title,
-        upgradeData.description,
-        upgradeData.businessJustification,
-        upgradeData.upgradeType,
-        upgradeData.priority || 'Medium',
-        upgradeData.risk || 'Medium',
-        JSON.stringify(upgradeData.currentConfiguration || {}),
-        JSON.stringify(upgradeData.newConfiguration || {}),
-        upgradeData.impactAssessment,
-        upgradeData.backoutPlan,
-        upgradeData.successCriteria,
-        upgradeData.estimatedCost || 0,
-        upgradeData.plannedStartDate || null,
-        upgradeData.plannedEndDate || null,
-        upgradeData.downtimeRequired || false,
-        upgradeData.estimatedDowntime || null
-      ];
-      
-      const result = await this.pool.query(query, values);
-      
-      // Log the upgrade creation in history
-      await this.addUpgradeHistory(result.rows[0].id, upgradeData.requestedById, 'Upgrade Created', null, 'Upgrade request submitted');
-      
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error creating asset upgrade:', error);
-      throw error;
-    }
-  }
-
   async getAssetUpgrade(upgradeId: number): Promise<any> {
     try {
       const query = `
