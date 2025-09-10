@@ -278,8 +278,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             <FileText className="mr-2 h-4 w-4" />
             View History
           </DropdownMenuItem>
-          </DropdownMenuContent>
-          </DropdownMenu>
+
   
           <DropdownMenuSeparator />
 
@@ -290,7 +289,9 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
           }}>
             <ArrowUp className="mr-2 h-4 w-4" />
             Request Upgrade
-          </DropdownMenuItem>        
+          </DropdownMenuItem> 
+          </DropdownMenuContent>
+          </DropdownMenu>       
 
 
       {/* Maintenance Form Dialog - using a wrapper dialog */}
