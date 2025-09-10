@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, DollarSign, Check } from 'lucide-react';
+import { CalendarIcon, Loader2, DollarSign, Check , HardDrive, Code} from 'lucide-react';
 
 // UI Components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
