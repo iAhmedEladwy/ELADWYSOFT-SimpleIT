@@ -269,9 +269,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             <Wrench className="mr-2 h-4 w-4" />
             Schedule Maintenance
           </DropdownMenuItem>
-          
-          <DropdownMenuSeparator />
-          
+
           <DropdownMenuItem onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -280,8 +278,20 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             <FileText className="mr-2 h-4 w-4" />
             View History
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+          </DropdownMenu>
+  
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleUpgrade();
+          }}>
+            <ArrowUp className="mr-2 h-4 w-4" />
+            Request Upgrade
+          </DropdownMenuItem>        
+
 
       {/* Maintenance Form Dialog - using a wrapper dialog */}
       <Dialog open={showMaintenanceForm} onOpenChange={(open) => {
