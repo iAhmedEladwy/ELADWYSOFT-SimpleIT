@@ -3397,13 +3397,12 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       res.json(transactions);
 
        // Also get upgrades for this asset
-    try {
       const upgradesQuery = `
         SELECT 
           'UPGRADE_' || u.id as id,
           u.asset_id as "assetId",
           null as "employeeId",
-          'Upgrade' as type,  -- ✅ Just "Upgrade"
+          'Upgrade' as type,
           u.created_at as "transactionDate",
           u.title || ' (Status: ' || u.status || ')' as notes,
           JSON_BUILD_OBJECT(
