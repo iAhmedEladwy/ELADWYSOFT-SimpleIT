@@ -5090,7 +5090,10 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         transactions = await storage.getAllAssetTransactions();
       }
 
-      // Fetch all upgrade transactions from asset_upgrades table
+      let upgradeTransactions = [];
+
+      if ('pool' in storage && storage.pool) {
+      // PostgreSQL storage - fetch from asset_upgrades table
       const upgradesQuery = `
         SELECT 
           'UPGRADE_' || u.id as id,
@@ -5107,23 +5110,32 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
             'status', u.status,
             'estimatedCost', u.estimated_cost,
             'description', u.description
-          ) as "conditionNotes"
+          ) as "deviceSpecs"
         FROM asset_upgrades u
+        WHERE u.asset_id = $1
         ORDER BY u.created_at DESC
       `;
-
-      const upgradesResult = await storage.pool.query(upgradesQuery);
-
-      // Merge regular transactions with upgrades
-      transactions = [
-        ...transactions,
-        ...upgradesResult.rows
-      ].sort((a, b) => {
-        const dateA = new Date(a.transactionDate || a.date || 0);
-        const dateB = new Date(b.transactionDate || b.date || 0);
-        return dateB.getTime() - dateA.getTime();
-      });
       
+      try {
+        const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
+        upgradeTransactions = upgradesResult.rows;
+      } catch (error) {
+        console.error('Error fetching upgrades:', error);
+      }
+    }
+
+    // Combine transactions and upgrades
+    const allHistory = [
+      ...transactions,
+      ...upgradeTransactions
+    ].sort((a, b) => {
+      const dateA = new Date(a.transactionDate || a.date || 0);
+      const dateB = new Date(b.transactionDate || b.date || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    res.json(allHistory);
+     
       // SAFETY CHECK: Ensure transactions is always an array
       if (!transactions || !Array.isArray(transactions)) {
         console.warn('Asset transactions returned invalid data:', transactions);
