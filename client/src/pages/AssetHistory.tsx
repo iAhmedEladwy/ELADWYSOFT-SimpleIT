@@ -114,6 +114,7 @@ export default function AssetHistory() {
     maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
     sale: language === 'English' ? 'Sale' : 'بيع',
     retirement: language === 'English' ? 'Retirement' : 'تقاعد',
+    upgrade: language === 'English' ? 'Upgrade' : 'ترقية',
     sold: language === 'English' ? 'Sold' : 'مباع',
     retired: language === 'English' ? 'Retired' : 'متقاعد',
     id: language === 'English' ? 'ID' : 'المعرف',
@@ -273,6 +274,7 @@ export default function AssetHistory() {
       'Maintenance': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '🔧' },
       'Sale': { bg: 'bg-purple-100', text: 'text-purple-800', icon: '💰' },
       'Retirement': { bg: 'bg-orange-100', text: 'text-orange-800', icon: '🗑️' },
+      'Upgrade': { bg: 'bg-blue-100', text: 'text-blue-800', icon: '⬆' },
     };
 
 
@@ -445,8 +447,7 @@ export default function AssetHistory() {
                     <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
                     <SelectItem value="Sale">{translations.sale}</SelectItem>
                     <SelectItem value="Retirement">{translations.retirement}</SelectItem>
-
-
+                    <SelectItem value="Upgrade">{translations.upgrade}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -2714,9 +2714,8 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
- async createAssetHistory(data: any): Promise<any> {
+async createAssetHistory(data: any): Promise<any> {
   try {
-    // Check which columns exist in asset_transactions
     const query = `
       INSERT INTO asset_transactions (
         asset_id, 
@@ -2732,9 +2731,9 @@ async deleteTicket(id: number): Promise<boolean> {
     const values = [
       data.assetId,
       null, // No employee for upgrade actions
-      data.action || 'UPGRADE_REQUESTED',
+      'Upgrade',  // ✅ Just "Upgrade"
       data.performedAt || new Date(),
-      data.description || `Upgrade: ${data.action}`,
+      data.description || 'Upgrade requested',
       data.metadata ? JSON.stringify(data.metadata) : null
     ];
     
@@ -2745,7 +2744,6 @@ async deleteTicket(id: number): Promise<boolean> {
     return result.rows[0];
   } catch (error) {
     console.error('Error creating asset history - full error:', error);
-    // Return null but log the error for debugging
     return null;
   }
   }
