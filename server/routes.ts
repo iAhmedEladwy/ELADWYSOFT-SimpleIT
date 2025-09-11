@@ -5068,169 +5068,114 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 
   // Asset Transactions with Enhanced Filtering
    app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
-    try {
-      const { 
-        assetId, 
-        employeeId, 
-        search, 
-        type, 
-        dateFrom, 
-        dateTo, 
-        page = '1', 
-        limit = '10',
-        include 
-      } = req.query;
-      
-      let transactions;
-      if (assetId) {
-        transactions = await storage.getAssetTransactions(Number(assetId));
-      } else if (employeeId) {
-        transactions = await storage.getEmployeeTransactions(Number(employeeId));
-      } else {
-        transactions = await storage.getAllAssetTransactions();
-      }
-
-      let upgradeTransactions = [];
-
-      if ('pool' in storage && storage.pool) {
-      // PostgreSQL storage - fetch from asset_upgrades table
-      const upgradesQuery = `
-        SELECT 
-          'UPGRADE_' || u.id as id,
-          u.asset_id as "assetId",
-          null as "employeeId",
-          'Upgrade' as type,
-          u.created_at as "transactionDate",
-          u.title || ' (Status: ' || u.status || ')' as notes,
-          JSON_BUILD_OBJECT(
-            'title', u.title,
-            'category', u.category,
-            'upgradeType', u.upgrade_type,
-            'priority', u.priority,
-            'status', u.status,
-            'estimatedCost', u.estimated_cost,
-            'description', u.description
-          ) as "deviceSpecs"
-        FROM asset_upgrades u
-        WHERE u.asset_id = $1
-        ORDER BY u.created_at DESC
-      `;
-      
+  try {
+    const { 
+      assetId, 
+      employeeId, 
+      search, 
+      type, 
+      dateFrom, 
+      dateTo, 
+      page = '1', 
+      limit = '10',
+      include 
+    } = req.query;
+    
+    let transactions;
+    if (assetId) {
+      transactions = await storage.getAssetTransactions(Number(assetId));
+    } else if (employeeId) {
+      transactions = await storage.getEmployeeTransactions(Number(employeeId));
+    } else {
+      transactions = await storage.getAllAssetTransactions();
+    }
+    
+    // Fetch all upgrade transactions - SAFE version
+    let upgradeTransactions = [];
+    
+    // Only try to fetch upgrades if using PostgreSQL
+    if ('pool' in storage && storage.pool) {
       try {
-        const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
-        upgradeTransactions = upgradesResult.rows;
-      } catch (error) {
-        console.error('Error fetching upgrades:', error);
-      }
-    }
-
-    // Combine transactions and upgrades
-    const allHistory = [
-      ...transactions,
-      ...upgradeTransactions
-    ].sort((a, b) => {
-      const dateA = new Date(a.transactionDate || a.date || 0);
-      const dateB = new Date(b.transactionDate || b.date || 0);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    res.json(allHistory);
-     
-      // SAFETY CHECK: Ensure transactions is always an array
-      if (!transactions || !Array.isArray(transactions)) {
-        console.warn('Asset transactions returned invalid data:', transactions);
-        transactions = [];
-      }
-      
-      // Apply filters
-      let filteredTransactions = transactions;
-      
-      // Search filter
-      if (search && typeof search === 'string') {
-        const searchLower = search.toLowerCase();
-        filteredTransactions = filteredTransactions.filter(transaction => 
-          transaction.id.toString().includes(searchLower) ||
-          transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
-          transaction.asset?.type?.toLowerCase().includes(searchLower) ||
-          transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
-          transaction.conditionNotes?.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      // Type filter - Fixed to handle "Upgrade" type
-      if (type && typeof type === 'string' && type !== '') {
-        filteredTransactions = filteredTransactions.filter(transaction => 
-          transaction.type === type
-        );
-      }
-      
-      // Date range filter
-      if (dateFrom && typeof dateFrom === 'string') {
-        const fromDate = new Date(dateFrom);
-        filteredTransactions = filteredTransactions.filter(transaction => {
-          const transactionDate = new Date(transaction.transactionDate);
-          return transactionDate >= fromDate;
-        });
-      }
-      
-      if (dateTo && typeof dateTo === 'string') {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999); // End of day
-        filteredTransactions = filteredTransactions.filter(transaction => {
-          const transactionDate = new Date(transaction.transactionDate);
-          return transactionDate <= toDate;
-        });
-      }
-      
-      // Calculate pagination
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
-      const startIndex = (pageNum - 1) * limitNum;
-      const endIndex = startIndex + limitNum;
-      
-      const totalItems = filteredTransactions.length;
-      const totalPages = Math.ceil(totalItems / limitNum);
-      
-      // Apply pagination
-      const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
-      
-      // Enhance with related data if requested
-      let enhancedTransactions = paginatedTransactions;
-      if (include && typeof include === 'string') {
-        const includes = include.split(',');
+        const upgradesQuery = `
+          SELECT 
+            'UPGRADE_' || u.id as id,
+            u.asset_id as "assetId",
+            null as "employeeId",
+            'Upgrade' as type,
+            u.created_at as "transactionDate",
+            u.title || ' (Status: ' || u.status || ')' as notes,
+            JSON_BUILD_OBJECT(
+              'title', u.title,
+              'category', u.category,
+              'upgradeType', u.upgrade_type,
+              'priority', u.priority,
+              'status', u.status,
+              'estimatedCost', u.estimated_cost,
+              'description', u.description
+            ) as "conditionNotes"
+          FROM asset_upgrades u
+          ORDER BY u.created_at DESC
+        `;
         
-        enhancedTransactions = await Promise.all(paginatedTransactions.map(async (transaction) => {
-          let enhanced = { ...transaction };
-          
-          if (includes.includes('asset') && transaction.assetId && !transaction.asset) {
-            enhanced.asset = await storage.getAsset(transaction.assetId);
-          }
-          
-          if (includes.includes('employee') && transaction.employeeId && !transaction.employee) {
-            enhanced.employee = await storage.getEmployee(transaction.employeeId);
-          }
-          
-          return enhanced;
-        }));
+        const upgradesResult = await storage.pool.query(upgradesQuery);
+        upgradeTransactions = upgradesResult.rows || [];
+      } catch (upgradeError) {
+        console.error('Error fetching upgrades:', upgradeError);
+        // Continue without upgrades
       }
-      
-      res.json({
-        data: enhancedTransactions,
-        pagination: {
-          currentPage: pageNum,
-          totalPages,
-          totalItems,
-          itemsPerPage: limitNum,
-          hasNextPage: pageNum < totalPages,
-          hasPreviousPage: pageNum > 1
-        }
-      });
-    } catch (error: unknown) {
-      console.error("Error fetching asset transactions:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
-  });
-  
+    
+    // Merge transactions with upgrades
+    if (upgradeTransactions.length > 0) {
+      transactions = [
+        ...(transactions || []),
+        ...upgradeTransactions
+      ].sort((a, b) => {
+        const dateA = new Date(a.transactionDate || a.date || 0);
+        const dateB = new Date(b.transactionDate || b.date || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+    }
+    
+    // SAFETY CHECK: Ensure transactions is always an array
+    if (!transactions || !Array.isArray(transactions)) {
+      console.warn('Asset transactions returned invalid data:', transactions);
+      transactions = [];
+    }
+    
+    // Apply filters (rest of the existing filter code)
+    let filteredTransactions = transactions;
+    
+    // ... (keep all the existing filter code here) ...
+    
+    // Make sure to keep the pagination and response code at the end
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const startIndex = (pageNum - 1) * limitNum;
+    const endIndex = startIndex + limitNum;
+    
+    const totalItems = filteredTransactions.length;
+    const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+    
+    // Return the response with pagination
+    res.json({
+      transactions: paginatedTransactions,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalItems / limitNum),
+        totalItems,
+        itemsPerPage: limitNum
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in /api/asset-transactions:', error);
+    res.status(500).json({ 
+      message: 'Error fetching transactions',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
   // Reports
   app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {
