@@ -3393,8 +3393,47 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
         });
       }
       
-      const transactions = await storage.getAssetTransactions(assetId);
+      const transactions = await storage.getAssetTransactions(assetId);     
       res.json(transactions);
+
+       // Also get upgrades for this asset
+    const upgradesQuery = `
+      SELECT 
+        u.id,
+        u.asset_id as "assetId",
+        null as "employeeId",
+        'UPGRADE' as type,
+        u.created_at as "transactionDate",
+        u.title as notes,
+        JSON_BUILD_OBJECT(
+          'title', u.title,
+          'category', u.category,
+          'upgradeType', u.upgrade_type,
+          'priority', u.priority,
+          'status', u.status,
+          'estimatedCost', u.estimated_cost
+        ) as "deviceSpecs",
+        creator.username as "performedBy"
+      FROM asset_upgrades u
+      LEFT JOIN users creator ON u.created_by_id = creator.id
+      WHERE u.asset_id = $1
+      ORDER BY u.created_at DESC
+    `;
+    
+    const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
+    
+    // Combine transactions and upgrades
+    const allHistory = [
+      ...transactions,
+      ...upgradesResult.rows.map(row => ({
+        ...row,
+        type: 'Upgrade Request',
+        notes: `${row.notes} (Status: ${row.deviceSpecs.status})`
+      }))
+    ].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime());
+    
+    res.json(allHistory);
+    
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }

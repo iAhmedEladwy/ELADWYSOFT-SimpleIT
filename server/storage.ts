@@ -2716,6 +2716,7 @@ async deleteTicket(id: number): Promise<boolean> {
 
  async createAssetHistory(data: any): Promise<any> {
   try {
+    // Check which columns exist in asset_transactions
     const query = `
       INSERT INTO asset_transactions (
         asset_id, 
@@ -2723,28 +2724,28 @@ async deleteTicket(id: number): Promise<boolean> {
         type, 
         transaction_date, 
         notes,
-        performed_by,
         condition_notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
     
-    // Map the upgrade history data to transaction format
     const values = [
       data.assetId,
       null, // No employee for upgrade actions
       data.action || 'UPGRADE_REQUESTED',
       data.performedAt || new Date(),
-      data.description,
-      data.performedById,
+      data.description || `Upgrade: ${data.action}`,
       data.metadata ? JSON.stringify(data.metadata) : null
     ];
     
-    const result = await pool.query(query, values);  // ✅ Use pool, not this.pool
+    console.log('Creating asset history with values:', values);
+    
+    const result = await pool.query(query, values);
+    console.log('Asset history created:', result.rows[0]);
     return result.rows[0];
   } catch (error) {
-    console.error('Error creating asset history:', error);
-    // Don't throw - history is not critical for the operation
+    console.error('Error creating asset history - full error:', error);
+    // Return null but log the error for debugging
     return null;
   }
   }
