@@ -200,7 +200,6 @@ export default function AssetHistory() {
         return response.json();
       }
     });
-    const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   // Fetch employees for filter dropdown
   const { data: employees } = useQuery({
@@ -216,27 +215,70 @@ export default function AssetHistory() {
     }
   });
 
-    const transactions = transactionsData?.transactions || [];
     const pagination = transactionsData?.pagination;
 
     
-    // Filter transactions locally for display
-    const filteredTransactions = transactions.filter((transaction: TransactionWithRelations) => {
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
-          transaction.id?.toString().includes(searchLower) ||
-          transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
-          transaction.asset?.type?.toLowerCase().includes(searchLower) ||
-          transaction.asset?.brand?.toLowerCase().includes(searchLower) ||
-          transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
-          transaction.employee?.arabicName?.toLowerCase().includes(searchLower) ||
-          transaction.notes?.toLowerCase().includes(searchLower) ||
-          transaction.conditionNotes?.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
+    // Safely handle assets and employees arrays
+    const assets = React.useMemo(() => {
+      if (!assetsResponse) return [];
+      if (Array.isArray(assetsResponse)) return assetsResponse;
+      if (assetsResponse.data && Array.isArray(assetsResponse.data)) return assetsResponse.data;
+      return [];
+    }, [assetsResponse]);
+
+    const employeesList = React.useMemo(() => {
+      if (!employees) return [];
+      if (Array.isArray(employees)) return employees;
+      if (employees.data && Array.isArray(employees.data)) return employees.data;
+      return [];
+    }, [employees]);
+
+    // Safely extract transactions with multiple fallbacks
+    const transactions = React.useMemo(() => {
+      if (!transactionsData) return [];
+      if (Array.isArray(transactionsData)) return transactionsData;
+      if (transactionsData.transactions && Array.isArray(transactionsData.transactions)) {
+        return transactionsData.transactions;
       }
-      return true;
-    });
+      if (transactionsData.data && Array.isArray(transactionsData.data)) {
+        return transactionsData.data;
+      }
+      return [];
+    }, [transactionsData]);
+
+    // Filter transactions locally for display with safety check
+    const filteredTransactions = React.useMemo(() => {
+      // Ensure transactions is an array before filtering
+      if (!transactions || !Array.isArray(transactions)) {
+        console.warn('Transactions is not an array:', transactions);
+        return [];
+      }
+
+      try {
+        return transactions.filter((transaction: TransactionWithRelations) => {
+          // Ensure transaction exists
+          if (!transaction) return false;
+          
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const matchesSearch = 
+              transaction.id?.toString().includes(searchLower) ||
+              transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
+              transaction.asset?.type?.toLowerCase().includes(searchLower) ||
+              transaction.asset?.brand?.toLowerCase().includes(searchLower) ||
+              transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
+              transaction.employee?.arabicName?.toLowerCase().includes(searchLower) ||
+              transaction.notes?.toLowerCase().includes(searchLower) ||
+              transaction.conditionNotes?.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+          return true;
+        });
+      } catch (error) {
+        console.error('Error filtering transactions:', error);
+        return [];
+      }
+    }, [transactions, filters.search]);
 
    // Auto-refresh when component mounts or becomes visible
   useEffect(() => {
@@ -463,9 +505,11 @@ export default function AssetHistory() {
                       aria-expanded={assetSearchOpen}
                       className="w-full justify-between font-normal"
                     >
-                      {filters.assetId && filters.assetId !== 'all'
-                        ? assets.find((asset: any) => asset.id.toString() === filters.assetId)?.assetId +
-                          ' - ' + assets.find((asset: any) => asset.id.toString() === filters.assetId)?.type
+                     {filters.assetId && filters.assetId !== 'all'
+                        ? (() => {
+                            const asset = assets?.find((asset: any) => asset.id.toString() === filters.assetId);
+                            return asset ? `${asset.assetId} - ${asset.type}` : translations.all;
+                          })()
                         : translations.all}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -495,7 +539,7 @@ export default function AssetHistory() {
                           />
                           {translations.all}
                         </CommandItem>
-                        {assets
+                        {(assets || [])
                           .filter((asset: any) => {
                             const searchLower = assetSearchValue.toLowerCase();
                             return !assetSearchValue || 
@@ -547,7 +591,7 @@ export default function AssetHistory() {
                     >
                       {filters.employeeId && filters.employeeId !== 'all'
                         ? (() => {
-                            const emp = employees.find((e: any) => e.id.toString() === filters.employeeId);
+                            const emp = employeesList?.find((e: any) => e.id.toString() === filters.employeeId);
                             return emp ? `${emp.englishName || emp.arabicName}` : translations.all;
                           })()
                         : translations.all}
@@ -579,7 +623,7 @@ export default function AssetHistory() {
                           />
                           {translations.all}
                         </CommandItem>
-                        {employees
+                        {(employeesList || [])
                           .filter((emp: any) => {
                             const searchLower = employeeSearchValue.toLowerCase();
                             return !employeeSearchValue || 
