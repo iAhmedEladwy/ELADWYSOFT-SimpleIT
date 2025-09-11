@@ -5089,6 +5089,69 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         transactions = await storage.getAllAssetTransactions();
       }
       
+      // Fetch upgrade transactions if using PostgreSQL
+      if ('pool' in storage && storage.pool) {
+        try {
+          let upgradesQuery = `
+            SELECT 
+              CAST('UPGRADE_' || u.id AS TEXT) as id,
+              u.asset_id as "assetId",
+              null as "employeeId",
+              'Upgrade' as type,
+              u.created_at as "transactionDate",
+              u.created_at as date,
+              u.title || ' (Status: ' || u.status || ')' as notes,
+              JSON_BUILD_OBJECT(
+                'title', u.title,
+                'category', u.category,
+                'upgradeType', u.upgrade_type,
+                'priority', u.priority,
+                'status', u.status,
+                'estimatedCost', u.estimated_cost,
+                'description', u.description
+              )::text as "conditionNotes",
+              u.created_at as "createdAt"
+            FROM asset_upgrades u
+          `;
+          
+          // Add asset filter if specified
+          const queryParams = [];
+          if (assetId) {
+            upgradesQuery += ' WHERE u.asset_id = $1';
+            queryParams.push(Number(assetId));
+          }
+          
+          upgradesQuery += ' ORDER BY u.created_at DESC';
+          
+          const upgradesResult = queryParams.length > 0 
+            ? await storage.pool.query(upgradesQuery, queryParams)
+            : await storage.pool.query(upgradesQuery);
+          
+          if (upgradesResult.rows && upgradesResult.rows.length > 0) {
+            // Parse the conditionNotes JSON string back to object
+            const upgradeTransactions = upgradesResult.rows.map(row => ({
+              ...row,
+              conditionNotes: row.conditionNotes ? JSON.parse(row.conditionNotes) : null
+            }));
+            
+            // Merge with existing transactions
+            transactions = [
+              ...(transactions || []),
+              ...upgradeTransactions
+            ].sort((a, b) => {
+              const dateA = new Date(a.transactionDate || a.date || 0);
+              const dateB = new Date(b.transactionDate || b.date || 0);
+              return dateB.getTime() - dateA.getTime();
+            });
+            
+            console.log(`Added ${upgradeTransactions.length} upgrade transactions`);
+          }
+        } catch (upgradeError) {
+          console.error('Error fetching upgrades:', upgradeError);
+          // Continue without upgrades rather than failing
+        }
+      }
+      
       // SAFETY CHECK: Ensure transactions is always an array
       if (!transactions || !Array.isArray(transactions)) {
         console.warn('Asset transactions returned invalid data:', transactions);
@@ -5112,7 +5175,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         );
       }
       
-      // Type filter - handle all transaction types including upgrades
+      // Type filter
       if (type && typeof type === 'string' && type !== '') {
         filteredTransactions = filteredTransactions.filter(transaction => 
           transaction.type === type
@@ -5123,7 +5186,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       if (dateFrom && typeof dateFrom === 'string') {
         const fromDate = new Date(dateFrom);
         filteredTransactions = filteredTransactions.filter(transaction => {
-          const transactionDate = new Date(transaction.transactionDate || transaction.date);
+          const transactionDate = new Date(transaction.transactionDate || transaction.date || 0);
           return transactionDate >= fromDate;
         });
       }
@@ -5132,7 +5195,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
         filteredTransactions = filteredTransactions.filter(transaction => {
-          const transactionDate = new Date(transaction.transactionDate || transaction.date);
+          const transactionDate = new Date(transaction.transactionDate || transaction.date || 0);
           return transactionDate <= toDate;
         });
       }
@@ -5205,10 +5268,9 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-  });
-
+    });
   // Asset Transactions with Enhanced Filtering
-   app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
+  app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
   try {
     const assetId = parseInt(req.params.id);
     
@@ -5234,7 +5296,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     const transactions = await storage.getAssetTransactions(assetId);
     
     // Enhance transactions with asset and employee details
-    const enhancedTransactions = await Promise.all(
+    let enhancedTransactions = await Promise.all(
       transactions.map(async (transaction) => {
         const enhanced: any = { ...transaction };
         
@@ -5251,6 +5313,64 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         return enhanced;
       })
     );
+    
+    // Also get upgrades for this asset if using PostgreSQL
+    if ('pool' in storage && storage.pool) {
+      try {
+        const upgradesQuery = `
+          SELECT 
+            CAST('UPGRADE_' || u.id AS TEXT) as id,
+            u.asset_id as "assetId",
+            null as "employeeId",
+            'Upgrade' as type,
+            u.created_at as "transactionDate",
+            u.created_at as date,
+            u.title || ' (Status: ' || u.status || ')' as notes,
+            JSON_BUILD_OBJECT(
+              'title', u.title,
+              'category', u.category,
+              'upgradeType', u.upgrade_type,
+              'priority', u.priority,
+              'status', u.status,
+              'estimatedCost', u.estimated_cost,
+              'description', u.description
+            )::text as "deviceSpecs",
+            u.created_at as "createdAt"
+          FROM asset_upgrades u
+          WHERE u.asset_id = $1
+          ORDER BY u.created_at DESC
+        `;
+        
+        const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
+        
+        if (upgradesResult.rows && upgradesResult.rows.length > 0) {
+          // Parse the deviceSpecs JSON string back to object
+          const upgradeTransactions = upgradesResult.rows.map(row => ({
+            ...row,
+            deviceSpecs: row.deviceSpecs ? JSON.parse(row.deviceSpecs) : null,
+            asset: asset // Add the asset details to upgrade transactions
+          }));
+          
+          // Merge with existing transactions
+          enhancedTransactions = [
+            ...enhancedTransactions,
+            ...upgradeTransactions
+          ];
+          
+          // Sort by date
+          enhancedTransactions.sort((a, b) => {
+            const dateA = new Date(a.transactionDate || a.date || 0);
+            const dateB = new Date(b.transactionDate || b.date || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+          
+          console.log(`Added ${upgradeTransactions.length} upgrade transactions for asset ${assetId}`);
+        }
+      } catch (upgradeError) {
+        console.error('Error fetching upgrades for asset:', upgradeError);
+        // Continue without upgrades
+      }
+    }
     
     // Return array directly
     res.json(enhancedTransactions);
