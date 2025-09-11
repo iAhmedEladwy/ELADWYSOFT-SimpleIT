@@ -3394,7 +3394,6 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       }
       
       const transactions = await storage.getAssetTransactions(assetId);     
-      res.json(transactions);
 
        // Also get upgrades for this asset
       const upgradesQuery = `
@@ -3430,6 +3429,9 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
         const dateB = new Date(b.transactionDate || b.date || 0);
         return dateB.getTime() - dateA.getTime();
       });
+
+      res.json(allHistory);
+
 
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -5087,6 +5089,40 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       } else {
         transactions = await storage.getAllAssetTransactions();
       }
+
+      // Fetch all upgrade transactions from asset_upgrades table
+      const upgradesQuery = `
+        SELECT 
+          'UPGRADE_' || u.id as id,
+          u.asset_id as "assetId",
+          null as "employeeId",
+          'Upgrade' as type,
+          u.created_at as "transactionDate",
+          u.title || ' (Status: ' || u.status || ')' as notes,
+          JSON_BUILD_OBJECT(
+            'title', u.title,
+            'category', u.category,
+            'upgradeType', u.upgrade_type,
+            'priority', u.priority,
+            'status', u.status,
+            'estimatedCost', u.estimated_cost,
+            'description', u.description
+          ) as "conditionNotes"
+        FROM asset_upgrades u
+        ORDER BY u.created_at DESC
+      `;
+
+      const upgradesResult = await storage.pool.query(upgradesQuery);
+
+      // Merge regular transactions with upgrades
+      transactions = [
+        ...transactions,
+        ...upgradesResult.rows
+      ].sort((a, b) => {
+        const dateA = new Date(a.transactionDate || a.date || 0);
+        const dateB = new Date(b.transactionDate || b.date || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
       
       // SAFETY CHECK: Ensure transactions is always an array
       if (!transactions || !Array.isArray(transactions)) {
