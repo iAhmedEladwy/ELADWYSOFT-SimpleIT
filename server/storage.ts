@@ -2713,6 +2713,42 @@ async deleteTicket(id: number): Promise<boolean> {
       throw error;
     }
   }
+
+  async createAssetHistory(data: any): Promise<any> {
+  try {
+    // Using asset_transactions table since that's what exists in your system
+    const query = `
+      INSERT INTO asset_transactions (
+        asset_id, 
+        employee_id, 
+        type, 
+        transaction_date, 
+        notes,
+        performed_by,
+        condition_notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    
+    // Map the upgrade history data to transaction format
+    const values = [
+      data.assetId,
+      null, // No employee for upgrade actions
+      data.action || 'UPGRADE_REQUESTED',
+      data.performedAt || new Date(),
+      data.description,
+      data.performedById,
+      data.metadata ? JSON.stringify(data.metadata) : null
+    ];
+    
+    const result = await this.pool.query(query, values);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating asset history:', error);
+    // Don't throw - history is not critical for the operation
+    return null;
+  }
+}
 }
 
 // Use memory storage for development, PostgreSQL for production
