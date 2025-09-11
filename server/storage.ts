@@ -2534,7 +2534,7 @@ async deleteTicket(id: number): Promise<boolean> {
   
   const result = await pool.query(query, values); 
   return result.rows[0];
-}
+  }
 
   async getAssetUpgrade(upgradeId: number): Promise<any> {
     try {
@@ -2746,6 +2746,7 @@ async deleteTicket(id: number): Promise<boolean> {
     console.error('Error creating asset history:', error);
     // Don't throw - history is not critical for the operation
     return null;
+  }
   }
 }
 
