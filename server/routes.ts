@@ -5065,7 +5065,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 });
 
   // Asset Transactions with Enhanced Filtering
-  app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
+   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
     try {
       const { 
         assetId, 
@@ -5088,6 +5088,12 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         transactions = await storage.getAllAssetTransactions();
       }
       
+      // SAFETY CHECK: Ensure transactions is always an array
+      if (!transactions || !Array.isArray(transactions)) {
+        console.warn('Asset transactions returned invalid data:', transactions);
+        transactions = [];
+      }
+      
       // Apply filters
       let filteredTransactions = transactions;
       
@@ -5103,7 +5109,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         );
       }
       
-      // Type filter
+      // Type filter - Fixed to handle "Upgrade" type
       if (type && typeof type === 'string' && type !== '') {
         filteredTransactions = filteredTransactions.filter(transaction => 
           transaction.type === type

@@ -2716,6 +2716,12 @@ async deleteTicket(id: number): Promise<boolean> {
 
 async createAssetHistory(data: any): Promise<any> {
   try {
+    // Ensure we have valid data
+    if (!data.assetId) {
+      console.error('createAssetHistory: Missing assetId');
+      return null;
+    }
+
     const query = `
       INSERT INTO asset_transactions (
         asset_id, 
@@ -2730,8 +2736,8 @@ async createAssetHistory(data: any): Promise<any> {
     
     const values = [
       data.assetId,
-      null, // No employee for upgrade actions
-      'Upgrade',  // ✅ Just "Upgrade"
+      data.employeeId || null, // Employee ID can be null for upgrade actions
+      data.type || 'Upgrade',  // Default to 'Upgrade' if not specified
       data.performedAt || new Date(),
       data.description || 'Upgrade requested',
       data.metadata ? JSON.stringify(data.metadata) : null
@@ -2739,14 +2745,22 @@ async createAssetHistory(data: any): Promise<any> {
     
     console.log('Creating asset history with values:', values);
     
-    const result = await pool.query(query, values);
-    console.log('Asset history created:', result.rows[0]);
-    return result.rows[0];
+    // Use this.pool instead of pool
+    const result = await this.pool.query(query, values);
+    
+    if (result.rows && result.rows.length > 0) {
+      console.log('Asset history created successfully:', result.rows[0]);
+      return result.rows[0];
+    } else {
+      console.error('No rows returned from asset history creation');
+      return null;
+    }
   } catch (error) {
     console.error('Error creating asset history - full error:', error);
+    // Don't throw - return null so the calling code can continue
     return null;
   }
-  }
+}
 }
 
 // Use memory storage for development, PostgreSQL for production

@@ -842,6 +842,51 @@ export class MemoryStorage implements IStorage {
     return this.assetTransactions;
   }
 
+   async createAssetHistory(data: any): Promise<any> {
+    try {
+      // Ensure we have valid data
+      if (!data.assetId) {
+        console.error('createAssetHistory: Missing assetId');
+        return null;
+      }
+
+      // Create a new transaction for the history
+      const newTransaction: schema.AssetTransaction = {
+        id: this.idCounters.assetTransactions++,
+        assetId: data.assetId,
+        employeeId: data.employeeId || null,
+        type: data.type || 'Upgrade',
+        transactionDate: data.performedAt || new Date(),
+        notes: data.description || 'Upgrade action',
+        conditionNotes: data.metadata ? JSON.stringify(data.metadata) : null,
+        createdAt: new Date()
+      };
+      
+      // Add to transactions array
+      this.assetTransactions.push(newTransaction);
+      
+      // Log the activity if it's an upgrade
+      if (data.action) {
+        await this.logActivity({
+          userId: data.performedById || 1,
+          action: data.action,
+          entityType: 'ASSET',
+          entityId: data.assetId,
+          details: {
+            description: data.description,
+            metadata: data.metadata
+          }
+        });
+      }
+      
+      console.log('Asset history created in memory:', newTransaction);
+      return newTransaction;
+    } catch (error) {
+      console.error('Error creating asset history in memory:', error);
+      return null;
+    }
+  }
+
   async checkOutAsset(assetId: number, employeeId: number, notes?: string, type: string = 'Check-Out'): Promise<schema.AssetTransaction> {
     const asset = await this.getAsset(assetId);
     if (!asset) throw new Error('Asset not found');
