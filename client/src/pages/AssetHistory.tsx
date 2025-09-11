@@ -177,7 +177,7 @@ export default function AssetHistory() {
           const result = await response.json();
           // Handle the enhanced route response format
           return {
-            transactions: result.data || result,
+            transactions: result.transactions || result.data || [],
             pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
           };
         },
