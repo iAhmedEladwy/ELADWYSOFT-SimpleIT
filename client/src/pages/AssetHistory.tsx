@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/hooks/use-language';
@@ -219,14 +219,14 @@ export default function AssetHistory() {
 
     
     // Safely handle assets and employees arrays
-    const assets = React.useMemo(() => {
+    const assets = useMemo(() => {
       if (!assetsResponse) return [];
       if (Array.isArray(assetsResponse)) return assetsResponse;
       if (assetsResponse.data && Array.isArray(assetsResponse.data)) return assetsResponse.data;
       return [];
     }, [assetsResponse]);
 
-    const employeesList = React.useMemo(() => {
+    const employeesList = useMemo(() => {
       if (!employees) return [];
       if (Array.isArray(employees)) return employees;
       if (employees.data && Array.isArray(employees.data)) return employees.data;
@@ -234,7 +234,7 @@ export default function AssetHistory() {
     }, [employees]);
 
     // Safely extract transactions with multiple fallbacks
-    const transactions = React.useMemo(() => {
+    const transactions = useMemo(() => {
       if (!transactionsData) return [];
       if (Array.isArray(transactionsData)) return transactionsData;
       if (transactionsData.transactions && Array.isArray(transactionsData.transactions)) {
@@ -247,7 +247,7 @@ export default function AssetHistory() {
     }, [transactionsData]);
 
     // Filter transactions locally for display with safety check
-    const filteredTransactions = React.useMemo(() => {
+    const filteredTransactions = useMemo(() => {
       // Ensure transactions is an array before filtering
       if (!transactions || !Array.isArray(transactions)) {
         console.warn('Transactions is not an array:', transactions);
