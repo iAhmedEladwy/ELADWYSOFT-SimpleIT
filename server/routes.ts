@@ -5067,33 +5067,33 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 });
 
   // Asset Transactions with Enhanced Filtering
-   app.get("/api/asset-transactions", authenticateUser, async (req, res) => {
+   app.get("/api/assets/:id/transactions", authenticateUser, async (req, res) => {
   try {
-    const { 
-      assetId, 
-      employeeId, 
-      search, 
-      type, 
-      dateFrom, 
-      dateTo, 
-      page = '1', 
-      limit = '10',
-      include 
-    } = req.query;
+    const assetId = parseInt(req.params.id);
     
-    let transactions;
-    if (assetId) {
-      transactions = await storage.getAssetTransactions(Number(assetId));
-    } else if (employeeId) {
-      transactions = await storage.getEmployeeTransactions(Number(employeeId));
-    } else {
-      transactions = await storage.getAllAssetTransactions();
+    // Check if asset exists
+    const asset = await storage.getAsset(assetId);
+    if (!asset) {
+      return res.status(404).json({ message: "Asset not found" });
     }
     
-    // Fetch all upgrade transactions - SAFE version
+    const user = req.user as schema.User;
+    const userRoleLevel = getUserRoleLevel(user);
+    
+    // If user has level 1 access (Employee), check if they can see this asset
+    if (userRoleLevel === 1 && 
+        asset.status !== 'Available' && 
+        asset.status !== 'In Use') {
+      return res.status(403).json({ 
+        message: "You don't have permission to view this asset's transactions" 
+      });
+    }
+    
+    const transactions = await storage.getAssetTransactions(assetId);
+    
+    // Also get upgrades for this asset - handle both storage types
     let upgradeTransactions = [];
     
-    // Only try to fetch upgrades if using PostgreSQL
     if ('pool' in storage && storage.pool) {
       try {
         const upgradesQuery = `
@@ -5112,68 +5112,34 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
               'status', u.status,
               'estimatedCost', u.estimated_cost,
               'description', u.description
-            ) as "conditionNotes"
+            ) as "deviceSpecs"
           FROM asset_upgrades u
+          WHERE u.asset_id = $1
           ORDER BY u.created_at DESC
         `;
         
-        const upgradesResult = await storage.pool.query(upgradesQuery);
+        const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
         upgradeTransactions = upgradesResult.rows || [];
-      } catch (upgradeError) {
-        console.error('Error fetching upgrades:', upgradeError);
-        // Continue without upgrades
+      } catch (error) {
+        console.error('Error fetching upgrades:', error);
       }
     }
     
-    // Merge transactions with upgrades
-    if (upgradeTransactions.length > 0) {
-      transactions = [
-        ...(transactions || []),
-        ...upgradeTransactions
-      ].sort((a, b) => {
-        const dateA = new Date(a.transactionDate || a.date || 0);
-        const dateB = new Date(b.transactionDate || b.date || 0);
-        return dateB.getTime() - dateA.getTime();
-      });
-    }
-    
-    // SAFETY CHECK: Ensure transactions is always an array
-    if (!transactions || !Array.isArray(transactions)) {
-      console.warn('Asset transactions returned invalid data:', transactions);
-      transactions = [];
-    }
-    
-    // Apply filters (rest of the existing filter code)
-    let filteredTransactions = transactions;
-    
-    // ... (keep all the existing filter code here) ...
-    
-    // Make sure to keep the pagination and response code at the end
-    const pageNum = parseInt(page as string, 10);
-    const limitNum = parseInt(limit as string, 10);
-    const startIndex = (pageNum - 1) * limitNum;
-    const endIndex = startIndex + limitNum;
-    
-    const totalItems = filteredTransactions.length;
-    const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
-    
-    // Return the response with pagination
-    res.json({
-      transactions: paginatedTransactions,
-      pagination: {
-        currentPage: pageNum,
-        totalPages: Math.ceil(totalItems / limitNum),
-        totalItems,
-        itemsPerPage: limitNum
-      }
+    // Combine transactions and upgrades
+    const allHistory = [
+      ...(transactions || []),
+      ...upgradeTransactions
+    ].sort((a, b) => {
+      const dateA = new Date(a.transactionDate || a.date || 0);
+      const dateB = new Date(b.transactionDate || b.date || 0);
+      return dateB.getTime() - dateA.getTime();
     });
     
-  } catch (error) {
-    console.error('Error in /api/asset-transactions:', error);
-    res.status(500).json({ 
-      message: 'Error fetching transactions',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    // Return array directly
+    res.json(allHistory);
+    
+  } catch (error: unknown) {
+    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
   }
 });
   // Reports
