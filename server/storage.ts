@@ -2304,28 +2304,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-      async createAssetUpgrade(data: any): Promise<any> {
-      const query = `
-        INSERT INTO asset_upgrades (
-          asset_id, title, description, category, upgrade_type, priority,
-          scheduled_date, purchase_required, estimated_cost, justification,
-          approved_by_id, approval_date, status, created_by_id, updated_by_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        RETURNING *
-      `;
-      
-      const values = [
-        data.assetId, data.title, data.description, data.category,
-        data.upgradeType, data.priority, data.scheduledDate,
-        data.purchaseRequired, data.estimatedCost, data.justification,
-        data.approvedById, data.approvalDate, data.status,
-        data.createdById, data.updatedById
-      ];
-      
-      const result = await this.pool.query(query, values);
-      return result.rows[0];
-    }
-
   // Ticket History operations
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
@@ -2536,6 +2514,28 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
+  async createAssetUpgrade(data: any): Promise<any> {
+  const query = `
+    INSERT INTO asset_upgrades (
+      asset_id, title, description, category, upgrade_type, priority,
+      scheduled_date, purchase_required, estimated_cost, justification,
+      approved_by_id, approval_date, status, created_by_id, updated_by_id
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    RETURNING *
+  `;
+  
+  const values = [
+    data.assetId, data.title, data.description, data.category,
+    data.upgradeType, data.priority, data.scheduledDate,
+    data.purchaseRequired, data.estimatedCost, data.justification,
+    data.approvedById, data.approvalDate, data.status,
+    data.createdById, data.updatedById
+  ];
+  
+  const result = await pool.query(query, values); 
+  return result.rows[0];
+}
+
   async getAssetUpgrade(upgradeId: number): Promise<any> {
     try {
       const query = `
@@ -2714,9 +2714,8 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  async createAssetHistory(data: any): Promise<any> {
+ async createAssetHistory(data: any): Promise<any> {
   try {
-    // Using asset_transactions table since that's what exists in your system
     const query = `
       INSERT INTO asset_transactions (
         asset_id, 
@@ -2741,14 +2740,13 @@ async deleteTicket(id: number): Promise<boolean> {
       data.metadata ? JSON.stringify(data.metadata) : null
     ];
     
-    const result = await this.pool.query(query, values);
+    const result = await pool.query(query, values);  // ✅ Use pool, not this.pool
     return result.rows[0];
   } catch (error) {
     console.error('Error creating asset history:', error);
     // Don't throw - history is not critical for the operation
     return null;
   }
-}
 }
 
 // Use memory storage for development, PostgreSQL for production
