@@ -3158,49 +3158,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Get all upgrades
 app.get('/api/upgrades', authenticateUser, async (req, res) => {
   try {
-    const { status, category, assetId } = req.query;
+    // Use the existing storage method
+    const allUpgrades = await storage.getAllAssetUpgrades();
     
-    let query = `
-      SELECT 
-        u.*,
-        a.asset_id as asset_code,
-        a.type as asset_type,
-        a.brand as asset_brand,
-        a.model_name as asset_model,
-        creator.username as created_by_name,
-        approver.name as approved_by_name
-      FROM asset_upgrades u
-      LEFT JOIN assets a ON u.asset_id = a.id
-      LEFT JOIN users creator ON u.created_by_id = creator.id
-      LEFT JOIN employees approver ON u.approved_by_id = approver.id
-      WHERE 1=1
-    `;
+    // Apply filters if provided
+    let filteredUpgrades = allUpgrades;
     
-    const params: any[] = [];
-    let paramCount = 0;
+    const { status, category, priority, search } = req.query;
     
-    if (status) {
-      paramCount++;
-      query += ` AND u.status = $${paramCount}`;
-      params.push(status);
+    if (status && status !== 'all') {
+      filteredUpgrades = filteredUpgrades.filter(u => u.status === status);
     }
     
-    if (category) {
-      paramCount++;
-      query += ` AND u.category = $${paramCount}`;
-      params.push(category);
+    if (category && category !== 'all') {
+      filteredUpgrades = filteredUpgrades.filter(u => u.category === category);
     }
     
-    if (assetId) {
-      paramCount++;
-      query += ` AND u.asset_id = $${paramCount}`;
-      params.push(assetId);
+    if (priority && priority !== 'all') {
+      filteredUpgrades = filteredUpgrades.filter(u => u.priority === priority);
     }
     
-    query += ' ORDER BY u.created_at DESC';
+    if (search) {
+      const searchLower = String(search).toLowerCase();
+      filteredUpgrades = filteredUpgrades.filter(u => 
+        u.title?.toLowerCase().includes(searchLower) ||
+        u.description?.toLowerCase().includes(searchLower) ||
+        u.assetInfo?.assetId?.toLowerCase().includes(searchLower)
+      );
+    }
     
-    const result = await storage.pool.query(query, params);
-    res.json(result.rows);
+    res.json(filteredUpgrades);
   } catch (error: unknown) {
     console.error('Error fetching upgrades:', error);
     res.status(500).json({ message: 'Error fetching upgrades' });
