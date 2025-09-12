@@ -2496,61 +2496,46 @@ async deleteTicket(id: number): Promise<boolean> {
   }
 }
 
-  async updateAssetUpgrade(upgradeId: number, updateData: any, userId: number): Promise<any> {
+  async getAssetUpgrade(upgradeId: number): Promise<any> {
   try {
-    const fields = [];
-    const values = [];
-    let paramCount = 1;
-    
-    // Map the fields correctly
-    const fieldMapping = {
-      title: 'title',
-      description: 'description',
-      category: 'category',
-      upgradeType: 'upgrade_type',
-      priority: 'priority',
-      scheduledDate: 'scheduled_date',
-      purchaseRequired: 'purchase_required',
-      estimatedCost: 'estimated_cost',
-      justification: 'justification',
-      approvedById: 'approved_by_id',
-      approvalDate: 'approval_date',
-      status: 'status'
-    };
-    
-    Object.keys(updateData).forEach(key => {
-      if (fieldMapping[key] && updateData[key] !== undefined) {
-        fields.push(`${fieldMapping[key]} = $${paramCount}`);
-        values.push(updateData[key]);
-        paramCount++;
-      }
-    });
-    
-    if (fields.length === 0) {
-      const current = await this.getAssetUpgrade(upgradeId);
-      return current;
-    }
-    
-    // Add updatedById and updatedAt
-    fields.push(`updated_by_id = $${paramCount}`);
-    values.push(userId);
-    paramCount++;
-    
-    fields.push(`updated_at = NOW()`);
-    
-    values.push(upgradeId);
-    
     const query = `
-      UPDATE asset_upgrades 
-      SET ${fields.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING *
+      SELECT 
+        au.*,
+        a.asset_id as asset_asset_id,
+        a.type as asset_type,
+        a.brand as asset_brand,
+        a.model_name as asset_model_name,
+        a.serial_number as asset_serial,
+        creator.username as created_by_name,
+        approver.english_name as approved_by_name
+      FROM asset_upgrades au
+      LEFT JOIN assets a ON au.asset_id = a.id
+      LEFT JOIN users creator ON au.created_by_id = creator.id
+      LEFT JOIN employees approver ON au.approved_by_id = approver.id
+      WHERE au.id = $1
     `;
     
-    const result = await pool.query(query, values);
-    return result.rows[0];
+    const result = await pool.query(query, [upgradeId]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    const row = result.rows[0];
+    return {
+      ...row,
+      assetInfo: {
+        assetId: row.asset_asset_id,
+        type: row.asset_type,
+        brand: row.asset_brand,
+        modelName: row.asset_model_name,
+        serialNumber: row.asset_serial
+      },
+      createdByName: row.created_by_name,
+      approvedByName: row.approved_by_name
+    };
   } catch (error) {
-    console.error('Error updating asset upgrade:', error);
+    console.error('Error fetching asset upgrade:', error);
     throw error;
   }
 }
@@ -2565,7 +2550,7 @@ async deleteTicket(id: number): Promise<boolean> {
         a.brand as asset_brand,
         a.model_name as asset_model_name,
         creator.username as created_by_name,
-        approver.name as approved_by_name
+        approver.english_name as approved_by_name
       FROM asset_upgrades au
       LEFT JOIN assets a ON au.asset_id = a.id
       LEFT JOIN users creator ON au.created_by_id = creator.id
@@ -2591,6 +2576,7 @@ async deleteTicket(id: number): Promise<boolean> {
     throw error;
   }
 }
+
 
   async addUpgradeHistory(upgradeId: number, userId: number, action: string, previousValue: string | null, newValue: string | null = null): Promise<void> {
     try {
