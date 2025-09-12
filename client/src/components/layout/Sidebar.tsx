@@ -238,15 +238,15 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                   <span>{translations.AuditLogs}</span>
                 </Link>
                 
-                {/* Maintenance */}
-                <Link 
-                  href="/admin-console/maintenance" 
-                  className={`${getLinkClass('/admin-console/maintenance')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                  onClick={handleLinkClick}
-                >
-                  <Wrench className="h-4 w-4" />
-                  <span>{translations.Maintenance}</span>
-                </Link>
+                {/* Upgrade Requests */}
+                       <Link 
+                          href="/admin-console/upgrade-requests" 
+                          className={`${getLinkClass('/admin-console/upgrade-requests')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                          onClick={handleLinkClick}
+                        >
+                          <ArrowUpCircle className="h-4 w-4" />
+                          <span>{translations.UpgradeRequests}</span>
+                        </Link>
                 
                 {/* Bulk Operations History */}
                 <Link 
