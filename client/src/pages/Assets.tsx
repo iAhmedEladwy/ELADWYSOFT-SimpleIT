@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 export default function Assets() {
   const { language } = useLanguage();
   const { toast } = useToast();
-  const { hasAccess } = useAuth();
+  const { user, hasAccess } = useAuth();
   const [location] = useLocation();
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
