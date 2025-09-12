@@ -60,6 +60,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
     AdminConsole: language === 'English' ? 'Admin Console' : 'وحدة التحكم الإدارية',
     Maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
+    UpgradeRequests: language === 'English' ? 'Upgrade Requests' : 'طلبات الترقية',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
