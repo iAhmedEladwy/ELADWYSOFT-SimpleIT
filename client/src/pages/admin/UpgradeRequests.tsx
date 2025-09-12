@@ -29,7 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import {
   Search,
   Filter,
@@ -79,7 +79,8 @@ export default function UpgradeRequests() {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+  const { toast } = useToast();
+
   // Dialog states
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<UpgradeRequest | null>(null);
