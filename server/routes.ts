@@ -5339,37 +5339,48 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 
   // Temporary debug endpoint - add this after other routes
     app.get("/api/debug/upgrades", authenticateUser, async (req, res) => {
-      try {
-        if ('pool' in storage && storage.pool) {
-          // Check if asset_upgrades table exists and has data
-          const checkTable = await storage.pool.query(`
-            SELECT COUNT(*) as count FROM asset_upgrades
-          `);
-          
-          const sampleData = await storage.pool.query(`
-            SELECT id, asset_id, title, status, created_at 
-            FROM asset_upgrades 
-            LIMIT 5
-          `);
-          
-          res.json({
-            upgradeCount: checkTable.rows[0].count,
-            sampleUpgrades: sampleData.rows,
-            storageType: 'PostgreSQL'
-          });
-        } else {
-          res.json({
-            message: 'Not using PostgreSQL',
-            storageType: 'Memory'
-          });
-        }
-      } catch (error) {
-        res.json({
-          error: error.message,
-          stack: error.stack
-        });
+  try {
+    const storageInfo = {
+      hasPool: 'pool' in storage,
+      poolExists: !!(storage as any).pool,
+      storageType: storage.constructor.name,
+      databaseUrl: !!process.env.DATABASE_URL
+    };
+    
+    if ('pool' in storage && storage.pool) {
+      const checkTable = await storage.pool.query(`
+        SELECT COUNT(*) as count FROM asset_upgrades
+      `);
+      
+      const sampleData = await storage.pool.query(`
+        SELECT id, asset_id, title, status, created_at 
+        FROM asset_upgrades 
+        LIMIT 5
+      `);
+      
+      res.json({
+        ...storageInfo,
+        upgradeCount: checkTable.rows[0].count,
+        sampleUpgrades: sampleData.rows,
+        message: 'Using PostgreSQL'
+      });
+    } else {
+      res.json({
+        ...storageInfo,
+        message: 'Not using PostgreSQL - but why?'
+      });
+    }
+  } catch (error) {
+    res.json({
+      error: error.message,
+      storageInfo: {
+        hasPool: 'pool' in storage,
+        poolExists: !!(storage as any).pool,
+        storageType: storage.constructor.name,
       }
     });
+  }
+});
 
   // Reports
   app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
