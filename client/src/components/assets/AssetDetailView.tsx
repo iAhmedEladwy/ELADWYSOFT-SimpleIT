@@ -119,24 +119,34 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
   });
 
   // Fetch asset transactions
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['/api/asset-transactions', assetId],
-    queryFn: async () => {
-      if (!assetId) return [];
-      // Use the correct endpoint with query parameter
-      const response = await fetch(`/api/asset-transactions?assetId=${assetId}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        console.error('Failed to fetch transactions');
-        return [];
-      }
-      const data = await response.json();
-      // Handle both array and object response formats
-      return Array.isArray(data) ? data : (data?.data || data?.transactions || []);
-    },
-    enabled: !!assetId && open && activeTab === 'transactions',
-  });
+const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+  queryKey: ['/api/assets/:id/transactions', assetId],
+  queryFn: async () => {
+    if (!assetId) return [];
+    
+    const response = await fetch(`/api/assets/${assetId}/transactions`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch transactions');
+      return [];
+    }
+    
+    const data = await response.json();
+    
+    // Handle both array and error response formats
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data.message) {
+      console.error('Error response:', data.message);
+      return [];
+    }
+    
+    return [];
+  },
+  enabled: !!assetId && open && activeTab === 'transactions',
+});
 
   // Fetch custom asset statuses for dynamic colors
   const { data: assetStatuses = [] } = useQuery<any[]>({

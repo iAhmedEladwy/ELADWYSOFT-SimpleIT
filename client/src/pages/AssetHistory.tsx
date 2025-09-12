@@ -246,6 +246,18 @@ export default function AssetHistory() {
       return [];
     }, [transactionsData]);
 
+      //debugging code
+    useEffect(() => {
+        if (transactions && transactions.length > 0) {
+          const upgradeTransactions = transactions.filter(t => t.type === 'Upgrade');
+          console.log('[AssetHistory] Total transactions:', transactions.length);
+          console.log('[AssetHistory] Upgrade transactions:', upgradeTransactions.length);
+          if (upgradeTransactions.length > 0) {
+            console.log('[AssetHistory] Sample upgrade:', upgradeTransactions[0]);
+          }
+        }
+      }, [transactions]);
+
     // Filter transactions locally for display with safety check
     const filteredTransactions = useMemo(() => {
       // Ensure transactions is an array before filtering
@@ -1033,6 +1045,67 @@ export default function AssetHistory() {
                                           <Label className="text-xs text-gray-500">{translations.provider}</Label>
                                           <p className="text-sm font-medium">{metadata.provider || '-'}</p>
                                         </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                {selectedTransaction && (() => {
+                                const metadata = selectedTransaction.deviceSpecs as any;
+                                
+                                if (selectedTransaction.type === 'Upgrade' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">Upgrade Details</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Title</Label>
+                                          <p className="text-sm font-medium">{metadata.title || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Category</Label>
+                                          <p className="text-sm font-medium">{metadata.category || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Upgrade Type</Label>
+                                          <p className="text-sm font-medium">{metadata.upgradeType || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Priority</Label>
+                                          <Badge variant={
+                                            metadata.priority === 'Critical' ? 'destructive' :
+                                            metadata.priority === 'High' ? 'default' :
+                                            metadata.priority === 'Medium' ? 'secondary' :
+                                            'outline'
+                                          }>
+                                            {metadata.priority || 'Low'}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Status</Label>
+                                          <Badge variant={
+                                            metadata.status === 'Completed' ? 'default' :
+                                            metadata.status === 'In Progress' ? 'secondary' :
+                                            metadata.status === 'Approved' ? 'outline' :
+                                            'outline'
+                                          }>
+                                            {metadata.status || '-'}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Estimated Cost</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.estimatedCost 
+                                              ? formatCurrency(metadata.estimatedCost)
+                                              : '-'}
+                                          </p>
+                                        </div>
+                                        {metadata.description && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">Description</Label>
+                                            <p className="text-sm">{metadata.description}</p>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   );
