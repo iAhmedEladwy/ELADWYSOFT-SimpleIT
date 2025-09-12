@@ -128,7 +128,7 @@ export default function UpgradeRequests() {
 
   // Fetch upgrade requests
   const { data: requests, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/asset-upgrades', { searchTerm, statusFilter, priorityFilter, currentPage, itemsPerPage }],
+    queryKey: ['/api/upgrades', { searchTerm, statusFilter, priorityFilter, currentPage, itemsPerPage }],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -138,7 +138,7 @@ export default function UpgradeRequests() {
         ...(priorityFilter !== 'all' && { priority: priorityFilter }),
       });
       
-      const response = await apiRequest(`/api/asset-upgrades?${params}`);
+      const response = await apiRequest(`/api/upgrades?${params}`);
       return response;
     },
     staleTime: 30000, // 30 seconds
@@ -147,10 +147,10 @@ export default function UpgradeRequests() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes: string }) => {
-      return apiRequest(`/api/asset-upgrades/${id}/status`, 'PUT', { status, notes });
+      return apiRequest(`/api/upgrades/${id}/status`, 'PUT', { status, notes });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/asset-upgrades'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/upgrades'] });
       toast({
         title: translations.statusUpdated,
         description: language === 'English' ? 'The upgrade request status has been updated' : 'تم تحديث حالة طلب الترقية',
