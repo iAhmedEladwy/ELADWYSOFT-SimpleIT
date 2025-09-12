@@ -19,6 +19,9 @@ import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
 import ChangesLog from "@/pages/ChangesLog";
+import AdminConsole from "@/pages/AdminConsole";
+import BulkOperations from "@/pages/admin/BulkOperations";
+import UpgradeRequests from "@/pages/admin/UpgradeRequests";
 import Layout from "@/components/layout/Layout";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
@@ -175,6 +178,47 @@ function Router() {
         <Route path="/changes-log">
           <Layout>
             <PrivateRoute component={ChangesLog} />
+          </Layout>
+        </Route>
+
+        {/* Admin Console Routes */}
+        <Route path="/admin-console">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <AdminConsole />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/audit-logs">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <AuditLogs />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/bulk-operations">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <BulkOperations />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/upgrade-requests">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <UpgradeRequests />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route component={NotFound} />

@@ -15,6 +15,7 @@ import {
   User,
   Pin,
   PinOff,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -42,6 +43,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
+    AdminConsole: language === 'English' ? 'Admin Console' : 'وحدة التحكم الإدارية',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
@@ -177,6 +179,15 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
               <span>{translations.SystemConfig}</span>
+            </Link>
+          </div>
+        </RoleGuard>
+
+        <RoleGuard allowedRoles={['admin']}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/admin-console" className={getLinkClass('/admin-console')} onClick={handleLinkClick}>
+              <Shield className="h-5 w-5" />
+              <span>{translations.AdminConsole}</span>
             </Link>
           </div>
         </RoleGuard>
