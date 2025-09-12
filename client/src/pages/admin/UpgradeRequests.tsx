@@ -212,9 +212,9 @@ const requests = rawRequests || [];
   });
   
   // Pagination
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
+//  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+//  const startIndex = (currentPage - 1) * itemsPerPage;
+//  const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
   
   // Review Dialog Component
   const ReviewRequestDialog = () => {
@@ -240,7 +240,7 @@ const requests = rawRequests || [];
 
     const handleSubmitDecision = async () => {
       try {
-        const response = await fetch(`/api/upgrade-requests/${selectedRequest.id}/status`, {
+        const response = await fetch(`/api/upgrades/${selectedRequest.id}/status`, {
           method: 'PATCH',
           headers: { 
             'Content-Type': 'application/json',
@@ -264,7 +264,7 @@ const requests = rawRequests || [];
           setSelectedRequest(null);
           setDecision('');
           setReviewNote('');
-          queryClient.invalidateQueries({ queryKey: ['/api/upgrade-requests'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/upgrades'] });
         } else {
           const error = await response.json();
           toast.error(error.message || translations.updateFailed);
