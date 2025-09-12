@@ -131,8 +131,8 @@ export default function UpgradeRequests() {
     queryKey: ['/api/upgrades', { searchTerm, statusFilter, priorityFilter, currentPage, itemsPerPage }],
     queryFn: async () => {
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
+       // page: currentPage.toString(),
+       // limit: itemsPerPage.toString(),
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== 'all' && { status: statusFilter }),
         ...(priorityFilter !== 'all' && { priority: priorityFilter }),
