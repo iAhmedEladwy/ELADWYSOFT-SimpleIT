@@ -21,7 +21,8 @@ import {
   Clock,
   AlertCircle,
   Edit,
-  Eye
+  Eye,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -70,10 +71,13 @@ export default function UpgradeRequests() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
-  const [selectedRequest, setSelectedRequest] = useState<UpgradeRequest | null>(null);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<'Approved' | 'Rejected' | 'In Progress' | 'Completed'>('Approved');
   const [statusNotes, setStatusNotes] = useState('');
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [decision, setDecision] = useState<string>('');
+  const [reviewNote, setReviewNote] = useState('');
 
   const translations = {
     title: language === 'English' ? 'Upgrade Requests' : 'طلبات الترقية',
@@ -102,7 +106,7 @@ export default function UpgradeRequests() {
     medium: language === 'English' ? 'Medium' : 'متوسط',
     high: language === 'English' ? 'High' : 'عالي',
     critical: language === 'English' ? 'Critical' : 'حرج',
-    editStatus: language === 'English' ? 'Edit Status' : 'تعديل الحالة',
+    reviewRequest: language === 'English' ?'مراجعة الطلب' : 'مراجعة الطلب',
     viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
     updateStatus: language === 'English' ? 'Update Status' : 'تحديث الحالة',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
@@ -110,6 +114,24 @@ export default function UpgradeRequests() {
     statusUpdated: language === 'English' ? 'Status updated successfully' : 'تم تحديث الحالة بنجاح',
     updateFailed: language === 'English' ? 'Failed to update status' : 'فشل في تحديث الحالة',
     noAccess: language === 'English' ? 'You do not have permission to view this page' : 'ليس لديك صلاحية لعرض هذه الصفحة',
+    editStatus: language === 'English' ? 'Edit Status' : 'تعديل الحالة',
+    reviewRequest: language === 'English' ? 'Review Request' : 'مراجعة الطلب',
+    requestDetails: language === 'English' ? 'Request Details' : 'تفاصيل الطلب',
+    decision: language === 'English' ? 'Decision' : 'القرار',
+    reviewNote: language === 'English' ? 'Review Note' : 'ملاحظة المراجعة',
+    approve: language === 'English' ? 'Approve' : 'موافقة',
+    reject: language === 'English' ? 'Reject' : 'رفض',
+    keepPending: language === 'English' ? 'Keep Pending' : 'إبقاء معلق',
+    submitDecision: language === 'English' ? 'Submit Decision' : 'إرسال القرار',
+    selectDecision: language === 'English' ? 'Select a decision' : 'اختر قرارًا',
+    addReviewNote: language === 'English' ? 'Add a note about your decision...' : 'أضف ملاحظة حول قرارك...',
+    requestId: language === 'English' ? 'Request ID' : 'رقم الطلب',
+    employee: language === 'English' ? 'Employee' : 'الموظف',
+    department: language === 'English' ? 'Department' : 'القسم',
+    requestDate: language === 'English' ? 'Request Date' : 'تاريخ الطلب',
+    currentAsset: language === 'English' ? 'Current Asset' : 'الأصل الحالي',
+    requestedAsset: language === 'English' ? 'Requested Asset' : 'الأصل المطلوب',
+    reason: language === 'English' ? 'Reason' : 'السبب',
   };
 
   // Check if user has access
@@ -171,7 +193,7 @@ export default function UpgradeRequests() {
       return apiRequest(`/api/upgrades/${id}/status`, 'PUT', { status, notes });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/upgrades'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/upgrades', { searchTerm, statusFilter, priorityFilter }] });
       toast({
         title: translations.statusUpdated,
         description: language === 'English' ? 'The upgrade request status has been updated' : 'تم تحديث حالة طلب الترقية',
@@ -226,31 +248,7 @@ export default function UpgradeRequests() {
     );
   };
 
-  const handleStatusUpdate = () => {
-    if (selectedRequest) {
-      updateStatusMutation.mutate({
-        id: selectedRequest.id,
-        status: newStatus,
-        notes: statusNotes,
-      });
-    }
-  };
-
-  const openStatusDialog = (request: UpgradeRequest) => {
-    if (request.status === 'Approved') {
-      toast({
-        title: language === 'English' ? 'Cannot modify approved request' : 'لا يمكن تعديل طلب موافق عليه',
-        description: language === 'English' ? 'This request has already been approved' : 'هذا الطلب موافق عليه بالفعل',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setSelectedRequest(request);
-    setNewStatus('Approved');
-    setStatusNotes('');
-    setShowStatusDialog(true);
-  };
-
+  
   const PaginationControls = () => {
     if (!requests?.pagination) return null;
     
@@ -289,6 +287,207 @@ export default function UpgradeRequests() {
         </div>
       </div>
     );
+  };
+
+  const ReviewRequestDialog = () => {
+  if (!selectedRequest) return null;
+
+  const handleSubmitDecision = async () => {
+    try {
+      const response = await fetch(`/api/upgrade-requests/${selectedRequest.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: decision,
+          note: reviewNote 
+        })
+      });
+
+      if (response.ok) {
+        toast.success(`Request ${decision.toLowerCase()} successfully`);
+        setShowReviewDialog(false);
+        setSelectedRequest(null);
+        setDecision('');
+        setReviewNote('');
+        refetch(); // Refresh the list
+      }
+    } catch (error) {
+      toast.error('Failed to update request status');
+    }
+
+    const ReviewRequestDialog = () => {
+  if (!selectedRequest) return null;
+
+  const canReview = user?.role === 'admin' || user?.role === 'it_staff';
+  
+  if (!canReview) {
+    return (
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{translations.accessDenied}</DialogTitle>
+          </DialogHeader>
+          <p>{translations.noPermission}</p>
+          <DialogFooter>
+            <Button onClick={() => setShowReviewDialog(false)}>{translations.close}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const handleSubmitDecision = async () => {
+    try {
+      const response = await fetch(`/api/upgrade-requests/${selectedRequest.id}/status`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          status: decision,
+          note: reviewNote,
+          reviewedBy: user?.id,
+          reviewedAt: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        toast.success(
+          decision === 'Approved' ? translations.requestApproved :
+          decision === 'Rejected' ? translations.requestRejected :
+          translations.requestUpdated
+        );
+        setShowReviewDialog(false);
+        setSelectedRequest(null);
+        setDecision('');
+        setReviewNote('');
+        queryClient.invalidateQueries({ queryKey: ['/api/upgrade-requests'] });
+      } else {
+        const error = await response.json();
+        toast.error(error.message || translations.updateFailed);
+      }
+    } catch (error) {
+      toast.error(translations.updateFailed);
+    }
+  };
+
+    return (
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{translations.reviewRequest}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Request Details */}
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h3 className="font-semibold mb-2">{translations.requestDetails}</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="font-medium">{translations.requestId}:</span> #{selectedRequest?.id}
+                </div>
+                <div>
+                  <span className="font-medium">{translations.status}:</span>
+                  <Badge className="ml-2" variant={
+                    selectedRequest?.status === 'Approved' ? 'success' :
+                    selectedRequest?.status === 'Rejected' ? 'destructive' : 
+                    'default'
+                  }>
+                    {selectedRequest?.status}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="font-medium">{translations.employee}:</span> {selectedRequest?.employeeName}
+                </div>
+                <div>
+                  <span className="font-medium">{translations.department}:</span> {selectedRequest?.department}
+                </div>
+                <div>
+                  <span className="font-medium">{translations.requestDate}:</span> {
+                    selectedRequest?.requestDate ? 
+                    new Date(selectedRequest.requestDate).toLocaleDateString() : 
+                    'N/A'
+                  }
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">{translations.currentAsset}:</span> {selectedRequest?.currentAsset}
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">{translations.requestedAsset}:</span> {selectedRequest?.requestedAsset}
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">{translations.reason}:</span>
+                  <p className="mt-1 text-gray-600">{selectedRequest?.reason}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Decision Selection */}
+            <div className="space-y-2">
+              <Label>{translations.decision} *</Label>
+              <Select value={decision} onValueChange={setDecision}>
+                <SelectTrigger>
+                  <SelectValue placeholder={translations.selectDecision} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Approved">
+                    <div className="flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                      {translations.approve}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Rejected">
+                    <div className="flex items-center">
+                      <XCircle className="w-4 h-4 mr-2 text-red-600" />
+                      {translations.reject}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Pending">
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-yellow-600" />
+                      {translations.keepPending}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Review Note */}
+            <div className="space-y-2">
+              <Label>{translations.reviewNote} *</Label>
+              <Textarea
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                placeholder={translations.addReviewNote}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowReviewDialog(false);
+                setDecision('');
+                setReviewNote('');
+              }}
+            >
+              {translations.cancel}
+            </Button>
+            <Button 
+              onClick={handleSubmitDecision}
+              disabled={!decision || !reviewNote.trim()}
+            >
+              {translations.submitDecision}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
   };
 
   return (
@@ -430,7 +629,7 @@ export default function UpgradeRequests() {
                               disabled={request.status === 'Approved'}
                             >
                               <Edit className="w-4 h-4 mr-1" />
-                              {translations.editStatus}
+                              {translations.reviewRequest}
                             </Button>
                           </div>
                         </TableCell>
@@ -451,7 +650,7 @@ export default function UpgradeRequests() {
         <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{translations.editStatus}</DialogTitle>
+              <DialogTitle>{translations.reviewRequest}</DialogTitle>
               <DialogDescription>
                 {language === 'English' 
                   ? `Update the status for upgrade request: ${selectedRequest?.assetName}`
@@ -485,21 +684,24 @@ export default function UpgradeRequests() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-                {translations.cancel}
-              </Button>
-              <Button 
-                onClick={handleStatusUpdate}
-                disabled={updateStatusMutation.isPending}
-              >
-                {updateStatusMutation.isPending ? 
-                  (language === 'English' ? 'Updating...' : 'جاري التحديث...') : 
-                  translations.updateStatus
-                }
-              </Button>
+         {(user?.role === 'admin' || user?.role === 'it_staff') && (
+            <Button 
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedRequest(request);
+                setShowReviewDialog(true);
+              }}
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              {translations.reviewRequest}
+            </Button>
+          )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
+           <ReviewRequestDialog />
       </div>
     </RoleGuard>
   );
