@@ -127,22 +127,43 @@ export default function UpgradeRequests() {
   }
 
   // Fetch upgrade requests
-  const { data: requests, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/upgrades', { searchTerm, statusFilter, priorityFilter, currentPage, itemsPerPage }],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-       // page: currentPage.toString(),
-       // limit: itemsPerPage.toString(),
-        ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(priorityFilter !== 'all' && { priority: priorityFilter }),
-      });
-      
-      const response = await apiRequest(`/api/upgrades?${params}`);
-      return response;
-    },
-    staleTime: 30000, // 30 seconds
-  });
+  const { data: rawRequests, isLoading, error, refetch } = useQuery({
+  queryKey: ['/api/upgrades', { searchTerm, statusFilter, priorityFilter }],
+  queryFn: async () => {
+    const params = new URLSearchParams({
+      ...(searchTerm && { search: searchTerm }),
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      ...(priorityFilter !== 'all' && { priority: priorityFilter }),
+    });
+    
+    const response = await apiRequest(`/api/upgrades?${params}`);
+    
+    // Map the response to match the expected interface
+    return response.map((item: any) => ({
+      id: item.id,
+      assetId: item.asset_id,
+      assetName: item.assetInfo?.assetId || item.asset_asset_id || '',
+      requestedBy: item.createdByName || item.created_by_name || '',
+      approvedBy: item.approvedByName || item.approved_by_name || null,
+      currentSpecs: `${item.assetInfo?.type || ''} - ${item.assetInfo?.brand || ''} ${item.assetInfo?.modelName || ''}`,
+      requestedSpecs: item.upgrade_type || item.upgradeType || '',
+      reason: item.justification || '',
+      priority: item.priority || 'Medium',
+      status: item.status || 'Pending',
+      estimatedCost: item.estimated_cost || item.estimatedCost || 0,
+      requestedDate: item.created_at || item.createdAt,
+      approvedDate: item.approval_date || item.approvalDate || null,
+      completedDate: null,
+      notes: item.notes || null,
+      createdAt: item.created_at || item.createdAt,
+      updatedAt: item.updated_at || item.updatedAt,
+    }));
+  },
+  staleTime: 30000,
+});
+
+  const requests = rawRequests || [];
+
 
   // Update status mutation
   const updateStatusMutation = useMutation({
