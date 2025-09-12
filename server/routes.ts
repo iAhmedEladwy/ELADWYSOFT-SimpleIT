@@ -3077,6 +3077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Asset not found' });
       }
       
+      // Map approvedById from user.id (frontend sends user) to employees.id (DB FK)
+      let approvedEmployeeId: number | null = null;
+      if (req.body.approvedById) {
+        try {
+          const approverEmployee = await storage.getEmployeeByUserId(Number(req.body.approvedById));
+          approvedEmployeeId = approverEmployee ? approverEmployee.id : null;
+        } catch (mapErr) {
+          console.warn('Unable to map approvedById to employee:', mapErr);
+          approvedEmployeeId = null;
+        }
+      }
+
       // Create upgrade request
       const upgradeData = {
         assetId,
@@ -3089,9 +3101,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purchaseRequired: req.body.purchaseRequired || false,
         estimatedCost: req.body.estimatedCost || null,
         justification: req.body.justification,
-        approvedById: req.body.approvedById || null,
+        approvedById: approvedEmployeeId,
         approvalDate: req.body.approvalDate || null,
-        status: req.body.approvedById ? 'Approved' : 'Pending Approval',
+        status: approvedEmployeeId ? 'Approved' : 'Pending Approval',
         createdById: user.id,
         updatedById: user.id,
       };
