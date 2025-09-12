@@ -17,6 +17,60 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
+  // Add this entry at the beginning of CHANGELOG_DATA array in changelog-data.ts
+
+{
+  version: "0.3.5",
+  date: "2025-09-12",
+  title: "Upgrade Management & Material Design Dashboard",
+  type: "minor",
+  changes: {
+    features: [
+      "🚀 New Upgrade Management System:",
+      "   📝 Simplified upgrade request form with hardware/software categories",
+      "   👥 Searchable employee approval workflow with auto date-filling",
+      "   💰 Purchase tracking to differentiate in-stock vs purchase-required items",
+      "   📊 Full integration with asset history tracking",
+      "   🌐 Complete bilingual support (English/Arabic)",
+      "🎨 Material Design 3 Dashboard Styling:",
+      "   🎯 Applied MD3 design system with rounded corners and gradients",
+      "   ✨ Enhanced shadows with elevation system",
+      "   🎨 Color-coded metrics (Primary: Indigo, Secondary: Pink, Tertiary: Teal)",
+      "   📊 Progress bars and animated badges for visual metrics",
+      "   🔄 Smooth animations (fadeIn, slideIn, scaleIn effects)",
+      "📈 Enhanced Asset History:",
+      "   📦 Expanded transaction types (Maintenance, Sale, Retirement)",
+      "   🔍 Rich metadata display in history views",
+      "   💾 Hybrid architecture combining transactions with specialized data",
+      "🛠️ Deployment Script Enhancements:",
+      "   💾 Storage monitoring with color-coded indicators",
+      "   🧹 Maintenance operations for clearing logs and caches",
+      "   🔄 Schema synchronization checking against database"
+    ],
+    improvements: [
+      "🏗️ Dashboard restructured from 4 tabs to 3 tabs",
+      "📊 Merged Activity timeline and Analytics into Insights tab",
+      "🆕 Created new Overview tab as primary view with summary cards",
+      "⬆️ Reordered Maintenance Schedule to top position",
+      "🎯 Asset detail views with conditional display based on status",
+      "📝 Standardized data structures across frontend and backend",
+      "🔒 Enhanced authentication flow preventing 401 errors",
+      "⚡ Improved query invalidation for real-time updates"
+    ],
+    bugfixes: [
+      "🔧 Fixed JavaScript errors preventing upgrade records from displaying",
+      "📋 Resolved 'Cannot read properties of undefined' errors on page refresh",
+      "🔄 Fixed data structure mismatches between API and frontend",
+      "📁 Removed backend route code mistakenly placed in frontend files",
+      "🖼️ Fixed checkout dialog overflow with fields outside boundaries",
+      "🔄 Resolved table refresh issues after checkout operations",
+      "📦 Fixed bulk status update for selling and retiring assets",
+      "💰 Corrected currency display inconsistencies",
+      "🔧 Fixed maintenance data not displaying in history views",
+      "🔑 Resolved authentication flow 401 errors"
+    ]
+  }
+},
   {
   version: "0.3.0",
   date: "2025-09-07",
