@@ -1049,9 +1049,6 @@ export default function AssetHistory() {
                                     </div>
                                   );
                                 }
-
-                                {selectedTransaction && (() => {
-                                const metadata = selectedTransaction.deviceSpecs as any;
                                 
                                 if (selectedTransaction.type === 'Upgrade' && metadata) {
                                   return (
@@ -1123,6 +1120,7 @@ export default function AssetHistory() {
                     </TableBody>
                   </Table>
                 </div>
+                
 
                 {/* Pagination */}
                 {transactionsData?.pagination && transactionsData.pagination.totalPages > 1 && (
