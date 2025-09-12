@@ -388,7 +388,7 @@ export default function UpgradeRequests() {
                   {language === 'English' ? 'Failed to load upgrade requests' : 'فشل في تحميل طلبات الترقية'}
                 </AlertDescription>
               </Alert>
-            ) : !requests?.data?.length ? (
+            ) : !rawRequests?.length ? (
               <div className="text-center py-12">
                 <Wrench className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-2 text-sm font-medium">{translations.noData}</h3>
@@ -407,7 +407,7 @@ export default function UpgradeRequests() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {requests.data.map((request: UpgradeRequest) => (
+                    {rawRequests?.map((request: UpgradeRequest) => (
                       <TableRow key={request.id}>
                         <TableCell>
                           <div className="font-medium">{request.assetName}</div>
