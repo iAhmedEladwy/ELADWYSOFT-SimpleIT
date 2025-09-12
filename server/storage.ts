@@ -2453,92 +2453,48 @@ async deleteTicket(id: number): Promise<boolean> {
 }
 
   async getAssetUpgrade(upgradeId: number): Promise<any> {
-  try {
-    const query = `
-      SELECT 
-        au.*,
-        a.asset_id as asset_asset_id,
-        a.type as asset_type,
-        a.brand as asset_brand,
-        a.model_name as asset_model_name,
-        a.serial_number as asset_serial,
-        creator.username as created_by_name,
-        approver.name as approved_by_name
-      FROM asset_upgrades au
-      LEFT JOIN assets a ON au.asset_id = a.id
-      LEFT JOIN users creator ON au.created_by_id = creator.id
-      LEFT JOIN employees approver ON au.approved_by_id = approver.id
-      WHERE au.id = $1
-    `;
-    
-    const result = await pool.query(query, [upgradeId]);
-    
-    if (result.rows.length === 0) {
-      return null;
+    try {
+      const query = `
+        SELECT 
+          au.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial,
+          creator.username as created_by_name,
+          approver.english_name as approved_by_name
+        FROM asset_upgrades au
+        LEFT JOIN assets a ON au.asset_id = a.id
+        LEFT JOIN users creator ON au.created_by_id = creator.id
+        LEFT JOIN employees approver ON au.approved_by_id = approver.id
+        WHERE au.id = $1
+      `;
+      
+      const result = await pool.query(query, [upgradeId]);
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      const row = result.rows[0];
+      return {
+        ...row,
+        assetInfo: {
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial
+        },
+        createdByName: row.created_by_name,
+        approvedByName: row.approved_by_name
+      };
+    } catch (error) {
+      console.error('Error fetching asset upgrade:', error);
+      throw error;
     }
-    
-    const row = result.rows[0];
-    return {
-      ...row,
-      assetInfo: {
-        assetId: row.asset_asset_id,
-        type: row.asset_type,
-        brand: row.asset_brand,
-        modelName: row.asset_model_name,
-        serialNumber: row.asset_serial
-      },
-      createdByName: row.created_by_name,
-      approvedByName: row.approved_by_name
-    };
-  } catch (error) {
-    console.error('Error fetching asset upgrade:', error);
-    throw error;
   }
-}
-
-  async getAssetUpgrade(upgradeId: number): Promise<any> {
-  try {
-    const query = `
-      SELECT 
-        au.*,
-        a.asset_id as asset_asset_id,
-        a.type as asset_type,
-        a.brand as asset_brand,
-        a.model_name as asset_model_name,
-        a.serial_number as asset_serial,
-        creator.username as created_by_name,
-        approver.english_name as approved_by_name
-      FROM asset_upgrades au
-      LEFT JOIN assets a ON au.asset_id = a.id
-      LEFT JOIN users creator ON au.created_by_id = creator.id
-      LEFT JOIN employees approver ON au.approved_by_id = approver.id
-      WHERE au.id = $1
-    `;
-    
-    const result = await pool.query(query, [upgradeId]);
-    
-    if (result.rows.length === 0) {
-      return null;
-    }
-    
-    const row = result.rows[0];
-    return {
-      ...row,
-      assetInfo: {
-        assetId: row.asset_asset_id,
-        type: row.asset_type,
-        brand: row.asset_brand,
-        modelName: row.asset_model_name,
-        serialNumber: row.asset_serial
-      },
-      createdByName: row.created_by_name,
-      approvedByName: row.approved_by_name
-    };
-  } catch (error) {
-    console.error('Error fetching asset upgrade:', error);
-    throw error;
-  }
-}
 
   async getAllAssetUpgrades(): Promise<any[]> {
   try {
