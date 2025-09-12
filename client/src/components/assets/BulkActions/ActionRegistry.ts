@@ -78,16 +78,6 @@ export const BULK_ACTIONS: Record<string, BulkAction> = {
     minSelection: 1,
   },
   
-  TRANSFER: {
-    id: 'transfer',
-    label: 'Transfer Assets',
-    description: 'Transfer assets between locations or departments',
-    icon: 'ArrowRightLeft',
-    requiresConfirmation: true,
-    requiresDialog: true,
-    blockedStatuses: ['Sold', 'Retired', 'Disposed'],
-    minSelection: 1,
-  },
 };
 
 export function getAvailableActions(context: {

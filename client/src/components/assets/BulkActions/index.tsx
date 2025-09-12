@@ -14,6 +14,7 @@ import { createSuccessResult, createErrorResult, validateBulkActionContext } fro
 import BulkStatusDialog from './dialogs/BulkStatusDialog';
 import BulkAssignDialog from './dialogs/BulkAssignDialog';
 import BulkDeleteDialog from './dialogs/BulkDeleteDialog';
+import BulkMaintenanceDialog from './dialogs/BulkMaintenanceDialog';
 
 // Note: Sell and Retire dialogs are handled by the parent Assets.tsx component
 // to preserve existing functionality
@@ -281,6 +282,14 @@ export default function BulkActions({
 
       <BulkDeleteDialog
         open={activeDialog === 'delete'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        selectedAssets={selectedAssets}
+        onSuccess={handleDialogSuccess}
+        onCancel={handleDialogCancel}
+      />
+
+      <BulkMaintenanceDialog
+        open={activeDialog === 'schedule_maintenance'}
         onOpenChange={(open) => !open && setActiveDialog(null)}
         selectedAssets={selectedAssets}
         onSuccess={handleDialogSuccess}

@@ -80,17 +80,14 @@ export default function BulkStatusDialog({
     setIsProcessing(true);
 
     try {
-      const results = await Promise.allSettled(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/${id}`, 'PUT', { status: selectedStatus })
-        )
-      );
+      const response = await apiRequest('/api/assets/bulk/status', 'POST', {
+        assetIds: selectedAssets,
+        status: selectedStatus
+      });
 
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      const errors = results
-        .filter(r => r.status === 'rejected')
-        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      const succeeded = response.details?.succeeded || selectedAssets.length;
+      const failed = response.details?.failed || 0;
+      const errors = response.details?.errors || [];
 
       let result: BulkActionResult;
 

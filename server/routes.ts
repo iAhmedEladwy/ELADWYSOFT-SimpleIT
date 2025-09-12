@@ -7213,6 +7213,78 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
+  app.post('/api/assets/bulk/maintenance', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, type, description, scheduledDate, estimatedCost, priority, notes } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (!type || !description || !scheduledDate) {
+        return res.status(400).json({ error: 'Type, description, and scheduled date are required' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(assetId => 
+          storage.createAssetMaintenance({
+            assetId,
+            type,
+            description,
+            scheduledDate: new Date(scheduledDate),
+            estimatedCost: estimatedCost ? parseFloat(estimatedCost) : null,
+            priority: priority || 'Medium',
+            notes: notes || '',
+            status: 'Scheduled',
+            createdById: (req.user as schema.User).id,
+            updatedById: (req.user as schema.User).id
+          })
+        )
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Maintenance Schedule",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'maintenance_schedule',
+            assetIds,
+            type,
+            scheduledDate,
+            priority,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Successfully scheduled maintenance for ${succeeded} assets`,
+        details: {
+          succeeded,
+          failed,
+          errors: failed > 0 ? errors : undefined
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk maintenance error:', error);
+      res.status(500).json({ 
+        error: 'Failed to schedule maintenance',
+        message: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
