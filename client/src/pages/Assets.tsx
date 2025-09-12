@@ -25,6 +25,7 @@ import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
 import AssetsTable from '@/components/assets/AssetsTable';
+import BulkActions from '@/components/assets/BulkActions';
 import {
   Command,
   CommandEmpty,
@@ -490,301 +491,14 @@ export default function Assets() {
     }
   };
 
-  // Handler for bulk sell confirmation
-  const handleBulkSellConfirm = async () => {
-    // Validation based on pricing method
-    if (pricingMethod === 'total') {
-      if (!bulkSellData.buyer || !bulkSellData.totalAmount) {
-        toast({
-          title: translations.error,
-          description: translations.fillRequiredFields,
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else {
-      if (!bulkSellData.buyer) {
-        toast({
-          title: translations.error,
-          description: translations.fillRequiredFields,
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Check if all individual prices are filled
-      const allPricesFilled = selectedAssets.every(id => 
-        individualPrices[id] && parseFloat(individualPrices[id]) > 0
-      );
-      
-      if (!allPricesFilled) {
-        toast({
-          title: translations.error,
-          description: translations.fillAllPrices,
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    try {
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Selling ${selectedAssets.length} assets...`,
-      });
-
-      // Calculate total amount based on pricing method
-      let totalAmount = 0;
-      let saleNotes = bulkSellData.notes || `Bulk sale to ${bulkSellData.buyer}`;
-      
-      if (pricingMethod === 'total') {
-        totalAmount = parseFloat(bulkSellData.totalAmount);
-      } else {
-        // Sum up individual prices
-        totalAmount = selectedAssets.reduce((sum, id) => {
-          return sum + parseFloat(individualPrices[id] || '0');
-        }, 0);
-        
-        // Add individual pricing details to notes
-        const pricingDetails = assets
-          .filter((asset: any) => selectedAssets.includes(asset.id))
-          .map((asset: any) => `${asset.assetId}: ${formatCurrency(parseFloat(individualPrices[asset.id]))}`)
-          .join(', ');
-        
-        saleNotes = `${saleNotes}\nIndividual Pricing: ${pricingDetails}`;
-      }
-
-      const response = await apiRequest('/api/assets/sell', 'POST', {
-        assetIds: selectedAssets,
-        buyer: bulkSellData.buyer,
-        saleDate: bulkSellData.saleDate.toISOString().split('T')[0],
-        totalAmount: totalAmount,
-        notes: saleNotes,
-        pricingMethod: pricingMethod,
-        individualPrices: pricingMethod === 'individual' ? individualPrices : undefined
-      });
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      await refetch();
-
-      toast({
-        title: translations.success,
-        description: response.message || `Successfully sold ${selectedAssets.length} assets`,
-      });
-
-      // Reset everything
-      setSelectedAssets([]);
-      setShowBulkSellDialog(false);
-      setPricingMethod('total');
-      setIndividualPrices({});
-      setBulkSellData({
-        buyer: '',
-        saleDate: new Date(),
-        totalAmount: '',
-        notes: ''
-      });
-
-    } catch (error: any) {
-      console.error('Bulk sell error:', error);
-      toast({
-        title: translations.error,
-        description: error.message || 'Failed to sell assets',
-        variant: 'destructive',
-      });
-    }
-  };
+  // Old bulk sell handler removed - now handled by BulkActions component
 
 
-  // Handler for bulk retire confirmation
-  const handleBulkRetireConfirm = async () => {
-    if (!bulkRetireData.reason) {
-      toast({
-        title: translations.error || 'Error',
-        description: 'Please provide a retirement reason',
-        variant: 'destructive',
-      });
-      return;
-    }
+  // Old bulk retire handler removed - now handled by BulkActions component
 
-    try {
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Retiring ${selectedAssets.length} assets...`,
-      });
+  // Old bulk status change handler removed - now handled by BulkActions component
 
-      const response = await apiRequest('/api/assets/retire', 'POST', {
-        assetIds: selectedAssets,
-        reason: bulkRetireData.reason,
-        retirementDate: bulkRetireData.retirementDate.toISOString(),
-        notes: bulkRetireData.notes
-      });
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      await refetch();
-
-      toast({
-        title: translations.success,
-        description: response.message || `Successfully retired ${selectedAssets.length} assets`,
-      });
-
-      setSelectedAssets([]);
-      setShowBulkRetireDialog(false);
-      setBulkRetireData({
-        reason: '',
-        retirementDate: new Date(),
-        notes: ''
-      });
-
-    } catch (error: any) {
-      console.error('Bulk retire error:', error);
-      toast({
-        title: translations.error,
-        description: error.message || 'Failed to retire assets',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkStatusChange = async (newStatus: string) => {
-    if (selectedAssets.length === 0) return;
-    
-    // For Sell and Retire, open dialogs instead of processing immediately
-    if (newStatus === 'Sold') {
-      setShowBulkSellDialog(true);
-      return;
-    }
-    
-    if (newStatus === 'Retired') {
-      setShowBulkRetireDialog(true);
-      return;
-    }
-    
-    // For other statuses, process immediately
-    try {
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Updating ${selectedAssets.length} assets to ${newStatus}...`,
-      });
-
-      const results = await Promise.allSettled(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/paginated/${id}`, 'PUT', { status: newStatus })
-        )
-      );
-      
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      await refetch();
-      
-      if (failed === 0) {
-        toast({
-          title: translations.success,
-          description: `Successfully updated ${succeeded} assets to ${newStatus}`,
-        });
-      } else if (succeeded > 0) {
-        toast({
-          title: 'Partial Success',
-          description: `Updated ${succeeded} assets to ${newStatus}, ${failed} failed`,
-        });
-      } else {
-        throw new Error(`Failed to update all ${failed} assets`);
-      }
-      
-      setSelectedAssets([]);
-      
-    } catch (error: any) {
-      console.error('Bulk status update error:', error);
-      toast({
-        title: translations.error,
-        description: error.message || 'Failed to update asset status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedAssets.length === 0) return;
-    
-    if (!confirm(translations.deleteConfirm || `Are you sure you want to delete ${selectedAssets.length} assets?`)) return;
-    
-    try {
-      // Show loading state
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Deleting ${selectedAssets.length} assets...`,
-      });
-
-      // Use the bulk delete endpoint if available, otherwise delete individually
-      const results = await Promise.allSettled(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/paginated/${id}`, 'DELETE')
-        )
-      );
-      
-      // Count successes and failures
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      // Invalidate queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      // Force refetch
-      await refetch();
-      
-      // Show result message
-      if (failed === 0) {
-        toast({
-          title: translations.success,
-          description: `${succeeded} assets deleted successfully`,
-        });
-      } else if (succeeded > 0) {
-        toast({
-          title: 'Partial Success',
-          description: `Deleted ${succeeded} assets, ${failed} failed`,
-          variant: 'default',
-        });
-      } else {
-        toast({
-          title: translations.error,
-          description: `Failed to delete all ${failed} assets`,
-          variant: 'destructive',
-        });
-      }
-      
-      setSelectedAssets([]);
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      toast({
-        title: translations.error,
-        description: 'Failed to delete assets',
-        variant: 'destructive',
-      });
-    }
-  };
+  // Old bulk delete handler removed - now handled by BulkActions component
 
   const handleExportFilteredAssets = () => {
     if (assets.length === 0) {
@@ -1226,44 +940,14 @@ export default function Assets() {
           </CardContent>
         </Card>
 
-        {/* Bulk Actions */}
-        {selectedAssets.length > 0 && (
-          <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-            <span className="text-sm font-medium text-blue-700">
-              {selectedAssets.length} selected
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSelectAll}
-                className="text-xs"
-              >
-                {selectedAssets.length === assets.length ? 
-                  translations.deselectAll : translations.selectAll}
-              </Button>
-              <Select onValueChange={handleBulkStatusChange}>
-                <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue placeholder={translations.changeStatus} />
-                </SelectTrigger>
-                <SelectContent>
-                  {assetStatuses.map((status: string) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleBulkDelete}
-                className="text-xs"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                {translations.deleteSelected}
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* New Bulk Actions System */}
+        <BulkActions
+          selectedAssets={selectedAssets}
+          availableAssets={assets}
+          currentUser={user}
+          onSelectionChange={setSelectedAssets}
+          onRefresh={refetch}
+        />
 
         {/* Pagination Controls Top */}
         {!isLoading && <PaginationControls />}

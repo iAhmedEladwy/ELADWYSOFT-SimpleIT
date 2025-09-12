@@ -7040,6 +7040,179 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     logErrors: true 
   }));
 
+  // Bulk Operations Endpoints
+  app.post('/api/assets/bulk/status', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, status } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (!status) {
+        return res.status(400).json({ error: 'Status is required' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(id => storage.updateAsset(id, { status }))
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Update",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'status_change',
+            assetIds,
+            newStatus: status,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Updated ${succeeded} assets to ${status}`,
+        details: {
+          succeeded,
+          failed,
+          errors
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk status update error:', error);
+      res.status(500).json({ 
+        error: 'Failed to update asset statuses',
+        message: error.message 
+      });
+    }
+  });
+
+  app.post('/api/assets/bulk/assign', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, employeeId } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (employeeId === undefined) {
+        return res.status(400).json({ error: 'Employee ID is required (use null to unassign)' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(id => storage.updateAsset(id, { assignedEmployeeId: employeeId }))
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Update",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: employeeId ? 'assign' : 'unassign',
+            assetIds,
+            employeeId,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: employeeId 
+          ? `Assigned ${succeeded} assets to employee ${employeeId}`
+          : `Unassigned ${succeeded} assets`,
+        details: {
+          succeeded,
+          failed,
+          errors
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk assign error:', error);
+      res.status(500).json({ 
+        error: 'Failed to assign assets',
+        message: error.message 
+      });
+    }
+  });
+
+  app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { assetIds } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (assetIds.length > 10) {
+        return res.status(400).json({ error: 'Cannot delete more than 10 assets at once' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(id => storage.deleteAsset(id))
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Delete",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'delete',
+            assetIds,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Deleted ${succeeded} assets`,
+        details: {
+          succeeded,
+          failed,
+          errors
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk delete error:', error);
+      res.status(500).json({ 
+        error: 'Failed to delete assets',
+        message: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
