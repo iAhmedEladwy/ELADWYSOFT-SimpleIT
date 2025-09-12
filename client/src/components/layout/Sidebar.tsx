@@ -45,7 +45,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
     AdminConsole: language === 'English' ? 'Admin Console' : 'وحدة التحكم الإدارية',
-    Users: language === 'English' ? 'Users' : 'المستخدمين',
     Maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',

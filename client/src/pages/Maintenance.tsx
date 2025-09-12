@@ -61,7 +61,6 @@ export default function Maintenance() {
     assetType: language === 'English' ? 'Asset Type' : 'نوع الأصل',
     maintenanceType: language === 'English' ? 'Type' : 'النوع',
     date: language === 'English' ? 'Date' : 'التاريخ',
-    description: language === 'English' ? 'Description' : 'الوصف',
     cost: language === 'English' ? 'Cost' : 'التكلفة',
     provider: language === 'English' ? 'Provider' : 'مقدم الخدمة',
     performedBy: language === 'English' ? 'Performed By' : 'نفذ بواسطة',
