@@ -26,7 +26,7 @@ import {
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { RoleGuard } from '@/components/auth/RoleGuard';
-import { NotFound } from '@/pages/not-found';
+import NotFound from '@/pages/not-found';
 import { Link } from 'wouter';
 
 interface BulkActionHistoryItem {
