@@ -3341,32 +3341,30 @@ app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res)
 });
 
 // Quick status update
-app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req, res) => {
+app.put('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
-    const user = req.user as schema.User;
     const { status, notes } = req.body;
+    const user = req.user as schema.User;
     
-    const validStatuses = ['Draft', 'Pending Approval', 'Approved', 'In Progress', 'Completed', 'Cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-    
-    const query = `
+    const updateQuery = `
       UPDATE asset_upgrades 
-      SET status = $1, updated_by_id = $2, updated_at = NOW()
-      WHERE id = $3
+      SET status = $1, 
+          notes = COALESCE($2, notes),
+          updated_by_id = $3,
+          updated_at = NOW()
+      WHERE id = $4
       RETURNING *
     `;
     
-    const result = await storage.pool.query(query, [status, user.id, upgradeId]);
+    const result = await storage.pool.query(updateQuery, [status, notes, user.id, upgradeId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Upgrade not found' });
     }
     
     res.json(result.rows[0]);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error updating upgrade status:', error);
     res.status(500).json({ message: 'Error updating upgrade status' });
   }
