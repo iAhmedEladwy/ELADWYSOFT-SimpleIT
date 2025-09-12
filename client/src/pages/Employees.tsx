@@ -35,7 +35,7 @@ export default function Employees() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Active'); // Default to Active employees
+  const [statusFilter, setStatusFilter] = useState('All'); // Default to Active employees
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -484,7 +484,7 @@ export default function Employees() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchQuery) count++;
-    if (statusFilter !== 'Active') count++;
+    if (statusFilter !== 'All') count++;
     if (departmentFilter !== 'All') count++;
     if (employmentTypeFilter !== 'All') count++;
     if (customFilter) count++;
@@ -660,7 +660,7 @@ export default function Employees() {
           </div>
           {/* Clear Filters Button - Show only when filters are active */}
           {(customFilter || departmentFilter !== 'All' || employmentTypeFilter !== 'All' || 
-            statusFilter !== 'Active' || searchQuery) && (
+            statusFilter !== 'All' || searchQuery) && (
             <div className="flex justify-end">
               <Button
                 variant="outline"
@@ -668,7 +668,7 @@ export default function Employees() {
                 onClick={() => {
                   setDepartmentFilter('All');
                   setEmploymentTypeFilter('All');
-                  setStatusFilter('Active');
+                  setStatusFilter('All');
                   setSearchQuery('');
                   setCustomFilter(null);
                 }}

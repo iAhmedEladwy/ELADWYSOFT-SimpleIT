@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/hooks/use-language';
@@ -11,8 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Calendar, User, Package, FileDown, Filter, Eye } from 'lucide-react';
+import { Search, Calendar, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/lib/currencyContext';
+
+
 
 interface Asset {
   id: number;
@@ -62,6 +69,8 @@ interface TransactionWithRelations {
 
 export default function AssetHistory() {
   const { language } = useLanguage();
+  const { formatCurrency } = useCurrency();
+  const { toast } = useToast();
   const [filters, setFilters] = useState({
     search: '',
     type: '',
@@ -73,7 +82,10 @@ export default function AssetHistory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
-  
+  const [assetSearchOpen, setAssetSearchOpen] = useState(false);
+  const [assetSearchValue, setAssetSearchValue] = useState('');
+  const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+  const [employeeSearchValue, setEmployeeSearchValue] = useState('');
   // Translations
   const translations = {
     title: language === 'English' ? 'Asset History' : 'سجل الأصول',
@@ -84,10 +96,14 @@ export default function AssetHistory() {
       ? 'Track and manage all asset check-in and check-out activities with detailed history and device specifications' 
       : 'تتبع وإدارة جميع أنشطة تسجيل الوصول والمغادرة للأصول مع سجل تفصيلي ومواصفات الجهاز',
     filterSearch: language === 'English' ? 'Filter & Search Asset History' : 'تصفية وبحث سجل الأصول',
+    show: language === 'English' ? 'Show:' : 'عرض:',
     transactionHistory: language === 'English' ? 'Transaction History' : 'تاريخ المعاملات',
     search: language === 'English' ? 'Search transactions...' : 'البحث في المعاملات...',
     transactionType: language === 'English' ? 'Transaction Type' : 'نوع المعاملة',
+    transactionDetails: language === 'English' ? 'Transaction Type' : 'تفاصيل المعاملة',
+    transactionID: language === 'English' ? 'Transaction Type' : 'رقم المعاملة',
     asset: language === 'English' ? 'Asset' : 'الأصل',
+    assetId: language == 'English' ? 'Asset ID' : 'رقم الأصل',
     employee: language === 'English' ? 'Employee' : 'الموظف',
     dateFrom: language === 'English' ? 'Date From' : 'التاريخ من',
     dateTo: language === 'English' ? 'Date To' : 'التاريخ إلى',
@@ -96,6 +112,11 @@ export default function AssetHistory() {
     checkOut: language === 'English' ? 'Check Out' : 'تسجيل الخروج',
     assignment: language === 'English' ? 'Assignment' : 'تخصيص',
     maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
+    sale: language === 'English' ? 'Sale' : 'بيع',
+    retirement: language === 'English' ? 'Retirement' : 'تقاعد',
+    upgrade: language === 'English' ? 'Upgrade' : 'ترقية',
+    sold: language === 'English' ? 'Sold' : 'مباع',
+    retired: language === 'English' ? 'Retired' : 'متقاعد',
     id: language === 'English' ? 'ID' : 'المعرف',
     type: language === 'English' ? 'Type' : 'النوع',
     date: language === 'English' ? 'Date' : 'التاريخ',
@@ -112,6 +133,25 @@ export default function AssetHistory() {
     status: language === 'English' ? 'Status' : 'الحالة',
     export: language === 'English' ? 'Export' : 'تصدير',
     clearFilters: language === 'English' ? 'Clear Filters' : 'مسح المرشحات',
+    exportSuccess: language === 'English' ? 'Data exported successfully' : 'تم تصدير البيانات بنجاح',
+    exportError: language === 'English' ? 'Failed to export data' : 'فشل تصدير البيانات',
+    noDataToExport: language === 'English' ? 'No data to export' : 'لا توجد بيانات للتصدير',
+    searchAssets: language === 'English' ? 'Search assets...' : 'البحث عن الأصول...',
+    searchEmployees: language === 'English' ? 'Search employees...' : 'البحث عن الموظفين...',
+    noAssetsFound: language === 'English' ? 'No assets found' : 'لم يتم العثور على أصول',
+    noEmployeesFound: language === 'English' ? 'No employees found' : 'لم يتم العثور على موظفين',
+    saleDetails: language === 'English' ? 'Sale Details' : 'تفاصيل البيع',
+    retirementDetails: language === 'English' ? 'Retirement Details' : 'تفاصيل التقاعد',
+    maintenanceDetails: language === 'English' ? 'Maintenance Details' : 'تفاصيل الصيانة',
+    buyer: language === 'English' ? 'Buyer' : 'المشتري',
+    saleDate: language === 'English' ? 'Sale Date' : 'تاريخ البيع',
+    salePrice: language === 'English' ? 'Sale Price' : 'سعر البيع',
+    retirementReason: language === 'English' ? 'Retirement Reason' : 'سبب التقاعد',
+    retirementDate: language === 'English' ? 'Retirement Date' : 'تاريخ التقاعد',
+    maintenanceType: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
+    maintenanceCost: language === 'English' ? 'Cost' : 'التكلفة',
+    provider: language === 'English' ? 'Provider' : 'المزود',
+    generalNotes: language === 'English' ? 'General Notes' : 'ملاحظات عامة',
   };
 
       // Fetch transaction history
@@ -135,11 +175,11 @@ export default function AssetHistory() {
           }
           
           const result = await response.json();
-          // Handle the enhanced route response format
-          return {
-            transactions: result.data || result,
-            pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
-          };
+        // Handle the enhanced route response format
+        return {
+          transactions: result.transactions || result.data || [],
+          pagination: result.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, itemsPerPage: pageSize }
+        };
         },
         staleTime: 1000 * 30, // 30 seconds
         gcTime: 1000 * 60 * 5, // 5 minutes
@@ -148,19 +188,18 @@ export default function AssetHistory() {
       });
 
   // Fetch assets for filter dropdown
-const { data: assetsResponse } = useQuery({
-  queryKey: ['/api/assets'],
-  queryFn: async () => {
-    const response = await fetch('/api/assets', {
-      credentials: 'include'
+    const { data: assetsResponse } = useQuery({
+      queryKey: ['/api/assets'],
+      queryFn: async () => {
+        const response = await fetch('/api/assets', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch assets');
+        }
+        return response.json();
+      }
     });
-    if (!response.ok) {
-      throw new Error('Failed to fetch assets');
-    }
-    return response.json();
-  }
-});
-const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   // Fetch employees for filter dropdown
   const { data: employees } = useQuery({
@@ -175,6 +214,83 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
       return response.json();
     }
   });
+
+    const pagination = transactionsData?.pagination;
+
+    
+    // Safely handle assets and employees arrays
+    const assets = useMemo(() => {
+      if (!assetsResponse) return [];
+      if (Array.isArray(assetsResponse)) return assetsResponse;
+      if (assetsResponse.data && Array.isArray(assetsResponse.data)) return assetsResponse.data;
+      return [];
+    }, [assetsResponse]);
+
+    const employeesList = useMemo(() => {
+      if (!employees) return [];
+      if (Array.isArray(employees)) return employees;
+      if (employees.data && Array.isArray(employees.data)) return employees.data;
+      return [];
+    }, [employees]);
+
+    // Safely extract transactions with multiple fallbacks
+    const transactions = useMemo(() => {
+      if (!transactionsData) return [];
+      if (Array.isArray(transactionsData)) return transactionsData;
+      if (transactionsData.transactions && Array.isArray(transactionsData.transactions)) {
+        return transactionsData.transactions;
+      }
+      if (transactionsData.data && Array.isArray(transactionsData.data)) {
+        return transactionsData.data;
+      }
+      return [];
+    }, [transactionsData]);
+
+      //debugging code
+    useEffect(() => {
+        if (transactions && transactions.length > 0) {
+          const upgradeTransactions = transactions.filter(t => t.type === 'Upgrade');
+          console.log('[AssetHistory] Total transactions:', transactions.length);
+          console.log('[AssetHistory] Upgrade transactions:', upgradeTransactions.length);
+          if (upgradeTransactions.length > 0) {
+            console.log('[AssetHistory] Sample upgrade:', upgradeTransactions[0]);
+          }
+        }
+      }, [transactions]);
+
+    // Filter transactions locally for display with safety check
+    const filteredTransactions = useMemo(() => {
+      // Ensure transactions is an array before filtering
+      if (!transactions || !Array.isArray(transactions)) {
+        console.warn('Transactions is not an array:', transactions);
+        return [];
+      }
+
+      try {
+        return transactions.filter((transaction: TransactionWithRelations) => {
+          // Ensure transaction exists
+          if (!transaction) return false;
+          
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const matchesSearch = 
+              transaction.id?.toString().includes(searchLower) ||
+              transaction.asset?.assetId?.toLowerCase().includes(searchLower) ||
+              transaction.asset?.type?.toLowerCase().includes(searchLower) ||
+              transaction.asset?.brand?.toLowerCase().includes(searchLower) ||
+              transaction.employee?.englishName?.toLowerCase().includes(searchLower) ||
+              transaction.employee?.arabicName?.toLowerCase().includes(searchLower) ||
+              transaction.notes?.toLowerCase().includes(searchLower) ||
+              transaction.conditionNotes?.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+          return true;
+        });
+      } catch (error) {
+        console.error('Error filtering transactions:', error);
+        return [];
+      }
+    }, [transactions, filters.search]);
 
    // Auto-refresh when component mounts or becomes visible
   useEffect(() => {
@@ -206,16 +322,117 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
     setCurrentPage(1);
   };
 
-  const getTransactionTypeBadge = (type: string) => {
-    const colors = {
-      'Check In': 'bg-green-100 text-green-800',
-      'Check Out': 'bg-red-100 text-red-800',
-      'Assignment': 'bg-blue-100 text-blue-800',
-      'Maintenance': 'bg-yellow-100 text-yellow-800',
-      'Transfer': 'bg-purple-100 text-purple-800',
+      const TRANSACTION_BADGE_CONFIG = {
+      'Check-In': { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
+      'Check-Out': { bg: 'bg-red-100', text: 'text-red-800', icon: '→' },
+      'Maintenance': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '🔧' },
+      'Sale': { bg: 'bg-purple-100', text: 'text-purple-800', icon: '💰' },
+      'Retirement': { bg: 'bg-orange-100', text: 'text-orange-800', icon: '🗑️' },
+      'Upgrade': { bg: 'bg-blue-100', text: 'text-blue-800', icon: '⬆' },
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
-  };
+
+
+      const getTransactionTypeBadge = (type: string) => {
+        const config = TRANSACTION_BADGE_CONFIG[type];
+        return config ? `${config.bg} ${config.text}` : 'bg-gray-100 text-gray-800';
+      };
+
+      const handleExport = () => {
+      // Get the transactions to export (use filtered if available)
+      const dataToExport = filteredTransactions || transactions || [];
+      
+      if (dataToExport.length === 0) {
+        toast({
+          title: translations.noDataToExport,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      try {
+        // CSV Headers - including ALL columns even hidden ones
+        const headers = [
+          'Transaction ID',
+          'Transaction Type',
+          'Transaction Date',
+          'Asset ID',
+          'Asset Type',
+          'Asset Brand',
+          'Asset Model',
+          'Serial Number',
+          'Employee ID',
+          'Employee Name (English)',
+          'Employee Name (Arabic)',
+          'Employee Department',
+          'Notes',
+          'Condition Notes',
+          // Device Specs
+          'Device Condition',
+          'Operating System',
+          'Processor',
+          'RAM',
+          'Storage',
+          'Location',
+          'Status',
+        ];
+
+        // Build CSV rows with all data
+        const csvRows = [headers.join(',')];
+        
+        dataToExport.forEach((transaction: TransactionWithRelations) => {
+          const row = [
+            transaction.id || '',
+            transaction.type || '',
+            transaction.date || transaction.transactionDate ? 
+              format(new Date(transaction.date || transaction.transactionDate!), 'yyyy-MM-dd HH:mm:ss') : '',
+            transaction.asset?.assetId || '',
+            transaction.asset?.type || '',
+            transaction.asset?.brand || '',
+            transaction.asset?.modelName || '',
+            transaction.asset?.serialNumber || '',
+            transaction.employee?.id || '',
+            transaction.employee?.englishName || '',
+            transaction.employee?.arabicName || '',
+            transaction.employee?.department || '',
+            `"${(transaction.notes || '').replace(/"/g, '""')}"`, // Escape quotes in notes
+            `"${(transaction.conditionNotes || '').replace(/"/g, '""')}"`,
+            // Device Specs
+            transaction.deviceSpecs?.condition || transaction.asset?.condition || '',
+            transaction.deviceSpecs?.operatingSystem || transaction.asset?.operatingSystem || '',
+            transaction.deviceSpecs?.processor || transaction.asset?.processor || '',
+            transaction.deviceSpecs?.ram || transaction.asset?.ram || '',
+            transaction.deviceSpecs?.storage || transaction.asset?.storage || '',
+            transaction.deviceSpecs?.location || transaction.asset?.location || '',
+            transaction.deviceSpecs?.status || transaction.asset?.status || '',
+          ];
+          
+          csvRows.push(row.join(','));
+        });
+
+        // Create and download CSV file
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `asset-history-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: translations.exportSuccess,
+          description: `Exported ${dataToExport.length} transactions`,
+        });
+      } catch (error) {
+        console.error('Export error:', error);
+        toast({
+          title: translations.exportError,
+          variant: 'destructive',
+        });
+      }
+    };
 
   return (
     <>
@@ -235,8 +452,8 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
             <Button variant="outline" onClick={clearFilters}>
               {translations.clearFilters}
             </Button>
-            <Button variant="outline">
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button onClick={handleExport} className="gap-2">
+              <FileDown className="h-4 w-4" />
               {translations.export}
             </Button>
           </div>
@@ -281,46 +498,182 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                     <SelectItem value="all">{translations.all}</SelectItem>
                     <SelectItem value="Check In">{translations.checkIn}</SelectItem>
                     <SelectItem value="Check Out">{translations.checkOut}</SelectItem>
-                    <SelectItem value="Assignment">{translations.assignment}</SelectItem>
                     <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
+                    <SelectItem value="Sale">{translations.sale}</SelectItem>
+                    <SelectItem value="Retirement">{translations.retirement}</SelectItem>
+                    <SelectItem value="Upgrade">{translations.upgrade}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Asset Filter */}
+              {/* Searchable Asset Filter */}
               <div className="space-y-2">
                 <Label>{translations.asset}</Label>
-                <Select value={filters.assetId || 'all'} onValueChange={(value) => handleFilterChange('assetId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={translations.all} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{translations.all}</SelectItem>
-                    {assets?.map((asset: Asset) => (
-                      <SelectItem key={asset.id} value={asset.id.toString()}>
-                        {asset.assetId} - {asset.type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={assetSearchOpen} onOpenChange={setAssetSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={assetSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                     {filters.assetId && filters.assetId !== 'all'
+                        ? (() => {
+                            const asset = assets?.find((asset: any) => asset.id.toString() === filters.assetId);
+                            return asset ? `${asset.assetId} - ${asset.type}` : translations.all;
+                          })()
+                        : translations.all}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder={translations.searchAssets}
+                        value={assetSearchValue}
+                        onValueChange={setAssetSearchValue}
+                      />
+                      <CommandEmpty>{translations.noAssetsFound}</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            handleFilterChange('assetId', 'all');
+                            setAssetSearchOpen(false);
+                            setAssetSearchValue('');
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!filters.assetId || filters.assetId === 'all') ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {translations.all}
+                        </CommandItem>
+                        {(assets || [])
+                          .filter((asset: any) => {
+                            const searchLower = assetSearchValue.toLowerCase();
+                            return !assetSearchValue || 
+                              asset.assetId?.toLowerCase().includes(searchLower) ||
+                              asset.type?.toLowerCase().includes(searchLower) ||
+                              asset.brand?.toLowerCase().includes(searchLower) ||
+                              asset.modelName?.toLowerCase().includes(searchLower);
+                          })
+                          .map((asset: any) => (
+                            <CommandItem
+                              key={asset.id}
+                              value={`${asset.assetId} ${asset.type} ${asset.brand || ''}`}
+                              onSelect={() => {
+                                handleFilterChange('assetId', asset.id.toString());
+                                setAssetSearchOpen(false);
+                                setAssetSearchValue('');
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.assetId === asset.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{asset.assetId} - {asset.type}</span>
+                                {asset.brand && (
+                                  <span className="text-xs text-muted-foreground">{asset.brand} {asset.modelName || ''}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {/* Employee Filter */}
+             {/* Searchable Employee Filter */}
               <div className="space-y-2">
                 <Label>{translations.employee}</Label>
-                <Select value={filters.employeeId || 'all'} onValueChange={(value) => handleFilterChange('employeeId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={translations.all} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{translations.all}</SelectItem>
-                    {employees?.map((employee: Employee) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
-                        {employee.englishName || employee.arabicName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={employeeSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {filters.employeeId && filters.employeeId !== 'all'
+                        ? (() => {
+                            const emp = employeesList?.find((e: any) => e.id.toString() === filters.employeeId);
+                            return emp ? `${emp.englishName || emp.arabicName}` : translations.all;
+                          })()
+                        : translations.all}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder={translations.searchEmployees}
+                        value={employeeSearchValue}
+                        onValueChange={setEmployeeSearchValue}
+                      />
+                      <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            handleFilterChange('employeeId', 'all');
+                            setEmployeeSearchOpen(false);
+                            setEmployeeSearchValue('');
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (!filters.employeeId || filters.employeeId === 'all') ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {translations.all}
+                        </CommandItem>
+                        {(employeesList || [])
+                          .filter((emp: any) => {
+                            const searchLower = employeeSearchValue.toLowerCase();
+                            return !employeeSearchValue || 
+                              emp.englishName?.toLowerCase().includes(searchLower) ||
+                              emp.arabicName?.toLowerCase().includes(searchLower) ||
+                              emp.empId?.toLowerCase().includes(searchLower) ||
+                              emp.department?.toLowerCase().includes(searchLower);
+                          })
+                          .map((emp: any) => (
+                            <CommandItem
+                              key={emp.id}
+                              value={`${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`}
+                              onSelect={() => {
+                                handleFilterChange('employeeId', emp.id.toString());
+                                setEmployeeSearchOpen(false);
+                                setEmployeeSearchValue('');
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.employeeId === emp.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{emp.englishName || emp.arabicName}</span>
+                                {emp.department && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {emp.empId} • {emp.department}
+                                  </span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Date From */}
@@ -428,9 +781,46 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="max-w-xs truncate" title={transaction.notes || transaction.conditionNotes}>
-                              {transaction.notes || transaction.conditionNotes || '-'}
-                            </div>
+                            {(() => {
+                              const metadata = transaction.deviceSpecs as any;
+                              
+                              if (transaction.type === 'Sale' && metadata?.buyer) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Buyer: {metadata.buyer}</p>
+                                    <p className="text-gray-600">Price: {formatCurrency (metadata.salePrice || metadata.totalAmount || 'N/A')}</p>
+                                    {transaction.notes && <p className="text-gray-500 text-xs mt-1 truncate">{transaction.notes}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              if (transaction.type === 'Retirement' && metadata?.retirementReason) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Reason: {metadata.retirementReason}</p>
+                                    {metadata.notes && <p className="text-gray-500 text-xs mt-1 truncate">{metadata.notes}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              if (transaction.type === 'Maintenance' && metadata?.maintenanceType) {
+                                return (
+                                  <div className="text-sm space-y-1">
+                                    <p className="font-medium text-gray-900">Type: {metadata.maintenanceType}</p>
+                                    {metadata.cost && <p className="text-gray-600">Cost: {formatCurrency(metadata.cost)}</p>}
+                                    {metadata.provider && <p className="text-gray-600">Provider: {metadata.provider}</p>}
+                                    {metadata.status && <p className="text-gray-600">Status: {metadata.status}</p>}
+                                  </div>
+                                );
+                              }
+                              
+                              // Default display for Check-In/Check-Out
+                              return (
+                                <div className="max-w-xs truncate" title={transaction.notes || transaction.conditionNotes}>
+                                  <span className="text-sm text-gray-600">{transaction.notes || transaction.conditionNotes || '-'}</span>
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {transaction.deviceSpecs ? (
@@ -456,7 +846,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                               </DialogTrigger>
                              <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Transaction Details</DialogTitle>
+                                <DialogTitle>{translations.transactionDetails}</DialogTitle>
                                 <DialogDescription>
                                   Complete transaction information and device specifications
                                 </DialogDescription>
@@ -465,17 +855,17 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                 {/* Transaction Info */}
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <Label className="text-sm font-medium">Transaction ID</Label>
+                                    <Label className="text-sm font-medium">{translations.transactionID}</Label>
                                     <p className="text-sm text-gray-600">#{transaction.id}</p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Type</Label>
+                                    <Label className="text-sm font-medium">{translations.type}</Label>
                                     <Badge className={getTransactionTypeBadge(transaction.type)}>
                                       {transaction.type}
                                     </Badge>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Date</Label>
+                                    <Label className="text-sm font-medium">{translations.date}</Label>
                                     <p className="text-sm text-gray-600">
                                       {transaction.date || transaction.transactionDate 
                                         ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy HH:mm')
@@ -483,7 +873,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                     </p>
                                   </div>
                                   <div>
-                                    <Label className="text-sm font-medium">Employee</Label>
+                                    <Label className="text-sm font-medium">{translations.employee}</Label>
                                     <p className="text-sm text-gray-600">
                                       {transaction.employee 
                                         ? `${transaction.employee.englishName || transaction.employee.arabicName || 'N/A'} - ${transaction.employee.department || 'N/A'}`
@@ -499,11 +889,11 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                     <h4 className="font-medium mb-3">Asset Information</h4>
                                     <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
                                       <div>
-                                        <Label className="text-xs text-gray-500">Asset ID</Label>
+                                        <Label className="text-xs text-gray-500">{translations.assetId}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.assetId || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Type</Label>
+                                        <Label className="text-xs text-gray-500">{translations.type}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
                                       </div>
                                       <div>
@@ -513,7 +903,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                         </p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Serial Number</Label>
+                                        <Label className="text-xs text-gray-500">{translations.serialNumber}</Label>
                                         <p className="text-sm font-medium">{transaction.asset?.serialNumber || '-'}</p>
                                       </div>
                                       <div>
@@ -532,20 +922,20 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.cpu || transaction.asset?.cpu || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">RAM</Label>
+                                        <Label className="text-xs text-gray-500">{translations.ram}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.ram || transaction.asset?.ram || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Storage</Label>
+                                        <Label className="text-xs text-gray-500">{translations.storage}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.storage || transaction.asset?.storage || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Specifications</Label>
+                                        <Label className="text-xs text-gray-500">{translations.deviceSpecs}</Label>
                                         <p className="text-sm font-medium">{transaction.deviceSpecs?.specs || transaction.asset?.specs || '-'}</p>
                                       </div>
                                       {transaction.asset?.operatingSystem && (
                                         <div>
-                                          <Label className="text-xs text-gray-500">Operating System</Label>
+                                          <Label className="text-xs text-gray-500">{translations.operatingSystem}</Label>
                                           <p className="text-sm font-medium">{transaction.asset.operatingSystem}</p>
                                         </div>
                                       )}
@@ -566,7 +956,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                       )}
                                       {transaction.notes && (
                                         <div>
-                                          <Label className="text-xs text-gray-500">General Notes</Label>
+                                          <Label className="text-xs text-gray-500">{translations.generalNotes}</Label>
                                           <p className="text-sm">{transaction.notes}</p>
                                         </div>
                                       )}
@@ -574,6 +964,153 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                                   </div>
                                 )}
                               </div>
+                              {/* Enhanced metadata display based on transaction type */}
+                              {selectedTransaction && (() => {
+                                const metadata = selectedTransaction.deviceSpecs as any;
+                                
+                                if (selectedTransaction.type === 'Sale' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">{translations.saleDetails}</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.buyer}</Label>
+                                          <p className="text-sm font-medium">{metadata.buyer || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.saleDate}</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.saleDate ? format(new Date(metadata.saleDate), 'MMM dd, yyyy') : '-'}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.salePrice}</Label>
+                                        <p className="text-gray-600">Price: {formatCurrency(metadata.salePrice || metadata.totalAmount || 0)}</p>
+                                        </div>
+                                        {metadata.notes && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">{translations.generalNotes}</Label>
+                                            <p className="text-sm">{metadata.notes}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                if (selectedTransaction.type === 'Retirement' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">{translations.retirementDetails}</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.retirementReason}</Label>
+                                          <p className="text-sm font-medium">{metadata.retirementReason || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.retirementDate}</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.retirementDate ? format(new Date(metadata.retirementDate), 'MMM dd, yyyy') : '-'}
+                                          </p>
+                                        </div>
+                                        {metadata.notes && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">Notes</Label>
+                                            <p className="text-sm">{metadata.notes}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                if (selectedTransaction.type === 'Maintenance' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">{translations.maintenanceDetails}</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.maintenanceType}</Label>
+                                          <p className="text-sm font-medium">{metadata.maintenanceType || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.status}</Label>
+                                          <p className="text-sm font-medium">{metadata.status || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.maintenanceCost}</Label>
+                                          <p className="text-sm font-medium">{formatCurrency(metadata.cost || 0)}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">{translations.provider}</Label>
+                                          <p className="text-sm font-medium">{metadata.provider || '-'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                if (selectedTransaction.type === 'Upgrade' && metadata) {
+                                  return (
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium">Upgrade Details</h4>
+                                      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Title</Label>
+                                          <p className="text-sm font-medium">{metadata.title || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Category</Label>
+                                          <p className="text-sm font-medium">{metadata.category || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Upgrade Type</Label>
+                                          <p className="text-sm font-medium">{metadata.upgradeType || '-'}</p>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Priority</Label>
+                                          <Badge variant={
+                                            metadata.priority === 'Critical' ? 'destructive' :
+                                            metadata.priority === 'High' ? 'default' :
+                                            metadata.priority === 'Medium' ? 'secondary' :
+                                            'outline'
+                                          }>
+                                            {metadata.priority || 'Low'}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Status</Label>
+                                          <Badge variant={
+                                            metadata.status === 'Completed' ? 'default' :
+                                            metadata.status === 'In Progress' ? 'secondary' :
+                                            metadata.status === 'Approved' ? 'outline' :
+                                            'outline'
+                                          }>
+                                            {metadata.status || '-'}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs text-gray-500">Estimated Cost</Label>
+                                          <p className="text-sm font-medium">
+                                            {metadata.estimatedCost 
+                                              ? formatCurrency(metadata.estimatedCost)
+                                              : '-'}
+                                          </p>
+                                        </div>
+                                        {metadata.description && (
+                                          <div className="col-span-2">
+                                            <Label className="text-xs text-gray-500">Description</Label>
+                                            <p className="text-sm">{metadata.description}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                return null;
+                              })()}
+
                             </DialogContent>
                             </Dialog>
                           </TableCell>
@@ -583,6 +1120,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
                     </TableBody>
                   </Table>
                 </div>
+                
 
                 {/* Pagination */}
                 {transactionsData?.pagination && transactionsData.pagination.totalPages > 1 && (
@@ -616,7 +1154,7 @@ const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?
 
                 {/* Page Size Selector */}
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="pageSize" className="text-sm">Show:</Label>
+                  <Label htmlFor="pageSize" className="text-sm">{translations.show}</Label>
                   <Select value={pageSize.toString()} onValueChange={(value) => {
                     setPageSize(parseInt(value));
                     setCurrentPage(1);

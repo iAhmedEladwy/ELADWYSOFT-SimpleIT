@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import TicketsTable from '@/components/tickets/TicketsTable';
-import EnhancedTicketTable from '@/components/tickets/EnhancedTicketTable';
 import TicketForm from '@/components/tickets/TicketForm';
 
 import TicketFilters from '@/components/tickets/TicketFilters';
@@ -89,6 +88,8 @@ export default function Tickets() {
     deleteSelected: language === 'English' ? 'Delete Selected' : 'حذف المحدد',
     success: language === 'English' ? 'Success' : 'نجح',
     noTicketsSelected: language === 'English' ? 'No tickets selected' : 'لم يتم تحديد تذاكر',
+    openTickets: language === 'English' ? 'Open Tickets' : 'التذاكر المفتوحة',
+    all: language === 'English' ? 'All' : 'الكل',
   };
 
   // Fetch tickets
@@ -170,7 +171,6 @@ export default function Tickets() {
     }, 500);
   }, [filters]);
 
-  // ===== ADD THESE TWO useEffects HERE =====
   // Update URL whenever filters change (but not on initial mount)
   useEffect(() => {
     if (!isInitialMount.current) {
@@ -214,20 +214,33 @@ export default function Tickets() {
     staleTime: 1000 * 60 * 10, // 10 minutes
     enabled: hasAccess(2), // Only fetch if user has manager access
   });
+ 
+
+  // Calculate statistics
+const openTicketsCount = useMemo(() => {
+  return Array.isArray(tickets) ? tickets.filter(t => t.status === 'Open').length : 0;
+}, [tickets]);
+
+const allTicketsCount = useMemo(() => {
+  return Array.isArray(tickets) ? tickets.length : 0;
+}, [tickets]);
+
+const myTicketsCount = useMemo(() => {
+  if (!user || !Array.isArray(tickets)) return 0;
+  return tickets.filter(t => t.assignedToId === user.id).length;
+}, [tickets, user]);
 
   // Create ticket mutation using standard API
-  const createTicketMutation = useMutation({
+   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
-      console.log('Creating ticket with data:', ticketData);
-      
-      // Ensure data format is correct for backend
+      // Convert data types properly
       const formattedData = {
-        submittedById: Number(ticketData.submittedById),
+        submittedById: ticketData.submittedById ? Number(ticketData.submittedById) : null,
         assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null,
         relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
-        requestType: String(ticketData.requestType), // Ensure it's a string, not enum
+        requestType: String(ticketData.requestType),
         priority: String(ticketData.priority),
-        status: 'Open', // Always start as Open for new tickets
+        status: 'Open',
         summary: String(ticketData.summary),
         description: String(ticketData.description),
         dueDate: ticketData.dueDate ? new Date(ticketData.dueDate).toISOString() : null,
@@ -235,12 +248,11 @@ export default function Tickets() {
       };
       
       console.log('Formatted ticket data:', formattedData);
-      const response = await apiRequest('/api/tickets', 'POST', formattedData);
-      return response;
+      // FIX: Correct parameter order and no .json() call
+      return await apiRequest('/api/tickets', 'POST', formattedData);
     },
     onSuccess: (data) => {
       console.log("Ticket created successfully:", data);
-      // Force a complete refetch of the tickets
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
       
@@ -250,7 +262,6 @@ export default function Tickets() {
       });
       setOpenDialog(false);
       
-      // Force reload after a short delay to ensure UI updates
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ['/api/tickets'] });
       }, 500);
@@ -267,8 +278,9 @@ export default function Tickets() {
   // Update ticket status mutation
   const updateTicketStatusMutation = useMutation({
     mutationFn: async ({ id, status, resolutionNotes }: { id: number; status: string; resolutionNotes?: string }) => {
-      const res = await apiRequest('POST', `/api/tickets/${id}/status`, { status, resolutionNotes });
-      return res.json();
+      // FIX 1: Correct parameter order (url, method, data)
+      // FIX 2: Don't call .json() - apiRequest already returns parsed JSON
+      return await apiRequest(`/api/tickets/${id}/status`, 'POST', { status, resolutionNotes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -286,10 +298,11 @@ export default function Tickets() {
   });
 
   // Assign ticket mutation
-  const assignTicketMutation = useMutation({
+   const assignTicketMutation = useMutation({
     mutationFn: async ({ id, userId }: { id: number; userId: number }) => {
-      const res = await apiRequest('POST', `/api/tickets/${id}/assign`, { userId });
-      return res.json();
+      // FIX 1: Correct parameter order (url, method, data)
+      // FIX 2: Don't call .json() - apiRequest already returns parsed JSON
+      return await apiRequest(`/api/tickets/${id}/assign`, 'POST', { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -472,49 +485,62 @@ export default function Tickets() {
     });
   }, [tickets, filters, user]);
 
-  // Enhanced export mutation with all fields
-  const exportMutation = useMutation({
-    mutationFn: async (format: 'csv' | 'json') => {
-      const response = await apiRequest(`/api/tickets/export?format=${format}`, 'GET');
-      
-      const filename = `tickets_export_${new Date().toISOString().split('T')[0]}.${format}`;
-      
-      if (format === 'csv') {
-        const blob = new Blob([response], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else {
-        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
+  // Enhanced export  with all fields
+      const handleExport = () => {
+      if (!Array.isArray(filteredTickets) || filteredTickets.length === 0) {
+        toast({
+          title: language === 'English' ? 'No data to export' : 'لا توجد بيانات للتصدير',
+          variant: 'destructive',
+        });
+        return;
       }
-    },
-    onSuccess: () => {
+
+      // Prepare CSV data
+      const csvData = filteredTickets.map(ticket => ({
+        'Ticket ID': ticket.ticketId,
+        'Summary': ticket.summary || ticket.description.substring(0, 50),
+        'Status': ticket.status,
+        'Priority': ticket.priority,
+        'Type': ticket.requestType,
+        'Submitted By': employees?.find(e => e.id === ticket.submittedById)?.name || 'Unknown',
+        'Assigned To': users?.find(u => u.id === ticket.assignedToId)?.username || 'Unassigned',
+        'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'MM/dd/yyyy') : '',
+        'Created': format(new Date(ticket.createdAt), 'MM/dd/yyyy HH:mm'),
+      }));
+
+      // Convert to CSV string
+      const headers = Object.keys(csvData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => 
+          headers.map(header => {
+            const value = row[header];
+            // Escape quotes and wrap in quotes if contains comma
+            return typeof value === 'string' && value.includes(',') 
+              ? `"${value.replace(/"/g, '""')}"` 
+              : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Download the CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `tickets_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Tickets exported successfully with all fields' : 'تم تصدير التذاكر بنجاح مع جميع الحقول',
+        title: language === 'English' ? 'Export successful' : 'تم التصدير بنجاح',
+        description: language === 'English' 
+          ? `Exported ${csvData.length} tickets` 
+          : `تم تصدير ${csvData.length} تذكرة`,
       });
-    },
-    onError: () => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to export tickets' : 'فشل في تصدير التذاكر',
-        variant: 'destructive'
-      });
-    }
-  });
+    };
 
   return (
     <div className="p-6">
@@ -527,8 +553,7 @@ export default function Tickets() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => exportMutation.mutate('csv')}
-            disabled={exportMutation.isPending}
+            onClick={handleExport}
           >
             <Download className="h-4 w-4 mr-2" />
             {language === 'English' ? 'Export' : 'تصدير'}
@@ -553,6 +578,7 @@ export default function Tickets() {
         </div>
       </div>
 
+       
       {/* Filter & Search Tickets Section */}
       <div className="mb-6">
         <TicketFilters
@@ -560,6 +586,7 @@ export default function Tickets() {
           onFiltersChange={setFilters}
           totalCount={Array.isArray(tickets) ? tickets.length : 0}
           filteredCount={Array.isArray(filteredTickets) ? filteredTickets.length : 0}
+          tickets={tickets}
         />
       </div>
 
@@ -631,6 +658,37 @@ export default function Tickets() {
           </div>
         </div>
       )}
+
+       {/* Statistics Bar */}
+       <div className="mb-6 bg-white rounded-lg shadow-sm border p-4">
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-1 h-8 bg-blue-500 rounded"></div>
+            <div>
+              <span className="text-sm text-gray-600">{translations.openTickets}</span>
+              <span className="ml-2 font-semibold text-lg">{openTicketsCount}</span>
+            </div>
+          </div>
+          
+          <div className="text-gray-300">|</div>
+          
+          <div className="flex items-center space-x-2">
+            <div>
+              <span className="text-sm text-gray-600">{translations.all}:</span>
+              <span className="ml-2 font-semibold text-lg">{allTicketsCount}</span>
+            </div>
+          </div>
+          
+          <div className="text-gray-300">|</div>
+          
+          <div className="flex items-center space-x-2">
+            <div>
+              <span className="text-sm text-gray-600">{translations.myTickets}:</span>
+              <span className="ml-2 font-semibold text-lg">{myTicketsCount}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Tickets Table */}
       <Card>

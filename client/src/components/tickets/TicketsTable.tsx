@@ -5,6 +5,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input'; 
 
 import {
   Table,
@@ -26,6 +27,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -42,7 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
-import { MoreHorizontal, UserCircle2 } from 'lucide-react';
+import { MoreHorizontal, UserCircle2, Calendar, Clock } from 'lucide-react';
 
 interface TicketsTableProps {
   tickets: any[];
@@ -78,59 +80,49 @@ export default function TicketsTable({
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
-  const [editingField, setEditingField] = useState<{ticketId: number; field: string} | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [resolutionDialog, setResolutionDialog] = useState<{
+    open: boolean;
+    ticketId: number | null;
+    newStatus: string;
+  }>({ open: false, ticketId: null, newStatus: '' });
 
-  // Handle checkbox selection
-  const handleTicketSelection = (ticketId: number, checked: boolean) => {
-    if (!onSelectionChange) return;
-    
-    if (checked) {
-      onSelectionChange([...selectedTickets, ticketId]);
-    } else {
-      onSelectionChange(selectedTickets.filter(id => id !== ticketId));
-    }
-  };
-
-
-  // Start editing function
-  const startEditing = (ticketId: number, field: string, currentValue: string) => {
-    setEditingField({ ticketId, field });
-    setEditValue(currentValue);
-  };
-
-  // Handle inline edit
-  const handleInlineEdit = async (ticketId: number, field: string, value: string) => {
-    try {
-      let updateData: any = {};
+  const [resolution, setResolution] = useState('');
+  
+    // Handle checkbox selection
+    const handleTicketSelection = (ticketId: number, checked: boolean) => {
+      if (!onSelectionChange) return;
       
-      if (field === 'assignedTo') {
-        updateData.assignedToId = value === 'unassigned' ? null : parseInt(value);
+      if (checked) {
+        onSelectionChange([...selectedTickets, ticketId]);
       } else {
-        updateData[field] = value;
+        onSelectionChange(selectedTickets.filter(id => id !== ticketId));
       }
+    };
 
-      await apiRequest(`/api/tickets/${ticketId}`, 'PATCH', updateData);
-      
-      // Update the local state
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
+    // Handle resolution dialog submit
+  const handleResolutionSubmit = () => {
+    if (resolutionDialog.ticketId && resolutionNotes.trim()) {
+      updateTicketMutation.mutate({ 
+        id: resolutionDialog.ticketId, 
+        updates: { 
+          status: resolutionDialog.newStatus,
+          resolution: resolutionNotes
+        } 
       });
-    } catch (error: any) {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || 'Failed to update ticket',
-        variant: 'destructive',
-      });
-    } finally {
-      setEditingField(null);
-      setEditValue('');
+      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+      setResolutionNotes('');
     }
   };
 
+  // Handle status update from dialog
+  const handleStatusUpdate = () => {
+    if (selectedTicket && selectedStatus) {
+      onStatusChange(selectedTicket.id, selectedStatus);
+      setOpenStatusDialog(false);
+      setSelectedStatus('');
+      setSelectedTicket(null);
+    }
+  };
   // Fetch request types from system configuration with loading state
   const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
     queryKey: ['/api/custom-request-types'],
@@ -146,28 +138,27 @@ export default function TicketsTable({
   const requestTypes = customRequestTypes.filter((type: any) => type.isActive !== false);
 
   // Update ticket mutation
-  const updateTicketMutation = useMutation({
+    const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      const response = await apiRequest(`/api/tickets/${id}`, 'PATCH', updates);
-      return response.json();
+      // Fix: apiRequest expects separate parameters, not an object
+      return apiRequest(
+        `/api/tickets/${id}`,  // url
+        'PATCH',                // method
+        updates                 // data
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'نجح',
-        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
-      });
+      // No toast on success - too noisy for inline edits
     },
     onError: (error: any) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message,
+        title: language === 'English' ? 'Error updating ticket' : 'خطأ في تحديث التذكرة',
+        description: error.message || 'Please try again',
         variant: 'destructive',
       });
     },
   });
-
-
 
   // Translations
   const translations = {
@@ -181,11 +172,9 @@ export default function TicketsTable({
     relatedAsset: language === 'English' ? 'Related Asset' : 'الأصل المرتبط',
     assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
     description: language === 'English' ? 'Description' : 'الوصف',
-    actions: language === 'English' ? 'Actions' : 'الإجراءات',
     updateStatus: language === 'English' ? 'Update Status' : 'تحديث الحالة',
     assignTicket: language === 'English' ? 'Assign Ticket' : 'تعيين التذكرة',
     viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
-    resolutionNotes: language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل',
     update: language === 'English' ? 'Update' : 'تحديث',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     assign: language === 'English' ? 'Assign' : 'تعيين',
@@ -193,6 +182,7 @@ export default function TicketsTable({
     selectStatus: language === 'English' ? 'Select Status' : 'اختر الحالة',
     noTickets: language === 'English' ? 'No tickets found' : 'لم يتم العثور على تذاكر',
     open: language === 'English' ? 'Open' : 'مفتوح',
+    save: language === 'English' ? 'Save' : 'حفظ',
     inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
     resolved: language === 'English' ? 'Resolved' : 'تم الحل',
     closed: language === 'English' ? 'Closed' : 'مغلق',
@@ -205,6 +195,19 @@ export default function TicketsTable({
     other: language === 'English' ? 'Other' : 'أخرى',
     none: language === 'English' ? 'None' : 'لا يوجد',
     unassigned: language === 'English' ? 'Unassigned' : 'غير معين',
+    dueDate: language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق',
+    resolveTicket: language === 'English' ? 'Resolve Ticket' : 'حل التذكرة',
+    closeTicket: language === 'English' ? 'Close Ticket' : 'إغلاق التذكرة',
+    resolutionType: language === 'English' ? 'Resolution Type' : 'نوع الحل',
+    resolutionDetails: language === 'English' ? 'Please provide resolution details' : 'يرجى تقديم تفاصيل الحل',
+    selectResolutionType: language === 'English' ? 'Select resolution type' : 'اختر نوع الحل',
+    describeResolution: language === 'English' ? 'Describe how the issue was resolved...' : 'اصف كيف تم حل المشكلة...',
+    problemSolved: language === 'English' ? 'Problem Solved' : 'تم حل المشكلة',
+    workaroundProvided: language === 'English' ? 'Workaround Provided' : 'تم تقديم حل بديل',
+    duplicateTicket: language === 'English' ? 'Duplicate Ticket' : 'تذكرة مكررة',
+    noIssueFound: language === 'English' ? 'No Issue Found' : 'لم يتم العثور على مشكلة',
+    wontFix: language === 'English' ? "Won't Fix" : 'لن يتم الإصلاح',
+    setDate: language === 'English' ? 'Set date' : 'تعيين التاريخ',
   };
 
   const handleUpdateStatus = () => {
@@ -222,6 +225,10 @@ export default function TicketsTable({
       setOpenAssignDialog(false);
       setSelectedUserId('');
     }
+  };
+
+    const getTicketById = (ticketId: number) => {
+    return tickets.find((t: any) => t.id === ticketId);
   };
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" | "destructive" | null | undefined => {
@@ -335,417 +342,325 @@ export default function TicketsTable({
   }
 
   return (
-    <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {onSelectionChange && (
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedTickets.length === tickets.length && tickets.length > 0}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      onSelectionChange(tickets.map(t => t.id));
-                    } else {
-                      onSelectionChange([]);
-                    }
-                  }}
-                />
-              </TableHead>
-            )}
-            <TableHead>{translations.ticketId}</TableHead>
-            <TableHead>{translations.dateCreated}</TableHead>
-            <TableHead>{translations.summary}</TableHead>
-            <TableHead>{translations.requestType}</TableHead>
-            <TableHead>{translations.priority}</TableHead>
-            <TableHead>{translations.status}</TableHead>
-            <TableHead>{translations.submittedBy}</TableHead>
-            <TableHead>{translations.assignedTo}</TableHead>
-            <TableHead>{translations.actions}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {safeTickets.map((ticket: any) => (
-            <TableRow 
-              key={ticket.id}
-              className="hover:bg-muted/50 cursor-pointer"
-              onClick={(e) => {
-                // Prevent row click when clicking on action buttons, dropdowns, or inline edit elements
-                if (e.target instanceof HTMLElement && 
-                    (e.target.closest('button') || 
-                     e.target.closest('[role="button"]') ||
-                     e.target.closest('.dropdown-menu') ||
-                     e.target.closest('[data-radix-popper-content-wrapper]') ||
-                     e.target.closest('.inline-edit-element') ||
-                     e.target.tagName === 'SELECT' ||
-                     e.target.closest('select') ||
-                     e.target.closest('[type="checkbox"]'))) {
-                  return;
-                }
-                try {
-                  // Use same edit form as action button
-                  if (onEdit && ticket && ticket.id) {
-                    onEdit(ticket);
-                  } else {
-                    console.error('Invalid ticket data or missing onEdit callback:', ticket);
-                  }
-                } catch (error) {
-                  console.error('Row click error:', error);
-                  toast({
-                    title: language === 'English' ? 'Error' : 'خطأ',
-                    description: language === 'English' ? 'Unable to open ticket for editing' : 'تعذر فتح التذكرة للتعديل',
-                    variant: 'destructive',
-                  });
-                }
-              }}
-            >
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
               {onSelectionChange && (
-                <TableCell>
+                <TableHead className="w-12 text-center">
                   <Checkbox
-                    checked={selectedTickets.includes(ticket.id)}
-                    onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                    checked={selectedTickets.length === tickets.length && tickets.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onSelectionChange(tickets.map(t => t.id));
+                      } else {
+                        onSelectionChange([]);
+                      }
+                    }}
                   />
-                </TableCell>
+                </TableHead>
               )}
-              <TableCell className="font-medium">{ticket.ticketId}</TableCell>
-              <TableCell>
-                {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
-              </TableCell>
-              <TableCell className="max-w-xs truncate" title={ticket.summary}>
-                {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
-              </TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'requestType' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'requestType', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {isLoadingRequestTypes ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
-                          requestTypes.map((type: any) => (
-                            <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
-                              {type.name || 'Hardware'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="Hardware">Hardware</SelectItem>
-                            <SelectItem value="Software">Software</SelectItem>
-                            <SelectItem value="Network">Network</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <span 
-                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors inline-edit-element"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'requestType', ticket.requestType || 'Hardware');
-                    }}
-                  >
-                    {ticket.requestType || "Hardware"}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'priority' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'priority', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-24 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <Badge 
-                    variant={getPriorityBadgeVariant(ticket.priority)}
-                    className="cursor-pointer hover:opacity-80 transition-opacity inline-edit-element"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'priority', ticket.priority || 'Medium');
-                    }}
-                  >
-                    {ticket.priority}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'status' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'status', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-28 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Open">Open</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Resolved">Resolved</SelectItem>
-                        <SelectItem value="Closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <Badge 
-                    variant={getStatusBadgeVariant(ticket.status)}
-                    className="cursor-pointer hover:opacity-80 transition-opacity inline-edit-element"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'status', ticket.status || 'Open');
-                    }}
-                  >
-                    {ticket.status}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}</TableCell>
-              <TableCell>
-                {editingField?.ticketId === ticket.id && editingField?.field === 'assignedTo' ? (
-                  <div className="inline-edit-element" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={editValue}
-                      onValueChange={(value) => {
-                        handleInlineEdit(ticket.id, 'assignedTo', value);
-                      }}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-xs border-blue-500 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">
-                          <span className="text-gray-500">{translations.unassigned}</span>
-                        </SelectItem>
-                        {users.map((user) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.firstName && user.lastName 
-                              ? `${user.firstName} ${user.lastName}` 
-                              : user.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <span 
-                    className="cursor-pointer hover:text-blue-600 hover:underline px-2 py-1 rounded hover:bg-blue-50 transition-colors inline-edit-element"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEditing(ticket.id, 'assignedTo', ticket.assignedToId?.toString() || 'unassigned');
-                    }}
-                  >
-                    {ticket.assignedToId ? getUserName(ticket.assignedToId) : (
-                      <span className="text-gray-400">{translations.unassigned}</span>
-                    )}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>{translations.actions}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        try {
-                          // Prefetch ticket details data for faster loading
-                          queryClient.prefetchQuery({
-                            queryKey: ['/api/tickets', ticket.id.toString()],
-                            queryFn: () => apiRequest(`/api/tickets/${ticket.id}`, 'GET'),
-                            staleTime: 1000 * 60 * 5,
-                          });
-                          navigate(`/tickets/${ticket.id}`);
-                        } catch (error) {
-                          console.error('Navigation error:', error);
-                          // Fallback navigation without prefetch
-                          navigate(`/tickets/${ticket.id}`);
-                        }
-                      }}
-                    >
-{language === 'English' ? 'View Details' : 'عرض التفاصيل'}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onEdit) {
-                          onEdit(ticket);
-                        }
-                      }}
-                    >
-{language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة'}
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedTicket(ticket);
-                        setSelectedStatus('');
-                        setOpenStatusDialog(true);
-                      }}
-                    >
-                      {translations.updateStatus}
-                    </DropdownMenuItem>
-                    
-                    {user && ['admin', 'manager', 'agent'].includes(user.role) && (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedTicket(ticket);
-                          setSelectedUserId('');
-                          setOpenAssignDialog(true);
-                        }}
-                      >
-                        {translations.assignTicket}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+              <TableHead className="min-w-[100px]">{translations.ticketId}</TableHead>
+              <TableHead className="min-w-[110px]">{translations.dateCreated}</TableHead>
+              <TableHead className="min-w-[200px]">{translations.summary}</TableHead>
+              <TableHead className="min-w-[120px]">{translations.requestType}</TableHead>
+              <TableHead className="min-w-[100px]">{translations.priority}</TableHead>
+              <TableHead className="min-w-[120px]">{translations.status}</TableHead>
+              <TableHead className="min-w-[150px]">{translations.submittedBy}</TableHead>
+              <TableHead className="min-w-[150px]">{translations.assignedTo}</TableHead>
+              <TableHead className="min-w-[120px]">{translations.dueDate}</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {/* Update Status Dialog */}
-      <Dialog open={openStatusDialog} onOpenChange={setOpenStatusDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.updateStatus}</DialogTitle>
-            <DialogDescription>
-              Update the status of the selected ticket
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="status">{translations.status}</Label>
-              <Select
-                value={selectedStatus}
-                onValueChange={setSelectedStatus}
+          </TableHeader>
+          <TableBody>
+            {safeTickets.map((ticket: any) => (
+              <TableRow 
+                key={ticket.id}
+                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (
+                    target.closest('.inline-edit-cell') ||
+                    target.closest('button') ||
+                    target.closest('[role="button"]') ||
+                    target.closest('input') ||
+                    target.closest('[role="combobox"]') ||
+                    target.tagName === 'SELECT' ||
+                    target.closest('[type="checkbox"]')
+                  ) {
+                    return;
+                  }
+                  
+                  if (onEdit && ticket) {
+                    onEdit(ticket);
+                  }
+                }}
               >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder={translations.selectStatus} />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectedTicket && Array.isArray(getAvailableStatuses(selectedTicket.status)) && 
-                   getAvailableStatuses(selectedTicket.status).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status === 'Open' ? translations.open :
-                       status === 'In Progress' ? translations.inProgress :
-                       status === 'Resolved' ? translations.resolved :
-                       translations.closed}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Checkbox column */}
+                {onSelectionChange && (
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedTickets.includes(ticket.id)}
+                      onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                    />
+                  </TableCell>
+                )}
+                
+                {/* Ticket ID */}
+                <TableCell className="font-medium min-w-[100px]">
+                  {ticket.ticketId}
+                </TableCell>
+                
+                {/* Date Created */}
+                <TableCell className="min-w-[110px]">
+                  {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                </TableCell>
+                
+                {/* Summary */}
+                <TableCell className="min-w-[200px] max-w-xs truncate" title={ticket.summary}>
+                  {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
+                </TableCell>
+                
+                {/* Request Type */}
+                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={ticket.requestType || 'Hardware'}
+                    onValueChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { requestType: value } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="relative z-50">
+                      {isLoadingRequestTypes ? (
+                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                      ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
+                        requestTypes.map((type: any) => (
+                          <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
+                            {type.name || 'Hardware'}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="Hardware">Hardware</SelectItem>
+                          <SelectItem value="Software">Software</SelectItem>
+                          <SelectItem value="Network">Network</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                
+                {/* Priority */}
+                <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={ticket.priority || 'Medium'}
+                    onValueChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { priority: value } 
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
+                      <Badge 
+                        variant={getPriorityBadgeVariant(ticket.priority)}
+                        className="w-full justify-center cursor-pointer"
+                      >
+                        {ticket.priority || 'Medium'}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent className="relative z-50">
+                      <SelectItem value="Low">{translations.low}</SelectItem>
+                      <SelectItem value="Medium">{translations.medium}</SelectItem>
+                      <SelectItem value="High">{translations.high}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                
+                {/* Status */}
+                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={ticket.status || 'Open'}
+                    onValueChange={(value) => {
+                      if (value === 'Resolved' || value === 'Closed') {
+                        setResolutionNotes(ticket.resolution || '');
+                        setResolutionDialog({ 
+                          open: true, 
+                          ticketId: ticket.id, 
+                          newStatus: value 
+                        });
+                      } else {
+                        onStatusChange(ticket.id, value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
+                      <Badge 
+                        className={`w-full justify-center cursor-pointer ${
+                          ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' :
+                          ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                          ticket.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {ticket.status === 'Open' ? translations.open :
+                        ticket.status === 'In Progress' ? translations.inProgress :
+                        ticket.status === 'Resolved' ? translations.resolved :
+                        ticket.status === 'Closed' ? translations.closed :
+                        ticket.status}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent className="relative z-50">
+                      {getAvailableStatuses(ticket.status).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status === 'Open' ? translations.open :
+                          status === 'In Progress' ? translations.inProgress :
+                          status === 'Resolved' ? translations.resolved :
+                          translations.closed}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                
+                {/* Submitted By */}
+                <TableCell className="min-w-[150px]">
+                  {ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}
+                </TableCell>
+                
+                {/* Assigned To */}
+                <TableCell className="inline-edit-cell relative min-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={ticket.assignedToId?.toString() || 'unassigned'}
+                    onValueChange={(value) => {
+                      if (value === 'unassigned') {
+                        updateTicketMutation.mutate({ 
+                          id: ticket.id, 
+                          updates: { assignedToId: null } 
+                        });
+                      } else {
+                        const userId = parseInt(value);
+                        onAssign(ticket.id, userId);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                      <SelectValue>
+                        {ticket.assignedToId ? 
+                          getUserName(ticket.assignedToId) : 
+                          <span className="text-gray-400">{translations.unassigned}</span>
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="relative z-50">
+                      <SelectItem value="unassigned">
+                        <span className="text-gray-400">{translations.unassigned}</span>
+                      </SelectItem>
+                      {users?.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                
+                {/* Due Date */}
+                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Input
+                      type="date"
+                      value={ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : ''}
+                      onChange={(e) => {
+                        updateTicketMutation.mutate({ 
+                          id: ticket.id, 
+                          updates: { dueDate: e.target.value || null } 
+                        });
+                      }}
+                      className="border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-1 h-auto cursor-pointer"
+                      style={{ colorScheme: 'light' }}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
+          if (!open) {
+            setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+            setResolutionNotes('');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {resolutionNotes ? 'Update Resolution' : 'Add Resolution Details'}
+              </DialogTitle>
+              <DialogDescription>
+               {resolutionDialog.ticketId && (
+                  <>
+                    <p className="font-medium">
+                      Ticket: {getTicketById(resolutionDialog.ticketId)?.title || getTicketById(resolutionDialog.ticketId)?.ticketId}
+                    </p>
+                    <br />
+                  </>
+                )}
+                {resolutionNotes 
+                  ? `Review or update the resolution before marking this ticket as ${resolutionDialog.newStatus}.`
+                  : `Please provide resolution details before marking this ticket as ${resolutionDialog.newStatus}.`
+                }
+              </DialogDescription>
+            </DialogHeader>
             
-            {selectedStatus === 'Resolved' && (
+            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="notes">{translations.resolutionNotes}</Label>
+                <Label htmlFor="resolution">
+                  Resolution {!resolutionNotes && <span className="text-red-500">*</span>}
+                </Label>
                 <Textarea
-                  id="notes"
+                  id="resolution"
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
-                  rows={3}
+                  placeholder="Enter how this ticket was resolved..."
+                  className="min-h-[100px]"
+                  autoFocus
                 />
+                {resolutionNotes && (
+                  <p className="text-sm text-muted-foreground">
+                    Tip: You can update the resolution or leave it as is.
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpenStatusDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button
-              onClick={handleUpdateStatus}
-              disabled={!selectedStatus || (selectedTicket && !canUpdateStatus(selectedTicket.status))}
-            >
-              {translations.update}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign Ticket Dialog */}
-      <Dialog open={openAssignDialog} onOpenChange={setOpenAssignDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{translations.assignTicket}</DialogTitle>
-            <DialogDescription>
-              Assign this ticket to a user for processing
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="user">{translations.assignedTo}</Label>
-              <Select
-                value={selectedUserId.toString()}
-                onValueChange={(val) => setSelectedUserId(parseInt(val))}
-              >
-                <SelectTrigger id="user">
-                  <SelectValue placeholder={translations.selectUser} />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      <div className="flex items-center">
-                        <UserCircle2 className="h-4 w-4 mr-2" />
-                        {user.username} ({user.email})
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpenAssignDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button
-              onClick={handleAssignTicket}
-              disabled={selectedUserId === ''}
-            >
-              {translations.assign}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-    </>
-  );
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+                  setResolutionNotes('');
+                }}
+              >
+                {translations.cancel}
+              </Button>
+              <Button 
+                onClick={() => handleResolutionSubmit()}
+                disabled={!resolutionNotes.trim()} // Require resolution text
+              >
+                {resolutionNotes ? 'Update & Save' : translations.save}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
 }

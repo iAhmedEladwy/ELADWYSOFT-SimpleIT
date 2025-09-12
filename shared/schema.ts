@@ -19,7 +19,7 @@ export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High
 export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
-export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In']);
+export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In', 'Maintenance','Sale','Retirement','Upgrade']);
 
 // Add sequence definitions with increment: 1
 export const employeesIdSequence = pgSequence('employees_id_seq', {
@@ -225,12 +225,9 @@ export const assetSaleItems = pgTable("asset_sale_items", {
   id: serial("id").primaryKey(),
   saleId: integer("sale_id").notNull().references(() => assetSales.id),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  // CHANGE THIS: amount -> salePrice
   salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(),
-  // ADD THESE 2 NEW FIELDS:
   assetCondition: varchar("asset_condition", { length: 100 }),
   notes: text("notes"),
-  // KEEP EXISTING:
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -246,63 +243,43 @@ export const assetStatuses = pgTable("asset_statuses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Asset Upgrades table
+// Simplified Asset Upgrades table
 export const assetUpgrades = pgTable("asset_upgrades", {
   id: serial("id").primaryKey(),
-  upgradeId: varchar("upgrade_id", { length: 20 }).notNull(),
   assetId: integer("asset_id").notNull().references(() => assets.id),
-  requestedById: integer("requested_by_id").notNull().references(() => users.id),
-  approvedById: integer("approved_by_id").references(() => users.id),
-  implementedById: integer("implemented_by_id").references(() => users.id),
-  title: varchar("title", { length: 255 }).notNull(),
+  
+  // Basic Information
+  title: varchar("title", { length: 200 }).notNull(),
   description: text("description").notNull(),
-  businessJustification: text("business_justification").notNull(),
+  category: varchar("category", { length: 20 }).notNull(), // 'Hardware' or 'Software'
   upgradeType: varchar("upgrade_type", { length: 100 }).notNull(),
-  priority: upgradePriorityEnum("priority").notNull().default('Medium'),
-  risk: upgradeRiskEnum("risk").notNull().default('Medium'),
-  status: upgradeStatusEnum("status").notNull().default('Planned'),
-  currentConfiguration: jsonb("current_configuration"),
-  newConfiguration: jsonb("new_configuration"),
-  plannedStartDate: timestamp("planned_start_date"),
-  plannedEndDate: timestamp("planned_end_date"),
-  actualStartDate: timestamp("actual_start_date"),
-  actualEndDate: timestamp("actual_end_date"),
-  implementationNotes: text("implementation_notes"),
-  testingRequired: boolean("testing_required").default(true),
-  testingNotes: text("testing_notes"),
-  backoutPlan: text("backout_plan").notNull(),
-  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).default('0'),
-  actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default('0'),
-  costJustification: text("cost_justification"),
-  impactAssessment: text("impact_assessment").notNull(),
-  dependentAssets: text("dependent_assets").array(),
-  affectedUsers: text("affected_users").array(),
-  downtimeRequired: boolean("downtime_required").default(false),
-  estimatedDowntime: integer("estimated_downtime"),
-  requiresApproval: boolean("requires_approval").default(true),
-  approvalDate: timestamp("approval_date"),
-  approvalNotes: text("approval_notes"),
-  successCriteria: text("success_criteria").notNull(),
-  verificationSteps: text("verification_steps").array(),
-  postUpgradeValidation: text("post_upgrade_validation"),
-  rollbackRequired: boolean("rollback_required").default(false),
-  rollbackDate: timestamp("rollback_date"),
-  rollbackReason: text("rollback_reason"),
-  rollbackNotes: text("rollback_notes"),
+  priority: varchar("priority", { length: 20 }).notNull().default('Medium'), // Low, Medium, High
+  
+  // Scheduling
+  scheduledDate: date("scheduled_date").notNull(),
+  
+  // Cost Information
+  purchaseRequired: boolean("purchase_required").default(false),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  
+  // Justification
+  justification: text("justification").notNull(),
+  
+  // Approval
+  approvedById: integer("approved_by_id").references(() => employees.id),
+  approvalDate: date("approval_date"),
+  
+  // Status tracking
+  status: varchar("status", { length: 50 }).notNull().default('Draft'),
+  // Status values: Draft, Pending Approval, Approved, In Progress, Completed, Cancelled
+  
+  // User tracking
+  createdById: integer("created_by_id").notNull().references(() => users.id),
+  updatedById: integer("updated_by_id").references(() => users.id),
+  
+  // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Upgrade History table
-export const upgradeHistory = pgTable("upgrade_history", {
-  id: serial("id").primaryKey(),
-  upgradeId: integer("upgrade_id").notNull().references(() => assetUpgrades.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  action: varchar("action", { length: 100 }).notNull(),
-  previousValue: text("previous_value"),
-  newValue: text("new_value"),
-  notes: text("notes"),
-  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 // Tickets table

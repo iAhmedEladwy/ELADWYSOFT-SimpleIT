@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,16 +21,19 @@ interface TicketFiltersProps {
   onFiltersChange: (filters: TicketFilters) => void;
   totalCount: number;
   filteredCount: number;
+  tickets?: any[];
 }
 
 export default function TicketFilters({
   filters,
   onFiltersChange,
   totalCount,
-  filteredCount
+  filteredCount,
+  tickets = []
 }: TicketFiltersProps) {
   const { language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  
 
   // Fetch data for filter options
   const { data: users } = useQuery({
@@ -66,6 +69,17 @@ export default function TicketFilters({
   const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
   const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
   const ticketCategories = ['Hardware', 'Software', 'Network', 'Security', 'Access Control', 'General'];
+
+   const statusCounts = useMemo(() => {
+    if (!Array.isArray(tickets)) return {};
+    
+    return ticketStatuses.reduce((acc, status) => {
+      acc[status] = tickets.filter(t => t.status === status).length;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [tickets, ticketStatuses]); 
+
+
   const { data: requestTypesData } = useQuery({
     queryKey: ['/api/custom-request-types'],
   });
@@ -113,10 +127,6 @@ export default function TicketFilters({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {translations.showingResults}: {filteredCount} / {totalCount}
-            </span>
-
             {activeFiltersCount > 0 && (
               <Button variant="outline" size="sm" onClick={clearAllFilters}>
                 <X className="h-4 w-4 mr-2" />
@@ -149,17 +159,31 @@ export default function TicketFilters({
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">{translations.status}</Label>
-            <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder={translations.allStatuses} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allStatuses}</SelectItem>
-                {ticketStatuses?.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder={translations.allStatuses} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              <div className="flex items-center justify-between w-full">
+                <span>{translations.allStatuses}</span>
+                <Badge variant="secondary" className="ml-2 min-w-[24px] text-center">
+                  {tickets?.length || 0}
+                </Badge>
+              </div>
+            </SelectItem>
+            {ticketStatuses?.map(status => (
+              <SelectItem key={status} value={status}>
+                <div className="flex items-center justify-between w-full">
+                  <span>{status}</span>
+                  <Badge variant="secondary" className="ml-2 min-w-[24px] text-center">
+                    {statusCounts[status] || 0}
+                  </Badge>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           </div>
 
           <div>

@@ -26,7 +26,6 @@ import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
 interface AssetActionButtonsProps {
   asset: any;
-  employees: any[]; // This prop is no longer needed but kept for compatibility
 }
 
 // Check-out reason options - matching AssetActionsMenu
@@ -49,7 +48,7 @@ const CHECK_IN_REASONS = [
   'Loan period ended'
 ];
 
-export default function AssetActionButtons({ asset, employees }: AssetActionButtonsProps) {
+export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -92,8 +91,13 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: translations.checkOutSuccess });
+      // Invalidate all asset-related queries to ensure full refresh
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employees'] }); // In case employee assignment counts are shown
+      // Force refetch if specific asset is being viewed
+      queryClient.invalidateQueries({ queryKey: ['/api/assets', asset.id] });
       setShowCheckOutDialog(false);
       resetForm();
     },
@@ -103,15 +107,20 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
   });
 
   // Check-in mutation - matching AssetActionsMenu exactly
-  const checkInMutation = useMutation({
+   const checkInMutation = useMutation({
     mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
       notes: notes || reason,
       type: 'Check-In'
     }),
     onSuccess: () => {
       toast({ title: 'Success', description: translations.checkInSuccess });
+      // Invalidate all asset-related queries to ensure full refresh
       queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
       queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employees'] }); // In case employee assignment counts are shown
+      // Force refetch if specific asset is being viewed
+      queryClient.invalidateQueries({ queryKey: ['/api/assets', asset.id] });
       setShowCheckInDialog(false);
       resetForm();
     },
@@ -179,67 +188,57 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
       )}
 
       {/* Check-out dialog */}
-      <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+       <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{translations.checkOutTitle}</DialogTitle>
             <DialogDescription>{translations.checkOutDesc}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="employee">{translations.selectEmployee}</Label>
-              <ActiveEmployeeSelect
-                value={selectedEmployeeId}
-                onValueChange={setSelectedEmployeeId}
-                placeholder={translations.selectEmployee}
-                showDepartment={true}
-                showPosition={false}
-                required={true}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="reason">{translations.reasonLabel}</Label>
-              <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger id="reason">
-                  <SelectValue placeholder={translations.selectReason} />
-                </SelectTrigger>
-                <SelectContent>
-                  {CHECK_OUT_REASONS.map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="notes">{translations.notes}</Label>
-              <Textarea
-                id="notes"
-                placeholder={translations.optionalNotes}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
+          <div className="flex-1 overflow-y-auto py-4">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="employee">{translations.selectEmployee}</Label>
+                <ActiveEmployeeSelect
+                  value={selectedEmployeeId}
+                  onValueChange={setSelectedEmployeeId}
+                  placeholder={translations.selectEmployee}
+                  required={true}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="reason">{translations.reasonLabel}</Label>
+                <Select value={reason} onValueChange={setReason}>
+                  <SelectTrigger id="reason">
+                    <SelectValue placeholder={translations.selectReason} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={5}>
+                    {CHECK_OUT_REASONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">{translations.notes}</Label>
+                <Textarea
+                  id="notes"
+                  placeholder={translations.optionalNotes}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="min-h-[80px] max-h-[120px] resize-none"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowCheckOutDialog(false)}
-            >
+          <DialogFooter className="flex-shrink-0">
+            <Button variant="outline" onClick={() => setShowCheckOutDialog(false)}>
               {translations.cancel}
             </Button>
             <Button 
-              onClick={handleCheckOutSubmit}
-              disabled={checkOutMutation.isPending || !selectedEmployeeId || !reason}
+              onClick={handleCheckOutSubmit} 
+              disabled={!selectedEmployeeId || !reason || checkOutMutation.isPending}
             >
-              {checkOutMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {translations.processing}
-                </>
-              ) : (
-                translations.confirm
-              )}
+              {checkOutMutation.isPending ? translations.checkingOut : translations.confirm}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -247,55 +246,47 @@ export default function AssetActionButtons({ asset, employees }: AssetActionButt
 
       {/* Check-in dialog */}
       <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{translations.checkInTitle}</DialogTitle>
             <DialogDescription>{translations.checkInDesc}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="checkin-reason">{translations.reasonLabel}</Label>
-              <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger id="checkin-reason">
-                  <SelectValue placeholder={translations.selectReason} />
-                </SelectTrigger>
-                <SelectContent>
-                  {CHECK_IN_REASONS.map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="checkin-notes">{translations.notes}</Label>
-              <Textarea
-                id="checkin-notes"
-                placeholder={translations.optionalNotes}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
+          <div className="flex-1 overflow-y-auto py-4">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="checkin-reason">{translations.reasonLabel}</Label>
+                <Select value={reason} onValueChange={setReason}>
+                  <SelectTrigger id="checkin-reason">
+                    <SelectValue placeholder={translations.selectReason} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={5}>
+                    {CHECK_IN_REASONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="checkin-notes">{translations.notes}</Label>
+                <Textarea
+                  id="checkin-notes"
+                  placeholder={translations.optionalNotes}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="min-h-[80px] max-h-[120px] resize-none"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowCheckInDialog(false)}
-            >
+          <DialogFooter className="flex-shrink-0">
+            <Button variant="outline" onClick={() => setShowCheckInDialog(false)}>
               {translations.cancel}
             </Button>
             <Button 
-              onClick={handleCheckInSubmit}
-              disabled={checkInMutation.isPending || !reason}
+              onClick={handleCheckInSubmit} 
+              disabled={!reason || checkInMutation.isPending}
             >
-              {checkInMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {translations.processing}
-                </>
-              ) : (
-                translations.confirm
-              )}
+              {checkInMutation.isPending ? translations.checkingIn : translations.confirm}
             </Button>
           </DialogFooter>
         </DialogContent>

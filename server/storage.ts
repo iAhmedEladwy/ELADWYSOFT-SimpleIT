@@ -2204,106 +2204,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-
-  // Enhanced Ticket operations with time tracking
-  async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
-    try {
-      console.log('Starting time tracking for ticket:', ticketId);
-      
-      // Use raw SQL to avoid schema issues and get reliable results
-      const result = await pool.query(`
-        UPDATE tickets 
-        SET is_time_tracking = true, start_time = NOW(), last_activity_at = NOW(), updated_at = NOW()
-        WHERE id = $1
-        RETURNING *
-      `, [ticketId]);
-      
-      const updatedTicket = result.rows[0];
-      
-      if (updatedTicket) {
-        console.log('Time tracking started:', {
-          id: updatedTicket.id,
-          is_time_tracking: updatedTicket.is_time_tracking,
-          start_time: updatedTicket.start_time
-        });
-
-        // Add to history
-        await this.addTicketHistory({
-          ticketId,
-          userId,
-          action: "Started Time Tracking",
-          notes: "Timer started for this ticket"
-        });
-      }
-
-      return updatedTicket;
-    } catch (error) {
-      console.error('Error starting ticket time tracking:', error);
-      return undefined;
-    }
-  }
-
-  async stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
-    try {
-      console.log('Stopping time tracking for ticket:', ticketId);
-      
-      // Use raw SQL to get accurate time data
-      const timeResult = await pool.query(
-        'SELECT start_time, time_spent FROM tickets WHERE id = $1',
-        [ticketId]
-      );
-      
-      if (!timeResult.rows[0]?.start_time) {
-        console.log('No start time found for ticket:', ticketId);
-        return undefined;
-      }
-
-      const startTime = new Date(timeResult.rows[0].start_time);
-      const endTime = new Date();
-      const timeDiffMs = endTime.getTime() - startTime.getTime();
-      const sessionMinutes = Math.max(1, Math.round(timeDiffMs / (1000 * 60))); // At least 1 minute for any session
-      const previousTimeSpent = timeResult.rows[0].time_spent || 0;
-      const totalTimeSpent = previousTimeSpent + sessionMinutes;
-
-      console.log('Time calculation:', {
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        sessionMinutes,
-        previousTimeSpent,
-        totalTimeSpent
-      });
-
-      // Update using raw SQL for reliability
-      const result = await pool.query(
-        'UPDATE tickets SET is_time_tracking = false, completion_time = NOW(), time_spent = $2, last_activity_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
-        [ticketId, totalTimeSpent]
-      );
-
-      const updatedTicket = result.rows[0];
-      
-      if (updatedTicket) {
-        console.log('Updated ticket state:', {
-          id: updatedTicket.id,
-          is_time_tracking: updatedTicket.is_time_tracking,
-          time_spent: updatedTicket.time_spent
-        });
-
-        // Add to history
-        await this.addTicketHistory({
-          ticketId,
-          userId,
-          action: "Stopped Time Tracking", 
-          notes: `Timer stopped. Session: ${sessionMinutes} minutes. Total time: ${totalTimeSpent} minutes`
-        });
-      }
-
-      return updatedTicket;
-    } catch (error) {
-      console.error('Error stopping ticket time tracking:', error);
-      return undefined;
-    }
-  }
-
   // Ticket History operations
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
@@ -2514,56 +2414,43 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // ITIL-Compliant Asset Upgrade Management Methods
-  async createAssetUpgrade(upgradeData: any): Promise<any> {
-    try {
-      const upgradeId = `UPG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      
-      const query = `
-        INSERT INTO asset_upgrades (
-          upgrade_id, asset_id, requested_by_id, title, description, 
-          business_justification, upgrade_type, priority, risk, 
-          current_configuration, new_configuration, impact_assessment, 
-          backout_plan, success_criteria, estimated_cost, 
-          planned_start_date, planned_end_date, downtime_required, 
-          estimated_downtime
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-        RETURNING *
-      `;
-      
-      const values = [
-        upgradeId,
-        upgradeData.assetId,
-        upgradeData.requestedById,
-        upgradeData.title,
-        upgradeData.description,
-        upgradeData.businessJustification,
-        upgradeData.upgradeType,
-        upgradeData.priority || 'Medium',
-        upgradeData.risk || 'Medium',
-        JSON.stringify(upgradeData.currentConfiguration || {}),
-        JSON.stringify(upgradeData.newConfiguration || {}),
-        upgradeData.impactAssessment,
-        upgradeData.backoutPlan,
-        upgradeData.successCriteria,
-        upgradeData.estimatedCost || 0,
-        upgradeData.plannedStartDate || null,
-        upgradeData.plannedEndDate || null,
-        upgradeData.downtimeRequired || false,
-        upgradeData.estimatedDowntime || null
-      ];
-      
-      const result = await this.pool.query(query, values);
-      
-      // Log the upgrade creation in history
-      await this.addUpgradeHistory(result.rows[0].id, upgradeData.requestedById, 'Upgrade Created', null, 'Upgrade request submitted');
-      
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error creating asset upgrade:', error);
-      throw error;
-    }
+  async createAssetUpgrade(data: any): Promise<any> {
+  try {
+    const query = `
+      INSERT INTO asset_upgrades (
+        asset_id, title, description, category, upgrade_type, priority,
+        scheduled_date, purchase_required, estimated_cost, justification,
+        approved_by_id, approval_date, status, created_by_id, updated_by_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *
+    `;
+    
+    const values = [
+      data.assetId,
+      data.title,
+      data.description,
+      data.category,
+      data.upgradeType,
+      data.priority,
+      data.scheduledDate || null,
+      data.purchaseRequired === true,  // Ensure boolean
+      data.estimatedCost || null,
+      data.justification || null,
+      data.approvedById || null,
+      data.approvalDate || null,
+      data.status || 'Pending Approval',
+      data.createdById || null,
+      data.updatedById || null
+    ];
+    
+    console.log('Creating asset upgrade with values:', values);
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating asset upgrade - detailed:', error);
+    throw error;
   }
+}
 
   async getAssetUpgrade(upgradeId: number): Promise<any> {
     try {
@@ -2586,7 +2473,7 @@ async deleteTicket(id: number): Promise<boolean> {
         WHERE au.id = $1
       `;
       
-      const result = await this.pool.query(query, [upgradeId]);
+      const result = await pool.query(query, [upgradeId]);
       
       if (result.rows.length === 0) {
         return null;
@@ -2649,7 +2536,7 @@ async deleteTicket(id: number): Promise<boolean> {
         RETURNING *
       `;
       
-      const result = await this.pool.query(query, values);
+      const result = await pool.query(query, values);
       
       // Log status changes in history
       if (updateData.status && updateData.status !== currentUpgrade.status) {
@@ -2681,7 +2568,7 @@ async deleteTicket(id: number): Promise<boolean> {
         ORDER BY au.created_at DESC
       `;
       
-      const result = await this.pool.query(query);
+      const result = await pool.query(query);
       
       return result.rows.map(row => ({
         ...row,
@@ -2709,7 +2596,7 @@ async deleteTicket(id: number): Promise<boolean> {
         VALUES ($1, $2, $3, $4, $5)
       `;
       
-      await this.pool.query(query, [upgradeId, userId, action, previousValue, newValue]);
+      await pool.query(query, [upgradeId, userId, action, previousValue, newValue]);
     } catch (error) {
       console.error('Error adding upgrade history:', error);
       throw error;
@@ -2730,7 +2617,7 @@ async deleteTicket(id: number): Promise<boolean> {
         ORDER BY uh.timestamp DESC
       `;
       
-      const result = await this.pool.query(query, [upgradeId]);
+      const result = await pool.query(query, [upgradeId]);
       
       return result.rows.map(row => ({
         ...row,
@@ -2742,6 +2629,7 @@ async deleteTicket(id: number): Promise<boolean> {
       throw error;
     }
   }
+
 }
 
 // Use memory storage for development, PostgreSQL for production

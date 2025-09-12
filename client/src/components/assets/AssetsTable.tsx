@@ -265,7 +265,7 @@ export default function AssetsTable({
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -424,13 +424,9 @@ export default function AssetsTable({
                       onClick={(e) => e.stopPropagation()} 
                   >
                     {/* Check-in/Check-out buttons using AssetActionButtons component */}
-                    <AssetActionButtons 
-                      asset={asset} 
-                      employees={employees}
-                    />
+                    <AssetActionButtons asset={asset} />
                     <AssetActionsMenu 
                       asset={asset} 
-                      employees={employees}
                       onEdit={onEdit}
                     />
                   </div>
@@ -467,41 +463,6 @@ export default function AssetsTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-     {/* Assignment Dialog */}
-      <Dialog open={!!assetToAssign} onOpenChange={(open) => !open && setAssetToAssign(null)}>
-        <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{translations.assignAsset}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="employee-select">{translations.selectEmployee}</Label>
-                <ActiveEmployeeSelect
-                  value={employeeId}
-                  onValueChange={setEmployeeId}
-                  placeholder={translations.selectEmployee}
-                  showDepartment={true}
-                  showPosition={false}
-                  required={true}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">{translations.cancel}</Button>
-            </DialogClose>
-            <Button 
-              onClick={handleAssignConfirm} 
-              disabled={!employeeId}
-            >
-              {translations.assign}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Asset Detail View */}
       <AssetDetailView 

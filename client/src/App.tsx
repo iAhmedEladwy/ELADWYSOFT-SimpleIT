@@ -130,15 +130,6 @@ function Router() {
             )} />
           </Layout>
         </Route>
-        <Route path="/asset-import-export">
-          <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
-                <AssetImportExport />
-              </RoleGuard>
-            )} />
-          </Layout>
-        </Route>
         <Route path="/tickets">
           <Layout>
             <PrivateRoute component={Tickets} />

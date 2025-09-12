@@ -433,7 +433,7 @@ export const assetTransactionValidationRules: CSVValidationRule[] = [
     required: true,
     type: 'string',
     validate: (value) => {
-      const validTypes = ['Check-Out', 'Check-In'];
+      const validTypes = ['Check-Out', 'Check-In', 'Maintenance', 'Sale', 'Retirement'];
       return validTypes.includes(value) || `Type must be one of: ${validTypes.join(', ')}`;
     }
   },
