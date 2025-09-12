@@ -3077,16 +3077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Asset not found' });
       }
       
-      // Map approvedById from user.id (frontend sends user) to employees.id (DB FK)
+      // Validate approvedById as employees.id only (no userId mapping)
       let approvedEmployeeId: number | null = null;
-      if (req.body.approvedById) {
-        try {
-          const approverEmployee = await storage.getEmployeeByUserId(Number(req.body.approvedById));
-          approvedEmployeeId = approverEmployee ? approverEmployee.id : null;
-        } catch (mapErr) {
-          console.warn('Unable to map approvedById to employee:', mapErr);
-          approvedEmployeeId = null;
+      if (req.body.approvedById !== undefined && req.body.approvedById !== null) {
+        const idNum = Number(req.body.approvedById);
+        if (Number.isNaN(idNum)) {
+          return res.status(400).json({ message: 'approvedById must be a valid employee id' });
         }
+        const approver = await storage.getEmployee(idNum);
+        if (!approver) {
+          return res.status(400).json({ message: 'Approver employee not found' });
+        }
+        approvedEmployeeId = approver.id;
       }
 
       // Create upgrade request

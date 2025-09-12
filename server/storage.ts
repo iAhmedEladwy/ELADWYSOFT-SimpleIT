@@ -2416,16 +2416,22 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async createAssetUpgrade(data: any): Promise<any> {
   try {
+    // Generate a unique upgrade identifier to satisfy NOT NULL upgrade_id in DB
+    const upgradeId = `UPG-${new Date().getFullYear()}-${Math.floor(Math.random() * 1_000_000)
+      .toString()
+      .padStart(6, '0')}`;
+
     const query = `
       INSERT INTO asset_upgrades (
-        asset_id, title, description, category, upgrade_type, priority,
+        upgrade_id, asset_id, title, description, category, upgrade_type, priority,
         scheduled_date, purchase_required, estimated_cost, justification,
         approved_by_id, approval_date, status, created_by_id, updated_by_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `;
     
     const values = [
+      upgradeId,
       data.assetId,
       data.title,
       data.description,

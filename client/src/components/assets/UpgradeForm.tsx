@@ -220,8 +220,6 @@ export function UpgradeForm({
         approvalDate: data.approvalDate ? format(data.approvalDate, 'yyyy-MM-dd') : null,
         assetId: assetId,
         status: data.approvedById ? 'Approved' : 'Pending Approval',
-        createdById: mode === 'create' ? user?.id : upgradeData?.createdById,
-        updatedById: user?.id,
       };
 
       return apiRequest(endpoint, method, requestData);
