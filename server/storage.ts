@@ -2204,106 +2204,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-
-  // Enhanced Ticket operations with time tracking
-  async startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
-    try {
-      console.log('Starting time tracking for ticket:', ticketId);
-      
-      // Use raw SQL to avoid schema issues and get reliable results
-      const result = await pool.query(`
-        UPDATE tickets 
-        SET is_time_tracking = true, start_time = NOW(), last_activity_at = NOW(), updated_at = NOW()
-        WHERE id = $1
-        RETURNING *
-      `, [ticketId]);
-      
-      const updatedTicket = result.rows[0];
-      
-      if (updatedTicket) {
-        console.log('Time tracking started:', {
-          id: updatedTicket.id,
-          is_time_tracking: updatedTicket.is_time_tracking,
-          start_time: updatedTicket.start_time
-        });
-
-        // Add to history
-        await this.addTicketHistory({
-          ticketId,
-          userId,
-          action: "Started Time Tracking",
-          notes: "Timer started for this ticket"
-        });
-      }
-
-      return updatedTicket;
-    } catch (error) {
-      console.error('Error starting ticket time tracking:', error);
-      return undefined;
-    }
-  }
-
-  async stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined> {
-    try {
-      console.log('Stopping time tracking for ticket:', ticketId);
-      
-      // Use raw SQL to get accurate time data
-      const timeResult = await pool.query(
-        'SELECT start_time, time_spent FROM tickets WHERE id = $1',
-        [ticketId]
-      );
-      
-      if (!timeResult.rows[0]?.start_time) {
-        console.log('No start time found for ticket:', ticketId);
-        return undefined;
-      }
-
-      const startTime = new Date(timeResult.rows[0].start_time);
-      const endTime = new Date();
-      const timeDiffMs = endTime.getTime() - startTime.getTime();
-      const sessionMinutes = Math.max(1, Math.round(timeDiffMs / (1000 * 60))); // At least 1 minute for any session
-      const previousTimeSpent = timeResult.rows[0].time_spent || 0;
-      const totalTimeSpent = previousTimeSpent + sessionMinutes;
-
-      console.log('Time calculation:', {
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        sessionMinutes,
-        previousTimeSpent,
-        totalTimeSpent
-      });
-
-      // Update using raw SQL for reliability
-      const result = await pool.query(
-        'UPDATE tickets SET is_time_tracking = false, completion_time = NOW(), time_spent = $2, last_activity_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
-        [ticketId, totalTimeSpent]
-      );
-
-      const updatedTicket = result.rows[0];
-      
-      if (updatedTicket) {
-        console.log('Updated ticket state:', {
-          id: updatedTicket.id,
-          is_time_tracking: updatedTicket.is_time_tracking,
-          time_spent: updatedTicket.time_spent
-        });
-
-        // Add to history
-        await this.addTicketHistory({
-          ticketId,
-          userId,
-          action: "Stopped Time Tracking", 
-          notes: `Timer stopped. Session: ${sessionMinutes} minutes. Total time: ${totalTimeSpent} minutes`
-        });
-      }
-
-      return updatedTicket;
-    } catch (error) {
-      console.error('Error stopping ticket time tracking:', error);
-      return undefined;
-    }
-  }
-
   // Ticket History operations
   async getTicketHistory(ticketId: number): Promise<any[]> {
     try {
@@ -2557,7 +2457,7 @@ async deleteTicket(id: number): Promise<boolean> {
         WHERE au.id = $1
       `;
       
-      const result = await this.pool.query(query, [upgradeId]);
+      const result = await pool.query(query, [upgradeId]);
       
       if (result.rows.length === 0) {
         return null;
@@ -2620,7 +2520,7 @@ async deleteTicket(id: number): Promise<boolean> {
         RETURNING *
       `;
       
-      const result = await this.pool.query(query, values);
+      const result = await pool.query(query, values);
       
       // Log status changes in history
       if (updateData.status && updateData.status !== currentUpgrade.status) {
@@ -2652,7 +2552,7 @@ async deleteTicket(id: number): Promise<boolean> {
         ORDER BY au.created_at DESC
       `;
       
-      const result = await this.pool.query(query);
+      const result = await pool.query(query);
       
       return result.rows.map(row => ({
         ...row,
@@ -2680,7 +2580,7 @@ async deleteTicket(id: number): Promise<boolean> {
         VALUES ($1, $2, $3, $4, $5)
       `;
       
-      await this.pool.query(query, [upgradeId, userId, action, previousValue, newValue]);
+      await pool.query(query, [upgradeId, userId, action, previousValue, newValue]);
     } catch (error) {
       console.error('Error adding upgrade history:', error);
       throw error;
@@ -2701,7 +2601,7 @@ async deleteTicket(id: number): Promise<boolean> {
         ORDER BY uh.timestamp DESC
       `;
       
-      const result = await this.pool.query(query, [upgradeId]);
+      const result = await pool.query(query, [upgradeId]);
       
       return result.rows.map(row => ({
         ...row,
@@ -2714,53 +2614,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-async createAssetHistory(data: any): Promise<any> {
-  try {
-    // Ensure we have valid data
-    if (!data.assetId) {
-      console.error('createAssetHistory: Missing assetId');
-      return null;
-    }
-
-    const query = `
-      INSERT INTO asset_transactions (
-        asset_id, 
-        employee_id, 
-        type, 
-        transaction_date, 
-        notes,
-        condition_notes
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `;
-    
-    const values = [
-      data.assetId,
-      data.employeeId || null, // Employee ID can be null for upgrade actions
-      data.type || 'Upgrade',  // Default to 'Upgrade' if not specified
-      data.performedAt || new Date(),
-      data.description || 'Upgrade requested',
-      data.metadata ? JSON.stringify(data.metadata) : null
-    ];
-    
-    console.log('Creating asset history with values:', values);
-    
-    // Use this.pool instead of pool
-    const result = await this.pool.query(query, values);
-    
-    if (result.rows && result.rows.length > 0) {
-      console.log('Asset history created successfully:', result.rows[0]);
-      return result.rows[0];
-    } else {
-      console.error('No rows returned from asset history creation');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error creating asset history - full error:', error);
-    // Don't throw - return null so the calling code can continue
-    return null;
-  }
-}
 }
 
 // Use memory storage for development, PostgreSQL for production

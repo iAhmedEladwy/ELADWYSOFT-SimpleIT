@@ -3065,60 +3065,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // SIMPLIFIED ASSET UPGRADE ROUTES
 // ============================================
 
-// Create upgrade request
-app.post('/api/assets/:id/upgrade', authenticateUser, async (req, res) => {
-  try {
-    const assetId = parseInt(req.params.id);
-    const user = req.user as schema.User;
-    
-    // Validate asset exists
-    const asset = await storage.getAsset(assetId);
-    if (!asset) {
-      return res.status(404).json({ message: 'Asset not found' });
-    }
-    
-    // Create upgrade request
-    const upgradeData = {
-      assetId,
-      title: req.body.title,
-      description: req.body.description,
-      category: req.body.category,
-      upgradeType: req.body.upgradeType,
-      priority: req.body.priority,
-      scheduledDate: req.body.scheduledDate,
-      purchaseRequired: req.body.purchaseRequired || false,
-      estimatedCost: req.body.estimatedCost || null,
-      justification: req.body.justification,
-      approvedById: req.body.approvedById || null,
-      approvalDate: req.body.approvalDate || null,
-      status: req.body.approvedById ? 'Approved' : 'Pending Approval',
-      createdById: user.id,
-      updatedById: user.id,
-    };
-    
-    const upgrade = await storage.createAssetUpgrade(upgradeData);
-    
-    // Add to asset history
-    await storage.createAssetHistory({
-      assetId,
-      action: 'UPGRADE_REQUESTED',
-      description: `Upgrade requested: ${req.body.title}`,
-      performedById: user.id,
-      performedAt: new Date(),
-      metadata: {
-        upgradeId: upgrade.id,
-        category: req.body.category,
-        type: req.body.upgradeType,
-        priority: req.body.priority
+ // Create upgrade request
+  app.post('/api/assets/:id/upgrade', authenticateUser, async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const user = req.user as schema.User;
+      
+      // Validate asset exists
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ message: 'Asset not found' });
       }
-    });
-    
-    res.json(upgrade);
-  } catch (error: unknown) {
-    console.error('Error creating upgrade request:', error);
-    res.status(500).json({ message: 'Error creating upgrade request' });
-  }
-});
+      
+      // Create upgrade request
+      const upgradeData = {
+        assetId,
+        title: req.body.title,
+        description: req.body.description,
+        category: req.body.category,
+        upgradeType: req.body.upgradeType,
+        priority: req.body.priority,
+        scheduledDate: req.body.scheduledDate,
+        purchaseRequired: req.body.purchaseRequired || false,
+        estimatedCost: req.body.estimatedCost || null,
+        justification: req.body.justification,
+        approvedById: req.body.approvedById || null,
+        approvalDate: req.body.approvalDate || null,
+        status: req.body.approvedById ? 'Approved' : 'Pending Approval',
+        createdById: user.id,
+        updatedById: user.id,
+      };
+      
+      const upgrade = await storage.createAssetUpgrade(upgradeData);
+      
+      // Create a transaction record for the upgrade (EXACTLY like maintenance does)
+      await storage.createAssetTransaction({
+        assetId: assetId,
+        type: 'Upgrade',
+        employeeId: null, // Upgrades don't need employee assignment
+        transactionDate: new Date(),
+        handledById: user.id,
+        conditionNotes: `${req.body.title} (Status: ${upgradeData.status})`,
+        deviceSpecs: {
+          upgradeId: upgrade.id,
+          title: req.body.title,
+          category: req.body.category,
+          upgradeType: req.body.upgradeType,
+          priority: req.body.priority,
+          status: upgradeData.status,
+          estimatedCost: req.body.estimatedCost,
+          description: req.body.description
+        }
+      });
+      
+      // Log activity (following maintenance pattern)
+      if (req.user) {
+        await storage.logActivity({
+          userId: user.id,
+          action: "Create",
+          entityType: "Asset Upgrade",
+          entityId: upgrade.id,
+          details: {
+            assetId: asset.assetId,
+            upgradeTitle: upgrade.title,
+            upgradePriority: upgrade.priority,
+            upgradeStatus: upgrade.status
+          }
+        });
+      }
+      
+      res.json(upgrade);
+    } catch (error: unknown) {
+      console.error('Error creating upgrade request:', error);
+      res.status(500).json({ message: 'Error creating upgrade request' });
+    }
+  });
 
 // Get all upgrades
 app.get('/api/upgrades', authenticateUser, async (req, res) => {
@@ -3267,23 +3288,7 @@ app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) =>
     `;
     
     const result = await storage.pool.query(updateQuery, values);
-    
-    // Add to asset history if status changed
-    if (req.body.status && req.body.status !== existing.status) {
-      await storage.createAssetHistory({
-        assetId: existing.asset_id,
-        action: 'UPGRADE_STATUS_CHANGED',
-        description: `Upgrade status changed from ${existing.status} to ${req.body.status}`,
-        performedById: user.id,
-        performedAt: new Date(),
-        metadata: {
-          upgradeId,
-          oldStatus: existing.status,
-          newStatus: req.body.status
-        }
-      });
-    }
-    
+        
     res.json(result.rows[0]);
   } catch (error: unknown) {
     console.error('Error updating upgrade:', error);
@@ -3312,15 +3317,7 @@ app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res)
     // Delete upgrade
     await storage.pool.query('DELETE FROM asset_upgrades WHERE id = $1', [upgradeId]);
     
-    // Add to asset history
-    await storage.createAssetHistory({
-      assetId: checkResult.rows[0].asset_id,
-      action: 'UPGRADE_DELETED',
-      description: `Draft upgrade deleted: ${checkResult.rows[0].title}`,
-      performedById: user.id,
-      performedAt: new Date(),
-      metadata: { upgradeId }
-    });
+ 
     
     res.json({ message: 'Upgrade deleted successfully' });
   } catch (error: unknown) {
@@ -3353,16 +3350,6 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Upgrade not found' });
     }
-    
-    // Add to asset history
-    await storage.createAssetHistory({
-      assetId: result.rows[0].asset_id,
-      action: 'UPGRADE_STATUS_UPDATED',
-      description: notes || `Upgrade status updated to ${status}`,
-      performedById: user.id,
-      performedAt: new Date(),
-      metadata: { upgradeId, status }
-    });
     
     res.json(result.rows[0]);
   } catch (error: unknown) {
@@ -3411,67 +3398,27 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
           enhanced.employee = await storage.getEmployee(transaction.employeeId);
         }
         
+        // Parse deviceSpecs if it's a string
+        if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
+          try {
+            enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
+          } catch (e) {
+            console.error('Error parsing deviceSpecs:', e);
+          }
+        }
+        
         return enhanced;
       })
     );
     
-    // Also get upgrades for this asset if using PostgreSQL
-    if ('pool' in storage && storage.pool) {
-      try {
-        const upgradesQuery = `
-          SELECT 
-            CAST('UPGRADE_' || u.id AS TEXT) as id,
-            u.asset_id as "assetId",
-            null as "employeeId",
-            'Upgrade' as type,
-            u.created_at as "transactionDate",
-            u.created_at as date,
-            u.title || ' (Status: ' || u.status || ')' as notes,
-            JSON_BUILD_OBJECT(
-              'title', u.title,
-              'category', u.category,
-              'upgradeType', u.upgrade_type,
-              'priority', u.priority,
-              'status', u.status,
-              'estimatedCost', u.estimated_cost,
-              'description', u.description
-            )::text as "deviceSpecs",
-            u.created_at as "createdAt"
-          FROM asset_upgrades u
-          WHERE u.asset_id = $1
-          ORDER BY u.created_at DESC
-        `;
-        
-        const upgradesResult = await storage.pool.query(upgradesQuery, [assetId]);
-        
-        if (upgradesResult.rows && upgradesResult.rows.length > 0) {
-          // Parse the deviceSpecs JSON string back to object
-          const upgradeTransactions = upgradesResult.rows.map(row => ({
-            ...row,
-            deviceSpecs: row.deviceSpecs ? JSON.parse(row.deviceSpecs) : null,
-            asset: asset // Add the asset details to upgrade transactions
-          }));
-          
-          // Merge with existing transactions
-          enhancedTransactions = [
-            ...enhancedTransactions,
-            ...upgradeTransactions
-          ];
-          
-          // Sort by date
-          enhancedTransactions.sort((a, b) => {
-            const dateA = new Date(a.transactionDate || a.date || 0);
-            const dateB = new Date(b.transactionDate || b.date || 0);
-            return dateB.getTime() - dateA.getTime();
-          });
-          
-          console.log(`Added ${upgradeTransactions.length} upgrade transactions for asset ${assetId}`);
-        }
-      } catch (upgradeError) {
-        console.error('Error fetching upgrades for asset:', upgradeError);
-        // Continue without upgrades
-      }
-    }
+    // REMOVED: Complex upgrade merging logic - upgrades are now in assetTransactions
+    
+    // Sort by date
+    enhancedTransactions.sort((a, b) => {
+      const dateA = new Date(a.transactionDate || a.date || 0);
+      const dateB = new Date(b.transactionDate || b.date || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
     
     // Return array directly for backward compatibility
     res.json(enhancedTransactions);
@@ -3483,7 +3430,7 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-  });
+});
   
   app.get("/api/employees/:id/transactions", authenticateUser, async (req, res) => {
     try {
@@ -5150,97 +5097,21 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
             enhanced.employee = await storage.getEmployee(transaction.employeeId);
           }
           
+          // Parse deviceSpecs if it's a string
+          if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
+            try {
+              enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
+            } catch (e) {
+              console.error('Error parsing deviceSpecs:', e);
+            }
+          }
+          
           return enhanced;
         })
       );
     }
     
-    // Fetch upgrade transactions if using PostgreSQL
-    if ('pool' in storage && storage.pool) {
-      console.log('[API] Checking for upgrades in PostgreSQL...');
-      try {
-        let upgradesQuery = `
-          SELECT 
-            CAST('UPGRADE_' || u.id AS TEXT) as id,
-            u.asset_id as "assetId",
-            null as "employeeId",
-            'Upgrade' as type,
-            u.created_at as "transactionDate",
-            u.created_at as date,
-            u.title || ' (Status: ' || u.status || ')' as notes,
-            JSON_BUILD_OBJECT(
-              'title', u.title,
-              'category', u.category,
-              'upgradeType', u.upgrade_type,
-              'priority', u.priority,
-              'status', u.status,
-              'estimatedCost', u.estimated_cost,
-              'description', u.description
-            )::text as "deviceSpecs",
-            u.created_at as "createdAt"
-          FROM asset_upgrades u
-        `;
-        
-        // Add asset filter if specified
-        const queryParams = [];
-        if (assetId) {
-          upgradesQuery += ' WHERE u.asset_id = $1';
-          queryParams.push(Number(assetId));
-          console.log('[API] Filtering upgrades for assetId:', assetId);
-        }
-        
-        upgradesQuery += ' ORDER BY u.created_at DESC';
-        
-        console.log('[API] Executing upgrades query...');
-        const upgradesResult = queryParams.length > 0 
-          ? await storage.pool.query(upgradesQuery, queryParams)
-          : await storage.pool.query(upgradesQuery);
-        
-        console.log('[API] Upgrades query returned:', upgradesResult.rows.length, 'rows');
-        
-        if (upgradesResult.rows && upgradesResult.rows.length > 0) {
-          console.log('[API] Sample upgrade row:', upgradesResult.rows[0]);
-          
-          // Parse the deviceSpecs JSON string back to object
-          const upgradeTransactions = upgradesResult.rows.map(row => ({
-            ...row,
-            deviceSpecs: row.deviceSpecs ? JSON.parse(row.deviceSpecs) : null,
-            // Remove the conditionNotes field to avoid confusion
-            conditionNotes: undefined
-          }));
-          
-          console.log('[API] Parsed upgrade transactions:', upgradeTransactions.length);
-          
-          // Add asset details to upgrade transactions
-          const enhancedUpgrades = await Promise.all(
-            upgradeTransactions.map(async (upgrade) => {
-              const asset = await storage.getAsset(upgrade.assetId);
-              return {
-                ...upgrade,
-                asset
-              };
-            })
-          );
-          
-          console.log('[API] Enhanced upgrades with asset details:', enhancedUpgrades.length);
-          
-          // Merge with existing transactions
-          const beforeMerge = transactions ? transactions.length : 0;
-          transactions = [
-            ...(transactions || []),
-            ...enhancedUpgrades
-          ];
-          console.log(`[API] Merged transactions: ${beforeMerge} + ${enhancedUpgrades.length} = ${transactions.length}`);
-        } else {
-          console.log('[API] No upgrades found in database');
-        }
-      } catch (upgradeError) {
-        console.error('[API] Error fetching upgrades - Full error:', upgradeError);
-        // Continue without upgrades rather than failing
-      }
-    } else {
-      console.log('[API] Not using PostgreSQL, skipping upgrades');
-    }
+    // REMOVED: Complex upgrade merging logic - upgrades are now in assetTransactions
     
     // SAFETY CHECK: Ensure transactions is always an array
     if (!transactions || !Array.isArray(transactions)) {
@@ -5307,9 +5178,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     const totalPages = Math.ceil(totalItems / limitNum);
     const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
     
-    console.log(`[Asset Transactions API] Returning ${paginatedTransactions.length} transactions out of ${totalItems} total`);
-    console.log(`[Asset Transactions API] Transaction types:`, paginatedTransactions.map(t => ({ id: t.id, type: t.type })));
-
     // ALWAYS return the expected format with transactions and pagination
     res.json({
       transactions: paginatedTransactions,
@@ -5332,52 +5200,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         itemsPerPage: 10
       },
       error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-  });
-  
-
-  // Temporary debug endpoint - add this after other routes
-    app.get("/api/debug/upgrades", authenticateUser, async (req, res) => {
-  try {
-    const storageInfo = {
-      hasPool: 'pool' in storage,
-      poolExists: !!(storage as any).pool,
-      storageType: storage.constructor.name,
-      databaseUrl: !!process.env.DATABASE_URL
-    };
-    
-    if ('pool' in storage && storage.pool) {
-      const checkTable = await storage.pool.query(`
-        SELECT COUNT(*) as count FROM asset_upgrades
-      `);
-      
-      const sampleData = await storage.pool.query(`
-        SELECT id, asset_id, title, status, created_at 
-        FROM asset_upgrades 
-        LIMIT 5
-      `);
-      
-      res.json({
-        ...storageInfo,
-        upgradeCount: checkTable.rows[0].count,
-        sampleUpgrades: sampleData.rows,
-        message: 'Using PostgreSQL'
-      });
-    } else {
-      res.json({
-        ...storageInfo,
-        message: 'Not using PostgreSQL - but why?'
-      });
-    }
-  } catch (error) {
-    res.json({
-      error: error.message,
-      storageInfo: {
-        hasPool: 'pool' in storage,
-        poolExists: !!(storage as any).pool,
-        storageType: storage.constructor.name,
-      }
     });
   }
 });
