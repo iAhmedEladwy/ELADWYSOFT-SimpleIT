@@ -15,9 +15,8 @@ import BulkStatusDialog from './dialogs/BulkStatusDialog';
 import BulkAssignDialog from './dialogs/BulkAssignDialog';
 import BulkDeleteDialog from './dialogs/BulkDeleteDialog';
 
-// Import existing dialogs (preserve sell/retire functionality)
-import BulkSellDialog from '../BulkSellDialog';
-import BulkRetireDialog from '../BulkRetireDialog';
+// Note: Sell and Retire dialogs are handled by the parent Assets.tsx component
+// to preserve existing functionality
 
 import { 
   MoreHorizontal, 
@@ -39,6 +38,8 @@ interface BulkActionsProps {
   currentUser: any;
   onSelectionChange: (assets: number[]) => void;
   onRefresh: () => void;
+  onSellRequest?: () => void;
+  onRetireRequest?: () => void;
 }
 
 const actionIcons = {
@@ -57,7 +58,9 @@ export default function BulkActions({
   availableAssets,
   currentUser,
   onSelectionChange,
-  onRefresh
+  onRefresh,
+  onSellRequest,
+  onRetireRequest
 }: BulkActionsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
@@ -100,7 +103,18 @@ export default function BulkActions({
       return;
     }
 
-    // Open appropriate dialog
+    // Handle sell and retire through parent component
+    if (action.id === 'sell' && onSellRequest) {
+      onSellRequest();
+      return;
+    }
+    
+    if (action.id === 'retire' && onRetireRequest) {
+      onRetireRequest();
+      return;
+    }
+
+    // Open appropriate dialog for other actions
     setActiveDialog(action.id);
   };
 
@@ -273,22 +287,7 @@ export default function BulkActions({
         onCancel={handleDialogCancel}
       />
 
-      {/* Preserve existing sell/retire dialogs */}
-      <BulkSellDialog
-        open={activeDialog === 'sell'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-
-      <BulkRetireDialog
-        open={activeDialog === 'retire'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
+      {/* Sell and Retire dialogs are handled by parent Assets.tsx component */}
     </div>
   );
 }

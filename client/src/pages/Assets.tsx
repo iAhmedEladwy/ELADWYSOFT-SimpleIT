@@ -491,14 +491,171 @@ export default function Assets() {
     }
   };
 
-  // Old bulk sell handler removed - now handled by BulkActions component
+  // Handler for bulk sell confirmation
+  const handleBulkSellConfirm = async () => {
+    // Validation based on pricing method
+    if (pricingMethod === 'total') {
+      if (!bulkSellData.buyer || !bulkSellData.totalAmount) {
+        toast({
+          title: translations.error,
+          description: translations.fillRequiredFields,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!bulkSellData.buyer) {
+        toast({
+          title: translations.error,
+          description: translations.fillRequiredFields,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check if all individual prices are filled
+      const allPricesFilled = selectedAssets.every(id => 
+        individualPrices[id] && parseFloat(individualPrices[id]) > 0
+      );
+      
+      if (!allPricesFilled) {
+        toast({
+          title: translations.error,
+          description: translations.fillAllPrices,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
 
+    try {
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Selling ${selectedAssets.length} assets...`,
+      });
 
-  // Old bulk retire handler removed - now handled by BulkActions component
+      // Calculate total amount based on pricing method
+      let totalAmount = 0;
+      let saleNotes = bulkSellData.notes || `Bulk sale to ${bulkSellData.buyer}`;
+      
+      if (pricingMethod === 'total') {
+        totalAmount = parseFloat(bulkSellData.totalAmount);
+      } else {
+        // Sum up individual prices
+        totalAmount = selectedAssets.reduce((sum, id) => {
+          return sum + parseFloat(individualPrices[id] || '0');
+        }, 0);
+        
+        // Add individual pricing details to notes
+        const pricingDetails = assets
+          .filter((asset: any) => selectedAssets.includes(asset.id))
+          .map((asset: any) => `${asset.assetId}: ${formatCurrency(parseFloat(individualPrices[asset.id]))}`)
+          .join(', ');
+        
+        saleNotes = `${saleNotes}\nIndividual Pricing: ${pricingDetails}`;
+      }
 
-  // Old bulk status change handler removed - now handled by BulkActions component
+      const response = await apiRequest('/api/assets/sell', 'POST', {
+        assetIds: selectedAssets,
+        buyer: bulkSellData.buyer,
+        saleDate: bulkSellData.saleDate.toISOString().split('T')[0],
+        totalAmount: totalAmount,
+        notes: saleNotes,
+        pricingMethod: pricingMethod,
+        individualPrices: pricingMethod === 'individual' ? individualPrices : undefined
+      });
 
-  // Old bulk delete handler removed - now handled by BulkActions component
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      await refetch();
+
+      toast({
+        title: translations.success,
+        description: response.message || `Successfully sold ${selectedAssets.length} assets`,
+      });
+
+      // Reset everything
+      setSelectedAssets([]);
+      setShowBulkSellDialog(false);
+      setPricingMethod('total');
+      setIndividualPrices({});
+      setBulkSellData({
+        buyer: '',
+        saleDate: new Date(),
+        totalAmount: '',
+        notes: ''
+      });
+
+    } catch (error: any) {
+      console.error('Bulk sell error:', error);
+      toast({
+        title: translations.error,
+        description: error.message || 'Failed to sell assets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handler for bulk retire confirmation
+  const handleBulkRetireConfirm = async () => {
+    if (!bulkRetireData.reason) {
+      toast({
+        title: translations.error || 'Error',
+        description: 'Please provide a retirement reason',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: translations.processing || 'Processing...',
+        description: `Retiring ${selectedAssets.length} assets...`,
+      });
+
+      const response = await apiRequest('/api/assets/retire', 'POST', {
+        assetIds: selectedAssets,
+        reason: bulkRetireData.reason,
+        retirementDate: bulkRetireData.retirementDate.toISOString(),
+        notes: bulkRetireData.notes
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
+      ]);
+      
+      await refetch();
+
+      toast({
+        title: translations.success,
+        description: response.message || `Successfully retired ${selectedAssets.length} assets`,
+      });
+
+      setSelectedAssets([]);
+      setShowBulkRetireDialog(false);
+      setBulkRetireData({
+        reason: '',
+        retirementDate: new Date(),
+        notes: ''
+      });
+
+    } catch (error: any) {
+      console.error('Bulk retire error:', error);
+      toast({
+        title: translations.error,
+        description: error.message || 'Failed to retire assets',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleExportFilteredAssets = () => {
     if (assets.length === 0) {
@@ -947,6 +1104,8 @@ export default function Assets() {
           currentUser={user}
           onSelectionChange={setSelectedAssets}
           onRefresh={refetch}
+          onSellRequest={() => setShowBulkSellDialog(true)}
+          onRetireRequest={() => setShowBulkRetireDialog(true)}
         />
 
         {/* Pagination Controls Top */}
