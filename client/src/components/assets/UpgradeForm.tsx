@@ -42,6 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
+import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
 // Define comprehensive upgrade types based on requirements
 const HARDWARE_UPGRADES = {
@@ -577,24 +578,14 @@ export function UpgradeForm({
                       {translations.approvedBy}
                       <span className="text-muted-foreground ml-1">({translations.optional})</span>
                     </FormLabel>
-                    <Select 
-                     onValueChange={(value) => field.onChange(value === 'none' ? undefined : parseInt(value))}
-                      value={field.value?.toString() || ''}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={translations.selectUser} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                        {users.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.username} - {user.role}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ActiveEmployeeSelect
+                      value={field.value ? String(field.value) : ''}
+                      onValueChange={(val) => field.onChange(val ? parseInt(val) : undefined)}
+                      placeholder={translations.selectUser}
+                      showDepartment={true}
+                      showPosition={true}
+                      dropdownHeight="compact"
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
