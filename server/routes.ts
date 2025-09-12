@@ -5157,6 +5157,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     
     // Fetch upgrade transactions if using PostgreSQL
     if ('pool' in storage && storage.pool) {
+      console.log('[API] Checking for upgrades in PostgreSQL...');
       try {
         let upgradesQuery = `
           SELECT 
@@ -5185,15 +5186,21 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         if (assetId) {
           upgradesQuery += ' WHERE u.asset_id = $1';
           queryParams.push(Number(assetId));
+          console.log('[API] Filtering upgrades for assetId:', assetId);
         }
         
         upgradesQuery += ' ORDER BY u.created_at DESC';
         
+        console.log('[API] Executing upgrades query...');
         const upgradesResult = queryParams.length > 0 
           ? await storage.pool.query(upgradesQuery, queryParams)
           : await storage.pool.query(upgradesQuery);
         
+        console.log('[API] Upgrades query returned:', upgradesResult.rows.length, 'rows');
+        
         if (upgradesResult.rows && upgradesResult.rows.length > 0) {
+          console.log('[API] Sample upgrade row:', upgradesResult.rows[0]);
+          
           // Parse the deviceSpecs JSON string back to object
           const upgradeTransactions = upgradesResult.rows.map(row => ({
             ...row,
@@ -5201,6 +5208,8 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
             // Remove the conditionNotes field to avoid confusion
             conditionNotes: undefined
           }));
+          
+          console.log('[API] Parsed upgrade transactions:', upgradeTransactions.length);
           
           // Add asset details to upgrade transactions
           const enhancedUpgrades = await Promise.all(
@@ -5213,16 +5222,24 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
             })
           );
           
+          console.log('[API] Enhanced upgrades with asset details:', enhancedUpgrades.length);
+          
           // Merge with existing transactions
+          const beforeMerge = transactions ? transactions.length : 0;
           transactions = [
             ...(transactions || []),
             ...enhancedUpgrades
           ];
+          console.log(`[API] Merged transactions: ${beforeMerge} + ${enhancedUpgrades.length} = ${transactions.length}`);
+        } else {
+          console.log('[API] No upgrades found in database');
         }
       } catch (upgradeError) {
-        console.error('Error fetching upgrades:', upgradeError);
+        console.error('[API] Error fetching upgrades - Full error:', upgradeError);
         // Continue without upgrades rather than failing
       }
+    } else {
+      console.log('[API] Not using PostgreSQL, skipping upgrades');
     }
     
     // SAFETY CHECK: Ensure transactions is always an array
@@ -5318,7 +5335,41 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     });
   }
   });
-  // Asset Transactions with Enhanced Filtering
+  
+
+  // Temporary debug endpoint - add this after other routes
+    app.get("/api/debug/upgrades", authenticateUser, async (req, res) => {
+      try {
+        if ('pool' in storage && storage.pool) {
+          // Check if asset_upgrades table exists and has data
+          const checkTable = await storage.pool.query(`
+            SELECT COUNT(*) as count FROM asset_upgrades
+          `);
+          
+          const sampleData = await storage.pool.query(`
+            SELECT id, asset_id, title, status, created_at 
+            FROM asset_upgrades 
+            LIMIT 5
+          `);
+          
+          res.json({
+            upgradeCount: checkTable.rows[0].count,
+            sampleUpgrades: sampleData.rows,
+            storageType: 'PostgreSQL'
+          });
+        } else {
+          res.json({
+            message: 'Not using PostgreSQL',
+            storageType: 'Memory'
+          });
+        }
+      } catch (error) {
+        res.json({
+          error: error.message,
+          stack: error.stack
+        });
+      }
+    });
 
   // Reports
   app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
