@@ -18,6 +18,8 @@ import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
 import UserProfile from "@/pages/UserProfile";
+import Users from "@/pages/Users";
+import Maintenance from "@/pages/Maintenance";
 import ChangesLog from "@/pages/ChangesLog";
 import AdminConsole from "@/pages/AdminConsole";
 import BulkOperations from "@/pages/admin/BulkOperations";
@@ -173,6 +175,24 @@ function Router() {
         <Route path="/profile">
           <Layout>
             <PrivateRoute component={UserProfile} />
+          </Layout>
+        </Route>
+        <Route path="/users">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+                <Users />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+        <Route path="/maintenance">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+                <Maintenance />
+              </RoleGuard>
+            )} />
           </Layout>
         </Route>
         <Route path="/changes-log">

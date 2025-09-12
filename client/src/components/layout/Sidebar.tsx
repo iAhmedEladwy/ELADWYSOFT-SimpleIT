@@ -16,6 +16,7 @@ import {
   Pin,
   PinOff,
   Shield,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -44,6 +45,8 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     Reports: language === 'English' ? 'Reports' : 'التقارير',
     SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
     AdminConsole: language === 'English' ? 'Admin Console' : 'وحدة التحكم الإدارية',
+    Users: language === 'English' ? 'Users' : 'المستخدمين',
+    Maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
     Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
@@ -188,6 +191,24 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             <Link href="/admin-console" className={getLinkClass('/admin-console')} onClick={handleLinkClick}>
               <Shield className="h-5 w-5" />
               <span>{translations.AdminConsole}</span>
+            </Link>
+          </div>
+        </RoleGuard>
+
+        <RoleGuard allowedRoles={['admin', 'manager']}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/users" className={getLinkClass('/users')} onClick={handleLinkClick}>
+              <Users className="h-5 w-5" />
+              <span>{translations.Users}</span>
+            </Link>
+          </div>
+        </RoleGuard>
+
+        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link href="/maintenance" className={getLinkClass('/maintenance')} onClick={handleLinkClick}>
+              <Wrench className="h-5 w-5" />
+              <span>{translations.Maintenance}</span>
             </Link>
           </div>
         </RoleGuard>
