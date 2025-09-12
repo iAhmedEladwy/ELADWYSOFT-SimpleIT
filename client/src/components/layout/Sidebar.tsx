@@ -2,6 +2,7 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { RoleGuard, hasPermission } from '@/components/auth/RoleGuard';
+import { useState, useEffect } from 'react';
 import {
   Home,
   Users,
@@ -17,6 +18,9 @@ import {
   PinOff,
   Shield,
   Wrench,
+  ChevronDown,
+  ChevronRight,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,6 +37,15 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const [location] = useLocation();
   const { user } = useAuth();
   const { language } = useLanguage();
+  const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState(false);
+
+  useEffect(() => {
+  // Auto-expand Admin Console if on any admin page
+  if (location.startsWith('/admin-console')) {
+    setIsAdminConsoleOpen(true);
+  }
+  }, [location]);
+
 
   // Link translations
   const translations = {
@@ -51,16 +64,19 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
     PinSidebar: language === 'English' ? 'Pin Sidebar' : 'تثبيت الشريط الجانبي',
     UnpinSidebar: language === 'English' ? 'Unpin Sidebar' : 'إلغاء تثبيت الشريط الجانبي',
+    BulkOperations: language === 'English' ? 'Bulk Operations History' : 'سجل العمليات المجمعة',
   };
 
   // Get class for sidebar item based on active path
-  const getLinkClass = (path: string) => {
+  // Update the getLinkClass function to handle submenu paths:
+    const getLinkClass = (path: string) => {
     const baseClass = "flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gradient-to-r hover:from-primary/10 hover:to-transparent hover:text-primary rounded-lg transition-all duration-300";
     const activeClass = "bg-gradient-to-r from-primary/20 to-transparent text-primary font-medium shadow-sm";
     
-    return location === path 
-      ? `${baseClass} ${activeClass}` 
-      : baseClass;
+    // Check if current location matches the path or is a child of it
+    const isActive = location === path || location.startsWith(path + '/');
+    
+    return isActive ? `${baseClass} ${activeClass}` : baseClass;
   };
 
   // Handle link click
@@ -69,6 +85,10 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
       onPageSelect();
     }
   };
+
+  const toggleAdminConsole = () => {
+  setIsAdminConsoleOpen(!isAdminConsoleOpen);
+};
 
   // If sidebar is hidden, don't render anything
   if (!isSidebarOpen) {
@@ -184,42 +204,66 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             </Link>
           </div>
         </RoleGuard>
-
         <RoleGuard allowedRoles={['admin']}>
-          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/admin-console" className={getLinkClass('/admin-console')} onClick={handleLinkClick}>
-              <Shield className="h-5 w-5" />
-              <span>{translations.AdminConsole}</span>
-            </Link>
+          <div className="space-y-1">
+            {/* Admin Console Parent Menu */}
+            <div 
+              className={`${getLinkClass('/admin-console')} cursor-pointer justify-between`}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleAdminConsole();
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5" />
+                <span>{translations.AdminConsole}</span>
+              </div>
+              {isAdminConsoleOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </div>
+            
+            {/* Admin Console Submenu Items */}
+            {isAdminConsoleOpen && (
+              <div className={`ml-6 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
+                {/* Audit Logs */}
+                <Link 
+                  href="/admin-console/audit-logs" 
+                  className={`${getLinkClass('/admin-console/audit-logs')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>{translations.AuditLogs}</span>
+                </Link>
+                
+                {/* Maintenance */}
+                <Link 
+                  href="/admin-console/maintenance" 
+                  className={`${getLinkClass('/admin-console/maintenance')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Wrench className="h-4 w-4" />
+                  <span>{translations.Maintenance}</span>
+                </Link>
+                
+                {/* Bulk Operations History */}
+                <Link 
+                  href="/admin-console/bulk-operations" 
+                  className={`${getLinkClass('/admin-console/bulk-operations')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{translations.BulkOperations}</span>
+                </Link>
+              </div>
+            )}
           </div>
         </RoleGuard>
 
-        <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/users" className={getLinkClass('/users')} onClick={handleLinkClick}>
-              <Users className="h-5 w-5" />
-              <span>{translations.Users}</span>
-            </Link>
-          </div>
-        </RoleGuard>
-
-        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
-          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/maintenance" className={getLinkClass('/maintenance')} onClick={handleLinkClick}>
-              <Wrench className="h-5 w-5" />
-              <span>{translations.Maintenance}</span>
-            </Link>
-          </div>
-        </RoleGuard>
         
-        <RoleGuard allowedRoles={['admin', 'manager']}>
-          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link href="/audit-logs" className={getLinkClass('/audit-logs')} onClick={handleLinkClick}>
-              <FileText className="h-5 w-5" />
-              <span>{translations.AuditLogs}</span>
-            </Link>
-          </div>
-        </RoleGuard>
+
 
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/profile" className={getLinkClass('/profile')} onClick={handleLinkClick}>
