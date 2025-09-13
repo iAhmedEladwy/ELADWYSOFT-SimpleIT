@@ -15,6 +15,8 @@ import BulkStatusDialog from './dialogs/BulkStatusDialog';
 import BulkAssignDialog from './dialogs/BulkAssignDialog';
 import BulkDeleteDialog from './dialogs/BulkDeleteDialog';
 import BulkMaintenanceDialog from './dialogs/BulkMaintenanceDialog';
+import BulkUnassignDialog from './dialogs/BulkUnassignDialog';
+
 
 // Note: Sell and Retire dialogs are handled by the parent Assets.tsx component
 // to preserve existing functionality
@@ -32,6 +34,9 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 interface BulkActionsProps {
   selectedAssets: number[];
@@ -90,6 +95,12 @@ export default function BulkActions({
     error: language === 'English' ? 'Error' : 'خطأ',
     operationCompleted: language === 'English' ? 'Operation completed' : 'تم إكمال العملية',
     operationFailed: language === 'English' ? 'Operation failed' : 'فشلت العملية',
+    unassignAssets: language === 'English' ? 'Unassign Assets' : 'إلغاء تخصيص الأصول',
+    unassignConfirm: language === 'English' 
+    ? `Are you sure you want to unassign ${selectedAssets.length} asset${selectedAssets.length > 1 ? 's' : ''}? This will remove the employee assignment from the selected assets.`
+    : `هل أنت متأكد من إلغاء تخصيص ${selectedAssets.length} أصل؟ سيؤدي هذا إلى إزالة تخصيص الموظف من الأصول المحددة.`,
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    unassign: language === 'English' ? 'Unassign' : 'إلغاء التخصيص',
   };
 
   const handleActionClick = (action: BulkAction) => {
@@ -118,6 +129,41 @@ export default function BulkActions({
     // Open appropriate dialog for other actions
     setActiveDialog(action.id);
   };
+
+  const handleBulkUnassign = async () => {
+    try {
+      // Call the API to unassign all selected assets
+      const response = await apiRequest('/api/assets/bulk/unassign', 'POST', {
+        assetIds: selectedAssets
+      });
+
+      // Show success result
+      const result: BulkActionResult = {
+        success: true,
+        message: `Successfully unassigned ${selectedAssets.length} assets`,
+        details: {
+          total: selectedAssets.length,
+          successful: selectedAssets.length,
+          failed: 0
+        }
+      };
+      
+      handleDialogSuccess(result);
+    } catch (error: any) {
+      const result: BulkActionResult = {
+        success: false,
+        message: error.message || 'Failed to unassign assets',
+        details: {
+          total: selectedAssets.length,
+          successful: 0,
+          failed: selectedAssets.length
+        }
+      };
+      
+      handleDialogSuccess(result);
+    }
+  };
+
 
   const handleDialogSuccess = (result: BulkActionResult) => {
     setLastResult(result);
@@ -287,14 +333,13 @@ export default function BulkActions({
         onSuccess={handleDialogSuccess}
         onCancel={handleDialogCancel}
       />
-{/* 
       <BulkUnassignDialog
         open={activeDialog === 'unassign'}
         onOpenChange={(open) => !open && setActiveDialog(null)}
         selectedAssets={selectedAssets}
         onSuccess={handleDialogSuccess}
         onCancel={handleDialogCancel}
-      /> */}
+      />
 
       <BulkMaintenanceDialog
         open={activeDialog === 'schedule_maintenance'}

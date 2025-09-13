@@ -341,6 +341,7 @@ export default function AssetsTable({
                       checked={selectedAssets.includes(asset.id)}
                       onCheckedChange={() => handleSelectAsset(asset.id)}
                       aria-label={`Select asset ${asset.assetId}`}
+                      className="pointer-events-none" 
                     />
                   </TableCell>
                 )}

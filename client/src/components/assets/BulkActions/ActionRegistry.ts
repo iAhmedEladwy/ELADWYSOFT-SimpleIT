@@ -80,6 +80,7 @@ export const BULK_ACTIONS: Record<string, BulkAction> = {
   
 };
 
+// Fix for getAvailableActions function
 export function getAvailableActions(context: {
   selectedAssets: number[];
   availableAssets: any[];
@@ -98,7 +99,6 @@ export function getAvailableActions(context: {
   
   const availableActions: BulkAction[] = [];
   
-  // Check each action against context
   Object.values(BULK_ACTIONS).forEach(action => {
     // Check minimum selection
     if (action.minSelection && selectedAssets.length < action.minSelection) {
@@ -110,28 +110,50 @@ export function getAvailableActions(context: {
       return;
     }
     
-    // Check blocked statuses
+    // FIXED: Check blocked statuses - ALL assets must not have blocked status
     if (action.blockedStatuses) {
       const hasBlockedStatus = selectedAssetData.some(asset => 
         action.blockedStatuses!.includes(asset.status)
       );
       if (hasBlockedStatus) {
-        return;
+        return; // If ANY asset has blocked status, don't show action
       }
     }
     
-    // Check allowed statuses
+    // FIXED: Check allowed statuses - ALL assets must have allowed status
     if (action.allowedStatuses) {
-      const hasAllowedStatus = selectedAssetData.some(asset => 
+      const allHaveAllowedStatus = selectedAssetData.every(asset => 
         action.allowedStatuses!.includes(asset.status)
       );
-      if (!hasAllowedStatus) {
-        return;
+      if (!allHaveAllowedStatus) {
+        return; // If ANY asset doesn't have allowed status, don't show action
+      }
+    }
+    
+    // NEW: Special handling for ASSIGN action
+    if (action.id === 'assign') {
+      // Check if ANY asset is already assigned
+      const hasAssignedAsset = selectedAssetData.some(asset => 
+        asset.assignedEmployeeId || asset.assignedTo || asset.assignedToId
+      );
+      if (hasAssignedAsset) {
+        return; // Don't show assign if any asset is already assigned
+      }
+    }
+    
+    // NEW: Special handling for UNASSIGN action
+    if (action.id === 'unassign') {
+      // Check if ALL assets are assigned
+      const allAssigned = selectedAssetData.every(asset => 
+        asset.assignedEmployeeId || asset.assignedTo || asset.assignedToId
+      );
+      if (!allAssigned) {
+        return; // Don't show unassign if any asset is not assigned
       }
     }
     
     // Check user permissions
-    if (action.requiresEmployee && !currentUser?.accessLevel || currentUser?.accessLevel < 2) {
+    if (action.requiresEmployee && (!currentUser?.accessLevel || currentUser?.accessLevel < 2)) {
       return;
     }
     

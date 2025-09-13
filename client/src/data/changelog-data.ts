@@ -17,8 +17,46 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
-  // Add this entry at the beginning of CHANGELOG_DATA array in changelog-data.ts
-
+{
+  version: "0.3.6",
+  date: "2025-01-11",
+  title: "Enhanced Employee Filtering & Bulk Operations UI",
+  type: "minor",
+  changes: {
+    features: [
+      "🔍 Enhanced Assets Assignment Filter:",
+      "   ✅ New API endpoint `/api/employees/with-assets` for efficient filtering",
+      "   ✅ Shows ALL employees with assets across entire inventory (not just current page)",
+      "   ✅ Optimized performance with dedicated backend filtering",
+      "   ✅ Replaced paginated filtering with comprehensive employee list",
+      "⚡ Bulk Unassign Assets:",
+      "   ✅ New bulk unassign functionality for removing employee assignments",
+      "   ✅ Confirmation dialog with warning message",
+      "   ✅ Backend endpoint `/api/assets/bulk/unassign` with validation",
+      "   ✅ Automatically sets assets to 'Available' status after unassignment",
+      "   ✅ Blocks unassignment for Sold/Retired/Disposed assets",
+      "   ✅ Activity logging for audit trail"
+    ],
+    improvements: [
+      "🎯 Relocated bulk actions button to left side of pagination controls",
+      "🧹 Removed unnecessary 'Select assets to perform bulk actions' placeholder text",
+      "📍 Bulk actions button now only appears when assets are selected",
+      "🖱️ Prevented accidental asset edit form triggers:",
+      "   ✅ Entire checkbox cell area stops event propagation",
+      "   ✅ Larger clickable area around checkboxes for easier selection",
+      "   ✅ Click anywhere in checkbox cell to toggle selection",
+      "📊 Assignment filter now uses dedicated API call instead of client-side filtering",
+      "⚡ Reduced memory usage by fetching only employees with assets"
+    ],
+    bugfixes: [
+      "🔧 Fixed assignment filter showing incomplete employee list due to pagination",
+      "🎯 Fixed bulk unassign not working - added missing dialog and API endpoint",
+      "📐 Fixed accidental edit form opening when clicking near checkboxes",
+      "🔍 Resolved employees with assets on other pages not appearing in filter",
+      "✅ Fixed checkbox double-triggering with pointer-events optimization"
+    ]
+  }
+},
 {
   version: "0.3.5",
   date: "2025-09-12",

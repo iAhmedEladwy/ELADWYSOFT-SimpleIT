@@ -7068,6 +7068,89 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
+  // Bulk unassign assets
+  app.post("/api/assets/bulk/unassign", authenticateUser, async (req, res) => {
+    try {
+      const { assetIds } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ 
+          error: 'Invalid request: assetIds array is required' 
+        });
+      }
+
+      console.log(`[Bulk Unassign] Processing ${assetIds.length} assets`);
+      
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+      
+      // Process each asset
+      for (const assetId of assetIds) {
+        try {
+          // Get the current asset
+          const asset = await storage.getAssetById(assetId);
+          
+          if (!asset) {
+            errors.push(`Asset ${assetId} not found`);
+            failed++;
+            continue;
+          }
+          
+          // Check if asset can be unassigned (not sold, retired, etc.)
+          const blockedStatuses = ['Sold', 'Retired', 'Disposed'];
+          if (blockedStatuses.includes(asset.status)) {
+            errors.push(`Asset ${asset.assetId} cannot be unassigned (status: ${asset.status})`);
+            failed++;
+            continue;
+          }
+          
+          // Unassign the asset
+          await storage.updateAsset(assetId, {
+            assignedEmployeeId: null,
+            assignedTo: null,
+            assignedToId: null,
+            status: 'Available' // Set to available when unassigned
+          });
+          
+          // Log the activity
+          await storage.createActivityLog({
+            userId: req.user!.id,
+            action: 'BULK_UNASSIGN',
+            entityType: 'Asset',
+            entityId: assetId,
+            details: {
+              assetId: asset.assetId,
+              previousEmployee: asset.assignedEmployeeId,
+              bulkOperation: true
+            }
+          });
+          
+          successful++;
+        } catch (error) {
+          console.error(`Failed to unassign asset ${assetId}:`, error);
+          errors.push(`Failed to unassign asset ${assetId}`);
+          failed++;
+        }
+      }
+      
+      res.json({
+        message: `Bulk unassign completed: ${successful} successful, ${failed} failed`,
+        successful,
+        failed,
+        total: assetIds.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+      
+    } catch (error) {
+      console.error('Bulk unassign error:', error);
+      res.status(500).json({ 
+        error: 'Failed to unassign assets',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Add global error handler at the end
   app.use(errorHandler({ 
     showStackTrace: process.env.NODE_ENV === 'development',
