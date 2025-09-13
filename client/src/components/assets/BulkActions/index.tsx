@@ -162,13 +162,13 @@ export default function BulkActions({
     return <IconComponent className="h-4 w-4" />;
   };
 
-  if (selectedAssets.length === 0) {
-    return (
-      <div className="text-center py-4 text-gray-500">
-        {translations.selectAssets}
-      </div>
-    );
-  }
+  // if (selectedAssets.length === 0) {
+  //   return (
+  //     <div className="text-center py-4 text-gray-500">
+  //       {translations.selectAssets}
+  //     </div>
+  //   );
+  // }
 
   if (availableActions.length === 0) {
     return (
@@ -287,6 +287,14 @@ export default function BulkActions({
         onSuccess={handleDialogSuccess}
         onCancel={handleDialogCancel}
       />
+{/* 
+      <BulkUnassignDialog
+        open={activeDialog === 'unassign'}
+        onOpenChange={(open) => !open && setActiveDialog(null)}
+        selectedAssets={selectedAssets}
+        onSuccess={handleDialogSuccess}
+        onCancel={handleDialogCancel}
+      /> */}
 
       <BulkMaintenanceDialog
         open={activeDialog === 'schedule_maintenance'}

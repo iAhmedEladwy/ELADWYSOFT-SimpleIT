@@ -779,11 +779,25 @@ export default function Assets() {
   const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 bg-white dark:bg-gray-800 rounded-lg">
       <div className="flex items-center space-x-4">
+        {/* Add BulkActions button here on the left */}
+        <BulkActions
+          selectedAssets={selectedAssets}
+          availableAssets={assets}
+          currentUser={user}
+          onSelectionChange={setSelectedAssets}
+          onRefresh={refetch}
+          onSellRequest={() => setShowBulkSellDialog(true)}
+          onRetireRequest={() => setShowBulkRetireDialog(true)}
+        />
+        
+        {/* Showing text */}
         <p className="text-sm text-gray-700 dark:text-gray-300">
           {translations.showing} {Math.min((currentPage - 1) * itemsPerPage + 1, pagination.totalCount)} - {' '}
           {Math.min(currentPage * itemsPerPage, pagination.totalCount)} {translations.of} {' '}
           {pagination.totalCount} {translations.assets}
         </p>
+        
+        {/* Items per page selector */}
         <div className="flex items-center space-x-2">
           <Label className="text-sm">{translations.perPage}</Label>
           <Select
@@ -806,6 +820,7 @@ export default function Assets() {
         </div>
       </div>
       
+      {/* Keep pagination buttons on the right */}
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"
@@ -813,42 +828,34 @@ export default function Assets() {
           onClick={() => setCurrentPage(1)}
           disabled={currentPage === 1}
         >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <div className="flex items-center gap-1 px-2">
-          <span className="text-sm font-medium">
-            {translations.page} {currentPage} {translations.of} {pagination.totalPages || 1}
-          </span>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-sm font-medium">
+              {translations.page} {currentPage} {translations.of} {pagination.totalPages || 1}
+            </span>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+            disabled={currentPage >= pagination.totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(pagination.totalPages)}
+            disabled={currentPage >= pagination.totalPages}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
         </div>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-          disabled={currentPage >= pagination.totalPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(pagination.totalPages)}
-          disabled={currentPage >= pagination.totalPages}
-        >
-          <ChevronsRight className="h-4 w-4" />
-        </Button>
       </div>
-    </div>
-  );
+    );
 
   return (
     <>
@@ -1095,18 +1102,7 @@ export default function Assets() {
             </div>
           </CardContent>
         </Card>
-
-        {/* New Bulk Actions System */}
-        <BulkActions
-          selectedAssets={selectedAssets}
-          availableAssets={assets}
-          currentUser={user}
-          onSelectionChange={setSelectedAssets}
-          onRefresh={refetch}
-          onSellRequest={() => setShowBulkSellDialog(true)}
-          onRetireRequest={() => setShowBulkRetireDialog(true)}
-        />
-
+        
         {/* Pagination Controls Top */}
         {!isLoading && <PaginationControls />}
 
