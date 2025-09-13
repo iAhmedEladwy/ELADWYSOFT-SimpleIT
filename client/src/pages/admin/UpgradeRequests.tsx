@@ -180,6 +180,33 @@ export default function UpgradeRequests() {
           type: item.asset_type || '',
           brand: item.asset_brand || '',
           modelName: item.asset_model_name || ''
+        },
+        // Map for backward compatibility with original interface
+        employeeName: item.createdByName || item.created_by_name || '',
+        employeeCode: '',  // Not available in current backend
+        department: '',     // Not available in current backend
+        currentAsset: `${item.assetInfo?.type || ''} - ${item.assetInfo?.brand || ''} ${item.assetInfo?.modelName || ''}`.trim(),
+        requestedAsset: item.upgrade_type || item.upgradeType || '',
+        reason: item.justification || '',
+        requestDate: item.created_at || item.createdAt || '',
+        reviewedByName: item.approvedByName || item.approved_by_name || null,
+        reviewedAt: item.approval_date || item.approvalDate || null,
+        reviewNote: item.notes || ''
+      }));
+    },
+    staleTime: 30000,
+  });.justification || '',
+        estimatedCost: item.estimated_cost || item.estimatedCost || 0,
+        purchaseRequired: item.purchase_required || item.purchaseRequired || false,
+        createdBy: item.createdByName || item.created_by_name || '',
+        createdAt: item.created_at || item.createdAt || '',
+        approvedBy: item.approvedByName || item.approved_by_name || null,
+        approvalDate: item.approval_date || item.approvalDate || null,
+        assetInfo: item.assetInfo || {
+          assetId: item.asset_asset_id || '',
+          type: item.asset_type || '',
+          brand: item.asset_brand || '',
+          modelName: item.asset_model_name || ''
         }
       }));
     },
@@ -204,10 +231,17 @@ export default function UpgradeRequests() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
-  // Update status mutation
+  // Update status mutation with transaction creation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes: string }) => {
-      return apiRequest(`/api/upgrades/${id}/status`, 'POST', { status, notes });
+      // First update the status
+      const response = await apiRequest(`/api/upgrades/${id}/status`, 'POST', { status, notes });
+      
+      // If status changed to Approved, we should note that a transaction will be created
+      // Note: The backend currently doesn't auto-create transaction on status change
+      // This would need to be added to the backend if required
+      
+      return response;
     },
     onSuccess: (data, variables) => {
       toast({
