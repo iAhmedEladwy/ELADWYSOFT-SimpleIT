@@ -952,6 +952,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/employees/with-assets", authenticateUser, async (req, res) => {
+    try {
+      // Get all employees
+      const allEmployees = await storage.getAllEmployees();
+      
+      // Get all assets to check assignments
+      const allAssets = await storage.getAllAssets();
+      
+      // Create a Set of employee IDs who have assets for O(1) lookup
+      const employeeIdsWithAssets = new Set<number>();
+      
+      // Check all possible assignment fields in assets
+      for (const asset of allAssets) {
+        if (asset.assignedEmployeeId) {
+          employeeIdsWithAssets.add(asset.assignedEmployeeId);
+        }
+        // Also check other possible fields for backward compatibility
+        if (asset.assignedTo && typeof asset.assignedTo === 'number') {
+          employeeIdsWithAssets.add(asset.assignedTo);
+        }
+        if (asset.assignedToId) {
+          employeeIdsWithAssets.add(asset.assignedToId);
+        }
+      }
+      
+      // Filter employees who have assets assigned
+      const employeesWithAssets = allEmployees.filter((emp: any) => 
+        employeeIdsWithAssets.has(emp.id)
+      );
+      
+      res.json(employeesWithAssets);
+    } catch (error) {
+      console.error('Error fetching employees with assets:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch employees with assets',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Employee export endpoint - MUST be before /:id route
   app.get("/api/employees/export", authenticateUser, async (req, res) => {
     try {

@@ -276,6 +276,20 @@ export default function Assets() {
     gcTime: 1000 * 60 * 10, // Add - 10 minutes
   });
 
+  const { data: employeesWithAssetsData } = useQuery({
+    queryKey: ['employees-with-assets'],
+    queryFn: async () => {
+      const response = await fetch('/api/employees/with-assets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees with assets');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
   const { data: customAssetTypes = [] } = useQuery({
   queryKey: ['/api/custom-asset-types'],
   staleTime: 1000 * 60 * 10, // Add - 10 minutes
@@ -739,28 +753,13 @@ export default function Assets() {
   };
 
     // Process employees who have assets assigned - optimized version
-    const employeesWithAssets = useMemo(() => {
-      if (!assets || !Array.isArray(assets) || assets.length === 0) return [];
-      if (!employees || !Array.isArray(employees) || employees.length === 0) return [];
-      
-      // Create a Set for O(1) lookup instead of filtering arrays
-      const assignedEmployeeIds = new Set<number>();
-      
-      // Single pass through assets
-      for (const asset of assets) {
-        if (asset.assignedEmployeeId) {
-          assignedEmployeeIds.add(asset.assignedEmployeeId);
-        }
-      }
-      
-      // Early return if no assignments
-      if (assignedEmployeeIds.size === 0) return [];
-      
-      // Single pass through employees with Set lookup (O(1) per employee)
-      return employees.filter((emp: any) => 
-        assignedEmployeeIds.has(emp.id)
-      );
-    }, [assets, employees]);
+   const employeesWithAssets = useMemo(() => {
+    // Use the data from our dedicated API endpoint
+    if (!employeesWithAssetsData || !Array.isArray(employeesWithAssetsData)) {
+      return [];
+    }
+    return employeesWithAssetsData;
+    }, [employeesWithAssetsData]);
 
       const hasUnassignedAssets = useMemo(() => {
       if (!assets || !Array.isArray(assets)) return false;
