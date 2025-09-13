@@ -59,6 +59,8 @@ export default function Assets() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showBulkCheckOutDialog, setShowBulkCheckOutDialog] = useState(false);
+  const [showBulkCheckInDialog, setShowBulkCheckInDialog] = useState(false);
   const { formatCurrency } = useCurrency();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

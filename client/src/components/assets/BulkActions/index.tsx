@@ -17,13 +17,16 @@ import BulkDeleteDialog from './dialogs/BulkDeleteDialog';
 import BulkMaintenanceDialog from './dialogs/BulkMaintenanceDialog';
 import BulkUnassignDialog from './dialogs/BulkUnassignDialog';
 
+// Import the new Check-In/Out dialogs
+import CheckOutDialog from './dialogs/CheckOutDialog';
+import CheckInDialog from './dialogs/CheckInDialog';
 
 // Note: Sell and Retire dialogs are handled by the parent Assets.tsx component
 // to preserve existing functionality
 
 import { 
   MoreHorizontal, 
-  Badge, 
+  Badge as BadgeIcon, 
   User, 
   UserX, 
   DollarSign, 
@@ -32,11 +35,13 @@ import {
   Wrench, 
   ArrowRightLeft,
   CheckCircle,
-  XCircle
+  XCircle,
+  LogOut,
+  LogIn,
+  ChevronDown
 } from 'lucide-react';
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-
 
 interface BulkActionsProps {
   selectedAssets: number[];
@@ -49,7 +54,7 @@ interface BulkActionsProps {
 }
 
 const actionIcons = {
-  Badge: Badge,
+  Badge: BadgeIcon,
   User: User,
   UserX: UserX,
   DollarSign: DollarSign,
@@ -57,6 +62,8 @@ const actionIcons = {
   Trash2: Trash2,
   Wrench: Wrench,
   ArrowRightLeft: ArrowRightLeft,
+  LogOut: LogOut,
+  LogIn: LogIn,
 };
 
 export default function BulkActions({
@@ -75,6 +82,22 @@ export default function BulkActions({
   // Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<BulkActionResult | null>(null);
+  const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
+  const [showCheckInDialog, setShowCheckInDialog] = useState(false);
+  const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
+
+  // Get selected asset data
+  const selectedAssetData = availableAssets.filter(asset => 
+    selectedAssets.includes(asset.id)
+  );
+
+  // Filter assets by status for conditional actions
+  const availableForCheckOut = selectedAssetData.filter(a => a.status === 'Available');
+  const checkedOutAssets = selectedAssetData.filter(a => 
+    a.status === 'Checked Out' || a.status === 'In Use'
+  );
+  const assignedAssets = selectedAssetData.filter(a => a.assignedEmployeeId);
+  const unassignedAssets = selectedAssetData.filter(a => !a.assignedEmployeeId);
 
   // Get available actions based on current context
   const context: BulkActionContext = {
@@ -97,10 +120,19 @@ export default function BulkActions({
     operationFailed: language === 'English' ? 'Operation failed' : 'فشلت العملية',
     unassignAssets: language === 'English' ? 'Unassign Assets' : 'إلغاء تخصيص الأصول',
     unassignConfirm: language === 'English' 
-    ? `Are you sure you want to unassign ${selectedAssets.length} asset${selectedAssets.length > 1 ? 's' : ''}? This will remove the employee assignment from the selected assets.`
-    : `هل أنت متأكد من إلغاء تخصيص ${selectedAssets.length} أصل؟ سيؤدي هذا إلى إزالة تخصيص الموظف من الأصول المحددة.`,
+      ? `Are you sure you want to unassign ${selectedAssets.length} asset${selectedAssets.length > 1 ? 's' : ''}? This will remove the employee assignment from the selected assets.`
+      : `هل أنت متأكد من إلغاء تخصيص ${selectedAssets.length} أصل؟ سيؤدي هذا إلى إزالة تخصيص الموظف من الأصول المحددة.`,
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     unassign: language === 'English' ? 'Unassign' : 'إلغاء التخصيص',
+    checkOut: language === 'English' ? 'Check Out' : 'تسليم',
+    checkIn: language === 'English' ? 'Check In' : 'استلام',
+    assign: language === 'English' ? 'Assign to Employee' : 'تعيين لموظف',
+    changeStatus: language === 'English' ? 'Change Status' : 'تغيير الحالة',
+    sell: language === 'English' ? 'Sell' : 'بيع',
+    retire: language === 'English' ? 'Retire' : 'تقاعد',
+    delete: language === 'English' ? 'Delete' : 'حذف',
+    maintenance: language === 'English' ? 'Schedule Maintenance' : 'جدولة الصيانة',
+    selected: language === 'English' ? 'selected' : 'محدد',
   };
 
   const handleActionClick = (action: BulkAction) => {
@@ -126,6 +158,12 @@ export default function BulkActions({
       return;
     }
 
+    // Handle unassign with confirmation
+    if (action.id === 'unassign') {
+      setShowUnassignConfirm(true);
+      return;
+    }
+
     // Open appropriate dialog for other actions
     setActiveDialog(action.id);
   };
@@ -142,8 +180,7 @@ export default function BulkActions({
         success: true,
         message: `Successfully unassigned ${selectedAssets.length} assets`,
         details: {
-          total: selectedAssets.length,
-          successful: selectedAssets.length,
+          succeeded: selectedAssets.length,
           failed: 0
         }
       };
@@ -154,8 +191,7 @@ export default function BulkActions({
         success: false,
         message: error.message || 'Failed to unassign assets',
         details: {
-          total: selectedAssets.length,
-          successful: 0,
+          succeeded: 0,
           failed: selectedAssets.length
         }
       };
@@ -163,7 +199,6 @@ export default function BulkActions({
       handleDialogSuccess(result);
     }
   };
-
 
   const handleDialogSuccess = (result: BulkActionResult) => {
     setLastResult(result);
@@ -192,6 +227,7 @@ export default function BulkActions({
 
     // Close dialog
     setActiveDialog(null);
+    setShowUnassignConfirm(false);
   };
 
   const handleDialogCancel = () => {
@@ -202,154 +238,242 @@ export default function BulkActions({
     setLastResult(null);
   };
 
+  // Handle successful check-in/out operations
+  const handleCheckSuccess = () => {
+    onSelectionChange([]);
+    onRefresh();
+  };
+
   // Render action icon
   const renderActionIcon = (iconName: string) => {
     const IconComponent = actionIcons[iconName as keyof typeof actionIcons] || MoreHorizontal;
     return <IconComponent className="h-4 w-4" />;
   };
 
-  // if (selectedAssets.length === 0) {
-  //   return (
-  //     <div className="text-center py-4 text-gray-500">
-  //       {translations.selectAssets}
-  //     </div>
-  //   );
-  // }
-
-  if (availableActions.length === 0) {
-    return (
-      <div className="text-center py-4 text-gray-500">
-        {translations.noActions}
-      </div>
-    );
+  if (selectedAssets.length === 0) {
+    return null;
   }
 
   return (
-    <div className="space-y-4">
-      {/* Selection Summary */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">
-            {selectedAssets.length} {language === 'English' ? 'assets selected' : 'أصول محددة'}
-          </Badge>
-        </div>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              {translations.bulkActions}
-              <MoreHorizontal className="h-4 w-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            {availableActions.map((action, index) => (
-              <React.Fragment key={action.id}>
-                {index > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuItem 
-                  onClick={() => handleActionClick(action)}
-                  className="flex items-center gap-2"
-                >
-                  {renderActionIcon(action.icon)}
-                  <div>
-                    <div className="font-medium">{action.label}</div>
-                    <div className="text-xs text-gray-500">{action.description}</div>
-                  </div>
-                </DropdownMenuItem>
-              </React.Fragment>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div className="flex items-center gap-2">
+      <Badge variant="secondary">
+        {selectedAssets.length} {translations.selected}
+      </Badge>
 
-      {/* Result Display */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            {translations.bulkActions}
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          
+          {/* Check-Out Action - Show only if some assets are available */}
+          {availableForCheckOut.length > 0 && (
+            <DropdownMenuItem onClick={() => setShowCheckOutDialog(true)}>
+              <LogOut className="mr-2 h-4 w-4" />
+              {translations.checkOut} ({availableForCheckOut.length})
+            </DropdownMenuItem>
+          )}
+
+          {/* Check-In Action - Show only if some assets are checked out */}
+          {checkedOutAssets.length > 0 && (
+            <DropdownMenuItem onClick={() => setShowCheckInDialog(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              {translations.checkIn} ({checkedOutAssets.length})
+            </DropdownMenuItem>
+          )}
+
+          {availableForCheckOut.length > 0 || checkedOutAssets.length > 0 ? (
+            <DropdownMenuSeparator />
+          ) : null}
+
+          {/* Assign Action - Show only if some assets are unassigned */}
+          {unassignedAssets.length > 0 && (
+            <DropdownMenuItem onClick={() => setActiveDialog('assign')}>
+              <User className="mr-2 h-4 w-4" />
+              {translations.assign} ({unassignedAssets.length})
+            </DropdownMenuItem>
+          )}
+
+          {/* Unassign Action - Show only if some assets are assigned */}
+          {assignedAssets.length > 0 && (
+            <DropdownMenuItem onClick={() => setShowUnassignConfirm(true)}>
+              <UserX className="mr-2 h-4 w-4" />
+              {translations.unassign} ({assignedAssets.length})
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
+          {/* Change Status */}
+          <DropdownMenuItem onClick={() => setActiveDialog('change_status')}>
+            <BadgeIcon className="mr-2 h-4 w-4" />
+            {translations.changeStatus}
+          </DropdownMenuItem>
+
+          {/* Schedule Maintenance */}
+          <DropdownMenuItem onClick={() => setActiveDialog('schedule_maintenance')}>
+            <Wrench className="mr-2 h-4 w-4" />
+            {translations.maintenance}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Sell Action */}
+          {onSellRequest && (
+            <DropdownMenuItem onClick={onSellRequest}>
+              <DollarSign className="mr-2 h-4 w-4" />
+              {translations.sell}
+            </DropdownMenuItem>
+          )}
+
+          {/* Retire Action */}
+          {onRetireRequest && (
+            <DropdownMenuItem onClick={onRetireRequest}>
+              <Archive className="mr-2 h-4 w-4" />
+              {translations.retire}
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
+          {/* Delete Action */}
+          <DropdownMenuItem 
+            onClick={() => setActiveDialog('delete')}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {translations.delete}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Dialogs */}
+      
+      {/* Check-Out Dialog */}
+      <CheckOutDialog
+        open={showCheckOutDialog}
+        onOpenChange={setShowCheckOutDialog}
+        assets={selectedAssetData}
+        onSuccess={handleCheckSuccess}
+      />
+
+      {/* Check-In Dialog */}
+      <CheckInDialog
+        open={showCheckInDialog}
+        onOpenChange={setShowCheckInDialog}
+        assets={selectedAssetData}
+        onSuccess={handleCheckSuccess}
+      />
+
+      {/* Status Change Dialog */}
+      {activeDialog === 'change_status' && (
+        <BulkStatusDialog
+          open={true}
+          onOpenChange={(open) => !open && setActiveDialog(null)}
+          selectedAssets={selectedAssets}
+          onSuccess={handleDialogSuccess}
+          onCancel={handleDialogCancel}
+        />
+      )}
+
+      {/* Assign Dialog */}
+      {activeDialog === 'assign' && (
+        <BulkAssignDialog
+          open={true}
+          onOpenChange={(open) => !open && setActiveDialog(null)}
+          selectedAssets={selectedAssets}
+          onSuccess={handleDialogSuccess}
+          onCancel={handleDialogCancel}
+        />
+      )}
+
+      {/* Unassign Confirmation Dialog */}
+      <AlertDialog open={showUnassignConfirm} onOpenChange={setShowUnassignConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{translations.unassignAssets}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {translations.unassignConfirm}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{translations.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkUnassign}>
+              {translations.unassign}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      {activeDialog === 'delete' && (
+        <BulkDeleteDialog
+          open={true}
+          onOpenChange={(open) => !open && setActiveDialog(null)}
+          selectedAssets={selectedAssets}
+          onSuccess={handleDialogSuccess}
+          onCancel={handleDialogCancel}
+        />
+      )}
+
+      {/* Maintenance Dialog */}
+      {activeDialog === 'schedule_maintenance' && (
+        <BulkMaintenanceDialog
+          open={true}
+          onOpenChange={(open) => !open && setActiveDialog(null)}
+          selectedAssets={selectedAssets}
+          onSuccess={handleDialogSuccess}
+          onCancel={handleDialogCancel}
+        />
+      )}
+
+      {/* Result Dialog */}
       {lastResult && (
-        <div className={`p-4 rounded-lg border ${
-          lastResult.success 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {lastResult.success ? (
-                <CheckCircle className="h-5 w-5" />
-              ) : (
-                <XCircle className="h-5 w-5" />
-              )}
-              <div>
-                <div className="font-medium">
-                  {lastResult.success ? translations.operationCompleted : translations.operationFailed}
-                </div>
-                <div className="text-sm">{lastResult.message}</div>
+        <AlertDialog open={!!lastResult} onOpenChange={() => setLastResult(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {lastResult.success ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    {translations.operationCompleted}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-5 w-5 text-red-600" />
+                    {translations.operationFailed}
+                  </div>
+                )}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {lastResult.message}
                 {lastResult.details && (
-                  <div className="text-xs mt-1">
-                    {lastResult.details.succeeded > 0 && (
-                      <span className="text-green-600">
-                        {lastResult.details.succeeded} succeeded
-                      </span>
-                    )}
-                    {lastResult.details.succeeded > 0 && lastResult.details.failed > 0 && ' • '}
-                    {lastResult.details.failed > 0 && (
-                      <span className="text-red-600">
-                        {lastResult.details.failed} failed
-                      </span>
+                  <div className="mt-2">
+                    <div>Succeeded: {lastResult.details.succeeded}</div>
+                    <div>Failed: {lastResult.details.failed}</div>
+                    {lastResult.details.errors && lastResult.details.errors.length > 0 && (
+                      <div className="mt-2">
+                        <div className="font-medium">Errors:</div>
+                        <ul className="list-disc list-inside">
+                          {lastResult.details.errors.map((error, index) => (
+                            <li key={index} className="text-sm">{error}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleCloseResult}
-              className="h-6 w-6 p-0"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={handleCloseResult}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
-
-      {/* Dialogs */}
-      <BulkStatusDialog
-        open={activeDialog === 'change_status'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-
-      <BulkAssignDialog
-        open={activeDialog === 'assign'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-
-      <BulkDeleteDialog
-        open={activeDialog === 'delete'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-      <BulkUnassignDialog
-        open={activeDialog === 'unassign'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-
-      <BulkMaintenanceDialog
-        open={activeDialog === 'schedule_maintenance'}
-        onOpenChange={(open) => !open && setActiveDialog(null)}
-        selectedAssets={selectedAssets}
-        onSuccess={handleDialogSuccess}
-        onCancel={handleDialogCancel}
-      />
-
-      {/* Sell and Retire dialogs are handled by parent Assets.tsx component */}
     </div>
   );
 }
