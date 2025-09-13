@@ -195,22 +195,6 @@ export default function UpgradeRequests() {
       }));
     },
     staleTime: 30000,
-  });.justification || '',
-        estimatedCost: item.estimated_cost || item.estimatedCost || 0,
-        purchaseRequired: item.purchase_required || item.purchaseRequired || false,
-        createdBy: item.createdByName || item.created_by_name || '',
-        createdAt: item.created_at || item.createdAt || '',
-        approvedBy: item.approvedByName || item.approved_by_name || null,
-        approvalDate: item.approval_date || item.approvalDate || null,
-        assetInfo: item.assetInfo || {
-          assetId: item.asset_asset_id || '',
-          type: item.asset_type || '',
-          brand: item.asset_brand || '',
-          modelName: item.asset_model_name || ''
-        }
-      }));
-    },
-    staleTime: 30000,
   });
 
   // Filter and search logic
