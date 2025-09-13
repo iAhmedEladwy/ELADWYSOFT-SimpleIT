@@ -218,7 +218,12 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             >
               <div className="flex items-center gap-3">
                 <Shield className="h-5 w-5" />
-                <span>{translations.AdminConsole}</span>
+                  <span className="flex items-center gap-2">
+                  {translations.AdminConsole}
+                  <span className="bg-gray-200 text-gray-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
+                    Beta
+                  </span>
+                </span>
               </div>
               {isAdminConsoleOpen ? (
                 <ChevronDown className="h-4 w-4" />
