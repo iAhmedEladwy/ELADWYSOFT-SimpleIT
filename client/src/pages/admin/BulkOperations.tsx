@@ -91,6 +91,7 @@ export default function BulkOperations() {
     failedCount: language === 'English' ? 'failed' : 'فشل',
     errors: language === 'English' ? 'errors' : 'أخطاء',
     noAccess: language === 'English' ? 'You do not have permission to view this page' : 'ليس لديك صلاحية لعرض هذه الصفحة',
+    id: language === 'English' ? 'ID' : 'المعرف',
   };
 
   // Check if user has admin access
@@ -363,7 +364,7 @@ export default function BulkOperations() {
                           <div className="text-sm">
                             <div className="font-medium">{item.entityType}</div>
                             {item.entityId && (
-                              <div className="text-muted-foreground">ID: {item.entityId}</div>
+                              <div className="text-muted-foreground">{translations.id}: {item.entityId}</div>
                             )}
                           </div>
                         </TableCell>

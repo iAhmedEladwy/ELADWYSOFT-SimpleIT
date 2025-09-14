@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/use-language';
 import {
   Table,
   TableBody,
@@ -75,6 +76,7 @@ interface UpgradeRequest {
 export default function UpgradeRequests() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -86,14 +88,6 @@ export default function UpgradeRequests() {
   const [selectedRequest, setSelectedRequest] = useState<UpgradeRequest | null>(null);
   const [decision, setDecision] = useState<string>('');
   const [reviewNote, setReviewNote] = useState('');
-
-  // Get user info
-  const { data: user } = useQuery({
-    queryKey: ['/api/me'],
-    staleTime: Infinity,
-  });
-
-  const language = user?.language || 'English';
 
   // Translations
   const translations = {
