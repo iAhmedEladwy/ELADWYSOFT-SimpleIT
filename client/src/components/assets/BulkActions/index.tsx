@@ -245,13 +245,6 @@ export default function BulkActions({
             <DropdownMenuSeparator />
           ) : null}
 
-          {/* Assign Action - Show only if some assets are unassigned */}
-          {unassignedAssets.length > 0 && (
-            <DropdownMenuItem onClick={() => setActiveDialog('assign')}>
-              <User className="mr-2 h-4 w-4" />
-              {translations.assign} ({unassignedAssets.length})
-            </DropdownMenuItem>
-          )}
 
           <DropdownMenuSeparator />
 
