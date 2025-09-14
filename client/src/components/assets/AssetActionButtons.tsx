@@ -30,26 +30,6 @@ interface AssetActionButtonsProps {
   asset: any;
 }
 
-// Check-out reason options - matching AssetActionsMenu
-const CHECK_OUT_REASONS = [
-  'Assigned for work use',
-  'Temporary loan',
-  'Replacement for faulty asset',
-  'Project-based use',
-  'Remote work setup',
-  'New employee onboarding'
-];
-
-// Check-in reason options - matching AssetActionsMenu
-const CHECK_IN_REASONS = [
-  'End of assignment',
-  'Employee exit',
-  'Asset not needed anymore',
-  'Asset upgrade/replacement',
-  'Faulty/Needs repair',
-  'Loan period ended'
-];
-
 export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
@@ -83,6 +63,26 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
     checkOutSuccess: language === 'English' ? 'Asset checked out successfully' : 'تم تسليم الأصل بنجاح',
     checkInSuccess: language === 'English' ? 'Asset checked in successfully' : 'تم استلام الأصل بنجاح',
   };
+
+  // Translated check-out reasons
+  const checkOutReasons = [
+    language === 'English' ? 'Assigned for work use' : 'مخصص للاستخدام في العمل',
+    language === 'English' ? 'Temporary loan' : 'إعارة مؤقتة',
+    language === 'English' ? 'Replacement for faulty asset' : 'بديل لأصل معطل',
+    language === 'English' ? 'Project-based use' : 'استخدام في مشروع',
+    language === 'English' ? 'Remote work setup' : 'إعداد للعمل عن بُعد',
+    language === 'English' ? 'New employee onboarding' : 'إعداد موظف جديد',
+  ];
+
+  // Translated check-in reasons
+  const checkInReasons = [
+    language === 'English' ? 'End of assignment' : 'انتهاء المهمة',
+    language === 'English' ? 'Employee exit' : 'مغادرة الموظف',
+    language === 'English' ? 'Asset not needed anymore' : 'لم يعد الأصل مطلوباً',
+    language === 'English' ? 'Asset upgrade/replacement' : 'ترقية/استبدال الأصل',
+    language === 'English' ? 'Faulty/Needs repair' : 'معطل/يحتاج إصلاح',
+    language === 'English' ? 'Loan period ended' : 'انتهت فترة الإعارة',
+  ];
 
   const resetForm = () => {
     setSelectedEmployeeId('');

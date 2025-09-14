@@ -34,21 +34,22 @@ export default function AssetFilters({
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
   const translations = {
-    filters: language === 'Arabic' ? 'الفلاتر' : 'Filters',
-    search: language === 'Arabic' ? 'البحث' : 'Search',
-    type: language === 'Arabic' ? 'النوع' : 'Type',
-    brand: language === 'Arabic' ? 'العلامة التجارية' : 'Brand',
-    status: language === 'Arabic' ? 'الحالة' : 'Status',
-    assignedTo: language === 'Arabic' ? 'مخصص لـ' : 'Assigned To',
-    clearAll: language === 'Arabic' ? 'مسح الكل' : 'Clear All',
-    searchPlaceholder: language === 'Arabic' ? 'البحث في الأصول...' : 'Search assets...',
-    allTypes: language === 'Arabic' ? 'جميع الأنواع' : 'All Types',
-    allBrands: language === 'Arabic' ? 'جميع العلامات' : 'All Brands',
-    allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
-    unassigned: language === 'Arabic' ? 'غير مخصص' : 'Unassigned',
-    results: language === 'Arabic' ? 
-      `عرض ${filteredCount} من ${totalCount} أصل` : 
-      `Showing ${filteredCount} of ${totalCount} assets`,
+    filters: language === 'English' ? 'Filters' : 'الفلاتر',
+    search: language === 'English' ? 'Search' : 'البحث',
+    type: language === 'English' ? 'Type' : 'النوع',
+    brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
+    status: language === 'English' ? 'Status' : 'الحالة',
+    assignedTo: language === 'English' ? 'Assigned To' : 'مخصص لـ',
+    clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
+    searchPlaceholder: language === 'English' ? 'Search assets...' : 'البحث في الأصول...',
+    allTypes: language === 'English' ? 'All Types' : 'جميع الأنواع',
+    allBrands: language === 'English' ? 'All Brands' : 'جميع العلامات',
+    allStatuses: language === 'English' ? 'All Statuses' : 'جميع الحالات',
+    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
+    results: language === 'English' ? 
+      `Showing ${filteredCount} of ${totalCount} assets` : 
+      `عرض ${filteredCount} من ${totalCount} أصل`,
+    export: language === 'English' ? 'Export' : 'تصدير'
   };
 
   // Fetch available filter options
@@ -331,7 +332,7 @@ export default function AssetFilters({
                   className="gap-1 h-6 px-2 text-xs"
                 >
                   <Download className="h-3 w-3" />
-                  {language === 'Arabic' ? 'تصدير' : 'Export'}
+                  {translations.export}
                 </Button>
               )}
             </div>

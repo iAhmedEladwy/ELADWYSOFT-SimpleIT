@@ -57,14 +57,6 @@ interface EnhancedCheckOutDialogProps {
 }
 
 // Check-out reason options
-const CHECK_OUT_REASONS = [
-  'Assigned for work use',
-  'Temporary loan',
-  'Replacement for faulty asset',
-  'Project-based use',
-  'Remote work setup',
-  'New employee onboarding'
-];
 
 interface ProcessingResult {
   assetId: string;
@@ -130,7 +122,6 @@ export default function EnhancedCheckOutDialog({
     unavailable: language === 'English' ? 'Unavailable' : 'غير متاح',
     
     // Warnings
-    warningTitle: language === 'English' ? 'Warning' : 'تحذير',
     someAssetsUnavailable: language === 'English' 
       ? `${invalidAssets.length} asset(s) cannot be checked out (not available)` 
       : `${invalidAssets.length} أصل لا يمكن تسليمه (غير متاح)`,
@@ -147,13 +138,10 @@ export default function EnhancedCheckOutDialog({
     processingAssets: language === 'English' 
       ? 'Processing assets...' 
       : 'جاري معالجة الأصول...',
-    processedOf: language === 'English' ? 'of' : 'من',
     
     // Results
-    resultsTitle: language === 'English' ? 'Check-Out Results' : 'نتائج التسليم',
     successCount: language === 'English' ? 'Successful' : 'نجح',
     failedCount: language === 'English' ? 'Failed' : 'فشل',
-    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
     retry: language === 'English' ? 'Retry Failed' : 'إعادة المحاولة',
     done: language === 'English' ? 'Done' : 'تم',
     
@@ -167,7 +155,25 @@ export default function EnhancedCheckOutDialog({
     errorMessage: language === 'English' 
       ? 'Failed to check out assets' 
       : 'فشل تسليم الأصول',
+
+    // Check-out reasons
+    assignedWork: language === 'English' ? 'Assigned for work use' : 'مخصص للاستخدام العمل',
+    temporaryLoan: language === 'English' ? 'Temporary loan' : 'إعارة مؤقتة',
+    replacement: language === 'English' ? 'Replacement for faulty asset' : 'استبدال لأصل معطل',
+    projectUse: language === 'English' ? 'Project-based use' : 'استخدام حسب المشروع',
+    remoteWork: language === 'English' ? 'Remote work setup' : 'إعداد العمل عن بُعد',
+    onboarding: language === 'English' ? 'New employee onboarding' : 'إعداد موظف جديد'
   };
+
+  // Get check-out reasons with translations
+  const getCheckOutReasons = () => [
+    translations.assignedWork,
+    translations.temporaryLoan,
+    translations.replacement,
+    translations.projectUse,
+    translations.remoteWork,
+    translations.onboarding
+  ];
 
   // Process check-out for single or bulk
   const handleCheckOut = async () => {
@@ -432,8 +438,8 @@ export default function EnhancedCheckOutDialog({
                       <SelectValue placeholder={translations.selectReason} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={5}>
-                      {CHECK_OUT_REASONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      {getCheckOutReasons().map((reason, index) => (
+                        <SelectItem key={index} value={reason}>{reason}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

@@ -57,15 +57,6 @@ interface EnhancedCheckInDialogProps {
 }
 
 // Check-in reason options
-const CHECK_IN_REASONS = [
-  'End of assignment',
-  'Employee exit',
-  'Asset not needed anymore',
-  'Asset upgrade/replacement',
-  'Faulty/Needs repair',
-  'Loan period ended'
-];
-
 interface ProcessingResult {
   assetId: string;
   employeeName?: string;
@@ -150,16 +141,15 @@ export default function EnhancedCheckInDialog({
     notCheckedOut: language === 'English' ? 'Not checked out' : 'غير مسلم',
     
     // Warnings
-    warningTitle: language === 'English' ? 'Warning' : 'تحذير',
     someAssetsNotCheckedOut: language === 'English' 
       ? `${invalidAssets.length} asset(s) cannot be checked in (not checked out)` 
       : `${invalidAssets.length} أصل لا يمكن استلامه (غير مسلم)`,
     multipleEmployeesWarning: language === 'English'
       ? 'Assets are currently assigned to different employees. They will all be returned.'
       : 'الأصول مخصصة حالياً لموظفين مختلفين. سيتم إرجاعها جميعاً.',
+    cannotCheckIn: language === 'English' ? 'Cannot check in' : 'لا يمكن الاستلام',
     
     // Employee groups
-    employeeGroup: language === 'English' ? 'Assigned to' : 'مخصص لـ',
     assetsCount: language === 'English' ? 'assets' : 'أصول',
     
     // Buttons
@@ -174,13 +164,10 @@ export default function EnhancedCheckInDialog({
     processingAssets: language === 'English' 
       ? 'Processing returns...' 
       : 'جاري معالجة الإرجاع...',
-    processedOf: language === 'English' ? 'of' : 'من',
     
     // Results
-    resultsTitle: language === 'English' ? 'Check-In Results' : 'نتائج الاستلام',
     successCount: language === 'English' ? 'Successful' : 'نجح',
     failedCount: language === 'English' ? 'Failed' : 'فشل',
-    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
     retry: language === 'English' ? 'Retry Failed' : 'إعادة المحاولة',
     done: language === 'English' ? 'Done' : 'تم',
     returnedFrom: language === 'English' ? 'Returned from' : 'تم الإرجاع من',
@@ -195,7 +182,25 @@ export default function EnhancedCheckInDialog({
     errorMessage: language === 'English' 
       ? 'Failed to check in assets' 
       : 'فشل استلام الأصول',
+
+    // Check-in reasons
+    endOfAssignment: language === 'English' ? 'End of assignment' : 'انتهاء التكليف',
+    employeeExit: language === 'English' ? 'Employee exit' : 'خروج الموظف',
+    notNeeded: language === 'English' ? 'Asset not needed anymore' : 'الأصل لم يعد مطلوباً',
+    upgrade: language === 'English' ? 'Asset upgrade/replacement' : 'ترقية/استبدال الأصل',
+    faulty: language === 'English' ? 'Faulty/Needs repair' : 'معطل/يحتاج إصلاح',
+    loanEnded: language === 'English' ? 'Loan period ended' : 'انتهت فترة الإعارة'
   };
+
+  // Get check-in reasons with translations
+  const getCheckInReasons = () => [
+    translations.endOfAssignment,
+    translations.employeeExit,
+    translations.notNeeded,
+    translations.upgrade,
+    translations.faulty,
+    translations.loanEnded
+  ];
 
   // Process check-in for single or bulk
   const handleCheckIn = async () => {
@@ -487,7 +492,7 @@ export default function EnhancedCheckInDialog({
                       <SelectValue placeholder={translations.selectReason} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={5}>
-                      {CHECK_IN_REASONS.map((r) => (
+                      {getCheckInReasons().map((r) => (
                         <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
                     </SelectContent>

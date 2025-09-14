@@ -69,6 +69,40 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const { formatCurrency, symbol } = useCurrency();
   const isEditMode = !!initialData;
 
+  // Create schema with dynamic validation messages based on language
+  const createAssetFormSchema = () => z.object({
+    type: z.string(),
+    brand: z.string().min(1, translations.brandRequired),
+    modelNumber: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    modelName: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    serialNumber: z.string().min(1, translations.serialRequired),
+    specs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    status: z.string(),
+    purchaseDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+      .refine(
+        (date) => !date || !isNaN(Date.parse(date)),
+        { message: translations.invalidDate }
+      ),
+    buyPrice: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+      .refine(
+        (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+        { message: translations.invalidPrice }
+      ),
+    warrantyExpiryDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
+      .refine(
+        (date) => !date || !isNaN(Date.parse(date)),
+        { message: translations.invalidDate }
+      ),
+    lifeSpan: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    outOfBoxOs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    assignedEmployeeId: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    cpu: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    ram: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+    storage: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
+  });
+
+  const assetFormSchema = createAssetFormSchema();
+
   // Fetch employees list for assignment dropdown
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['/api/employees'],
@@ -138,6 +172,20 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     create: language === 'English' ? 'Create Asset' : 'إنشاء أصل',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
+    cpu: language === 'English' ? 'CPU' : 'المعالج',
+    cpuPlaceholder: language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H',
+    cpuDesc: language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته',
+    ram: language === 'English' ? 'RAM' : 'الذاكرة',
+    ramPlaceholder: language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4',
+    ramDesc: language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها',
+    storage: language === 'English' ? 'Storage' : 'التخزين',
+    storagePlaceholder: language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD',
+    storageDesc: language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه',
+    // Validation messages
+    brandRequired: language === 'English' ? 'Brand is required' : 'العلامة التجارية مطلوبة',
+    serialRequired: language === 'English' ? 'Serial number is required' : 'الرقم التسلسلي مطلوب',
+    invalidDate: language === 'English' ? 'Invalid date format' : 'تنسيق التاريخ غير صحيح',
+    invalidPrice: language === 'English' ? 'Enter a valid price (e.g., 999.99)' : 'أدخل سعرًا صحيحًا (مثال: 999.99)'
   };
 
   // Convert initial data to form format
@@ -411,11 +459,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="cpu"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'CPU' : 'المعالج'}</FormLabel>
+                    <FormLabel>{translations.cpu}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.cpuPlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته'}</FormDescription>
+                    <FormDescription>{translations.cpuDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -426,11 +474,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="ram"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'RAM' : 'الذاكرة'}</FormLabel>
+                    <FormLabel>{translations.ram}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.ramPlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها'}</FormDescription>
+                    <FormDescription>{translations.ramDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -441,11 +489,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="storage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'Storage' : 'التخزين'}</FormLabel>
+                    <FormLabel>{translations.storage}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.storagePlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه'}</FormDescription>
+                    <FormDescription>{translations.storageDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

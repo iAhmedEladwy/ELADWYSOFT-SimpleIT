@@ -68,27 +68,34 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
     date: language === 'English' ? 'Date' : 'التاريخ',
     cost: language === 'English' ? 'Cost' : 'التكلفة',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
+    editAsset: language === 'English' ? 'Edit Asset' : 'تحرير الأصل',
+    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
+    checkOut: language === 'English' ? 'Check Out' : 'تسليم',
+    checkIn: language === 'English' ? 'Check In' : 'استلام',
+    scheduleMaintenance: language === 'English' ? 'Schedule Maintenance' : 'جدولة الصيانة',
+    viewHistory: language === 'English' ? 'View History' : 'عرض السجل',
+    requestUpgrade: language === 'English' ? 'Request Upgrade' : 'طلب ترقية',
   };
 
 
-  // Check-out reasons
+  // Translated check-out reasons
   const checkOutReasons = [
-    'Assigned for work use',
-    'Temporary loan',
-    'Replacement for faulty asset',
-    'Project-based use',
-    'Remote work setup',
-    'New employee onboarding'
+    language === 'English' ? 'Assigned for work use' : 'مخصص للاستخدام في العمل',
+    language === 'English' ? 'Temporary loan' : 'إعارة مؤقتة',
+    language === 'English' ? 'Replacement for faulty asset' : 'بديل لأصل معطل',
+    language === 'English' ? 'Project-based use' : 'استخدام في مشروع',
+    language === 'English' ? 'Remote work setup' : 'إعداد للعمل عن بُعد',
+    language === 'English' ? 'New employee onboarding' : 'إعداد موظف جديد',
   ];
 
-  // Check-in reasons
+  // Translated check-in reasons
   const checkInReasons = [
-    'End of assignment',
-    'Employee exit',
-    'Asset not needed anymore',
-    'Asset upgrade/replacement',
-    'Faulty/Needs repair',
-    'Loan period ended'
+    language === 'English' ? 'End of assignment' : 'انتهاء المهمة',
+    language === 'English' ? 'Employee exit' : 'مغادرة الموظف',
+    language === 'English' ? 'Asset not needed anymore' : 'لم يعد الأصل مطلوباً',
+    language === 'English' ? 'Asset upgrade/replacement' : 'ترقية/استبدال الأصل',
+    language === 'English' ? 'Faulty/Needs repair' : 'معطل/يحتاج إصلاح',
+    language === 'English' ? 'Loan period ended' : 'انتهت فترة الإعارة',
   ];
 
   // Check-out mutation
@@ -223,7 +230,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             handleEdit();
           }}>
             <Edit className="mr-2 h-4 w-4" />
-            Edit Asset
+            {translations.editAsset}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={(e) => {
@@ -232,7 +239,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             handleViewDetails();
           }}>
             <Eye className="mr-2 h-4 w-4" />
-            View Details
+            {translations.viewDetails}
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
@@ -244,7 +251,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
               handleCheckOut();
             }}>
               <LogOut className="mr-2 h-4 w-4" />
-              Check Out
+              {translations.checkOut}
             </DropdownMenuItem>
           )}
           
@@ -255,7 +262,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
               handleCheckIn();
             }}>
               <LogIn className="mr-2 h-4 w-4" />
-              Check In
+              {translations.checkIn}
             </DropdownMenuItem>
           )}
           
@@ -267,7 +274,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             handleMaintenance();
           }}>
             <Wrench className="mr-2 h-4 w-4" />
-            Schedule Maintenance
+            {translations.scheduleMaintenance}
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={(e) => {
@@ -276,7 +283,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             handleViewHistory();
           }}>
             <FileText className="mr-2 h-4 w-4" />
-            View History
+            {translations.viewHistory}
           </DropdownMenuItem>
 
   
@@ -288,7 +295,7 @@ export function AssetActionsMenu({ asset, employees = [], onEdit }: AssetActions
             handleUpgrade();
           }}>
             <ArrowUp className="mr-2 h-4 w-4" />
-            Request Upgrade
+            {translations.requestUpgrade}
           </DropdownMenuItem> 
           </DropdownMenuContent>
           </DropdownMenu>       

@@ -39,22 +39,12 @@ export default function BulkMaintenanceDialog({
     queryKey: ['/api/maintenance-types'],
     queryFn: async () => {
       // Return common maintenance types if API doesn't exist
-      return [
-        { id: 'preventive', name: 'Preventive Maintenance' },
-        { id: 'corrective', name: 'Corrective Maintenance' },
-        { id: 'emergency', name: 'Emergency Repair' },
-        { id: 'upgrade', name: 'Upgrade/Enhancement' },
-        { id: 'inspection', name: 'Inspection' },
-        { id: 'cleaning', name: 'Cleaning' },
-        { id: 'calibration', name: 'Calibration' },
-        { id: 'other', name: 'Other' }
-      ];
+      return getMaintenanceTypes();
     }
   });
 
   const translations = {
     title: language === 'English' ? 'Schedule Bulk Maintenance' : 'جدولة الصيانة المجمعة',
-    description: language === 'English' ? 'Schedule maintenance for selected assets' : 'جدولة الصيانة للأصول المحددة',
     type: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
     descriptionLabel: language === 'English' ? 'Description' : 'الوصف',
     scheduledDate: language === 'English' ? 'Scheduled Date' : 'التاريخ المجدول',
@@ -70,8 +60,29 @@ export default function BulkMaintenanceDialog({
     assetSummary: language === 'English' ? 'Selected Assets' : 'الأصول المحددة',
     high: language === 'English' ? 'High' : 'عالي',
     medium: language === 'English' ? 'Medium' : 'متوسط',
-    low: language === 'English' ? 'Low' : 'منخفض'
+    low: language === 'English' ? 'Low' : 'منخفض',
+    // Maintenance types
+    preventiveMaintenance: language === 'English' ? 'Preventive Maintenance' : 'صيانة وقائية',
+    correctiveMaintenance: language === 'English' ? 'Corrective Maintenance' : 'صيانة تصحيحية',
+    emergencyRepair: language === 'English' ? 'Emergency Repair' : 'إصلاح طارئ',
+    upgradeEnhancement: language === 'English' ? 'Upgrade/Enhancement' : 'ترقية/تحسين',
+    inspection: language === 'English' ? 'Inspection' : 'فحص',
+    cleaning: language === 'English' ? 'Cleaning' : 'تنظيف',
+    calibration: language === 'English' ? 'Calibration' : 'معايرة',
+    other: language === 'English' ? 'Other' : 'أخرى'
   };
+
+  // Get maintenance types with translations
+  const getMaintenanceTypes = () => [
+    { id: 'preventive', name: translations.preventiveMaintenance },
+    { id: 'corrective', name: translations.correctiveMaintenance },
+    { id: 'emergency', name: translations.emergencyRepair },
+    { id: 'upgrade', name: translations.upgradeEnhancement },
+    { id: 'inspection', name: translations.inspection },
+    { id: 'cleaning', name: translations.cleaning },
+    { id: 'calibration', name: translations.calibration },
+    { id: 'other', name: translations.other }
+  ];
 
   const handleSubmit = async () => {
     // Validation
