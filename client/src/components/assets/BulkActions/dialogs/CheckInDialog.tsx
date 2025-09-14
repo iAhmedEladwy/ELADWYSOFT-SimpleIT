@@ -92,7 +92,8 @@ export default function EnhancedCheckInDialog({
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  // Determine if bulk mode
+ // Determine if bulk mode
+  const isBulkMode = assets.length > 1;
   const validAssets = assets.filter(asset => 
     asset.status === 'In Use' && asset.assignedEmployeeId
   );
