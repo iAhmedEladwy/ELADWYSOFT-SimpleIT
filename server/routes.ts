@@ -7222,7 +7222,7 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
         }
         
         // Check if asset is checked out
-        if (asset.status !== 'Checked Out' && asset.status !== 'In Use') {
+        if (asset.status !== 'In Use') {
           results.failed++;
           results.errors.push(`Asset ${asset.assetId} is not checked out (current status: ${asset.status})`);
           continue;
