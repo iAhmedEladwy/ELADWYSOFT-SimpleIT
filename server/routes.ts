@@ -7213,11 +7213,19 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
     // Process each asset
     for (const assetId of assetIds) {
       try {
-        // Get asset details
-        const asset = await storage.getAsset(assetId);
+        // Parse and validate the asset ID
+        const parsedAssetId = parseInt(assetId);
+        if (isNaN(parsedAssetId)) {
+          results.failed++;
+          results.errors.push(`Invalid asset ID: ${assetId}`);
+          continue;
+        }
+        
+        // Get asset details with the parsed ID
+        const asset = await storage.getAsset(parsedAssetId);
         if (!asset) {
           results.failed++;
-          results.errors.push(`Asset ${assetId} not found`);
+          results.errors.push(`Asset ${parsedAssetId} not found`);
           continue;
         }
         
@@ -7236,25 +7244,25 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
             employeeName = employee.englishName || employee.name;
           }
         }
+        
         // Build device specs object
-          const deviceSpecs = {
-            cpu: asset.cpu,
-            ram: asset.ram,
-            storage: asset.storage,
-            specs: asset.specs
-          };
+        const deviceSpecs = {
+          cpu: asset.cpu,
+          ram: asset.ram,
+          storage: asset.storage,
+          specs: asset.specs
+        };
         
         // Combine reason and notes into conditionNotes field
         const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
         
         // Create transaction using existing checkInAsset method
-        // The conditionNotes will be stored in the existing field
         const transaction = await storage.checkInAsset(
-          assetId, 
-          conditionNotes,  // Using conditionNotes field for reason + notes
+          parsedAssetId,  // Use parsed ID here
+          conditionNotes,
           'Check-In', 
           handledById,
-          deviceSpecs  
+          deviceSpecs  // Include deviceSpecs parameter
         );
         
         results.successful++;
@@ -7265,7 +7273,7 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
           userId: handledById,
           action: "BULK_CHECK_IN",
           entityType: "ASSET",
-          entityId: assetId,
+          entityId: parsedAssetId,
           details: {
             assetId: asset.assetId,
             previousEmployeeId: asset.assignedEmployeeId,
