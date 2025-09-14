@@ -7297,6 +7297,62 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
   }
 });
 
+//Bulk Status change
+app.post("/api/assets/bulk/status", authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const { assetIds, status } = req.body;
+    
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+      return res.status(400).json({ message: "Asset IDs are required" });
+    }
+    
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+    
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+    
+    for (const assetId of assetIds) {
+      try {
+        await storage.updateAsset(assetId, { status });
+        results.successful++;
+        
+        // Log activity
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "STATUS_CHANGE",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: {
+            newStatus: status,
+            bulkOperation: true
+          }
+        });
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`Asset ${assetId}: ${error.message}`);
+      }
+    }
+    
+    res.json({
+      message: `Changed status for ${results.successful} assets`,
+      successful: results.successful,
+      failed: results.failed,
+      errors: results.errors
+    });
+  } catch (error: unknown) {
+    console.error("Error in bulk status change:", error);
+    res.status(500).json({ 
+      message: "Failed to change status",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 // Optional: Get check-in/out reasons (for frontend dropdowns)
 app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) => {
   try {

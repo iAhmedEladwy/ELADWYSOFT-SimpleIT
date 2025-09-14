@@ -207,69 +207,47 @@ export default function EnhancedCheckInDialog({
 
     try {
       if (isBulkMode) {
-        // Bulk operation
-        const totalAssets = validAssets.length;
-        const results: ProcessingResult[] = [];
+        // Bulk operation - use bulk endpoint
+        const response = await apiRequest('/api/assets/bulk/check-in', 'POST', {
+          assetIds: validAssets.map(a => a.id),
+          reason,
+          notes,
+        });
 
-        for (let i = 0; i < validAssets.length; i++) {
-          const asset = validAssets[i];
-          
-          try {
-            await apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
-              reason,
-              notes,
-              transactionDate: new Date().toISOString(),
-            });
-
-            results.push({
-              assetId: asset.assetId,
-              employeeName: asset.assignedEmployee?.englishName,
-              success: true,
-            });
-          } catch (error: any) {
-            results.push({
-              assetId: asset.assetId,
-              employeeName: asset.assignedEmployee?.englishName,
-              success: false,
-              message: error.message || 'Failed to check in',
-            });
-          }
-
-          // Update progress
-          setProcessingProgress(((i + 1) / totalAssets) * 100);
-        }
-
-        setProcessingResults(results);
-        const successCount = results.filter(r => r.success).length;
+        // Handle response
+        const successCount = response.successful || 0;
+        const failedCount = response.failed || 0;
         
-        // Show results
-        setShowResults(true);
-
-        // Show toast
-        if (successCount === totalAssets) {
+        // Show toast based on results
+        if (successCount > 0 && failedCount === 0) {
           toast({
             title: translations.successMessage,
             description: `${successCount} ${language === 'English' ? 'assets checked in' : 'أصل تم استلامه'}`,
           });
-        } else if (successCount > 0) {
+        } else if (successCount > 0 && failedCount > 0) {
           toast({
             title: translations.partialSuccess,
-            description: `${successCount} ${language === 'English' ? 'of' : 'من'} ${totalAssets} ${language === 'English' ? 'assets checked in' : 'أصل تم استلامه'}`,
+            description: `${successCount} ${language === 'English' ? 'of' : 'من'} ${validAssets.length} ${language === 'English' ? 'assets checked in' : 'أصل تم استلامه'}`,
             variant: 'default',
           });
         } else {
           toast({
             title: translations.errorMessage,
+            description: response.message || 'Failed to check in assets',
             variant: 'destructive',
           });
         }
 
         // Refresh data
         queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
         
         if (successCount > 0 && onSuccess) {
           onSuccess();
         }
+        
+        // Close dialog
+        onOpenChange(false);
       } else {
         // Single asset operation
         const asset = validAssets[0];
@@ -460,7 +438,7 @@ export default function EnhancedCheckInDialog({
                             <Separator />
                             <div className="space-y-2">
                               <span className="text-sm font-medium text-muted-foreground">
-                                {translations.notCheckedOut}:
+                                {translations.cannotCheckIn}:
                               </span>
                               {invalidAssets.map((asset) => (
                                 <div key={asset.id} className="flex items-center gap-2 text-sm text-muted-foreground line-through">

@@ -139,6 +139,9 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
           assets={[asset]}  // Single asset in an array
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
           }}
         />
 
@@ -149,6 +152,9 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
         assets={[asset]}  // Single asset in an array
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
         }}
          />
     </>

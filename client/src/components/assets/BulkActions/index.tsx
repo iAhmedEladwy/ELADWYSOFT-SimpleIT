@@ -94,7 +94,7 @@ export default function BulkActions({
   // Filter assets by status for conditional actions
   const availableForCheckOut = selectedAssetData.filter(a => a.status === 'Available');
   const checkedOutAssets = selectedAssetData.filter(a => 
-    a.status === 'Checked Out' || a.status === 'In Use'
+    a.status === 'In Use' && a.assignedEmployeeId
   );
   const assignedAssets = selectedAssetData.filter(a => a.assignedEmployeeId);
   const unassignedAssets = selectedAssetData.filter(a => !a.assignedEmployeeId);
@@ -262,7 +262,7 @@ export default function BulkActions({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="default" size="sm">
             {translations.bulkActions}
             <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
@@ -298,8 +298,8 @@ export default function BulkActions({
           )}
 
           {/* Unassign Action - Show only if some assets are assigned */}
-          {assignedAssets.length > 0 && (
-            <DropdownMenuItem onClick={() => setShowUnassignConfirm(true)}>
+            {assignedAssets.length > 0 && checkedOutAssets.length === 0 && (
+              <DropdownMenuItem onClick={() => setShowUnassignConfirm(true)}>
               <UserX className="mr-2 h-4 w-4" />
               {translations.unassign} ({assignedAssets.length})
             </DropdownMenuItem>

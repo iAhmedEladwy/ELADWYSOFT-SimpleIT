@@ -1,244 +1,162 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useLanguage } from '@/hooks/use-language';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/hooks/use-language';
-import { apiRequest } from '@/lib/queryClient';
-import { BulkActionDialogProps, BulkActionResult } from '../types';
-import { createSuccessResult, createErrorResult, getAssetSummary } from '../utils';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { BulkActionResult } from '../types';
+
+interface BulkStatusDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedAssets: number[];
+  onSuccess: (result: BulkActionResult) => void;
+  onCancel: () => void;
+}
 
 export default function BulkStatusDialog({
   open,
   onOpenChange,
   selectedAssets,
   onSuccess,
-  onCancel
-}: BulkActionDialogProps) {
+  onCancel,
+}: BulkStatusDialogProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch available asset statuses
-  const { data: assetStatuses = [] } = useQuery({
-    queryKey: ['/api/asset-statuses'],
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Fetch selected assets data for summary
-  const { data: assets = [] } = useQuery({
-    queryKey: ['/api/assets'],
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const selectedAssetData = assets.filter((asset: any) => 
-    selectedAssets.includes(asset.id)
-  );
-
-  const assetSummary = getAssetSummary(selectedAssetData);
-
   const translations = {
     title: language === 'English' ? 'Change Asset Status' : 'تغيير حالة الأصول',
-    selectStatus: language === 'English' ? 'Select New Status' : 'اختر الحالة الجديدة',
-    currentStatus: language === 'English' ? 'Current Status' : 'الحالة الحالية',
+    description: language === 'English' 
+      ? `Change status for ${selectedAssets.length} selected asset(s)` 
+      : `تغيير الحالة لـ ${selectedAssets.length} أصل محدد`,
+    selectStatus: language === 'English' ? 'Select Status' : 'اختر الحالة',
     newStatus: language === 'English' ? 'New Status' : 'الحالة الجديدة',
-    summary: language === 'English' ? 'Summary' : 'ملخص',
-    assets: language === 'English' ? 'assets' : 'أصول',
-    types: language === 'English' ? 'Types' : 'أنواع',
-    statuses: language === 'English' ? 'Statuses' : 'حالات',
-    assigned: language === 'English' ? 'Assigned' : 'مُكلف',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير مُكلف',
-    warning: language === 'English' ? 'Warning' : 'تحذير',
-    statusChangeWarning: language === 'English' 
-      ? 'Changing status may affect asset availability and assignments.' 
-      : 'تغيير الحالة قد يؤثر على توفر الأصول والتكليفات.',
+    available: language === 'English' ? 'Available' : 'متاح',
+    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
+    maintenance: language === 'English' ? 'Under Maintenance' : 'تحت الصيانة',
+    damaged: language === 'English' ? 'Damaged' : 'تالف',
+    lost: language === 'English' ? 'Lost' : 'مفقود',
+    warning: language === 'English' 
+      ? 'This will change the status of all selected assets. This action cannot be undone.' 
+      : 'سيؤدي هذا إلى تغيير حالة جميع الأصول المحددة. لا يمكن التراجع عن هذا الإجراء.',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    update: language === 'English' ? 'Update Status' : 'تحديث الحالة',
+    change: language === 'English' ? 'Change Status' : 'تغيير الحالة',
     processing: language === 'English' ? 'Processing...' : 'جاري المعالجة...',
-    success: language === 'English' ? 'Success' : 'نجح',
-    error: language === 'English' ? 'Error' : 'خطأ',
-    statusUpdated: language === 'English' ? 'Asset status updated successfully' : 'تم تحديث حالة الأصول بنجاح',
-    updateFailed: language === 'English' ? 'Failed to update asset status' : 'فشل في تحديث حالة الأصول',
   };
 
+  const statusOptions = [
+    { value: 'Available', label: translations.available },
+    { value: 'In Use', label: translations.inUse },
+    { value: 'Under Maintenance', label: translations.maintenance },
+    { value: 'Damaged', label: translations.damaged },
+    { value: 'Lost', label: translations.lost },
+  ];
+
   const handleSubmit = async () => {
-    if (!selectedStatus) {
-      toast({
-        title: translations.error,
-        description: 'Please select a status',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!selectedStatus) return;
 
     setIsProcessing(true);
-
     try {
       const response = await apiRequest('/api/assets/bulk/status', 'POST', {
         assetIds: selectedAssets,
-        status: selectedStatus
+        status: selectedStatus,
       });
 
-      const succeeded = response.details?.succeeded || selectedAssets.length;
-      const failed = response.details?.failed || 0;
-      const errors = response.details?.errors || [];
-
-      let result: BulkActionResult;
-
-      if (failed === 0) {
-        result = createSuccessResult(
-          translations.statusUpdated,
-          succeeded,
-          failed,
-          errors
-        );
-        toast({
-          title: translations.success,
-          description: `Successfully updated ${succeeded} assets to ${selectedStatus}`,
-        });
-      } else if (succeeded > 0) {
-        result = createSuccessResult(
-          `Partially successful: ${succeeded} updated, ${failed} failed`,
-          succeeded,
-          failed,
-          errors
-        );
-        toast({
-          title: 'Partial Success',
-          description: `Updated ${succeeded} assets, ${failed} failed`,
-          variant: 'destructive',
-        });
-      } else {
-        result = createErrorResult(
-          translations.updateFailed,
-          errors
-        );
-        toast({
-          title: translations.error,
-          description: translations.updateFailed,
-          variant: 'destructive',
-        });
-      }
+      const result: BulkActionResult = {
+        success: true,
+        message: `Successfully changed status to ${selectedStatus} for ${selectedAssets.length} assets`,
+        details: {
+          succeeded: selectedAssets.length,
+          failed: 0,
+        }
+      };
 
       onSuccess(result);
       onOpenChange(false);
     } catch (error: any) {
-      const result = createErrorResult(
-        translations.updateFailed,
-        [error.message || 'Unknown error']
-      );
-      toast({
-        title: translations.error,
-        description: translations.updateFailed,
-        variant: 'destructive',
-      });
+      const result: BulkActionResult = {
+        success: false,
+        message: error.message || 'Failed to change status',
+        details: {
+          succeeded: 0,
+          failed: selectedAssets.length,
+        }
+      };
       onSuccess(result);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleCancel = () => {
-    setSelectedStatus('');
-    onCancel();
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{translations.title}</DialogTitle>
+          <DialogDescription>{translations.description}</DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Asset Summary */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium mb-3">{translations.summary}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">{translations.assets}:</span>
-                <div className="font-medium">{assetSummary.count}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">{translations.types}:</span>
-                <div className="font-medium">{assetSummary.types.join(', ')}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">{translations.statuses}:</span>
-                <div className="space-y-1">
-                  {assetSummary.statuses.map(status => (
-                    <Badge key={status} variant="outline" className="text-xs">
-                      {status}
-                    </Badge>
+        
+        <div className="py-4">
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="status">{translations.newStatus}</Label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder={translations.selectStatus} />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
                   ))}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-600">{translations.assigned}:</span>
-                <div className="font-medium">
-                  {assetSummary.assigned} / {assetSummary.unassigned}
-                </div>
-              </div>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* Status Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="status-select">{translations.selectStatus}</Label>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder={translations.selectStatus} />
-              </SelectTrigger>
-              <SelectContent>
-                {assetStatuses.map((status: any) => (
-                  <SelectItem key={status.id} value={status.name}>
-                    <div className="flex items-center gap-2">
-                      {status.color && (
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: status.color }}
-                        />
-                      )}
-                      {status.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Warning */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {translations.statusChangeWarning}
-            </AlertDescription>
-          </Alert>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
-              onClick={handleCancel}
-              disabled={isProcessing}
-            >
-              {translations.cancel}
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={!selectedStatus || isProcessing}
-            >
-              {isProcessing ? translations.processing : translations.update}
-            </Button>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {translations.warning}
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={isProcessing}
+          >
+            {translations.cancel}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!selectedStatus || isProcessing}
+          >
+            {isProcessing ? translations.processing : translations.change}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
