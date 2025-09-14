@@ -95,10 +95,10 @@ export default function EnhancedCheckInDialog({
  // Determine if bulk mode
   const isBulkMode = assets.length > 1;
   const validAssets = assets.filter(asset => 
-    asset.status === 'In Use' && asset.assignedEmployeeId
+    asset.status === 'In Use'
   );
   const invalidAssets = assets.filter(asset => 
-    asset.status !== 'In Use' || !asset.assignedEmployeeId
+    asset.status !== 'In Use'
   );
 
   // Group assets by employee for bulk mode
