@@ -10,30 +10,7 @@ export const BULK_ACTIONS: Record<string, BulkAction> = {
     requiresDialog: true,
     minSelection: 1,
   },
-  
-  ASSIGN: {
-    id: 'assign',
-    label: 'Assign to Employee',
-    description: 'Assign selected assets to an employee',
-    icon: 'User',
-    requiresConfirmation: true,
-    requiresDialog: true,
-    requiresEmployee: true,
-    blockedStatuses: ['Sold', 'Retired', 'Disposed'],
-    minSelection: 1,
-  },
-  
-  UNASSIGN: {
-    id: 'unassign',
-    label: 'Unassign',
-    description: 'Remove assignment from selected assets',
-    icon: 'UserX',
-    requiresConfirmation: true,
-    requiresDialog: false,
-    blockedStatuses: ['Sold', 'Retired', 'Disposed'],
-    minSelection: 1,
-  },
-  
+    
   SELL: {
     id: 'sell',
     label: 'Sell Assets',
@@ -129,29 +106,7 @@ export function getAvailableActions(context: {
         return; // If ANY asset doesn't have allowed status, don't show action
       }
     }
-    
-    // NEW: Special handling for ASSIGN action
-    if (action.id === 'assign') {
-      // Check if ANY asset is already assigned
-      const hasAssignedAsset = selectedAssetData.some(asset => 
-        asset.assignedEmployeeId || asset.assignedTo || asset.assignedToId
-      );
-      if (hasAssignedAsset) {
-        return; // Don't show assign if any asset is already assigned
-      }
-    }
-    
-    // NEW: Special handling for UNASSIGN action
-    if (action.id === 'unassign') {
-      // Check if ALL assets are assigned
-      const allAssigned = selectedAssetData.every(asset => 
-        asset.assignedEmployeeId || asset.assignedTo || asset.assignedToId
-      );
-      if (!allAssigned) {
-        return; // Don't show unassign if any asset is not assigned
-      }
-    }
-    
+        
     // Check user permissions
     if (action.requiresEmployee && (!currentUser?.accessLevel || currentUser?.accessLevel < 2)) {
       return;

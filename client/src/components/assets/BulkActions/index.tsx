@@ -12,10 +12,8 @@ import { createSuccessResult, createErrorResult, validateBulkActionContext } fro
 
 // Import dialogs
 import BulkStatusDialog from './dialogs/BulkStatusDialog';
-import BulkAssignDialog from './dialogs/BulkAssignDialog';
 import BulkDeleteDialog from './dialogs/BulkDeleteDialog';
 import BulkMaintenanceDialog from './dialogs/BulkMaintenanceDialog';
-import BulkUnassignDialog from './dialogs/BulkUnassignDialog';
 
 // Import the new Check-In/Out dialogs
 import CheckOutDialog from './dialogs/CheckOutDialog';
@@ -84,7 +82,6 @@ export default function BulkActions({
   const [lastResult, setLastResult] = useState<BulkActionResult | null>(null);
   const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
   const [showCheckInDialog, setShowCheckInDialog] = useState(false);
-  const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
 
   // Get selected asset data
   const selectedAssetData = availableAssets.filter(asset => 
@@ -118,12 +115,10 @@ export default function BulkActions({
     error: language === 'English' ? 'Error' : 'خطأ',
     operationCompleted: language === 'English' ? 'Operation completed' : 'تم إكمال العملية',
     operationFailed: language === 'English' ? 'Operation failed' : 'فشلت العملية',
-    unassignAssets: language === 'English' ? 'Unassign Assets' : 'إلغاء تخصيص الأصول',
     unassignConfirm: language === 'English' 
       ? `Are you sure you want to unassign ${selectedAssets.length} asset${selectedAssets.length > 1 ? 's' : ''}? This will remove the employee assignment from the selected assets.`
       : `هل أنت متأكد من إلغاء تخصيص ${selectedAssets.length} أصل؟ سيؤدي هذا إلى إزالة تخصيص الموظف من الأصول المحددة.`,
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    unassign: language === 'English' ? 'Unassign' : 'إلغاء التخصيص',
     checkOut: language === 'English' ? 'Check Out' : 'تسليم',
     checkIn: language === 'English' ? 'Check In' : 'استلام',
     assign: language === 'English' ? 'Assign to Employee' : 'تعيين لموظف',
@@ -158,46 +153,8 @@ export default function BulkActions({
       return;
     }
 
-    // Handle unassign with confirmation
-    if (action.id === 'unassign') {
-      setShowUnassignConfirm(true);
-      return;
-    }
-
     // Open appropriate dialog for other actions
     setActiveDialog(action.id);
-  };
-
-  const handleBulkUnassign = async () => {
-    try {
-      // Call the API to unassign all selected assets
-      const response = await apiRequest('/api/assets/bulk/unassign', 'POST', {
-        assetIds: selectedAssets
-      });
-
-      // Show success result
-      const result: BulkActionResult = {
-        success: true,
-        message: `Successfully unassigned ${selectedAssets.length} assets`,
-        details: {
-          succeeded: selectedAssets.length,
-          failed: 0
-        }
-      };
-      
-      handleDialogSuccess(result);
-    } catch (error: any) {
-      const result: BulkActionResult = {
-        success: false,
-        message: error.message || 'Failed to unassign assets',
-        details: {
-          succeeded: 0,
-          failed: selectedAssets.length
-        }
-      };
-      
-      handleDialogSuccess(result);
-    }
   };
 
   const handleDialogSuccess = (result: BulkActionResult) => {
@@ -227,7 +184,6 @@ export default function BulkActions({
 
     // Close dialog
     setActiveDialog(null);
-    setShowUnassignConfirm(false);
   };
 
   const handleDialogCancel = () => {
@@ -294,14 +250,6 @@ export default function BulkActions({
             <DropdownMenuItem onClick={() => setActiveDialog('assign')}>
               <User className="mr-2 h-4 w-4" />
               {translations.assign} ({unassignedAssets.length})
-            </DropdownMenuItem>
-          )}
-
-          {/* Unassign Action - Show only if some assets are assigned */}
-            {assignedAssets.length > 0 && checkedOutAssets.length === 0 && (
-              <DropdownMenuItem onClick={() => setShowUnassignConfirm(true)}>
-              <UserX className="mr-2 h-4 w-4" />
-              {translations.unassign} ({assignedAssets.length})
             </DropdownMenuItem>
           )}
 
@@ -378,35 +326,6 @@ export default function BulkActions({
           onCancel={handleDialogCancel}
         />
       )}
-
-      {/* Assign Dialog */}
-      {activeDialog === 'assign' && (
-        <BulkAssignDialog
-          open={true}
-          onOpenChange={(open) => !open && setActiveDialog(null)}
-          selectedAssets={selectedAssets}
-          onSuccess={handleDialogSuccess}
-          onCancel={handleDialogCancel}
-        />
-      )}
-
-      {/* Unassign Confirmation Dialog */}
-      <AlertDialog open={showUnassignConfirm} onOpenChange={setShowUnassignConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{translations.unassignAssets}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {translations.unassignConfirm}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{translations.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkUnassign}>
-              {translations.unassign}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Delete Dialog */}
       {activeDialog === 'delete' && (
