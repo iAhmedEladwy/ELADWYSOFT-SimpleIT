@@ -7189,10 +7189,13 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 });
 
 // Bulk Check-In endpoint
+// Bulk Check-In endpoint
 app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
   try {
     const { assetIds, reason, notes } = req.body;
     const handledById = req.user.id;
+    
+    console.log('Bulk check-in request received:', { assetIds, reason, notes });
     
     // Validate inputs
     if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
@@ -7211,23 +7214,41 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
     };
     
     // Process each asset
-    for (const assetId of assetIds) {
+    for (let i = 0; i < assetIds.length; i++) {
+      const rawAssetId = assetIds[i];
+      console.log(`Processing asset ${i + 1}/${assetIds.length}: rawAssetId =`, rawAssetId, 'type =', typeof rawAssetId);
+      
       try {
-        // Parse and validate the asset ID
-        const parsedAssetId = parseInt(assetId);
+        // Ensure assetId is a number
+        let parsedAssetId: number;
+        if (typeof rawAssetId === 'number') {
+          parsedAssetId = rawAssetId;
+        } else if (typeof rawAssetId === 'string') {
+          parsedAssetId = parseInt(rawAssetId, 10);
+        } else {
+          throw new Error(`Invalid asset ID type: ${typeof rawAssetId}`);
+        }
+        
+        // Check if parsing was successful
         if (isNaN(parsedAssetId)) {
           results.failed++;
-          results.errors.push(`Invalid asset ID: ${assetId}`);
+          results.errors.push(`Invalid asset ID: ${rawAssetId}`);
+          console.error(`Invalid asset ID: ${rawAssetId} parsed to NaN`);
           continue;
         }
+        
+        console.log(`Fetching asset with ID: ${parsedAssetId}`);
         
         // Get asset details with the parsed ID
         const asset = await storage.getAsset(parsedAssetId);
         if (!asset) {
           results.failed++;
-          results.errors.push(`Asset ${parsedAssetId} not found`);
+          results.errors.push(`Asset with ID ${parsedAssetId} not found`);
+          console.error(`Asset not found: ${parsedAssetId}`);
           continue;
         }
+        
+        console.log(`Found asset: ${asset.assetId}, status: ${asset.status}`);
         
         // Check if asset is checked out
         if (asset.status !== 'In Use') {
@@ -7256,17 +7277,21 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
         // Combine reason and notes into conditionNotes field
         const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
         
+        console.log(`Checking in asset ${asset.assetId}...`);
+        
         // Create transaction using existing checkInAsset method
         const transaction = await storage.checkInAsset(
-          parsedAssetId,  // Use parsed ID here
+          parsedAssetId,
           conditionNotes,
           'Check-In', 
           handledById,
-          deviceSpecs  // Include deviceSpecs parameter
+          deviceSpecs
         );
         
         results.successful++;
         results.transactions.push(transaction);
+        
+        console.log(`Successfully checked in asset ${asset.assetId}`);
         
         // Log activity
         await storage.logActivity({
@@ -7286,10 +7311,12 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
         
       } catch (error: any) {
         results.failed++;
-        results.errors.push(`Asset ${assetId}: ${error.message}`);
-        console.error(`Error checking in asset ${assetId}:`, error);
+        results.errors.push(`Asset ${rawAssetId}: ${error.message}`);
+        console.error(`Error checking in asset ${rawAssetId}:`, error);
       }
     }
+    
+    console.log('Bulk check-in completed:', results);
     
     // Return results
     const message = results.successful > 0 
