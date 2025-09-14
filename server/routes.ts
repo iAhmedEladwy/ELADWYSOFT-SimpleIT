@@ -3496,7 +3496,277 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-  
+  // Bulk Check-Out endpoint
+app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const { assetIds, employeeId, reason, notes } = req.body;
+    const handledById = req.user.id;
+    
+    // Validate inputs
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+      return res.status(400).json({ message: "Asset IDs are required" });
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID is required" });
+    }
+    
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required" });
+    }
+    
+    // Check if employee exists
+    const employee = await storage.getEmployee(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: [] as string[],
+      transactions: [] as any[]
+    };
+    
+    // Process each asset
+    for (const assetId of assetIds) {
+      try {
+        // Get asset details
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          results.failed++;
+          results.errors.push(`Asset ${assetId} not found`);
+          continue;
+        }
+        
+        // Check if asset is available
+        if (asset.status !== 'Available') {
+          results.failed++;
+          results.errors.push(`Asset ${asset.assetId} is not available (current status: ${asset.status})`);
+          continue;
+        }
+        
+        // Combine reason and notes into conditionNotes field
+        const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
+        
+        // Build device specs object (matching your existing pattern)
+        const deviceSpecs = {
+          cpu: asset.cpu,
+          ram: asset.ram,
+          storage: asset.storage,
+          specs: asset.specs
+        };
+        
+        // Create transaction using existing checkOutAsset method
+        // The conditionNotes will be stored in the existing field
+        const transaction = await storage.checkOutAsset(
+          assetId, 
+          employeeId, 
+          conditionNotes,  // Using conditionNotes field for reason + notes
+          'Check-Out', 
+          handledById, 
+          deviceSpecs
+        );
+        
+        results.successful++;
+        results.transactions.push(transaction);
+        
+        // Log activity
+        await storage.logActivity({
+          userId: handledById,
+          action: "BULK_CHECK_OUT",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: {
+            assetId: asset.assetId,
+            employeeId: employeeId,
+            employeeName: employee.englishName,
+            reason: reason,
+            notes: notes,
+            transactionId: transaction.id
+          }
+        });
+        
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`Asset ${assetId}: ${error.message}`);
+        console.error(`Error checking out asset ${assetId}:`, error);
+      }
+    }
+    
+    // Return results
+    const message = results.successful > 0 
+      ? `Successfully checked out ${results.successful} asset(s)` 
+      : 'No assets were checked out';
+    
+    res.status(results.successful > 0 ? 200 : 400).json({
+      message,
+      successful: results.successful,
+      failed: results.failed,
+      errors: results.errors,
+      transactions: results.transactions
+    });
+    
+  } catch (error: unknown) {
+    console.error("Error in bulk check-out:", error);
+    res.status(500).json({ 
+      message: "Internal server error during bulk check-out",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Bulk Check-In endpoint
+  app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, reason, notes } = req.body;
+      const handledById = req.user.id;
+      
+      console.log('Bulk check-in request received:', { assetIds, reason, notes });
+      
+      // Validate inputs
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Asset IDs are required" });
+      }
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Reason is required" });
+      }
+      
+      const results = {
+        successful: 0,
+        failed: 0,
+        errors: [] as string[],
+        transactions: [] as any[]
+      };
+      
+      // Process each asset
+      for (let i = 0; i < assetIds.length; i++) {
+        const rawAssetId = assetIds[i];
+        console.log(`Processing asset ${i + 1}/${assetIds.length}: rawAssetId =`, rawAssetId, 'type =', typeof rawAssetId);
+        
+        try {
+          // Ensure assetId is a number
+          let parsedAssetId: number;
+          if (typeof rawAssetId === 'number') {
+            parsedAssetId = rawAssetId;
+          } else if (typeof rawAssetId === 'string') {
+            parsedAssetId = parseInt(rawAssetId, 10);
+          } else {
+            throw new Error(`Invalid asset ID type: ${typeof rawAssetId}`);
+          }
+          
+          // Check if parsing was successful
+          if (isNaN(parsedAssetId)) {
+            results.failed++;
+            results.errors.push(`Invalid asset ID: ${rawAssetId}`);
+            console.error(`Invalid asset ID: ${rawAssetId} parsed to NaN`);
+            continue;
+          }
+          
+          console.log(`Fetching asset with ID: ${parsedAssetId}`);
+          
+          // Get asset details with the parsed ID
+          const asset = await storage.getAsset(parsedAssetId);
+          if (!asset) {
+            results.failed++;
+            results.errors.push(`Asset with ID ${parsedAssetId} not found`);
+            console.error(`Asset not found: ${parsedAssetId}`);
+            continue;
+          }
+          
+          console.log(`Found asset: ${asset.assetId}, status: ${asset.status}`);
+          
+          // Check if asset is checked out
+          if (asset.status !== 'In Use') {
+            results.failed++;
+            results.errors.push(`Asset ${asset.assetId} is not checked out (current status: ${asset.status})`);
+            continue;
+          }
+          
+          // Get employee info for logging
+          let employeeName = 'Unknown';
+          if (asset.assignedEmployeeId) {
+            const employee = await storage.getEmployee(asset.assignedEmployeeId);
+            if (employee) {
+              employeeName = employee.englishName || employee.name;
+            }
+          }
+          
+          // Build device specs object
+          const deviceSpecs = {
+            cpu: asset.cpu,
+            ram: asset.ram,
+            storage: asset.storage,
+            specs: asset.specs
+          };
+          
+          // Combine reason and notes into conditionNotes field
+          const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
+          
+          console.log(`Checking in asset ${asset.assetId}...`);
+          
+          // Create transaction using existing checkInAsset method
+          const transaction = await storage.checkInAsset(
+            parsedAssetId,
+            conditionNotes,
+            'Check-In', 
+            handledById,
+            deviceSpecs
+          );
+          
+          results.successful++;
+          results.transactions.push(transaction);
+          
+          console.log(`Successfully checked in asset ${asset.assetId}`);
+          
+          // Log activity
+          await storage.logActivity({
+            userId: handledById,
+            action: "BULK_CHECK_IN",
+            entityType: "ASSET",
+            entityId: parsedAssetId,
+            details: {
+              assetId: asset.assetId,
+              previousEmployeeId: asset.assignedEmployeeId,
+              previousEmployeeName: employeeName,
+              reason: reason,
+              notes: notes,
+              transactionId: transaction.id
+            }
+          });
+          
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`Asset ${rawAssetId}: ${error.message}`);
+          console.error(`Error checking in asset ${rawAssetId}:`, error);
+        }
+      }
+      
+      console.log('Bulk check-in completed:', results);
+      
+      // Return results
+      const message = results.successful > 0 
+        ? `Successfully checked in ${results.successful} asset(s)` 
+        : 'No assets were checked in';
+      
+      res.status(results.successful > 0 ? 200 : 400).json({
+        message,
+        successful: results.successful,
+        failed: results.failed,
+        errors: results.errors,
+        transactions: results.transactions
+      });
+      
+    } catch (error: unknown) {
+      console.error("Error in bulk check-in:", error);
+      res.status(500).json({ 
+        message: "Internal server error during bulk check-in",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
@@ -7068,277 +7338,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-// Bulk Check-Out endpoint
-app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (req, res) => {
-  try {
-    const { assetIds, employeeId, reason, notes } = req.body;
-    const handledById = req.user.id;
-    
-    // Validate inputs
-    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
-      return res.status(400).json({ message: "Asset IDs are required" });
-    }
-    
-    if (!employeeId) {
-      return res.status(400).json({ message: "Employee ID is required" });
-    }
-    
-    if (!reason) {
-      return res.status(400).json({ message: "Reason is required" });
-    }
-    
-    // Check if employee exists
-    const employee = await storage.getEmployee(employeeId);
-    if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-    
-    const results = {
-      successful: 0,
-      failed: 0,
-      errors: [] as string[],
-      transactions: [] as any[]
-    };
-    
-    // Process each asset
-    for (const assetId of assetIds) {
-      try {
-        // Get asset details
-        const asset = await storage.getAsset(assetId);
-        if (!asset) {
-          results.failed++;
-          results.errors.push(`Asset ${assetId} not found`);
-          continue;
-        }
-        
-        // Check if asset is available
-        if (asset.status !== 'Available') {
-          results.failed++;
-          results.errors.push(`Asset ${asset.assetId} is not available (current status: ${asset.status})`);
-          continue;
-        }
-        
-        // Combine reason and notes into conditionNotes field
-        const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
-        
-        // Build device specs object (matching your existing pattern)
-        const deviceSpecs = {
-          cpu: asset.cpu,
-          ram: asset.ram,
-          storage: asset.storage,
-          specs: asset.specs
-        };
-        
-        // Create transaction using existing checkOutAsset method
-        // The conditionNotes will be stored in the existing field
-        const transaction = await storage.checkOutAsset(
-          assetId, 
-          employeeId, 
-          conditionNotes,  // Using conditionNotes field for reason + notes
-          'Check-Out', 
-          handledById, 
-          deviceSpecs
-        );
-        
-        results.successful++;
-        results.transactions.push(transaction);
-        
-        // Log activity
-        await storage.logActivity({
-          userId: handledById,
-          action: "BULK_CHECK_OUT",
-          entityType: "ASSET",
-          entityId: assetId,
-          details: {
-            assetId: asset.assetId,
-            employeeId: employeeId,
-            employeeName: employee.englishName,
-            reason: reason,
-            notes: notes,
-            transactionId: transaction.id
-          }
-        });
-        
-      } catch (error: any) {
-        results.failed++;
-        results.errors.push(`Asset ${assetId}: ${error.message}`);
-        console.error(`Error checking out asset ${assetId}:`, error);
-      }
-    }
-    
-    // Return results
-    const message = results.successful > 0 
-      ? `Successfully checked out ${results.successful} asset(s)` 
-      : 'No assets were checked out';
-    
-    res.status(results.successful > 0 ? 200 : 400).json({
-      message,
-      successful: results.successful,
-      failed: results.failed,
-      errors: results.errors,
-      transactions: results.transactions
-    });
-    
-  } catch (error: unknown) {
-    console.error("Error in bulk check-out:", error);
-    res.status(500).json({ 
-      message: "Internal server error during bulk check-out",
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
-});
 
-// Bulk Check-In endpoint
-// Bulk Check-In endpoint
-app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
-  try {
-    const { assetIds, reason, notes } = req.body;
-    const handledById = req.user.id;
-    
-    console.log('Bulk check-in request received:', { assetIds, reason, notes });
-    
-    // Validate inputs
-    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
-      return res.status(400).json({ message: "Asset IDs are required" });
-    }
-    
-    if (!reason) {
-      return res.status(400).json({ message: "Reason is required" });
-    }
-    
-    const results = {
-      successful: 0,
-      failed: 0,
-      errors: [] as string[],
-      transactions: [] as any[]
-    };
-    
-    // Process each asset
-    for (let i = 0; i < assetIds.length; i++) {
-      const rawAssetId = assetIds[i];
-      console.log(`Processing asset ${i + 1}/${assetIds.length}: rawAssetId =`, rawAssetId, 'type =', typeof rawAssetId);
-      
-      try {
-        // Ensure assetId is a number
-        let parsedAssetId: number;
-        if (typeof rawAssetId === 'number') {
-          parsedAssetId = rawAssetId;
-        } else if (typeof rawAssetId === 'string') {
-          parsedAssetId = parseInt(rawAssetId, 10);
-        } else {
-          throw new Error(`Invalid asset ID type: ${typeof rawAssetId}`);
-        }
-        
-        // Check if parsing was successful
-        if (isNaN(parsedAssetId)) {
-          results.failed++;
-          results.errors.push(`Invalid asset ID: ${rawAssetId}`);
-          console.error(`Invalid asset ID: ${rawAssetId} parsed to NaN`);
-          continue;
-        }
-        
-        console.log(`Fetching asset with ID: ${parsedAssetId}`);
-        
-        // Get asset details with the parsed ID
-        const asset = await storage.getAsset(parsedAssetId);
-        if (!asset) {
-          results.failed++;
-          results.errors.push(`Asset with ID ${parsedAssetId} not found`);
-          console.error(`Asset not found: ${parsedAssetId}`);
-          continue;
-        }
-        
-        console.log(`Found asset: ${asset.assetId}, status: ${asset.status}`);
-        
-        // Check if asset is checked out
-        if (asset.status !== 'In Use') {
-          results.failed++;
-          results.errors.push(`Asset ${asset.assetId} is not checked out (current status: ${asset.status})`);
-          continue;
-        }
-        
-        // Get employee info for logging
-        let employeeName = 'Unknown';
-        if (asset.assignedEmployeeId) {
-          const employee = await storage.getEmployee(asset.assignedEmployeeId);
-          if (employee) {
-            employeeName = employee.englishName || employee.name;
-          }
-        }
-        
-        // Build device specs object
-        const deviceSpecs = {
-          cpu: asset.cpu,
-          ram: asset.ram,
-          storage: asset.storage,
-          specs: asset.specs
-        };
-        
-        // Combine reason and notes into conditionNotes field
-        const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
-        
-        console.log(`Checking in asset ${asset.assetId}...`);
-        
-        // Create transaction using existing checkInAsset method
-        const transaction = await storage.checkInAsset(
-          parsedAssetId,
-          conditionNotes,
-          'Check-In', 
-          handledById,
-          deviceSpecs
-        );
-        
-        results.successful++;
-        results.transactions.push(transaction);
-        
-        console.log(`Successfully checked in asset ${asset.assetId}`);
-        
-        // Log activity
-        await storage.logActivity({
-          userId: handledById,
-          action: "BULK_CHECK_IN",
-          entityType: "ASSET",
-          entityId: parsedAssetId,
-          details: {
-            assetId: asset.assetId,
-            previousEmployeeId: asset.assignedEmployeeId,
-            previousEmployeeName: employeeName,
-            reason: reason,
-            notes: notes,
-            transactionId: transaction.id
-          }
-        });
-        
-      } catch (error: any) {
-        results.failed++;
-        results.errors.push(`Asset ${rawAssetId}: ${error.message}`);
-        console.error(`Error checking in asset ${rawAssetId}:`, error);
-      }
-    }
-    
-    console.log('Bulk check-in completed:', results);
-    
-    // Return results
-    const message = results.successful > 0 
-      ? `Successfully checked in ${results.successful} asset(s)` 
-      : 'No assets were checked in';
-    
-    res.status(results.successful > 0 ? 200 : 400).json({
-      message,
-      successful: results.successful,
-      failed: results.failed,
-      errors: results.errors,
-      transactions: results.transactions
-    });
-    
-  } catch (error: unknown) {
-    console.error("Error in bulk check-in:", error);
-    res.status(500).json({ 
-      message: "Internal server error during bulk check-in",
-      error: error instanceof Error ? error.message : String(error)
-    });
-  }
-});
 
 //Bulk Status change
 app.post("/api/assets/bulk/status", authenticateUser, hasAccess(2), async (req, res) => {
