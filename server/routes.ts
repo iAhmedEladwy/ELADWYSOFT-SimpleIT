@@ -7236,6 +7236,13 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
             employeeName = employee.englishName || employee.name;
           }
         }
+        // Build device specs object
+          const deviceSpecs = {
+            cpu: asset.cpu,
+            ram: asset.ram,
+            storage: asset.storage,
+            specs: asset.specs
+          };
         
         // Combine reason and notes into conditionNotes field
         const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
@@ -7246,7 +7253,8 @@ app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req
           assetId, 
           conditionNotes,  // Using conditionNotes field for reason + notes
           'Check-In', 
-          handledById
+          handledById,
+          deviceSpecs  
         );
         
         results.successful++;
