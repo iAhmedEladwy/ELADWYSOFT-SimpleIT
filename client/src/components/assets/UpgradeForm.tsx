@@ -92,6 +92,8 @@ export function UpgradeForm({
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<'Hardware' | 'Software'>('Hardware');
   const [autoTitle, setAutoTitle] = useState(true);
+  const [upgradeDateOpen, setUpgradeDateOpen] = useState(false);
+  const [approveDateOpen, setApproveDateOpen] = useState(false);
 
   // Translated hardware upgrades
   const hardwareUpgrades = {
@@ -445,7 +447,7 @@ export function UpgradeForm({
                   <FormLabel>
                     {translations.scheduledDate} <span className="text-red-500">*</span>
                   </FormLabel>
-                  <Popover>
+                  <Popover open={upgradeDateOpen} onOpenChange={setUpgradeDateOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -464,7 +466,10 @@ export function UpgradeForm({
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setUpgradeDateOpen(false);
+                        }}
                         disabled={(date) =>
                           date < new Date(new Date().setHours(0, 0, 0, 0))
                         }
@@ -617,7 +622,7 @@ export function UpgradeForm({
                       {translations.approvalDate}
                       <span className="text-muted-foreground ml-1">({translations.optional})</span>
                     </FormLabel>
-                    <Popover>
+                    <Popover open={approveDateOpen} onOpenChange={setApproveDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -637,7 +642,10 @@ export function UpgradeForm({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setApproveDateOpen(false);
+                          }}
                           disabled={(date) =>
                             date > new Date() || date < new Date('2020-01-01')
                           }

@@ -5,7 +5,8 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input'; 
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils'; 
 
 import {
   Table,
@@ -43,8 +44,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { MoreHorizontal, UserCircle2, Calendar, Clock } from 'lucide-react';
+import { MoreHorizontal, UserCircle2, Calendar, Clock, CalendarIcon } from 'lucide-react';
 
 interface TicketsTableProps {
   tickets: any[];
@@ -87,6 +94,7 @@ export default function TicketsTable({
   }>({ open: false, ticketId: null, newStatus: '' });
 
   const [resolution, setResolution] = useState('');
+  const [dueDatePopoverOpen, setDueDatePopoverOpen] = useState<{[key: number]: boolean}>({});
   
     // Handle checkbox selection
     const handleTicketSelection = (ticketId: number, checked: boolean) => {
@@ -585,21 +593,45 @@ export default function TicketsTable({
                 
                 {/* Due Date */}
                 <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <Input
-                      type="date"
-                      value={ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : ''}
-                      onChange={(e) => {
-                        updateTicketMutation.mutate({ 
-                          id: ticket.id, 
-                          updates: { dueDate: e.target.value || null } 
-                        });
-                      }}
-                      className="border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-1 h-auto cursor-pointer"
-                      style={{ colorScheme: 'light' }}
-                    />
-                  </div>
+                  <Popover 
+                    open={dueDatePopoverOpen[ticket.id] || false} 
+                    onOpenChange={(open) => setDueDatePopoverOpen(prev => ({ ...prev, [ticket.id]: open }))}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start text-left font-normal p-1 h-auto hover:bg-gray-50",
+                          !ticket.dueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
+                        {ticket.dueDate ? (
+                          format(new Date(ticket.dueDate), "MMM dd, yyyy")
+                        ) : (
+                          <span className="text-gray-400">{language === 'English' ? 'Set due date' : 'تحديد تاريخ الاستحقاق'}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={ticket.dueDate ? new Date(ticket.dueDate) : undefined}
+                        onSelect={(date) => {
+                          const isoString = date ? date.toISOString().split('T')[0] : null;
+                          updateTicketMutation.mutate({ 
+                            id: ticket.id, 
+                            updates: { dueDate: isoString } 
+                          });
+                          setDueDatePopoverOpen(prev => ({ ...prev, [ticket.id]: false }));
+                        }}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </TableCell>
               </TableRow>
             ))}

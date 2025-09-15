@@ -61,6 +61,8 @@ export default function Assets() {
   const [isImporting, setIsImporting] = useState(false);
   const [showBulkCheckOutDialog, setShowBulkCheckOutDialog] = useState(false);
   const [showBulkCheckInDialog, setShowBulkCheckInDialog] = useState(false);
+  const [bulkSaleDateOpen, setBulkSaleDateOpen] = useState(false);
+  const [bulkRetirementDateOpen, setBulkRetirementDateOpen] = useState(false);
   const { formatCurrency } = useCurrency();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -1291,7 +1293,7 @@ export default function Assets() {
               <Label htmlFor="saleDate" className="required">
                 {translations.saleDate} *
               </Label>
-              <Popover>
+              <Popover open={bulkSaleDateOpen} onOpenChange={setBulkSaleDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1308,7 +1310,10 @@ export default function Assets() {
                   <Calendar
                     mode="single"
                     selected={bulkSellData.saleDate}
-                    onSelect={(date) => date && setBulkSellData({ ...bulkSellData, saleDate: date })}
+                    onSelect={(date) => {
+                      if (date) setBulkSellData({ ...bulkSellData, saleDate: date });
+                      setBulkSaleDateOpen(false);
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
@@ -1477,7 +1482,7 @@ export default function Assets() {
               <Label htmlFor="retirementDate" className="required">
                 {translations.retirementDate} *
               </Label>
-              <Popover>
+              <Popover open={bulkRetirementDateOpen} onOpenChange={setBulkRetirementDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1494,7 +1499,10 @@ export default function Assets() {
                   <Calendar
                     mode="single"
                     selected={bulkRetireData.retirementDate}
-                    onSelect={(date) => date && setBulkRetireData({ ...bulkRetireData, retirementDate: date })}
+                    onSelect={(date) => {
+                      if (date) setBulkRetireData({ ...bulkRetireData, retirementDate: date });
+                      setBulkRetirementDateOpen(false);
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
