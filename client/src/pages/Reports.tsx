@@ -667,7 +667,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {activeVsExitedData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -730,7 +730,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {employmentTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -817,7 +817,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {assetsByTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -880,7 +880,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {assignedVsUnassignedData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -1041,7 +1041,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {ticketsByStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -1104,7 +1104,7 @@ export default function Reports() {
                         dataKey="value"
                       >
                         {ticketsByCategoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={MODERN_COLORS[index % MODERN_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
