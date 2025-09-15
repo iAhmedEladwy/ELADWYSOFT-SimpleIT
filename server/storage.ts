@@ -1113,97 +1113,59 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
-      // Log the data being inserted to identify the problematic field
-      console.log('Creating ticket with data:', {
-        title: ticket.title?.length || 0,
-        description: ticket.description?.length || 0,
-        type: ticket.type?.length || 0,
-        category: ticket.category?.length || 0,
-        priority: ticket.priority,
-        urgency: ticket.urgency?.length || 0,
-        impact: ticket.impact?.length || 0,
-        status: ticket.status
-      });
-
-      // Ensure field length limits are respected
-      const urgency = (ticket.urgency || 'Medium') as UrgencyLevel;
-      const impact = (ticket.impact || 'Medium') as ImpactLevel;
-
       // Auto-calculate priority based on urgency and impact
+      const urgency = ticket.urgency || 'Medium';
+      const impact = ticket.impact || 'Medium';
       const calculatedPriority = calculatePriority(urgency, impact);
 
       const safeData = {
-        title: (ticket.title || 'New Ticket').substring(0, 255),
-        description: ticket.description || '',
-        type: (ticket.type || 'Other').substring(0, 100),
-        category: (ticket.category || 'Incident').substring(0, 100),
-        priority: calculatedPriority, // Use calculated priority instead of ticket.priority
-        urgency: urgency.substring(0, 20),
-        impact: impact.substring(0, 20),
-        status: ticket.status || 'Open',
         submittedById: ticket.submittedById,
         assignedToId: ticket.assignedToId || null,
         relatedAssetId: ticket.relatedAssetId || null,
+        type: ticket.type || 'Incident',
+        category: ticket.category || 'General',
+        priority: calculatedPriority,
+        urgency: urgency,
+        impact: impact,
+        title: (ticket.title || 'New Ticket').substring(0, 255),
+        description: ticket.description || '',
         resolution: ticket.resolution || null,
-        resolutionNotes: ticket.resolutionNotes || null,
+        status: ticket.status || 'Open',
+        timeSpent: ticket.timeSpent || null,
         dueDate: ticket.dueDate || null,
         slaTarget: ticket.slaTarget || null,
-        escalationLevel: (ticket.escalationLevel || '0').toString().substring(0, 10),
-        tags: ticket.tags || null,
-        privateNotes: ticket.privateNotes || null,
-        timeSpent: ticket.timeSpent || 0,
-        isTimeTracking: ticket.isTimeTracking || false,
-        timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
       };
 
-      console.log('Priority calculation:', { urgency, impact, calculatedPriority });
-
-      console.log('Safe data after truncation:', {
-        title: safeData.title.length,
-        type: safeData.type.length,
-        category: safeData.category.length,
-        urgency: safeData.urgency.length,
-        impact: safeData.impact.length,
-        escalationLevel: safeData.escalationLevel.length
-      });
-
-      // Let database auto-generate ticket_id - don't include it in INSERT
+      // Let database auto-generate ticket_id using the sequence
       const result = await pool.query(`
         INSERT INTO tickets (
-          title, description, type, category, priority,
-          urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
-          resolution, resolution_notes, due_date, sla_target, escalation_level,
-          tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,
+          submitted_by_id, assigned_to_id, related_asset_id,
+          type, category, priority, urgency, impact,
+          title, description, resolution, status,
+          time_spent, due_date, sla_target,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-          $17, $18, $19, $20, $21, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+          NOW(), NOW()
         ) RETURNING *
       `, [
-        safeData.title,
-        safeData.description,
+        safeData.submittedById,
+        safeData.assignedToId,
+        safeData.relatedAssetId,
         safeData.type,
         safeData.category,
         safeData.priority,
         safeData.urgency,
         safeData.impact,
-        safeData.status,
-        safeData.submittedById,
-        safeData.assignedToId,
-        safeData.relatedAssetId,
+        safeData.title,
+        safeData.description,
         safeData.resolution,
-        safeData.resolutionNotes,
-        safeData.dueDate,
-        safeData.slaTarget,
-        safeData.escalationLevel,
-        safeData.tags,
-        safeData.privateNotes,
+        safeData.status,
         safeData.timeSpent,
-        safeData.isTimeTracking,
-        safeData.timeTrackingStartedAt
+        safeData.dueDate,
+        safeData.slaTarget
       ]);
 
-      console.log('Ticket created successfully:', result.rows[0]);
       return result.rows[0];
     } catch (error) {
       console.error('Error creating ticket:', error);

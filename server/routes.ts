@@ -2,8 +2,34 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
 import { db } from "./db";
-import { users, employees, assets, tickets, assetUpgrades, assetTransactions } from "@shared/schema";
+import { 
+  users, employees, assets, tickets, assetUpgrades, assetTransactions,
+  ticketUrgencyEnum, ticketImpactEnum, ticketTypeEnum, ticketPriorityEnum, ticketStatusEnum,
+  type InsertTicket
+} from "../shared/schema";
 import { eq } from "drizzle-orm";
+import { calculatePriority, validatePriority } from "../shared/priorityUtils";
+
+// Authenticated user type (from auth middleware)
+interface AuthUser {
+  id: number;
+  username: string;
+  role: string;
+  employeeId?: number;
+}
+
+type ValueOf<T> = T[keyof T];
+type TicketCreateInput = Omit<InsertTicket, 'id' | 'createdAt' | 'updatedAt'> & {
+  submittedById: string | number;
+  assignedToId?: string | number;
+  relatedAssetId?: string | number;
+  timeSpent?: string | number;
+  urgency?: keyof typeof ticketUrgencyEnum;
+  impact?: keyof typeof ticketImpactEnum;
+  type?: keyof typeof ticketTypeEnum;
+  priority?: keyof typeof ticketPriorityEnum;
+  status?: keyof typeof ticketStatusEnum;
+};
 
 const storage = getStorage();
 import * as schema from "@shared/schema";
@@ -4108,29 +4134,114 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
 
   // Standard ticket creation endpoint
-  app.post("/api/tickets", authenticateUser, async (req, res) => {
+  app.post("/api/tickets", authenticateUser, async (req: Request<unknown, unknown, TicketCreateInput>, res: Response) => {
     try {
       console.log("Creating ticket:", req.body);
       
-      // Validate required fields
-      const { submittedById, type, priority, description, urgency, impact } = req.body;
-      if (!submittedById || !type || !description) {
-        return res.status(400).json({ message: "Missing required fields" });
+      // Get request data with defaults from schema
+      const ticketData: InsertTicket = {
+        submittedById: parseInt(req.body.submittedById || '0'),
+        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId) : null,
+        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId) : null,
+        type: (req.body.type || 'Incident') as ValueOf<typeof ticketTypeEnum>,
+        category: req.body.category || 'General',
+        title: req.body.title || '',
+        description: req.body.description || '',
+        urgency: (req.body.urgency || 'Medium') as ValueOf<typeof ticketUrgencyEnum>,
+        impact: (req.body.impact || 'Medium') as ValueOf<typeof ticketImpactEnum>,
+        timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent) : null,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        slaTarget: req.body.slaTarget ? new Date(req.body.slaTarget) : null,
+        priority: 'Medium' as ValueOf<typeof ticketPriorityEnum>, // Will be updated based on urgency × impact
+        status: 'Open' as ValueOf<typeof ticketStatusEnum>
+      };
+
+      // Validate required fields per schema
+      if (!ticketData.submittedById || !ticketData.description || !ticketData.title) {
+        throw new ValidationError("Missing required fields: submittedById, description, and title are required");
       }
       
-      // Validate priority calculation (ensure it matches urgency × impact)
-      const ticketUrgency = urgency || 'Medium';
-      const ticketImpact = impact || 'Medium'; 
-      const calculatedPriority = calculatePriority(ticketUrgency as UrgencyLevel, ticketImpact as ImpactLevel);
+      // Type validation
+      const typeValues = Object.values(ticketTypeEnum);
+      if (!typeValues.includes(ticketData.type)) {
+        throw new ValidationError(
+          `Invalid ticket type: "${String(ticketData.type)}". Must be one of: ${typeValues.join(", ")}`
+        );
+      }
+
+      // Urgency and impact validation
+      const urgencyValues = Object.values(ticketUrgencyEnum);
+      if (!urgencyValues.includes(ticketData.urgency)) {
+        throw new ValidationError(
+          `Invalid urgency value: "${String(ticketData.urgency)}". Must be one of: ${urgencyValues.join(", ")}`
+        );
+      }
+
+      const impactValues = Object.values(ticketImpactEnum);
+      if (!impactValues.includes(ticketData.impact)) {
+        throw new ValidationError(
+          `Invalid impact value: "${String(ticketData.impact)}". Must be one of: ${impactValues.join(", ")}`
+        );
+      }
+
+      // Calculate priority based on urgency × impact
+      ticketData.priority = calculatePriority(ticketData.urgency, ticketData.impact) as ValueOf<typeof ticketPriorityEnum>;
+
+      // Validate employee ID exists
+      const employeeRecord = await db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, ticketData.submittedById))
+        .limit(1)
+        .then((results: Array<typeof employees.$inferSelect>) => results[0]);
       
-      if (priority && !validatePriority(ticketUrgency as UrgencyLevel, ticketImpact as ImpactLevel, priority)) {
-        return res.status(400).json({ 
-          message: `Priority "${priority}" is invalid. Based on urgency "${ticketUrgency}" and impact "${ticketImpact}", priority should be "${calculatedPriority}".`,
-          expectedPriority: calculatedPriority,
-          providedPriority: priority
+      if (!employeeRecord) {
+        throw new ValidationError(`No employee record found for employee ID ${ticketData.submittedById}`);
+      }
+
+      // Create ticket with validated data
+      const ticket = await storage.createTicket(ticketData);
+
+      // Create initial history entry
+      if (ticket) {
+        await storage.addTicketHistory({
+          ticketId: ticket.id,
+          userId: (req.user as AuthUser)?.id || 0,
+          action: 'Created',
+          fieldChanged: null,
+          oldValue: null,
+          newValue: JSON.stringify({
+            id: ticket.id,
+            status: ticket.status,
+            priority: ticket.priority,
+            type: ticket.type
+          }),
+          notes: `Ticket created with status ${ticket.status} and priority ${ticket.priority}`,
         });
       }
-      
+
+      res.status(201).json({ 
+        message: 'Ticket created successfully',
+        ticket 
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error('Error creating ticket:', error);
+        res.status(500).json({ message: 'Internal server error while creating ticket' });
+      }
+    }
+          message: `Invalid urgency value: "${ticketUrgency}". Must be one of: ${Object.values(ticketUrgencyEnum).join(", ")}`
+        });
+      }
+
+      if (!Object.values(ticketImpactEnum).includes(ticketImpact)) {
+        return res.status(400).json({
+          message: `Invalid impact value: "${ticketImpact}". Must be one of: ${Object.values(ticketImpactEnum).join(", ")}`
+        });
+      }
+
       // Validate employee ID exists (submittedById is already an employee ID from the form)
       const employeeId = parseInt(submittedById.toString());
       const employees = await storage.getAllEmployees();
@@ -4204,79 +4315,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     } catch (error: unknown) {
       console.error("Ticket creation error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.post("/api/tickets/create-raw", authenticateUser, async (req, res) => {
-    try {
-      console.log("Creating new ticket with storage system:", req.body);
-      
-      // Validate employee ID exists for create-raw endpoint
-      const employeeId = parseInt(req.body.submittedById.toString());
-      const employees = await storage.getAllEmployees();
-      const employeeRecord = employees.find(emp => emp.id === employeeId);
-      
-      if (!employeeRecord) {
-        return res.status(400).json({ 
-          message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
-        });
-      }
-      
-      console.log(`Create-raw: Validated employee ID ${employeeId} for ticket creation`);
-      
-      // Create ticket data - ticketId will be auto-generated by database
-      const ticketData = {
-        // ticketId is excluded - database will auto-generate it
-        submittedById: employeeId, // Use the employee ID from form
-        type: req.body.type || req.body.category,
-        category: req.body.category || 'Incident',
-        priority: req.body.priority,
-        urgency: req.body.urgency || 'Medium',
-        impact: req.body.impact || 'Medium',
-        summary: req.body.summary || '',
-        description: req.body.description,
-        status: 'Open' as const,
-        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
-        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
-        rootCause: req.body.rootCause || '',
-        workaround: req.body.workaround || '',
-        resolution: req.body.resolution || '',
-        resolutionNotes: req.body.resolutionNotes || '',
-        dueDate: req.body.dueDate ? new Date(req.body.dueDate).toISOString() : null,
-        slaTarget: req.body.slaTarget ? new Date(req.body.slaTarget) : null,
-        escalationLevel: req.body.escalationLevel ? parseInt(req.body.escalationLevel.toString()) : 0,
-        tags: req.body.tags || [],
-        privateNotes: req.body.privateNotes || '',
-        timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent.toString()) : null
-      };
-      
-      // Create the ticket using storage interface - ticketId will be auto-generated
-      const newTicket = await storage.createTicket(ticketData as any);
-      
-      console.log("Ticket creation successful:", newTicket);
-      
-      // Log the activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "Ticket",
-          entityId: newTicket.id,
-          details: { 
-            ticketId: newTicket.ticketId,
-            type: newTicket.type, 
-            priority: newTicket.priority 
-          }
-        });
-      }
-      
-      res.status(201).json({
-        message: "Ticket created successfully",
-        ticket: newTicket
-      });
-    } catch (error: unknown) {
-      console.error("Ticket creation failed:", error);
-      res.status(500).json({ message: "Failed to create ticket: " + error.message });
     }
   });
 
