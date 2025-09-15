@@ -267,7 +267,7 @@ export const tickets = pgTable("tickets", {
   
   // Request Classification
   type: ticketTypeEnum("type").notNull().default('Incident'), // Nature of request
-  category: ticketCategoryEnum("category").notNull().default('Other'), // Classification for reporting
+  category: varchar("category", { length: 100 }).notNull().default('General'), // Custom request type from system config
   
   // Priority Management (calculated based on urgency × impact)
   priority: ticketPriorityEnum("priority").notNull().default('Medium'),
@@ -384,8 +384,8 @@ export const customAssetTypes = pgTable("custom_asset_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Custom Request Types table
-export const customRequestTypes = pgTable("custom_request_types", {
+// Categories table (formerly Custom Request Types)
+export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),

@@ -6953,14 +6953,14 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 
 
 
-  // Custom Request Types CRUD routes  
-  app.get("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
+  // Categories CRUD routes  
+  app.get("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      let requestTypes = await storage.getCustomRequestTypes();
+      let categories = await storage.getCategories();
       
-      // If no request types exist, create default ones
-      if (requestTypes.length === 0) {
-        const defaultTypes = [
+      // If no categories exist, create default ones
+      if (categories.length === 0) {
+        const defaultCategories = [
           { name: "Hardware", description: "Hardware-related issues and requests" },
           { name: "Software", description: "Software installation and application support" },
           { name: "Network", description: "Network connectivity and infrastructure issues" },
@@ -6968,38 +6968,38 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
           { name: "Security", description: "Security incidents and compliance issues" }
         ];
         
-        for (const type of defaultTypes) {
-          await storage.createCustomRequestType(type);
+        for (const category of defaultCategories) {
+          await storage.createCategory(category);
         }
         
-        requestTypes = await storage.getCustomRequestTypes();
+        categories = await storage.getCategories();
       }
       
-      res.json(requestTypes);
+      res.json(categories);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.post("/api/custom-request-types", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const { name, description } = req.body;
       if (!name || !name.trim()) {
         return res.status(400).json({ message: "Name is required" });
       }
       
-      const requestType = await storage.createCustomRequestType({
+      const category = await storage.createCategory({
         name: name.trim(),
         description: description?.trim() || null
       });
       
-      res.status(201).json(requestType);
+      res.status(201).json(category);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.put("/api/custom-request-types/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/categories/:id", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { name, description } = req.body;
@@ -7008,31 +7008,31 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         return res.status(400).json({ message: "Name is required" });
       }
       
-      const requestType = await storage.updateCustomRequestType(id, {
+      const category = await storage.updateCategory(id, {
         name: name.trim(),
         description: description?.trim() || null
       });
       
-      if (!requestType) {
-        return res.status(404).json({ message: "Request type not found" });
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
       }
       
-      res.json(requestType);
+      res.json(category);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.delete("/api/custom-request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/categories/:id", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteCustomRequestType(id);
+      const deleted = await storage.deleteCategory(id);
       
       if (!deleted) {
-        return res.status(404).json({ message: "Request type not found" });
+        return res.status(404).json({ message: "Category not found" });
       }
       
-      res.json({ message: "Request type deleted successfully" });
+      res.json({ message: "Category deleted successfully" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }

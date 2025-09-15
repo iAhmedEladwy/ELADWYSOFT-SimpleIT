@@ -11,7 +11,6 @@ import type { UserResponse, AssetResponse } from '@shared/types';
 import { calculatePriority, getPriorityBadgeVariant, getPriorityExplanation, type UrgencyLevel, type ImpactLevel } from '@shared/priorityUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// Dialog imports removed - form now renders inline
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,18 +32,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { 
-  Clock, 
   User, 
   MessageSquare, 
   History, 
-  Paperclip, 
   X,
   Save,
   AlertCircle,
   Edit3,
   Send,
-  Loader2,
-  Calendar as CalendarIcon
+  Loader2
 } from 'lucide-react';
 
 import {
@@ -68,13 +64,13 @@ const ticketFormSchema = z.object({
   submittedById: z.string(), 
   assignedToId: z.string().optional(),
   relatedAssetId: z.string().optional(),
-  requestType: z.string(),
-  category: z.string().default('Incident'),
+  type: z.string().default('Incident'),
+  category: z.string().default('General'),
   priority: z.string(), // Made optional
   urgency: z.string().default('Medium'),
   impact: z.string().default('Medium'),
   status: z.string().default('Open'),
-  summary: z.string().min(1,"Summary is required").max(200,"Summary cannot exceed 200 characters"),
+  title: z.string().min(1,"Title is required").max(200,"Title cannot exceed 200 characters"),
   description: z.string().min(1, "Description is required").max(2000, "Description cannot exceed 2000 characters"),
   resolution: z.string().optional(),
   dueDate: z.string().optional(),
@@ -156,12 +152,12 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
   gcTime: 10 * 60 * 1000,
 });
 
-
-  const { data: requestTypes = [], isLoading: isLoadingRequestTypes } = useQuery<Array<{id: number, name: string}>>({ 
-    queryKey: ['/api/custom-request-types'],
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Array<{id: number, name: string}>>({ 
+    queryKey: ['/api/categories'],
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+
   
   // Fetch comments and history for edit mode
   const { data: comments = [] } = useQuery<CommentData[]>({
@@ -230,13 +226,13 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
       submittedById: ticket?.submittedById?.toString() || '',
       assignedToId: ticket?.assignedToId?.toString() || 'unassigned',
       relatedAssetId: ticket?.relatedAssetId?.toString() || 'none',
-      requestType: ticket?.requestType || '',
-      category: ticket?.category || 'Incident',
+      type: ticket?.type || 'Incident',
+      category: ticket?.category || 'General',
       priority: ticket?.priority || '',
       urgency: ticket?.urgency || 'Medium',
       impact: ticket?.impact || 'Medium',
       status: ticket?.status || 'Open',
-      summary: ticket?.summary || '',
+      title: ticket?.title || '',
       description: ticket?.description || '',
       resolution: ticket?.resolution || '',
       dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
@@ -255,13 +251,13 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
         submittedById: ticket.submittedById?.toString() || '',
         assignedToId: ticket.assignedToId?.toString() || 'unassigned',
         relatedAssetId: ticket.relatedAssetId?.toString() || 'none',
-        requestType: ticket.requestType || '',
-        category: ticket.category || 'Incident',
+        type: ticket.type || 'Incident',
+        category: ticket.category || 'General',
         priority: ticket.priority || '',
         urgency: ticket.urgency || 'Medium',
         impact: ticket.impact || 'Medium',
         status: ticket.status || 'Open',
-        summary: ticket.summary || '',
+        title: ticket.title || '',
         description: ticket.description || '',
         resolution: ticket.resolution || '',
         dueDate: ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
@@ -658,31 +654,24 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                       )}
                     />
 
-                    {/* Request Type */}
+                    {/* Type */}
                     <FormField
                       control={form.control}
-                      name="requestType"
+                      name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{language === 'English' ? 'Request Type' : 'نوع الطلب'} *</FormLabel>
+                          <FormLabel>{language === 'English' ? 'Type' : 'النوع'} *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select request type' : 'اختر نوع الطلب'} />
+                                <SelectValue placeholder={language === 'English' ? 'Select ticket type' : 'اختر نوع التذكرة'} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {isLoadingRequestTypes ? (
-                                <SelectItem value="loading" disabled>Loading...</SelectItem>
-                              ) : requestTypes.length > 0 ? (
-                                requestTypes.map((type: any) => (
-                                  <SelectItem key={type.id} value={type.name}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="none" disabled>No request types available</SelectItem>
-                              )}
+                              <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
+                              <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
+                              <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
+                              <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -700,17 +689,17 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Summary */}
+                    {/* Title */}
                     <FormField
                       control={form.control}
-                      name="summary"
+                      name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{language === 'English' ? 'Summary' : 'الملخص'} *</FormLabel>
+                          <FormLabel>{language === 'English' ? 'Title' : 'العنوان'} *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
-                              placeholder={language === 'English' ? 'Brief summary of the issue' : 'ملخص مختصر للمشكلة'}
+                              placeholder={language === 'English' ? 'Brief title of the issue' : 'عنوان مختصر للمشكلة'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -848,14 +837,21 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder={language === 'English' ? 'Select category' : 'اختر الفئة'} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
-                              <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
-                              <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
-                              <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
+                              {isLoadingCategories ? (
+                                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                              ) : categories.length > 0 ? (
+                                categories.map((category: any) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="General">General</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -1085,7 +1081,7 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
         ) : (
           // Edit Mode: Tabbed detailed view
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="details" className="flex items-center gap-2">
                 <Edit3 className="h-4 w-4" />
                 {language === 'English' ? 'Details' : 'التفاصيل'}
@@ -1098,10 +1094,6 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                 <History className="h-4 w-4" />
                 {language === 'English' ? 'History' : 'التاريخ'} ({history.length})
               </TabsTrigger>
-              <TabsTrigger value="attachments" className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4" />
-                {language === 'English' ? 'Attachments' : 'المرفقات'}
-              </TabsTrigger>
             </TabsList>
 
             <div className="overflow-y-auto max-h-[60vh] mt-4">
@@ -1112,7 +1104,7 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                     <div className="flex items-center justify-between pb-4 border-b">
                       <div>
                         <h3 className="text-lg font-semibold">#{ticket?.ticketId}</h3>
-                        <p className="text-sm text-gray-600">{ticket?.summary}</p>
+                        <p className="text-sm text-gray-600">{ticket?.title}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={getPriorityColor(ticket?.priority)}>
@@ -1236,31 +1228,24 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                               )}
                             />
 
-                            {/* Request Type */}
+                            {/* Type */}
                             <FormField
                               control={form.control}
-                              name="requestType"
+                              name="type"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Request Type' : 'نوع الطلب'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('requestType', value); }} value={field.value}>
+                                  <FormLabel>{language === 'English' ? 'Type' : 'النوع'} *</FormLabel>
+                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('type', value); }} value={field.value}>
                                     <FormControl>
                                       <SelectTrigger>
                                         <SelectValue placeholder={language === 'English' ? 'Select type' : 'اختر النوع'} />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {isLoadingRequestTypes ? (
-                                        <SelectItem value="loading" disabled>Loading...</SelectItem>
-                                      ) : requestTypes.length > 0 ? (
-                                        requestTypes.map((type: any) => (
-                                          <SelectItem key={type.id} value={type.name}>
-                                            {type.name}
-                                          </SelectItem>
-                                        ))
-                                      ) : (
-                                        <SelectItem value="none" disabled>No request types available</SelectItem>
-                                      )}
+                                      <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
+                                      <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
+                                      <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
+                                      <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
@@ -1282,10 +1267,17 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
-                                      <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
-                                      <SelectItem value="Change Request">{language === 'English' ? 'Change Request' : 'طلب تغيير'}</SelectItem>
-                                      <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
+                                      {isLoadingCategories ? (
+                                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                      ) : categories.length > 0 ? (
+                                        categories.map((category: any) => (
+                                          <SelectItem key={category.id} value={category.name}>
+                                            {category.name}
+                                          </SelectItem>
+                                        ))
+                                      ) : (
+                                        <SelectItem value="General">General</SelectItem>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
@@ -1482,18 +1474,18 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
 
                           {/* Description Fields */}
                           <div className="space-y-4 mt-6">
-                            {/* Summary */}
+                            {/* Title */}
                             <FormField
                               control={form.control}
-                              name="summary"
+                              name="title"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Summary' : 'الملخص'} *</FormLabel>
+                                  <FormLabel>{language === 'English' ? 'Title' : 'العنوان'} *</FormLabel>
                                   <FormControl>
                                     <Input
                                       {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('summary', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Brief summary of the issue' : 'ملخص موجز للمشكلة'}
+                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('title', e.target.value); }}
+                                      placeholder={language === 'English' ? 'Brief title of the issue' : 'عنوان موجز للمشكلة'}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -1694,16 +1686,6 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                     </Card>
                   )}
                 </div>
-              </TabsContent>
-
-              <TabsContent value="attachments" className="space-y-4">
-                {/* Placeholder for attachments */}
-                <Card>
-                  <CardContent className="pt-4 text-center text-gray-500">
-                    <Paperclip className="h-8 w-8 mx-auto mb-2" />
-                    <p>{language === 'English' ? 'No attachments yet' : 'لا توجد مرفقات بعد'}</p>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </div>
           </Tabs>

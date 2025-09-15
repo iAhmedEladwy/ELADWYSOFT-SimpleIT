@@ -12,7 +12,7 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes,
+  customAssetTypes, customAssetBrands, customAssetStatuses, categories,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
@@ -181,11 +181,11 @@ export interface IStorage {
   ensureAssetStatus(name: string, color?: string): Promise<AssetStatus>;
   
   // Custom Request Types operations (Feature 1: Change Category to Request Type)
-  getCustomRequestTypes(): Promise<any[]>;
-  getAllCustomRequestTypes(): Promise<any[]>;
-  createCustomRequestType(requestType: any): Promise<any>;
-  updateCustomRequestType(id: number, requestType: any): Promise<any | undefined>;
-  deleteCustomRequestType(id: number): Promise<boolean>;
+  getCategories(): Promise<any[]>;
+  getAllCategories(): Promise<any[]>;
+  createCategory(category: any): Promise<any>;
+  updateCategory(id: number, category: any): Promise<any | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
   
   // Ticket History operations (Feature 3: Ticket history and updates display)
   getTicketHistory(ticketId: number): Promise<any[]>;
@@ -2226,32 +2226,36 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // Custom request types operations
-  async getCustomRequestTypes(): Promise<CustomRequestType[]> {
+  // Categories operations
+  async getCategories(): Promise<Category[]> {
     try {
-      const result = await db.select().from(customRequestTypes).orderBy(customRequestTypes.name);
+      const result = await db.select().from(categories).orderBy(categories.name);
       return result;
     } catch (error) {
-      console.error('Error fetching custom request types:', error);
+      console.error('Error fetching categories:', error);
       return [];
     }
   }
 
-  async createCustomRequestType(data: InsertCustomRequestType): Promise<CustomRequestType> {
-    const [result] = await db.insert(customRequestTypes).values(data).returning();
+  async getAllCategories(): Promise<Category[]> {
+    return this.getCategories();
+  }
+
+  async createCategory(data: any): Promise<any> {
+    const [result] = await db.insert(categories).values(data).returning();
     return result;
   }
 
-  async updateCustomRequestType(id: number, data: Partial<InsertCustomRequestType>): Promise<CustomRequestType | null> {
-    const [result] = await db.update(customRequestTypes)
+  async updateCategory(id: number, data: any): Promise<any | null> {
+    const [result] = await db.update(categories)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(customRequestTypes.id, id))
+      .where(eq(categories.id, id))
       .returning();
     return result || null;
   }
 
-  async deleteCustomRequestType(id: number): Promise<boolean> {
-    const result = await db.delete(customRequestTypes).where(eq(customRequestTypes.id, id));
+  async deleteCategory(id: number): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id));
     return result.rowCount > 0;
   }
 
