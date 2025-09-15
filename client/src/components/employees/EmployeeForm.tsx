@@ -24,6 +24,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface EmployeeFormProps {
   onSubmit: (data: any) => void;
@@ -145,6 +155,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
   };
+
+  // State for controlling date picker popovers
+  const [joiningDateOpen, setJoiningDateOpen] = useState(false);
+  const [exitDateOpen, setExitDateOpen] = useState(false);
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof employeeFormSchema>>({
@@ -395,7 +409,41 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.joiningDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <Popover open={joiningDateOpen} onOpenChange={setJoiningDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>{language === 'English' ? 'Pick joining date' : 'اختر تاريخ الانضمام'}</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const isoString = date.toISOString().split('T')[0];
+                                field.onChange(isoString);
+                              }
+                              setJoiningDateOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date > new Date()
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -409,7 +457,40 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.exitDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} type="date" />
+                      <Popover open={exitDateOpen} onOpenChange={setExitDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>{language === 'English' ? 'Pick exit date (optional)' : 'اختر تاريخ المغادرة (اختياري)'}</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const isoString = date.toISOString().split('T')[0];
+                                field.onChange(isoString);
+                              } else {
+                                field.onChange('');
+                              }
+                              setExitDateOpen(false);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                     <FormDescription>{translations.exitDateDesc}</FormDescription>
                     <FormMessage />

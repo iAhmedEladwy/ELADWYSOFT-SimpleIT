@@ -1,9 +1,17 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
@@ -13,8 +21,44 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  const [month, setMonth] = React.useState<Date>(props.month || new Date())
+  
+  const years = React.useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    const startYear = currentYear - 100
+    const endYear = currentYear + 10
+    return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
+  }, [])
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+
+  const handleYearChange = (year: string) => {
+    const newDate = new Date(month)
+    newDate.setFullYear(parseInt(year))
+    setMonth(newDate)
+    props.onMonthChange?.(newDate)
+  }
+
+  const handleMonthChange = (monthIndex: string) => {
+    const newDate = new Date(month)
+    newDate.setMonth(parseInt(monthIndex))
+    setMonth(newDate)
+    props.onMonthChange?.(newDate)
+  }
+
+  React.useEffect(() => {
+    if (props.month) {
+      setMonth(props.month)
+    }
+  }, [props.month])
+
   return (
     <DayPicker
+      month={month}
+      onMonthChange={setMonth}
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
@@ -57,6 +101,43 @@ function Calendar({
         ),
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+        ),
+        Caption: ({ displayMonth }) => (
+          <div className="flex justify-center items-center gap-2 pt-1 relative w-full">
+            <div className="flex items-center gap-1">
+              <Select
+                value={displayMonth.getMonth().toString()}
+                onValueChange={handleMonthChange}
+              >
+                <SelectTrigger className="h-7 w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month, index) => (
+                    <SelectItem key={index} value={index.toString()}>
+                      {month}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select
+                value={displayMonth.getFullYear().toString()}
+                onValueChange={handleYearChange}
+              >
+                <SelectTrigger className="h-7 w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         ),
       }}
       {...props}

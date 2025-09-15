@@ -25,6 +25,16 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface AssetFormProps {
   onSubmit: (data: any) => void;
@@ -195,6 +205,10 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       specs: initialData.specs || '',
     };
   };
+
+  // State for controlling date picker popovers
+  const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
+  const [warrantyDateOpen, setWarrantyDateOpen] = useState(false);
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof assetFormSchema>>({
@@ -531,7 +545,41 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.purchaseDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" value={field.value || ''} />
+                      <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>{language === 'English' ? 'Pick purchase date' : 'اختر تاريخ الشراء'}</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const isoString = date.toISOString().split('T')[0];
+                                field.onChange(isoString);
+                              }
+                              setPurchaseDateOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date > new Date()
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                     <FormDescription>{translations.purchaseDateDesc}</FormDescription>
                     <FormMessage />
@@ -572,7 +620,41 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.warrantyExpiry}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" value={field.value || ''} />
+                      <Popover open={warrantyDateOpen} onOpenChange={setWarrantyDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>{language === 'English' ? 'Pick warranty expiry date' : 'اختر تاريخ انتهاء الضمان'}</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const isoString = date.toISOString().split('T')[0];
+                                field.onChange(isoString);
+                              }
+                              setWarrantyDateOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                     <FormDescription>{translations.warrantyExpiryDesc}</FormDescription>
                     <FormMessage />
