@@ -2763,6 +2763,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quick asset assignment for testing (temporary route)
+  app.post("/api/assets/:id/quick-assign", authenticateUser, async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const { employeeId } = req.body;
+      
+      console.log(`Quick assign request: Asset ${assetId} to Employee ${employeeId}`);
+      
+      // Use the helper method we just created
+      const updatedAsset = await storage.assignAssetToEmployee(assetId, parseInt(employeeId));
+      
+      if (!updatedAsset) {
+        return res.status(404).json({ message: "Asset or Employee not found" });
+      }
+      
+      res.json({ 
+        message: "Asset assigned successfully", 
+        asset: updatedAsset 
+      });
+    } catch (error: unknown) {
+      console.error('Error in quick assign:', error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Asset Assign/Unassign
   app.post("/api/assets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
     try {

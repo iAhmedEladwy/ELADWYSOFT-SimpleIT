@@ -2214,6 +2214,20 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
+  // Helper method to assign an asset to an employee for testing
+  async assignAssetToEmployee(assetId: number, employeeId: number): Promise<Asset | undefined> {
+    try {
+      console.log(`Assigning asset ${assetId} to employee ${employeeId}`);
+      return await this.updateAsset(assetId, {
+        assignedEmployeeId: employeeId,
+        status: 'In Use'
+      });
+    } catch (error) {
+      console.error('Error assigning asset to employee:', error);
+      throw error;
+    }
+  }
+
 
 
   async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {

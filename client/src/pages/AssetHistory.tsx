@@ -804,7 +804,7 @@ export default function AssetHistory() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        transactionsData?.transactions?.map((transaction: TransactionWithRelations) => (
+                        transactions?.map((transaction: TransactionWithRelations) => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-medium">#{transaction.id}</TableCell>
                           <TableCell>
