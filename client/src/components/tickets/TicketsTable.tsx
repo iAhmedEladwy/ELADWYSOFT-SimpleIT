@@ -394,13 +394,10 @@ export default function TicketsTable({
                           {type}
                         </SelectItem>
                       ))}
-                        <>
-                          <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
-                          <SelectItem value="Software">{t.categorySoftware}</SelectItem>
-                          <SelectItem value="Network">{t.categoryNetwork}</SelectItem>
-                          <SelectItem value="Other">{t.categoryOther}</SelectItem>
-                        </>
-                      )}
+                      <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
+                      <SelectItem value="Software">{t.categorySoftware}</SelectItem>
+                      <SelectItem value="Network">{t.categoryNetwork}</SelectItem>
+                      <SelectItem value="Other">{t.categoryOther}</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
