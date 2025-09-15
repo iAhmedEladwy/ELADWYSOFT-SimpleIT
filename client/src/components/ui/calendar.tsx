@@ -141,7 +141,12 @@ function Calendar({
     const parsedDate = parseDate(inputValue)
     if (parsedDate && isValid(parsedDate)) {
       setInputValue(formatDateForDisplay(parsedDate))
-      props.onChange?.(parsedDate.toISOString().split('T')[0])
+      // Fix timezone issue: format date as YYYY-MM-DD without timezone conversion
+      const year = parsedDate.getFullYear()
+      const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+      const day = String(parsedDate.getDate()).padStart(2, '0')
+      const dateString = `${year}-${month}-${day}`
+      props.onChange?.(dateString)
     } else if (inputValue && inputValue !== "") {
       // If invalid date, revert to original value or clear
       if (props.value) {
@@ -160,7 +165,12 @@ function Calendar({
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
       setInputValue(formatDateForDisplay(date))
-      props.onChange?.(date.toISOString().split('T')[0])
+      // Fix timezone issue: format date as YYYY-MM-DD without timezone conversion
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const dateString = `${year}-${month}-${day}`
+      props.onChange?.(dateString)
     } else {
       setInputValue("")
       props.onChange?.(undefined)
@@ -170,9 +180,14 @@ function Calendar({
   }
 
   const handleButtonClick = () => {
-    if (!isEditing) {
-      setIsEditing(true)
-    }
+    // In picker mode, just open the calendar, don't switch to editing
+    setOpen(true)
+  }
+
+  const handleButtonDoubleClick = () => {
+    // Double-click to enable manual editing
+    setIsEditing(true)
+    setOpen(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -215,6 +230,7 @@ function Calendar({
               <Button
                 variant={props.variant || "outline"}
                 onClick={handleButtonClick}
+                onDoubleClick={handleButtonDoubleClick}
                 className={cn(
                   "w-full justify-start text-left font-normal",
                   !props.value && "text-muted-foreground",
