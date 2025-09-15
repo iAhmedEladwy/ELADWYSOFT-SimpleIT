@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Search, Calendar, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Search, Calendar as CalendarIcon, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +80,8 @@ export default function AssetHistory() {
     dateFrom: '',
     dateTo: '',
   });
+  const [dateFromSelected, setDateFromSelected] = useState<Date | undefined>(undefined);
+  const [dateToSelected, setDateToSelected] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
@@ -738,21 +740,61 @@ export default function AssetHistory() {
               {/* Date From */}
               <div className="space-y-2">
                 <Label>{translations.dateFrom}</Label>
-                <DatePicker
-                  date={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
-                  onDateChange={(date) => handleFilterChange('dateFrom', date ? format(date, 'yyyy-MM-dd') : '')}
-                  placeholder={translations.dateFrom}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateFromSelected && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFromSelected ? format(dateFromSelected, "PPP") : translations.dateFrom}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFromSelected}
+                      onSelect={(date) => {
+                        setDateFromSelected(date);
+                        handleFilterChange('dateFrom', date ? format(date, 'yyyy-MM-dd') : '');
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Date To */}
               <div className="space-y-2">
                 <Label>{translations.dateTo}</Label>
-                <DatePicker
-                  date={filters.dateTo ? new Date(filters.dateTo) : undefined}
-                  onDateChange={(date) => handleFilterChange('dateTo', date ? format(date, 'yyyy-MM-dd') : '')}
-                  placeholder={translations.dateTo}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateToSelected && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateToSelected ? format(dateToSelected, "PPP") : translations.dateTo}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateToSelected}
+                      onSelect={(date) => {
+                        setDateToSelected(date);
+                        handleFilterChange('dateTo', date ? format(date, 'yyyy-MM-dd') : '');
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
