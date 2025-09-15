@@ -345,7 +345,7 @@ export default function Reports() {
 
   // PDF Export functionality using react-to-print
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    contentRef: componentRef,
     documentTitle: `IT Asset Reports - ${new Date().toLocaleDateString()}`,
     pageStyle: `
       @page {
@@ -397,7 +397,7 @@ export default function Reports() {
         }
       }
     `,
-    onBeforeGetContent: () => {
+    onBeforePrint: () => {
       // Add a title to the document before printing
       const titleElement = document.createElement('div');
       titleElement.innerHTML = `
