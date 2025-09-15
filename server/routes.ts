@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
 import { db } from "./db";
-import { users, employees, assets, tickets } from "@shared/schema";
+import { users, employees, assets, tickets, assetUpgrades, assetTransactions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const storage = getStorage();
@@ -3388,19 +3388,56 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    // Use Drizzle ORM instead of raw SQL
+    // First get the upgrade request details
+    const upgradeRequest = await db
+      .select()
+      .from(assetUpgrades)
+      .where(eq(assetUpgrades.id, upgradeId))
+      .limit(1);
+
+    if (upgradeRequest.length === 0) {
+      return res.status(404).json({ message: 'Upgrade request not found' });
+    }
+
+    const upgrade = upgradeRequest[0];
+
+    // Update the upgrade status
     const result = await db
-      .update(schema.assetUpgrades)
+      .update(assetUpgrades)
       .set({ 
         status: status,
         updatedById: user.id,
         updatedAt: new Date()
       })
-      .where(eq(schema.assetUpgrades.id, upgradeId))
+      .where(eq(assetUpgrades.id, upgradeId))
       .returning();
     
     if (result.length === 0) {
       return res.status(404).json({ message: 'Upgrade not found' });
+    }
+
+    // Create asset transaction record for certain status changes
+    const shouldCreateTransaction = ['Approved', 'Completed', 'Cancelled'].includes(status);
+    
+    if (shouldCreateTransaction) {
+      try {
+        const transactionData = {
+          assetId: upgrade.assetId,
+          type: 'Upgrade' as const,
+          employeeId: null, // Upgrade is system-initiated, not employee-specific
+          transactionDate: new Date(),
+          conditionNotes: `Upgrade Request: ${upgrade.title}\nCategory: ${upgrade.category}\nType: ${upgrade.upgradeType}\nStatus: ${status}\nJustification: ${upgrade.justification}${notes ? `\nReview Notes: ${notes}` : ''}`,
+          handledById: user.id,
+          deviceSpecs: null // Will be auto-populated by createAssetTransaction
+        };
+
+        const transaction = await storage.createAssetTransaction(transactionData);
+        console.log('Created asset transaction for upgrade:', transaction.id);
+      } catch (transactionError) {
+        console.error('Error creating asset transaction:', transactionError);
+        // Don't fail the upgrade status update if transaction creation fails
+        // Log the error but continue
+      }
     }
 
     console.log('Upgrade status updated successfully:', result[0]);

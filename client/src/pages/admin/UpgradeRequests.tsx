@@ -214,12 +214,9 @@ export default function UpgradeRequests() {
   // Update status mutation with transaction creation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes: string }) => {
-      // First update the status
+      // Update the status - backend automatically creates asset transaction records
+      // for status changes to 'Approved', 'Completed', or 'Cancelled'
       const response = await apiRequest(`/api/upgrades/${id}/status`, 'POST', { status, notes });
-      
-      // If status changed to Approved, we should note that a transaction will be created
-      // Note: The backend currently doesn't auto-create transaction on status change
-      // This would need to be added to the backend if required
       
       return response;
     },
@@ -285,10 +282,12 @@ export default function UpgradeRequests() {
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | "success" | "warning" => {
     switch (status) {
       case 'Approved': return 'success';
-      case 'Rejected':
-      case 'Cancelled': return 'destructive';
-      case 'In Progress': return 'warning';
       case 'Completed': return 'success';
+      case 'Pending Approval': return 'warning';  // Yellow/orange for waiting states
+      case 'In Progress': return 'secondary';     // Gray for active work
+      case 'Rejected':
+      case 'Cancelled': return 'destructive';    // Red for negative states
+      case 'Draft': return 'outline';            // Outline for draft state
       default: return 'default';
     }
   };
