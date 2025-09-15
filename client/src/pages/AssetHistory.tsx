@@ -175,6 +175,21 @@ export default function AssetHistory() {
     estimatedCost: language === 'English' ? 'Estimated Cost' : 'التكلفة المقدرة',
     upgradeDescription: language === 'English' ? 'Description' : 'الوصف',
     perPage: language === 'English' ? 'per page' : 'لكل صفحة',
+    // Table content labels
+    brandModel: language === 'English' ? 'Brand & Model' : 'الماركة والموديل',
+    deviceSpecsAt: language === 'English' ? 'Device Specs at' : 'مواصفات الجهاز في',
+    recorded: language === 'English' ? 'Recorded' : 'مسجل',
+    notAvailable: language === 'English' ? 'Not Available' : 'غير متوفر',
+    reason: language === 'English' ? 'Reason' : 'السبب',
+    typeLabel: language === 'English' ? 'Type' : 'النوع',
+    costLabel: language === 'English' ? 'Cost' : 'التكلفة',
+    providerLabel: language === 'English' ? 'Provider' : 'المزود',
+    statusLabel: language === 'English' ? 'Status' : 'الحالة',
+    // Pagination text
+    showing: language === 'English' ? 'Showing' : 'عرض',
+    to: language === 'English' ? 'to' : 'إلى',
+    results: language === 'English' ? 'results' : 'نتيجة',
+    lowPriority: language === 'English' ? 'Low' : 'منخفض',
     // Additional CSV headers
     transactionDate: language === 'English' ? 'Transaction Date' : 'تاريخ المعاملة',
     assetType: language === 'English' ? 'Asset Type' : 'نوع الأصل',
@@ -832,7 +847,7 @@ export default function AssetHistory() {
                               if (transaction.type === 'Retirement' && metadata?.retirementReason) {
                                 return (
                                   <div className="text-sm space-y-1">
-                                    <p className="font-medium text-gray-900">Reason: {metadata.retirementReason}</p>
+                                    <p className="font-medium text-gray-900">{translations.reason}: {metadata.retirementReason}</p>
                                     {metadata.notes && <p className="text-gray-500 text-xs mt-1 truncate">{metadata.notes}</p>}
                                   </div>
                                 );
@@ -841,10 +856,10 @@ export default function AssetHistory() {
                               if (transaction.type === 'Maintenance' && metadata?.maintenanceType) {
                                 return (
                                   <div className="text-sm space-y-1">
-                                    <p className="font-medium text-gray-900">Type: {metadata.maintenanceType}</p>
-                                    {metadata.cost && <p className="text-gray-600">Cost: {formatCurrency(metadata.cost)}</p>}
-                                    {metadata.provider && <p className="text-gray-600">Provider: {metadata.provider}</p>}
-                                    {metadata.status && <p className="text-gray-600">Status: {metadata.status}</p>}
+                                    <p className="font-medium text-gray-900">{translations.typeLabel}: {metadata.maintenanceType}</p>
+                                    {metadata.cost && <p className="text-gray-600">{translations.costLabel}: {formatCurrency(metadata.cost)}</p>}
+                                    {metadata.provider && <p className="text-gray-600">{translations.providerLabel}: {metadata.provider}</p>}
+                                    {metadata.status && <p className="text-gray-600">{translations.statusLabel}: {metadata.status}</p>}
                                   </div>
                                 );
                               }
@@ -860,11 +875,11 @@ export default function AssetHistory() {
                           <TableCell>
                             {transaction.deviceSpecs ? (
                               <Badge variant="outline">
-                                Recorded
+                                {translations.recorded}
                               </Badge>
                             ) : (
                               <Badge variant="secondary">
-                                Not Available
+                                {translations.notAvailable}
                               </Badge>
                             )}
                           </TableCell>
@@ -932,7 +947,7 @@ export default function AssetHistory() {
                                         <p className="text-sm font-medium">{transaction.asset?.type || '-'}</p>
                                       </div>
                                       <div>
-                                        <Label className="text-xs text-gray-500">Brand & Model</Label>
+                                        <Label className="text-xs text-gray-500">{translations.brandModel}</Label>
                                         <p className="text-sm font-medium">
                                           {transaction.asset?.brand || '-'} {transaction.asset?.modelName ? `- ${transaction.asset.modelName}` : ''}
                                         </p>
@@ -950,7 +965,7 @@ export default function AssetHistory() {
 
                                   {/* Device Specifications */}
                                   <div>
-                                    <h4 className="font-medium mb-3">Device Specs at {transaction.type}</h4>
+                                    <h4 className="font-medium mb-3">{translations.deviceSpecsAt} {transaction.type}</h4>
                                     <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
                                       <div>
                                         <Label className="text-xs text-gray-500">{translations.cpu}</Label>
@@ -1110,7 +1125,7 @@ export default function AssetHistory() {
                                             metadata.priority === 'Medium' ? 'secondary' :
                                             'outline'
                                           }>
-                                            {metadata.priority || 'Low'}
+                                            {metadata.priority || translations.lowPriority}
                                           </Badge>
                                         </div>
                                         <div>
@@ -1161,7 +1176,7 @@ export default function AssetHistory() {
                 {transactionsData?.pagination && transactionsData.pagination.totalPages > 1 && (
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
-                      Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, transactionsData.pagination.totalItems)} of {transactionsData.pagination.totalItems} results
+                      {translations.showing} {((currentPage - 1) * pageSize) + 1} {translations.to} {Math.min(currentPage * pageSize, transactionsData.pagination.totalItems)} {translations.of} {transactionsData.pagination.totalItems} {translations.results}
                     </div>
                     <div className="flex gap-2">
                       <Button

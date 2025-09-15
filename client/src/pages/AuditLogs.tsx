@@ -107,6 +107,7 @@ export default function AuditLogs() {
     id: language === 'English' ? 'ID' : 'المعرف',
     timestamp: language === 'English' ? 'Timestamp' : 'الوقت',
     details: language === 'English' ? 'Details' : 'التفاصيل',
+    entityId: language === 'English' ? 'Entity ID' : 'معرف الكيان',
   };
   
   const [filters, setFilters] = useState<any>({});
@@ -190,7 +191,7 @@ export default function AuditLogs() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to clear logs');
+        throw new Error(errorData.message || translations.failedToClearLogs);
       }
       
       return response.json();
@@ -269,7 +270,7 @@ export default function AuditLogs() {
       translations.user || 'User', 
       translations.action || 'Action', 
       translations.entityType || 'Entity Type', 
-      'Entity ID', 
+      translations.entityId || 'Entity ID', 
       translations.details || 'Details'
     ];
     
