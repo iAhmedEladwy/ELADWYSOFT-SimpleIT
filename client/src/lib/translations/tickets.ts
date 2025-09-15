@@ -116,6 +116,17 @@ export interface TicketTranslations {
   myTickets: string;
   openTickets: string;
   all: string;
+
+  assignmentClassification: string;
+  timeManagement: string;
+  minutesLabel: string;
+  selectDueDate: string;
+  selectSlaTarget: string;
+  selectAssetDescription: string;
+  noUserFound: string;
+  addCommentPlaceholder: string;
+  noHistoryEntries: string;
+  systemUser: string;
   
   // Placeholders
   searchPlaceholder: string;
@@ -285,6 +296,17 @@ export const ticketTranslations = {
     noTickets: 'No tickets found',
     noTicketsSelected: 'No tickets selected',
     errorUpdating: 'Failed to update ticket',
+    assignmentClassification: 'Assignment & Classification',
+    timeManagement: 'Time Management',
+    minutesLabel: 'minutes',
+    selectDueDate: 'Select due date',
+    selectSlaTarget: 'Select SLA target',
+    selectAssetDescription: 'Optional: Select an asset related to this ticket',
+    noUserFound: 'No user found.',
+    addCommentPlaceholder: 'Add a comment...',
+    noHistoryEntries: 'No history entries yet',
+    systemUser: 'System',
+  
     
     // Filters
     allTickets: 'All Tickets',
@@ -459,6 +481,16 @@ export const ticketTranslations = {
     noTickets: 'لا توجد تذاكر',
     noTicketsSelected: 'لم يتم تحديد تذاكر',
     errorUpdating: 'فشل في تحديث التذكرة',
+    assignmentClassification: 'التخصيص والتصنيف',
+    timeManagement: 'إدارة الوقت',
+    minutesLabel: 'دقائق',
+    selectDueDate: 'اختر تاريخ الاستحقاق',
+    selectSlaTarget: 'اختر هدف مستوى الخدمة',
+    selectAssetDescription: 'اختياري: اختر أصل متعلق بهذه التذكرة',
+    noUserFound: 'لم يتم العثور على مستخدم.',
+    addCommentPlaceholder: 'أضف تعليق...',
+    noHistoryEntries: 'لا توجد إدخالات تاريخية بعد',
+    systemUser: 'النظام',
     
     // Filters
     allTickets: 'جميع التذاكر',

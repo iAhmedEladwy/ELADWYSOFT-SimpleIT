@@ -1,20 +1,25 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import type { UserResponse, AssetResponse } from '@shared/types';
-import { calculatePriority, getPriorityBadgeVariant, getPriorityExplanation, type UrgencyLevel, type ImpactLevel } from '@shared/priorityUtils';
+import { useTicketTranslations } from '@/lib/translations/tickets';
+import { calculatePriority, getPriorityBadgeVariant, getPriorityExplanation } from '@shared/priorityUtils';
+
+import type { TicketResponse, TicketCreateRequest, TicketUpdateRequest, UserResponse, AssetResponse, EmployeeResponse } from '@shared/types';
+
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Form,
@@ -23,6 +28,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -31,1665 +37,1074 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  User, 
-  MessageSquare, 
-  History, 
-  X,
-  Save,
-  AlertCircle,
-  Edit3,
-  Send,
-  Loader2
-} from 'lucide-react';
-
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
-// Ticket form schema with all ITIL-compliant fields - made flexible for better UX
+import { 
+  Save, 
+  Loader2, 
+  X, 
+  User, 
+  MessageSquare, 
+  History,
+  AlertCircle,
+  Send,
+  Check,
+  ChevronsUpDown 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// v0.4.0 Compliant Ticket Form Schema
 const ticketFormSchema = z.object({
-  submittedById: z.string(), 
-  assignedToId: z.string().optional(),
-  relatedAssetId: z.string().optional(),
-  type: z.string().default('Incident'),
+  // Core Identity - Numbers (not strings)
+  submittedById: z.number().min(1, "Submitted by is required"),
+  assignedToId: z.number().optional(),
+  relatedAssetId: z.number().optional(),
+  
+  // Request Classification - Proper enums
+  type: z.enum(['Incident', 'Service Request', 'Problem', 'Change']).default('Incident'),
   category: z.string().default('General'),
-  priority: z.string(), // Made optional
-  urgency: z.string().default('Medium'),
-  impact: z.string().default('Medium'),
-  status: z.string().default('Open'),
-  title: z.string().min(1,"Title is required").max(200,"Title cannot exceed 200 characters"),
-  description: z.string().min(1, "Description is required").max(2000, "Description cannot exceed 2000 characters"),
+  
+  // Priority Management - Proper enums (priority calculated automatically)
+  urgency: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
+  impact: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
+  
+  // Content - Fixed length limits to match schema
+  title: z.string().min(1, "Title is required").max(255, "Title cannot exceed 255 characters"),
+  description: z.string().min(1, "Description is required"),
   resolution: z.string().optional(),
+  
+  // Status & Workflow - Proper enum
+  status: z.enum(['Open', 'In Progress', 'Resolved', 'Closed']).default('Open'),
+  
+  // Time Management - Proper types with safe conversion
+  timeSpent: z.union([
+    z.number().min(0, "Time spent cannot be negative"),
+    z.string().transform((val) => {
+      if (val === '' || val === null || val === undefined) return undefined;
+      const parsed = parseInt(val, 10);
+      if (isNaN(parsed)) return undefined;
+      return parsed >= 0 ? parsed : undefined;
+    })
+  ]).optional(),
+  
   dueDate: z.string().optional(),
   slaTarget: z.string().optional(),
-  escalationLevel: z.string().default('0'),
-  tags: z.string().optional(),
-  privateNotes: z.string().optional(),
-  timeSpent: z.string().optional(),
 });
 
 type TicketFormData = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormProps {
-  ticket?: any; // If provided, this is edit mode
+  ticket?: TicketResponse;
   mode: 'create' | 'edit';
-  onSubmit?: (data: TicketFormData) => void;
-  onCancel?: () => void;
-  isSubmitting?: boolean;
-  onTicketUpdate?: (ticket: any) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: (ticket: TicketResponse) => void;
 }
 
-interface CommentData {
-  id: number;
-  content: string;
-  username: string;
-  createdAt: string;
-}
-
-interface HistoryData {
-  id: number;
-  changeType: string;
-  changeDescription: string;
-  createdAt: string;
-}
-
-export default function TicketForm({
-  ticket,
-  mode,
-  onSubmit,
-  onCancel,
-  isSubmitting = false,
-  onTicketUpdate
+export default function TicketForm({ 
+  ticket, 
+  mode, 
+  open = false, 
+  onOpenChange, 
+  onSuccess 
 }: TicketFormProps) {
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, hasAccess } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const t = useTicketTranslations(language);
+
+  // Local state
   const [activeTab, setActiveTab] = useState('details');
-  const [commentText, setCommentText] = useState('');
-  const [autoSaving, setAutoSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
+  const [userSearchOpen, setUserSearchOpen] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [addingComment, setAddingComment] = useState(false);
 
-  // Fetch data with improved caching and loading states
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<UserResponse[]>({ 
-    queryKey: ['/api/users'],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
-  });
-  const { data: employeesData, isLoading: isLoadingEmployees } = useQuery<any[]>({ 
-  queryKey: ['/api/employees'],
-  staleTime: 5 * 60 * 1000,
-  gcTime: 10 * 60 * 1000,
-  });
-  // Filter to show only active employees
-  const activeEmployees = useMemo(() => {
-  // Ensure employees is an array before filtering
-  if (!Array.isArray(employeesData)) {
-    console.warn('Employees data is not an array:', employeesData);
-    return [];
-  }
-  
-  return employeesData.filter((employee: any) => 
-    employee && employee.status === 'Active'
-  );
-  }, [employeesData]);
-const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetResponse[]>({ 
-  queryKey: ['/api/assets'],
-  staleTime: 5 * 60 * 1000,
-  gcTime: 10 * 60 * 1000,
-});
-
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Array<{id: number, name: string}>>({ 
-    queryKey: ['/api/categories'],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  
-  // Fetch comments and history for edit mode
-  const { data: comments = [] } = useQuery<CommentData[]>({
-    queryKey: [`/api/tickets/${ticket?.id}/comments`],
-    enabled: mode === 'edit' && !!ticket?.id,
-  });
-
-  const { data: history = [] } = useQuery<HistoryData[]>({
-    queryKey: [`/api/tickets/${ticket?.id}/history`],
-    enabled: mode === 'edit' && !!ticket?.id,
-  });
-
-  // Auto-save mutation for edit mode
-  const autoSaveMutation = useMutation({
-    mutationFn: async (updateData: Partial<TicketFormData>) => {
-      if (mode === 'edit' && ticket) {
-        return await apiRequest(`/api/tickets/${ticket.id}/enhanced`, 'PUT', updateData);
-      }
-      throw new Error('Auto-save only available in edit mode');
-    },
-    onSuccess: (updatedTicket) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      if (onTicketUpdate) {
-        onTicketUpdate(updatedTicket);
-      }
-      setAutoSaving(false);
-    },
-    onError: (error) => {
-      setAutoSaving(false);
-      toast({
-        title: 'Auto-save failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  
-
-  // Comment mutation
-  const commentMutation = useMutation({
-    mutationFn: async (commentData: any) => {
-      return await apiRequest(`/api/tickets/comments`, 'POST', commentData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}/comments`] });
-      setCommentText('');
-      toast({
-        title: 'Comment added',
-        description: 'Your comment has been added successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Form setup with default values
+  // Initialize form with proper defaults
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
-      submittedById: ticket?.submittedById?.toString() || '',
-      assignedToId: ticket?.assignedToId?.toString() || 'unassigned',
-      relatedAssetId: ticket?.relatedAssetId?.toString() || 'none',
+      submittedById: ticket?.submittedById || 0,
+      assignedToId: ticket?.assignedToId || undefined,
+      relatedAssetId: ticket?.relatedAssetId || undefined,
       type: ticket?.type || 'Incident',
       category: ticket?.category || 'General',
-      priority: ticket?.priority || '',
       urgency: ticket?.urgency || 'Medium',
       impact: ticket?.impact || 'Medium',
       status: ticket?.status || 'Open',
       title: ticket?.title || '',
       description: ticket?.description || '',
       resolution: ticket?.resolution || '',
+      timeSpent: ticket?.timeSpent || undefined,
       dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
-      slaTarget: ticket?.slaTarget?.toString() || '',
-      escalationLevel: ticket?.escalationLevel?.toString() || '0',
-      tags: ticket?.tags?.join(', ') || '',
-      privateNotes: ticket?.privateNotes || '',
-      timeSpent: ticket?.timeSpent?.toString() || '',
+      slaTarget: ticket?.slaTarget ? new Date(ticket.slaTarget).toISOString().split('T')[0] : '',
     },
   });
 
-  // Reset form when ticket changes (for edit mode)
-  useEffect(() => {
-    if (ticket && mode === 'edit') {
-      form.reset({
-        submittedById: ticket.submittedById?.toString() || '',
-        assignedToId: ticket.assignedToId?.toString() || 'unassigned',
-        relatedAssetId: ticket.relatedAssetId?.toString() || 'none',
-        type: ticket.type || 'Incident',
-        category: ticket.category || 'General',
-        priority: ticket.priority || '',
-        urgency: ticket.urgency || 'Medium',
-        impact: ticket.impact || 'Medium',
-        status: ticket.status || 'Open',
-        title: ticket.title || '',
-        description: ticket.description || '',
-        resolution: ticket.resolution || '',
-        dueDate: ticket.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : '',
-        slaTarget: ticket.slaTarget?.toString() || '',
-        escalationLevel: ticket.escalationLevel?.toString() || '0',
-        tags: ticket.tags?.join(', ') || '',
-        privateNotes: ticket.privateNotes || '',
-        timeSpent: ticket.timeSpent?.toString() || '',
-      });
-    }
-  }, [ticket, mode, form]);
+  // Watch urgency and impact for priority calculation
+  const urgency = form.watch('urgency');
+  const impact = form.watch('impact');
+  const calculatedPriority = calculatePriority(urgency as any, impact as any);
 
-  // Watch the submittedById field to dynamically filter assets
+  // Queries for form data
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => apiRequest('/api/employees'),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => apiRequest('/api/users'),
+  });
+
+  const { data: assets = [] } = useQuery({
+    queryKey: ['assets'],
+    queryFn: () => apiRequest('/api/assets'),
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => apiRequest('/api/categories'),
+  });
+
+  // Get comments and history for edit mode
+  const { data: comments = [] } = useQuery({
+    queryKey: ['ticket-comments', ticket?.id],
+    queryFn: () => apiRequest(`/api/tickets/${ticket?.id}/comments`),
+    enabled: mode === 'edit' && !!ticket?.id,
+  });
+
+  const { data: history = [] } = useQuery({
+    queryKey: ['ticket-history', ticket?.id],
+    queryFn: () => apiRequest(`/api/tickets/${ticket?.id}/history`),
+    enabled: mode === 'edit' && !!ticket?.id,
+  });
+
+  // Filter active employees
+  const activeEmployees = useMemo(() => 
+    employees.filter((emp: EmployeeResponse) => emp.status === 'Active'),
+    [employees]
+  );
+
+  // Filter assets based on selected employee
   const selectedEmployeeId = form.watch('submittedById');
-  
-    // Filter assets based on selected employee - show assets assigned to that employee
-    const assets = useMemo(() => {
-        if (!selectedEmployeeId || selectedEmployeeId === '') {
-          return []; // No employee selected, show no assets
-        }
-        
-        if (!Array.isArray(allAssets)) {
-          console.warn('Assets data is not an array:', allAssets);
-          return [];
-        }
-        
-        const employeeIdNum = parseInt(selectedEmployeeId);
-        
-        return allAssets.filter((asset: any) => {
-          // Check multiple possible field names for assigned employee
-          // 1. Check assignedEmployee object (if populated from API)
-          if (asset.assignedEmployee && typeof asset.assignedEmployee === 'object') {
-            return asset.assignedEmployee.id === employeeIdNum;
-          }
-          
-          // 2. Check assignedToId (from AssetResponse type)
-          if (asset.assignedToId) {
-            return asset.assignedToId === employeeIdNum;
-          }
-          
-          // 3. Check assignedEmployeeId (from database schema - most common)
-          if (asset.assignedEmployeeId) {
-            return asset.assignedEmployeeId === employeeIdNum;
-          }
-          
-          return false;
-        });
-    }, [allAssets, selectedEmployeeId]);
+  const filteredAssets = useMemo(() => {
+    if (!selectedEmployeeId) return [];
+    return assets.filter((asset: AssetResponse) => 
+      asset.assignedEmployee?.id === selectedEmployeeId || asset.assignedToId === selectedEmployeeId
+    );
+  }, [assets, selectedEmployeeId]);
 
-  // Auto-save handler for edit mode
-  const handleAutoSave = async (field: string, value: any) => {
-    if (mode === 'edit' && ticket) {
-      setAutoSaving(true);
-      
-      // Update dialog title with autosave indicator
-      const indicator = document.getElementById('autosave-indicator');
-      if (indicator) {
-        indicator.innerHTML = `
-          <div class="flex items-center gap-1 text-sm text-muted-foreground">
-            <div class="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full"></div>
-            ${language === 'English' ? 'Auto-saving...' : 'حفظ تلقائي...'}
-          </div>
-        `;
-      }
-      // Convert string values back to appropriate types for API
-      let processedValue = value;
-      
-      // Handle numeric ID fields  
-      if (field === 'submittedById' || field === 'relatedAssetId') {
-        processedValue = value && value !== '' && value !== 'none' ? parseInt(value) : null;
-      }
-      // Handle assignedToId - users table reference
-      else if (field === 'assignedToId') {
-        processedValue = value && value !== '' && value !== 'unassigned' ? parseInt(value) : null;
-      }
-      // Handle numeric fields
-      else if (field === 'slaTarget' || field === 'escalationLevel' || field === 'timeSpent') {
-        processedValue = value && value !== '' ? parseInt(value) : null;
-      }
-      // Handle tags field - convert comma-separated string to array
-      else if (field === 'tags') {
-        processedValue = value && value.trim() !== '' 
-          ? value.split(',').map((tag: string) => tag.trim()).filter(Boolean)
-          : [];
-      }
-      // Handle date fields
-      else if (field === 'dueDate') {
-        processedValue = value && value !== '' ? new Date(value).toISOString() : null;
-      }
-      
-      autoSaveMutation.mutate({ [field]: processedValue });
-    }
-  };
-
-  // Clear autosave indicator when saving is complete
-  useEffect(() => {
-    if (!autoSaving) {
-      const indicator = document.getElementById('autosave-indicator');
-      if (indicator) {
-        indicator.innerHTML = '';
-      }
-    }
-  }, [autoSaving]);
-
-  // Form submission for create mode
-  const handleFormSubmit = (data: TicketFormData) => {
-    if (onSubmit) {
-      // Convert string IDs back to numbers for submission
-      const processedData = {
-        ...data,
-        submittedById: parseInt(data.submittedById),
-        assignedToId: data.assignedToId && data.assignedToId !== 'unassigned' ? parseInt(data.assignedToId) : null,
-        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
-        slaTarget: data.slaTarget ? parseInt(data.slaTarget) : null,
-        escalationLevel: parseInt(data.escalationLevel || '0'),
-        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
-      };
-      onSubmit(processedData as any);
-    }
-  };
-
-  // Handle comment submission
-  const handleCommentSubmit = () => {
-    if (!commentText.trim() || !ticket) return;
+  // Available categories (custom + default)
+  const availableCategories = useMemo(() => {
+    const customCategories = categories.map((cat: any) => ({
+      value: cat.name,
+      label: cat.name,
+    }));
     
-    commentMutation.mutate({
-      ticketId: ticket.id,
-      content: commentText,
-      isPrivate: false,
+    const defaultCategories = [
+      { value: 'General', label: language === 'English' ? 'General' : 'عام' },
+      { value: 'Hardware', label: t.categoryHardware },
+      { value: 'Software', label: t.categorySoftware },
+      { value: 'Network', label: t.categoryNetwork },
+      { value: 'Access', label: t.categoryAccess },
+      { value: 'Other', label: t.categoryOther },
+    ];
+
+    // If no custom categories, return defaults with "General" first
+    if (customCategories.length === 0) {
+      return defaultCategories;
+    }
+
+    // Merge custom and default, avoiding duplicates
+    const allCategories = [...customCategories];
+    defaultCategories.forEach(defaultCat => {
+      if (!allCategories.some(cat => cat.value === defaultCat.value)) {
+        allCategories.push(defaultCat);
+      }
     });
-  };
 
-  // Watch form changes for auto-save in edit mode
-  useEffect(() => {
-    if (mode === 'edit') {
-      const subscription = form.watch((value, { name }) => {
-        if (name && value[name] !== undefined) {
-          handleAutoSave(name, value[name]);
-        }
+    return allCategories;
+  }, [categories, language, t]);
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: (data: TicketCreateRequest) => apiRequest('/api/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    onSuccess: (newTicket) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      toast({ title: t.success, description: t.ticketCreated });
+      onSuccess?.(newTicket);
+      onOpenChange?.(false);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t.error, 
+        description: error.message || 'Failed to create ticket',
+        variant: 'destructive' 
       });
-      return () => subscription.unsubscribe();
-    }
-  }, [mode, form]);
+    },
+  });
 
-  const isCreateMode = mode === 'create';
-  const isEditMode = mode === 'edit';
+  const updateMutation = useMutation({
+    mutationFn: (data: TicketUpdateRequest) => apiRequest(`/api/tickets/${ticket?.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+    onSuccess: (updatedTicket) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket?.id] });
+      toast({ title: t.success, description: t.ticketUpdated });
+      onSuccess?.(updatedTicket);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t.error, 
+        description: error.message || 'Failed to update ticket',
+        variant: 'destructive' 
+      });
+    },
+  });
 
-  // Priority color mapping
-  const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'critical': return 'destructive';
-      case 'high': return 'destructive';
-      case 'medium': return 'default';
-      case 'low': return 'secondary';
-      default: return 'default';
+  const addCommentMutation = useMutation({
+    mutationFn: (content: string) => apiRequest(`/api/tickets/${ticket?.id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket-comments', ticket?.id] });
+      setNewComment('');
+      toast({ title: t.success, description: t.commentAdded });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t.error, 
+        description: error.message || 'Failed to add comment',
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  // Handle form submission
+  const onSubmit = async (data: TicketFormData) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Calculate priority
+      const priority = calculatePriority(data.urgency as any, data.impact as any);
+      
+      // Prepare data for API
+      const submitData = {
+        ...data,
+        priority,
+        // Convert dates to ISO format if provided
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        slaTarget: data.slaTarget ? new Date(data.slaTarget).toISOString() : undefined,
+        // Ensure proper number types
+        timeSpent: data.timeSpent ? Number(data.timeSpent) : undefined,
+      };
+
+      if (mode === 'create') {
+        await createMutation.mutateAsync(submitData as TicketCreateRequest);
+      } else {
+        await updateMutation.mutateAsync(submitData as TicketUpdateRequest);
+      }
+    } catch (error) {
+      // Error handling is done in mutations
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Status color mapping
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'open': return 'default';
-      case 'in progress': return 'default';
-      case 'pending': return 'secondary';
-      case 'resolved': return 'default';
-      case 'closed': return 'secondary';
-      default: return 'default';
+  // Handle add comment
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    
+    setAddingComment(true);
+    try {
+      await addCommentMutation.mutateAsync(newComment.trim());
+    } finally {
+      setAddingComment(false);
     }
   };
 
   return (
-    <div className={isCreateMode ? "overflow-y-auto max-h-[75vh]" : "pt-4"}>
-      {isCreateMode && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="h-5 w-5 text-blue-500" />
-            <h2 className="text-2xl font-bold">{language === 'English' ? 'Create New Ticket' : 'إنشاء تذكرة جديدة'}</h2>
-          </div>
-          <p className="text-gray-600">
-            {language === 'English' ? 'Fill in all required fields to create a new support ticket' : 'املأ جميع الحقول المطلوبة لإنشاء تذكرة دعم جديدة'}
-          </p>
-        </div>
-      )}
-      
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {mode === 'create' ? t.createTicket : t.editTicket}
+            {mode === 'edit' && ticket && (
+              <Badge variant="outline">
+                #{ticket.ticketId}
+              </Badge>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === 'create' ? t.description : t.editTicketDescription}
+          </DialogDescription>
+        </DialogHeader>
 
+        <div className="space-y-6">
+          {mode === 'edit' ? (
+            // Edit Mode with Tabs
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="details" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {t.ticketDetails}
+                </TabsTrigger>
+                <TabsTrigger value="comments" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  {t.comments} ({comments.length})
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  {t.history} ({history.length})
+                </TabsTrigger>
+              </TabsList>
 
-        {isCreateMode ? (
-          // Create Mode: Single comprehensive view
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-                {/* Basic Information Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'Basic Information' : 'المعلومات الأساسية'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Submitted By with Search */}
-                  <FormField
-                    control={form.control}
-                    name="submittedById"
-                    render={({ field }) => {
-                      const [open, setOpen] = useState(false);
-                      
-                      return (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                          <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  aria-expanded={open}
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                 {field.value && Array.isArray(activeEmployees)
-                                    ? activeEmployees.find(
-                                        (employee) => employee && employee.id.toString() === field.value
-                                      )?.englishName || "Select employee..."
-                                    : language === 'English' ? "Select employee..." : "اختر الموظف..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-                             <Command filter={(value, search) => {
-                                  // Ensure activeEmployees is an array
-                                  if (!Array.isArray(activeEmployees)) return 0;
-                                  
-                                  const employee = activeEmployees.find(emp => {
-                                    if (!emp) return false;
-                                    const searchString = `${emp.englishName || ''} ${emp.arabicName || ''} ${emp.department || ''}`.toLowerCase();
-                                    return searchString.includes(value.toLowerCase());
-                                  });
-                                  
-                                  if (!employee) return 0;
-                                  
-                                  const searchLower = search.toLowerCase();
-                                  const englishName = employee.englishName?.toLowerCase() || '';
-                                  const arabicName = employee.arabicName?.toLowerCase() || '';
-                                  const department = employee.department?.toLowerCase() || '';
-                                  
-                                  if (englishName.includes(searchLower) || 
-                                      arabicName.includes(searchLower) || 
-                                      department.includes(searchLower)) {
-                                    return 1;
-                                  }
-                                  return 0;
-                                }}>
-                                <CommandInput 
-                                  placeholder={language === 'English' ? "Search employee..." : "البحث عن موظف..."} 
-                                  className="h-9"
-                                />
-                                <CommandEmpty>
-                                  {language === 'English' ? "No employee found." : "لم يتم العثور على موظف."}
-                                </CommandEmpty>
-                                <CommandGroup className="max-h-[200px] overflow-auto">
-                                  {Array.isArray(activeEmployees) && activeEmployees.length > 0 ? (
-                                    activeEmployees.map((employee) => (
-                                      <CommandItem
-                                        key={employee.id}
-                                        value={`${employee.englishName || ''} ${employee.arabicName || ''} ${employee.department || ''}`}
-                                        onSelect={() => {
-                                          field.onChange(employee.id.toString());
-                                          form.setValue('relatedAssetId', 'none');
-                                          setOpen(false);
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            field.value === employee.id.toString()
-                                              ? "opacity-100"
-                                              : "opacity-0"
-                                          )}
-                                        />
-                                        <div className="flex flex-col">
-                                          <span>{employee.englishName || employee.name || 'Unknown'}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {employee.department || 'No department'}
-                                          </span>
-                                        </div>
-                                      </CommandItem>
-                                    ))
-                                  ) : (
-                                    <CommandItem disabled>
-                                      <span className="text-muted-foreground">
-                                        {isLoadingEmployees ? 'Loading employees...' : 'No active employees available'}
-                                      </span>
-                                    </CommandItem>
-                                  )}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-
-                    {/* Assigned To */}
-                    <FormField
-                      control={form.control}
-                      name="assignedToId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Assigned To' : 'مسند إلى'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مسند'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
-                              {isLoadingUsers ? (
-                                <SelectItem value="loading" disabled>Loading users...</SelectItem>
-                              ) : (
-                                users.map((user: any) => (
-                                  <SelectItem key={user.id} value={user.id.toString()}>
-                                    {user.username}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                   {/* Related Asset */}
-                    <FormField
-                      control={form.control}
-                      name="relatedAssetId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            value={field.value}
-                            disabled={!selectedEmployeeId || selectedEmployeeId === ''}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={
-                                  !selectedEmployeeId 
-                                    ? (language === 'English' ? 'Select employee first' : 'اختر الموظف أولاً')
-                                    : (language === 'English' ? 'Select asset (optional)' : 'اختر الأصل (اختياري)')
-                                } />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">
-                                {language === 'English' ? 'No Asset' : 'بدون أصل'}
-                              </SelectItem>
-                              {assets.length > 0 ? (
-                                assets.map((asset) => {
-                                  // Build the display string
-                                  const displayParts = [asset.assetId];
-                                  const deviceInfo = [];
-                                  
-                                  if (asset.type) deviceInfo.push(asset.type);
-                                  if (asset.brand) deviceInfo.push(asset.brand);
-                                  if (asset.modelName) deviceInfo.push(asset.modelName);
-                                  
-                                  const displayString = deviceInfo.length > 0 
-                                    ? `${asset.assetId}, ${deviceInfo.join(' ')}`
-                                    : asset.assetId;
-                                  
-                                  return (
-                                    <SelectItem key={asset.id} value={asset.id.toString()}>
-                                      {displayString}
-                                    </SelectItem>
-                                  );
-                                })
-                              ) : (
-                                selectedEmployeeId && (
-                                  <SelectItem value="no-assets" disabled>
-                                    {language === 'English' ? 'No assets assigned to this employee' : 'لا توجد أصول مخصصة لهذا الموظف'}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Type */}
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Type' : 'النوع'} *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select ticket type' : 'اختر نوع التذكرة'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
-                              <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
-                              <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
-                              <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Ticket Details Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'Ticket Details' : 'تفاصيل التذكرة'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Title */}
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Title' : 'العنوان'} *</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder={language === 'English' ? 'Brief title of the issue' : 'عنوان مختصر للمشكلة'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Description */}
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Description' : 'الوصف'} *</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Detailed description of the issue' : 'وصف تفصيلي للمشكلة'}
-                              rows={4}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Priority & Classification Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'Priority & Classification' : 'الأولوية والتصنيف'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Priority - Auto-calculated from Urgency × Impact */}
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => {
-                        const currentUrgency = form.watch('urgency') as UrgencyLevel;
-                        const currentImpact = form.watch('impact') as ImpactLevel;
-                        const calculatedPriority = calculatePriority(currentUrgency || 'Medium', currentImpact || 'Medium');
-                        
-                        // Update the form value to match calculated priority
-                        if (field.value !== calculatedPriority) {
-                          field.onChange(calculatedPriority);
-                        }
-                        
-                        return (
-                          <FormItem>
-                            <FormLabel>{language === 'English' ? 'Priority (Auto-calculated)' : 'الأولوية (محسوبة تلقائياً)'}</FormLabel>
-                            <div className="relative">
-                              <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
-                                <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                                  calculatedPriority === 'Critical' ? 'bg-red-100 text-red-800 border-red-200' : 
-                                  calculatedPriority === 'High' ? 'bg-red-100 text-red-700 border-red-200' : 
-                                  calculatedPriority === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 
-                                  'bg-green-100 text-green-800 border-green-200'
-                                }`}>
-                                  {calculatedPriority}
-                                </div>
-                                <span className="text-sm text-gray-600">
-                                  {language === 'English' 
-                                    ? getPriorityExplanation(currentUrgency || 'Medium', currentImpact || 'Medium')
-                                    : `الأولوية "${calculatedPriority}" محسوبة من الإلحاح: ${currentUrgency || 'Medium'} × التأثير: ${currentImpact || 'Medium'}`
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-
-                    {/* Urgency */}
-                    <FormField
-                      control={form.control}
-                      name="urgency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Urgency' : 'الإلحاح'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
-                              <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
-                              <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
-                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Impact */}
-                    <FormField
-                      control={form.control}
-                      name="impact"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Impact' : 'التأثير'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
-                              <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
-                              <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
-                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Category */}
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Category' : 'الفئة'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select category' : 'اختر الفئة'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {isLoadingCategories ? (
-                                <SelectItem value="loading" disabled>Loading...</SelectItem>
-                              ) : categories.length > 0 ? (
-                                categories.map((category: any) => (
-                                  <SelectItem key={category.id} value={category.name}>
-                                    {category.name}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="General">General</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Status */}
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Status' : 'الحالة'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="New">New</SelectItem>
-                              <SelectItem value="Open">Open</SelectItem>
-                              <SelectItem value="In Progress">In Progress</SelectItem>
-                              <SelectItem value="Pending">Pending</SelectItem>
-                              <SelectItem value="Resolved">Resolved</SelectItem>
-                              <SelectItem value="Closed">Closed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Escalation Level */}
-                    <FormField
-                      control={form.control}
-                      name="escalationLevel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Escalation Level' : 'مستوى التصعيد'}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="0">{language === 'English' ? 'None' : 'لا يوجد'}</SelectItem>
-                              <SelectItem value="1">{language === 'English' ? 'Level 1' : 'المستوى 1'}</SelectItem>
-                              <SelectItem value="2">{language === 'English' ? 'Level 2' : 'المستوى 2'}</SelectItem>
-                              <SelectItem value="3">{language === 'English' ? 'Level 3' : 'المستوى 3'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Resolution Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'Resolution' : 'الحل'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Resolution */}
-                    <FormField
-                      control={form.control}
-                      name="resolution"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Resolution' : 'الحل'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Final resolution details' : 'تفاصيل الحل النهائي'}
-                              rows={3}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* SLA & Scheduling Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'SLA & Scheduling' : 'اتفاقية مستوى الخدمة والجدولة'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Due Date */}
-                    <FormField
-                      control={form.control}
-                      name="dueDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
-                          <FormControl>
-                            <Calendar
-                              mode="picker"
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
-                              className="w-full"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* SLA Target (hours) */}
-                    <FormField
-                      control={form.control}
-                      name="slaTarget"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'SLA Target (hours)' : 'هدف اتفاقية مستوى الخدمة (ساعات)'}</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="720"
-                              {...field}
-                              placeholder={language === 'English' ? 'SLA target in hours' : 'الهدف بالساعات'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Time Spent (Minutes) */}
-                    <FormField
-                      control={form.control}
-                      name="timeSpent"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Time Spent (Minutes)' : 'الوقت المستغرق (دقائق)'}</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              {...field}
-                              placeholder={language === 'English' ? 'Time spent in minutes' : 'الوقت بالدقائق'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Additional Information Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {language === 'English' ? 'Additional Information' : 'معلومات إضافية'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Tags */}
-                    <FormField
-                      control={form.control}
-                      name="tags"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Tags' : 'العلامات'}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder={language === 'English' ? 'Comma-separated tags (e.g., urgent, hardware, network)' : 'علامات مفصولة بفواصل (مثل: عاجل، أجهزة، شبكة)'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Private Notes */}
-                    <FormField
-                      control={form.control}
-                      name="privateNotes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Private Notes (Staff Only)' : 'ملاحظات خاصة (للموظفين فقط)'}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              placeholder={language === 'English' ? 'Internal notes visible only to staff members' : 'ملاحظات داخلية مرئية للموظفين فقط'}
-                              rows={3}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Form Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  {onCancel && (
-                    <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-                      <X className="h-4 w-4 mr-2" />
-                      {language === 'English' ? 'Cancel' : 'إلغاء'}
-                    </Button>
-                  )}
-                  
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    <Save className="h-4 w-4 mr-2" />
-                    {language === 'English' ? 'Create Ticket' : 'إنشاء التذكرة'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-        ) : (
-          // Edit Mode: Tabbed detailed view
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details" className="flex items-center gap-2">
-                <Edit3 className="h-4 w-4" />
-                {language === 'English' ? 'Details' : 'التفاصيل'}
-              </TabsTrigger>
-              <TabsTrigger value="comments" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                {language === 'English' ? 'Comments' : 'التعليقات'} ({comments.length})
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                {language === 'English' ? 'History' : 'التاريخ'} ({history.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="overflow-y-auto max-h-[60vh] mt-4">
-              <TabsContent value="details" className="space-y-4">
-                <Form {...form}>
-                  <div className="space-y-6">
-                    {/* Ticket Header */}
-                    <div className="flex items-center justify-between pb-4 border-b">
-                      <div>
-                        <h3 className="text-lg font-semibold">#{ticket?.ticketId}</h3>
-                        <p className="text-sm text-gray-600">{ticket?.title}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getPriorityColor(ticket?.priority)}>
-                          {ticket?.priority}
-                        </Badge>
-                        <Badge variant={getStatusColor(ticket?.status)}>
-                          {ticket?.status}
-                        </Badge>
-
-                      </div>
-                    </div>
-
-                    {/* Editable Fields */}
-                    <div className="space-y-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">
-                            {language === 'English' ? 'Ticket Information' : 'معلومات التذكرة'}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="text-sm text-gray-600 mb-4">
-                            {language === 'English' ? 'Click any field to edit. Changes save automatically.' : 'انقر على أي حقل للتعديل. التغييرات تحفظ تلقائياً.'}
-                          </div>
-
-                          {/* Basic Information Fields */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Submitted By */}
-                            <FormField
-                              control={form.control}
-                              name="submittedById"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Submitted By' : 'مقدم الطلب'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('submittedById', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select user' : 'اختر المستخدم'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                <SelectContent>
-                                  {isLoadingEmployees ? (
-                                    <SelectItem value="loading" disabled>Loading employees...</SelectItem>
-                                  ) : !Array.isArray(activeEmployees) || activeEmployees.length === 0 ? (
-                                    <SelectItem value="no-active" disabled>
-                                      {language === 'English' ? 'No active employees available' : 'لا يوجد موظفين نشطين'}
-                                    </SelectItem>
-                                  ) : (
-                                    activeEmployees.map((employee: any) => (
-                                      <SelectItem key={employee.id} value={employee.id.toString()}>
-                                        {employee.englishName || employee.name || 'Unknown'} - {employee.idNumber || 'N/A'}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Assigned To */}
-                            <FormField
-                              control={form.control}
-                              name="assignedToId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Assigned To' : 'مسند إلى'}</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('assignedToId', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Unassigned' : 'غير مسند'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="unassigned">{language === 'English' ? 'Unassigned' : 'غير مسند'}</SelectItem>
-                                      {isLoadingUsers ? (
-                                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
-                                      ) : (
-                                        users.map((user: any) => (
-                                          <SelectItem key={user.id} value={user.id.toString()}>
-                                            {user.username}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Related Asset */}
-                            <FormField
-                              control={form.control}
-                              name="relatedAssetId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Related Asset' : 'الأصل المرتبط'}</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('relatedAssetId', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'No asset' : 'لا يوجد أصل'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="none">{language === 'English' ? 'No Asset' : 'لا يوجد أصل'}</SelectItem>
-                                      {isLoadingAssets ? (
-                                        <SelectItem value="loading" disabled>Loading assets...</SelectItem>
-                                      ) : (
-                                        allAssets.map((asset: any) => (
-                                          <SelectItem key={asset.id} value={asset.id.toString()}>
-                                            {asset.assetId} - {asset.modelName || asset.modelNumber || 'Unknown Model'}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Type */}
-                            <FormField
-                              control={form.control}
-                              name="type"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Type' : 'النوع'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('type', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select type' : 'اختر النوع'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Incident">{language === 'English' ? 'Incident' : 'حادث'}</SelectItem>
-                                      <SelectItem value="Service Request">{language === 'English' ? 'Service Request' : 'طلب خدمة'}</SelectItem>
-                                      <SelectItem value="Problem">{language === 'English' ? 'Problem' : 'مشكلة'}</SelectItem>
-                                      <SelectItem value="Change">{language === 'English' ? 'Change' : 'تغيير'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Category */}
-                            <FormField
-                              control={form.control}
-                              name="category"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Category' : 'الفئة'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('category', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select category' : 'اختر الفئة'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {isLoadingCategories ? (
-                                        <SelectItem value="loading" disabled>Loading...</SelectItem>
-                                      ) : categories.length > 0 ? (
-                                        categories.map((category: any) => (
-                                          <SelectItem key={category.id} value={category.name}>
-                                            {category.name}
-                                          </SelectItem>
-                                        ))
-                                      ) : (
-                                        <SelectItem value="General">General</SelectItem>
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Priority - Auto-calculated from Urgency × Impact */}
-                            <FormField
-                              control={form.control}
-                              name="priority"
-                              render={({ field }) => {
-                                const currentUrgency = form.watch('urgency') as UrgencyLevel;
-                                const currentImpact = form.watch('impact') as ImpactLevel;
-                                const calculatedPriority = calculatePriority(currentUrgency || 'Medium', currentImpact || 'Medium');
-                                
-                                // Update the form value to match calculated priority
-                                if (field.value !== calculatedPriority) {
-                                  field.onChange(calculatedPriority);
-                                  handleAutoSave('priority', calculatedPriority);
-                                }
-                                
-                                return (
-                                  <FormItem>
-                                    <FormLabel>{language === 'English' ? 'Priority (Auto-calculated)' : 'الأولوية (محسوبة تلقائياً)'}</FormLabel>
-                                    <div className="relative">
-                                      <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
-                                        <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                                          calculatedPriority === 'Critical' ? 'bg-red-100 text-red-800 border-red-200' : 
-                                          calculatedPriority === 'High' ? 'bg-red-100 text-red-700 border-red-200' : 
-                                          calculatedPriority === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 
-                                          'bg-green-100 text-green-800 border-green-200'
-                                        }`}>
-                                          {calculatedPriority}
-                                        </div>
-                                        <span className="text-sm text-gray-600">
-                                          {language === 'English' 
-                                            ? getPriorityExplanation(currentUrgency || 'Medium', currentImpact || 'Medium')
-                                            : `الأولوية "${calculatedPriority}" محسوبة من الإلحاح: ${currentUrgency || 'Medium'} × التأثير: ${currentImpact || 'Medium'}`
-                                          }
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <FormMessage />
-                                  </FormItem>
-                                );
-                              }}
-                            />
-
-                            {/* Urgency */}
-                            <FormField
-                              control={form.control}
-                              name="urgency"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Urgency' : 'الإلحاح'}</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('urgency', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select urgency' : 'اختر الإلحاح'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
-                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
-                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
-                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Impact */}
-                            <FormField
-                              control={form.control}
-                              name="impact"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Impact' : 'التأثير'}</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('impact', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select impact' : 'اختر التأثير'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
-                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
-                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
-                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Status */}
-                            <FormField
-                              control={form.control}
-                              name="status"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Status' : 'الحالة'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('status', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Open">{language === 'English' ? 'Open' : 'مفتوح'}</SelectItem>
-                                      <SelectItem value="In Progress">{language === 'English' ? 'In Progress' : 'قيد التنفيذ'}</SelectItem>
-                                      <SelectItem value="Pending">{language === 'English' ? 'Pending' : 'معلق'}</SelectItem>
-                                      <SelectItem value="Resolved">{language === 'English' ? 'Resolved' : 'محلول'}</SelectItem>
-                                      <SelectItem value="Closed">{language === 'English' ? 'Closed' : 'مغلق'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Due Date */}
-                            <FormField
-                              control={form.control}
-                              name="dueDate"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
-                                  <FormControl>
-                                    <Calendar
-                                      mode="picker"
-                                      value={field.value}
-                                      onChange={(value) => {
-                                        field.onChange(value);
-                                        if (value) {
-                                          handleAutoSave('dueDate', value);
-                                        }
-                                      }}
-                                      placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
-                                      className="w-full"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* SLA Target (Hours) */}
-                            <FormField
-                              control={form.control}
-                              name="slaTarget"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'SLA Target (Hours)' : 'هدف اتفاقية الخدمة (ساعات)'}</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('slaTarget', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Hours' : 'ساعات'}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Time Spent (Minutes) */}
-                            <FormField
-                              control={form.control}
-                              name="timeSpent"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Time Spent (Minutes)' : 'الوقت المستغرق (دقائق)'}</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('timeSpent', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Minutes' : 'دقائق'}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          {/* Description Fields */}
-                          <div className="space-y-4 mt-6">
-                            {/* Title */}
-                            <FormField
-                              control={form.control}
-                              name="title"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Title' : 'العنوان'} *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('title', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Brief title of the issue' : 'عنوان موجز للمشكلة'}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Description */}
-                            <FormField
-                              control={form.control}
-                              name="description"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Description' : 'الوصف'} *</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('description', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Detailed description of the issue' : 'وصف مفصل للمشكلة'}
-                                      rows={4}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-
-
-                            {/* Resolution */}
-                            <FormField
-                              control={form.control}
-                              name="resolution"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Resolution' : 'الحل'}</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('resolution', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Final resolution details' : 'تفاصيل الحل النهائي'}
-                                      rows={3}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-
-
-                            {/* Escalation Level */}
-                            <FormField
-                              control={form.control}
-                              name="escalationLevel"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Escalation Level' : 'مستوى التصعيد'}</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('escalationLevel', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select level' : 'اختر المستوى'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="0">{language === 'English' ? 'Level 0 - No Escalation' : 'المستوى 0 - بدون تصعيد'}</SelectItem>
-                                      <SelectItem value="1">{language === 'English' ? 'Level 1 - Supervisor' : 'المستوى 1 - المشرف'}</SelectItem>
-                                      <SelectItem value="2">{language === 'English' ? 'Level 2 - Manager' : 'المستوى 2 - المدير'}</SelectItem>
-                                      <SelectItem value="3">{language === 'English' ? 'Level 3 - Director' : 'المستوى 3 - المدير العام'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Tags */}
-                            <FormField
-                              control={form.control}
-                              name="tags"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Tags' : 'العلامات'}</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('tags', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Comma-separated tags (e.g., urgent, hardware, network)' : 'علامات مفصولة بفواصل (مثل: عاجل، أجهزة، شبكة)'}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Private Notes */}
-                            <FormField
-                              control={form.control}
-                              name="privateNotes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Private Notes (Staff Only)' : 'ملاحظات خاصة (للموظفين فقط)'}</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('privateNotes', e.target.value); }}
-                                      placeholder={language === 'English' ? 'Internal notes visible only to staff members' : 'ملاحظات داخلية مرئية للموظفين فقط'}
-                                      rows={3}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </Form>
+              <TabsContent value="details" className="space-y-6">
+                <TicketFormContent 
+                  form={form}
+                  t={t}
+                  language={language}
+                  mode={mode}
+                  calculatedPriority={calculatedPriority}
+                  activeEmployees={activeEmployees}
+                  users={users}
+                  filteredAssets={filteredAssets}
+                  availableCategories={availableCategories}
+                  employeeSearchOpen={employeeSearchOpen}
+                  setEmployeeSearchOpen={setEmployeeSearchOpen}
+                  userSearchOpen={userSearchOpen}
+                  setUserSearchOpen={setUserSearchOpen}
+                />
               </TabsContent>
 
               <TabsContent value="comments" className="space-y-4">
-                {/* Comment display and input */}
-                <div className="space-y-4">
-                  {Array.isArray(comments) && comments.map((comment: any) => (
-                    <Card key={comment.id}>
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-3">
-                          <User className="h-6 w-6 mt-1 text-gray-400" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{comment.username || 'User'}</span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(comment.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-                            <p className="text-gray-700">{comment.content}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  {/* Comment input */}
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="space-y-3">
-                        <Label>{language === 'English' ? 'Add Comment' : 'إضافة تعليق'}</Label>
-                        <Textarea
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder={language === 'English' ? 'Type your comment...' : 'اكتب تعليقك...'}
-                          rows={3}
-                        />
-                        <Button 
-                          onClick={handleCommentSubmit}
-                          disabled={!commentText.trim() || commentMutation.isPending}
-                          size="sm"
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Add Comment' : 'إضافة تعليق'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <CommentsTab
+                  comments={comments}
+                  newComment={newComment}
+                  setNewComment={setNewComment}
+                  addingComment={addingComment}
+                  onAddComment={handleAddComment}
+                  t={t}
+                  language={language}
+                />
               </TabsContent>
 
               <TabsContent value="history" className="space-y-4">
-                {/* History display */}
-                <div className="space-y-3">
-                  {Array.isArray(history) && history.map((entry: any) => (
-                    <Card key={entry.id}>
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-3">
-                          <History className="h-5 w-5 mt-1 text-gray-400" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">{entry.changeType || entry.action}</span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(entry.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700">{entry.changeDescription || entry.notes}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  {(!Array.isArray(history) || history.length === 0) && (
-                    <Card>
-                      <CardContent className="pt-4 text-center text-gray-500">
-                        <History className="h-8 w-8 mx-auto mb-2" />
-                        <p>{language === 'English' ? 'No history yet' : 'لا يوجد تاريخ بعد'}</p>
-                      </CardContent>
-                    </Card>
+                <HistoryTab
+                  history={history}
+                  t={t}
+                  language={language}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            // Create Mode - Single Form
+            <TicketFormContent 
+              form={form}
+              t={t}
+              language={language}
+              mode={mode}
+              calculatedPriority={calculatedPriority}
+              activeEmployees={activeEmployees}
+              users={users}
+              filteredAssets={filteredAssets}
+              availableCategories={availableCategories}
+              employeeSearchOpen={employeeSearchOpen}
+              setEmployeeSearchOpen={setEmployeeSearchOpen}
+              userSearchOpen={userSearchOpen}
+              setUserSearchOpen={setUserSearchOpen}
+            />
+          )}
+        </div>
+
+        <DialogFooter className="flex justify-between items-center">
+          {mode === 'edit' && activeTab === 'details' && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <AlertCircle className="h-4 w-4" />
+              {t.priority}: <Badge variant={getPriorityBadgeVariant(calculatedPriority)}>
+                {calculatedPriority === 'Low' ? t.priorityLow :
+                 calculatedPriority === 'Medium' ? t.priorityMedium :
+                 calculatedPriority === 'High' ? t.priorityHigh :
+                 t.priorityCritical}
+              </Badge>
+              {getPriorityExplanation(urgency as any, impact as any, language)}
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange?.(false)}
+              disabled={isSubmitting}
+            >
+              {t.cancel}
+            </Button>
+            
+            {(mode === 'create' || activeTab === 'details') && (
+              <Button
+                type="submit"
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={isSubmitting}
+                className="flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {mode === 'create' ? t.create : t.save}
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Ticket Form Content Component
+function TicketFormContent({ 
+  form, 
+  t, 
+  language, 
+  mode, 
+  calculatedPriority,
+  activeEmployees,
+  users,
+  filteredAssets,
+  availableCategories,
+  employeeSearchOpen,
+  setEmployeeSearchOpen,
+  userSearchOpen,
+  setUserSearchOpen
+}: any) {
+  return (
+    <Form {...form}>
+      <div className="space-y-6">
+        {/* Priority Display */}
+        {mode === 'create' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {t.priority}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Badge variant={getPriorityBadgeVariant(calculatedPriority)}>
+                  {calculatedPriority === 'Low' ? t.priorityLow :
+                   calculatedPriority === 'Medium' ? t.priorityMedium :
+                   calculatedPriority === 'High' ? t.priorityHigh :
+                   t.priorityCritical}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {getPriorityExplanation(form.watch('urgency'), form.watch('impact'), language)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Basic Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.ticketDetails}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Title */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.title_field}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t.titlePlaceholder}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.description_field}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t.descriptionPlaceholder}
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Resolution (Edit mode only) */}
+            {mode === 'edit' && (
+              <FormField
+                control={form.control}
+                name="resolution"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.resolution}</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={t.resolutionPlaceholder}
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Assignment & Classification */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.assignmentClassification}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Submitted By */}
+              <FormField
+                control={form.control}
+                name="submittedById"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t.submittedBy}</FormLabel>
+                    <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn("justify-between", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value
+                              ? activeEmployees.find((emp: EmployeeResponse) => emp.id === field.value)?.englishName
+                              : t.selectEmployee}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder={t.searchEmployee} />
+                          <CommandEmpty>{t.noEmployeeFound}</CommandEmpty>
+                          <CommandGroup className="max-h-64 overflow-auto">
+                            {activeEmployees.map((employee: EmployeeResponse) => (
+                              <CommandItem
+                                key={employee.id}
+                                value={employee.englishName}
+                                onSelect={() => {
+                                  form.setValue("submittedById", employee.id);
+                                  form.setValue("relatedAssetId", undefined); // Reset asset when employee changes
+                                  setEmployeeSearchOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === employee.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div>
+                                  <div className="font-medium">{employee.englishName}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {employee.department || t.noDepartment} • {employee.position}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Assigned To */}
+              <FormField
+                control={form.control}
+                name="assignedToId"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t.assignedTo}</FormLabel>
+                    <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn("justify-between", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value
+                              ? users.find((user: UserResponse) => user.id === field.value)?.username
+                              : t.unassigned}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder={t.selectUser} />
+                          <CommandEmpty>{t.noUserFound}</CommandEmpty>
+                          <CommandGroup className="max-h-64 overflow-auto">
+                            <CommandItem
+                              value=""
+                              onSelect={() => {
+                                form.setValue("assignedToId", undefined);
+                                setUserSearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !field.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {t.unassigned}
+                            </CommandItem>
+                            {users.map((user: UserResponse) => (
+                              <CommandItem
+                                key={user.id}
+                                value={user.username}
+                                onSelect={() => {
+                                  form.setValue("assignedToId", user.id);
+                                  setUserSearchOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === user.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div>
+                                  <div className="font-medium">{user.username}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {user.role} • {user.email}
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Type */}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.type}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.selectType} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Incident">{t.typeIncident}</SelectItem>
+                        <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
+                        <SelectItem value="Problem">{t.typeProblem}</SelectItem>
+                        <SelectItem value="Change">{t.typeChange}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Category */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.category}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.selectCategory} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableCategories.map((category: any) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Urgency */}
+              <FormField
+                control={form.control}
+                name="urgency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.urgency}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.selectUrgency} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Low">{t.urgencyLow}</SelectItem>
+                        <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
+                        <SelectItem value="High">{t.urgencyHigh}</SelectItem>
+                        <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Impact */}
+              <FormField
+                control={form.control}
+                name="impact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.impact}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.selectImpact} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Low">{t.impactLow}</SelectItem>
+                        <SelectItem value="Medium">{t.impactMedium}</SelectItem>
+                        <SelectItem value="High">{t.impactHigh}</SelectItem>
+                        <SelectItem value="Critical">{t.impactCritical}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Related Asset */}
+            <FormField
+              control={form.control}
+              name="relatedAssetId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.relatedAsset}</FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === 'none' ? undefined : parseInt(value))} 
+                    value={field.value?.toString() || 'none'}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t.selectAssetOptional} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">{t.noAsset}</SelectItem>
+                      {filteredAssets.length === 0 && form.watch('submittedById') && (
+                        <SelectItem value="none" disabled>
+                          {t.noAssetsForEmployee}
+                        </SelectItem>
+                      )}
+                      {filteredAssets.map((asset: AssetResponse) => (
+                        <SelectItem key={asset.id} value={asset.id.toString()}>
+                          {asset.name} ({asset.assetId})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {!form.watch('submittedById') 
+                      ? t.selectEmployeeFirst
+                      : filteredAssets.length === 0 
+                        ? t.noAssetsForEmployee
+                        : language === 'English' 
+                          ? 'Optional: Select an asset related to this ticket'
+                          : 'اختياري: اختر أصل متعلق بهذه التذكرة'
+                    }
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Status (Edit mode only) */}
+            {mode === 'edit' && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.status}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t.selectStatus} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Open">{t.statusOpen}</SelectItem>
+                        <SelectItem value="In Progress">{t.statusInProgress}</SelectItem>
+                        <SelectItem value="Resolved">{t.statusResolved}</SelectItem>
+                        <SelectItem value="Closed">{t.statusClosed}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Time Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.timeManagement}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Time Spent */}
+              <FormField
+                control={form.control}
+                name="timeSpent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.timeSpent} ({t.minutesLabel})</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Due Date */}
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.dueDate}</FormLabel>
+                    <FormControl>
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={t.selectDueDate}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* SLA Target */}
+              <FormField
+                control={form.control}
+                name="slaTarget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t.slaTarget}</FormLabel>
+                    <FormControl>
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={t.selectSlaTarget}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Form>
+  );
+}
+
+// Comments Tab Component
+function CommentsTab({ comments, newComment, setNewComment, addingComment, onAddComment, t, language }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">{t.comments}</h3>
+        <Badge variant="outline">{comments.length}</Badge>
+      </div>
+
+      {/* Add Comment */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <Textarea
+              placeholder={t.addCommentPlaceholder}
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={3}
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={onAddComment}
+                disabled={!newComment.trim() || addingComment}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                {addingComment ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                {t.addComment}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Comments List */}
+      <div className="space-y-3">
+        {comments.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6 text-center text-muted-foreground">
+              {t.noComments}
+            </CardContent>
+          </Card>
+        ) : (
+          comments.map((comment: any) => (
+            <Card key={comment.id}>
+              <CardContent className="pt-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="font-medium">{comment.user?.username || 'Unknown User'}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(comment.createdAt).toLocaleString(language === 'English' ? 'en-US' : 'ar-SA')}
+                  </div>
+                </div>
+                <p className="text-sm">{comment.content}</p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// History Tab Component
+function HistoryTab({ history, t, language }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">{t.history}</h3>
+        <Badge variant="outline">{history.length}</Badge>
+      </div>
+
+      <div className="space-y-3">
+        {history.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6 text-center text-muted-foreground">
+              {t.noHistoryEntries}
+            </CardContent>
+          </Card>
+        ) : (
+          history.map((entry: any) => (
+            <Card key={entry.id}>
+              <CardContent className="pt-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="font-medium">{entry.user?.username || 'System'}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(entry.createdAt).toLocaleString(language === 'English' ? 'en-US' : 'ar-SA')}
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium text-blue-600">{entry.action}</div>
+                  {entry.fieldChanged && (
+                    <div className="mt-1">
+                      <span className="text-muted-foreground">{entry.fieldChanged}: </span>
+                      <span className="line-through text-red-500">{entry.oldValue}</span>
+                      <span className="mx-2">→</span>
+                      <span className="text-green-600">{entry.newValue}</span>
+                    </div>
+                  )}
+                  {entry.notes && (
+                    <div className="mt-1 text-muted-foreground">{entry.notes}</div>
                   )}
                 </div>
-              </TabsContent>
-            </div>
-          </Tabs>
+              </CardContent>
+            </Card>
+          ))
         )}
+      </div>
     </div>
   );
 }
