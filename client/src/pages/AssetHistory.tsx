@@ -554,8 +554,8 @@ export default function AssetHistory() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{translations.all}</SelectItem>
-                    <SelectItem value="Check In">{translations.checkIn}</SelectItem>
-                    <SelectItem value="Check Out">{translations.checkOut}</SelectItem>
+                    <SelectItem value="Check-In">{translations.checkIn}</SelectItem>
+                    <SelectItem value="Check-Out">{translations.checkOut}</SelectItem>
                     <SelectItem value="Maintenance">{translations.maintenance}</SelectItem>
                     <SelectItem value="Sale">{translations.sale}</SelectItem>
                     <SelectItem value="Retirement">{translations.retirement}</SelectItem>

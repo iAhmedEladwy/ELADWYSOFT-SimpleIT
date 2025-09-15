@@ -298,6 +298,8 @@ export default function AssetsTable({
                   // Prevent row click when clicking on interactive elements or dialog overlays
                   if (e.target instanceof HTMLElement && 
                       (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('[data-checkbox-cell]') ||
+                       e.target.closest('[role="checkbox"]') ||
                        e.target.closest('button') || 
                        e.target.closest('[role="button"]') ||
                        e.target.closest('.dropdown-menu') ||
@@ -317,12 +319,21 @@ export default function AssetsTable({
                 }}
               >
                 {hasAccess(3) && (
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => handleSelectAsset(asset.id)}
-                      aria-label={`${translations.selectAsset} ${asset.assetId}`}
-                    />
+                  <TableCell 
+                    data-checkbox-cell 
+                    className="cursor-pointer hover:bg-gray-50 w-12" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectAsset(asset.id);
+                    }}
+                  >
+                    <div className="flex items-center justify-center p-1">
+                      <Checkbox 
+                        checked={selectedAssets.includes(asset.id)}
+                        onCheckedChange={() => handleSelectAsset(asset.id)}
+                        aria-label={`${translations.selectAsset} ${asset.assetId}`}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 <TableCell className="font-medium">

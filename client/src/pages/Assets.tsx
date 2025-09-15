@@ -822,13 +822,17 @@ export default function Assets() {
         <div className="flex items-center space-x-2">
           <Label className="text-sm">{translations.perPage}</Label>
           <Select
-            value={itemsPerPage.toString()}
+            value={itemsPerPage === 99999 ? 'all' : itemsPerPage.toString()}
             onValueChange={(value) => {
-              setItemsPerPage(parseInt(value));
+              if (value === 'all') {
+                setItemsPerPage(99999); // Set a very high number to show all records
+              } else {
+                setItemsPerPage(parseInt(value));
+              }
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[70px] h-8">
+            <SelectTrigger className="w-[80px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -836,6 +840,7 @@ export default function Assets() {
               <SelectItem value="50">50</SelectItem>
               <SelectItem value="100">100</SelectItem>
               <SelectItem value="200">200</SelectItem>
+              <SelectItem value="all">{translations.all}</SelectItem>
             </SelectContent>
           </Select>
         </div>
