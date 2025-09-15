@@ -153,7 +153,7 @@ export default function AssetFilters({
           </Button>
         </form>
 
-        {/* Filter Grid */}
+        {/* Filter Grid - Updated layout for 5 columns */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {/* Type Filter */}
           <div>
