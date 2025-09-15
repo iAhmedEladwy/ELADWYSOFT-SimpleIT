@@ -202,6 +202,14 @@ export default function AssetHistory() {
     deviceCondition: language === 'English' ? 'Device Condition' : 'حالة الجهاز',
     notAssigned: language === 'English' ? 'Not assigned' : 'غير مخصص',
     completeTransactionInfo: language === 'English' ? 'Complete transaction information and device specifications' : 'معلومات المعاملة الكاملة ومواصفات الجهاز',
+    
+    // Add missing card description translations
+    filterSearchDescription: language === 'English' 
+      ? 'Filter and search through asset transaction history with device specifications' 
+      : 'تصفية والبحث في سجل معاملات الأصول مع مواصفات الجهاز',
+    transactionHistoryDescription: language === 'English' 
+      ? 'Complete history of asset transactions with device specifications at time of change' 
+      : 'تاريخ كامل لمعاملات الأصول مع مواصفات الجهاز في وقت التغيير'
   };
 
       // Fetch transaction history
@@ -517,7 +525,7 @@ export default function AssetHistory() {
               {translations.filterSearch}
             </CardTitle>
             <CardDescription>
-              Filter and search through asset transaction history with device specifications
+              {translations.filterSearchDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -761,7 +769,7 @@ export default function AssetHistory() {
               {translations.transactionHistory}
             </CardTitle>
             <CardDescription>
-              Complete history of asset transactions with device specifications at time of change
+              {translations.transactionHistoryDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>
