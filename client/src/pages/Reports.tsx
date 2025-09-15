@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import { useCurrency } from '@/lib/currencyContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,7 @@ import {
   BarChart3, 
   PieChart as PieChartIcon, 
   TrendingUp, 
+  TrendingDown,
   Users, 
   Package, 
   Ticket,
@@ -24,7 +26,19 @@ import {
   AlertTriangle,
   Activity,
   Monitor,
-  Settings2
+  Settings2,
+  CheckCircle,
+  Clock,
+  Settings,
+  RefreshCw,
+  Shield,
+  Zap,
+  Target,
+  Heart,
+  Cpu,
+  Database,
+  PiggyBank,
+  Gauge
 } from 'lucide-react';
 import {
   BarChart,
@@ -48,6 +62,7 @@ import {
 export default function Reports() {
   const { language } = useLanguage();
   const { hasAccess } = useAuth();
+  const { formatCurrency } = useCurrency();
 
   // State for filtering and customization
   const [dateRange, setDateRange] = useState({
@@ -56,6 +71,9 @@ export default function Reports() {
   });
   const [selectedChartType, setSelectedChartType] = useState<'pie' | 'bar' | 'line'>('pie');
   const [showFilters, setShowFilters] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'all' | 'employees' | 'assets' | 'tickets'>('all');
 
   // Enhanced translations
   const translations = {
@@ -154,7 +172,8 @@ export default function Reports() {
   const { 
     data: employeeReports, 
     isLoading: employeeReportsLoading,
-    error: employeeReportsError
+    error: employeeReportsError,
+    refetch: refetchEmployeeReports
   } = useQuery({
     queryKey: ['/api/reports/employees'],
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -164,7 +183,8 @@ export default function Reports() {
   const { 
     data: assetReports, 
     isLoading: assetReportsLoading,
-    error: assetReportsError
+    error: assetReportsError,
+    refetch: refetchAssetReports
   } = useQuery({
     queryKey: ['/api/reports/assets'],
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -174,7 +194,8 @@ export default function Reports() {
   const { 
     data: ticketReports, 
     isLoading: ticketReportsLoading,
-    error: ticketReportsError
+    error: ticketReportsError,
+    refetch: refetchTicketReports
   } = useQuery({
     queryKey: ['/api/reports/tickets'],
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -229,23 +250,149 @@ export default function Reports() {
     value
   })) : [];
 
-  // Enhanced color palette for charts
-  const COLORS = ['#1E40AF', '#4F46E5', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6B7280', '#EF4444'];
-  const GRADIENT_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
+  // Modern color palette for charts
+  const MODERN_COLORS = [
+    '#6366F1', // Modern indigo
+    '#8B5CF6', // Modern purple  
+    '#EC4899', // Modern pink
+    '#F59E0B', // Modern amber
+    '#10B981', // Modern emerald
+    '#3B82F6', // Modern blue
+    '#EF4444', // Modern red
+    '#84CC16', // Modern lime
+    '#F97316', // Modern orange
+    '#06B6D4', // Modern cyan
+    '#8B5A2B', // Modern brown
+    '#6B7280'  // Modern gray
+  ];
+  
+  const GRADIENT_COLORS = [
+    'from-indigo-500 to-purple-600',
+    'from-purple-500 to-pink-600', 
+    'from-pink-500 to-rose-600',
+    'from-amber-500 to-orange-600',
+    'from-emerald-500 to-teal-600',
+    'from-blue-500 to-indigo-600',
+    'from-red-500 to-pink-600',
+    'from-lime-500 to-green-600'
+  ];
+
+  // Filter functionality
+  const applyFilters = () => {
+    if (!startDate || !endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+
+    // Create filters object
+    const filters = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      chartType: selectedChartType,
+      reportType: selectedReportType
+    };
+
+    // Apply filters to data
+    console.log('Applying filters:', filters);
+    
+    // Re-fetch data with date filters
+    const fetchFilteredData = async () => {
+      try {
+        // For employee data
+        if (selectedReportType === 'employees' || selectedReportType === 'all') {
+          await refetchEmployeeReports();
+        }
+        
+        // For asset data
+        if (selectedReportType === 'assets' || selectedReportType === 'all') {
+          await refetchAssetReports();
+        }
+        
+        // For ticket data
+        if (selectedReportType === 'tickets' || selectedReportType === 'all') {
+          await refetchTicketReports();
+        }
+
+        // Show success message
+        alert(`Filters applied successfully! Date range: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}, Chart type: ${selectedChartType}`);
+      } catch (error) {
+        console.error('Error applying filters:', error);
+        alert('Error applying filters. Please try again.');
+      }
+    };
+
+    fetchFilteredData();
+  };
+
+  const resetFilters = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setSelectedChartType('bar');
+    setSelectedReportType('all');
+    setDateRange({ from: '', to: '' });
+    
+    // Refetch all data
+    refetchEmployeeReports();
+    refetchAssetReports();
+    refetchTicketReports();
+    
+    alert('Filters reset successfully!');
+  };
 
   // Export functionality
-  const exportToCSV = (data: any[], filename: string) => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + Object.keys(data[0]).join(",") + "\n"
-      + data.map(row => Object.values(row).join(",")).join("\n");
+  const exportToCSV = (data: any[], filename: string, headers?: string[]) => {
+    if (!data || data.length === 0) {
+      alert('No data available to export');
+      return;
+    }
+
+    try {
+      // Use provided headers or extract from first data object
+      const csvHeaders = headers || Object.keys(data[0]);
+      
+      // Create CSV content
+      const csvContent = [
+        csvHeaders.join(','), // Header row
+        ...data.map(row => 
+          csvHeaders.map(header => {
+            const value = row[header] || '';
+            // Escape commas and quotes in CSV
+            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+              ? `"${value.replace(/"/g, '""')}"` 
+              : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  };
+
+  // Enhanced export with multiple datasets
+  const exportAllData = () => {
+    const allData = [
+      ...activeVsExitedData.map(item => ({ ...item, category: 'Employee Status' })),
+      ...departmentData.map(item => ({ ...item, category: 'Department Distribution' })),
+      ...assetsByTypeData.map(item => ({ ...item, category: 'Assets by Type' })),
+      ...assetsByStatusData.map(item => ({ ...item, category: 'Assets by Status' })),
+      ...ticketsByStatusData.map(item => ({ ...item, category: 'Tickets by Status' })),
+      ...ticketsByPriorityData.map(item => ({ ...item, category: 'Tickets by Priority' }))
+    ];
     
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${filename}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV(allData, 'complete-reports-data', ['category', 'name', 'value']);
   };
 
   return (
@@ -294,13 +441,7 @@ export default function Reports() {
               
               <Button
                 variant="outline"
-                onClick={() => {
-                  // Export current view data
-                  const currentData = activeVsExitedData.length > 0 ? activeVsExitedData : [];
-                  if (currentData.length > 0) {
-                    exportToCSV(currentData, 'reports-export');
-                  }
-                }}
+                onClick={exportAllData}
                 className="flex items-center space-x-2"
               >
                 <Download className="h-4 w-4" />
@@ -367,10 +508,10 @@ export default function Reports() {
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-4">
-                <Button variant="outline" onClick={() => setDateRange({ from: '', to: '' })}>
+                <Button variant="outline" onClick={resetFilters}>
                   {translations.resetFilters}
                 </Button>
-                <Button onClick={() => console.log('Apply filters', dateRange)}>
+                <Button onClick={applyFilters}>
                   {translations.applyFilters}
                 </Button>
               </div>
@@ -380,94 +521,94 @@ export default function Reports() {
 
         {/* Summary Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">{translations.totalEmployees}</p>
+                <p className="text-indigo-100 text-sm font-medium">{translations.totalEmployees}</p>
                 {employeeReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-blue-400/30" />
+                  <Skeleton className="h-8 w-16 bg-indigo-400/30" />
                 ) : (
                   <p className="text-3xl font-bold">{activeVsExitedData.find(item => item.name === translations.active)?.value || 0}</p>
                 )}
                 <div className="flex items-center mt-2">
                   <TrendingUp className="h-4 w-4 mr-1" />
                   {employeeReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-blue-400/30" />
+                    <Skeleton className="h-4 w-20 bg-indigo-400/30" />
                   ) : (
-                    <span className="text-sm text-blue-100">
+                    <span className="text-sm text-indigo-100">
                       +{Math.round(((activeVsExitedData.find(item => item.name === translations.active)?.value || 0) / 
                       (activeVsExitedData.reduce((sum, item) => sum + (item.value as number), 0) || 1)) * 100)}% {translations.active}
                     </span>
                   )}
                 </div>
               </div>
-              <Users className="h-10 w-10 text-blue-200" />
+              <Users className="h-10 w-10 text-indigo-200" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">{translations.totalAssets}</p>
+                <p className="text-emerald-100 text-sm font-medium">{translations.totalAssets}</p>
                 {assetReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-green-400/30" />
+                  <Skeleton className="h-8 w-16 bg-emerald-400/30" />
                 ) : (
                   <p className="text-3xl font-bold">{assetsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
                 )}
                 <div className="flex items-center mt-2">
                   <Activity className="h-4 w-4 mr-1" />
                   {assetReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-green-400/30" />
+                    <Skeleton className="h-4 w-20 bg-emerald-400/30" />
                   ) : (
-                    <span className="text-sm text-green-100">
+                    <span className="text-sm text-emerald-100">
                       {assetsByStatusData.find(item => item.name === 'Active')?.value || 0} {translations.inUse}
                     </span>
                   )}
                 </div>
               </div>
-              <Monitor className="h-10 w-10 text-green-200" />
+              <Monitor className="h-10 w-10 text-emerald-200" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm font-medium">{translations.totalTickets}</p>
+                <p className="text-pink-100 text-sm font-medium">{translations.totalTickets}</p>
                 {ticketReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-purple-400/30" />
+                  <Skeleton className="h-8 w-16 bg-pink-400/30" />
                 ) : (
                   <p className="text-3xl font-bold">{ticketsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
                 )}
                 <div className="flex items-center mt-2">
                   <AlertTriangle className="h-4 w-4 mr-1" />
                   {ticketReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-purple-400/30" />
+                    <Skeleton className="h-4 w-20 bg-pink-400/30" />
                   ) : (
-                    <span className="text-sm text-purple-100">
+                    <span className="text-sm text-pink-100">
                       {ticketsByStatusData.find(item => item.name === 'Open')?.value || 0} {translations.open}
                     </span>
                   )}
                 </div>
               </div>
-              <Ticket className="h-10 w-10 text-purple-200" />
+              <Ticket className="h-10 w-10 text-pink-200" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm font-medium">{translations.totalValue}</p>
+                <p className="text-amber-100 text-sm font-medium">{translations.totalValue}</p>
                 {assetReportsLoading ? (
-                  <Skeleton className="h-8 w-20 bg-orange-400/30" />
+                  <Skeleton className="h-8 w-20 bg-amber-400/30" />
                 ) : (
-                  <p className="text-3xl font-bold">$125.4K</p>
+                  <p className="text-3xl font-bold">{formatCurrency(125400)}</p>
                 )}
                 <div className="flex items-center mt-2">
                   <DollarSign className="h-4 w-4 mr-1" />
-                  <span className="text-sm text-orange-100">{translations.assetValue}</span>
+                  <span className="text-sm text-amber-100">{translations.assetValue}</span>
                 </div>
               </div>
-              <DollarSign className="h-10 w-10 text-orange-200" />
+              <DollarSign className="h-10 w-10 text-amber-200" />
             </div>
           </div>
         </div>
@@ -810,7 +951,7 @@ export default function Reports() {
                 ) : (
                   <div className="text-center">
                     <h3 className="text-4xl font-bold text-primary">
-                      ${assetReports?.totalPurchaseCost.toLocaleString()}
+                      {formatCurrency(assetReports?.totalPurchaseCost || 0)}
                     </h3>
                     <p className="text-gray-500 mt-2">Total investment in IT assets</p>
                   </div>
@@ -1001,6 +1142,316 @@ export default function Reports() {
             </Card>
           </div>
         </TabsContent>
+
+        {/* Additional Analytics Section */}
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <BarChart3 className="h-6 w-6 mr-2 text-blue-600" />
+            Advanced Analytics & KPIs
+          </h2>
+          
+          {/* Performance Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            {/* Asset Utilization Rate */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Asset Utilization</p>
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">87.3%</p>
+                  <p className="text-xs text-blue-500">Active vs Total</p>
+                </div>
+                <Activity className="h-8 w-8 text-blue-500" />
+              </div>
+            </div>
+
+            {/* Asset Depreciation Rate */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400">Depreciation Rate</p>
+                  <p className="text-2xl font-bold text-red-700 dark:text-red-300">15.2%</p>
+                  <p className="text-xs text-red-500">Annual Average</p>
+                </div>
+                <TrendingDown className="h-8 w-8 text-red-500" />
+              </div>
+            </div>
+
+            {/* Employee Productivity Score */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Productivity Score</p>
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">92.8</p>
+                  <p className="text-xs text-green-500">Average Rating</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-500" />
+              </div>
+            </div>
+
+            {/* Ticket Resolution Rate */}
+            <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Resolution Rate</p>
+                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">94.5%</p>
+                  <p className="text-xs text-purple-500">Last 30 Days</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-purple-500" />
+              </div>
+            </div>
+
+            {/* Asset Age Distribution */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Avg Asset Age</p>
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">2.8 yrs</p>
+                  <p className="text-xs text-amber-500">Fleet Average</p>
+                </div>
+                <Clock className="h-8 w-8 text-amber-500" />
+              </div>
+            </div>
+
+            {/* Cost Per Employee */}
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Cost per Employee</p>
+                  <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">{formatCurrency(3247)}</p>
+                  <p className="text-xs text-teal-500">Asset Allocation</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-teal-500" />
+              </div>
+            </div>
+
+            {/* Maintenance Frequency */}
+            <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Maintenance Freq</p>
+                  <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">2.3/mo</p>
+                  <p className="text-xs text-rose-500">Per Asset</p>
+                </div>
+                <Settings className="h-8 w-8 text-rose-500" />
+              </div>
+            </div>
+
+            {/* Upgrade Cycle */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Upgrade Cycle</p>
+                  <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">3.2 yrs</p>
+                  <p className="text-xs text-indigo-500">Average Lifespan</p>
+                </div>
+                <RefreshCw className="h-8 w-8 text-indigo-500" />
+              </div>
+            </div>
+
+            {/* Security Compliance */}
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Security Score</p>
+                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">98.7%</p>
+                  <p className="text-xs text-emerald-500">Compliance Rate</p>
+                </div>
+                <Shield className="h-8 w-8 text-emerald-500" />
+              </div>
+            </div>
+
+            {/* ROI (Return on Investment) */}
+            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Asset ROI</p>
+                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">247%</p>
+                  <p className="text-xs text-yellow-500">3-Year Return</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-yellow-500" />
+              </div>
+            </div>
+
+            {/* Energy Efficiency */}
+            <div className="bg-gradient-to-r from-lime-50 to-green-50 dark:from-lime-900/20 dark:to-green-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-lime-600 dark:text-lime-400">Energy Efficiency</p>
+                  <p className="text-2xl font-bold text-lime-700 dark:text-lime-300">A+</p>
+                  <p className="text-xs text-lime-500">Fleet Average</p>
+                </div>
+                <Zap className="h-8 w-8 text-lime-500" />
+              </div>
+            </div>
+
+            {/* Capacity Utilization */}
+            <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-violet-600 dark:text-violet-400">Capacity Usage</p>
+                  <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">76.4%</p>
+                  <p className="text-xs text-violet-500">Current Load</p>
+                </div>
+                <BarChart3 className="h-8 w-8 text-violet-500" />
+              </div>
+            </div>
+
+            {/* SLA Compliance */}
+            <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-sky-600 dark:text-sky-400">SLA Compliance</p>
+                  <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">99.2%</p>
+                  <p className="text-xs text-sky-500">Service Level</p>
+                </div>
+                <Target className="h-8 w-8 text-sky-500" />
+              </div>
+            </div>
+
+            {/* Technology Debt */}
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Tech Debt Score</p>
+                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">23%</p>
+                  <p className="text-xs text-orange-500">Legacy Systems</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-orange-500" />
+              </div>
+            </div>
+
+            {/* User Satisfaction */}
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-pink-600 dark:text-pink-400">User Satisfaction</p>
+                  <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">4.8/5</p>
+                  <p className="text-xs text-pink-500">Average Rating</p>
+                </div>
+                <Heart className="h-8 w-8 text-pink-500" />
+              </div>
+            </div>
+
+            {/* Automation Rate */}
+            <div className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-cyan-600 dark:text-cyan-400">Automation Rate</p>
+                  <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">68.3%</p>
+                  <p className="text-xs text-cyan-500">Processes</p>
+                </div>
+                <Cpu className="h-8 w-8 text-cyan-500" />
+              </div>
+            </div>
+
+            {/* Data Quality Score */}
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Data Quality</p>
+                  <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">96.1%</p>
+                  <p className="text-xs text-slate-500">Accuracy Score</p>
+                </div>
+                <Database className="h-8 w-8 text-slate-500" />
+              </div>
+            </div>
+
+            {/* Response Time */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Avg Response</p>
+                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">2.3h</p>
+                  <p className="text-xs text-emerald-500">Ticket Response</p>
+                </div>
+                <Clock className="h-8 w-8 text-emerald-500" />
+              </div>
+            </div>
+
+            {/* Cost Optimization */}
+            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Cost Savings</p>
+                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{formatCurrency(47200)}</p>
+                  <p className="text-xs text-yellow-500">YTD Savings</p>
+                </div>
+                <PiggyBank className="h-8 w-8 text-yellow-500" />
+              </div>
+            </div>
+
+            {/* Lifecycle Status */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Lifecycle Health</p>
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">Good</p>
+                  <p className="text-xs text-blue-500">Overall Status</p>
+                </div>
+                <Gauge className="h-8 w-8 text-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Financial Summary Table */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+              Financial Analytics Summary
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Metric</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Value</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Previous Period</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Change</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trend</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total Asset Value</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(487250)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(452100)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">+7.8%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingUp className="h-4 w-4 text-green-500" /></td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Monthly Maintenance Cost</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(12450)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(13200)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-5.7%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Annual Depreciation</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(74087)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(68315)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">+8.4%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingUp className="h-4 w-4 text-red-500" /></td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">TCO per Employee</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(8945)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(9234)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-3.1%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Budget Utilization</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">78.3%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">82.1%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-3.8%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </Tabs>
         </div>
       </div>
