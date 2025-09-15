@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, Calendar as CalendarIcon, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
@@ -89,8 +88,6 @@ export default function AssetHistory() {
   const [assetSearchValue, setAssetSearchValue] = useState('');
   const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
   const [employeeSearchValue, setEmployeeSearchValue] = useState('');
-  const [dateFromOpen, setDateFromOpen] = useState(false);
-  const [dateToOpen, setDateToOpen] = useState(false);
   // Translations
   const translations = {
     title: language === 'English' ? 'Asset History' : 'سجل الأصول',
@@ -742,63 +739,33 @@ export default function AssetHistory() {
               {/* Date From */}
               <div className="space-y-2">
                 <Label>{translations.dateFrom}</Label>
-                <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dateFromSelected && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateFromSelected ? format(dateFromSelected, "PPP") : translations.dateFrom}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dateFromSelected}
-                      onSelect={(date) => {
-                        setDateFromSelected(date);
-                        handleFilterChange('dateFrom', date ? format(date, 'yyyy-MM-dd') : '');
-                        setDateFromOpen(false);
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Calendar
+                  mode="picker"
+                  value={dateFromSelected ? format(dateFromSelected, 'yyyy-MM-dd') : ''}
+                  onChange={(value) => {
+                    const date = value ? new Date(value) : undefined;
+                    setDateFromSelected(date);
+                    handleFilterChange('dateFrom', value || '');
+                  }}
+                  placeholder={translations.dateFrom}
+                  className="w-full"
+                />
               </div>
 
               {/* Date To */}
               <div className="space-y-2">
                 <Label>{translations.dateTo}</Label>
-                <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dateToSelected && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateToSelected ? format(dateToSelected, "PPP") : translations.dateTo}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dateToSelected}
-                      onSelect={(date) => {
-                        setDateToSelected(date);
-                        handleFilterChange('dateTo', date ? format(date, 'yyyy-MM-dd') : '');
-                        setDateToOpen(false);
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Calendar
+                  mode="picker"
+                  value={dateToSelected ? format(dateToSelected, 'yyyy-MM-dd') : ''}
+                  onChange={(value) => {
+                    const date = value ? new Date(value) : undefined;
+                    setDateToSelected(date);
+                    handleFilterChange('dateTo', value || '');
+                  }}
+                  placeholder={translations.dateTo}
+                  className="w-full"
+                />
               </div>
             </div>
 
