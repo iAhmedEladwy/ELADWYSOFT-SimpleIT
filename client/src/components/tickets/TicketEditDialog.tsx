@@ -50,7 +50,7 @@ import {
 
 // Form validation schema
 const ticketEditSchema = z.object({
-  summary: z.string().min(1, 'Summary is required'),
+  title: z.string().min(1, 'Title is required').max(255, 'Title must be less than 255 characters'),
   description: z.string().optional(),
   requestType: z.string().min(1, 'Request type is required'),
   category: z.string().optional(),
@@ -122,7 +122,7 @@ export default function TicketEditDialog({
   useEffect(() => {
     if (ticket && open) {
       form.reset({
-        summary: ticket.summary || '',
+        title: ticket.title || '',
         description: ticket.description || '',
         requestType: ticket.requestType || 'Hardware',
         category: ticket.category || '',
@@ -211,7 +211,7 @@ export default function TicketEditDialog({
   const t = {
     editTicket: language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة',
     ticketInfo: language === 'English' ? 'Ticket Information' : 'معلومات التذكرة',
-    summary: language === 'English' ? 'Summary' : 'الملخص',
+    title: language === 'English' ? 'Title' : 'العنوان',
     description: language === 'English' ? 'Description' : 'الوصف',
     requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
     category: language === 'English' ? 'Category' : 'الفئة',
@@ -303,15 +303,15 @@ export default function TicketEditDialog({
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Summary */}
+                  {/* Title */}
                   <FormField
                     control={form.control}
-                    name="summary"
+                    name="title"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>{t.summary} *</FormLabel>
+                        <FormLabel>{t.title} *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Enter ticket summary" />
+                          <Input {...field} placeholder="Enter ticket title" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

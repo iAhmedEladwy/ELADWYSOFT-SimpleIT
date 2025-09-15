@@ -241,7 +241,7 @@ const myTicketsCount = useMemo(() => {
         requestType: String(ticketData.requestType),
         priority: String(ticketData.priority),
         status: 'Open',
-        summary: String(ticketData.summary),
+        title: String(ticketData.title),
         description: String(ticketData.description),
         dueDate: ticketData.dueDate ? new Date(ticketData.dueDate).toISOString() : null,
         slaTarget: ticketData.slaTarget ? Number(ticketData.slaTarget) : null,
