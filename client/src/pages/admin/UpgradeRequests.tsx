@@ -72,6 +72,11 @@ interface UpgradeRequest {
     brand: string;
     modelName?: string;
   };
+  assignedEmployee?: {
+    name: string;
+    employeeId: string;
+    department: string;
+  } | null;
 }
 
 export default function UpgradeRequests() {
@@ -126,6 +131,9 @@ export default function UpgradeRequests() {
     status: language === 'English' ? 'Status' : 'الحالة',
     scheduledDate: language === 'English' ? 'Scheduled Date' : 'التاريخ المجدول',
     createdBy: language === 'English' ? 'Created By' : 'أنشئ بواسطة',
+    assignedEmployee: language === 'English' ? 'Assigned Employee' : 'الموظف المعين',
+    department: language === 'English' ? 'Department' : 'القسم',
+    notAssigned: language === 'English' ? 'Not Assigned' : 'غير معين',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
     noRequests: language === 'English' ? 'No upgrade requests found' : 'لا توجد طلبات ترقية',
     loading: language === 'English' ? 'Loading...' : 'جار التحميل...',
@@ -177,6 +185,7 @@ export default function UpgradeRequests() {
           brand: item.asset_brand || '',
           modelName: item.asset_model_name || ''
         },
+        assignedEmployee: item.assignedEmployee || null,
         // Map for backward compatibility with original interface
         employeeName: item.createdByName || item.created_by_name || '',
         employeeCode: '',  // Not available in current backend
@@ -389,6 +398,7 @@ export default function UpgradeRequests() {
                   <TableHead>{translations.upgradeType}</TableHead>
                   <TableHead>{translations.priority}</TableHead>
                   <TableHead>{translations.status}</TableHead>
+                  <TableHead>{translations.assignedEmployee}</TableHead>
                   <TableHead>{translations.scheduledDate}</TableHead>
                   <TableHead>{translations.actions}</TableHead>
                 </TableRow>
@@ -396,7 +406,7 @@ export default function UpgradeRequests() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       <div className="flex justify-center items-center">
                         <RefreshCw className="w-6 h-6 animate-spin mr-2" />
                         {translations.loading}
@@ -405,7 +415,7 @@ export default function UpgradeRequests() {
                   </TableRow>
                 ) : paginatedRequests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       <div className="flex flex-col items-center">
                         <AlertCircle className="w-12 h-12 text-gray-400 mb-2" />
                         <p className="text-gray-500">{translations.noRequests}</p>
@@ -450,6 +460,16 @@ export default function UpgradeRequests() {
                         <Badge variant={getStatusBadgeVariant(request.status)}>
                           {request.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {request.assignedEmployee ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{request.assignedEmployee.name}</span>
+                            <span className="text-xs text-gray-500">{request.assignedEmployee.department}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">{translations.notAssigned}</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {request.scheduledDate ? format(new Date(request.scheduledDate), 'MMM dd, yyyy') : '-'}
@@ -574,6 +594,14 @@ export default function UpgradeRequests() {
                     <span className="font-medium text-gray-600">{translations.estimatedCost}:</span>
                     <span className="ml-2">
                       {selectedRequest.estimatedCost ? `$${selectedRequest.estimatedCost}` : '-'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">{translations.assignedEmployee}:</span>
+                    <span className="ml-2">
+                      {selectedRequest.assignedEmployee
+                        ? `${selectedRequest.assignedEmployee.name} (${selectedRequest.assignedEmployee.department})`
+                        : translations.notAssigned}
                     </span>
                   </div>
                   <div className="col-span-2">

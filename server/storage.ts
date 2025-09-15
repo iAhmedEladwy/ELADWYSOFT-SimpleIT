@@ -2505,12 +2505,17 @@ async deleteTicket(id: number): Promise<boolean> {
         a.type as asset_type,
         a.brand as asset_brand,
         a.model_name as asset_model_name,
+        a.assigned_employee_id,
         creator.username as created_by_name,
-        approver.english_name as approved_by_name
+        approver.english_name as approved_by_name,
+        assigned_emp.english_name as assigned_employee_name,
+        assigned_emp.employee_id as assigned_employee_id_code,
+        assigned_emp.department as assigned_employee_department
       FROM asset_upgrades au
       LEFT JOIN assets a ON au.asset_id = a.id
       LEFT JOIN users creator ON au.created_by_id = creator.id
       LEFT JOIN employees approver ON au.approved_by_id = approver.id
+      LEFT JOIN employees assigned_emp ON a.assigned_employee_id = assigned_emp.id
       ORDER BY au.created_at DESC
     `;
     
@@ -2525,7 +2530,12 @@ async deleteTicket(id: number): Promise<boolean> {
         modelName: row.asset_model_name
       },
       createdByName: row.created_by_name,
-      approvedByName: row.approved_by_name
+      approvedByName: row.approved_by_name,
+      assignedEmployee: row.assigned_employee_name ? {
+        name: row.assigned_employee_name,
+        employeeId: row.assigned_employee_id_code,
+        department: row.assigned_employee_department
+      } : null
     }));
   } catch (error) {
     console.error('Error fetching all asset upgrades:', error);

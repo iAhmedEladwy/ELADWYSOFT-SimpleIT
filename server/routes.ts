@@ -3421,10 +3421,21 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     
     if (shouldCreateTransaction) {
       try {
+        // Query the asset to get the assigned employee information
+        const assetQuery = await db
+          .select({
+            assignedEmployeeId: assets.assignedEmployeeId
+          })
+          .from(assets)
+          .where(eq(assets.id, upgrade.assetId))
+          .limit(1);
+
+        const assignedEmployeeId = assetQuery.length > 0 ? assetQuery[0].assignedEmployeeId : null;
+
         const transactionData = {
           assetId: upgrade.assetId,
           type: 'Upgrade' as const,
-          employeeId: null, // Upgrade is system-initiated, not employee-specific
+          employeeId: assignedEmployeeId, // Use the assigned employee from the asset
           transactionDate: new Date(),
           conditionNotes: `Upgrade Request: ${upgrade.title}\nCategory: ${upgrade.category}\nType: ${upgrade.upgradeType}\nStatus: ${status}\nJustification: ${upgrade.justification}${notes ? `\nReview Notes: ${notes}` : ''}`,
           handledById: user.id,
@@ -3433,6 +3444,9 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
 
         const transaction = await storage.createAssetTransaction(transactionData);
         console.log('Created asset transaction for upgrade:', transaction.id);
+        if (assignedEmployeeId) {
+          console.log('Transaction linked to assigned employee:', assignedEmployeeId);
+        }
       } catch (transactionError) {
         console.error('Error creating asset transaction:', transactionError);
         // Don't fail the upgrade status update if transaction creation fails
