@@ -127,19 +127,8 @@ export default function TicketsTable({
       setSelectedTicket(null);
     }
   };
-  // Fetch request types from system configuration with loading state
-  const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
-    queryKey: ['/api/custom-request-types'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/custom-request-types');
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to improve performance
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
-  });
-
-  // Use only request types from system configuration
-  const requestTypes = customRequestTypes.filter((type: any) => type.isActive !== false);
+  // Define ticket types
+  const ticketTypes = ['Incident', 'Service Request', 'Problem', 'Change'];
 
   // Update ticket mutation
     const updateTicketMutation = useMutation({
@@ -400,15 +389,11 @@ export default function TicketsTable({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="relative z-50">
-                      {isLoadingRequestTypes ? (
-                        <SelectItem value="loading" disabled>{t.loading}</SelectItem>
-                      ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
-                        requestTypes.map((type: any) => (
-                          <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
-                            {type.name || t.categoryHardware}
-                          </SelectItem>
-                        ))
-                      ) : (
+                      {ticketTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
                         <>
                           <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
                           <SelectItem value="Software">{t.categorySoftware}</SelectItem>

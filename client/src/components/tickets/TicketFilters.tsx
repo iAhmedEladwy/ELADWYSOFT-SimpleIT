@@ -1,7 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardT            <Label className="text-xs">{translations.type}</Label>
+            <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Incident">Incident</SelectItem>
+                <SelectItem value="Service Request">Service Request</SelectItem>
+                <SelectItem value="Problem">Problem</SelectItem>
+                <SelectItem value="Change">Change</SelectItem>
+              </SelectContent>m '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,7 +62,7 @@ export default function TicketFilters({
     status: language === 'Arabic' ? 'الحالة' : 'Status',
     priority: language === 'Arabic' ? 'الأولوية' : 'Priority',
     category: language === 'Arabic' ? 'الفئة' : 'Category',
-    requestType: language === 'Arabic' ? 'نوع الطلب' : 'Request Type',
+    type: language === 'Arabic' ? 'نوع التذكرة' : 'Ticket Type',
     assignedTo: language === 'Arabic' ? 'مُسند إلى' : 'Assigned To',
     creator: language === 'Arabic' ? 'المنشئ' : 'Creator',
     clearFilters: language === 'Arabic' ? 'مسح الفلاتر' : 'Clear Filters',

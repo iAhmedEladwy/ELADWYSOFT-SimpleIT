@@ -111,7 +111,7 @@ export default function Tickets() {
     const priorityParam = params.get('priorityFilter');
     const assignedToParam = params.get('assignedTo');
     const searchParam = params.get('search');
-    const requestTypeParam = params.get('requestType');
+        const typeParam = params.get('type');  // Changed from requestType to type
 
     // Build initial filters object from URL
     const initialFilters: any = {};
@@ -120,7 +120,7 @@ export default function Tickets() {
     if (priorityParam) initialFilters.priority = priorityParam;
     if (assignedToParam) initialFilters.assignedTo = assignedToParam;
     if (searchParam) initialFilters.search = searchParam;
-    if (requestTypeParam) initialFilters.requestType = requestTypeParam;
+    if (typeParam) initialFilters.type = typeParam;  // Changed from requestType to type
 
     // Only update if we have filters from URL
     if (Object.keys(initialFilters).length > 0) {
@@ -156,8 +156,8 @@ export default function Tickets() {
       if (filters.search) {
         params.set('search', filters.search);
       }
-      if (filters.requestType) {
-        params.set('requestType', filters.requestType);
+      if (filters.type) {
+        params.set('type', filters.type);
       }
 
       // Construct the new URL
@@ -238,7 +238,7 @@ const myTicketsCount = useMemo(() => {
         submittedById: ticketData.submittedById ? Number(ticketData.submittedById) : null,
         assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null,
         relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
-        requestType: String(ticketData.requestType),
+        type: ticketData.type || 'Incident', // Use type instead of requestType
         priority: String(ticketData.priority),
         status: 'Open',
         title: String(ticketData.title),
@@ -451,7 +451,7 @@ const myTicketsCount = useMemo(() => {
           ticket.ticketId,
           ticket.title,
           ticket.description,
-          ticket.requestType,
+          ticket.type,
           ticket.priority,
           ticket.status
         ].filter(Boolean);
@@ -473,8 +473,8 @@ const myTicketsCount = useMemo(() => {
         return false;
       }
       
-      // Request type filter  
-      if (filters.requestType && ticket.requestType !== filters.requestType) {
+      // Ticket type filter  
+      if (filters.type && ticket.type !== filters.type) {
         return false;
       }
       
@@ -509,7 +509,7 @@ const myTicketsCount = useMemo(() => {
         'Title': ticket.title || ticket.description.substring(0, 50),
         'Status': ticket.status,
         'Priority': ticket.priority,
-        'Type': ticket.requestType,
+        'Type': ticket.type,
         'Submitted By': employees?.find(e => e.id === ticket.submittedById)?.name || 'Unknown',
         'Assigned To': users?.find(u => u.id === ticket.assignedToId)?.username || 'Unassigned',
         'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'MM/dd/yyyy') : '',
