@@ -872,12 +872,9 @@ export default function AssetHistory() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4 text-gray-400" />
-                              {transaction.date || transaction.transactionDate 
-                                ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy')
-                                : '-'}
-                            </div>
+                            {transaction.date || transaction.transactionDate 
+                              ? format(new Date(transaction.date || transaction.transactionDate!), 'MMM dd, yyyy')
+                              : '-'}
                           </TableCell>
                           <TableCell>
                             {(() => {
