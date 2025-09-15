@@ -18,8 +18,76 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
 {
+  version: "0.3.7",
+  date: "2025-09-15",
+  title: "Unified Calendar System & Enhanced Export Functionality",
+  type: "minor",
+  changes: {
+    features: [
+      "📅 Unified Calendar Component System:",
+      "   ✅ Complete refactor of calendar components across the application",
+      "   ✅ Implemented unified Calendar component with mode='picker' functionality",
+      "   ✅ Removed deprecated date-input.tsx component (142 lines) for cleaner architecture",
+      "   ✅ Updated AssetForm, EmployeeForm, TicketForm, and TicketsTable to use unified calendar",
+      "   ✅ Simplified date handling with direct string format support (YYYY-MM-DD)",
+      "   ✅ Auto-close functionality for improved user experience",
+      "   ✅ Enhanced calendar component with 295+ lines of unified functionality",
+      "📄 Enhanced Export & PDF Functionality:",
+      "   ✅ Fixed export generation in Asset History page",
+      "   ✅ Resolved PDF export functionality with proper dependency handling",
+      "   ✅ Fixed print dependency issues for reliable document generation",
+      "🔧 Complete Reports System Revamp:",
+      "   ✅ Comprehensive overhaul of Reports page functionality",
+      "   ✅ Enhanced report generation with improved reliability",
+      "   ✅ Fixed syntax errors and improved system stability"
+    ],
+    improvements: [
+      "⚡ Component Architecture Enhancement:",
+      "   ✅ Unified calendar system reduces code duplication across forms",
+      "   ✅ Better error handling and validation in date components",
+      "   ✅ Simplified state management for date inputs",
+      "   ✅ Consistent date format handling across application",
+      "📊 Asset Management Improvements:",
+      "   ✅ Enhanced asset page filters implementation",
+      "   ✅ Added proper pagination to assets page",
+      "   ✅ Improved asset filter fields height with scrollable lists",
+      "   ✅ Enhanced related asset display data accuracy",
+      "🎫 Ticket System Enhancements:",
+      "   ✅ Added search functionality in 'submitted by' field for ticket creation",
+      "   ✅ Improved ticket form date handling with unified calendar",
+      "   ✅ Enhanced ticket creation workflow reliability",
+      "📈 Dashboard & Display Updates:",
+      "   ✅ Updated Dashboard Summary and Recent items display",
+      "   ✅ Enhanced assets API with proper maintenance calculations",
+      "   ✅ Improved data presentation across multiple components"
+    ],
+    bugfixes: [
+      "🔧 Critical Calendar & Date Fixes:",
+      "   ✅ Fixed 'ReferenceError: Popover is not defined' in Asset History page",
+      "   ✅ Resolved calendar handler issues across all forms",
+      "   ✅ Fixed datepicker autoclose functionality in AssetHistory and AuditLog",
+      "   ✅ Corrected calendar date bug affecting ticket creation dates",
+      "🎫 Ticket Management Fixes:",
+      "   ✅ Fixed 'Create new ticket selecting submitted by causes white screen' error",
+      "   ✅ Resolved ticket creation form crashes when selecting employees",
+      "   ✅ Fixed tickets submitted by to display only active employees",
+      "📊 Asset & Data Display Fixes:",
+      "   ✅ Resolved 'White page in notifications, asset history' problems",
+      "   ✅ Fixed overlapped asset edit form when clicking on purchase information",
+      "   ✅ Removed asset inventory card conflicts in assets page",
+      "   ✅ Fixed duplicate maintenance data issues",
+      "   ✅ Continued fixing missing status field implementation",
+      "   ✅ Enhanced asset filtering to properly show employees' assets",
+      "📄 Export & PDF Generation Fixes:",
+      "   ✅ Fixed export not being generated in Asset History",
+      "   ✅ Resolved print dependency conflicts",
+      "   ✅ Enhanced PDF export reliability and error handling"
+    ]
+  }
+},
+{
   version: "0.3.6",
-  date: "2025-01-11",
+  date: "2025-09-13",
   title: "Enhanced Employee Filtering & Bulk Operations UI",
   type: "minor",
   changes: {
