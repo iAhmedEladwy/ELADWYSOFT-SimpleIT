@@ -126,35 +126,6 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
   });
 
   const maintenanceFormSchema = createMaintenanceFormSchema();
-    repair: language === 'English' ? 'Repair' : 'إصلاح',
-    inspection: language === 'English' ? 'Inspection' : 'فحص',
-    cleaning: language === 'English' ? 'Cleaning' : 'تنظيف',
-    replacement: language === 'English' ? 'Replacement' : 'استبدال',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    descriptionDesc: language === 'English' ? 'Detailed description of the maintenance work performed' : 'وصف مفصل لأعمال الصيانة المنجزة',
-    cost: language === 'English' ? 'Cost' : 'التكلفة',
-    costDesc: language === 'English' ? 'Total cost of maintenance (optional)' : 'التكلفة الإجمالية للصيانة (اختياري)',
-    providerType: language === 'English' ? 'Provider Type' : 'نوع مقدم الخدمة',
-    providerTypeDesc: language === 'English' ? 'Who performed the maintenance?' : 'من قام بالصيانة؟',
-    internal: language === 'English' ? 'Internal' : 'داخلي',
-    external: language === 'English' ? 'External' : 'خارجي',
-    providerName: language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة',
-    providerNameDesc: language === 'English' ? 'Name of person/company who performed maintenance' : 'اسم الشخص/الشركة التي قامت بالصيانة',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    completed: language === 'English' ? 'Completed' : 'مكتمل',
-    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
-    scheduled: language === 'English' ? 'Scheduled' : 'مجدول',
-    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    save: language === 'English' ? 'Save Maintenance Record' : 'حفظ سجل الصيانة',
-    saving: language === 'English' ? 'Saving...' : 'جاري الحفظ...',
-    // Validation messages
-    dateRequired: language === 'English' ? 'Date is required' : 'التاريخ مطلوب',
-    typeRequired: language === 'English' ? 'Maintenance type is required' : 'نوع الصيانة مطلوب',
-    descriptionRequired: language === 'English' ? 'Description must be at least 5 characters' : 'الوصف يجب أن يكون 5 أحرف على الأقل',
-    invalidCost: language === 'English' ? 'Enter a valid cost (e.g., 99.99)' : 'أدخل تكلفة صحيحة (مثال: 99.99)',
-    providerTypeRequired: language === 'English' ? 'Provider type is required' : 'نوع مقدم الخدمة مطلوب',
-    providerNameRequired: language === 'English' ? 'Provider name is required' : 'اسم مقدم الخدمة مطلوب'
-  };
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof maintenanceFormSchema>>({
