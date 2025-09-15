@@ -552,7 +552,7 @@ export default function AssetHistory() {
                   <SelectTrigger>
                     <SelectValue placeholder={translations.all} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]">
                     <SelectItem value="all">{translations.all}</SelectItem>
                     <SelectItem value="Check-In">{translations.checkIn}</SelectItem>
                     <SelectItem value="Check-Out">{translations.checkOut}</SelectItem>
@@ -584,7 +584,7 @@ export default function AssetHistory() {
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[var(--radix-popover-trigger-width)] p-0" align="start">
                     <Command>
                       <CommandInput 
                         placeholder={translations.searchAssets}
@@ -668,7 +668,7 @@ export default function AssetHistory() {
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[var(--radix-popover-trigger-width)] p-0" align="start">
                     <Command>
                       <CommandInput 
                         placeholder={translations.searchEmployees}
