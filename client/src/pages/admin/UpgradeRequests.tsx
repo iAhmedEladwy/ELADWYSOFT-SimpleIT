@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Table,
   TableBody,
@@ -77,6 +78,7 @@ export default function UpgradeRequests() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');

@@ -46,14 +46,27 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       "   ✅ Larger clickable area around checkboxes for easier selection",
       "   ✅ Click anywhere in checkbox cell to toggle selection",
       "📊 Assignment filter now uses dedicated API call instead of client-side filtering",
-      "⚡ Reduced memory usage by fetching only employees with assets"
+      "⚡ Reduced memory usage by fetching only employees with assets",
+      "🌐 Comprehensive Bilingual Translation Enhancement:",
+      "   ✅ Fixed missing translations in Assets page filter interface",
+      "   ✅ Added 18+ new translation keys for search, filter labels, and UI elements",
+      "   ✅ Translated all filter options (All Types, All Statuses, All Brands, etc.)",
+      "   ✅ Fixed hardcoded 'Filter & Search Assets', search placeholders, and buttons",
+      "   ✅ Enhanced AssetHistory card descriptions with proper Arabic translations",
+      "   ✅ Updated AuditLogFilter with comprehensive bilingual support (16 keys)",
+      "   ✅ Completed AuditLogTable bilingual implementation (18 translation keys)",
+      "   ✅ All audit components now fully localized for English/Arabic users",
+      "   ✅ Fixed getEmployeeDisplay function to use translations for assignment labels"
     ],
     bugfixes: [
       "🔧 Fixed assignment filter showing incomplete employee list due to pagination",
       "🎯 Fixed bulk unassign not working - added missing dialog and API endpoint",
       "📐 Fixed accidental edit form opening when clicking near checkboxes",
       "🔍 Resolved employees with assets on other pages not appearing in filter",
-      "✅ Fixed checkbox double-triggering with pointer-events optimization"
+      "✅ Fixed checkbox double-triggering with pointer-events optimization",
+      "🗃️ Identified database schema mismatch for asset transaction types:",
+      "   ✅ Found TypeScript types missing 'Upgrade' and 'Retirement' enum values",
+      "   ✅ Documented need for database enum sync with schema definition"
     ]
   }
 },
