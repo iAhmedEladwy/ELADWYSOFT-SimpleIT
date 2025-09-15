@@ -252,7 +252,7 @@ export interface AssetFilters {
 export interface TicketFilters {
   status?: string;
   priority?: string;
-  requestType?: string;
+  type?: string;
   assignedTo?: string;
   category?: string;
   createdBy?: string;

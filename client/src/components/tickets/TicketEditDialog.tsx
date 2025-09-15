@@ -312,6 +312,31 @@ export default function TicketEditDialog({
                     )}
                   />
 
+                  {/* Type */}
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.type} *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.selectType} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Incident">{t.typeIncident}</SelectItem>
+                            <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
+                            <SelectItem value="Problem">{t.typeProblem}</SelectItem>
+                            <SelectItem value="Change">{t.typeChange}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Category */}
                   <FormField
                     control={form.control}
