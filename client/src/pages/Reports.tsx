@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   BarChart3, 
   PieChart as PieChartIcon, 
@@ -396,7 +397,8 @@ export default function Reports() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="p-6 space-y-6">
         {/* Error Message */}
         {hasErrors && (
@@ -521,96 +523,144 @@ export default function Reports() {
 
         {/* Summary Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-indigo-100 text-sm font-medium">{translations.totalEmployees}</p>
-                {employeeReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-indigo-400/30" />
-                ) : (
-                  <p className="text-3xl font-bold">{activeVsExitedData.find(item => item.name === translations.active)?.value || 0}</p>
-                )}
-                <div className="flex items-center mt-2">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  {employeeReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-indigo-400/30" />
-                  ) : (
-                    <span className="text-sm text-indigo-100">
-                      +{Math.round(((activeVsExitedData.find(item => item.name === translations.active)?.value || 0) / 
-                      (activeVsExitedData.reduce((sum, item) => sum + (item.value as number), 0) || 1)) * 100)}% {translations.active}
-                    </span>
-                  )}
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-indigo-100 text-sm font-medium">{translations.totalEmployees}</p>
+                    {employeeReportsLoading ? (
+                      <Skeleton className="h-8 w-16 bg-indigo-400/30" />
+                    ) : (
+                      <p className="text-3xl font-bold">{activeVsExitedData.find(item => item.name === translations.active)?.value || 0}</p>
+                    )}
+                    <div className="flex items-center mt-2">
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                      {employeeReportsLoading ? (
+                        <Skeleton className="h-4 w-20 bg-indigo-400/30" />
+                      ) : (
+                        <span className="text-sm text-indigo-100">
+                          +{Math.round(((activeVsExitedData.find(item => item.name === translations.active)?.value || 0) / 
+                          (activeVsExitedData.reduce((sum, item) => sum + (item.value as number), 0) || 1)) * 100)}% {translations.active}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Users className="h-10 w-10 text-indigo-200" />
                 </div>
               </div>
-              <Users className="h-10 w-10 text-indigo-200" />
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                {language === 'English' 
+                  ? 'Total number of active employees in the organization. This metric shows currently working staff and their percentage of the total workforce.'
+                  : 'العدد الإجمالي للموظفين النشطين في المنظمة. يُظهر هذا المؤشر الموظفين العاملين حاليًا ونسبتهم من إجمالي القوى العاملة.'
+                }
+              </p>
+            </TooltipContent>
+          </UITooltip>
 
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-emerald-100 text-sm font-medium">{translations.totalAssets}</p>
-                {assetReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-emerald-400/30" />
-                ) : (
-                  <p className="text-3xl font-bold">{assetsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
-                )}
-                <div className="flex items-center mt-2">
-                  <Activity className="h-4 w-4 mr-1" />
-                  {assetReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-emerald-400/30" />
-                  ) : (
-                    <span className="text-sm text-emerald-100">
-                      {assetsByStatusData.find(item => item.name === 'Active')?.value || 0} {translations.inUse}
-                    </span>
-                  )}
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-medium">{translations.totalAssets}</p>
+                    {assetReportsLoading ? (
+                      <Skeleton className="h-8 w-16 bg-emerald-400/30" />
+                    ) : (
+                      <p className="text-3xl font-bold">{assetsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
+                    )}
+                    <div className="flex items-center mt-2">
+                      <Activity className="h-4 w-4 mr-1" />
+                      {assetReportsLoading ? (
+                        <Skeleton className="h-4 w-20 bg-emerald-400/30" />
+                      ) : (
+                        <span className="text-sm text-emerald-100">
+                          {assetsByStatusData.find(item => item.name === 'Active')?.value || 0} {translations.inUse}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Monitor className="h-10 w-10 text-emerald-200" />
                 </div>
               </div>
-              <Monitor className="h-10 w-10 text-emerald-200" />
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                {language === 'English' 
+                  ? 'Total number of IT assets in your inventory including computers, monitors, servers, and other equipment. Shows active assets currently in use.'
+                  : 'العدد الإجمالي لأصول تكنولوجيا المعلومات في المخزون بما في ذلك أجهزة الكمبيوتر والشاشات والخوادم والمعدات الأخرى. يُظهر الأصول النشطة قيد الاستخدام حاليًا.'
+                }
+              </p>
+            </TooltipContent>
+          </UITooltip>
 
-          <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-pink-100 text-sm font-medium">{translations.totalTickets}</p>
-                {ticketReportsLoading ? (
-                  <Skeleton className="h-8 w-16 bg-pink-400/30" />
-                ) : (
-                  <p className="text-3xl font-bold">{ticketsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
-                )}
-                <div className="flex items-center mt-2">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  {ticketReportsLoading ? (
-                    <Skeleton className="h-4 w-20 bg-pink-400/30" />
-                  ) : (
-                    <span className="text-sm text-pink-100">
-                      {ticketsByStatusData.find(item => item.name === 'Open')?.value || 0} {translations.open}
-                    </span>
-                  )}
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-pink-100 text-sm font-medium">{translations.totalTickets}</p>
+                    {ticketReportsLoading ? (
+                      <Skeleton className="h-8 w-16 bg-pink-400/30" />
+                    ) : (
+                      <p className="text-3xl font-bold">{ticketsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}</p>
+                    )}
+                    <div className="flex items-center mt-2">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      {ticketReportsLoading ? (
+                        <Skeleton className="h-4 w-20 bg-pink-400/30" />
+                      ) : (
+                        <span className="text-sm text-pink-100">
+                          {ticketsByStatusData.find(item => item.name === 'Open')?.value || 0} {translations.open}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Ticket className="h-10 w-10 text-pink-200" />
                 </div>
               </div>
-              <Ticket className="h-10 w-10 text-pink-200" />
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                {language === 'English' 
+                  ? 'Total number of support tickets submitted by users. Includes all ticket statuses with emphasis on currently open tickets requiring attention.'
+                  : 'العدد الإجمالي لتذاكر الدعم المقدمة من المستخدمين. يشمل جميع حالات التذاكر مع التركيز على التذاكر المفتوحة حاليًا التي تتطلب الاهتمام.'
+                }
+              </p>
+            </TooltipContent>
+          </UITooltip>
 
-          <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-amber-100 text-sm font-medium">{translations.totalValue}</p>
-                {assetReportsLoading ? (
-                  <Skeleton className="h-8 w-20 bg-amber-400/30" />
-                ) : (
-                  <p className="text-3xl font-bold">{formatCurrency(125400)}</p>
-                )}
-                <div className="flex items-center mt-2">
-                  <DollarSign className="h-4 w-4 mr-1" />
-                  <span className="text-sm text-amber-100">{translations.assetValue}</span>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm font-medium">{translations.totalValue}</p>
+                    {assetReportsLoading ? (
+                      <Skeleton className="h-8 w-20 bg-amber-400/30" />
+                    ) : (
+                      <p className="text-3xl font-bold">{formatCurrency(assetReports?.totalPurchaseCost || 0)}</p>
+                    )}
+                    <div className="flex items-center mt-2">
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      <span className="text-sm text-amber-100">{translations.assetValue}</span>
+                    </div>
+                  </div>
+                  <DollarSign className="h-10 w-10 text-amber-200" />
                 </div>
               </div>
-              <DollarSign className="h-10 w-10 text-amber-200" />
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                {language === 'English' 
+                  ? 'Total monetary value of all IT assets in your organization. This represents the cumulative investment in hardware, software licenses, and technology infrastructure.'
+                  : 'القيمة النقدية الإجمالية لجميع أصول تكنولوجيا المعلومات في مؤسستك. وهذا يمثل الاستثمار التراكمي في الأجهزة وتراخيص البرامج والبنية التحتية التكنولوجية.'
+                }
+              </p>
+            </TooltipContent>
+          </UITooltip>
         </div>
 
         {/* Enhanced Tabbed Reports Section */}
@@ -1147,314 +1197,209 @@ export default function Reports() {
         <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
             <BarChart3 className="h-6 w-6 mr-2 text-blue-600" />
-            Advanced Analytics & KPIs
+            System Analytics & KPIs
           </h2>
           
-          {/* Performance Metrics Grid */}
+          {/* Performance Metrics Grid - Only Real Data */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
             {/* Asset Utilization Rate */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Asset Utilization</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">87.3%</p>
-                  <p className="text-xs text-blue-500">Active vs Total</p>
-                </div>
-                <Activity className="h-8 w-8 text-blue-500" />
-              </div>
-            </div>
+            {assetReports && assignedVsUnassignedData.length > 0 && (
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 cursor-help">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Asset Utilization</p>
+                        <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                          {Math.round((assignedVsUnassignedData.find(item => item.name === translations.assigned)?.value || 0) / 
+                          (assignedVsUnassignedData.reduce((sum, item) => sum + (item.value as number), 0) || 1) * 100)}%
+                        </p>
+                        <p className="text-xs text-blue-500">Assigned Assets</p>
+                      </div>
+                      <Activity className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">
+                    {language === 'English' 
+                      ? 'Percentage of assets currently assigned to employees versus total assets in inventory.'
+                      : 'نسبة الأصول المعينة حاليًا للموظفين مقابل إجمالي الأصول في المخزون.'
+                    }
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            )}
 
-            {/* Asset Depreciation Rate */}
-            <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-red-600 dark:text-red-400">Depreciation Rate</p>
-                  <p className="text-2xl font-bold text-red-700 dark:text-red-300">15.2%</p>
-                  <p className="text-xs text-red-500">Annual Average</p>
+            {/* Total Assets Count */}
+            {assetReports && assetsByStatusData.length > 0 && (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Assets</p>
+                    <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                      {assetsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}
+                    </p>
+                    <p className="text-xs text-emerald-500">In System</p>
+                  </div>
+                  <Monitor className="h-8 w-8 text-emerald-500" />
                 </div>
-                <TrendingDown className="h-8 w-8 text-red-500" />
               </div>
-            </div>
+            )}
 
-            {/* Employee Productivity Score */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Productivity Score</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">92.8</p>
-                  <p className="text-xs text-green-500">Average Rating</p>
+            {/* Active Employees */}
+            {employeeReports && activeVsExitedData.length > 0 && (
+              <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Active Employees</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                      {activeVsExitedData.find(item => item.name === translations.active)?.value || 0}
+                    </p>
+                    <p className="text-xs text-purple-500">Currently Working</p>
+                  </div>
+                  <Users className="h-8 w-8 text-purple-500" />
                 </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
               </div>
-            </div>
+            )}
 
-            {/* Ticket Resolution Rate */}
-            <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Resolution Rate</p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">94.5%</p>
-                  <p className="text-xs text-purple-500">Last 30 Days</p>
+            {/* Total Tickets */}
+            {ticketReports && ticketsByStatusData.length > 0 && (
+              <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Total Tickets</p>
+                    <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">
+                      {ticketsByStatusData.reduce((sum, item) => sum + (item.value as number), 0)}
+                    </p>
+                    <p className="text-xs text-rose-500">All Time</p>
+                  </div>
+                  <Ticket className="h-8 w-8 text-rose-500" />
                 </div>
-                <CheckCircle className="h-8 w-8 text-purple-500" />
               </div>
-            </div>
+            )}
 
-            {/* Asset Age Distribution */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Avg Asset Age</p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">2.8 yrs</p>
-                  <p className="text-xs text-amber-500">Fleet Average</p>
+            {/* Open Tickets */}
+            {ticketReports && ticketsByStatusData.length > 0 && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Open Tickets</p>
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                      {ticketsByStatusData.find(item => item.name === 'Open')?.value || 0}
+                    </p>
+                    <p className="text-xs text-amber-500">Needs Attention</p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-amber-500" />
                 </div>
-                <Clock className="h-8 w-8 text-amber-500" />
               </div>
-            </div>
+            )}
 
             {/* Cost Per Employee */}
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Cost per Employee</p>
-                  <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">{formatCurrency(3247)}</p>
-                  <p className="text-xs text-teal-500">Asset Allocation</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-teal-500" />
-              </div>
-            </div>
+            {assetReports && employeeReports && assetReports.totalPurchaseCost && activeVsExitedData.length > 0 && (
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-lg p-4 cursor-help">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Cost per Employee</p>
+                        <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">
+                          {formatCurrency(
+                            Math.round(assetReports.totalPurchaseCost / 
+                            (activeVsExitedData.find(item => item.name === translations.active)?.value || 1))
+                          )}
+                        </p>
+                        <p className="text-xs text-teal-500">Asset Investment</p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-teal-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">
+                    {language === 'English' 
+                      ? 'Average cost of IT assets per active employee. Calculated from total asset value divided by active employees.'
+                      : 'متوسط تكلفة أصول تكنولوجيا المعلومات لكل موظف نشط. محسوب من إجمالي قيمة الأصول مقسوم على الموظفين النشطين.'
+                    }
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            )}
 
-            {/* Maintenance Frequency */}
-            <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Maintenance Freq</p>
-                  <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">2.3/mo</p>
-                  <p className="text-xs text-rose-500">Per Asset</p>
+            {/* Average Resolution Time */}
+            {ticketReports && ticketReports.averageResolutionTime && (
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Resolution</p>
+                    <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
+                      {ticketReports.averageResolutionTime}
+                    </p>
+                    <p className="text-xs text-indigo-500">Ticket Response</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-indigo-500" />
                 </div>
-                <Settings className="h-8 w-8 text-rose-500" />
               </div>
-            </div>
+            )}
 
-            {/* Upgrade Cycle */}
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Upgrade Cycle</p>
-                  <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">3.2 yrs</p>
-                  <p className="text-xs text-indigo-500">Average Lifespan</p>
+            {/* Recent Tickets Count */}
+            {ticketReports && ticketReports.recentTicketsCount !== undefined && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Recent Tickets</p>
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {ticketReports.recentTicketsCount}
+                    </p>
+                    <p className="text-xs text-green-500">Last 30 Days</p>
+                  </div>
+                  <Activity className="h-8 w-8 text-green-500" />
                 </div>
-                <RefreshCw className="h-8 w-8 text-indigo-500" />
               </div>
-            </div>
-
-            {/* Security Compliance */}
-            <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Security Score</p>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">98.7%</p>
-                  <p className="text-xs text-emerald-500">Compliance Rate</p>
-                </div>
-                <Shield className="h-8 w-8 text-emerald-500" />
-              </div>
-            </div>
-
-            {/* ROI (Return on Investment) */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Asset ROI</p>
-                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">247%</p>
-                  <p className="text-xs text-yellow-500">3-Year Return</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-yellow-500" />
-              </div>
-            </div>
-
-            {/* Energy Efficiency */}
-            <div className="bg-gradient-to-r from-lime-50 to-green-50 dark:from-lime-900/20 dark:to-green-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-lime-600 dark:text-lime-400">Energy Efficiency</p>
-                  <p className="text-2xl font-bold text-lime-700 dark:text-lime-300">A+</p>
-                  <p className="text-xs text-lime-500">Fleet Average</p>
-                </div>
-                <Zap className="h-8 w-8 text-lime-500" />
-              </div>
-            </div>
-
-            {/* Capacity Utilization */}
-            <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-violet-600 dark:text-violet-400">Capacity Usage</p>
-                  <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">76.4%</p>
-                  <p className="text-xs text-violet-500">Current Load</p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-violet-500" />
-              </div>
-            </div>
-
-            {/* SLA Compliance */}
-            <div className="bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-sky-600 dark:text-sky-400">SLA Compliance</p>
-                  <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">99.2%</p>
-                  <p className="text-xs text-sky-500">Service Level</p>
-                </div>
-                <Target className="h-8 w-8 text-sky-500" />
-              </div>
-            </div>
-
-            {/* Technology Debt */}
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Tech Debt Score</p>
-                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">23%</p>
-                  <p className="text-xs text-orange-500">Legacy Systems</p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-orange-500" />
-              </div>
-            </div>
-
-            {/* User Satisfaction */}
-            <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-pink-600 dark:text-pink-400">User Satisfaction</p>
-                  <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">4.8/5</p>
-                  <p className="text-xs text-pink-500">Average Rating</p>
-                </div>
-                <Heart className="h-8 w-8 text-pink-500" />
-              </div>
-            </div>
-
-            {/* Automation Rate */}
-            <div className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-cyan-600 dark:text-cyan-400">Automation Rate</p>
-                  <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">68.3%</p>
-                  <p className="text-xs text-cyan-500">Processes</p>
-                </div>
-                <Cpu className="h-8 w-8 text-cyan-500" />
-              </div>
-            </div>
-
-            {/* Data Quality Score */}
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Data Quality</p>
-                  <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">96.1%</p>
-                  <p className="text-xs text-slate-500">Accuracy Score</p>
-                </div>
-                <Database className="h-8 w-8 text-slate-500" />
-              </div>
-            </div>
-
-            {/* Response Time */}
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Avg Response</p>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">2.3h</p>
-                  <p className="text-xs text-emerald-500">Ticket Response</p>
-                </div>
-                <Clock className="h-8 w-8 text-emerald-500" />
-              </div>
-            </div>
-
-            {/* Cost Optimization */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Cost Savings</p>
-                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{formatCurrency(47200)}</p>
-                  <p className="text-xs text-yellow-500">YTD Savings</p>
-                </div>
-                <PiggyBank className="h-8 w-8 text-yellow-500" />
-              </div>
-            </div>
-
-            {/* Lifecycle Status */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Lifecycle Health</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">Good</p>
-                  <p className="text-xs text-blue-500">Overall Status</p>
-                </div>
-                <Gauge className="h-8 w-8 text-blue-500" />
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Financial Summary Table */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-              Financial Analytics Summary
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Metric</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Value</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Previous Period</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Change</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trend</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total Asset Value</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(487250)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(452100)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">+7.8%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingUp className="h-4 w-4 text-green-500" /></td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Monthly Maintenance Cost</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(12450)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(13200)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-5.7%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Annual Depreciation</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(74087)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(68315)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">+8.4%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingUp className="h-4 w-4 text-red-500" /></td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">TCO per Employee</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(8945)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatCurrency(9234)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-3.1%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Budget Utilization</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">78.3%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">82.1%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">-3.8%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm"><TrendingDown className="h-4 w-4 text-green-500" /></td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* Asset Financial Summary - Only Real Data */}
+          {assetReports && assetReports.totalPurchaseCost && (
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                Asset Financial Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Total Asset Investment</h4>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {formatCurrency(assetReports.totalPurchaseCost)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Current portfolio value
+                  </p>
+                </div>
+                
+                {activeVsExitedData.length > 0 && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Investment per Employee</h4>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(
+                        Math.round(assetReports.totalPurchaseCost / 
+                        (activeVsExitedData.find(item => item.name === translations.active)?.value || 1))
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Assets per active employee
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
       </Tabs>
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
