@@ -196,6 +196,25 @@ export default function Assets() {
     confirmRetirement: language === 'English' ? 'Confirm Retirement' : 'تأكيد السحب',
     provideRetirementReason: language === 'English' ? 'Please provide a retirement reason' : 'يرجى تقديم سبب السحب',
     fillRequiredFields: language === 'English' ? 'Please fill in all required fields' : 'يرجى ملء جميع الحقول المطلوبة',
+    
+    // Missing filter and UI translations
+    filterSearchAssets: language === 'Arabic' ? 'تصفية والبحث في الأصول' : 'Filter & Search Assets',
+    searchPlaceholder: language === 'Arabic' ? 'البحث بمعرف الأصل، النوع، العلامة التجارية، الموديل، الرقم التسلسلي...' : 'Search by Asset ID, Type, Brand, Model, Serial Number...',
+    search: language === 'Arabic' ? 'بحث' : 'Search',
+    type: language === 'Arabic' ? 'النوع' : 'Type',
+    status: language === 'Arabic' ? 'الحالة' : 'Status',
+    brand: language === 'Arabic' ? 'العلامة التجارية' : 'Brand',
+    assignment: language === 'Arabic' ? 'التخصيص' : 'Assignment',
+    allTypes: language === 'Arabic' ? 'جميع الأنواع' : 'All Types',
+    allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
+    allBrands: language === 'Arabic' ? 'جميع العلامات التجارية' : 'All Brands',
+    allAssignments: language === 'Arabic' ? 'جميع التخصيصات' : 'All Assignments',
+    unassigned: language === 'Arabic' ? 'غير مخصص' : 'Unassigned',
+    totalAssets: language === 'Arabic' ? 'إجمالي الأصول' : 'total assets',
+    searchEmployees: language === 'Arabic' ? 'البحث عن الموظفين...' : 'Search employees...',
+    noEmployeesFound: language === 'Arabic' ? 'لم يتم العثور على موظفين.' : 'No employees found.',
+    maintenanceStatus: language === 'Arabic' ? 'حالة الصيانة' : 'Maintenance Status',
+    exportCsv: language === 'Arabic' ? 'تصدير CSV' : 'Export CSV'
   };
 
   // Parse URL parameters on component mount
@@ -771,10 +790,10 @@ export default function Assets() {
      }, [assets]);
 
   const getEmployeeDisplay = (employeeId: string | undefined) => {
-    if (!employeeId || employeeId === 'all') return "All Assignments";
-    if (employeeId === 'unassigned') return "Unassigned";
+    if (!employeeId || employeeId === 'all') return translations.allAssignments;
+    if (employeeId === 'unassigned') return translations.unassigned;
     const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
-    return employee ? (employee.englishName || employee.name) : "All Assignments";
+    return employee ? (employee.englishName || employee.name) : translations.allAssignments;
   };
 
   // Pagination controls component
@@ -881,7 +900,7 @@ export default function Assets() {
                 disabled={assets.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV ({pagination.totalCount})
+                {translations.exportCsv} ({pagination.totalCount})
               </Button>
             )}
             
@@ -906,13 +925,13 @@ export default function Assets() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
-                <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+                <CardTitle className="text-lg">{translations.filterSearchAssets}</CardTitle>
                 {Object.values(filters).filter(Boolean).length > 0 && (
                   <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
                 )}
               </div>
               <div className="text-sm text-muted-foreground">
-                {pagination.totalCount} total assets
+                {pagination.totalCount} {translations.totalAssets}
               </div>
             </div>
           </CardHeader>
@@ -926,14 +945,14 @@ export default function Assets() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by Asset ID, Type, Brand, Model, Serial Number..."
+                  placeholder={translations.searchPlaceholder}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9"
                 />
               </div>
               <Button type="submit" variant="outline">
-                Search
+                {translations.search}
               </Button>
             </form>
 
@@ -942,16 +961,16 @@ export default function Assets() {
              
              {/* Type Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Type</label>
+              <label className="text-sm font-medium mb-2 block">{translations.type}</label>
               <Select
                 value={filters.type || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
+                  <SelectValue placeholder={translations.allTypes} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="all">{translations.allTypes}</SelectItem>
                   {customAssetTypes.map((type: any) => (
                     <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                   ))}
@@ -961,16 +980,16 @@ export default function Assets() {
 
             {/* Status Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
+              <label className="text-sm font-medium mb-2 block">{translations.status}</label>
               <Select
                 value={filters.status || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder={translations.allStatuses} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">{translations.allStatuses}</SelectItem>
                   {assetStatuses.map((status: string) => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
@@ -980,16 +999,16 @@ export default function Assets() {
 
             {/* Brand Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <label className="text-sm font-medium mb-2 block">{translations.brand}</label>
               <Select
                 value={filters.brand || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Brands" />
+                  <SelectValue placeholder={translations.allBrands} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Brands</SelectItem>
+                  <SelectItem value="all">{translations.allBrands}</SelectItem>
                   {customAssetBrands.map((brand: any) => (
                     <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
                   ))}
@@ -998,7 +1017,7 @@ export default function Assets() {
             </div>
               {/* Assignment Filter with Combobox */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Assignment</label>
+                <label className="text-sm font-medium mb-2 block">{translations.assignment}</label>
                 <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -1016,11 +1035,11 @@ export default function Assets() {
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <Command>
                       <CommandInput 
-                        placeholder="Search employees..." 
+                        placeholder={translations.searchEmployees} 
                         className="h-9"
                       />
                       <CommandList>
-                        <CommandEmpty>No employees found.</CommandEmpty>
+                        <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
                         <CommandGroup>
                           <CommandItem
                             value="all"
@@ -1034,7 +1053,7 @@ export default function Assets() {
                                 !filters.assignedTo ? "opacity-100" : "opacity-0"
                               }`}
                             />
-                            All Assignments
+                            {translations.allAssignments}
                           </CommandItem>
                           
                           {hasUnassignedAssets && (
@@ -1050,7 +1069,7 @@ export default function Assets() {
                                   filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
                                 }`}
                               />
-                              Unassigned
+                              {translations.unassigned}
                             </CommandItem>
                           )}
                           
