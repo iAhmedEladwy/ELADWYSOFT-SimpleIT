@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
@@ -65,6 +66,9 @@ export default function Reports() {
   const { hasAccess } = useAuth();
   const { formatCurrency } = useCurrency();
 
+  // Add ref for PDF export
+  const componentRef = useRef<HTMLDivElement>(null);
+
   // State for filtering and customization
   const [dateRange, setDateRange] = useState({
     from: '',
@@ -117,7 +121,7 @@ export default function Reports() {
     
     // Controls and actions
     filters: language === 'English' ? 'Filters' : 'المرشحات',
-    exportData: language === 'English' ? 'Export Data' : 'تصدير البيانات',
+    exportData: language === 'English' ? 'Export to PDF' : 'تصدير إلى PDF',
     chartType: language === 'English' ? 'Chart Type' : 'نوع المخطط',
     dateRange: language === 'English' ? 'Date Range' : 'النطاق الزمني',
     dateFrom: language === 'English' ? 'From Date' : 'من تاريخ',
@@ -280,15 +284,15 @@ export default function Reports() {
 
   // Filter functionality
   const applyFilters = () => {
-    if (!startDate || !endDate) {
+    if (!dateRange.from || !dateRange.to) {
       alert('Please select both start and end dates');
       return;
     }
 
     // Create filters object
     const filters = {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
+      startDate: new Date(dateRange.from).toISOString(),
+      endDate: new Date(dateRange.to).toISOString(),
       chartType: selectedChartType,
       reportType: selectedReportType
     };
@@ -315,7 +319,7 @@ export default function Reports() {
         }
 
         // Show success message
-        alert(`Filters applied successfully! Date range: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}, Chart type: ${selectedChartType}`);
+        alert(`Filters applied successfully! Date range: ${new Date(dateRange.from).toLocaleDateString()} - ${new Date(dateRange.to).toLocaleDateString()}, Chart type: ${selectedChartType}`);
       } catch (error) {
         console.error('Error applying filters:', error);
         alert('Error applying filters. Please try again.');
@@ -326,8 +330,7 @@ export default function Reports() {
   };
 
   const resetFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
+    setDateRange({ from: '', to: '' });
     setSelectedChartType('bar');
     setSelectedReportType('all');
     setDateRange({ from: '', to: '' });
@@ -340,65 +343,92 @@ export default function Reports() {
     alert('Filters reset successfully!');
   };
 
-  // Export functionality
-  const exportToCSV = (data: any[], filename: string, headers?: string[]) => {
-    if (!data || data.length === 0) {
-      alert('No data available to export');
-      return;
+  // PDF Export functionality using react-to-print
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+    documentTitle: `IT Asset Reports - ${new Date().toLocaleDateString()}`,
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+      @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body { 
+          margin: 0; 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        .no-print { 
+          display: none !important; 
+        }
+        .print-break { 
+          page-break-before: always; 
+        }
+        .chart-container { 
+          width: 100% !important; 
+          height: 300px !important; 
+          margin-bottom: 20px;
+        }
+        .shadow-lg, .shadow-sm, .shadow-xl { 
+          box-shadow: none !important; 
+        }
+        .bg-gradient-to-r, .bg-gradient-to-br { 
+          background: #f8f9fa !important; 
+          border: 1px solid #e9ecef !important;
+        }
+        .dark\\:bg-gray-800 {
+          background: white !important;
+        }
+        .dark\\:text-white {
+          color: black !important;
+        }
+        .text-white {
+          color: white !important;
+        }
+        h1, h2, h3, h4, h5, h6 {
+          color: #212529 !important;
+        }
+        .rounded-xl, .rounded-lg {
+          border-radius: 8px !important;
+        }
+      }
+    `,
+    onBeforeGetContent: () => {
+      // Add a title to the document before printing
+      const titleElement = document.createElement('div');
+      titleElement.innerHTML = `
+        <div style="text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #dee2e6;">
+          <h1 style="margin: 0; color: #212529; font-size: 28px; font-weight: bold;">IT Asset Management Reports</h1>
+          <p style="margin: 10px 0 0 0; color: #6c757d; font-size: 14px;">Generated on ${new Date().toLocaleDateString()}</p>
+        </div>
+      `;
+      if (componentRef.current) {
+        componentRef.current.insertBefore(titleElement, componentRef.current.firstChild);
+      }
+    },
+    onAfterPrint: () => {
+      // Clean up the added title after printing
+      if (componentRef.current) {
+        const titleElement = componentRef.current.firstChild;
+        if (titleElement && titleElement.textContent?.includes('IT Asset Management Reports')) {
+          componentRef.current.removeChild(titleElement);
+        }
+      }
     }
+  });
 
-    try {
-      // Use provided headers or extract from first data object
-      const csvHeaders = headers || Object.keys(data[0]);
-      
-      // Create CSV content
-      const csvContent = [
-        csvHeaders.join(','), // Header row
-        ...data.map(row => 
-          csvHeaders.map(header => {
-            const value = row[header] || '';
-            // Escape commas and quotes in CSV
-            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
-              ? `"${value.replace(/"/g, '""')}"` 
-              : value;
-          }).join(',')
-        )
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
-    }
-  };
-
-  // Enhanced export with multiple datasets
+  // Enhanced export with PDF generation
   const exportAllData = () => {
-    const allData = [
-      ...activeVsExitedData.map(item => ({ ...item, category: 'Employee Status' })),
-      ...departmentData.map(item => ({ ...item, category: 'Department Distribution' })),
-      ...assetsByTypeData.map(item => ({ ...item, category: 'Assets by Type' })),
-      ...assetsByStatusData.map(item => ({ ...item, category: 'Assets by Status' })),
-      ...ticketsByStatusData.map(item => ({ ...item, category: 'Tickets by Status' })),
-      ...ticketsByPriorityData.map(item => ({ ...item, category: 'Tickets by Priority' }))
-    ];
-    
-    exportToCSV(allData, 'complete-reports-data', ['category', 'name', 'value']);
+    handlePrint();
   };
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div ref={componentRef} className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="p-6 space-y-6">
         {/* Error Message */}
         {hasErrors && (
@@ -431,7 +461,7 @@ export default function Reports() {
             </div>
             
             {/* Header Controls */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 no-print">
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
@@ -454,7 +484,7 @@ export default function Reports() {
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 no-print">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>{translations.dateFrom}</Label>
