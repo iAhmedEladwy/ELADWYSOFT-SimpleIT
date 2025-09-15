@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Search, Calendar, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -736,23 +737,21 @@ export default function AssetHistory() {
 
               {/* Date From */}
               <div className="space-y-2">
-                <Label htmlFor="dateFrom">{translations.dateFrom}</Label>
-                <Input
-                  id="dateFrom"
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                <Label>{translations.dateFrom}</Label>
+                <DatePicker
+                  date={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
+                  onDateChange={(date) => handleFilterChange('dateFrom', date ? format(date, 'yyyy-MM-dd') : '')}
+                  placeholder={translations.dateFrom}
                 />
               </div>
 
               {/* Date To */}
               <div className="space-y-2">
-                <Label htmlFor="dateTo">{translations.dateTo}</Label>
-                <Input
-                  id="dateTo"
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                <Label>{translations.dateTo}</Label>
+                <DatePicker
+                  date={filters.dateTo ? new Date(filters.dateTo) : undefined}
+                  onDateChange={(date) => handleFilterChange('dateTo', date ? format(date, 'yyyy-MM-dd') : '')}
+                  placeholder={translations.dateTo}
                 />
               </div>
             </div>
