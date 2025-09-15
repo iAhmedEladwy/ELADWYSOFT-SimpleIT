@@ -324,9 +324,17 @@ const myTicketsCount = useMemo(() => {
     // Ensure all data is properly formatted for the server
     const formattedData = {
       ...ticketData,
-      submittedById: String(ticketData.submittedById),
-      relatedAssetId: ticketData.relatedAssetId ? String(ticketData.relatedAssetId) : undefined
+      type: ticketData.type || 'Incident', // Ensure we always send type, never requestType
+      submittedById: ticketData.submittedById ? Number(ticketData.submittedById) : null,
+      relatedAssetId: ticketData.relatedAssetId ? Number(ticketData.relatedAssetId) : null,
+      assignedToId: ticketData.assignedToId ? Number(ticketData.assignedToId) : null
     };
+
+    // Remove any requestType field that might have been accidentally included
+    if ('requestType' in formattedData) {
+      delete (formattedData as any).requestType;
+    }
+
     createTicketMutation.mutate(formattedData);
   };
 
