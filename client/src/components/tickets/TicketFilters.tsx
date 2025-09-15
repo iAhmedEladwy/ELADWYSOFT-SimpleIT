@@ -1,22 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { Card, CardContent, CardHeader, CardT            <Label className="text-xs">{translations.type}</Label>
-            <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Incident">Incident</SelectItem>
-                <SelectItem value="Service Request">Service Request</SelectItem>
-                <SelectItem value="Problem">Problem</SelectItem>
-                <SelectItem value="Change">Change</SelectItem>
-              </SelectContent>m '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import type { VariantProps } from 'class-variance-authority';
 import { 
   Select, 
   SelectContent, 
@@ -110,7 +101,7 @@ export default function TicketFilters({
   };
 
   // Handle search
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateFilter('search', searchTerm || undefined);
   };
@@ -134,7 +125,7 @@ export default function TicketFilters({
             <Filter className="h-4 w-4" />
             <CardTitle className="text-lg">Filter & Search Tickets</CardTitle>
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary">{activeFiltersCount}</Badge>
+              <Badge className="bg-secondary">{activeFiltersCount}</Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -158,8 +149,8 @@ export default function TicketFilters({
                 type="text"
                 placeholder={translations.searchPlaceholder}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchSubmit(e as unknown as React.FormEvent<HTMLFormElement>)}
                 className="pl-8 h-8 text-sm w-full"
               />
             </div>
@@ -170,7 +161,7 @@ export default function TicketFilters({
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">{translations.status}</Label>
-          <Select value={filters.status || 'all'} onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}>
+          <Select value={filters.status || 'all'} onValueChange={(value: string) => updateFilter('status', value === 'all' ? undefined : value)}>
           <SelectTrigger className="h-8 text-sm">
             <SelectValue placeholder={translations.allStatuses} />
           </SelectTrigger>

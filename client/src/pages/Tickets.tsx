@@ -493,61 +493,54 @@ const myTicketsCount = useMemo(() => {
     });
   }, [tickets, filters, user]);
 
-  // Enhanced export  with all fields
-      const handleExport = () => {
-      if (!Array.isArray(filteredTickets) || filteredTickets.length === 0) {
-        toast({
-          title: language === 'English' ? 'No data to export' : 'لا توجد بيانات للتصدير',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Prepare CSV data
-      const csvData = filteredTickets.map(ticket => ({
-        'Ticket ID': ticket.ticketId,
-        'Title': ticket.title || ticket.description.substring(0, 50),
-        'Status': ticket.status,
-        'Priority': ticket.priority,
-        'Type': ticket.type,
-        'Submitted By': employees?.find(e => e.id === ticket.submittedById)?.name || 'Unknown',
-        'Assigned To': users?.find(u => u.id === ticket.assignedToId)?.username || 'Unassigned',
-        'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'MM/dd/yyyy') : '',
-        'Created': format(new Date(ticket.createdAt), 'MM/dd/yyyy HH:mm'),
-      }));
-
-      // Convert to CSV string
-      const headers = Object.keys(csvData[0]);
-      const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => 
-          headers.map(header => {
-            const value = row[header];
-            // Escape quotes and wrap in quotes if contains comma
-            return typeof value === 'string' && value.includes(',') 
-              ? `"${value.replace(/"/g, '""')}"` 
-              : value;
-          }).join(',')
-        )
-      ].join('\n');
-
-      // Download the CSV
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `tickets_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+  // Export functionality
+  const handleExport = () => {
+    if (!Array.isArray(filteredTickets) || filteredTickets.length === 0) {
       toast({
-        title: language === 'English' ? 'Export successful' : 'تم التصدير بنجاح',
-        description: language === 'English' 
-          ? `Exported ${csvData.length} tickets` 
-          : `تم تصدير ${csvData.length} تذكرة`,
+        title: translations.error,
+        description: 'No tickets to export',
+        variant: 'destructive',
       });
+      return;
+    }
+    
+    const headers = ['Ticket ID', 'Title', 'Status', 'Priority', 'Type', 'Submitted By', 'Assigned To', 'Due Date', 'Created'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTickets.map((ticket: any) => {
+        const assignedUser = users?.find((u: any) => u.id === ticket.assignedToId);
+        const submittedBy = employees?.find((e: any) => e.id === ticket.submittedById);
+        return [
+          ticket.ticketId || '',
+          (ticket.title || ticket.description.substring(0, 50)) || '',
+          ticket.status || '',
+          ticket.priority || '',
+          ticket.type || '',
+          submittedBy ? submittedBy.name : '',
+          assignedUser ? assignedUser.username : '',
+          ticket.dueDate ? new Date(ticket.dueDate).toLocaleDateString() : '',
+          new Date(ticket.createdAt).toLocaleDateString() + ' ' + new Date(ticket.createdAt).toLocaleTimeString()
+        ].map(field => `"${field}"`).join(',');
+      })
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0].replace(':', '-').substring(0, 5);
+    a.download = `tickets_${dateStr}_${timeStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: translations.success,
+      description: `Exported ${filteredTickets.length} tickets successfully`,
+    });
     };
 
   return (
