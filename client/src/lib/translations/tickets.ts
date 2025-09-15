@@ -116,6 +116,11 @@ export interface TicketTranslations {
   myTickets: string;
   openTickets: string;
   all: string;
+  actions: string;
+  viewDetails: string;
+  assignToMe: string;
+  unassignAction: string;
+  selectedCount: string;
 
   assignmentClassification: string;
   timeManagement: string;
@@ -127,6 +132,7 @@ export interface TicketTranslations {
   addCommentPlaceholder: string;
   noHistoryEntries: string;
   systemUser: string;
+
   
   // Placeholders
   searchPlaceholder: string;
@@ -306,6 +312,11 @@ export const ticketTranslations = {
     addCommentPlaceholder: 'Add a comment...',
     noHistoryEntries: 'No history entries yet',
     systemUser: 'System',
+    actions: 'Actions',
+    viewDetails: 'View Details', 
+    assignToMe: 'Assign to me',
+    unassignAction: 'Unassign',
+    selectedCount: 'selected',
   
     
     // Filters
@@ -491,7 +502,13 @@ export const ticketTranslations = {
     addCommentPlaceholder: 'أضف تعليق...',
     noHistoryEntries: 'لا توجد إدخالات تاريخية بعد',
     systemUser: 'النظام',
-    
+
+    actions: 'الإجراءات',
+    viewDetails: 'عرض التفاصيل',
+    assignToMe: 'تعيين لي', 
+    unassignAction: 'إلغاء التعيين',
+    selectedCount: 'محدد',
+      
     // Filters
     allTickets: 'جميع التذاكر',
     myTickets: 'تذاكري',
