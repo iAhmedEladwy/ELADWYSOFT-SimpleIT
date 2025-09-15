@@ -1117,25 +1117,25 @@ export class DatabaseStorage implements IStorage {
       console.log('Creating ticket with data:', {
         title: ticket.title?.length || 0,
         description: ticket.description?.length || 0,
-        requestType: ticket.requestType?.length || 0,
+        type: ticket.type?.length || 0,
         category: ticket.category?.length || 0,
         priority: ticket.priority,
         urgency: ticket.urgency?.length || 0,
         impact: ticket.impact?.length || 0,
         status: ticket.status
       });
-      
+
       // Ensure field length limits are respected
       const urgency = (ticket.urgency || 'Medium') as UrgencyLevel;
       const impact = (ticket.impact || 'Medium') as ImpactLevel;
-      
+
       // Auto-calculate priority based on urgency and impact
       const calculatedPriority = calculatePriority(urgency, impact);
-      
+
       const safeData = {
         title: (ticket.title || 'New Ticket').substring(0, 255),
         description: ticket.description || '',
-        requestType: (ticket.requestType || 'Other').substring(0, 100),
+        type: (ticket.type || 'Other').substring(0, 100),
         category: (ticket.category || 'Incident').substring(0, 100),
         priority: calculatedPriority, // Use calculated priority instead of ticket.priority
         urgency: urgency.substring(0, 20),
@@ -1155,22 +1155,22 @@ export class DatabaseStorage implements IStorage {
         isTimeTracking: ticket.isTimeTracking || false,
         timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
       };
-      
+
       console.log('Priority calculation:', { urgency, impact, calculatedPriority });
-      
+
       console.log('Safe data after truncation:', {
         title: safeData.title.length,
-        requestType: safeData.requestType.length,
+        type: safeData.type.length,
         category: safeData.category.length,
         urgency: safeData.urgency.length,
         impact: safeData.impact.length,
         escalationLevel: safeData.escalationLevel.length
       });
-      
+
       // Let database auto-generate ticket_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO tickets (
-          title, description, request_type, category, priority,
+          title, description, type, category, priority,
           urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
           resolution, resolution_notes, due_date, sla_target, escalation_level,
           tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,
@@ -1180,9 +1180,9 @@ export class DatabaseStorage implements IStorage {
           $17, $18, $19, $20, $21, NOW(), NOW()
         ) RETURNING *
       `, [
-        safeData.summary,
+        safeData.title,
         safeData.description,
-        safeData.requestType,
+        safeData.type,
         safeData.category,
         safeData.priority,
         safeData.urgency,
@@ -1202,7 +1202,7 @@ export class DatabaseStorage implements IStorage {
         safeData.isTimeTracking,
         safeData.timeTrackingStartedAt
       ]);
-      
+
       console.log('Ticket created successfully:', result.rows[0]);
       return result.rows[0];
     } catch (error) {
