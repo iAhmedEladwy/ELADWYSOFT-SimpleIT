@@ -44,15 +44,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { DateInput } from '@/components/ui/date-input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { MoreHorizontal, UserCircle2, Calendar, Clock, CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, UserCircle2, Calendar as CalendarIconLucide, Clock, CalendarIcon } from 'lucide-react';
 
 interface TicketsTableProps {
   tickets: any[];
@@ -593,7 +587,8 @@ export default function TicketsTable({
                 
                 {/* Due Date */}
                 <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <DateInput
+                  <Calendar
+                    mode="picker"
                     value={ticket.dueDate || ''}
                     onChange={(value) => {
                       updateTicketMutation.mutate({ 
@@ -601,7 +596,7 @@ export default function TicketsTable({
                         updates: { dueDate: value || null } 
                       });
                     }}
-                    placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                    placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
                     className="w-full h-8 text-sm"
                   />
                 </TableCell>

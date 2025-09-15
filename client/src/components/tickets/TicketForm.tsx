@@ -53,16 +53,9 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { DateInput } from "@/components/ui/date-input";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
 
 // Ticket form schema with all ITIL-compliant fields - made flexible for better UX
 const ticketFormSchema = z.object({
@@ -946,10 +939,11 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
                           <FormControl>
-                            <DateInput
+                            <Calendar
+                              mode="picker"
                               value={field.value}
                               onChange={field.onChange}
-                              placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                              placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
                               className="w-full"
                             />
                           </FormControl>
@@ -1385,7 +1379,8 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                                 <FormItem>
                                   <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
                                   <FormControl>
-                                    <DateInput
+                                    <Calendar
+                                      mode="picker"
                                       value={field.value}
                                       onChange={(value) => {
                                         field.onChange(value);
@@ -1393,7 +1388,7 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                                           handleAutoSave('dueDate', value);
                                         }
                                       }}
-                                      placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                                      placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
                                       className="w-full"
                                     />
                                   </FormControl>

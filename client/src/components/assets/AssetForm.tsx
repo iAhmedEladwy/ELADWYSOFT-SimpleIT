@@ -26,13 +26,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { DateInput } from '@/components/ui/date-input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -206,10 +199,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
       specs: initialData.specs || '',
     };
   };
-
-  // State for controlling date picker popovers
-  const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
-  const [warrantyDateOpen, setWarrantyDateOpen] = useState(false);
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof assetFormSchema>>({
@@ -546,10 +535,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.purchaseDate}</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Calendar
+                        mode="picker"
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder={language === 'English' ? 'mm/dd/yyyy' : 'شش/يي/سسسس'}
+                        placeholder={language === 'English' ? 'Pick purchase date' : 'اختر تاريخ الشراء'}
                         disabled={(date) => date > new Date()}
                         className="w-full"
                       />
@@ -593,10 +583,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.warrantyExpiry}</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Calendar
+                        mode="picker"
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder={language === 'English' ? 'mm/dd/yyyy' : 'شش/يي/سسسس'}
+                        placeholder={language === 'English' ? 'Pick warranty expiry date' : 'اختر تاريخ انتهاء الضمان'}
                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                         className="w-full"
                       />

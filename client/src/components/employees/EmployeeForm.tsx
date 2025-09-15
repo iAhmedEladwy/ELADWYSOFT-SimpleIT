@@ -25,13 +25,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
-import { DateInput } from '@/components/ui/date-input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -410,10 +403,11 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.joiningDate}</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Calendar
+                        mode="picker"
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder={language === 'English' ? 'mm/dd/yyyy' : 'شش/يي/سسسس'}
+                        placeholder={language === 'English' ? 'Pick joining date' : 'اختر تاريخ الانضمام'}
                         disabled={(date) => date > new Date()}
                         className="w-full"
                       />
@@ -430,10 +424,11 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.exitDate}</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Calendar
+                        mode="picker"
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder={language === 'English' ? 'mm/dd/yyyy (optional)' : 'شش/يي/سسسس (اختياري)'}
+                        placeholder={language === 'English' ? 'Pick exit date (optional)' : 'اختر تاريخ المغادرة (اختياري)'}
                         className="w-full"
                       />
                     </FormControl>
