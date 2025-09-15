@@ -155,7 +155,7 @@ export interface AssetTransactionResponse {
   id: number;
   assetId: number;
   employeeId?: number;
-  type: 'Check-In' | 'Check-Out' | 'Transfer' | 'Maintenance' | 'Sale';
+  type: 'Check-In' | 'Check-Out' | 'Maintenance' | 'Sale' | 'Retirement' | 'Upgrade';
   date: string;
   notes?: string;
   conditionNotes?: string;

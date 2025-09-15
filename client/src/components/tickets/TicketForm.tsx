@@ -42,7 +42,8 @@ import {
   AlertCircle,
   Edit3,
   Send,
-  Loader2
+  Loader2,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 
 import {
@@ -57,6 +58,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -942,7 +944,13 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Calendar
+                              mode="picker"
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
+                              className="w-full"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1376,10 +1384,17 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                                 <FormItem>
                                   <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
                                   <FormControl>
-                                    <Input
-                                      type="date"
-                                      {...field}
-                                      onChange={(e) => { field.onChange(e.target.value); handleAutoSave('dueDate', e.target.value); }}
+                                    <Calendar
+                                      mode="picker"
+                                      value={field.value}
+                                      onChange={(value) => {
+                                        field.onChange(value);
+                                        if (value) {
+                                          handleAutoSave('dueDate', value);
+                                        }
+                                      }}
+                                      placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
+                                      className="w-full"
                                     />
                                   </FormControl>
                                   <FormMessage />

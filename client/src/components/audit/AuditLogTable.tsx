@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/hooks/use-language';
 import {
   Table,
   TableBody,
@@ -93,12 +94,36 @@ const getEntityBadgeColor = (entityType: string) => {
 };
 
 export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
+  const { language } = useLanguage();
+
+  const translations = {
+    auditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
+    securityAuditTrail: language === 'English' ? 'Security audit trail for all system activities' : 'مسار تدقيق الأمان لجميع أنشطة النظام',
+    loadingAuditLogs: language === 'English' ? 'Loading Audit Logs' : 'جاري تحميل سجلات التدقيق',
+    noAuditEntries: language === 'English' ? 'No audit log entries found' : 'لم يتم العثور على إدخالات سجل التدقيق',
+    adjustFilterCriteria: language === 'English' ? 'Adjust your filter criteria or check back later' : 'اضبط معايير التصفية أو تحقق مرة أخرى لاحقاً',
+    timestamp: language === 'English' ? 'Timestamp' : 'الطابع الزمني',
+    user: language === 'English' ? 'User' : 'المستخدم',
+    action: language === 'English' ? 'Action' : 'الإجراء',
+    entityType: language === 'English' ? 'Entity Type' : 'نوع الكيان',
+    entityId: language === 'English' ? 'Entity ID' : 'معرف الكيان',
+    details: language === 'English' ? 'Details' : 'التفاصيل',
+    actions: language === 'English' ? 'Actions' : 'الإجراءات',
+    system: language === 'English' ? 'System' : 'النظام',
+    openMenu: language === 'English' ? 'Open menu' : 'فتح القائمة',
+    copyDetails: language === 'English' ? 'Copy Details' : 'نسخ التفاصيل',
+    copyEntry: language === 'English' ? 'Copy Entry' : 'نسخ الإدخال',
+    clickToViewDetails: language === 'English' ? 'Click to view details' : 'انقر لعرض التفاصيل',
+    noDetailsAvailable: language === 'English' ? 'No details available' : 'لا توجد تفاصيل متاحة',
+    unableToDisplayDetails: language === 'English' ? 'Unable to display details' : 'غير قادر على عرض التفاصيل'
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
   const formatDetails = (details: any) => {
-    if (!details) return 'No details available';
+    if (!details) return translations.noDetailsAvailable;
     
     try {
       if (typeof details === 'string') {
@@ -113,7 +138,7 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
       }
       return JSON.stringify(details, null, 2);
     } catch (error) {
-      return 'Unable to display details';
+      return translations.unableToDisplayDetails;
     }
   };
 
@@ -121,7 +146,7 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-center">Loading Audit Logs</CardTitle>
+          <CardTitle className="text-center">{translations.loadingAuditLogs}</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center">
           <div className="animate-pulse h-96 w-full bg-gray-100 rounded-md"></div>
@@ -134,13 +159,13 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Audit Logs</CardTitle>
-          <CardDescription>Security audit trail for all system activities</CardDescription>
+          <CardTitle>{translations.auditLogs}</CardTitle>
+          <CardDescription>{translations.securityAuditTrail}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-48">
           <FileText className="h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-500 text-center">No audit log entries found</p>
-          <p className="text-gray-400 text-sm text-center mt-2">Adjust your filter criteria or check back later</p>
+          <p className="text-gray-500 text-center">{translations.noAuditEntries}</p>
+          <p className="text-gray-400 text-sm text-center mt-2">{translations.adjustFilterCriteria}</p>
         </CardContent>
       </Card>
     );
@@ -149,20 +174,20 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Audit Logs</CardTitle>
-        <CardDescription>Security audit trail for all system activities</CardDescription>
+        <CardTitle>{translations.auditLogs}</CardTitle>
+        <CardDescription>{translations.securityAuditTrail}</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Entity Type</TableHead>
-              <TableHead>Entity ID</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{translations.timestamp}</TableHead>
+              <TableHead>{translations.user}</TableHead>
+              <TableHead>{translations.action}</TableHead>
+              <TableHead>{translations.entityType}</TableHead>
+              <TableHead>{translations.entityId}</TableHead>
+              <TableHead>{translations.details}</TableHead>
+              <TableHead className="text-right">{translations.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -172,7 +197,7 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                   {format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}
                 </TableCell>
                 <TableCell>
-                  {log.user ? log.user.username : 'System'}
+                  {log.user ? log.user.username : translations.system}
                 </TableCell>
                 <TableCell>
                   <Badge className={getActionBadgeColor(log.action)} variant="outline">
@@ -187,7 +212,7 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                 <TableCell>{log.entityId || '-'}</TableCell>
                 <TableCell className="max-w-md truncate font-mono text-xs">
                   {log.details ? (
-                    <div className="cursor-pointer group relative" title="Click to view details">
+                    <div className="cursor-pointer group relative" title={translations.clickToViewDetails}>
                       <div className="truncate max-w-xs">
                         {typeof log.details === 'object' 
                           ? JSON.stringify(log.details).substring(0, 50) + '...' 
@@ -205,26 +230,26 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{translations.openMenu}</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{translations.actions}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => copyToClipboard(formatDetails(log.details))}>
                         <Copy className="mr-2 h-4 w-4" />
-                        Copy Details
+                        {translations.copyDetails}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => 
                           copyToClipboard(
-                            `ID: ${log.id}\nUser: ${log.user ? log.user.username : 'System'}\nAction: ${log.action}\nEntity: ${log.entityType}\nEntity ID: ${log.entityId || '-'}\nTimestamp: ${format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}\nDetails: ${formatDetails(log.details)}`
+                            `ID: ${log.id}\nUser: ${log.user ? log.user.username : translations.system}\nAction: ${log.action}\nEntity: ${log.entityType}\nEntity ID: ${log.entityId || '-'}\nTimestamp: ${format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}\nDetails: ${formatDetails(log.details)}`
                           )
                         }
                       >
                         <Copy className="mr-2 h-4 w-4" />
-                        Copy Entry
+                        {translations.copyEntry}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

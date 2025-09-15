@@ -25,6 +25,7 @@ import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
 import AssetsTable from '@/components/assets/AssetsTable';
+import BulkActions from '@/components/assets/BulkActions';
 import {
   Command,
   CommandEmpty,
@@ -43,7 +44,7 @@ import { cn } from "@/lib/utils";
 export default function Assets() {
   const { language } = useLanguage();
   const { toast } = useToast();
-  const { hasAccess } = useAuth();
+  const { user, hasAccess } = useAuth();
   const [location] = useLocation();
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
@@ -58,6 +59,10 @@ export default function Assets() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showBulkCheckOutDialog, setShowBulkCheckOutDialog] = useState(false);
+  const [showBulkCheckInDialog, setShowBulkCheckInDialog] = useState(false);
+  const [bulkSaleDateOpen, setBulkSaleDateOpen] = useState(false);
+  const [bulkRetirementDateOpen, setBulkRetirementDateOpen] = useState(false);
   const { formatCurrency } = useCurrency();
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -193,6 +198,25 @@ export default function Assets() {
     confirmRetirement: language === 'English' ? 'Confirm Retirement' : 'تأكيد السحب',
     provideRetirementReason: language === 'English' ? 'Please provide a retirement reason' : 'يرجى تقديم سبب السحب',
     fillRequiredFields: language === 'English' ? 'Please fill in all required fields' : 'يرجى ملء جميع الحقول المطلوبة',
+    
+    // Missing filter and UI translations
+    filterSearchAssets: language === 'Arabic' ? 'تصفية والبحث في الأصول' : 'Filter & Search Assets',
+    searchPlaceholder: language === 'Arabic' ? 'البحث بمعرف الأصل، النوع، العلامة التجارية، الموديل، الرقم التسلسلي...' : 'Search by Asset ID, Type, Brand, Model, Serial Number...',
+    search: language === 'Arabic' ? 'بحث' : 'Search',
+    type: language === 'Arabic' ? 'النوع' : 'Type',
+    status: language === 'Arabic' ? 'الحالة' : 'Status',
+    brand: language === 'Arabic' ? 'العلامة التجارية' : 'Brand',
+    assignment: language === 'Arabic' ? 'التخصيص' : 'Assignment',
+    allTypes: language === 'Arabic' ? 'جميع الأنواع' : 'All Types',
+    allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
+    allBrands: language === 'Arabic' ? 'جميع العلامات التجارية' : 'All Brands',
+    allAssignments: language === 'Arabic' ? 'جميع التخصيصات' : 'All Assignments',
+    unassigned: language === 'Arabic' ? 'غير مخصص' : 'Unassigned',
+    totalAssets: language === 'Arabic' ? 'إجمالي الأصول' : 'total assets',
+    searchEmployees: language === 'Arabic' ? 'البحث عن الموظفين...' : 'Search employees...',
+    noEmployeesFound: language === 'Arabic' ? 'لم يتم العثور على موظفين.' : 'No employees found.',
+    maintenanceStatus: language === 'Arabic' ? 'حالة الصيانة' : 'Maintenance Status',
+    exportCsv: language === 'Arabic' ? 'تصدير CSV' : 'Export CSV'
   };
 
   // Parse URL parameters on component mount
@@ -273,6 +297,20 @@ export default function Assets() {
     queryKey: ['/api/employees'],
     staleTime: 1000 * 60 * 5, // Add - 5 minutes
     gcTime: 1000 * 60 * 10, // Add - 10 minutes
+  });
+
+  const { data: employeesWithAssetsData } = useQuery({
+    queryKey: ['employees-with-assets'],
+    queryFn: async () => {
+      const response = await fetch('/api/employees/with-assets', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees with assets');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   const { data: customAssetTypes = [] } = useQuery({
@@ -600,7 +638,6 @@ export default function Assets() {
     }
   };
 
-
   // Handler for bulk retire confirmation
   const handleBulkRetireConfirm = async () => {
     if (!bulkRetireData.reason) {
@@ -652,135 +689,6 @@ export default function Assets() {
       toast({
         title: translations.error,
         description: error.message || 'Failed to retire assets',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkStatusChange = async (newStatus: string) => {
-    if (selectedAssets.length === 0) return;
-    
-    // For Sell and Retire, open dialogs instead of processing immediately
-    if (newStatus === 'Sold') {
-      setShowBulkSellDialog(true);
-      return;
-    }
-    
-    if (newStatus === 'Retired') {
-      setShowBulkRetireDialog(true);
-      return;
-    }
-    
-    // For other statuses, process immediately
-    try {
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Updating ${selectedAssets.length} assets to ${newStatus}...`,
-      });
-
-      const results = await Promise.allSettled(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/paginated/${id}`, 'PUT', { status: newStatus })
-        )
-      );
-      
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      await refetch();
-      
-      if (failed === 0) {
-        toast({
-          title: translations.success,
-          description: `Successfully updated ${succeeded} assets to ${newStatus}`,
-        });
-      } else if (succeeded > 0) {
-        toast({
-          title: 'Partial Success',
-          description: `Updated ${succeeded} assets to ${newStatus}, ${failed} failed`,
-        });
-      } else {
-        throw new Error(`Failed to update all ${failed} assets`);
-      }
-      
-      setSelectedAssets([]);
-      
-    } catch (error: any) {
-      console.error('Bulk status update error:', error);
-      toast({
-        title: translations.error,
-        description: error.message || 'Failed to update asset status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedAssets.length === 0) return;
-    
-    if (!confirm(translations.deleteConfirm || `Are you sure you want to delete ${selectedAssets.length} assets?`)) return;
-    
-    try {
-      // Show loading state
-      toast({
-        title: translations.processing || 'Processing...',
-        description: `Deleting ${selectedAssets.length} assets...`,
-      });
-
-      // Use the bulk delete endpoint if available, otherwise delete individually
-      const results = await Promise.allSettled(
-        selectedAssets.map(id => 
-          apiRequest(`/api/assets/paginated/${id}`, 'DELETE')
-        )
-      );
-      
-      // Count successes and failures
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      // Invalidate queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/assets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] })
-      ]);
-      
-      // Force refetch
-      await refetch();
-      
-      // Show result message
-      if (failed === 0) {
-        toast({
-          title: translations.success,
-          description: `${succeeded} assets deleted successfully`,
-        });
-      } else if (succeeded > 0) {
-        toast({
-          title: 'Partial Success',
-          description: `Deleted ${succeeded} assets, ${failed} failed`,
-          variant: 'default',
-        });
-      } else {
-        toast({
-          title: translations.error,
-          description: `Failed to delete all ${failed} assets`,
-          variant: 'destructive',
-        });
-      }
-      
-      setSelectedAssets([]);
-    } catch (error) {
-      console.error('Bulk delete error:', error);
-      toast({
-        title: translations.error,
-        description: 'Failed to delete assets',
         variant: 'destructive',
       });
     }
@@ -868,28 +776,13 @@ export default function Assets() {
   };
 
     // Process employees who have assets assigned - optimized version
-    const employeesWithAssets = useMemo(() => {
-      if (!assets || !Array.isArray(assets) || assets.length === 0) return [];
-      if (!employees || !Array.isArray(employees) || employees.length === 0) return [];
-      
-      // Create a Set for O(1) lookup instead of filtering arrays
-      const assignedEmployeeIds = new Set<number>();
-      
-      // Single pass through assets
-      for (const asset of assets) {
-        if (asset.assignedEmployeeId) {
-          assignedEmployeeIds.add(asset.assignedEmployeeId);
-        }
-      }
-      
-      // Early return if no assignments
-      if (assignedEmployeeIds.size === 0) return [];
-      
-      // Single pass through employees with Set lookup (O(1) per employee)
-      return employees.filter((emp: any) => 
-        assignedEmployeeIds.has(emp.id)
-      );
-    }, [assets, employees]);
+   const employeesWithAssets = useMemo(() => {
+    // Use the data from our dedicated API endpoint
+    if (!employeesWithAssetsData || !Array.isArray(employeesWithAssetsData)) {
+      return [];
+    }
+    return employeesWithAssetsData;
+    }, [employeesWithAssetsData]);
 
       const hasUnassignedAssets = useMemo(() => {
       if (!assets || !Array.isArray(assets)) return false;
@@ -899,31 +792,49 @@ export default function Assets() {
      }, [assets]);
 
   const getEmployeeDisplay = (employeeId: string | undefined) => {
-    if (!employeeId || employeeId === 'all') return "All Assignments";
-    if (employeeId === 'unassigned') return "Unassigned";
+    if (!employeeId || employeeId === 'all') return translations.allAssignments;
+    if (employeeId === 'unassigned') return translations.unassigned;
     const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
-    return employee ? (employee.englishName || employee.name) : "All Assignments";
+    return employee ? (employee.englishName || employee.name) : translations.allAssignments;
   };
 
   // Pagination controls component
   const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 bg-white dark:bg-gray-800 rounded-lg">
       <div className="flex items-center space-x-4">
+        {/* Add BulkActions button here on the left */}
+        <BulkActions
+          selectedAssets={selectedAssets}
+          availableAssets={assets}
+          currentUser={user}
+          onSelectionChange={setSelectedAssets}
+          onRefresh={refetch}
+          onSellRequest={() => setShowBulkSellDialog(true)}
+          onRetireRequest={() => setShowBulkRetireDialog(true)}
+        />
+        
+        {/* Showing text */}
         <p className="text-sm text-gray-700 dark:text-gray-300">
           {translations.showing} {Math.min((currentPage - 1) * itemsPerPage + 1, pagination.totalCount)} - {' '}
           {Math.min(currentPage * itemsPerPage, pagination.totalCount)} {translations.of} {' '}
           {pagination.totalCount} {translations.assets}
         </p>
+        
+        {/* Items per page selector */}
         <div className="flex items-center space-x-2">
           <Label className="text-sm">{translations.perPage}</Label>
           <Select
-            value={itemsPerPage.toString()}
+            value={itemsPerPage === 99999 ? 'all' : itemsPerPage.toString()}
             onValueChange={(value) => {
-              setItemsPerPage(parseInt(value));
+              if (value === 'all') {
+                setItemsPerPage(99999); // Set a very high number to show all records
+              } else {
+                setItemsPerPage(parseInt(value));
+              }
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[70px] h-8">
+            <SelectTrigger className="w-[80px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -931,11 +842,13 @@ export default function Assets() {
               <SelectItem value="50">50</SelectItem>
               <SelectItem value="100">100</SelectItem>
               <SelectItem value="200">200</SelectItem>
+              <SelectItem value="all">{translations.all}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       
+      {/* Keep pagination buttons on the right */}
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"
@@ -943,47 +856,39 @@ export default function Assets() {
           onClick={() => setCurrentPage(1)}
           disabled={currentPage === 1}
         >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <div className="flex items-center gap-1 px-2">
-          <span className="text-sm font-medium">
-            {translations.page} {currentPage} {translations.of} {pagination.totalPages || 1}
-          </span>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-sm font-medium">
+              {translations.page} {currentPage} {translations.of} {pagination.totalPages || 1}
+            </span>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+            disabled={currentPage >= pagination.totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(pagination.totalPages)}
+            disabled={currentPage >= pagination.totalPages}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
         </div>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-          disabled={currentPage >= pagination.totalPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentPage(pagination.totalPages)}
-          disabled={currentPage >= pagination.totalPages}
-        >
-          <ChevronsRight className="h-4 w-4" />
-        </Button>
       </div>
-    </div>
-  );
+    );
 
   return (
     <>
       <Helmet>
-        <title>{translations.title} | SimpleIT v0.3.5</title>
+        <title>{translations.title} | SimpleIT v0.3.7</title>
         <meta name="description" content={translations.description} />
       </Helmet>
       
@@ -1002,7 +907,7 @@ export default function Assets() {
                 disabled={assets.length === 0}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV ({pagination.totalCount})
+                {translations.exportCsv} ({pagination.totalCount})
               </Button>
             )}
             
@@ -1027,13 +932,13 @@ export default function Assets() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
-                <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+                <CardTitle className="text-lg">{translations.filterSearchAssets}</CardTitle>
                 {Object.values(filters).filter(Boolean).length > 0 && (
                   <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
                 )}
               </div>
               <div className="text-sm text-muted-foreground">
-                {pagination.totalCount} total assets
+                {pagination.totalCount} {translations.totalAssets}
               </div>
             </div>
           </CardHeader>
@@ -1047,32 +952,32 @@ export default function Assets() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by Asset ID, Type, Brand, Model, Serial Number..."
+                  placeholder={translations.searchPlaceholder}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9"
                 />
               </div>
               <Button type="submit" variant="outline">
-                Search
+                {translations.search}
               </Button>
             </form>
 
             {/* Filter Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
              
              {/* Type Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Type</label>
+              <label className="text-sm font-medium mb-2 block">{translations.type}</label>
               <Select
                 value={filters.type || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
+                  <SelectValue placeholder={translations.allTypes} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="all">{translations.allTypes}</SelectItem>
                   {customAssetTypes.map((type: any) => (
                     <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                   ))}
@@ -1082,16 +987,16 @@ export default function Assets() {
 
             {/* Status Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
+              <label className="text-sm font-medium mb-2 block">{translations.status}</label>
               <Select
                 value={filters.status || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue placeholder={translations.allStatuses} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">{translations.allStatuses}</SelectItem>
                   {assetStatuses.map((status: string) => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
@@ -1101,16 +1006,16 @@ export default function Assets() {
 
             {/* Brand Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <label className="text-sm font-medium mb-2 block">{translations.brand}</label>
               <Select
                 value={filters.brand || 'all'}
                 onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All Brands" />
+                  <SelectValue placeholder={translations.allBrands} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">All Brands</SelectItem>
+                  <SelectItem value="all">{translations.allBrands}</SelectItem>
                   {customAssetBrands.map((brand: any) => (
                     <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
                   ))}
@@ -1119,7 +1024,7 @@ export default function Assets() {
             </div>
               {/* Assignment Filter with Combobox */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Assignment</label>
+                <label className="text-sm font-medium mb-2 block">{translations.assignment}</label>
                 <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -1137,11 +1042,11 @@ export default function Assets() {
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <Command>
                       <CommandInput 
-                        placeholder="Search employees..." 
+                        placeholder={translations.searchEmployees} 
                         className="h-9"
                       />
                       <CommandList>
-                        <CommandEmpty>No employees found.</CommandEmpty>
+                        <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
                         <CommandGroup>
                           <CommandItem
                             value="all"
@@ -1155,7 +1060,7 @@ export default function Assets() {
                                 !filters.assignedTo ? "opacity-100" : "opacity-0"
                               }`}
                             />
-                            All Assignments
+                            {translations.allAssignments}
                           </CommandItem>
                           
                           {hasUnassignedAssets && (
@@ -1171,7 +1076,7 @@ export default function Assets() {
                                   filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
                                 }`}
                               />
-                              Unassigned
+                              {translations.unassigned}
                             </CommandItem>
                           )}
                           
@@ -1225,46 +1130,7 @@ export default function Assets() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Bulk Actions */}
-        {selectedAssets.length > 0 && (
-          <div className="mb-4 flex items-center gap-2 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
-            <span className="text-sm font-medium text-blue-700">
-              {selectedAssets.length} selected
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSelectAll}
-                className="text-xs"
-              >
-                {selectedAssets.length === assets.length ? 
-                  translations.deselectAll : translations.selectAll}
-              </Button>
-              <Select onValueChange={handleBulkStatusChange}>
-                <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue placeholder={translations.changeStatus} />
-                </SelectTrigger>
-                <SelectContent>
-                  {assetStatuses.map((status: string) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleBulkDelete}
-                className="text-xs"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                {translations.deleteSelected}
-              </Button>
-            </div>
-          </div>
-        )}
-
+        
         {/* Pagination Controls Top */}
         {!isLoading && <PaginationControls />}
 
@@ -1427,7 +1293,7 @@ export default function Assets() {
               <Label htmlFor="saleDate" className="required">
                 {translations.saleDate} *
               </Label>
-              <Popover>
+              <Popover open={bulkSaleDateOpen} onOpenChange={setBulkSaleDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1444,7 +1310,10 @@ export default function Assets() {
                   <Calendar
                     mode="single"
                     selected={bulkSellData.saleDate}
-                    onSelect={(date) => date && setBulkSellData({ ...bulkSellData, saleDate: date })}
+                    onSelect={(date) => {
+                      if (date) setBulkSellData({ ...bulkSellData, saleDate: date });
+                      setBulkSaleDateOpen(false);
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
@@ -1613,7 +1482,7 @@ export default function Assets() {
               <Label htmlFor="retirementDate" className="required">
                 {translations.retirementDate} *
               </Label>
-              <Popover>
+              <Popover open={bulkRetirementDateOpen} onOpenChange={setBulkRetirementDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1630,7 +1499,10 @@ export default function Assets() {
                   <Calendar
                     mode="single"
                     selected={bulkRetireData.retirementDate}
-                    onSelect={(date) => date && setBulkRetireData({ ...bulkRetireData, retirementDate: date })}
+                    onSelect={(date) => {
+                      if (date) setBulkRetireData({ ...bulkRetireData, retirementDate: date });
+                      setBulkRetirementDateOpen(false);
+                    }}
                     initialFocus
                   />
                 </PopoverContent>

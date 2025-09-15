@@ -44,30 +44,6 @@ import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
 
-// Define comprehensive upgrade types based on requirements
-const HARDWARE_UPGRADES = {
-  'Memory (RAM) Upgrade': 'Increase system memory capacity',
-  'Storage Upgrade': 'SSD/HDD replacement or expansion',
-  'CPU Upgrade': 'Processor replacement or upgrade',
-  'Graphics Card Upgrade': 'GPU enhancement',
-  'Display Upgrade': 'Monitor or screen replacement',
-  'Battery Replacement': 'For laptops and mobile devices',
-  'Power Supply Upgrade': 'PSU enhancement',
-  'Motherboard Replacement': 'System board upgrade',
-  'Network Card Upgrade': 'WiFi/Ethernet enhancement',
-  'Peripheral Upgrade': 'Keyboard, mouse, webcam upgrades',
-};
-
-const SOFTWARE_UPGRADES = {
-  'Operating System Upgrade': 'Windows/Linux/macOS updates',
-  'Application Suite Upgrade': 'Office/Creative software',
-  'Security Software Update': 'Antivirus/firewall upgrades',
-  'Database Upgrade': 'Database version updates',
-  'License Upgrade': 'From standard to professional editions',
-  'Firmware Update': 'BIOS/UEFI updates',
-  'Driver Updates': 'Hardware driver upgrades',
-};
-
 // Simplified upgrade form schema
 const upgradeFormSchema = z.object({
   category: z.enum(['Hardware', 'Software']),
@@ -116,6 +92,50 @@ export function UpgradeForm({
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<'Hardware' | 'Software'>('Hardware');
   const [autoTitle, setAutoTitle] = useState(true);
+  const [upgradeDateOpen, setUpgradeDateOpen] = useState(false);
+  const [approveDateOpen, setApproveDateOpen] = useState(false);
+
+  // Translated hardware upgrades
+  const hardwareUpgrades = {
+    [language === 'English' ? 'Memory (RAM) Upgrade' : 'ترقية الذاكرة (RAM)']: 
+      language === 'English' ? 'Increase system memory capacity' : 'زيادة سعة ذاكرة النظام',
+    [language === 'English' ? 'Storage Upgrade' : 'ترقية التخزين']: 
+      language === 'English' ? 'SSD/HDD replacement or expansion' : 'استبدال أو توسيع SSD/HDD',
+    [language === 'English' ? 'CPU Upgrade' : 'ترقية المعالج']: 
+      language === 'English' ? 'Processor replacement or upgrade' : 'استبدال أو ترقية المعالج',
+    [language === 'English' ? 'Graphics Card Upgrade' : 'ترقية كارت الرسوميات']: 
+      language === 'English' ? 'GPU enhancement' : 'تحسين GPU',
+    [language === 'English' ? 'Display Upgrade' : 'ترقية الشاشة']: 
+      language === 'English' ? 'Monitor or screen replacement' : 'استبدال الشاشة أو العرض',
+    [language === 'English' ? 'Battery Replacement' : 'استبدال البطارية']: 
+      language === 'English' ? 'For laptops and mobile devices' : 'للأجهزة المحمولة والهواتف',
+    [language === 'English' ? 'Power Supply Upgrade' : 'ترقية مزود الطاقة']: 
+      language === 'English' ? 'PSU enhancement' : 'تحسين مزود الطاقة',
+    [language === 'English' ? 'Motherboard Replacement' : 'استبدال اللوحة الأم']: 
+      language === 'English' ? 'System board upgrade' : 'ترقية لوحة النظام',
+    [language === 'English' ? 'Network Card Upgrade' : 'ترقية كارت الشبكة']: 
+      language === 'English' ? 'WiFi/Ethernet enhancement' : 'تحسين WiFi/Ethernet',
+    [language === 'English' ? 'Peripheral Upgrade' : 'ترقية الملحقات']: 
+      language === 'English' ? 'Keyboard, mouse, webcam upgrades' : 'ترقية لوحة المفاتيح والفأرة والكاميرا',
+  };
+
+  // Translated software upgrades
+  const softwareUpgrades = {
+    [language === 'English' ? 'Operating System Upgrade' : 'ترقية نظام التشغيل']: 
+      language === 'English' ? 'Windows/Linux/macOS updates' : 'تحديثات Windows/Linux/macOS',
+    [language === 'English' ? 'Application Suite Upgrade' : 'ترقية حزمة التطبيقات']: 
+      language === 'English' ? 'Office/Creative software' : 'برامج Office/الإبداعية',
+    [language === 'English' ? 'Security Software Update' : 'تحديث برامج الأمان']: 
+      language === 'English' ? 'Antivirus/firewall upgrades' : 'ترقية مكافح الفيروسات/الجدار الناري',
+    [language === 'English' ? 'Database Upgrade' : 'ترقية قاعدة البيانات']: 
+      language === 'English' ? 'Database version updates' : 'تحديثات إصدار قاعدة البيانات',
+    [language === 'English' ? 'License Upgrade' : 'ترقية الترخيص']: 
+      language === 'English' ? 'From standard to professional editions' : 'من الإصدارات العادية إلى المهنية',
+    [language === 'English' ? 'Firmware Update' : 'تحديث البرامج الثابتة']: 
+      language === 'English' ? 'BIOS/UEFI updates' : 'تحديثات BIOS/UEFI',
+    [language === 'English' ? 'Driver Updates' : 'تحديث التعريفات']: 
+      language === 'English' ? 'Hardware driver upgrades' : 'ترقية تعريفات الأجهزة',
+  };
 
   // Translations
   const translations = {
@@ -202,7 +222,7 @@ export function UpgradeForm({
 
   // Get upgrade options based on category
   const getUpgradeOptions = () => {
-    return selectedCategory === 'Hardware' ? HARDWARE_UPGRADES : SOFTWARE_UPGRADES;
+    return selectedCategory === 'Hardware' ? hardwareUpgrades : softwareUpgrades;
   };
 
   // Create/Update upgrade mutation
@@ -427,7 +447,7 @@ export function UpgradeForm({
                   <FormLabel>
                     {translations.scheduledDate} <span className="text-red-500">*</span>
                   </FormLabel>
-                  <Popover>
+                  <Popover open={upgradeDateOpen} onOpenChange={setUpgradeDateOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -446,7 +466,10 @@ export function UpgradeForm({
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setUpgradeDateOpen(false);
+                        }}
                         disabled={(date) =>
                           date < new Date(new Date().setHours(0, 0, 0, 0))
                         }
@@ -599,7 +622,7 @@ export function UpgradeForm({
                       {translations.approvalDate}
                       <span className="text-muted-foreground ml-1">({translations.optional})</span>
                     </FormLabel>
-                    <Popover>
+                    <Popover open={approveDateOpen} onOpenChange={setApproveDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -619,7 +642,10 @@ export function UpgradeForm({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setApproveDateOpen(false);
+                          }}
                           disabled={(date) =>
                             date > new Date() || date < new Date('2020-01-01')
                           }

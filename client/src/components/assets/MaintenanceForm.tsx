@@ -68,6 +68,7 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
     title: language === 'English' ? 'Add Maintenance Record' : 'إضافة سجل صيانة',
     assetInfo: language === 'English' ? 'Asset Information' : 'معلومات الأصل',
     assetId: language === 'English' ? 'Asset ID' : 'معرف الأصل',
+    assetName: language === 'English' ? 'Asset Name' : 'اسم الأصل',
     date: language === 'English' ? 'Maintenance Date' : 'تاريخ الصيانة',
     dateDesc: language === 'English' ? 'When was the maintenance performed?' : 'متى تم تنفيذ الصيانة؟',
     type: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
@@ -96,7 +97,35 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     save: language === 'English' ? 'Save Maintenance Record' : 'حفظ سجل الصيانة',
     saving: language === 'English' ? 'Saving...' : 'جاري الحفظ...',
+    // Validation messages
+    dateRequired: language === 'English' ? 'Date is required' : 'التاريخ مطلوب',
+    typeRequired: language === 'English' ? 'Maintenance type is required' : 'نوع الصيانة مطلوب',
+    descriptionRequired: language === 'English' ? 'Description must be at least 5 characters' : 'الوصف يجب أن يكون 5 أحرف على الأقل',
+    invalidCost: language === 'English' ? 'Enter a valid cost (e.g., 99.99)' : 'أدخل تكلفة صحيحة (مثال: 99.99)',
+    providerTypeRequired: language === 'English' ? 'Provider type is required' : 'نوع مقدم الخدمة مطلوب',
+    providerNameRequired: language === 'English' ? 'Provider name is required' : 'اسم مقدم الخدمة مطلوب'
   };
+
+  // Create schema with dynamic validation messages based on language
+  const createMaintenanceFormSchema = () => z.object({
+    date: z.string().min(1, translations.dateRequired),
+    type: z.string().min(1, translations.typeRequired),
+    description: z.string().min(5, translations.descriptionRequired),
+    cost: z.string().optional()
+      .transform(value => {
+        if (value === "" || value === undefined || value === null) return "0";
+        return value;
+      })
+      .refine(
+        (value) => /^\d+(\.\d{1,2})?$/.test(value),
+        { message: translations.invalidCost }
+      ),
+    providerType: z.string().min(1, translations.providerTypeRequired),
+    providerName: z.string().min(1, translations.providerNameRequired),
+    status: z.string().optional().default('Completed')
+  });
+
+  const maintenanceFormSchema = createMaintenanceFormSchema();
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof maintenanceFormSchema>>({
@@ -139,7 +168,7 @@ export default function MaintenanceForm({ onSubmit, isSubmitting, assetId, asset
             {assetName && (
               <>
                 <br />
-                <span className="font-medium">{language === 'English' ? 'Asset Name' : 'اسم الأصل'}:</span> {assetName}
+                <span className="font-medium">{translations.assetName}:</span> {assetName}
               </>
             )}
           </p>

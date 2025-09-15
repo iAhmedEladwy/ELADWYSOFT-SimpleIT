@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
 import { db } from "./db";
-import { users, employees, assets, tickets } from "@shared/schema";
+import { users, employees, assets, tickets, assetUpgrades, assetTransactions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const storage = getStorage();
@@ -949,6 +949,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(mappedEmployees);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.get("/api/employees/with-assets", authenticateUser, async (req, res) => {
+    try {
+      // Get all employees
+      const allEmployees = await storage.getAllEmployees();
+      
+      // Get all assets to check assignments
+      const allAssets = await storage.getAllAssets();
+      
+      // Create a Set of employee IDs who have assets for O(1) lookup
+      const employeeIdsWithAssets = new Set<number>();
+      
+      // Check all possible assignment fields in assets
+      for (const asset of allAssets) {
+        if (asset.assignedEmployeeId) {
+          employeeIdsWithAssets.add(asset.assignedEmployeeId);
+        }
+        // Also check other possible fields for backward compatibility
+        if (asset.assignedTo && typeof asset.assignedTo === 'number') {
+          employeeIdsWithAssets.add(asset.assignedTo);
+        }
+        if (asset.assignedToId) {
+          employeeIdsWithAssets.add(asset.assignedToId);
+        }
+      }
+      
+      // Filter employees who have assets assigned
+      const employeesWithAssets = allEmployees.filter((emp: any) => 
+        employeeIdsWithAssets.has(emp.id)
+      );
+      
+      res.json(employeesWithAssets);
+    } catch (error) {
+      console.error('Error fetching employees with assets:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch employees with assets',
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -2723,6 +2763,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quick asset assignment for testing (temporary route)
+  app.post("/api/assets/:id/quick-assign", authenticateUser, async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.id);
+      const { employeeId } = req.body;
+      
+      console.log(`Quick assign request: Asset ${assetId} to Employee ${employeeId}`);
+      
+      // Use the helper method we just created
+      const updatedAsset = await storage.assignAssetToEmployee(assetId, parseInt(employeeId));
+      
+      if (!updatedAsset) {
+        return res.status(404).json({ message: "Asset or Employee not found" });
+      }
+      
+      res.json({ 
+        message: "Asset assigned successfully", 
+        asset: updatedAsset 
+      });
+    } catch (error: unknown) {
+      console.error('Error in quick assign:', error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Asset Assign/Unassign
   app.post("/api/assets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
     try {
@@ -3112,11 +3177,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const upgrade = await storage.createAssetUpgrade(upgradeData);
       
-      // Create a transaction record for the upgrade (EXACTLY like maintenance does)
+      // Get the asset to find assigned employee
+      const assetForUpgrade = await storage.getAsset(assetId);
+      
+      // Create a transaction record for the upgrade with the assigned employee
       await storage.createAssetTransaction({
         assetId: assetId,
         type: 'Upgrade',
-        employeeId: null, // Upgrades don't need employee assignment
+        employeeId: assetForUpgrade?.assignedEmployeeId || null, // Include assigned employee for history context
         transactionDate: new Date(),
         handledById: user.id,
         conditionNotes: `${req.body.title} (Status: ${upgradeData.status})`,
@@ -3158,52 +3226,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Get all upgrades
 app.get('/api/upgrades', authenticateUser, async (req, res) => {
   try {
-    const { status, category, assetId } = req.query;
-    
-    let query = `
-      SELECT 
-        u.*,
-        a.asset_id as asset_code,
-        a.type as asset_type,
-        a.brand as asset_brand,
-        a.model_name as asset_model,
-        creator.username as created_by_name,
-        approver.name as approved_by_name
-      FROM asset_upgrades u
-      LEFT JOIN assets a ON u.asset_id = a.id
-      LEFT JOIN users creator ON u.created_by_id = creator.id
-      LEFT JOIN employees approver ON u.approved_by_id = approver.id
-      WHERE 1=1
-    `;
-    
-    const params: any[] = [];
-    let paramCount = 0;
-    
-    if (status) {
-      paramCount++;
-      query += ` AND u.status = $${paramCount}`;
-      params.push(status);
+    // Check if the storage method exists
+    if (typeof storage.getAllAssetUpgrades === 'function') {
+      // Use the storage method if it exists
+      const allUpgrades = await storage.getAllAssetUpgrades();
+      
+      // Apply filters
+      let filteredUpgrades = allUpgrades;
+      const { status, category, priority, search } = req.query;
+      
+      if (status && status !== 'all') {
+        filteredUpgrades = filteredUpgrades.filter(u => u.status === status);
+      }
+      
+      if (category && category !== 'all') {
+        filteredUpgrades = filteredUpgrades.filter(u => u.category === category);
+      }
+      
+      if (priority && priority !== 'all') {
+        filteredUpgrades = filteredUpgrades.filter(u => u.priority === priority);
+      }
+      
+      if (search) {
+        const searchLower = String(search).toLowerCase();
+        filteredUpgrades = filteredUpgrades.filter(u => 
+          u.title?.toLowerCase().includes(searchLower) ||
+          u.description?.toLowerCase().includes(searchLower) ||
+          u.assetInfo?.assetId?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      res.json(filteredUpgrades);
+    } else {
+      // Fallback: return empty array for now
+      console.log('getAllAssetUpgrades method not found, returning empty array');
+      res.json([]);
     }
-    
-    if (category) {
-      paramCount++;
-      query += ` AND u.category = $${paramCount}`;
-      params.push(category);
-    }
-    
-    if (assetId) {
-      paramCount++;
-      query += ` AND u.asset_id = $${paramCount}`;
-      params.push(assetId);
-    }
-    
-    query += ' ORDER BY u.created_at DESC';
-    
-    const result = await storage.pool.query(query, params);
-    res.json(result.rows);
   } catch (error: unknown) {
     console.error('Error fetching upgrades:', error);
-    res.status(500).json({ message: 'Error fetching upgrades' });
+    // Return empty array instead of error to keep the page working
+    res.json([]);
   }
 });
 
@@ -3347,28 +3409,88 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     const user = req.user as schema.User;
     const { status, notes } = req.body;
     
+    console.log('Updating upgrade status:', { upgradeId, status, userId: user.id });
+    
     const validStatuses = ['Draft', 'Pending Approval', 'Approved', 'In Progress', 'Completed', 'Cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
+
+    // First get the upgrade request details
+    const upgradeRequest = await db
+      .select()
+      .from(assetUpgrades)
+      .where(eq(assetUpgrades.id, upgradeId))
+      .limit(1);
+
+    if (upgradeRequest.length === 0) {
+      return res.status(404).json({ message: 'Upgrade request not found' });
+    }
+
+    const upgrade = upgradeRequest[0];
+
+    // Update the upgrade status
+    const result = await db
+      .update(assetUpgrades)
+      .set({ 
+        status: status,
+        updatedById: user.id,
+        updatedAt: new Date()
+      })
+      .where(eq(assetUpgrades.id, upgradeId))
+      .returning();
     
-    const query = `
-      UPDATE asset_upgrades 
-      SET status = $1, updated_by_id = $2, updated_at = NOW()
-      WHERE id = $3
-      RETURNING *
-    `;
-    
-    const result = await storage.pool.query(query, [status, user.id, upgradeId]);
-    
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ message: 'Upgrade not found' });
     }
+
+    // Create asset transaction record for certain status changes
+    const shouldCreateTransaction = ['Approved', 'Completed', 'Cancelled'].includes(status);
     
-    res.json(result.rows[0]);
+    if (shouldCreateTransaction) {
+      try {
+        // Query the asset to get the assigned employee information
+        const assetQuery = await db
+          .select({
+            assignedEmployeeId: assets.assignedEmployeeId
+          })
+          .from(assets)
+          .where(eq(assets.id, upgrade.assetId))
+          .limit(1);
+
+        const assignedEmployeeId = assetQuery.length > 0 ? assetQuery[0].assignedEmployeeId : null;
+
+        const transactionData = {
+          assetId: upgrade.assetId,
+          type: 'Upgrade' as const,
+          employeeId: assignedEmployeeId, // Use the assigned employee from the asset
+          transactionDate: new Date(),
+          conditionNotes: `Upgrade Request: ${upgrade.title}\nCategory: ${upgrade.category}\nType: ${upgrade.upgradeType}\nStatus: ${status}\nJustification: ${upgrade.justification}${notes ? `\nReview Notes: ${notes}` : ''}`,
+          handledById: user.id,
+          deviceSpecs: null // Will be auto-populated by createAssetTransaction
+        };
+
+        const transaction = await storage.createAssetTransaction(transactionData);
+        console.log('Created asset transaction for upgrade:', transaction.id);
+        if (assignedEmployeeId) {
+          console.log('Transaction linked to assigned employee:', assignedEmployeeId);
+        }
+      } catch (transactionError) {
+        console.error('Error creating asset transaction:', transactionError);
+        // Don't fail the upgrade status update if transaction creation fails
+        // Log the error but continue
+      }
+    }
+
+    console.log('Upgrade status updated successfully:', result[0]);
+    res.json(result[0]);
   } catch (error: unknown) {
-    console.error('Error updating upgrade status:', error);
-    res.status(500).json({ message: 'Error updating upgrade status' });
+    console.error('Error updating upgrade status - detailed:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    res.status(500).json({ message: 'Error updating upgrade status', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
   // Asset Transaction APIs
@@ -3462,7 +3584,277 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-  
+  // Bulk Check-Out endpoint
+app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const { assetIds, employeeId, reason, notes } = req.body;
+    const handledById = req.user.id;
+    
+    // Validate inputs
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+      return res.status(400).json({ message: "Asset IDs are required" });
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID is required" });
+    }
+    
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required" });
+    }
+    
+    // Check if employee exists
+    const employee = await storage.getEmployee(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: [] as string[],
+      transactions: [] as any[]
+    };
+    
+    // Process each asset
+    for (const assetId of assetIds) {
+      try {
+        // Get asset details
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          results.failed++;
+          results.errors.push(`Asset ${assetId} not found`);
+          continue;
+        }
+        
+        // Check if asset is available
+        if (asset.status !== 'Available') {
+          results.failed++;
+          results.errors.push(`Asset ${asset.assetId} is not available (current status: ${asset.status})`);
+          continue;
+        }
+        
+        // Combine reason and notes into conditionNotes field
+        const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
+        
+        // Build device specs object (matching your existing pattern)
+        const deviceSpecs = {
+          cpu: asset.cpu,
+          ram: asset.ram,
+          storage: asset.storage,
+          specs: asset.specs
+        };
+        
+        // Create transaction using existing checkOutAsset method
+        // The conditionNotes will be stored in the existing field
+        const transaction = await storage.checkOutAsset(
+          assetId, 
+          employeeId, 
+          conditionNotes,  // Using conditionNotes field for reason + notes
+          'Check-Out', 
+          handledById, 
+          deviceSpecs
+        );
+        
+        results.successful++;
+        results.transactions.push(transaction);
+        
+        // Log activity
+        await storage.logActivity({
+          userId: handledById,
+          action: "BULK_CHECK_OUT",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: {
+            assetId: asset.assetId,
+            employeeId: employeeId,
+            employeeName: employee.englishName,
+            reason: reason,
+            notes: notes,
+            transactionId: transaction.id
+          }
+        });
+        
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`Asset ${assetId}: ${error.message}`);
+        console.error(`Error checking out asset ${assetId}:`, error);
+      }
+    }
+    
+    // Return results
+    const message = results.successful > 0 
+      ? `Successfully checked out ${results.successful} asset(s)` 
+      : 'No assets were checked out';
+    
+    res.status(results.successful > 0 ? 200 : 400).json({
+      message,
+      successful: results.successful,
+      failed: results.failed,
+      errors: results.errors,
+      transactions: results.transactions
+    });
+    
+  } catch (error: unknown) {
+    console.error("Error in bulk check-out:", error);
+    res.status(500).json({ 
+      message: "Internal server error during bulk check-out",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Bulk Check-In endpoint
+  app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, reason, notes } = req.body;
+      const handledById = req.user.id;
+      
+      console.log('Bulk check-in request received:', { assetIds, reason, notes });
+      
+      // Validate inputs
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Asset IDs are required" });
+      }
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Reason is required" });
+      }
+      
+      const results = {
+        successful: 0,
+        failed: 0,
+        errors: [] as string[],
+        transactions: [] as any[]
+      };
+      
+      // Process each asset
+      for (let i = 0; i < assetIds.length; i++) {
+        const rawAssetId = assetIds[i];
+        console.log(`Processing asset ${i + 1}/${assetIds.length}: rawAssetId =`, rawAssetId, 'type =', typeof rawAssetId);
+        
+        try {
+          // Ensure assetId is a number
+          let parsedAssetId: number;
+          if (typeof rawAssetId === 'number') {
+            parsedAssetId = rawAssetId;
+          } else if (typeof rawAssetId === 'string') {
+            parsedAssetId = parseInt(rawAssetId, 10);
+          } else {
+            throw new Error(`Invalid asset ID type: ${typeof rawAssetId}`);
+          }
+          
+          // Check if parsing was successful
+          if (isNaN(parsedAssetId)) {
+            results.failed++;
+            results.errors.push(`Invalid asset ID: ${rawAssetId}`);
+            console.error(`Invalid asset ID: ${rawAssetId} parsed to NaN`);
+            continue;
+          }
+          
+          console.log(`Fetching asset with ID: ${parsedAssetId}`);
+          
+          // Get asset details with the parsed ID
+          const asset = await storage.getAsset(parsedAssetId);
+          if (!asset) {
+            results.failed++;
+            results.errors.push(`Asset with ID ${parsedAssetId} not found`);
+            console.error(`Asset not found: ${parsedAssetId}`);
+            continue;
+          }
+          
+          console.log(`Found asset: ${asset.assetId}, status: ${asset.status}`);
+          
+          // Check if asset is checked out
+          if (asset.status !== 'In Use') {
+            results.failed++;
+            results.errors.push(`Asset ${asset.assetId} is not checked out (current status: ${asset.status})`);
+            continue;
+          }
+          
+          // Get employee info for logging
+          let employeeName = 'Unknown';
+          if (asset.assignedEmployeeId) {
+            const employee = await storage.getEmployee(asset.assignedEmployeeId);
+            if (employee) {
+              employeeName = employee.englishName || employee.name;
+            }
+          }
+          
+          // Build device specs object
+          const deviceSpecs = {
+            cpu: asset.cpu,
+            ram: asset.ram,
+            storage: asset.storage,
+            specs: asset.specs
+          };
+          
+          // Combine reason and notes into conditionNotes field
+          const conditionNotes = `Reason: ${reason}${notes ? ` | Notes: ${notes}` : ''}`;
+          
+          console.log(`Checking in asset ${asset.assetId}...`);
+          
+          // Create transaction using existing checkInAsset method
+          const transaction = await storage.checkInAsset(
+            parsedAssetId,
+            conditionNotes,
+            'Check-In', 
+            handledById,
+            deviceSpecs
+          );
+          
+          results.successful++;
+          results.transactions.push(transaction);
+          
+          console.log(`Successfully checked in asset ${asset.assetId}`);
+          
+          // Log activity
+          await storage.logActivity({
+            userId: handledById,
+            action: "BULK_CHECK_IN",
+            entityType: "ASSET",
+            entityId: parsedAssetId,
+            details: {
+              assetId: asset.assetId,
+              previousEmployeeId: asset.assignedEmployeeId,
+              previousEmployeeName: employeeName,
+              reason: reason,
+              notes: notes,
+              transactionId: transaction.id
+            }
+          });
+          
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`Asset ${rawAssetId}: ${error.message}`);
+          console.error(`Error checking in asset ${rawAssetId}:`, error);
+        }
+      }
+      
+      console.log('Bulk check-in completed:', results);
+      
+      // Return results
+      const message = results.successful > 0 
+        ? `Successfully checked in ${results.successful} asset(s)` 
+        : 'No assets were checked in';
+      
+      res.status(results.successful > 0 ? 200 : 400).json({
+        message,
+        successful: results.successful,
+        failed: results.failed,
+        errors: results.errors,
+        transactions: results.transactions
+      });
+      
+    } catch (error: unknown) {
+      console.error("Error in bulk check-in:", error);
+      res.status(500).json({ 
+        message: "Internal server error during bulk check-in",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
@@ -5089,40 +5481,87 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     let transactions;
     if (assetId) {
       transactions = await storage.getAssetTransactions(Number(assetId));
+      // Enhance individual asset transactions with details if needed
+      if (transactions && Array.isArray(transactions)) {
+        transactions = await Promise.all(
+          transactions.map(async (transaction) => {
+            const enhanced: any = { ...transaction };
+            
+            // Add asset details if not already present
+            if (!enhanced.asset && transaction.assetId) {
+              enhanced.asset = await storage.getAsset(transaction.assetId);
+            }
+            
+            // Add employee details if not already present
+            if (!enhanced.employee && transaction.employeeId) {
+              enhanced.employee = await storage.getEmployee(transaction.employeeId);
+            }
+            
+            return enhanced;
+          })
+        );
+      }
     } else if (employeeId) {
       transactions = await storage.getEmployeeTransactions(Number(employeeId));
+      // Enhance individual employee transactions with details if needed
+      if (transactions && Array.isArray(transactions)) {
+        transactions = await Promise.all(
+          transactions.map(async (transaction) => {
+            const enhanced: any = { ...transaction };
+            
+            // Add asset details if not already present
+            if (!enhanced.asset && transaction.assetId) {
+              enhanced.asset = await storage.getAsset(transaction.assetId);
+            }
+            
+            // Add employee details if not already present
+            if (!enhanced.employee && transaction.employeeId) {
+              enhanced.employee = await storage.getEmployee(transaction.employeeId);
+            }
+            
+            return enhanced;
+          })
+        );
+      }
     } else {
+      // Check what's actually in the database first
+      try {
+        const directDbQuery = `SELECT id, asset_id, employee_id, type, transaction_date FROM asset_transactions LIMIT 5`;
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const directResult = await pool.query(directDbQuery);
+        console.log('Direct DB query result for asset_transactions:', directResult.rows);
+        
+        // Check if any have employee_id
+        const withEmployees = directResult.rows.filter(row => row.employee_id);
+        console.log('Transactions with employee_id:', withEmployees.length);
+      } catch (dbError) {
+        console.error('Direct DB query error:', dbError);
+      }
+      
+      // getAllAssetTransactions now includes asset and employee data via JOINs
       transactions = await storage.getAllAssetTransactions();
+      console.log('Asset transactions route - transactions length:', transactions?.length);
+      console.log('Asset transactions route - first transaction employee:', transactions?.[0]?.employee);
     }
     
-    // Enhance transactions with asset and employee details if needed
+    // Parse deviceSpecs if it's a string for all transactions
     if (transactions && Array.isArray(transactions)) {
-      transactions = await Promise.all(
-        transactions.map(async (transaction) => {
-          const enhanced: any = { ...transaction };
-          
-          // Add asset details if not already present
-          if (!enhanced.asset && transaction.assetId) {
-            enhanced.asset = await storage.getAsset(transaction.assetId);
+      transactions = transactions.map(transaction => {
+        const enhanced: any = { ...transaction };
+        
+        // Parse deviceSpecs if it's a string
+        if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
+          try {
+            enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
+          } catch (e) {
+            console.error('Error parsing deviceSpecs:', e);
           }
-          
-          // Add employee details if not already present
-          if (!enhanced.employee && transaction.employeeId) {
-            enhanced.employee = await storage.getEmployee(transaction.employeeId);
-          }
-          
-          // Parse deviceSpecs if it's a string
-          if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
-            try {
-              enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
-            } catch (e) {
-              console.error('Error parsing deviceSpecs:', e);
-            }
-          }
-          
-          return enhanced;
-        })
-      );
+        }
+        
+        return enhanced;
+      });
+      console.log('Asset transactions route - final enhanced first transaction employee:', transactions?.[0]?.employee);
     }
     
     // REMOVED: Complex upgrade merging logic - upgrades are now in assetTransactions
@@ -7034,11 +7473,292 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
+
+
+//Bulk Status change
+app.post("/api/assets/bulk/status", authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const { assetIds, status } = req.body;
+    
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+      return res.status(400).json({ message: "Asset IDs are required" });
+    }
+    
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+    
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+    
+    for (const assetId of assetIds) {
+      try {
+        await storage.updateAsset(assetId, { status });
+        results.successful++;
+        
+        // Log activity
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "STATUS_CHANGE",
+          entityType: "ASSET",
+          entityId: assetId,
+          details: {
+            newStatus: status,
+            bulkOperation: true
+          }
+        });
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`Asset ${assetId}: ${error.message}`);
+      }
+    }
+    
+    res.json({
+      message: `Changed status for ${results.successful} assets`,
+      successful: results.successful,
+      failed: results.failed,
+      errors: results.errors
+    });
+  } catch (error: unknown) {
+    console.error("Error in bulk status change:", error);
+    res.status(500).json({ 
+      message: "Failed to change status",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Optional: Get check-in/out reasons (for frontend dropdowns)
+app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) => {
+  try {
+    const checkOutReasons = [
+      'Assigned for work use',
+      'Temporary loan',
+      'Replacement for faulty asset',
+      'Project-based use',
+      'Remote work setup',
+      'New employee onboarding'
+    ];
+    
+    const checkInReasons = [
+      'End of assignment',
+      'Employee exit',
+      'Asset not needed anymore',
+      'Asset upgrade/replacement',
+      'Faulty/Needs repair',
+      'Loan period ended'
+    ];
+    
+    res.json({
+      checkOut: checkOutReasons,
+      checkIn: checkInReasons
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching transaction reasons:", error);
+    res.status(500).json({ 
+      message: "Failed to fetch transaction reasons",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+
   // Add global error handler at the end
   app.use(errorHandler({ 
     showStackTrace: process.env.NODE_ENV === 'development',
     logErrors: true 
   }));
+
+  // Bulk Operations Endpoints
+  app.post('/api/assets/bulk/status', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, status } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (!status) {
+        return res.status(400).json({ error: 'Status is required' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(id => storage.updateAsset(id, { status }))
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Update",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'status_change',
+            assetIds,
+            newStatus: status,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Updated ${succeeded} assets to ${status}`,
+        details: {
+          succeeded,
+          failed,
+          errors
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk status update error:', error);
+      res.status(500).json({ 
+        error: 'Failed to update asset statuses',
+        message: error.message 
+      });
+    }
+  });
+
+
+
+  app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { assetIds } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (assetIds.length > 10) {
+        return res.status(400).json({ error: 'Cannot delete more than 10 assets at once' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(id => storage.deleteAsset(id))
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Delete",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'delete',
+            assetIds,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Deleted ${succeeded} assets`,
+        details: {
+          succeeded,
+          failed,
+          errors
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk delete error:', error);
+      res.status(500).json({ 
+        error: 'Failed to delete assets',
+        message: error.message 
+      });
+    }
+  });
+
+  app.post('/api/assets/bulk/maintenance', authenticateUser, hasAccess(2), async (req, res) => {
+    try {
+      const { assetIds, type, description, scheduledDate, estimatedCost, priority, notes } = req.body;
+      
+      if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ error: 'Asset IDs array is required' });
+      }
+      
+      if (!type || !description || !scheduledDate) {
+        return res.status(400).json({ error: 'Type, description, and scheduled date are required' });
+      }
+      
+      const results = await Promise.allSettled(
+        assetIds.map(assetId => 
+          storage.createAssetMaintenance({
+            assetId,
+            type,
+            description,
+            scheduledDate: new Date(scheduledDate),
+            estimatedCost: estimatedCost ? parseFloat(estimatedCost) : null,
+            priority: priority || 'Medium',
+            notes: notes || '',
+            status: 'Scheduled',
+            createdById: (req.user as schema.User).id,
+            updatedById: (req.user as schema.User).id
+          })
+        )
+      );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason?.message || 'Unknown error');
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Bulk Maintenance Schedule",
+          entityType: "Asset",
+          entityId: null,
+          details: { 
+            operation: 'maintenance_schedule',
+            assetIds,
+            type,
+            scheduledDate,
+            priority,
+            succeeded,
+            failed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: `Successfully scheduled maintenance for ${succeeded} assets`,
+        details: {
+          succeeded,
+          failed,
+          errors: failed > 0 ? errors : undefined
+        }
+      });
+    } catch (error: any) {
+      console.error('Bulk maintenance error:', error);
+      res.status(500).json({ 
+        error: 'Failed to schedule maintenance',
+        message: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

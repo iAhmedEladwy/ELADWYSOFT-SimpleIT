@@ -34,21 +34,26 @@ export default function AssetFilters({
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
   const translations = {
-    filters: language === 'Arabic' ? 'الفلاتر' : 'Filters',
-    search: language === 'Arabic' ? 'البحث' : 'Search',
-    type: language === 'Arabic' ? 'النوع' : 'Type',
-    brand: language === 'Arabic' ? 'العلامة التجارية' : 'Brand',
-    status: language === 'Arabic' ? 'الحالة' : 'Status',
-    assignedTo: language === 'Arabic' ? 'مخصص لـ' : 'Assigned To',
-    clearAll: language === 'Arabic' ? 'مسح الكل' : 'Clear All',
-    searchPlaceholder: language === 'Arabic' ? 'البحث في الأصول...' : 'Search assets...',
-    allTypes: language === 'Arabic' ? 'جميع الأنواع' : 'All Types',
-    allBrands: language === 'Arabic' ? 'جميع العلامات' : 'All Brands',
-    allStatuses: language === 'Arabic' ? 'جميع الحالات' : 'All Statuses',
-    unassigned: language === 'Arabic' ? 'غير مخصص' : 'Unassigned',
-    results: language === 'Arabic' ? 
-      `عرض ${filteredCount} من ${totalCount} أصل` : 
-      `Showing ${filteredCount} of ${totalCount} assets`,
+    filters: language === 'English' ? 'Filters' : 'الفلاتر',
+    search: language === 'English' ? 'Search' : 'البحث',
+    type: language === 'English' ? 'Type' : 'النوع',
+    brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
+    model: language === 'English' ? 'Model' : 'الموديل',
+    status: language === 'English' ? 'Status' : 'الحالة',
+    assignedTo: language === 'English' ? 'Assigned To' : 'مخصص لـ',
+    clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
+    searchPlaceholder: language === 'English' ? 'Search assets...' : 'البحث في الأصول...',
+    allTypes: language === 'English' ? 'All Types' : 'جميع الأنواع',
+    allBrands: language === 'English' ? 'All Brands' : 'جميع العلامات',
+    allModels: language === 'English' ? 'All Models' : 'جميع الموديلات',
+    allStatuses: language === 'English' ? 'All Statuses' : 'جميع الحالات',
+    allAssignments: language === 'English' ? 'All Assignments' : 'جميع التخصيصات',
+    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
+    filterAndSearch: language === 'English' ? 'Filter & Search Assets' : 'تصفية والبحث في الأصول',
+    results: language === 'English' ? 
+      `Showing ${filteredCount} of ${totalCount} assets` : 
+      `عرض ${filteredCount} من ${totalCount} أصل`,
+    export: language === 'English' ? 'Export' : 'تصدير'
   };
 
   // Fetch available filter options
@@ -118,7 +123,7 @@ export default function AssetFilters({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
-            <CardTitle className="text-lg">Filter & Search Assets</CardTitle>
+            <CardTitle className="text-lg">{translations.filterAndSearch}</CardTitle>
             {activeFiltersCount > 0 && (
               <Badge variant="secondary">{activeFiltersCount}</Badge>
             )}
@@ -148,8 +153,8 @@ export default function AssetFilters({
           </Button>
         </form>
 
-        {/* Filter Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Filter Grid - Updated layout for 5 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {/* Type Filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -195,17 +200,17 @@ export default function AssetFilters({
           {/* Model Filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Model
+              {translations.model}
             </label>
             <Select
               value={filters.model || 'all'}
               onValueChange={(value) => updateFilter('model', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Models" />
+                <SelectValue placeholder={translations.allModels} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Models</SelectItem>
+                <SelectItem value="all">{translations.allModels}</SelectItem>
                 {filteredModels.map((model) => (
                   <SelectItem key={model} value={model}>{model}</SelectItem>
                 ))}
@@ -244,10 +249,10 @@ export default function AssetFilters({
               onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder={translations.allStatuses} />
+                <SelectValue placeholder={translations.allAssignments} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allStatuses}</SelectItem>
+                <SelectItem value="all">{translations.allAssignments}</SelectItem>
                 <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
                 {employees.map((emp: any) => (
                   <SelectItem key={emp.id} value={emp.id.toString()}>
@@ -292,6 +297,15 @@ export default function AssetFilters({
                 />
               </Badge>
             )}
+            {filters.model && (
+              <Badge variant="outline" className="gap-1">
+                {translations.model}: {filters.model}
+                <X 
+                  className="h-3 w-3 cursor-pointer" 
+                  onClick={() => updateFilter('model', undefined)}
+                />
+              </Badge>
+            )}
             {filters.status && (
               <Badge variant="outline" className="gap-1">
                 {translations.status}: {filters.status}
@@ -331,7 +345,7 @@ export default function AssetFilters({
                   className="gap-1 h-6 px-2 text-xs"
                 >
                   <Download className="h-3 w-3" />
-                  {language === 'Arabic' ? 'تصدير' : 'Export'}
+                  {translations.export}
                 </Button>
               )}
             </div>

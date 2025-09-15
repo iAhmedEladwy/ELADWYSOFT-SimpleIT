@@ -60,7 +60,7 @@ export default function Employees() {
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
     onLeave: language === 'English' ? 'On Leave' : 'في إجازة',
     filterByStatus: language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة',
-    filters: language === 'English' ? 'Filters' : 'الفلاتر',  // ADD THIS
+    filters: language === 'English' ? 'Filters' : 'الفلاتر',
     advancedFilters: language === 'English' ? 'Advanced Filters' : 'فلاتر متقدمة',
     department: language === 'English' ? 'Department' : 'القسم',
     employmentType: language === 'English' ? 'Employment Type' : 'نوع التوظيف',
@@ -78,6 +78,7 @@ export default function Employees() {
     refresh: language === 'English' ? 'Refresh' : 'تحديث',
     status: language === 'English' ? 'Status' : 'الحالة',
     search: language === 'English' ? 'Search...' : 'بحث...',
+    searchPlaceholder: language === 'English' ? 'Search employees...' : 'البحث عن الموظفين...',
     import: language === 'English' ? 'Import' : 'استيراد',
     export: language === 'English' ? 'Export' : 'تصدير',
     selectFile: language === 'English' ? 'Select File' : 'اختر ملف',
@@ -86,6 +87,21 @@ export default function Employees() {
     employeeDeleted: language === 'English' ? 'Employee deleted successfully' : 'تم حذف الموظف بنجاح',
     importSuccess: language === 'English' ? 'Employees imported successfully' : 'تم استيراد الموظفين بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
+    quickFilters: language === 'English' ? 'Quick Filters' : 'الفلاتر السريعة',
+    employeesSelected: language === 'English' ? 'employees selected' : 'موظف محدد',
+    activateSelected: language === 'English' ? 'Activate Selected' : 'تفعيل المحدد',
+    markAsResigned: language === 'English' ? 'Mark as Resigned' : 'وضع علامة كمستقيل',
+    markOnLeave: language === 'English' ? 'Mark on Leave' : 'وضع علامة في إجازة',
+    markAsTerminated: language === 'English' ? 'Mark as Terminated' : 'وضع علامة كمنهي الخدمة',
+    showing: language === 'English' ? 'Showing' : 'عرض',
+    of: language === 'English' ? 'of' : 'من',
+    employees: language === 'English' ? 'employees' : 'موظف',
+    filtersActive: language === 'English' ? 'filter(s) active' : 'مرشح نشط',
+    filtersApplied: language === 'English' ? 'Filters applied' : 'تم تطبيق الفلاتر',
+    employeesUpdatedSuccess: language === 'English' ? 'employees updated successfully' : 'تم تحديث الموظفين بنجاح',
+    failedToUpdate: language === 'English' ? 'Failed to update employees' : 'فشل في تحديث الموظفين',
+    editEmployeeDescription: language === 'English' ? 'Edit employee information and details' : 'تعديل معلومات وتفاصيل الموظف',
+    addEmployeeDescription: language === 'English' ? 'Add a new employee to the system' : 'إضافة موظف جديد إلى النظام',
   };
 
   // Fetch employees
@@ -406,13 +422,13 @@ export default function Employees() {
       
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
-        title: `${selectedEmployees.length} employees updated successfully`,
+        title: `${selectedEmployees.length} ${translations.employeesUpdatedSuccess}`,
       });
       setSelectedEmployees([]);
     } catch (error) {
       toast({
         title: translations.error,
-        description: 'Failed to update employees',
+        description: translations.failedToUpdate,
         variant: 'destructive',
       });
     }
@@ -545,7 +561,7 @@ export default function Employees() {
                       )}
                     </DialogTitle>
                     <DialogDescription id="employee-form-description">
-                      {editingEmployee ? 'Edit employee information and details' : 'Add a new employee to the system'}
+                      {editingEmployee ? translations.editEmployeeDescription : translations.addEmployeeDescription}
                     </DialogDescription>
                   </DialogHeader>
                   <EmployeeForm
@@ -589,7 +605,7 @@ export default function Employees() {
             {/* 1. Custom Filters Dropdown */}
             <div>
               <Label className="text-sm font-medium mb-1 block">
-                {language === 'English' ? 'Quick Filters' : 'الفلاتر السريعة'}
+                {translations.quickFilters}
               </Label>
               <EmployeeCustomFilters
                 onFilterChange={setCustomFilter}
@@ -686,8 +702,8 @@ export default function Employees() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-blue-700">
               {language === 'English' 
-                ? `${activeFilterCount} filter(s) active - Showing ${filteredEmployees.length} of ${employees && Array.isArray(employees) ? employees.length : 0} employees`
-                : `${activeFilterCount} مرشح نشط - عرض ${filteredEmployees.length} من ${employees && Array.isArray(employees) ? employees.length : 0} موظف`}
+                ? `${activeFilterCount} ${translations.filtersActive} - ${translations.showing} ${filteredEmployees.length} ${translations.of} ${employees && Array.isArray(employees) ? employees.length : 0} ${translations.employees}`
+                : `${activeFilterCount} ${translations.filtersActive} - ${translations.showing} ${filteredEmployees.length} ${translations.of} ${employees && Array.isArray(employees) ? employees.length : 0} ${translations.employees}`}
             </span>
           </div>
         </div>
@@ -697,7 +713,7 @@ export default function Employees() {
       {selectedEmployees.length > 0 && (
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-gray-600">
-            {selectedEmployees.length} {language === 'English' ? 'employees selected' : 'موظف محدد'}
+            {selectedEmployees.length} {translations.employeesSelected}
           </span>
         </div>
       )}
@@ -707,7 +723,7 @@ export default function Employees() {
         <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400 mb-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-blue-700">
-              {selectedEmployees.length} {language === 'English' ? 'employees selected' : 'موظف محدد'}
+              {selectedEmployees.length} {translations.employeesSelected}
             </span>
             <Button
               variant="outline"
@@ -728,19 +744,19 @@ export default function Employees() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleBulkStatusChange('Active')}>
                   <UserCheck className="h-4 w-4 mr-2" />
-                  {language === 'English' ? 'Activate Selected' : 'تفعيل المحدد'}
+                  {translations.activateSelected}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleBulkStatusChange('Resigned')}>
                   <UserX className="h-4 w-4 mr-2" />
-                  {language === 'English' ? 'Mark as Resigned' : 'وضع علامة كمستقيل'}
+                  {translations.markAsResigned}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleBulkStatusChange('On Leave')}>
                   <Edit3 className="h-4 w-4 mr-2" />
-                  {language === 'English' ? 'Mark on Leave' : 'وضع علامة في إجازة'}
+                  {translations.markOnLeave}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleBulkStatusChange('Terminated')}>
                   <UserX className="h-4 w-4 mr-2" />
-                  {language === 'English' ? 'Mark as Terminated' : 'وضع علامة كمنهي الخدمة'}
+                  {translations.markAsTerminated}
                 </DropdownMenuItem>
                 {hasAccess(3) && (
                   <DropdownMenuItem 
@@ -760,11 +776,11 @@ export default function Employees() {
       {/* Results Summary */}
       <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
         <span>
-          Showing {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} of {Array.isArray(employees) ? employees.length : 0} employees
+          {translations.showing} {Array.isArray(filteredEmployees) ? filteredEmployees.length : 0} {translations.of} {Array.isArray(employees) ? employees.length : 0} {translations.employees}
         </span>
         {activeFilterCount > 0 && (
           <span className="text-blue-600">
-            Filters applied
+            {translations.filtersApplied}
           </span>
         )}
       </div>

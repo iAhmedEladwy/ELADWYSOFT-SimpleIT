@@ -23,30 +23,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import ActiveEmployeeSelect from '@/components/employees/ActiveEmployee';
+import CheckOutDialog from './BulkActions/dialogs/CheckOutDialog';
+import CheckInDialog from './BulkActions/dialogs/CheckInDialog';
 
 interface AssetActionButtonsProps {
   asset: any;
 }
-
-// Check-out reason options - matching AssetActionsMenu
-const CHECK_OUT_REASONS = [
-  'Assigned for work use',
-  'Temporary loan',
-  'Replacement for faulty asset',
-  'Project-based use',
-  'Remote work setup',
-  'New employee onboarding'
-];
-
-// Check-in reason options - matching AssetActionsMenu
-const CHECK_IN_REASONS = [
-  'End of assignment',
-  'Employee exit',
-  'Asset not needed anymore',
-  'Asset upgrade/replacement',
-  'Faulty/Needs repair',
-  'Loan period ended'
-];
 
 export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
   const { language } = useLanguage();
@@ -82,52 +64,25 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
     checkInSuccess: language === 'English' ? 'Asset checked in successfully' : 'تم استلام الأصل بنجاح',
   };
 
-  // Check-out mutation - matching AssetActionsMenu exactly
-  const checkOutMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-out`, 'POST', {
-      employeeId: parseInt(selectedEmployeeId),
-      notes: notes || reason,
-      type: 'Check-Out'
-    }),
-    onSuccess: () => {
-      toast({ title: 'Success', description: translations.checkOutSuccess });
-      // Invalidate all asset-related queries to ensure full refresh
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] }); // In case employee assignment counts are shown
-      // Force refetch if specific asset is being viewed
-      queryClient.invalidateQueries({ queryKey: ['/api/assets', asset.id] });
-      setShowCheckOutDialog(false);
-      resetForm();
-    },
-    onError: (error: any) => {
-      toast({ title: 'Error', description: error?.message || 'Failed to check out asset', variant: 'destructive' });
-    }
-  });
+  // Translated check-out reasons
+  const checkOutReasons = [
+    language === 'English' ? 'Assigned for work use' : 'مخصص للاستخدام في العمل',
+    language === 'English' ? 'Temporary loan' : 'إعارة مؤقتة',
+    language === 'English' ? 'Replacement for faulty asset' : 'بديل لأصل معطل',
+    language === 'English' ? 'Project-based use' : 'استخدام في مشروع',
+    language === 'English' ? 'Remote work setup' : 'إعداد للعمل عن بُعد',
+    language === 'English' ? 'New employee onboarding' : 'إعداد موظف جديد',
+  ];
 
-  // Check-in mutation - matching AssetActionsMenu exactly
-   const checkInMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/assets/${asset.id}/check-in`, 'POST', {
-      notes: notes || reason,
-      type: 'Check-In'
-    }),
-    onSuccess: () => {
-      toast({ title: 'Success', description: translations.checkInSuccess });
-      // Invalidate all asset-related queries to ensure full refresh
-      queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/employees'] }); // In case employee assignment counts are shown
-      // Force refetch if specific asset is being viewed
-      queryClient.invalidateQueries({ queryKey: ['/api/assets', asset.id] });
-      setShowCheckInDialog(false);
-      resetForm();
-    },
-    onError: (error: any) => {
-      toast({ title: 'Error', description: error?.message || 'Failed to check in asset', variant: 'destructive' });
-    }
-  });
+  // Translated check-in reasons
+  const checkInReasons = [
+    language === 'English' ? 'End of assignment' : 'انتهاء المهمة',
+    language === 'English' ? 'Employee exit' : 'مغادرة الموظف',
+    language === 'English' ? 'Asset not needed anymore' : 'لم يعد الأصل مطلوباً',
+    language === 'English' ? 'Asset upgrade/replacement' : 'ترقية/استبدال الأصل',
+    language === 'English' ? 'Faulty/Needs repair' : 'معطل/يحتاج إصلاح',
+    language === 'English' ? 'Loan period ended' : 'انتهت فترة الإعارة',
+  ];
 
   const resetForm = () => {
     setSelectedEmployeeId('');
@@ -149,16 +104,6 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
     setShowCheckInDialog(true);
   };
 
-  // Handle check-out form submit
-  const handleCheckOutSubmit = () => {
-    if (!selectedEmployeeId) return;
-    checkOutMutation.mutate();
-  };
-
-  // Handle check-in form submit
-  const handleCheckInSubmit = () => {
-    checkInMutation.mutate();
-  };
 
   // Render action buttons based on asset status
   return (
@@ -188,109 +133,30 @@ export default function AssetActionButtons({ asset }: AssetActionButtonsProps) {
       )}
 
       {/* Check-out dialog */}
-       <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>{translations.checkOutTitle}</DialogTitle>
-            <DialogDescription>{translations.checkOutDesc}</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto py-4">
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="employee">{translations.selectEmployee}</Label>
-                <ActiveEmployeeSelect
-                  value={selectedEmployeeId}
-                  onValueChange={setSelectedEmployeeId}
-                  placeholder={translations.selectEmployee}
-                  required={true}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="reason">{translations.reasonLabel}</Label>
-                <Select value={reason} onValueChange={setReason}>
-                  <SelectTrigger id="reason">
-                    <SelectValue placeholder={translations.selectReason} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={5}>
-                    {CHECK_OUT_REASONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">{translations.notes}</Label>
-                <Textarea
-                  id="notes"
-                  placeholder={translations.optionalNotes}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[80px] max-h-[120px] resize-none"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex-shrink-0">
-            <Button variant="outline" onClick={() => setShowCheckOutDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button 
-              onClick={handleCheckOutSubmit} 
-              disabled={!selectedEmployeeId || !reason || checkOutMutation.isPending}
-            >
-              {checkOutMutation.isPending ? translations.checkingOut : translations.confirm}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+         <CheckOutDialog
+          open={showCheckOutDialog}
+          onOpenChange={setShowCheckOutDialog}
+          assets={[asset]}  // Single asset in an array
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+          }}
+        />
 
       {/* Check-in dialog */}
-      <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>{translations.checkInTitle}</DialogTitle>
-            <DialogDescription>{translations.checkInDesc}</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto py-4">
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="checkin-reason">{translations.reasonLabel}</Label>
-                <Select value={reason} onValueChange={setReason}>
-                  <SelectTrigger id="checkin-reason">
-                    <SelectValue placeholder={translations.selectReason} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={5}>
-                    {CHECK_IN_REASONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="checkin-notes">{translations.notes}</Label>
-                <Textarea
-                  id="checkin-notes"
-                  placeholder={translations.optionalNotes}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[80px] max-h-[120px] resize-none"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex-shrink-0">
-            <Button variant="outline" onClick={() => setShowCheckInDialog(false)}>
-              {translations.cancel}
-            </Button>
-            <Button 
-              onClick={handleCheckInSubmit} 
-              disabled={!reason || checkInMutation.isPending}
-            >
-              {checkInMutation.isPending ? translations.checkingIn : translations.confirm}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CheckInDialog
+        open={showCheckInDialog}
+        onOpenChange={setShowCheckInDialog}
+        assets={[asset]}  // Single asset in an array
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/assets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/assets/paginated'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/asset-transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
+        }}
+         />
     </>
   );
 }

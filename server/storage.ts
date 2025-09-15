@@ -1985,11 +1985,63 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAssetTransactions(assetId: number): Promise<AssetTransaction[]> {
     try {
-      return await db
-        .select()
-        .from(assetTransactions)
-        .where(eq(assetTransactions.assetId, assetId))
-        .orderBy(desc(assetTransactions.transactionDate));
+      // Use SQL query with joins for consistency with getAllAssetTransactions
+      const query = `
+        SELECT 
+          at.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial_number,
+          a.specs as asset_specs,
+          a.status as asset_status,
+          e.english_name as employee_english_name,
+          e.arabic_name as employee_arabic_name,
+          e.department as employee_department,
+          e.emp_id as employee_emp_id
+        FROM asset_transactions at
+        LEFT JOIN assets a ON at.asset_id = a.id
+        LEFT JOIN employees e ON at.employee_id = e.id
+        WHERE at.asset_id = $1
+        ORDER BY at.transaction_date DESC
+      `;
+      
+      const result = await pool.query(query, [assetId]);
+      
+      // Map the results to include proper asset and employee objects
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        assetId: row.asset_id,
+        type: row.type,
+        employeeId: row.employee_id,
+        transactionDate: row.transaction_date,
+        expectedReturnDate: row.expected_return_date,
+        actualReturnDate: row.actual_return_date,
+        conditionNotes: row.condition_notes,
+        handledById: row.handled_by_id,
+        attachments: row.attachments,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deviceSpecs: row.device_specs,
+        asset: row.asset_asset_id ? {
+          id: row.asset_id,
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial_number,
+          specs: row.asset_specs,
+          status: row.asset_status
+        } : undefined,
+        employee: row.employee_english_name ? {
+          id: row.employee_id,
+          englishName: row.employee_english_name,
+          arabicName: row.employee_arabic_name,
+          department: row.employee_department,
+          empId: row.employee_emp_id
+        } : undefined
+      }));
     } catch (error) {
       console.error(`Error fetching transactions for asset ${assetId}:`, error);
       return [];
@@ -1998,11 +2050,63 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]> {
     try {
-      return await db
-        .select()
-        .from(assetTransactions)
-        .where(eq(assetTransactions.employeeId, employeeId))
-        .orderBy(desc(assetTransactions.transactionDate));
+      // Use SQL query with joins for consistency with getAllAssetTransactions
+      const query = `
+        SELECT 
+          at.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial_number,
+          a.specs as asset_specs,
+          a.status as asset_status,
+          e.english_name as employee_english_name,
+          e.arabic_name as employee_arabic_name,
+          e.department as employee_department,
+          e.emp_id as employee_emp_id
+        FROM asset_transactions at
+        LEFT JOIN assets a ON at.asset_id = a.id
+        LEFT JOIN employees e ON at.employee_id = e.id
+        WHERE at.employee_id = $1
+        ORDER BY at.transaction_date DESC
+      `;
+      
+      const result = await pool.query(query, [employeeId]);
+      
+      // Map the results to include proper asset and employee objects
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        assetId: row.asset_id,
+        type: row.type,
+        employeeId: row.employee_id,
+        transactionDate: row.transaction_date,
+        expectedReturnDate: row.expected_return_date,
+        actualReturnDate: row.actual_return_date,
+        conditionNotes: row.condition_notes,
+        handledById: row.handled_by_id,
+        attachments: row.attachments,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deviceSpecs: row.device_specs,
+        asset: row.asset_asset_id ? {
+          id: row.asset_id,
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial_number,
+          specs: row.asset_specs,
+          status: row.asset_status
+        } : undefined,
+        employee: row.employee_english_name ? {
+          id: row.employee_id,
+          englishName: row.employee_english_name,
+          arabicName: row.employee_arabic_name,
+          department: row.employee_department,
+          empId: row.employee_emp_id
+        } : undefined
+      }));
     } catch (error) {
       console.error(`Error fetching transactions for employee ${employeeId}:`, error);
       return [];
@@ -2011,12 +2115,16 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAllAssetTransactions(): Promise<AssetTransaction[]> {
     try {
+      // First, let's get the transactions using Drizzle ORM to ensure compatibility
       const transactions = await db
         .select()
         .from(assetTransactions)
         .orderBy(desc(assetTransactions.transactionDate));
         
-      // Enhance with asset and employee details
+      console.log('Drizzle ORM transactions count:', transactions.length);
+      console.log('First transaction employee_id:', transactions[0]?.employeeId);
+      
+      // Now enhance with asset and employee details using the existing methods
       const result = await Promise.all(transactions.map(async (transaction) => {
         const asset = transaction.assetId 
           ? await this.getAsset(transaction.assetId) 
@@ -2026,12 +2134,17 @@ async deleteTicket(id: number): Promise<boolean> {
           ? await this.getEmployee(transaction.employeeId) 
           : undefined;
           
+        console.log(`Transaction ${transaction.id}: employeeId=${transaction.employeeId}, employee fetched:`, employee?.englishName);
+          
         return {
           ...transaction,
           asset,
           employee
         };
       }));
+      
+      console.log('getAllAssetTransactions final result sample:', result[0]);
+      console.log('Employee data for first transaction (final):', result[0]?.employee);
       
       return result;
     } catch (error) {
@@ -2097,6 +2210,20 @@ async deleteTicket(id: number): Promise<boolean> {
       return transaction;
     } catch (error) {
       console.error('Error checking in asset:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to assign an asset to an employee for testing
+  async assignAssetToEmployee(assetId: number, employeeId: number): Promise<Asset | undefined> {
+    try {
+      console.log(`Assigning asset ${assetId} to employee ${employeeId}`);
+      return await this.updateAsset(assetId, {
+        assignedEmployeeId: employeeId,
+        status: 'In Use'
+      });
+    } catch (error) {
+      console.error('Error assigning asset to employee:', error);
       throw error;
     }
   }
@@ -2462,14 +2589,12 @@ async deleteTicket(id: number): Promise<boolean> {
           a.brand as asset_brand,
           a.model_name as asset_model_name,
           a.serial_number as asset_serial,
-          req.username as requested_by_name,
-          app.username as approved_by_name,
-          imp.username as implemented_by_name
+          creator.username as created_by_name,
+          approver.english_name as approved_by_name
         FROM asset_upgrades au
         LEFT JOIN assets a ON au.asset_id = a.id
-        LEFT JOIN users req ON au.requested_by_id = req.id
-        LEFT JOIN users app ON au.approved_by_id = app.id
-        LEFT JOIN users imp ON au.implemented_by_id = imp.id
+        LEFT JOIN users creator ON au.created_by_id = creator.id
+        LEFT JOIN employees approver ON au.approved_by_id = approver.id
         WHERE au.id = $1
       `;
       
@@ -2482,8 +2607,6 @@ async deleteTicket(id: number): Promise<boolean> {
       const row = result.rows[0];
       return {
         ...row,
-        currentConfiguration: row.current_configuration,
-        newConfiguration: row.new_configuration,
         assetInfo: {
           assetId: row.asset_asset_id,
           type: row.asset_type,
@@ -2491,9 +2614,8 @@ async deleteTicket(id: number): Promise<boolean> {
           modelName: row.asset_model_name,
           serialNumber: row.asset_serial
         },
-        requestedByName: row.requested_by_name,
-        approvedByName: row.approved_by_name,
-        implementedByName: row.implemented_by_name
+        createdByName: row.created_by_name,
+        approvedByName: row.approved_by_name
       };
     } catch (error) {
       console.error('Error fetching asset upgrade:', error);
@@ -2501,93 +2623,53 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  async updateAssetUpgrade(upgradeId: number, updateData: any, userId: number): Promise<any> {
-    try {
-      // Get current upgrade for history tracking
-      const currentUpgrade = await this.getAssetUpgrade(upgradeId);
-      
-      const fields = [];
-      const values = [];
-      let paramCount = 1;
-      
-      Object.keys(updateData).forEach(key => {
-        if (key !== 'id' && updateData[key] !== undefined) {
-          let dbKey = key;
-          // Convert camelCase to snake_case for database
-          dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-          
-          fields.push(`${dbKey} = $${paramCount}`);
-          values.push(key.includes('onfiguration') ? JSON.stringify(updateData[key]) : updateData[key]);
-          paramCount++;
-        }
-      });
-      
-      if (fields.length === 0) {
-        return currentUpgrade;
-      }
-      
-      fields.push(`updated_at = NOW()`);
-      values.push(upgradeId);
-      
-      const query = `
-        UPDATE asset_upgrades 
-        SET ${fields.join(', ')}
-        WHERE id = $${paramCount}
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, values);
-      
-      // Log status changes in history
-      if (updateData.status && updateData.status !== currentUpgrade.status) {
-        await this.addUpgradeHistory(upgradeId, userId, 'Status Changed', currentUpgrade.status, updateData.status);
-      }
-      
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error updating asset upgrade:', error);
-      throw error;
-    }
-  }
-
   async getAllAssetUpgrades(): Promise<any[]> {
-    try {
-      const query = `
-        SELECT 
-          au.*,
-          a.asset_id as asset_asset_id,
-          a.type as asset_type,
-          a.brand as asset_brand,
-          a.model_name as asset_model_name,
-          req.username as requested_by_name,
-          app.username as approved_by_name
-        FROM asset_upgrades au
-        LEFT JOIN assets a ON au.asset_id = a.id
-        LEFT JOIN users req ON au.requested_by_id = req.id
-        LEFT JOIN users app ON au.approved_by_id = app.id
-        ORDER BY au.created_at DESC
-      `;
-      
-      const result = await pool.query(query);
-      
-      return result.rows.map(row => ({
-        ...row,
-        currentConfiguration: row.current_configuration,
-        newConfiguration: row.new_configuration,
-        assetInfo: {
-          assetId: row.asset_asset_id,
-          type: row.asset_type,
-          brand: row.asset_brand,
-          modelName: row.asset_model_name
-        },
-        requestedByName: row.requested_by_name,
-        approvedByName: row.approved_by_name
-      }));
-    } catch (error) {
-      console.error('Error fetching all asset upgrades:', error);
-      throw error;
-    }
+  try {
+    const query = `
+      SELECT 
+        au.*,
+        a.asset_id as asset_asset_id,
+        a.type as asset_type,
+        a.brand as asset_brand,
+        a.model_name as asset_model_name,
+        a.assigned_employee_id,
+        creator.username as created_by_name,
+        approver.english_name as approved_by_name,
+        assigned_emp.english_name as assigned_employee_name,
+        assigned_emp.emp_id as assigned_employee_id_code,
+        assigned_emp.department as assigned_employee_department
+      FROM asset_upgrades au
+      LEFT JOIN assets a ON au.asset_id = a.id
+      LEFT JOIN users creator ON au.created_by_id = creator.id
+      LEFT JOIN employees approver ON au.approved_by_id = approver.id
+      LEFT JOIN employees assigned_emp ON a.assigned_employee_id = assigned_emp.id
+      ORDER BY au.created_at DESC
+    `;
+    
+    const result = await pool.query(query);
+    
+    return result.rows.map(row => ({
+      ...row,
+      assetInfo: {
+        assetId: row.asset_asset_id,
+        type: row.asset_type,
+        brand: row.asset_brand,
+        modelName: row.asset_model_name
+      },
+      createdByName: row.created_by_name,
+      approvedByName: row.approved_by_name,
+      assignedEmployee: row.assigned_employee_name ? {
+        name: row.assigned_employee_name,
+        employeeId: row.assigned_employee_id_code,
+        department: row.assigned_employee_department
+      } : null
+    }));
+  } catch (error) {
+    console.error('Error fetching all asset upgrades:', error);
+    throw error;
   }
+}
+
 
   async addUpgradeHistory(upgradeId: number, userId: number, action: string, previousValue: string | null, newValue: string | null = null): Promise<void> {
     try {

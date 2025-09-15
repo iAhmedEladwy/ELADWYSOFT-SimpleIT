@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Filter, X } from "lucide-react";
 import { format } from "date-fns";
+import { useLanguage } from '@/hooks/use-language';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -59,7 +60,30 @@ interface AuditLogFilterProps {
 }
 
 export default function AuditLogFilter({ onFilter, users = [], isLoading = false }: AuditLogFilterProps) {
+  const { language } = useLanguage();
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
+  const translations = {
+    keywordSearch: language === 'English' ? 'Keyword Search' : 'البحث بالكلمات المفتاحية',
+    searchLogs: language === 'English' ? 'Search logs...' : 'البحث في السجلات...',
+    action: language === 'English' ? 'Action' : 'الإجراء',
+    selectAction: language === 'English' ? 'Select action' : 'اختر الإجراء',
+    allActions: language === 'English' ? 'All Actions' : 'جميع الإجراءات',
+    entityType: language === 'English' ? 'Entity Type' : 'نوع الكيان',
+    selectEntityType: language === 'English' ? 'Select entity type' : 'اختر نوع الكيان',
+    allEntities: language === 'English' ? 'All Entities' : 'جميع الكيانات',
+    startDate: language === 'English' ? 'Start Date' : 'تاريخ البداية',
+    endDate: language === 'English' ? 'End Date' : 'تاريخ النهاية',
+    pickDate: language === 'English' ? 'Pick a date' : 'اختر التاريخ',
+    text: language === 'English' ? 'Text' : 'النص',
+    entity: language === 'English' ? 'Entity' : 'الكيان',
+    dateRange: language === 'English' ? 'Date Range' : 'نطاق التاريخ',
+    clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
+    filtering: language === 'English' ? 'Filtering...' : 'جاري التصفية...',
+    filterLogs: language === 'English' ? 'Filter Logs' : 'تصفية السجلات',
+  };
 
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterFormSchema),
@@ -108,9 +132,9 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 name="filter"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Keyword Search</FormLabel>
+                    <FormLabel>{translations.keywordSearch}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Search logs..." {...field} />
+                      <Input placeholder={translations.searchLogs} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,18 +146,18 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 name="action"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Action</FormLabel>
+                    <FormLabel>{translations.action}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select action" />
+                          <SelectValue placeholder={translations.selectAction} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="all-actions">All Actions</SelectItem>
+                        <SelectItem value="all-actions">{translations.allActions}</SelectItem>
                         {actionTypes.map(action => (
                           <SelectItem key={action} value={action}>{action}</SelectItem>
                         ))}
@@ -149,18 +173,18 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 name="entityType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Entity Type</FormLabel>
+                    <FormLabel>{translations.entityType}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select entity type" />
+                          <SelectValue placeholder={translations.selectEntityType} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="all-entities">All Entities</SelectItem>
+                        <SelectItem value="all-entities">{translations.allEntities}</SelectItem>
                         {entityTypes.map(entity => (
                           <SelectItem key={entity} value={entity}>{entity}</SelectItem>
                         ))}
@@ -176,8 +200,8 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 name="startDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
+                    <FormLabel>{translations.startDate}</FormLabel>
+                    <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -187,7 +211,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>{translations.pickDate}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -197,7 +221,10 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setStartDateOpen(false);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -212,8 +239,8 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 name="endDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
+                    <FormLabel>{translations.endDate}</FormLabel>
+                    <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -223,7 +250,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>{translations.pickDate}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -233,7 +260,10 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setEndDateOpen(false);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -250,7 +280,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                   <div className="flex flex-wrap gap-2 mb-2 sm:mb-0">
                     {activeFilters.includes('text') && (
                       <Badge variant="outline" className="flex items-center gap-1">
-                        Text
+                        {translations.text}
                         <button type="button" onClick={() => {
                           form.setValue('filter', '');
                           form.handleSubmit(onSubmit)();
@@ -261,7 +291,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                     )}
                     {activeFilters.includes('action') && (
                       <Badge variant="outline" className="flex items-center gap-1">
-                        Action: {form.getValues().action}
+                        {translations.action}: {form.getValues().action}
                         <button type="button" onClick={() => {
                           form.setValue('action', undefined);
                           form.handleSubmit(onSubmit)();
@@ -272,7 +302,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                     )}
                     {activeFilters.includes('entityType') && (
                       <Badge variant="outline" className="flex items-center gap-1">
-                        Entity: {form.getValues().entityType}
+                        {translations.entity}: {form.getValues().entityType}
                         <button type="button" onClick={() => {
                           form.setValue('entityType', undefined);
                           form.handleSubmit(onSubmit)();
@@ -283,7 +313,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                     )}
                     {activeFilters.includes('dateRange') && (
                       <Badge variant="outline" className="flex items-center gap-1">
-                        Date Range
+                        {translations.dateRange}
                         <button type="button" onClick={() => {
                           form.setValue('startDate', undefined);
                           form.setValue('endDate', undefined);
@@ -300,12 +330,12 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
               <div className="flex gap-2">
                 {activeFilters.length > 0 && (
                   <Button type="button" variant="outline" onClick={clearFilters}>
-                    Clear All
+                    {translations.clearAll}
                   </Button>
                 )}
                 <Button type="submit" disabled={isLoading}>
                   <Filter className="mr-2 h-4 w-4" />
-                  {isLoading ? "Filtering..." : "Filter Logs"}
+                  {isLoading ? translations.filtering : translations.filterLogs}
                 </Button>
               </div>
             </div>

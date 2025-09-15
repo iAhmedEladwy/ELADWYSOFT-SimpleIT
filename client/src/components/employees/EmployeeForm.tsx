@@ -24,25 +24,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Define schema for form validation with proper transformations
-const employeeFormSchema = z.object({
-  englishName: z.string().min(2, 'Name must be at least 2 characters'),
-  arabicName: z.string().optional().or(z.literal('')),
-  department: z.string().min(1, 'Department is required'),
-  idNumber: z.string().min(3, 'ID number is required'),
-  title: z.string().min(1, 'Job title is required'),
-  directManager: z.string().optional().or(z.literal('')),
-  employmentType: z.enum(['Full-time', 'Part-time', 'Contract', 'Intern','Freelance']),
-  joiningDate: z.string(),
-  exitDate: z.string().optional().or(z.literal('')),
-  status: z.enum(['Active', 'Resigned', 'Terminated', 'On Leave']),
-  personalMobile: z.string().optional().or(z.literal('')),
-  workMobile: z.string().optional().or(z.literal('')),
-  personalEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
-  corporateEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
-  userId: z.string().optional().or(z.literal('')),
-});
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface EmployeeFormProps {
   onSubmit: (data: any) => void;
@@ -53,24 +38,6 @@ interface EmployeeFormProps {
 export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: EmployeeFormProps) {
   const { language } = useLanguage();
   const isEditMode = !!initialData;
-
-  // Fetch users list for user assignment dropdown
-  const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  // Fetch employees list for manager dropdown
-  const { data: employees = [] } = useQuery({
-    queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-  
-  // Fetch system configuration for departments
-  const { data: systemConfig } = useQuery({
-    queryKey: ['/api/system-config'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
 
   // Translations
   const translations = {
@@ -93,7 +60,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     partTime: language === 'English' ? 'Part-time' : 'دوام جزئي',
     contract: language === 'English' ? 'Contract' : 'عقد',
     intern: language === 'English' ? 'Intern' : 'متدرب',
-    freelance: language == 'English' ? 'Freelance' : 'حر',
+    freelance: language === 'English' ? 'Freelance' : 'حر',
     joiningDate: language === 'English' ? 'Joining Date' : 'تاريخ الالتحاق',
     exitDate: language === 'English' ? 'Exit Date' : 'تاريخ المغادرة',
     exitDateDesc: language === 'English' ? 'Leave blank if not applicable' : 'اتركه فارغًا إذا لم ينطبق',
@@ -111,7 +78,52 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     create: language === 'English' ? 'Create Employee' : 'إنشاء موظف',
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
+    general: language === 'English' ? 'General' : 'عام',
+    selectDepartments: language === 'English' ? 'Select from departments defined in System Configuration' : 'اختر من الأقسام المحددة في إعدادات النظام',
+    // Validation messages
+    nameMinLength: language === 'English' ? 'Name must be at least 2 characters' : 'يجب أن يكون الاسم على الأقل حرفين',
+    departmentRequired: language === 'English' ? 'Department is required' : 'القسم مطلوب',
+    idNumberRequired: language === 'English' ? 'ID number is required' : 'رقم الهوية مطلوب',
+    jobTitleRequired: language === 'English' ? 'Job title is required' : 'المسمى الوظيفي مطلوب',
+    invalidEmail: language === 'English' ? 'Invalid email format' : 'تنسيق البريد الإلكتروني غير صحيح',
   };
+
+  // Define schema for form validation with proper transformations
+  const employeeFormSchema = z.object({
+    englishName: z.string().min(2, translations.nameMinLength),
+    arabicName: z.string().optional().or(z.literal('')),
+    department: z.string().min(1, translations.departmentRequired),
+    idNumber: z.string().min(3, translations.idNumberRequired),
+    title: z.string().min(1, translations.jobTitleRequired),
+    directManager: z.string().optional().or(z.literal('')),
+    employmentType: z.enum(['Full-time', 'Part-time', 'Contract', 'Intern','Freelance']),
+    joiningDate: z.string(),
+    exitDate: z.string().optional().or(z.literal('')),
+    status: z.enum(['Active', 'Resigned', 'Terminated', 'On Leave']),
+    personalMobile: z.string().optional().or(z.literal('')),
+    workMobile: z.string().optional().or(z.literal('')),
+    personalEmail: z.string().email(translations.invalidEmail).optional().or(z.literal('')),
+    corporateEmail: z.string().email(translations.invalidEmail).optional().or(z.literal('')),
+    userId: z.string().optional().or(z.literal('')),
+  });
+
+  // Fetch users list for user assignment dropdown
+  const { data: users = [] } = useQuery({
+    queryKey: ['/api/users'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fetch employees list for manager dropdown
+  const { data: employees = [] } = useQuery({
+    queryKey: ['/api/employees'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  
+  // Fetch system configuration for departments
+  const { data: systemConfig } = useQuery({
+    queryKey: ['/api/system-config'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   // Convert initial data to form format with proper field mapping
   const getFormattedInitialData = () => {
@@ -137,6 +149,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
       userId: initialData.userId ? initialData.userId.toString() : '',
     };
   };
+
+  // State for controlling date picker popovers
+  const [joiningDateOpen, setJoiningDateOpen] = useState(false);
+  const [exitDateOpen, setExitDateOpen] = useState(false);
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof employeeFormSchema>>({
@@ -288,14 +304,12 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                           <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                         ))}
                         {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
-                          <SelectItem value="General">General</SelectItem>
+                          <SelectItem value="General">{translations.general}</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {language === 'English' ? 
-                        'Select from departments defined in System Configuration' : 
-                        'اختر من الأقسام المعرفة في إعدادات النظام'}
+                      {translations.selectDepartments}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -389,7 +403,14 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.joiningDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={language === 'English' ? 'Pick joining date' : 'اختر تاريخ الانضمام'}
+                        disabled={(date) => date > new Date()}
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -403,7 +424,13 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                   <FormItem>
                     <FormLabel>{translations.exitDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} type="date" />
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={language === 'English' ? 'Pick exit date (optional)' : 'اختر تاريخ المغادرة (اختياري)'}
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormDescription>{translations.exitDateDesc}</FormDescription>
                     <FormMessage />

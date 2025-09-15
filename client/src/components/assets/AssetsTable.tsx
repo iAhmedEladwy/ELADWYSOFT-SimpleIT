@@ -119,40 +119,21 @@ export default function AssetsTable({
     moredetails: language === 'English' ? 'More Details' : 'تفاصيل',
     assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
-    edit: language === 'English' ? 'Edit' : 'تعديل',
-    delete: language === 'English' ? 'Delete' : 'حذف',
-    assign: language === 'English' ? 'Assign' : 'تعيين',
-    unassign: language === 'English' ? 'Unassign' : 'إلغاء التعيين',
-    addMaintenanceShort: language === 'English' ? 'Add Maintenance' : 'إضافة صيانة',
-    details: language === 'English' ? 'View Details' : 'عرض التفاصيل',
-    qrCode: language === 'English' ? 'Generate QR Code' : 'إنشاء رمز QR',
-    selectEmployee: language === 'English' ? 'Select Employee' : 'اختر الموظف',
-    assignAsset: language === 'English' ? 'Assign Asset' : 'تعيين الأصل',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     confirmDelete: language === 'English' ? 'Confirm Deletion' : 'تأكيد الحذف',
+    delete: language === 'English' ? 'Delete' : 'حذف',
     deleteWarning: language === 'English' 
       ? 'Are you sure you want to delete this asset? This action cannot be undone.' 
       : 'هل أنت متأكد أنك تريد حذف هذا الأصل؟ لا يمكن التراجع عن هذا الإجراء.',
-    addMaintenance: language === 'English' ? 'Add Maintenance Record' : 'إضافة سجل صيانة',
-    date: language === 'English' ? 'Date' : 'التاريخ',
-    maintenanceType: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
-    hardware: language === 'English' ? 'Hardware' : 'أجهزة',
-    software: language === 'English' ? 'Software' : 'برمجيات',
-    both: language === 'English' ? 'Both' : 'كلاهما',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    cost: language === 'English' ? 'Cost' : 'التكلفة',
-    providerType: language === 'English' ? 'Provider Type' : 'نوع المزود',
-    internal: language === 'English' ? 'Internal' : 'داخلي',
-    external: language === 'English' ? 'External' : 'خارجي',
-    providerName: language === 'English' ? 'Provider Name' : 'اسم المزود',
-    save: language === 'English' ? 'Save' : 'حفظ',
     noAssets: language === 'English' ? 'No assets found' : 'لم يتم العثور على أصول',
-    available: language === 'English' ? 'Available' : 'متاح',
-    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
-    maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
-    damaged: language === 'English' ? 'Damaged' : 'تالف',
-    sold: language === 'English' ? 'Sold' : 'تم بيعه',
-    retired: language === 'English' ? 'Retired' : 'متقاعد',
+    selectAllAssets: language === 'English' ? 'Select all assets' : 'تحديد جميع الأصول',
+    selectAsset: language === 'English' ? 'Select asset' : 'تحديد الأصل',
+    maintenanceOverdue: language === 'English' ? 'Maintenance overdue!' : 'الصيانة متأخرة!',
+    maintenanceDueThisWeek: language === 'English' ? 'Maintenance due this week' : 'الصيانة مستحقة هذا الأسبوع',
+    maintenanceScheduled: language === 'English' ? 'Maintenance scheduled' : 'الصيانة مجدولة',
+    cpu: language === 'English' ? 'CPU' : 'المعالج',
+    ram: language === 'English' ? 'RAM' : 'الذاكرة',
+    storage: language === 'English' ? 'Storage' : 'التخزين',
   };
 
   // Fetch asset statuses for dynamic badges
@@ -274,7 +255,7 @@ export default function AssetsTable({
                 <Checkbox 
                   checked={assets && assets.length > 0 && selectedAssets.length === assets.length}
                   onCheckedChange={handleSelectAll}
-                  aria-label="Select all assets"
+                  aria-label={translations.selectAllAssets}
                 />
               </TableHead>
             )}
@@ -317,6 +298,8 @@ export default function AssetsTable({
                   // Prevent row click when clicking on interactive elements or dialog overlays
                   if (e.target instanceof HTMLElement && 
                       (e.target.closest('input[type="checkbox"]') || 
+                       e.target.closest('[data-checkbox-cell]') ||
+                       e.target.closest('[role="checkbox"]') ||
                        e.target.closest('button') || 
                        e.target.closest('[role="button"]') ||
                        e.target.closest('.dropdown-menu') ||
@@ -336,12 +319,21 @@ export default function AssetsTable({
                 }}
               >
                 {hasAccess(3) && (
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => handleSelectAsset(asset.id)}
-                      aria-label={`Select asset ${asset.assetId}`}
-                    />
+                  <TableCell 
+                    data-checkbox-cell 
+                    className="cursor-pointer hover:bg-gray-50 w-12" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectAsset(asset.id);
+                    }}
+                  >
+                    <div className="flex items-center justify-center p-1">
+                      <Checkbox 
+                        checked={selectedAssets.includes(asset.id)}
+                        onCheckedChange={() => handleSelectAsset(asset.id)}
+                        aria-label={`${translations.selectAsset} ${asset.assetId}`}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 <TableCell className="font-medium">
@@ -362,13 +354,13 @@ export default function AssetsTable({
                       if (nextMaintenance) {
                         if (nextMaintenance < today) {
                           // Overdue
-                          return <span title="Maintenance overdue!" className="text-red-500">⏰</span>;
+                          return <span title={translations.maintenanceOverdue} className="text-red-500">⏰</span>;
                         } else if (nextMaintenance <= weekFromNow) {
                           // Due soon
-                          return <span title="Maintenance due this week" className="text-yellow-500">🛠️</span>;
+                          return <span title={translations.maintenanceDueThisWeek} className="text-yellow-500">🛠️</span>;
                         } else {
                           // Scheduled
-                          return <span title="Maintenance scheduled" className="text-blue-500">📅</span>;
+                          return <span title={translations.maintenanceScheduled} className="text-blue-500">📅</span>;
                         }
                       }
                       return null;
@@ -384,17 +376,17 @@ export default function AssetsTable({
                   <div className="flex items-center gap-1 text-xs">
                     {asset.cpu && (
                       <span className="text-xs text-muted-foreground">
-                        CPU: {asset.cpu}
+                        {translations.cpu}: {asset.cpu}
                       </span>
                     )}
                     {asset.ram && (
                       <span className="text-xs text-muted-foreground">
-                        RAM: {asset.ram}
+                        {translations.ram}: {asset.ram}
                       </span>
                     )}
                     {asset.storage && (
                       <span className="text-xs text-muted-foreground">
-                        Storage: {asset.storage}
+                        {translations.storage}: {asset.storage}
                       </span>
                     )}
                     {!asset.cpu && !asset.ram && !asset.storage && '-'}

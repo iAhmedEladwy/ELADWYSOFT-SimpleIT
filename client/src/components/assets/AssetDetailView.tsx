@@ -92,6 +92,17 @@ export default function AssetDetailView({ assetId, open, onOpenChange }: AssetDe
     retirementReason: language === 'English' ? 'Retirement Reason' : 'سبب التقاعد',
     retirementDate: language === 'English' ? 'Retirement Date' : 'تاريخ التقاعد',
     notes: language === 'English' ? 'Notes' : 'ملاحظات',
+    
+    // Additional maintenance/transaction translations
+    employee: language === 'English' ? 'Employee' : 'الموظف',
+    performedBy: language === 'English' ? 'Performed by' : 'تم بواسطة',
+    cost: language === 'English' ? 'Cost' : 'التكلفة',
+    noDescription: language === 'English' ? 'No description provided' : 'لا يوجد وصف متاح',
+    checkedOut: language === 'English' ? 'Checked Out' : 'تم التسليم',
+    checkedIn: language === 'English' ? 'Checked In' : 'تم الاستلام',
+    dateNotAvailable: language === 'English' ? 'Date not available' : 'التاريخ غير متاح',
+    maintenanceType: language === 'English' ? 'Maintenance' : 'صيانة',
+    noMaintenanceHistory: language === 'English' ? 'This asset has no maintenance history' : 'هذا الأصل ليس له تاريخ صيانة',
   };
 
   // Fetch asset data
@@ -433,26 +444,26 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
-                      Sale Information
+                      {translations.saleInformation}
                     </h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Buyer:</span>
+                        <span className="text-gray-600">{translations.buyer}:</span>
                         <p className="font-medium">{saleInfo.buyer || 'N/A'}</p>
                       </div>
                       <div>
-                        <span className="text-gray-600">Sale Date:</span>
+                        <span className="text-gray-600">{translations.saleDate}:</span>
                         <p className="font-medium">
                           {saleInfo.saleDate ? format(new Date(saleInfo.saleDate), 'MMM dd, yyyy') : 'N/A'}
                         </p>
                       </div>
                       <div>
-                        <span className="text-gray-600">Sale Price:</span>
+                        <span className="text-gray-600">{translations.salePrice}:</span>
                         <p className="font-medium">{formatCurrency(saleInfo.salePrice || saleInfo.totalAmount || 0)}</p>
                       </div>
                       {saleInfo.notes && (
                         <div className="col-span-2">
-                          <span className="text-gray-600">Notes:</span>
+                          <span className="text-gray-600">{translations.notes}:</span>
                           <p className="font-medium">{saleInfo.notes}</p>
                         </div>
                       )}
@@ -473,22 +484,22 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                     <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
                       <Package className="h-5 w-5" />
-                      Retirement Information
+                      {translations.retirementInformation}
                     </h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Retirement Reason:</span>
+                        <span className="text-gray-600">{translations.retirementReason}:</span>
                         <p className="font-medium">{retireInfo.retirementReason || 'N/A'}</p>
                       </div>
                       <div>
-                        <span className="text-gray-600">Retirement Date:</span>
+                        <span className="text-gray-600">{translations.retirementDate}:</span>
                         <p className="font-medium">
                           {retireInfo.retirementDate ? format(new Date(retireInfo.retirementDate), 'MMM dd, yyyy') : 'N/A'}
                         </p>
                       </div>
                       {retireInfo.notes && (
                         <div className="col-span-2">
-                          <span className="text-gray-600">Notes:</span>
+                          <span className="text-gray-600">{translations.notes}:</span>
                           <p className="font-medium">{retireInfo.notes}</p>
                         </div>
                       )}
@@ -579,10 +590,10 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                   <span className="ml-2">{translations.loading}</span>
                 </div>
               ) : !maintenanceRecords || maintenanceRecords.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-muted-foreground">
                   <Wrench className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>{language === 'English' ? 'No maintenance records found' : 'لم يتم العثور على سجلات صيانة'}</p>
-                  <p className="text-sm mt-2">{language === 'English' ? 'This asset has no maintenance history' : 'هذا الأصل ليس له تاريخ صيانة'}</p>
+                  <p>{translations.noMaintenance}</p>
+                  <p className="text-sm mt-2">{translations.noMaintenanceHistory}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -590,25 +601,25 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                     <div key={record.id} className="border rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-semibold">{record.maintenanceType || record.type} Maintenance</h4>
+                          <h4 className="font-semibold">{record.maintenanceType || record.type} {translations.maintenanceType}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {record.date ? format(new Date(record.date), 'PPP') : 'Date not available'}
+                            {record.date ? format(new Date(record.date), 'PPP') : translations.dateNotAvailable}
                           </p>
                           {record.performerName && (
                             <p className="text-xs text-gray-500 mt-1">
-                              Performed by: {record.performerName}
+                              {translations.performedBy}: {record.performerName}
                             </p>
                           )}
                         </div>
                         <Badge variant={record.maintenanceType === 'Completed' ? 'default' : 'secondary'}>
-                          {record.providerType || record.maintenanceType || 'Maintenance'}
+                          {record.providerType || record.maintenanceType || translations.maintenanceType}
                         </Badge>
                       </div>
                       <Separator className="my-3" />
-                      <p className="text-sm">{record.description || 'No description provided'}</p>
+                      <p className="text-sm">{record.description || translations.noDescription}</p>
                       {record.cost && (
                         <p className="text-sm font-medium mt-2">
-                          Cost: {formatCurrency(record.cost)}
+                          {translations.cost}: {formatCurrency(record.cost)}
                         </p>
                       )}
                     </div>
@@ -631,7 +642,7 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">
-                            {transaction.type === 'Check-Out' ? 'Checked Out' : 'Checked In'}
+                            {transaction.type === 'Check-Out' ? translations.checkedOut : translations.checkedIn}
                           </h4>
                           <p className="text-sm text-muted-foreground">
                             {format(new Date(transaction.transactionDate), 'PPP p')}
@@ -644,13 +655,13 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
                       <Separator className="my-3" />
                       {transaction.employee && (
                         <p className="text-sm">
-                          <span className="font-medium">Employee: </span>
+                          <span className="font-medium">{translations.employee}: </span>
                           {transaction.employee.englishName}
                         </p>
                       )}
                       {transaction.conditionNotes && (
                         <p className="text-sm mt-2">
-                          <span className="font-medium">Notes: </span>
+                          <span className="font-medium">{translations.notes}: </span>
                           {transaction.conditionNotes}
                         </p>
                       )}

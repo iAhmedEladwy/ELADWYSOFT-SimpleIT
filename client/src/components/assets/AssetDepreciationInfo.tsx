@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useCurrency } from '@/lib/currencyContext';
-import { calculateAssetValue, getDepreciationStatusColor, getDepreciationStatusText } from '@/lib/assetUtils';
+import { calculateAssetValue, getDepreciationStatusColor } from '@/lib/assetUtils';
 import {
   Card,
   CardContent,
@@ -57,6 +57,27 @@ export default function AssetDepreciationInfo({ asset, className = '' }: AssetDe
     assetLife: language === 'English' ? 'Asset Life Cycle Status' : 'حالة دورة حياة الأصل',
     months: language === 'English' ? 'months' : 'شهر',
     lifespan: language === 'English' ? 'Expected Lifespan' : 'العمر المتوقع',
+    insufficientData: language === 'English'
+      ? 'Insufficient data to calculate depreciation.'
+      : 'بيانات غير كافية لحساب الإهلاك.',
+    pleaseEnsure: language === 'English'
+      ? 'Please ensure purchase date, price, and lifespan are set.'
+      : 'يرجى التأكد من تاريخ الشراء والسعر والعمر المتوقع.',
+    // Depreciation status translations
+    fullyDepreciatedStatus: language === 'English' ? 'Fully Depreciated' : 'مستهلك بالكامل',
+    nearEndOfLife: language === 'English' ? 'Near End of Life' : 'قرب نهاية العمر',
+    moderateDepreciation: language === 'English' ? 'Moderate Depreciation' : 'إهلاك متوسط',
+    goodCondition: language === 'English' ? 'Good Condition' : 'حالة جيدة',
+    excellentCondition: language === 'English' ? 'Excellent Condition' : 'حالة ممتازة',
+  };
+
+  // Local function to get translated depreciation status text
+  const getTranslatedDepreciationStatusText = (remainingLifePercentage: number): string => {
+    if (remainingLifePercentage <= 0) return translations.fullyDepreciatedStatus;
+    if (remainingLifePercentage < 25) return translations.nearEndOfLife;
+    if (remainingLifePercentage < 50) return translations.moderateDepreciation;
+    if (remainingLifePercentage < 75) return translations.goodCondition;
+    return translations.excellentCondition;
   };
 
   useEffect(() => {
@@ -82,14 +103,10 @@ export default function AssetDepreciationInfo({ asset, className = '' }: AssetDe
         <CardContent>
           <div className="flex flex-col gap-2 items-center justify-center py-4">
             <p className="text-center text-muted-foreground">
-              {language === 'English'
-                ? 'Insufficient data to calculate depreciation.'
-                : 'بيانات غير كافية لحساب الإهلاك.'}
+              {translations.insufficientData}
             </p>
             <p className="text-center text-sm text-muted-foreground">
-              {language === 'English'
-                ? 'Please ensure purchase date, price, and lifespan are set.'
-                : 'يرجى التأكد من تاريخ الشراء والسعر والعمر المتوقع.'}
+              {translations.pleaseEnsure}
             </p>
           </div>
         </CardContent>
@@ -98,7 +115,7 @@ export default function AssetDepreciationInfo({ asset, className = '' }: AssetDe
   }
 
   const statusColor = getDepreciationStatusColor(depreciationInfo.remainingLifePercentage);
-  const statusText = getDepreciationStatusText(depreciationInfo.remainingLifePercentage);
+  const statusText = getTranslatedDepreciationStatusText(depreciationInfo.remainingLifePercentage);
 
   return (
     <Card className={`${className}`}>

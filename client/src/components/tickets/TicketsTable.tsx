@@ -5,7 +5,8 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input'; 
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils'; 
 
 import {
   Table,
@@ -43,8 +44,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { MoreHorizontal, UserCircle2, Calendar, Clock } from 'lucide-react';
+import { MoreHorizontal, UserCircle2, Calendar as CalendarIconLucide, Clock, CalendarIcon } from 'lucide-react';
 
 interface TicketsTableProps {
   tickets: any[];
@@ -380,6 +382,8 @@ export default function TicketsTable({
                   const target = e.target as HTMLElement;
                   if (
                     target.closest('.inline-edit-cell') ||
+                    target.closest('[data-checkbox-cell]') ||
+                    target.closest('[role="checkbox"]') ||
                     target.closest('button') ||
                     target.closest('[role="button"]') ||
                     target.closest('input') ||
@@ -397,11 +401,20 @@ export default function TicketsTable({
               >
                 {/* Checkbox column */}
                 {onSelectionChange && (
-                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedTickets.includes(ticket.id)}
-                      onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
-                    />
+                  <TableCell 
+                    data-checkbox-cell 
+                    className="cursor-pointer hover:bg-gray-50 w-12 text-center" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTicketSelection(ticket.id, !selectedTickets.includes(ticket.id));
+                    }}
+                  >
+                    <div className="flex items-center justify-center p-1">
+                      <Checkbox
+                        checked={selectedTickets.includes(ticket.id)}
+                        onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 
@@ -574,21 +587,18 @@ export default function TicketsTable({
                 
                 {/* Due Date */}
                 <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <Input
-                      type="date"
-                      value={ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : ''}
-                      onChange={(e) => {
-                        updateTicketMutation.mutate({ 
-                          id: ticket.id, 
-                          updates: { dueDate: e.target.value || null } 
-                        });
-                      }}
-                      className="border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-1 h-auto cursor-pointer"
-                      style={{ colorScheme: 'light' }}
-                    />
-                  </div>
+                  <Calendar
+                    mode="picker"
+                    value={ticket.dueDate || ''}
+                    onChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { dueDate: value || null } 
+                      });
+                    }}
+                    placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
+                    className="w-full h-8 text-sm"
+                  />
                 </TableCell>
               </TableRow>
             ))}

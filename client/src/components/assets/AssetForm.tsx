@@ -25,38 +25,10 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-
-// Define schema for form validation
-const assetFormSchema = z.object({
-  type: z.string(),
-  brand: z.string().min(1, 'Brand is required'),
-  modelNumber: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  modelName: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  serialNumber: z.string().min(1, 'Serial number is required'),
-  specs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  status: z.string(),
-  purchaseDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
-    .refine(
-      (date) => !date || !isNaN(Date.parse(date)),
-      { message: "Invalid date format" }
-    ),
-  buyPrice: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
-    .refine(
-      (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
-      { message: "Enter a valid price (e.g., 999.99)" }
-    ),
-  warrantyExpiryDate: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value)
-    .refine(
-      (date) => !date || !isNaN(Date.parse(date)),
-      { message: "Invalid date format" }
-    ),
-  lifeSpan: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  outOfBoxOs: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  assignedEmployeeId: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  cpu: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  ram: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-  storage: z.string().optional().or(z.literal("")).transform(value => value === "" ? undefined : value),
-});
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface AssetFormProps {
   onSubmit: (data: any) => void;
@@ -68,6 +40,121 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
   const { language } = useLanguage();
   const { formatCurrency, symbol } = useCurrency();
   const isEditMode = !!initialData;
+
+  // Translations - moved before createAssetFormSchema to fix initialization order
+  const translations = {
+    basicInfo: language === 'English' ? 'Basic Information' : 'معلومات أساسية',
+    purchaseInfo: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
+    assetID: language === 'English' ? 'Asset ID' : 'معرف الأصل',
+    idDesc: language === 'English' ? 'Auto-generated if left blank' : 'يتم إنشاؤه تلقائيًا إذا تُرك فارغًا',
+    type: language === 'English' ? 'Type' : 'النوع',
+    laptop: language === 'English' ? 'Laptop' : 'جهاز محمول',
+    desktop: language === 'English' ? 'Desktop' : 'جهاز سطح المكتب',
+    mobile: language === 'English' ? 'Mobile' : 'جهاز جوال',
+    tablet: language === 'English' ? 'Tablet' : 'جهاز لوحي',
+    monitor: language === 'English' ? 'Monitor' : 'شاشة',
+    printer: language === 'English' ? 'Printer' : 'طابعة',
+    server: language === 'English' ? 'Server' : 'خادم',
+    network: language === 'English' ? 'Network Equipment' : 'معدات الشبكة',
+    accessory: language === 'English' ? 'Accessory' : 'ملحق',
+    other: language === 'English' ? 'Other' : 'أخرى',
+    brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
+    modelNumber: language === 'English' ? 'Model Number' : 'رقم الموديل',
+    modelName: language === 'English' ? 'Model Name' : 'اسم الموديل',
+    serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
+    technicalSpecs: language === 'English' ? 'Technical Specifications' : 'المواصفات التقنية',
+    status: language === 'English' ? 'Status' : 'الحالة',
+    available: language === 'English' ? 'Available' : 'متاح',
+    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
+    maintenance: language === 'English' ? 'Under Maintenance' : 'تحت الصيانة',
+    damaged: language === 'English' ? 'Damaged' : 'تالف',
+    lost: language === 'English' ? 'Lost' : 'مفقود',
+    purchaseDate: language === 'English' ? 'Purchase Date' : 'تاريخ الشراء',
+    purchasePrice: language === 'English' ? 'Purchase Price' : 'سعر الشراء',
+    warrantyExpiry: language === 'English' ? 'Warranty Expiry Date' : 'تاريخ انتهاء الضمان',
+    lifeSpan: language === 'English' ? 'Expected Lifespan (months)' : 'العمر المتوقع (شهور)',
+    operatingSystem: language === 'English' ? 'Operating System' : 'نظام التشغيل',
+    assignedEmployee: language === 'English' ? 'Assigned Employee' : 'الموظف المخصص',
+    selectEmployee: language === 'English' ? 'Select employee...' : 'اختر الموظف...',
+    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
+    processor: language === 'English' ? 'Processor (CPU)' : 'المعالج',
+    memory: language === 'English' ? 'Memory (RAM)' : 'الذاكرة',
+    storage: language === 'English' ? 'Storage' : 'التخزين',
+    specifications: language === 'English' ? 'Additional Specifications' : 'مواصفات إضافية',
+    specsPlaceholder: language === 'English' ? 'Enter additional specifications...' : 'أدخل المواصفات الإضافية...',
+    submit: language === 'English' ? 'Submit' : 'إرسال',
+    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    create: language === 'English' ? 'Create Asset' : 'إنشاء أصل',
+    update: language === 'English' ? 'Update Asset' : 'تحديث الأصل',
+    
+    // Additional missing translations
+    modelNumberDesc: language === 'English' ? 'Optional' : 'اختياري',
+    modelNameDesc: language === 'English' ? 'Optional' : 'اختياري',
+    specs: language === 'English' ? 'Specifications' : 'المواصفات',
+    specsDesc: language === 'English' ? 'Processor, RAM, Disk, etc.' : 'المعالج، ذاكرة الوصول العشوائي، القرص، إلخ.',
+    sold: language === 'English' ? 'Sold' : 'تم بيعه',
+    retired: language === 'English' ? 'Retired' : 'متقاعد',
+    purchaseDateDesc: language === 'English' ? 'Optional' : 'اختياري',
+    buyPrice: language === 'English' ? 'Purchase Price' : 'سعر الشراء',
+    buyPriceDesc: language === 'English' ? 'Optional' : 'اختياري',
+    warrantyExpiryDesc: language === 'English' ? 'Optional' : 'اختياري',
+    lifeSpanDesc: language === 'English' ? 'Expected useful life in months' : 'العمر المتوقع بالأشهر',
+    outOfBoxOs: language === 'English' ? 'Factory OS' : 'نظام التشغيل الأصلي',
+    outOfBoxOsDesc: language === 'English' ? 'OS that came with the device' : 'نظام التشغيل الذي أتى مع الجهاز',
+    assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
+    assignedToDesc: language === 'English' ? 'Employee using this asset' : 'الموظف الذي يستخدم هذا الأصل',
+    none: language === 'English' ? 'None' : 'لا يوجد',
+    submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
+    cpu: language === 'English' ? 'CPU' : 'المعالج',
+    cpuPlaceholder: language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H',
+    cpuDesc: language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته',
+    ram: language === 'English' ? 'RAM' : 'الذاكرة',
+    ramPlaceholder: language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4',
+    ramDesc: language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها',
+    storagePlaceholder: language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD',
+    storageDesc: language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه',
+    
+    // Validation messages
+    brandRequired: language === 'English' ? 'Brand is required' : 'العلامة التجارية مطلوبة',
+    serialRequired: language === 'English' ? 'Serial number is required' : 'الرقم التسلسلي مطلوب',
+    invalidDate: language === 'English' ? 'Invalid date format' : 'تنسيق التاريخ غير صحيح',
+    invalidPrice: language === 'English' ? 'Enter a valid price (e.g., 999.99)' : 'أدخل سعرًا صحيحًا (مثال: 999.99)'
+  };
+
+  // Create schema with dynamic validation messages based on language
+  const createAssetFormSchema = () => z.object({
+    type: z.string(),
+    brand: z.string().min(1, translations.brandRequired),
+    modelNumber: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    modelName: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    serialNumber: z.string().min(1, translations.serialRequired),
+    specs: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    status: z.string(),
+    purchaseDate: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value)
+      .refine(
+        (date: string | undefined) => !date || !isNaN(Date.parse(date)),
+        { message: translations.invalidDate }
+      ),
+    buyPrice: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value)
+      .refine(
+        (value: string | undefined) => !value || /^\d+(\.\d{1,2})?$/.test(value),
+        { message: translations.invalidPrice }
+      ),
+    warrantyExpiryDate: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value)
+      .refine(
+        (date: string | undefined) => !date || !isNaN(Date.parse(date)),
+        { message: translations.invalidDate }
+      ),
+    lifeSpan: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    outOfBoxOs: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    assignedEmployeeId: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    cpu: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    ram: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+    storage: z.string().optional().or(z.literal("")).transform((value: string | undefined) => value === "" ? undefined : value),
+  });
+
+  const assetFormSchema = createAssetFormSchema();
 
   // Fetch employees list for assignment dropdown
   const { data: employees = [] } = useQuery<any[]>({
@@ -90,55 +177,6 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
     queryKey: ['/api/custom-asset-statuses'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-
-  // Translations
-  const translations = {
-    basicInfo: language === 'English' ? 'Basic Information' : 'معلومات أساسية',
-    purchaseInfo: language === 'English' ? 'Purchase Information' : 'معلومات الشراء',
-    assetID: language === 'English' ? 'Asset ID' : 'معرف الأصل',
-    idDesc: language === 'English' ? 'Auto-generated if left blank' : 'يتم إنشاؤه تلقائيًا إذا تُرك فارغًا',
-    type: language === 'English' ? 'Type' : 'النوع',
-    laptop: language === 'English' ? 'Laptop' : 'جهاز محمول',
-    desktop: language === 'English' ? 'Desktop' : 'جهاز سطح المكتب',
-    mobile: language === 'English' ? 'Mobile' : 'جهاز جوال',
-    tablet: language === 'English' ? 'Tablet' : 'جهاز لوحي',
-    monitor: language === 'English' ? 'Monitor' : 'شاشة',
-    printer: language === 'English' ? 'Printer' : 'طابعة',
-    server: language === 'English' ? 'Server' : 'خادم',
-    network: language === 'English' ? 'Network' : 'شبكة',
-    other: language === 'English' ? 'Other' : 'أخرى',
-    brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
-    modelNumber: language === 'English' ? 'Model Number' : 'رقم الطراز',
-    modelNumberDesc: language === 'English' ? 'Optional' : 'اختياري',
-    modelName: language === 'English' ? 'Model Name' : 'اسم الطراز',
-    modelNameDesc: language === 'English' ? 'Optional' : 'اختياري',
-    serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
-    specs: language === 'English' ? 'Specifications' : 'المواصفات',
-    specsDesc: language === 'English' ? 'Processor, RAM, Disk, etc.' : 'المعالج، ذاكرة الوصول العشوائي، القرص، إلخ.',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    available: language === 'English' ? 'Available' : 'متاح',
-    inUse: language === 'English' ? 'In Use' : 'قيد الاستخدام',
-    maintenance: language === 'English' ? 'Maintenance' : 'صيانة',
-    damaged: language === 'English' ? 'Damaged' : 'تالف',
-    sold: language === 'English' ? 'Sold' : 'تم بيعه',
-    retired: language === 'English' ? 'Retired' : 'متقاعد',
-    purchaseDate: language === 'English' ? 'Purchase Date' : 'تاريخ الشراء',
-    purchaseDateDesc: language === 'English' ? 'Optional' : 'اختياري',
-    buyPrice: language === 'English' ? 'Purchase Price' : 'سعر الشراء',
-    buyPriceDesc: language === 'English' ? 'Optional' : 'اختياري',
-    warrantyExpiry: language === 'English' ? 'Warranty Expiry Date' : 'تاريخ انتهاء الضمان',
-    warrantyExpiryDesc: language === 'English' ? 'Optional' : 'اختياري',
-    lifeSpan: language === 'English' ? 'Life Span (months)' : 'العمر الافتراضي (شهور)',
-    lifeSpanDesc: language === 'English' ? 'Expected useful life in months' : 'العمر المتوقع بالأشهر',
-    outOfBoxOs: language === 'English' ? 'Factory OS' : 'نظام التشغيل الأصلي',
-    outOfBoxOsDesc: language === 'English' ? 'OS that came with the device' : 'نظام التشغيل الذي أتى مع الجهاز',
-    assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
-    assignedToDesc: language === 'English' ? 'Employee using this asset' : 'الموظف الذي يستخدم هذا الأصل',
-    none: language === 'English' ? 'None' : 'لا يوجد',
-    create: language === 'English' ? 'Create Asset' : 'إنشاء أصل',
-    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
-    submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
-  };
 
   // Convert initial data to form format
   const getFormattedInitialData = () => {
@@ -411,11 +449,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="cpu"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'CPU' : 'المعالج'}</FormLabel>
+                    <FormLabel>{translations.cpu}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., Intel Core i7-12700H' : 'مثال: Intel Core i7-12700H'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.cpuPlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Processor model and specifications' : 'طراز المعالج ومواصفاته'}</FormDescription>
+                    <FormDescription>{translations.cpuDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -426,11 +464,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="ram"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'RAM' : 'الذاكرة'}</FormLabel>
+                    <FormLabel>{translations.ram}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 16GB DDR4' : 'مثال: 16GB DDR4'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.ramPlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Memory capacity and type' : 'سعة الذاكرة ونوعها'}</FormDescription>
+                    <FormDescription>{translations.ramDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -441,11 +479,11 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                 name="storage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{language === 'English' ? 'Storage' : 'التخزين'}</FormLabel>
+                    <FormLabel>{translations.storage}</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} placeholder={language === 'English' ? 'e.g., 512GB NVMe SSD' : 'مثال: 512GB NVMe SSD'} />
+                      <Input {...field} value={field.value || ''} placeholder={translations.storagePlaceholder} />
                     </FormControl>
-                    <FormDescription>{language === 'English' ? 'Storage capacity and type' : 'سعة التخزين ونوعه'}</FormDescription>
+                    <FormDescription>{translations.storageDesc}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -497,7 +535,14 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.purchaseDate}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" value={field.value || ''} />
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={language === 'English' ? 'Pick purchase date' : 'اختر تاريخ الشراء'}
+                        disabled={(date) => date > new Date()}
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormDescription>{translations.purchaseDateDesc}</FormDescription>
                     <FormMessage />
@@ -538,7 +583,14 @@ export default function AssetForm({ onSubmit, initialData, isSubmitting }: Asset
                   <FormItem>
                     <FormLabel>{translations.warrantyExpiry}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" value={field.value || ''} />
+                      <Calendar
+                        mode="picker"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={language === 'English' ? 'Pick warranty expiry date' : 'اختر تاريخ انتهاء الضمان'}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormDescription>{translations.warrantyExpiryDesc}</FormDescription>
                     <FormMessage />
