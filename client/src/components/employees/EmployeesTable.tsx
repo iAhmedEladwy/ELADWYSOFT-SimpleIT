@@ -129,6 +129,8 @@ export default function EmployeesTable({
     resigned: language === 'English' ? 'Resigned' : 'استقال',
     terminated: language === 'English' ? 'Terminated' : 'تم إنهاء الخدمة',
     onLeave: language === 'English' ? 'On Leave' : 'في إجازة',
+    selectAllEmployees: language === 'English' ? 'Select all employees' : 'تحديد جميع الموظفين',
+    openMenu: language === 'English' ? 'Open menu' : 'فتح القائمة',
   };
 
   // Get status badge with color
@@ -192,7 +194,7 @@ export default function EmployeesTable({
                 <Checkbox
                   checked={isAllSelected}
                   onCheckedChange={handleSelectAll}
-                  aria-label="Select all employees"
+                  aria-label={translations.selectAllEmployees}
                   className={isIndeterminate ? "data-[state=checked]:bg-blue-600" : ""}
                 />
               </TableHead>
@@ -273,7 +275,7 @@ export default function EmployeesTable({
                           e.stopPropagation();
                         }}
                       >
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{translations.openMenu}</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>

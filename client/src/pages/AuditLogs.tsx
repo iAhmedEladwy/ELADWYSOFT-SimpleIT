@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useLanguage } from '@/hooks/use-language';
 import { Helmet } from "react-helmet-async";
 import { 
   FileText, 
@@ -54,6 +55,60 @@ import { useAuth } from '@/lib/authContext';
 
 export default function AuditLogs() {
   const { hasAccess } = useAuth();
+  const { language } = useLanguage();
+  
+  const translations = {
+    auditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
+    viewSearchActivity: language === 'English' ? 'View and search all system activity and user actions' : 'عرض والبحث في جميع أنشطة النظام وإجراءات المستخدمين',
+    clearLogs: language === 'English' ? 'Clear Logs' : 'مسح السجلات',
+    exportCsv: language === 'English' ? 'Export CSV' : 'تصدير CSV',
+    clearAuditLogs: language === 'English' ? 'Clear Audit Logs' : 'مسح سجلات التدقيق',
+    actionCannotBeUndone: language === 'English' ? 'This action cannot be undone. Please select which logs to clear.' : 'لا يمكن التراجع عن هذا الإجراء. يرجى اختيار السجلات المراد مسحها.',
+    timePeriod: language === 'English' ? 'Time Period' : 'الفترة الزمنية',
+    selectTimePeriod: language === 'English' ? 'Select time period' : 'اختر الفترة الزمنية',
+    allLogs: language === 'English' ? 'All logs' : 'جميع السجلات',
+    olderThan1Week: language === 'English' ? 'Older than 1 week' : 'أقدم من أسبوع واحد',
+    olderThan1Month: language === 'English' ? 'Older than 1 month' : 'أقدم من شهر واحد',
+    olderThan1Year: language === 'English' ? 'Older than 1 year' : 'أقدم من سنة واحدة',
+    entityType: language === 'English' ? 'Entity Type (Optional)' : 'نوع الكيان (اختياري)',
+    allEntityTypes: language === 'English' ? 'All entity types' : 'جميع أنواع الكيانات',
+    user: language === 'English' ? 'User' : 'مستخدم',
+    employee: language === 'English' ? 'Employee' : 'موظف',
+    asset: language === 'English' ? 'Asset' : 'أصل',
+    ticket: language === 'English' ? 'Ticket' : 'تذكرة',
+    report: language === 'English' ? 'Report' : 'تقرير',
+    system: language === 'English' ? 'System' : 'نظام',
+    action: language === 'English' ? 'Action (Optional)' : 'الإجراء (اختياري)',
+    allActions: language === 'English' ? 'All actions' : 'جميع الإجراءات',
+    create: language === 'English' ? 'Create' : 'إنشاء',
+    update: language === 'English' ? 'Update' : 'تحديث',
+    delete: language === 'English' ? 'Delete' : 'حذف',
+    login: language === 'English' ? 'Login' : 'تسجيل دخول',
+    logout: language === 'English' ? 'Logout' : 'تسجيل خروج',
+    view: language === 'English' ? 'View' : 'عرض',
+    export: language === 'English' ? 'Export' : 'تصدير',
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    clearing: language === 'English' ? 'Clearing...' : 'جاري المسح...',
+    accessRestricted: language === 'English' ? 'Access Restricted' : 'الوصول مقيد',
+    noPermissionAuditLogs: language === 'English' ? 'You do not have permission to view the audit logs. This feature requires administrator access.' : 'ليس لديك صلاحية لعرض سجلات التدقيق. تتطلب هذه الميزة وصول المسؤول.',
+    errorLoadingAuditLogs: language === 'English' ? 'Error Loading Audit Logs' : 'خطأ في تحميل سجلات التدقيق',
+    failedToLoadData: language === 'English' ? 'Failed to load the audit log data' : 'فشل في تحميل بيانات سجل التدقيق',
+    tryAgain: language === 'English' ? 'Try Again' : 'المحاولة مرة أخرى',
+    showing: language === 'English' ? 'Showing' : 'عرض',
+    of: language === 'English' ? 'of' : 'من',
+    entries: language === 'English' ? 'entries' : 'إدخالات',
+    logsCleared: language === 'English' ? 'Logs cleared' : 'تم مسح السجلات',
+    successfullyCleared: language === 'English' ? 'Successfully cleared' : 'تم المسح بنجاح',
+    logEntries: language === 'English' ? 'log entries' : 'إدخالات السجل',
+    error: language === 'English' ? 'Error' : 'خطأ',
+    failedToClearLogs: language === 'English' ? 'Failed to clear logs' : 'فشل في مسح السجلات',
+    auditLogsTitle: language === 'English' ? 'Audit Logs | SimpleIT' : 'سجلات التدقيق | SimpleIT',
+    auditLogsDescription: language === 'English' ? 'View and search system audit logs. Track user actions and security events.' : 'عرض والبحث في سجلات تدقيق النظام. تتبع إجراءات المستخدم والأحداث الأمنية.',
+    id: language === 'English' ? 'ID' : 'المعرف',
+    timestamp: language === 'English' ? 'Timestamp' : 'الوقت',
+    details: language === 'English' ? 'Details' : 'التفاصيل',
+  };
+  
   const [filters, setFilters] = useState<any>({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -142,16 +197,16 @@ export default function AuditLogs() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: 'Logs cleared',
-        description: data.message || `Successfully cleared ${data.deletedCount} log entries`,
+        title: translations.logsCleared,
+        description: data.message || `${translations.successfullyCleared} ${data.deletedCount} ${translations.logEntries}`,
       });
       setDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/audit-logs'] });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to clear logs',
+        title: translations.error,
+        description: error.message || translations.failedToClearLogs,
         variant: 'destructive'
       });
     }
@@ -208,14 +263,22 @@ export default function AuditLogs() {
   const exportToCSV = () => {
     if (!data || !data.data) return;
     
-    const headers = ['ID', 'Timestamp', 'User', 'Action', 'Entity Type', 'Entity ID', 'Details'];
+    const headers = [
+      translations.id || 'ID', 
+      translations.timestamp || 'Timestamp', 
+      translations.user || 'User', 
+      translations.action || 'Action', 
+      translations.entityType || 'Entity Type', 
+      'Entity ID', 
+      translations.details || 'Details'
+    ];
     
     const csvContent = [
       headers.join(','),
-      ...data.data.map(log => [
+      ...data.data.map((log: any) => [
         log.id,
         new Date(log.createdAt).toISOString(),
-        log.user ? log.user.username : 'System',
+        log.user ? log.user.username : translations.system || 'System',
         log.action,
         log.entityType,
         log.entityId || '',
@@ -238,10 +301,9 @@ export default function AuditLogs() {
       <Card className="mt-6">
         <CardHeader className="text-center">
           <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <CardTitle>Access Restricted</CardTitle>
+          <CardTitle>{translations.accessRestricted}</CardTitle>
           <CardDescription>
-            You do not have permission to view the audit logs.
-            This feature requires administrator access.
+            {translations.noPermissionAuditLogs}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -251,16 +313,16 @@ export default function AuditLogs() {
   return (
     <>
       <Helmet>
-        <title>Audit Logs | SimpleIT</title>
-        <meta name="description" content="View and search system audit logs. Track user actions and security events." />
+        <title>{translations.auditLogsTitle}</title>
+        <meta name="description" content={translations.auditLogsDescription} />
       </Helmet>
       
       <div className="p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{translations.auditLogs}</h1>
             <p className="text-muted-foreground">
-              View and search all system activity and user actions
+              {translations.viewSearchActivity}
             </p>
           </div>
           
@@ -274,78 +336,78 @@ export default function AuditLogs() {
                     disabled={isLoading || isError || !data?.data?.length}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Clear Logs
+                    {translations.clearLogs}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle className="flex items-center">
                       <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
-                      Clear Audit Logs
+                      {translations.clearAuditLogs}
                     </DialogTitle>
                     <DialogDescription>
-                      This action cannot be undone. Please select which logs to clear.
+                      {translations.actionCannotBeUndone}
                     </DialogDescription>
                   </DialogHeader>
                   
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="timeframe">Time Period</Label>
+                      <Label htmlFor="timeframe">{translations.timePeriod}</Label>
                       <Select
                         value={clearOptions.timeframe}
-                        onValueChange={(value) => setClearOptions({...clearOptions, timeframe: value})}
+                        onValueChange={(value: any) => setClearOptions({...clearOptions, timeframe: value})}
                       >
                         <SelectTrigger id="timeframe">
-                          <SelectValue placeholder="Select time period" />
+                          <SelectValue placeholder={translations.selectTimePeriod} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All logs</SelectItem>
-                          <SelectItem value="week">Older than 1 week</SelectItem>
-                          <SelectItem value="month">Older than 1 month</SelectItem>
-                          <SelectItem value="year">Older than 1 year</SelectItem>
+                          <SelectItem value="all">{translations.allLogs}</SelectItem>
+                          <SelectItem value="week">{translations.olderThan1Week}</SelectItem>
+                          <SelectItem value="month">{translations.olderThan1Month}</SelectItem>
+                          <SelectItem value="year">{translations.olderThan1Year}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="entityType">Entity Type (Optional)</Label>
+                      <Label htmlFor="entityType">{translations.entityType}</Label>
                       <Select
                         value={clearOptions.entityType}
-                        onValueChange={(value) => setClearOptions({...clearOptions, entityType: value})}
+                        onValueChange={(value: any) => setClearOptions({...clearOptions, entityType: value})}
                       >
                         <SelectTrigger id="entityType">
-                          <SelectValue placeholder="All entity types" />
+                          <SelectValue placeholder={translations.allEntityTypes} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All entity types</SelectItem>
-                          <SelectItem value="USER">User</SelectItem>
-                          <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                          <SelectItem value="ASSET">Asset</SelectItem>
-                          <SelectItem value="TICKET">Ticket</SelectItem>
-                          <SelectItem value="REPORT">Report</SelectItem>
-                          <SelectItem value="SYSTEM">System</SelectItem>
+                          <SelectItem value="all">{translations.allEntityTypes}</SelectItem>
+                          <SelectItem value="USER">{translations.user}</SelectItem>
+                          <SelectItem value="EMPLOYEE">{translations.employee}</SelectItem>
+                          <SelectItem value="ASSET">{translations.asset}</SelectItem>
+                          <SelectItem value="TICKET">{translations.ticket}</SelectItem>
+                          <SelectItem value="REPORT">{translations.report}</SelectItem>
+                          <SelectItem value="SYSTEM">{translations.system}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="action">Action (Optional)</Label>
+                      <Label htmlFor="action">{translations.action}</Label>
                       <Select
                         value={clearOptions.action}
-                        onValueChange={(value) => setClearOptions({...clearOptions, action: value})}
+                        onValueChange={(value: any) => setClearOptions({...clearOptions, action: value})}
                       >
                         <SelectTrigger id="action">
-                          <SelectValue placeholder="All actions" />
+                          <SelectValue placeholder={translations.allActions} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All actions</SelectItem>
-                          <SelectItem value="CREATE">Create</SelectItem>
-                          <SelectItem value="UPDATE">Update</SelectItem>
-                          <SelectItem value="DELETE">Delete</SelectItem>
-                          <SelectItem value="LOGIN">Login</SelectItem>
-                          <SelectItem value="LOGOUT">Logout</SelectItem>
-                          <SelectItem value="VIEW">View</SelectItem>
-                          <SelectItem value="EXPORT">Export</SelectItem>
+                          <SelectItem value="all">{translations.allActions}</SelectItem>
+                          <SelectItem value="CREATE">{translations.create}</SelectItem>
+                          <SelectItem value="UPDATE">{translations.update}</SelectItem>
+                          <SelectItem value="DELETE">{translations.delete}</SelectItem>
+                          <SelectItem value="LOGIN">{translations.login}</SelectItem>
+                          <SelectItem value="LOGOUT">{translations.logout}</SelectItem>
+                          <SelectItem value="VIEW">{translations.view}</SelectItem>
+                          <SelectItem value="EXPORT">{translations.export}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -356,14 +418,14 @@ export default function AuditLogs() {
                       variant="outline" 
                       onClick={() => setDialogOpen(false)}
                     >
-                      Cancel
+                      {translations.cancel}
                     </Button>
                     <Button 
                       variant="destructive" 
                       onClick={handleClearLogs}
                       disabled={clearLogsMutation.isPending}
                     >
-                      {clearLogsMutation.isPending ? 'Clearing...' : 'Clear Logs'}
+                      {clearLogsMutation.isPending ? translations.clearing : translations.clearLogs}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -377,7 +439,7 @@ export default function AuditLogs() {
               disabled={isLoading || isError || !data?.data?.length}
             >
               <Download className="mr-2 h-4 w-4" />
-              Export CSV
+              {translations.exportCsv}
             </Button>
           </div>
         </div>
@@ -391,14 +453,14 @@ export default function AuditLogs() {
         {isError ? (
           <Card className="my-6">
             <CardHeader className="text-center">
-              <CardTitle className="text-red-500">Error Loading Audit Logs</CardTitle>
+              <CardTitle className="text-red-500">{translations.errorLoadingAuditLogs}</CardTitle>
               <CardDescription>
-                {(error as any)?.message || 'Failed to load the audit log data'}
+                {(error as any)?.message || translations.failedToLoadData}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
               <Button variant="outline" onClick={() => window.location.reload()}>
-                Try Again
+                {translations.tryAgain}
               </Button>
             </CardContent>
           </Card>
@@ -475,8 +537,8 @@ export default function AuditLogs() {
                 <div className="mt-6 text-sm text-center text-muted-foreground">
                   {data?.pagination && (
                     <>
-                      Showing {(page - 1) * limit + 1}-
-                      {Math.min(page * limit, data.pagination.totalItems)} of {data.pagination.totalItems} entries
+                      {translations.showing} {(page - 1) * limit + 1}-
+                      {Math.min(page * limit, data.pagination.totalItems)} {translations.of} {data.pagination.totalItems} {translations.entries}
                     </>
                   )}
                 </div>

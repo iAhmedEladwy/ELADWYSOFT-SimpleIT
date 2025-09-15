@@ -96,12 +96,12 @@ export default function ActiveEmployeeSelect({
 
     // Sort
     return filtered.sort((a, b) => {
-      const nameA = language === 'Arabic' && a.arabicName 
-        ? a.arabicName 
-        : (a.englishName || a.name || '');
-      const nameB = language === 'Arabic' && b.arabicName 
-        ? b.arabicName 
-        : (b.englishName || b.name || '');
+      const nameA = language === 'English' 
+        ? (a.englishName || a.name || '')
+        : (a.arabicName || a.englishName || a.name || '');
+      const nameB = language === 'English' 
+        ? (b.englishName || b.name || '')
+        : (b.arabicName || b.englishName || b.name || '');
       return nameA.localeCompare(nameB);
     });
   }, [employeesData, searchQuery, language]);
@@ -114,9 +114,9 @@ export default function ActiveEmployeeSelect({
 
   // Format employee display
   const formatEmployeeDisplay = (employee: Employee) => {
-    const name = language === 'Arabic' && employee.arabicName 
-      ? employee.arabicName 
-      : (employee.englishName || employee.name || '');
+    const name = language === 'English' 
+      ? (employee.englishName || employee.name || '')
+      : (employee.arabicName || employee.englishName || employee.name || '');
     
     let display = `${employee.empId} - ${name}`;
     
@@ -231,9 +231,9 @@ export default function ActiveEmployeeSelect({
                 
                 {/* Employee list */}
                 {filteredEmployees.map((employee) => {
-                  const displayName = language === 'Arabic' && employee.arabicName 
-                    ? employee.arabicName 
-                    : (employee.englishName || employee.name || '');
+                  const displayName = language === 'English' 
+                    ? (employee.englishName || employee.name || '')
+                    : (employee.arabicName || employee.englishName || employee.name || '');
                   
                   return (
                     <div
