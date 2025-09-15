@@ -398,24 +398,29 @@ export default function Reports() {
       }
     `,
     onBeforePrint: () => {
-      // Add a title to the document before printing
-      const titleElement = document.createElement('div');
-      titleElement.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #dee2e6;">
-          <h1 style="margin: 0; color: #212529; font-size: 28px; font-weight: bold;">IT Asset Management Reports</h1>
-          <p style="margin: 10px 0 0 0; color: #6c757d; font-size: 14px;">Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
-      `;
-      if (componentRef.current) {
-        componentRef.current.insertBefore(titleElement, componentRef.current.firstChild);
-      }
+      return new Promise<void>((resolve) => {
+        // Add a title to the document before printing
+        const titleElement = document.createElement('div');
+        titleElement.className = 'print-title-header';
+        titleElement.innerHTML = `
+          <div style="text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #dee2e6;">
+            <h1 style="margin: 0; color: #212529; font-size: 28px; font-weight: bold;">IT Asset Management Reports</h1>
+            <p style="margin: 10px 0 0 0; color: #6c757d; font-size: 14px;">Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+        `;
+        if (componentRef.current) {
+          componentRef.current.insertBefore(titleElement, componentRef.current.firstChild);
+        }
+        // Give time for DOM to update
+        setTimeout(() => resolve(), 100);
+      });
     },
     onAfterPrint: () => {
       // Clean up the added title after printing
       if (componentRef.current) {
-        const titleElement = componentRef.current.firstChild;
-        if (titleElement && titleElement.textContent?.includes('IT Asset Management Reports')) {
-          componentRef.current.removeChild(titleElement);
+        const titleElement = componentRef.current.querySelector('.print-title-header');
+        if (titleElement) {
+          titleElement.remove();
         }
       }
     }
@@ -423,7 +428,37 @@ export default function Reports() {
 
   // Enhanced export with PDF generation
   const exportAllData = () => {
-    handlePrint();
+    try {
+      console.log('Attempting to print...');
+      if (handlePrint) {
+        handlePrint();
+      } else {
+        console.error('Print function not available');
+        // Fallback to browser print
+        window.print();
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      // Clean up any title that might be left behind
+      cleanupPrintTitle();
+    }
+  };
+
+  // Function to clean up any stuck print titles
+  const cleanupPrintTitle = () => {
+    if (componentRef.current) {
+      const titleElements = componentRef.current.querySelectorAll('.print-title-header');
+      titleElements.forEach(element => element.remove());
+      
+      // Also check for any elements that might contain the print title text
+      const allDivs = componentRef.current.querySelectorAll('div');
+      allDivs.forEach(div => {
+        if (div.textContent?.includes('IT Asset Management Reports') && div.textContent?.includes('Generated on')) {
+          div.remove();
+        }
+      });
+      console.log('Print title cleanup completed');
+    }
   };
 
   return (
@@ -478,6 +513,16 @@ export default function Reports() {
               >
                 <Download className="h-4 w-4" />
                 <span>{translations.exportData}</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={cleanupPrintTitle}
+                className="flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
+                title="Remove stuck print title"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>Clean Title</span>
               </Button>
             </div>
           </div>
