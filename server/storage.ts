@@ -2509,7 +2509,7 @@ async deleteTicket(id: number): Promise<boolean> {
         creator.username as created_by_name,
         approver.english_name as approved_by_name,
         assigned_emp.english_name as assigned_employee_name,
-        assigned_emp.employee_id as assigned_employee_id_code,
+        assigned_emp.emp_id as assigned_employee_id_code,
         assigned_emp.department as assigned_employee_department
       FROM asset_upgrades au
       LEFT JOIN assets a ON au.asset_id = a.id
