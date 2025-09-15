@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useTicketTranslations } from '@/lib/translations/tickets';
 import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -72,6 +73,7 @@ export default function TicketsTable({
   onSelectionChange,
 }: TicketsTableProps) {
   const { language } = useLanguage();
+  const t = useTicketTranslations(language);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -162,56 +164,6 @@ export default function TicketsTable({
     },
   });
 
-  // Translations
-  const translations = {
-    ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
-    dateCreated: language === 'English' ? 'Date Created' : 'تاريخ الإنشاء',
-    summary: language === 'English' ? 'Summary' : 'الملخص',
-    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
-    priority: language === 'English' ? 'Priority' : 'الأولوية',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    submittedBy: language === 'English' ? 'Submitted By' : 'مقدم من',
-    relatedAsset: language === 'English' ? 'Related Asset' : 'الأصل المرتبط',
-    assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    updateStatus: language === 'English' ? 'Update Status' : 'تحديث الحالة',
-    assignTicket: language === 'English' ? 'Assign Ticket' : 'تعيين التذكرة',
-    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
-    update: language === 'English' ? 'Update' : 'تحديث',
-    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    assign: language === 'English' ? 'Assign' : 'تعيين',
-    selectUser: language === 'English' ? 'Select User' : 'اختر المستخدم',
-    selectStatus: language === 'English' ? 'Select Status' : 'اختر الحالة',
-    noTickets: language === 'English' ? 'No tickets found' : 'لم يتم العثور على تذاكر',
-    open: language === 'English' ? 'Open' : 'مفتوح',
-    save: language === 'English' ? 'Save' : 'حفظ',
-    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
-    resolved: language === 'English' ? 'Resolved' : 'تم الحل',
-    closed: language === 'English' ? 'Closed' : 'مغلق',
-    low: language === 'English' ? 'Low' : 'منخفض',
-    medium: language === 'English' ? 'Medium' : 'متوسط',
-    high: language === 'English' ? 'High' : 'مرتفع',
-    hardware: language === 'English' ? 'Hardware' : 'أجهزة',
-    software: language === 'English' ? 'Software' : 'برمجيات',
-    network: language === 'English' ? 'Network' : 'شبكة',
-    other: language === 'English' ? 'Other' : 'أخرى',
-    none: language === 'English' ? 'None' : 'لا يوجد',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير معين',
-    dueDate: language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق',
-    resolveTicket: language === 'English' ? 'Resolve Ticket' : 'حل التذكرة',
-    closeTicket: language === 'English' ? 'Close Ticket' : 'إغلاق التذكرة',
-    resolutionType: language === 'English' ? 'Resolution Type' : 'نوع الحل',
-    resolutionDetails: language === 'English' ? 'Please provide resolution details' : 'يرجى تقديم تفاصيل الحل',
-    selectResolutionType: language === 'English' ? 'Select resolution type' : 'اختر نوع الحل',
-    describeResolution: language === 'English' ? 'Describe how the issue was resolved...' : 'اصف كيف تم حل المشكلة...',
-    problemSolved: language === 'English' ? 'Problem Solved' : 'تم حل المشكلة',
-    workaroundProvided: language === 'English' ? 'Workaround Provided' : 'تم تقديم حل بديل',
-    duplicateTicket: language === 'English' ? 'Duplicate Ticket' : 'تذكرة مكررة',
-    noIssueFound: language === 'English' ? 'No Issue Found' : 'لم يتم العثور على مشكلة',
-    wontFix: language === 'English' ? "Won't Fix" : 'لن يتم الإصلاح',
-    setDate: language === 'English' ? 'Set date' : 'تعيين التاريخ',
-  };
-
   const handleUpdateStatus = () => {
     if (selectedTicket && selectedStatus) {
       onStatusChange(selectedTicket.id, selectedStatus, resolutionNotes);
@@ -263,34 +215,34 @@ export default function TicketsTable({
 
   const getEmployeeName = (id: number) => {
     try {
-      if (!Array.isArray(employees)) return translations.none;
+      if (!Array.isArray(employees)) return t.none;
       const employee = employees.find(emp => emp && emp.id === id);
-      return employee && employee.englishName ? employee.englishName : translations.none;
+      return employee && employee.englishName ? employee.englishName : t.none;
     } catch (error) {
       console.error('Error getting employee name:', error);
-      return translations.none;
+      return t.none;
     }
   };
 
   const getAssetName = (id: number) => {
     try {
-      if (!Array.isArray(assets)) return translations.none;
+      if (!Array.isArray(assets)) return t.none;
       const asset = assets.find(a => a && a.id === id);
-      return asset && asset.name ? asset.name : translations.none;
+      return asset && asset.name ? asset.name : t.none;
     } catch (error) {
       console.error('Error getting asset name:', error);
-      return translations.none;
+      return t.none;
     }
   };
 
   const getUserName = (id: number) => {
     try {
-      if (!Array.isArray(users)) return translations.unassigned;
+      if (!Array.isArray(users)) return t.unassigned;
       const assignedUser = users.find(u => u && u.id === id);
-      return assignedUser && assignedUser.username ? assignedUser.username : translations.unassigned;
+      return assignedUser && assignedUser.username ? assignedUser.username : t.unassigned;
     } catch (error) {
       console.error('Error getting user name:', error);
-      return translations.unassigned;
+      return t.unassigned;
     }
   };
 
@@ -340,7 +292,7 @@ export default function TicketsTable({
   const safeTickets = Array.isArray(tickets) ? tickets : [];
   
   if (safeTickets.length === 0) {
-    return <div className="text-center py-8 text-gray-500">{translations.noTickets}</div>;
+    return <div className="text-center py-8 text-gray-500">{t.noTickets}</div>;
   }
 
   return (
@@ -362,15 +314,15 @@ export default function TicketsTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="min-w-[100px]">{translations.ticketId}</TableHead>
-              <TableHead className="min-w-[110px]">{translations.dateCreated}</TableHead>
-              <TableHead className="min-w-[200px]">{translations.summary}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.requestType}</TableHead>
-              <TableHead className="min-w-[100px]">{translations.priority}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.status}</TableHead>
-              <TableHead className="min-w-[150px]">{translations.submittedBy}</TableHead>
-              <TableHead className="min-w-[150px]">{translations.assignedTo}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.dueDate}</TableHead>
+              <TableHead className="min-w-[100px]">{t.ticketId}</TableHead>
+              <TableHead className="min-w-[110px]">{t.createdAt}</TableHead>
+              <TableHead className="min-w-[200px]">{t.title_field}</TableHead>
+              <TableHead className="min-w-[120px]">{t.type}</TableHead>
+              <TableHead className="min-w-[100px]">{t.priority}</TableHead>
+              <TableHead className="min-w-[120px]">{t.status}</TableHead>
+              <TableHead className="min-w-[150px]">{t.submittedBy}</TableHead>
+              <TableHead className="min-w-[150px]">{t.assignedTo}</TableHead>
+              <TableHead className="min-w-[120px]">{t.dueDate}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -488,9 +440,9 @@ export default function TicketsTable({
                       </Badge>
                     </SelectTrigger>
                     <SelectContent className="relative z-50">
-                      <SelectItem value="Low">{translations.low}</SelectItem>
-                      <SelectItem value="Medium">{translations.medium}</SelectItem>
-                      <SelectItem value="High">{translations.high}</SelectItem>
+                      <SelectItem value="Low">{t.priorityLow}</SelectItem>
+                      <SelectItem value="Medium">{t.priorityMedium}</SelectItem>
+                      <SelectItem value="High">{t.priorityHigh}</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -521,20 +473,20 @@ export default function TicketsTable({
                           'bg-gray-100 text-gray-800'
                         }`}
                       >
-                        {ticket.status === 'Open' ? translations.open :
-                        ticket.status === 'In Progress' ? translations.inProgress :
-                        ticket.status === 'Resolved' ? translations.resolved :
-                        ticket.status === 'Closed' ? translations.closed :
+                        {ticket.status === 'Open' ? t.statusOpen :
+                        ticket.status === 'In Progress' ? t.statusInProgress :
+                        ticket.status === 'Resolved' ? t.statusResolved :
+                        ticket.status === 'Closed' ? t.statusClosed :
                         ticket.status}
                       </Badge>
                     </SelectTrigger>
                     <SelectContent className="relative z-50">
                       {getAvailableStatuses(ticket.status).map((status) => (
                         <SelectItem key={status} value={status}>
-                          {status === 'Open' ? translations.open :
-                          status === 'In Progress' ? translations.inProgress :
-                          status === 'Resolved' ? translations.resolved :
-                          translations.closed}
+                          {status === 'Open' ? t.statusOpen :
+                          status === 'In Progress' ? t.statusInProgress :
+                          status === 'Resolved' ? t.statusResolved :
+                          t.statusClosed}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -543,7 +495,7 @@ export default function TicketsTable({
                 
                 {/* Submitted By */}
                 <TableCell className="min-w-[150px]">
-                  {ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}
+                  {ticket.submittedById ? getEmployeeName(ticket.submittedById) : t.none}
                 </TableCell>
                 
                 {/* Assigned To */}
@@ -566,13 +518,13 @@ export default function TicketsTable({
                       <SelectValue>
                         {ticket.assignedToId ? 
                           getUserName(ticket.assignedToId) : 
-                          <span className="text-gray-400">{translations.unassigned}</span>
+                          <span className="text-gray-400">{t.unassigned}</span>
                         }
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="relative z-50">
                       <SelectItem value="unassigned">
-                        <span className="text-gray-400">{translations.unassigned}</span>
+                        <span className="text-gray-400">{t.unassigned}</span>
                       </SelectItem>
                       {users?.map((user: any) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
@@ -660,13 +612,13 @@ export default function TicketsTable({
                   setResolutionNotes('');
                 }}
               >
-                {translations.cancel}
+                {t.cancel}
               </Button>
               <Button 
                 onClick={() => handleResolutionSubmit()}
                 disabled={!resolutionNotes.trim()} // Require resolution text
               >
-                {resolutionNotes ? 'Update & Save' : translations.save}
+                {resolutionNotes ? 'Update & Save' : t.save}
               </Button>
             </DialogFooter>
           </DialogContent>

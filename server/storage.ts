@@ -12,10 +12,11 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
+  customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
+import { calculatePriority, type UrgencyLevel, type ImpactLevel } from "@shared/priorityUtils";
 import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
 import { compare, hash } from 'bcrypt';
@@ -39,8 +40,7 @@ import type {
   TicketResponse,
   CustomAssetType,
   CustomAssetBrand,
-  CustomAssetStatus,
-  ServiceProvider
+  CustomAssetStatus
 } from '@shared/types';
 
 export interface IStorage {
@@ -180,21 +180,12 @@ export interface IStorage {
   getAssetStatusByName(name: string): Promise<AssetStatus | undefined>;
   ensureAssetStatus(name: string, color?: string): Promise<AssetStatus>;
   
-  getServiceProviders(): Promise<any[]>;
-  createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
-  updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
-  deleteServiceProvider(id: number): Promise<boolean>;
-  
   // Custom Request Types operations (Feature 1: Change Category to Request Type)
   getCustomRequestTypes(): Promise<any[]>;
   getAllCustomRequestTypes(): Promise<any[]>;
   createCustomRequestType(requestType: any): Promise<any>;
   updateCustomRequestType(id: number, requestType: any): Promise<any | undefined>;
   deleteCustomRequestType(id: number): Promise<boolean>;
-  
-  // Enhanced Ticket operations with time tracking (Feature 2: Manual time tracking)
-  startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
-  stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
   
   // Ticket History operations (Feature 3: Ticket history and updates display)
   getTicketHistory(ticketId: number): Promise<any[]>;
@@ -1135,14 +1126,20 @@ export class DatabaseStorage implements IStorage {
       });
       
       // Ensure field length limits are respected
+      const urgency = (ticket.urgency || 'Medium') as UrgencyLevel;
+      const impact = (ticket.impact || 'Medium') as ImpactLevel;
+      
+      // Auto-calculate priority based on urgency and impact
+      const calculatedPriority = calculatePriority(urgency, impact);
+      
       const safeData = {
         summary: (ticket.summary || 'Ticket').substring(0, 255),
         description: ticket.description || '',
         requestType: (ticket.requestType || 'Other').substring(0, 100),
         category: (ticket.category || 'Incident').substring(0, 100),
-        priority: ticket.priority || 'Medium',
-        urgency: (ticket.urgency || 'Medium').substring(0, 20),
-        impact: (ticket.impact || 'Medium').substring(0, 20),
+        priority: calculatedPriority, // Use calculated priority instead of ticket.priority
+        urgency: urgency.substring(0, 20),
+        impact: impact.substring(0, 20),
         status: ticket.status || 'Open',
         submittedById: ticket.submittedById,
         assignedToId: ticket.assignedToId || null,
@@ -1158,6 +1155,8 @@ export class DatabaseStorage implements IStorage {
         isTimeTracking: ticket.isTimeTracking || false,
         timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
       };
+      
+      console.log('Priority calculation:', { urgency, impact, calculatedPriority });
       
       console.log('Safe data after truncation:', {
         summary: safeData.summary.length,
@@ -1228,10 +1227,36 @@ export class DatabaseStorage implements IStorage {
 
   async updateTicket(id: number, ticketData: Partial<InsertTicket>): Promise<Ticket | undefined> {
     try {
+      // If urgency or impact is being updated, recalculate priority
+      let updatedData = { ...ticketData };
+      
+      // Check if urgency or impact is being changed
+      if (ticketData.urgency || ticketData.impact) {
+        // Get current ticket to retrieve existing urgency/impact values
+        const currentTicket = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+        
+        if (currentTicket.length > 0) {
+          const current = currentTicket[0];
+          const newUrgency = (ticketData.urgency || current.urgency) as UrgencyLevel;
+          const newImpact = (ticketData.impact || current.impact) as ImpactLevel;
+          
+          // Recalculate priority
+          const calculatedPriority = calculatePriority(newUrgency, newImpact);
+          updatedData.priority = calculatedPriority;
+          
+          console.log('Priority recalculated for ticket update:', { 
+            ticketId: id, 
+            urgency: newUrgency, 
+            impact: newImpact, 
+            newPriority: calculatedPriority 
+          });
+        }
+      }
+      
       // Update only permitted fields
       const [updatedTicket] = await db
         .update(tickets)
-        .set({ ...ticketData, updatedAt: new Date() })
+        .set({ ...updatedData, updatedAt: new Date() })
         .where(eq(tickets.id, id))
         .returning();
       return updatedTicket;
@@ -1884,63 +1909,6 @@ async deleteTicket(id: number): Promise<boolean> {
     } catch (error) {
       console.error('Error ensuring asset status:', error);
       throw error;
-    }
-  }
-
-  // Service Providers
-  async getServiceProviders(): Promise<any[]> {
-    try {
-      const providers = await db.select().from(serviceProviders).orderBy(asc(serviceProviders.name));
-      return providers;
-    } catch (error) {
-      console.error('Error fetching service providers:', error);
-      return [];
-    }
-  }
-
-  async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
-    try {
-      const [newProvider] = await db.insert(serviceProviders)
-        .values({
-          name: data.name,
-          contactPerson: data.contactPerson || null,
-          phone: data.phone || null,
-          email: data.email || null
-        })
-        .returning();
-      return newProvider;
-    } catch (error) {
-      console.error('Error creating service provider:', error);
-      throw error;
-    }
-  }
-
-  async updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any | undefined> {
-    try {
-      const [updated] = await db.update(serviceProviders)
-        .set({
-          name: data.name,
-          contactPerson: data.contactPerson,
-          phone: data.phone,
-          email: data.email,
-          updatedAt: new Date()
-        })
-        .where(eq(serviceProviders.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error('Error updating service provider:', error);
-      return undefined;
-    }
-  }
-
-  async deleteServiceProvider(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(serviceProviders).where(eq(serviceProviders.id, id));
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
-      console.error('Error deleting service provider:', error);
-      return false;
     }
   }
 

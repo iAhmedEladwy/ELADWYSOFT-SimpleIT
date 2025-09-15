@@ -25,6 +25,7 @@ import { stringify as csvStringify } from "csv-stringify";
 import { createHash, randomBytes } from "crypto";
 import { auditLogMiddleware, logActivity, AuditAction, EntityType } from "./auditLogger";
 import { emailService } from "./emailService";
+import { calculatePriority, validatePriority, type UrgencyLevel, type ImpactLevel } from "@shared/priorityUtils";
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
@@ -4034,169 +4035,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  // Improved Asset Import handler
-  app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      
-      const results: schema.InsertAsset[] = [];
-      const errors: any[] = [];
-      let counter = 0;
-      
-      // Get system config for asset ID prefix
-      let assetPrefix = "BOLT-";
-      const sysConfig = await storage.getSystemConfig();
-      if (sysConfig && sysConfig.assetIdPrefix) {
-        assetPrefix = sysConfig.assetIdPrefix;
-      }
-      
-      // Convert buffer to readable stream
-      const stream = Readable.from(req.file.buffer.toString());
-      
-      // Parse CSV
-      stream
-        .pipe(csvParser())
-        .on('data', async (data) => {
-          try {
-            counter++;
-            
-            // Generate asset ID using enhanced system
-            let assetId = data.assetId;
-            if (!assetId) {
-              assetId = await generateId('asset');
-            }
-            
-            const assetData: schema.InsertAsset = {
-              assetId,
-              type: data.type as any,
-              brand: data.brand,
-              modelNumber: data.modelNumber || null,
-              modelName: data.modelName || null,
-              serialNumber: data.serialNumber,
-              specs: data.specs || null,
-              status: (data.status || 'Available') as any,
-              purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
-              buyPrice: data.buyPrice ? parseFloat(data.buyPrice) : null,
-              warrantyExpiryDate: data.warrantyExpiryDate ? new Date(data.warrantyExpiryDate) : null,
-              lifeSpan: data.lifeSpan ? parseInt(data.lifeSpan) : null,
-              outOfBoxOs: data.outOfBoxOs || null,
-              assignedEmployeeId: data.assignedEmployeeId ? parseInt(data.assignedEmployeeId) : null
-            };
-            
-            results.push(assetData);
-          } catch (error: unknown) {
-            errors.push({ row: counter, error: error.message });
-          }
-        })
-        .on('end', async () => {
-          // Insert all valid assets
-          const importedAssets = [];
-          
-          for (const asset of results) {
-            try {
-              const newAsset = await storage.createAsset(asset);
-              importedAssets.push(newAsset);
-              
-              // Log activity
-              if (req.user) {
-                await storage.logActivity({
-                  userId: (req.user as schema.User).id,
-                  action: "Import",
-                  entityType: "Asset",
-                  entityId: newAsset.id,
-                  details: { assetId: newAsset.assetId, type: newAsset.type, brand: newAsset.brand }
-                });
-              }
-            } catch (error: unknown) {
-              errors.push({ asset: asset.assetId, error: error.message });
-            }
-          }
-          
-          res.json({ 
-            message: "Import completed", 
-            imported: importedAssets.length,
-            errors: errors.length > 0 ? errors : null
-          });
-        });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const assets = await storage.getAllAssets();
-      
-      // Get employees for mapping assignedEmployeeId to employee names
-      const employees = await storage.getAllEmployees();
-      const employeeMap = new Map();
-      employees.forEach(emp => {
-        employeeMap.set(emp.id, emp.englishName);
-      });
-      
-      // Enhanced CSV export with all current schema fields including new hardware specs
-      const csvData = assets.map(asset => {
-        const assignedTo = asset.assignedEmployeeId ? 
-          employeeMap.get(asset.assignedEmployeeId) || '' : '';
-          
-        return {
-          'Asset ID': asset.assetId,
-          'Type': asset.type,
-          'Brand': asset.brand,
-          'Model Number': asset.modelNumber || '',
-          'Model Name': asset.modelName || '',
-          'Serial Number': asset.serialNumber,
-          'Specifications': asset.specs || '',
-          'CPU': asset.cpu || '', // New hardware field
-          'RAM': asset.ram || '', // New hardware field  
-          'Storage': asset.storage || '', // New hardware field
-          'Status': asset.status,
-          'Purchase Date': asset.purchaseDate ? 
-            new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
-          'Purchase Price': asset.buyPrice || '',
-          'Warranty Expiry Date': asset.warrantyExpiryDate ? 
-            new Date(asset.warrantyExpiryDate).toISOString().split('T')[0] : '',
-          'Life Span (months)': asset.lifeSpan || '',
-          'Factory OS': asset.outOfBoxOs || '',
-          'Assigned To': assignedTo,
-          'Created Date': asset.createdAt ? 
-            new Date(asset.createdAt).toISOString().split('T')[0] : '',
-          'Last Updated': asset.updatedAt ? 
-            new Date(asset.updatedAt).toISOString().split('T')[0] : ''
-        };
-      });
-      
-      // Convert to CSV using csv-stringify
-      csvStringify(csvData, { header: true }, (err, output) => {
-        if (err) {
-          throw new Error('Error generating CSV export');
-        }
-        
-        // Set headers for file download
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=assets-export.csv');
-        
-        // Send CSV data
-        res.send(output);
-        
-        // Log activity
-        if (req.user) {
-          logActivity({
-            userId: (req.user as schema.User).id,
-            action: AuditAction.EXPORT,
-            entityType: EntityType.ASSET,
-            details: { count: assets.length }
-          });
-        }
-      });
-    } catch (error: unknown) {
-      console.error('Error exporting assets:', error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
   // Ticket CRUD routes
   app.get("/api/tickets", authenticateUser, async (req, res) => {
     try {
@@ -4275,9 +4113,22 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
       console.log("Creating ticket:", req.body);
       
       // Validate required fields
-      const { submittedById, requestType, priority, description } = req.body;
-      if (!submittedById || !requestType || !priority || !description) {
+      const { submittedById, requestType, priority, description, urgency, impact } = req.body;
+      if (!submittedById || !requestType || !description) {
         return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Validate priority calculation (ensure it matches urgency × impact)
+      const ticketUrgency = urgency || 'Medium';
+      const ticketImpact = impact || 'Medium'; 
+      const calculatedPriority = calculatePriority(ticketUrgency as UrgencyLevel, ticketImpact as ImpactLevel);
+      
+      if (priority && !validatePriority(ticketUrgency as UrgencyLevel, ticketImpact as ImpactLevel, priority)) {
+        return res.status(400).json({ 
+          message: `Priority "${priority}" is invalid. Based on urgency "${ticketUrgency}" and impact "${ticketImpact}", priority should be "${calculatedPriority}".`,
+          expectedPriority: calculatedPriority,
+          providedPriority: priority
+        });
       }
       
       // Validate employee ID exists (submittedById is already an employee ID from the form)
@@ -4433,6 +4284,31 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     try {
       const id = parseInt(req.params.id);
       const ticketData = req.body;
+      
+      // Validate priority calculation if urgency, impact, or priority is being updated
+      if (ticketData.urgency || ticketData.impact || ticketData.priority) {
+        // Get current ticket to check existing values
+        const currentTicket = await storage.getTicket(id);
+        if (!currentTicket) {
+          return res.status(404).json({ message: "Ticket not found" });
+        }
+        
+        const newUrgency = (ticketData.urgency || currentTicket.urgency) as UrgencyLevel;
+        const newImpact = (ticketData.impact || currentTicket.impact) as ImpactLevel;
+        const calculatedPriority = calculatePriority(newUrgency, newImpact);
+        
+        // If priority is provided, validate it matches the calculated value
+        if (ticketData.priority && !validatePriority(newUrgency, newImpact, ticketData.priority)) {
+          return res.status(400).json({ 
+            message: `Priority "${ticketData.priority}" is invalid. Based on urgency "${newUrgency}" and impact "${newImpact}", priority should be "${calculatedPriority}".`,
+            expectedPriority: calculatedPriority,
+            providedPriority: ticketData.priority
+          });
+        }
+        
+        // Auto-set the correct priority (this ensures consistency even if not provided)
+        ticketData.priority = calculatedPriority;
+      }
       
       const updatedTicket = await storage.updateTicket(id, ticketData);
       if (!updatedTicket) {
@@ -6713,39 +6589,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         return res.status(404).json({ message: "Request type not found" });
       }
       res.json({ success: true });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // Feature 2: Time Tracking operations
-  app.post("/api/tickets/:id/start-time", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const userId = (req.user as schema.User).id;
-      
-      const ticket = await storage.startTicketTimeTracking(ticketId, userId);
-      if (!ticket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json(ticket);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.post("/api/tickets/:id/stop-time", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const userId = (req.user as schema.User).id;
-      
-      const ticket = await storage.stopTicketTimeTracking(ticketId, userId);
-      if (!ticket) {
-        return res.status(404).json({ message: "Ticket not found or time tracking not started" });
-      }
-      
-      res.json(ticket);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }

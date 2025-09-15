@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { UserResponse, AssetResponse } from '@shared/types';
+import { calculatePriority, getPriorityBadgeVariant, getPriorityExplanation, type UrgencyLevel, type ImpactLevel } from '@shared/priorityUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Dialog imports removed - form now renders inline
@@ -412,6 +413,7 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
   // Priority color mapping
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
+      case 'critical': return 'destructive';
       case 'high': return 'destructive';
       case 'medium': return 'default';
       case 'low': return 'secondary';
@@ -745,29 +747,45 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Priority */}
+                    {/* Priority - Auto-calculated from Urgency × Impact */}
                     <FormField
                       control={form.control}
                       name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{language === 'English' ? 'Priority' : 'الأولوية'} *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={language === 'English' ? 'Select priority' : 'اختر الأولوية'} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفضة'}</SelectItem>
-                              <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسطة'}</SelectItem>
-                              <SelectItem value="High">{language === 'English' ? 'High' : 'عالية'}</SelectItem>
-                              <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرجة'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const currentUrgency = form.watch('urgency') as UrgencyLevel;
+                        const currentImpact = form.watch('impact') as ImpactLevel;
+                        const calculatedPriority = calculatePriority(currentUrgency || 'Medium', currentImpact || 'Medium');
+                        
+                        // Update the form value to match calculated priority
+                        if (field.value !== calculatedPriority) {
+                          field.onChange(calculatedPriority);
+                        }
+                        
+                        return (
+                          <FormItem>
+                            <FormLabel>{language === 'English' ? 'Priority (Auto-calculated)' : 'الأولوية (محسوبة تلقائياً)'}</FormLabel>
+                            <div className="relative">
+                              <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+                                <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                                  calculatedPriority === 'Critical' ? 'bg-red-100 text-red-800 border-red-200' : 
+                                  calculatedPriority === 'High' ? 'bg-red-100 text-red-700 border-red-200' : 
+                                  calculatedPriority === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 
+                                  'bg-green-100 text-green-800 border-green-200'
+                                }`}>
+                                  {calculatedPriority}
+                                </div>
+                                <span className="text-sm text-gray-600">
+                                  {language === 'English' 
+                                    ? getPriorityExplanation(currentUrgency || 'Medium', currentImpact || 'Medium')
+                                    : `الأولوية "${calculatedPriority}" محسوبة من الإلحاح: ${currentUrgency || 'Medium'} × التأثير: ${currentImpact || 'Medium'}`
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
 
                     {/* Urgency */}
@@ -1275,29 +1293,46 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                               )}
                             />
 
-                            {/* Priority */}
+                            {/* Priority - Auto-calculated from Urgency × Impact */}
                             <FormField
                               control={form.control}
                               name="priority"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>{language === 'English' ? 'Priority' : 'الأولوية'} *</FormLabel>
-                                  <Select onValueChange={(value) => { field.onChange(value); handleAutoSave('priority', value); }} value={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder={language === 'English' ? 'Select priority' : 'اختر الأولوية'} />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="Low">{language === 'English' ? 'Low' : 'منخفض'}</SelectItem>
-                                      <SelectItem value="Medium">{language === 'English' ? 'Medium' : 'متوسط'}</SelectItem>
-                                      <SelectItem value="High">{language === 'English' ? 'High' : 'عالي'}</SelectItem>
-                                      <SelectItem value="Critical">{language === 'English' ? 'Critical' : 'حرج'}</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                              render={({ field }) => {
+                                const currentUrgency = form.watch('urgency') as UrgencyLevel;
+                                const currentImpact = form.watch('impact') as ImpactLevel;
+                                const calculatedPriority = calculatePriority(currentUrgency || 'Medium', currentImpact || 'Medium');
+                                
+                                // Update the form value to match calculated priority
+                                if (field.value !== calculatedPriority) {
+                                  field.onChange(calculatedPriority);
+                                  handleAutoSave('priority', calculatedPriority);
+                                }
+                                
+                                return (
+                                  <FormItem>
+                                    <FormLabel>{language === 'English' ? 'Priority (Auto-calculated)' : 'الأولوية (محسوبة تلقائياً)'}</FormLabel>
+                                    <div className="relative">
+                                      <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+                                        <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                                          calculatedPriority === 'Critical' ? 'bg-red-100 text-red-800 border-red-200' : 
+                                          calculatedPriority === 'High' ? 'bg-red-100 text-red-700 border-red-200' : 
+                                          calculatedPriority === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 
+                                          'bg-green-100 text-green-800 border-green-200'
+                                        }`}>
+                                          {calculatedPriority}
+                                        </div>
+                                        <span className="text-sm text-gray-600">
+                                          {language === 'English' 
+                                            ? getPriorityExplanation(currentUrgency || 'Medium', currentImpact || 'Medium')
+                                            : `الأولوية "${calculatedPriority}" محسوبة من الإلحاح: ${currentUrgency || 'Medium'} × التأثير: ${currentImpact || 'Medium'}`
+                                          }
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <FormMessage />
+                                  </FormItem>
+                                );
+                              }}
                             />
 
                             {/* Urgency */}

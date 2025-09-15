@@ -10,13 +10,14 @@ export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const pricingModeEnum = pgEnum('pricing_mode', ['total', 'individual']);
 // Asset statuses are now flexible - ENUM removed to allow custom statuses
-export const assetTypeEnum = pgEnum('asset_type', ['Laptop', 'Desktop', 'Mobile', 'Tablet', 'Monitor', 'Printer', 'Server', 'Network', 'Other']);
 export const assetConditionEnum = pgEnum('asset_condition', ['New', 'Good', 'Fair', 'Poor', 'Damaged']);
 export const ticketStatusEnum = pgEnum('ticket_status', ['Open', 'In Progress', 'Resolved', 'Closed']);
-export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High']);
+export const ticketPriorityEnum = pgEnum('ticket_priority', ['Low', 'Medium', 'High', 'Critical']);
+export const ticketTypeEnum = pgEnum('ticket_type', ['Incident', 'Service Request', 'Problem', 'Change']);
+export const ticketCategoryEnum = pgEnum('ticket_category', ['Hardware', 'Software', 'Network', 'Access', 'Other']);
+export const ticketUrgencyEnum = pgEnum('ticket_urgency', ['Low', 'Medium', 'High', 'Critical']);
+export const ticketImpactEnum = pgEnum('ticket_impact', ['Low', 'Medium', 'High', 'Critical']);
 export const notificationTypeEnum = pgEnum('notification_type', ['Asset', 'Ticket', 'System', 'Employee']);
-export const upgradePriorityEnum = pgEnum('upgrade_priority', ['Critical', 'High', 'Medium', 'Low']);
-export const upgradeRiskEnum = pgEnum('upgrade_risk', ['Critical', 'High', 'Medium', 'Low']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
 export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In', 'Maintenance','Sale','Retirement','Upgrade']);
@@ -158,35 +159,6 @@ export const assetMaintenance = pgTable("asset_maintenance", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Service Providers table
-export const serviceProviders = pgTable("service_providers", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
-  contactPerson: varchar("contact_person", { length: 100 }),
-  phone: varchar("phone", { length: 50 }),
-  email: varchar("email", { length: 100 }),
-  address: varchar("address", { length: 255 }),
-  serviceType: varchar("service_type", { length: 100 }),
-  contractStartDate: timestamp("contract_start_date"),
-  contractEndDate: timestamp("contract_end_date"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Asset Service Providers relationship table
-export const assetServiceProviders = pgTable("asset_service_providers", {
-  id: serial("id").primaryKey(),
-  assetId: integer("asset_id").notNull().references(() => assets.id),
-  serviceProviderId: integer("service_provider_id").notNull().references(() => serviceProviders.id),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  contractNumber: varchar("contract_number", { length: 100 }),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // Asset Transactions table
 export const assetTransactions = pgTable("asset_transactions", {
   id: serial("id").primaryKey(),
@@ -282,44 +254,41 @@ export const assetUpgrades = pgTable("asset_upgrades", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Tickets table
+// Tickets table - Simplified v0.4.0 Schema (21 core fields)
 export const tickets = pgTable("tickets", {
+  // Core Identity & Tracking
   id: serial("id").primaryKey(),
   ticketId: varchar("ticket_id", { length: 20 }).notNull().unique().default(sql`('TKT-' || lpad((nextval('tickets_id_seq'::regclass))::text, 6, '0'::text))`),
+  
+  // Relationships
   submittedById: integer("submitted_by_id").notNull().references(() => employees.id),
-  requestType: varchar("request_type", { length: 100 }).notNull(),
-  priority: ticketPriorityEnum("priority").notNull(),
-  description: text("description").notNull(),
-  relatedAssetId: integer("related_asset_id").references(() => assets.id),
-  status: ticketStatusEnum("status").notNull().default('Open'),
   assignedToId: integer("assigned_to_id").references(() => users.id),
-  resolutionNotes: text("resolution_notes"),
+  relatedAssetId: integer("related_asset_id").references(() => assets.id),
+  
+  // Request Classification
+  type: ticketTypeEnum("type").notNull().default('Incident'), // Nature of request
+  category: ticketCategoryEnum("category").notNull().default('Other'), // Classification for reporting
+  
+  // Priority Management (calculated based on urgency × impact)
+  priority: ticketPriorityEnum("priority").notNull().default('Medium'),
+  urgency: ticketUrgencyEnum("urgency").notNull().default('Medium'),
+  impact: ticketImpactEnum("impact").notNull().default('Medium'),
+  
+  // Content
+  title: varchar("title", { length: 255 }).notNull(), // Renamed from summary
+  description: text("description").notNull(),
+  resolution: text("resolution"),
+  
+  // Status & Workflow
+  status: ticketStatusEnum("status").notNull().default('Open'),
+  
+  // Time Management
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  startTime: timestamp("start_time"),
   completionTime: timestamp("completion_time"),
-  timeSpent: integer("time_spent"),
-  category: varchar("category", { length: 100 }).default('Incident'),
-  summary: varchar("summary", { length: 255 }),
-  urgency: varchar("urgency", { length: 50 }).default('Medium'),
-  impact: varchar("impact", { length: 50 }).default('Medium'),
-  rootCause: text("root_cause"),
-  workaround: text("workaround"),
-  resolution: text("resolution"),
-  tags: text("tags").array(),
+  timeSpent: integer("time_spent"), // in minutes
   dueDate: timestamp("due_date"),
-  isTimeTracking: boolean("is_time_tracking").default(false),
-  lastActivityAt: timestamp("last_activity_at").defaultNow(),
   slaTarget: timestamp("sla_target"),
-  slaBreached: boolean("sla_breached").default(false),
-  escalationLevel: integer("escalation_level").default(0),
-  mergedIntoId: integer("merged_into_id").references((): any => tickets.id),
-  reopenCount: integer("reopen_count").default(0),
-  customerRating: integer("customer_rating"),
-  customerFeedback: text("customer_feedback"),
-  privateNotes: text("private_notes"),
-  attachments: text("attachments").array(),
-  timeTrackingStartedAt: timestamp("time_tracking_started_at"),
 });
 
 // Ticket Comments table
@@ -465,7 +434,6 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   assetMaintenance: many(assetMaintenance),
   assetTransactions: many(assetTransactions),
   assetUpgrades: many(assetUpgrades),
-  assetServiceProviders: many(assetServiceProviders),
   assetSaleItems: many(assetSaleItems),
 }));
 
@@ -487,7 +455,6 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedByEmployee: one(employees, { fields: [tickets.submittedById], references: [employees.id] }),
   assignedToUser: one(users, { fields: [tickets.assignedToId], references: [users.id] }),
   relatedAsset: one(assets, { fields: [tickets.relatedAssetId], references: [assets.id] }),
-  mergedIntoTicket: one(tickets, { fields: [tickets.mergedIntoId], references: [tickets.id] }),
   comments: many(ticketComments),
   history: many(ticketHistory),
 }));
