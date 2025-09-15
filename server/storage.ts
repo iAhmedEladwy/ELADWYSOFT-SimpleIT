@@ -1115,7 +1115,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Log the data being inserted to identify the problematic field
       console.log('Creating ticket with data:', {
-        summary: ticket.summary?.length || 0,
+        title: ticket.title?.length || 0,
         description: ticket.description?.length || 0,
         requestType: ticket.requestType?.length || 0,
         category: ticket.category?.length || 0,
@@ -1133,7 +1133,7 @@ export class DatabaseStorage implements IStorage {
       const calculatedPriority = calculatePriority(urgency, impact);
       
       const safeData = {
-        summary: (ticket.summary || 'Ticket').substring(0, 255),
+        title: (ticket.title || 'New Ticket').substring(0, 255),
         description: ticket.description || '',
         requestType: (ticket.requestType || 'Other').substring(0, 100),
         category: (ticket.category || 'Incident').substring(0, 100),
@@ -1159,7 +1159,7 @@ export class DatabaseStorage implements IStorage {
       console.log('Priority calculation:', { urgency, impact, calculatedPriority });
       
       console.log('Safe data after truncation:', {
-        summary: safeData.summary.length,
+        title: safeData.title.length,
         requestType: safeData.requestType.length,
         category: safeData.category.length,
         urgency: safeData.urgency.length,
@@ -1170,7 +1170,7 @@ export class DatabaseStorage implements IStorage {
       // Let database auto-generate ticket_id - don't include it in INSERT
       const result = await pool.query(`
         INSERT INTO tickets (
-          summary, description, request_type, category, priority,
+          title, description, request_type, category, priority,
           urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
           resolution, resolution_notes, due_date, sla_target, escalation_level,
           tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,

@@ -380,19 +380,19 @@ export default function TicketsTable({
                   {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
                 </TableCell>
                 
-                {/* Summary */}
-                <TableCell className="min-w-[200px] max-w-xs truncate" title={ticket.summary}>
-                  {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
+                {/* Title */}
+                <TableCell className="min-w-[200px] max-w-xs truncate" title={ticket.title}>
+                  {ticket.title || ticket.description?.substring(0, 50) + '...' || 'No title'}
                 </TableCell>
                 
-                {/* Request Type */}
+                {/* Type */}
                 <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
                   <Select
-                    value={ticket.requestType || 'Hardware'}
+                    value={ticket.type || 'Incident'}
                     onValueChange={(value) => {
                       updateTicketMutation.mutate({ 
                         id: ticket.id, 
-                        updates: { requestType: value } 
+                        updates: { type: value } 
                       });
                     }}
                   >
@@ -401,19 +401,19 @@ export default function TicketsTable({
                     </SelectTrigger>
                     <SelectContent className="relative z-50">
                       {isLoadingRequestTypes ? (
-                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        <SelectItem value="loading" disabled>{t.loading}</SelectItem>
                       ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
                         requestTypes.map((type: any) => (
                           <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
-                            {type.name || 'Hardware'}
+                            {type.name || t.categoryHardware}
                           </SelectItem>
                         ))
                       ) : (
                         <>
-                          <SelectItem value="Hardware">Hardware</SelectItem>
-                          <SelectItem value="Software">Software</SelectItem>
-                          <SelectItem value="Network">Network</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
+                          <SelectItem value="Software">{t.categorySoftware}</SelectItem>
+                          <SelectItem value="Network">{t.categoryNetwork}</SelectItem>
+                          <SelectItem value="Other">{t.categoryOther}</SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -565,20 +565,20 @@ export default function TicketsTable({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {resolutionNotes ? 'Update Resolution' : 'Add Resolution Details'}
+                {resolutionNotes ? t.updateResolution : t.addResolutionDetails}
               </DialogTitle>
               <DialogDescription>
                {resolutionDialog.ticketId && (
                   <>
                     <p className="font-medium">
-                      Ticket: {getTicketById(resolutionDialog.ticketId)?.title || getTicketById(resolutionDialog.ticketId)?.ticketId}
+                      {t.ticketLabel}: {getTicketById(resolutionDialog.ticketId)?.title || getTicketById(resolutionDialog.ticketId)?.ticketId}
                     </p>
                     <br />
                   </>
                 )}
                 {resolutionNotes 
-                  ? `Review or update the resolution before marking this ticket as ${resolutionDialog.newStatus}.`
-                  : `Please provide resolution details before marking this ticket as ${resolutionDialog.newStatus}.`
+                  ? t.reviewBeforeStatus.replace('{status}', resolutionDialog.newStatus)
+                  : t.provideResolutionBeforeStatus.replace('{status}', resolutionDialog.newStatus)
                 }
               </DialogDescription>
             </DialogHeader>
@@ -586,19 +586,19 @@ export default function TicketsTable({
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="resolution">
-                  Resolution {!resolutionNotes && <span className="text-red-500">*</span>}
+                  {t.resolution} {!resolutionNotes && <span className="text-red-500">*</span>}
                 </Label>
                 <Textarea
                   id="resolution"
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
-                  placeholder="Enter how this ticket was resolved..."
+                  placeholder={t.resolutionPlaceholder}
                   className="min-h-[100px]"
                   autoFocus
                 />
                 {resolutionNotes && (
                   <p className="text-sm text-muted-foreground">
-                    Tip: You can update the resolution or leave it as is.
+                    {t.resolutionTip}
                   </p>
                 )}
               </div>

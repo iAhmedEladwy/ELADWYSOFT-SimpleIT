@@ -248,10 +248,10 @@ export const ticketValidationRules: CSVValidationRule[] = [
     pattern: /^[A-Z0-9-]+$/
   },
   {
-    field: 'summary',
+    field: 'title',
     required: true,
     type: 'string',
-    validate: (value) => value.length >= 5 || 'Summary must be at least 5 characters'
+    validate: (value) => value.length >= 5 || 'Title must be at least 5 characters'
   },
   {
     field: 'description',
@@ -498,7 +498,7 @@ export const employeeExportColumns = [
 ];
 
 export const ticketExportColumns = [
-  'id', 'ticketId', 'summary', 'description', 'category', 'requestType', 
+  'id', 'ticketId', 'title', 'description', 'category', 'requestType', 
   'urgency', 'impact', 'priority', 'status', 'submittedById', 'assignedToId', 
   'relatedAssetId', 'dueDate', 'slaTarget', 'escalationLevel', 'tags',
   'rootCause', 'workaround', 'resolution', 'resolutionNotes', 'privateNotes',

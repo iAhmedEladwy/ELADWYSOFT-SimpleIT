@@ -7,7 +7,14 @@ export interface TicketTranslations {
   description: string;
   createTicket: string;
   editTicket: string;
+  editTicketDescription: string;
   ticketDetails: string;
+  updateResolution: string;
+  addResolutionDetails: string;
+  ticketLabel: string;
+  reviewBeforeStatus: string;
+  provideResolutionBeforeStatus: string;
+  resolutionTip: string;
   
   // Ticket Fields
   ticketId: string;
@@ -99,13 +106,12 @@ export interface TicketTranslations {
   ticketAssigned: string;
   ticketResolved: string;
   ticketClosed: string;
-  error: string;
-  success: string;
-  loading: string;
-  noTickets: string;
-  noTicketsSelected: string;
-  
-  // Filters
+    error: string;
+    success: string;
+    loading: string;
+    noTickets: string;
+    noTicketsSelected: string;
+    errorUpdating: string;  // Filters
   allTickets: string;
   myTickets: string;
   openTickets: string;
@@ -174,7 +180,14 @@ export const ticketTranslations = {
     description: 'Track and manage support requests',
     createTicket: 'Create Ticket',
     editTicket: 'Edit Ticket',
+    editTicketDescription: 'Edit ticket details, status, and assignment information',
     ticketDetails: 'Ticket Details',
+    updateResolution: 'Update Resolution',
+    addResolutionDetails: 'Add Resolution Details',
+    ticketLabel: 'Ticket',
+    reviewBeforeStatus: 'Review or update the resolution before marking this ticket as {status}',
+    provideResolutionBeforeStatus: 'Please provide resolution details before marking this ticket as {status}',
+    resolutionTip: 'Tip: You can update the resolution or leave it as is',
     
     // Ticket Fields
     ticketId: 'Ticket ID',
@@ -271,6 +284,7 @@ export const ticketTranslations = {
     loading: 'Loading...',
     noTickets: 'No tickets found',
     noTicketsSelected: 'No tickets selected',
+    errorUpdating: 'Failed to update ticket',
     
     // Filters
     allTickets: 'All Tickets',
@@ -340,7 +354,14 @@ export const ticketTranslations = {
     description: 'تتبع وإدارة طلبات الدعم',
     createTicket: 'إنشاء تذكرة',
     editTicket: 'تعديل التذكرة',
+    editTicketDescription: 'تعديل تفاصيل التذكرة والحالة والتعيين',
     ticketDetails: 'تفاصيل التذكرة',
+    updateResolution: 'تحديث الحل',
+    addResolutionDetails: 'إضافة تفاصيل الحل',
+    ticketLabel: 'تذكرة',
+    reviewBeforeStatus: 'راجع أو حدث الحل قبل تغيير حالة التذكرة إلى {status}',
+    provideResolutionBeforeStatus: 'الرجاء تقديم تفاصيل الحل قبل تغيير حالة التذكرة إلى {status}',
+    resolutionTip: 'نصيحة: يمكنك تحديث الحل أو تركه كما هو',
     
     // Ticket Fields
     ticketId: 'رقم التذكرة',
@@ -437,6 +458,7 @@ export const ticketTranslations = {
     loading: 'جاري التحميل...',
     noTickets: 'لا توجد تذاكر',
     noTicketsSelected: 'لم يتم تحديد تذاكر',
+    errorUpdating: 'فشل في تحديث التذكرة',
     
     // Filters
     allTickets: 'جميع التذاكر',

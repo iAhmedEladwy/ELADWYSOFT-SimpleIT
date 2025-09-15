@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
 import { useForm } from 'react-hook-form';
+import { useTicketTranslations } from '@/lib/translations/tickets';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -52,8 +53,8 @@ import {
 const ticketEditSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title must be less than 255 characters'),
   description: z.string().optional(),
-  requestType: z.string().min(1, 'Request type is required'),
-  category: z.string().optional(),
+  type: z.enum(['Incident', 'Service Request', 'Problem', 'Change']),
+  category: z.string().min(1, 'Category is required'),
   priority: z.enum(['Low', 'Medium', 'High']),
   status: z.enum(['Open', 'In Progress', 'Resolved', 'Closed']),
   assignedToId: z.number().nullable().optional(),
@@ -93,9 +94,9 @@ export default function TicketEditDialog({
   const form = useForm<TicketEditFormData>({
     resolver: zodResolver(ticketEditSchema),
     defaultValues: {
-      summary: '',
+      title: '',
       description: '',
-      requestType: 'Hardware',
+      type: 'Incident',
       category: '',
       priority: 'Medium',
       status: 'Open',
@@ -108,11 +109,11 @@ export default function TicketEditDialog({
     },
   });
 
-  // Load custom request types
-  const { data: customRequestTypes = [] } = useQuery({
-    queryKey: ['/api/custom-request-types'],
+  // Load ticket categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/api/categories'],
     queryFn: async () => {
-      const response = await apiRequest('/api/custom-request-types');
+      const response = await apiRequest('/api/categories');
       return response.json();
     },
     staleTime: 5 * 60 * 1000,
@@ -124,7 +125,7 @@ export default function TicketEditDialog({
       form.reset({
         title: ticket.title || '',
         description: ticket.description || '',
-        requestType: ticket.requestType || 'Hardware',
+        type: ticket.type || 'Incident',
         category: ticket.category || '',
         priority: ticket.priority || 'Medium',
         status: ticket.status || 'Open',
@@ -148,15 +149,15 @@ export default function TicketEditDialog({
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticket?.id}`] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
+        title: t.success,
+        description: t.ticketUpdated,
       });
       onOpenChange(false);
     },
     onError: (error: any) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to update ticket' : 'فشل في تحديث التذكرة'),
+        title: t.error,
+        description: error.message || t.errorUpdating,
         variant: 'destructive',
       });
     },
@@ -207,30 +208,8 @@ export default function TicketEditDialog({
     return asset ? `${asset.assetId} - ${asset.modelName || asset.type}` : 'Unknown';
   };
 
-  // Translations
-  const t = {
-    editTicket: language === 'English' ? 'Edit Ticket' : 'تعديل التذكرة',
-    ticketInfo: language === 'English' ? 'Ticket Information' : 'معلومات التذكرة',
-    title: language === 'English' ? 'Title' : 'العنوان',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
-    category: language === 'English' ? 'Category' : 'الفئة',
-    priority: language === 'English' ? 'Priority' : 'الأولوية',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
-    relatedAsset: language === 'English' ? 'Related Asset' : 'الأصل المرتبط',
-    urgency: language === 'English' ? 'Urgency' : 'الإلحاح',
-    impact: language === 'English' ? 'Impact' : 'التأثير',
-    resolutionNotes: language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل',
-    timeSpent: language === 'English' ? 'Time Spent (minutes)' : 'الوقت المستغرق (دقائق)',
-    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
-    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    saving: language === 'English' ? 'Saving...' : 'جاري الحفظ...',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير معين',
-    selectAsset: language === 'English' ? 'Select asset' : 'اختر الأصل',
-    selectUser: language === 'English' ? 'Select user' : 'اختر المستخدم',
-    selectType: language === 'English' ? 'Select type' : 'اختر النوع',
-  };
+  // Get translations
+  const t = useTicketTranslations(language);
 
   if (!ticket) return null;
 
@@ -243,7 +222,7 @@ export default function TicketEditDialog({
             {t.editTicket} - {ticket.ticketId}
           </DialogTitle>
           <DialogDescription>
-            Edit ticket details, status, and assignment information
+            {t.editTicketDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -252,13 +231,13 @@ export default function TicketEditDialog({
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{t.ticketInfo}</CardTitle>
+                <CardTitle className="text-sm">{t.ticketDetails}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Ticket className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label className="text-xs text-muted-foreground">ID</Label>
+                    <Label className="text-xs text-muted-foreground">{t.ticketId}</Label>
                     <p className="font-medium">{ticket.ticketId}</p>
                   </div>
                 </div>
@@ -266,7 +245,7 @@ export default function TicketEditDialog({
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label className="text-xs text-muted-foreground">Submitted By</Label>
+                    <Label className="text-xs text-muted-foreground">{t.submittedBy}</Label>
                     <p className="font-medium">{getEmployeeName(ticket.submittedById)}</p>
                   </div>
                 </div>
@@ -274,7 +253,7 @@ export default function TicketEditDialog({
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label className="text-xs text-muted-foreground">Created</Label>
+                    <Label className="text-xs text-muted-foreground">{t.createdAt}</Label>
                     <p className="font-medium">
                       {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy HH:mm')}
                     </p>
@@ -282,14 +261,14 @@ export default function TicketEditDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Current Status</Label>
+                  <Label className="text-xs text-muted-foreground">{t.status}</Label>
                   <Badge variant={getStatusBadgeVariant(ticket.status)}>
                     {ticket.status}
                   </Badge>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Current Priority</Label>
+                  <Label className="text-xs text-muted-foreground">{t.priority}</Label>
                   <Badge variant={getPriorityBadgeVariant(ticket.priority)}>
                     {ticket.priority}
                   </Badge>
@@ -309,9 +288,9 @@ export default function TicketEditDialog({
                     name="title"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>{t.title} *</FormLabel>
+                        <FormLabel>{t.title_field} *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Enter ticket title" />
+                          <Input {...field} placeholder={t.titlePlaceholder} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -324,41 +303,41 @@ export default function TicketEditDialog({
                     name="description"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>{t.description}</FormLabel>
+                        <FormLabel>{t.description_field}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} placeholder="Enter detailed description" />
+                          <Textarea {...field} rows={3} placeholder={t.descriptionPlaceholder} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  {/* Request Type */}
+                  {/* Category */}
                   <FormField
                     control={form.control}
-                    name="requestType"
+                    name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t.requestType} *</FormLabel>
+                        <FormLabel>{t.category} *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t.selectType} />
+                              <SelectValue placeholder={t.selectCategory} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {customRequestTypes.length > 0 ? (
-                              customRequestTypes.map((type: any) => (
-                                <SelectItem key={type.id} value={type.name}>
-                                  {type.name}
+                            {categories.length > 0 ? (
+                              categories.map((category: any) => (
+                                <SelectItem key={category.id} value={category.name}>
+                                  {category.name}
                                 </SelectItem>
                               ))
                             ) : (
                               <>
-                                <SelectItem value="Hardware">Hardware</SelectItem>
-                                <SelectItem value="Software">Software</SelectItem>
-                                <SelectItem value="Network">Network</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
+                                <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
+                                <SelectItem value="Software">{t.categorySoftware}</SelectItem>
+                                <SelectItem value="Network">{t.categoryNetwork}</SelectItem>
+                                <SelectItem value="Other">{t.categoryOther}</SelectItem>
                               </>
                             )}
                           </SelectContent>
@@ -382,9 +361,9 @@ export default function TicketEditDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
+                            <SelectItem value="Low">{t.priorityLow}</SelectItem>
+                            <SelectItem value="Medium">{t.priorityMedium}</SelectItem>
+                            <SelectItem value="High">{t.priorityHigh}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -406,10 +385,10 @@ export default function TicketEditDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Open">Open</SelectItem>
-                            <SelectItem value="In Progress">In Progress</SelectItem>
-                            <SelectItem value="Resolved">Resolved</SelectItem>
-                            <SelectItem value="Closed">Closed</SelectItem>
+                            <SelectItem value="Open">{t.statusOpen}</SelectItem>
+                            <SelectItem value="In Progress">{t.statusInProgress}</SelectItem>
+                            <SelectItem value="Resolved">{t.statusResolved}</SelectItem>
+                            <SelectItem value="Closed">{t.statusClosed}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -487,14 +466,14 @@ export default function TicketEditDialog({
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder={t.selectUrgency} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                            <SelectItem value="Critical">Critical</SelectItem>
+                            <SelectItem value="Low">{t.urgencyLow}</SelectItem>
+                            <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
+                            <SelectItem value="High">{t.urgencyHigh}</SelectItem>
+                            <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -512,14 +491,14 @@ export default function TicketEditDialog({
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue placeholder={t.selectImpact} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                            <SelectItem value="Critical">Critical</SelectItem>
+                            <SelectItem value="Low">{t.impactLow}</SelectItem>
+                            <SelectItem value="Medium">{t.impactMedium}</SelectItem>
+                            <SelectItem value="High">{t.impactHigh}</SelectItem>
+                            <SelectItem value="Critical">{t.impactCritical}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -556,7 +535,7 @@ export default function TicketEditDialog({
                       <FormItem className="md:col-span-2">
                         <FormLabel>{t.resolutionNotes}</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={3} placeholder="Enter resolution notes or work done" />
+                          <Textarea {...field} rows={3} placeholder={t.resolutionPlaceholder} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

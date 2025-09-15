@@ -441,7 +441,7 @@ const myTicketsCount = useMemo(() => {
         const searchLower = filters.search.toLowerCase();
         const searchFields = [
           ticket.ticketId,
-          ticket.summary,
+          ticket.title,
           ticket.description,
           ticket.requestType,
           ticket.priority,
@@ -498,7 +498,7 @@ const myTicketsCount = useMemo(() => {
       // Prepare CSV data
       const csvData = filteredTickets.map(ticket => ({
         'Ticket ID': ticket.ticketId,
-        'Summary': ticket.summary || ticket.description.substring(0, 50),
+        'Title': ticket.title || ticket.description.substring(0, 50),
         'Status': ticket.status,
         'Priority': ticket.priority,
         'Type': ticket.requestType,

@@ -1098,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         case 'tickets':
           templateData = [{
-            'Summary*': 'Computer not starting (Required: Brief ticket description)',
+            'Title*': 'Computer not starting (Required: Brief ticket title)',
             'Description*': 'Employee computer fails to boot up after power outage (Required: Detailed description)',
             'Category': 'Hardware (Hardware, Software, Network, Security, Access)',
             'Request Type': 'Incident (Service Request, Incident, Problem, Change)',
