@@ -3152,11 +3152,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const upgrade = await storage.createAssetUpgrade(upgradeData);
       
-      // Create a transaction record for the upgrade (EXACTLY like maintenance does)
+      // Get the asset to find assigned employee
+      const assetForUpgrade = await storage.getAsset(assetId);
+      
+      // Create a transaction record for the upgrade with the assigned employee
       await storage.createAssetTransaction({
         assetId: assetId,
         type: 'Upgrade',
-        employeeId: null, // Upgrades don't need employee assignment
+        employeeId: assetForUpgrade?.assignedEmployeeId || null, // Include assigned employee for history context
         transactionDate: new Date(),
         handledById: user.id,
         conditionNotes: `${req.body.title} (Status: ${upgradeData.status})`,
@@ -5496,8 +5499,25 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         );
       }
     } else {
+      // Check what's actually in the database first
+      try {
+        const directDbQuery = `SELECT id, asset_id, employee_id, type, transaction_date FROM asset_transactions LIMIT 5`;
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const directResult = await pool.query(directDbQuery);
+        console.log('Direct DB query result for asset_transactions:', directResult.rows);
+        
+        // Check if any have employee_id
+        const withEmployees = directResult.rows.filter(row => row.employee_id);
+        console.log('Transactions with employee_id:', withEmployees.length);
+      } catch (dbError) {
+        console.error('Direct DB query error:', dbError);
+      }
+      
       // getAllAssetTransactions now includes asset and employee data via JOINs
       transactions = await storage.getAllAssetTransactions();
+      console.log('Asset transactions route - transactions length:', transactions?.length);
+      console.log('Asset transactions route - first transaction employee:', transactions?.[0]?.employee);
     }
     
     // Parse deviceSpecs if it's a string for all transactions
@@ -5516,6 +5536,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         
         return enhanced;
       });
+      console.log('Asset transactions route - final enhanced first transaction employee:', transactions?.[0]?.employee);
     }
     
     // REMOVED: Complex upgrade merging logic - upgrades are now in assetTransactions

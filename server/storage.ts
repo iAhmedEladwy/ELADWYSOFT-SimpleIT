@@ -2115,62 +2115,38 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAllAssetTransactions(): Promise<AssetTransaction[]> {
     try {
-      // Use a single SQL query with proper joins for better performance and reliability
-      const query = `
-        SELECT 
-          at.*,
-          a.asset_id as asset_asset_id,
-          a.type as asset_type,
-          a.brand as asset_brand,
-          a.model_name as asset_model_name,
-          a.serial_number as asset_serial_number,
-          a.specs as asset_specs,
-          a.status as asset_status,
-          e.english_name as employee_english_name,
-          e.arabic_name as employee_arabic_name,
-          e.department as employee_department,
-          e.emp_id as employee_emp_id
-        FROM asset_transactions at
-        LEFT JOIN assets a ON at.asset_id = a.id
-        LEFT JOIN employees e ON at.employee_id = e.id
-        ORDER BY at.transaction_date DESC
-      `;
+      // First, let's get the transactions using Drizzle ORM to ensure compatibility
+      const transactions = await db
+        .select()
+        .from(assetTransactions)
+        .orderBy(desc(assetTransactions.transactionDate));
+        
+      console.log('Drizzle ORM transactions count:', transactions.length);
+      console.log('First transaction employee_id:', transactions[0]?.employeeId);
       
-      const result = await pool.query(query);
-      
-      // Map the results to include proper asset and employee objects
-      return result.rows.map((row: any) => ({
-        id: row.id,
-        assetId: row.asset_id,
-        type: row.type,
-        employeeId: row.employee_id,
-        transactionDate: row.transaction_date,
-        expectedReturnDate: row.expected_return_date,
-        actualReturnDate: row.actual_return_date,
-        conditionNotes: row.condition_notes,
-        handledById: row.handled_by_id,
-        attachments: row.attachments,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        deviceSpecs: row.device_specs,
-        asset: row.asset_asset_id ? {
-          id: row.asset_id,
-          assetId: row.asset_asset_id,
-          type: row.asset_type,
-          brand: row.asset_brand,
-          modelName: row.asset_model_name,
-          serialNumber: row.asset_serial_number,
-          specs: row.asset_specs,
-          status: row.asset_status
-        } : undefined,
-        employee: row.employee_english_name ? {
-          id: row.employee_id,
-          englishName: row.employee_english_name,
-          arabicName: row.employee_arabic_name,
-          department: row.employee_department,
-          empId: row.employee_emp_id
-        } : undefined
+      // Now enhance with asset and employee details using the existing methods
+      const result = await Promise.all(transactions.map(async (transaction) => {
+        const asset = transaction.assetId 
+          ? await this.getAsset(transaction.assetId) 
+          : undefined;
+          
+        const employee = transaction.employeeId 
+          ? await this.getEmployee(transaction.employeeId) 
+          : undefined;
+          
+        console.log(`Transaction ${transaction.id}: employeeId=${transaction.employeeId}, employee fetched:`, employee?.englishName);
+          
+        return {
+          ...transaction,
+          asset,
+          employee
+        };
       }));
+      
+      console.log('getAllAssetTransactions final result sample:', result[0]);
+      console.log('Employee data for first transaction (final):', result[0]?.employee);
+      
+      return result;
     } catch (error) {
       console.error('Error fetching all asset transactions:', error);
       return [];
