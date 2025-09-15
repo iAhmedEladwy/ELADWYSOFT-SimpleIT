@@ -154,7 +154,7 @@ export default function AssetFilters({
         </form>
 
         {/* Filter Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Type Filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">
