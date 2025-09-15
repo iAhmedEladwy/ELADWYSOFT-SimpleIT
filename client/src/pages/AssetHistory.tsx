@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, Calendar as CalendarIcon, User, Package, FileDown, Filter, Eye, Check, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
@@ -79,8 +80,6 @@ export default function AssetHistory() {
     dateFrom: '',
     dateTo: '',
   });
-  const [dateFromSelected, setDateFromSelected] = useState<Date | undefined>(undefined);
-  const [dateToSelected, setDateToSelected] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
@@ -741,12 +740,8 @@ export default function AssetHistory() {
                 <Label>{translations.dateFrom}</Label>
                 <Calendar
                   mode="picker"
-                  value={dateFromSelected ? format(dateFromSelected, 'yyyy-MM-dd') : ''}
-                  onChange={(value) => {
-                    const date = value ? new Date(value) : undefined;
-                    setDateFromSelected(date);
-                    handleFilterChange('dateFrom', value || '');
-                  }}
+                  value={filters.dateFrom}
+                  onChange={(value) => handleFilterChange('dateFrom', value || '')}
                   placeholder={translations.dateFrom}
                   className="w-full"
                 />
@@ -757,12 +752,8 @@ export default function AssetHistory() {
                 <Label>{translations.dateTo}</Label>
                 <Calendar
                   mode="picker"
-                  value={dateToSelected ? format(dateToSelected, 'yyyy-MM-dd') : ''}
-                  onChange={(value) => {
-                    const date = value ? new Date(value) : undefined;
-                    setDateToSelected(date);
-                    handleFilterChange('dateTo', value || '');
-                  }}
+                  value={filters.dateTo}
+                  onChange={(value) => handleFilterChange('dateTo', value || '')}
                   placeholder={translations.dateTo}
                   className="w-full"
                 />
