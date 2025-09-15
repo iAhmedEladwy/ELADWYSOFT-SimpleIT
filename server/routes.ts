@@ -5453,40 +5453,69 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     let transactions;
     if (assetId) {
       transactions = await storage.getAssetTransactions(Number(assetId));
+      // Enhance individual asset transactions with details if needed
+      if (transactions && Array.isArray(transactions)) {
+        transactions = await Promise.all(
+          transactions.map(async (transaction) => {
+            const enhanced: any = { ...transaction };
+            
+            // Add asset details if not already present
+            if (!enhanced.asset && transaction.assetId) {
+              enhanced.asset = await storage.getAsset(transaction.assetId);
+            }
+            
+            // Add employee details if not already present
+            if (!enhanced.employee && transaction.employeeId) {
+              enhanced.employee = await storage.getEmployee(transaction.employeeId);
+            }
+            
+            return enhanced;
+          })
+        );
+      }
     } else if (employeeId) {
       transactions = await storage.getEmployeeTransactions(Number(employeeId));
+      // Enhance individual employee transactions with details if needed
+      if (transactions && Array.isArray(transactions)) {
+        transactions = await Promise.all(
+          transactions.map(async (transaction) => {
+            const enhanced: any = { ...transaction };
+            
+            // Add asset details if not already present
+            if (!enhanced.asset && transaction.assetId) {
+              enhanced.asset = await storage.getAsset(transaction.assetId);
+            }
+            
+            // Add employee details if not already present
+            if (!enhanced.employee && transaction.employeeId) {
+              enhanced.employee = await storage.getEmployee(transaction.employeeId);
+            }
+            
+            return enhanced;
+          })
+        );
+      }
     } else {
+      // getAllAssetTransactions now includes asset and employee data via JOINs
       transactions = await storage.getAllAssetTransactions();
     }
     
-    // Enhance transactions with asset and employee details if needed
+    // Parse deviceSpecs if it's a string for all transactions
     if (transactions && Array.isArray(transactions)) {
-      transactions = await Promise.all(
-        transactions.map(async (transaction) => {
-          const enhanced: any = { ...transaction };
-          
-          // Add asset details if not already present
-          if (!enhanced.asset && transaction.assetId) {
-            enhanced.asset = await storage.getAsset(transaction.assetId);
+      transactions = transactions.map(transaction => {
+        const enhanced: any = { ...transaction };
+        
+        // Parse deviceSpecs if it's a string
+        if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
+          try {
+            enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
+          } catch (e) {
+            console.error('Error parsing deviceSpecs:', e);
           }
-          
-          // Add employee details if not already present
-          if (!enhanced.employee && transaction.employeeId) {
-            enhanced.employee = await storage.getEmployee(transaction.employeeId);
-          }
-          
-          // Parse deviceSpecs if it's a string
-          if (enhanced.deviceSpecs && typeof enhanced.deviceSpecs === 'string') {
-            try {
-              enhanced.deviceSpecs = JSON.parse(enhanced.deviceSpecs);
-            } catch (e) {
-              console.error('Error parsing deviceSpecs:', e);
-            }
-          }
-          
-          return enhanced;
-        })
-      );
+        }
+        
+        return enhanced;
+      });
     }
     
     // REMOVED: Complex upgrade merging logic - upgrades are now in assetTransactions

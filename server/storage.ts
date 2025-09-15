@@ -1985,11 +1985,63 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAssetTransactions(assetId: number): Promise<AssetTransaction[]> {
     try {
-      return await db
-        .select()
-        .from(assetTransactions)
-        .where(eq(assetTransactions.assetId, assetId))
-        .orderBy(desc(assetTransactions.transactionDate));
+      // Use SQL query with joins for consistency with getAllAssetTransactions
+      const query = `
+        SELECT 
+          at.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial_number,
+          a.specs as asset_specs,
+          a.status as asset_status,
+          e.english_name as employee_english_name,
+          e.arabic_name as employee_arabic_name,
+          e.department as employee_department,
+          e.emp_id as employee_emp_id
+        FROM asset_transactions at
+        LEFT JOIN assets a ON at.asset_id = a.id
+        LEFT JOIN employees e ON at.employee_id = e.id
+        WHERE at.asset_id = $1
+        ORDER BY at.transaction_date DESC
+      `;
+      
+      const result = await pool.query(query, [assetId]);
+      
+      // Map the results to include proper asset and employee objects
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        assetId: row.asset_id,
+        type: row.type,
+        employeeId: row.employee_id,
+        transactionDate: row.transaction_date,
+        expectedReturnDate: row.expected_return_date,
+        actualReturnDate: row.actual_return_date,
+        conditionNotes: row.condition_notes,
+        handledById: row.handled_by_id,
+        attachments: row.attachments,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deviceSpecs: row.device_specs,
+        asset: row.asset_asset_id ? {
+          id: row.asset_id,
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial_number,
+          specs: row.asset_specs,
+          status: row.asset_status
+        } : undefined,
+        employee: row.employee_english_name ? {
+          id: row.employee_id,
+          englishName: row.employee_english_name,
+          arabicName: row.employee_arabic_name,
+          department: row.employee_department,
+          empId: row.employee_emp_id
+        } : undefined
+      }));
     } catch (error) {
       console.error(`Error fetching transactions for asset ${assetId}:`, error);
       return [];
@@ -1998,11 +2050,63 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getEmployeeTransactions(employeeId: number): Promise<AssetTransaction[]> {
     try {
-      return await db
-        .select()
-        .from(assetTransactions)
-        .where(eq(assetTransactions.employeeId, employeeId))
-        .orderBy(desc(assetTransactions.transactionDate));
+      // Use SQL query with joins for consistency with getAllAssetTransactions
+      const query = `
+        SELECT 
+          at.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial_number,
+          a.specs as asset_specs,
+          a.status as asset_status,
+          e.english_name as employee_english_name,
+          e.arabic_name as employee_arabic_name,
+          e.department as employee_department,
+          e.emp_id as employee_emp_id
+        FROM asset_transactions at
+        LEFT JOIN assets a ON at.asset_id = a.id
+        LEFT JOIN employees e ON at.employee_id = e.id
+        WHERE at.employee_id = $1
+        ORDER BY at.transaction_date DESC
+      `;
+      
+      const result = await pool.query(query, [employeeId]);
+      
+      // Map the results to include proper asset and employee objects
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        assetId: row.asset_id,
+        type: row.type,
+        employeeId: row.employee_id,
+        transactionDate: row.transaction_date,
+        expectedReturnDate: row.expected_return_date,
+        actualReturnDate: row.actual_return_date,
+        conditionNotes: row.condition_notes,
+        handledById: row.handled_by_id,
+        attachments: row.attachments,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deviceSpecs: row.device_specs,
+        asset: row.asset_asset_id ? {
+          id: row.asset_id,
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial_number,
+          specs: row.asset_specs,
+          status: row.asset_status
+        } : undefined,
+        employee: row.employee_english_name ? {
+          id: row.employee_id,
+          englishName: row.employee_english_name,
+          arabicName: row.employee_arabic_name,
+          department: row.employee_department,
+          empId: row.employee_emp_id
+        } : undefined
+      }));
     } catch (error) {
       console.error(`Error fetching transactions for employee ${employeeId}:`, error);
       return [];
@@ -2011,29 +2115,62 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAllAssetTransactions(): Promise<AssetTransaction[]> {
     try {
-      const transactions = await db
-        .select()
-        .from(assetTransactions)
-        .orderBy(desc(assetTransactions.transactionDate));
-        
-      // Enhance with asset and employee details
-      const result = await Promise.all(transactions.map(async (transaction) => {
-        const asset = transaction.assetId 
-          ? await this.getAsset(transaction.assetId) 
-          : undefined;
-          
-        const employee = transaction.employeeId 
-          ? await this.getEmployee(transaction.employeeId) 
-          : undefined;
-          
-        return {
-          ...transaction,
-          asset,
-          employee
-        };
-      }));
+      // Use a single SQL query with proper joins for better performance and reliability
+      const query = `
+        SELECT 
+          at.*,
+          a.asset_id as asset_asset_id,
+          a.type as asset_type,
+          a.brand as asset_brand,
+          a.model_name as asset_model_name,
+          a.serial_number as asset_serial_number,
+          a.specs as asset_specs,
+          a.status as asset_status,
+          e.english_name as employee_english_name,
+          e.arabic_name as employee_arabic_name,
+          e.department as employee_department,
+          e.emp_id as employee_emp_id
+        FROM asset_transactions at
+        LEFT JOIN assets a ON at.asset_id = a.id
+        LEFT JOIN employees e ON at.employee_id = e.id
+        ORDER BY at.transaction_date DESC
+      `;
       
-      return result;
+      const result = await pool.query(query);
+      
+      // Map the results to include proper asset and employee objects
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        assetId: row.asset_id,
+        type: row.type,
+        employeeId: row.employee_id,
+        transactionDate: row.transaction_date,
+        expectedReturnDate: row.expected_return_date,
+        actualReturnDate: row.actual_return_date,
+        conditionNotes: row.condition_notes,
+        handledById: row.handled_by_id,
+        attachments: row.attachments,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deviceSpecs: row.device_specs,
+        asset: row.asset_asset_id ? {
+          id: row.asset_id,
+          assetId: row.asset_asset_id,
+          type: row.asset_type,
+          brand: row.asset_brand,
+          modelName: row.asset_model_name,
+          serialNumber: row.asset_serial_number,
+          specs: row.asset_specs,
+          status: row.asset_status
+        } : undefined,
+        employee: row.employee_english_name ? {
+          id: row.employee_id,
+          englishName: row.employee_english_name,
+          arabicName: row.employee_arabic_name,
+          department: row.employee_department,
+          empId: row.employee_emp_id
+        } : undefined
+      }));
     } catch (error) {
       console.error('Error fetching all asset transactions:', error);
       return [];
