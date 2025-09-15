@@ -219,16 +219,18 @@ export default function EmployeesTable({
                 // Prevent row click when clicking on interactive elements or dialog overlays
                 if (e.target instanceof HTMLElement && 
                     (e.target.closest('input[type="checkbox"]') || 
-                    e.target.closest('button') || 
-                    e.target.closest('[role="button"]') ||
-                    e.target.closest('.dropdown-menu') ||
-                    e.target.closest('[data-radix-collection-item]') ||
-                    e.target.closest('[role="menuitem"]') ||
-                    e.target.closest('[data-state]') ||
-                    e.target.closest('[role="dialog"]') ||
-                    e.target.closest('[data-radix-dialog-overlay]') ||
-                    e.target.closest('[data-radix-dialog-content]') ||
-                    e.target.closest('[data-dialog]'))) {
+                     e.target.closest('[data-checkbox-cell]') ||
+                     e.target.closest('[role="checkbox"]') ||
+                     e.target.closest('button') || 
+                     e.target.closest('[role="button"]') ||
+                     e.target.closest('.dropdown-menu') ||
+                     e.target.closest('[data-radix-collection-item]') ||
+                     e.target.closest('[role="menuitem"]') ||
+                     e.target.closest('[data-state]') ||
+                     e.target.closest('[role="dialog"]') ||
+                     e.target.closest('[data-radix-dialog-overlay]') ||
+                     e.target.closest('[data-radix-dialog-content]') ||
+                     e.target.closest('[data-dialog]'))) {
                   e.preventDefault();  
                   e.stopPropagation();
                   return;
@@ -237,12 +239,21 @@ export default function EmployeesTable({
               }}
             >
                 {onSelectionChange && (
-                  <TableCell className="w-12">
-                    <Checkbox
-                      checked={selectedEmployees.includes(employee.id)}
-                      onCheckedChange={(checked) => handleEmployeeSelect(employee.id, checked as boolean)}
-                      aria-label={`Select employee ${employee.englishName}`}
-                    />
+                  <TableCell 
+                    data-checkbox-cell 
+                    className="cursor-pointer hover:bg-gray-50 w-12" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEmployeeSelect(employee.id, !selectedEmployees.includes(employee.id));
+                    }}
+                  >
+                    <div className="flex items-center justify-center p-1">
+                      <Checkbox
+                        checked={selectedEmployees.includes(employee.id)}
+                        onCheckedChange={(checked) => handleEmployeeSelect(employee.id, checked as boolean)}
+                        aria-label={`Select employee ${employee.englishName}`}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 <TableCell className="font-medium">{employee.empId}</TableCell>

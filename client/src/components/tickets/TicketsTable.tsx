@@ -380,6 +380,8 @@ export default function TicketsTable({
                   const target = e.target as HTMLElement;
                   if (
                     target.closest('.inline-edit-cell') ||
+                    target.closest('[data-checkbox-cell]') ||
+                    target.closest('[role="checkbox"]') ||
                     target.closest('button') ||
                     target.closest('[role="button"]') ||
                     target.closest('input') ||
@@ -397,11 +399,20 @@ export default function TicketsTable({
               >
                 {/* Checkbox column */}
                 {onSelectionChange && (
-                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedTickets.includes(ticket.id)}
-                      onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
-                    />
+                  <TableCell 
+                    data-checkbox-cell 
+                    className="cursor-pointer hover:bg-gray-50 w-12 text-center" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTicketSelection(ticket.id, !selectedTickets.includes(ticket.id));
+                    }}
+                  >
+                    <div className="flex items-center justify-center p-1">
+                      <Checkbox
+                        checked={selectedTickets.includes(ticket.id)}
+                        onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                      />
+                    </div>
                   </TableCell>
                 )}
                 
