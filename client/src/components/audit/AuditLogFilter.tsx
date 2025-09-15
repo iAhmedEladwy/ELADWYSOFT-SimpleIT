@@ -62,6 +62,8 @@ interface AuditLogFilterProps {
 export default function AuditLogFilter({ onFilter, users = [], isLoading = false }: AuditLogFilterProps) {
   const { language } = useLanguage();
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const translations = {
     keywordSearch: language === 'English' ? 'Keyword Search' : 'البحث بالكلمات المفتاحية',
@@ -199,7 +201,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>{translations.startDate}</FormLabel>
-                    <Popover>
+                    <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -219,7 +221,10 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setStartDateOpen(false);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -235,7 +240,7 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>{translations.endDate}</FormLabel>
-                    <Popover>
+                    <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -255,7 +260,10 @@ export default function AuditLogFilter({ onFilter, users = [], isLoading = false
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setEndDateOpen(false);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>

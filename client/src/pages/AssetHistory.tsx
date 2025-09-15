@@ -89,6 +89,8 @@ export default function AssetHistory() {
   const [assetSearchValue, setAssetSearchValue] = useState('');
   const [employeeSearchOpen, setEmployeeSearchOpen] = useState(false);
   const [employeeSearchValue, setEmployeeSearchValue] = useState('');
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
   // Translations
   const translations = {
     title: language === 'English' ? 'Asset History' : 'سجل الأصول',
@@ -740,7 +742,7 @@ export default function AssetHistory() {
               {/* Date From */}
               <div className="space-y-2">
                 <Label>{translations.dateFrom}</Label>
-                <Popover>
+                <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -760,6 +762,7 @@ export default function AssetHistory() {
                       onSelect={(date) => {
                         setDateFromSelected(date);
                         handleFilterChange('dateFrom', date ? format(date, 'yyyy-MM-dd') : '');
+                        setDateFromOpen(false);
                       }}
                       initialFocus
                     />
@@ -770,7 +773,7 @@ export default function AssetHistory() {
               {/* Date To */}
               <div className="space-y-2">
                 <Label>{translations.dateTo}</Label>
-                <Popover>
+                <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -790,6 +793,7 @@ export default function AssetHistory() {
                       onSelect={(date) => {
                         setDateToSelected(date);
                         handleFilterChange('dateTo', date ? format(date, 'yyyy-MM-dd') : '');
+                        setDateToOpen(false);
                       }}
                       initialFocus
                     />
