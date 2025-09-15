@@ -1713,7 +1713,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Tickets Export/Import
   app.get("/api/tickets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const tickets = await storage.getAllTickets();
@@ -1721,10 +1720,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const csvData = tickets.map(ticket => ({
         'ID': ticket.id,
         'Ticket ID': ticket.ticketId,
-        'Summary': ticket.summary || '',
+        'Title': ticket.title || '',                     // ✅ Fixed: was Summary
         'Description': ticket.description || '',
+        'Type': ticket.type || '',                       // ✅ Already correct
         'Category': ticket.category || '',
-        'Type': ticket.type || '',
         'Urgency': ticket.urgency || '',
         'Impact': ticket.impact || '',
         'Priority': ticket.priority || '',
@@ -1732,17 +1731,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Submitted By ID': ticket.submittedById || '',
         'Assigned To ID': ticket.assignedToId || '',
         'Related Asset ID': ticket.relatedAssetId || '',
+        'Time Spent': ticket.timeSpent || 0,             // ✅ Added: new schema field
         'Due Date': ticket.dueDate || '',
         'SLA Target': ticket.slaTarget || '',
-        'Escalation Level': ticket.escalationLevel || '',
-        'Tags': ticket.tags || '',
-        'Root Cause': ticket.rootCause || '',
-        'Workaround': ticket.workaround || '',
+        'Completion Time': ticket.completionTime || '',  // ✅ Added: new schema field
         'Resolution': ticket.resolution || '',
-        'Resolution Notes': ticket.resolutionNotes || '',
-        'Private Notes': ticket.privateNotes || '',
         'Created At': ticket.createdAt ? new Date(ticket.createdAt).toISOString() : '',
         'Updated At': ticket.updatedAt ? new Date(ticket.updatedAt).toISOString() : ''
+        // ✅ Removed deprecated fields: Escalation Level, Tags, Root Cause, Workaround, Resolution Notes, Private Notes
       }));
       
       res.setHeader('Content-Type', 'text/csv');
@@ -4133,108 +4129,81 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  // Standard ticket creation endpoint
-  app.post("/api/tickets", authenticateUser, async (req: Request<unknown, unknown, TicketCreateInput>, res: Response) => {
-    try {
-      console.log("Creating ticket:", req.body);
-      
-      // Get request data with defaults from schema
-      const ticketData: InsertTicket = {
-        submittedById: parseInt(req.body.submittedById || '0'),
-        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId) : null,
-        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId) : null,
-        type: (req.body.type || 'Incident') as ValueOf<typeof ticketTypeEnum>,
-        category: req.body.category || 'General',
-        title: req.body.title || '',
-        description: req.body.description || '',
-        urgency: (req.body.urgency || 'Medium') as ValueOf<typeof ticketUrgencyEnum>,
-        impact: (req.body.impact || 'Medium') as ValueOf<typeof ticketImpactEnum>,
-        timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent) : null,
-        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
-        slaTarget: req.body.slaTarget ? new Date(req.body.slaTarget) : null,
-        priority: 'Medium' as ValueOf<typeof ticketPriorityEnum>, // Will be updated based on urgency × impact
-        status: 'Open' as ValueOf<typeof ticketStatusEnum>
-      };
+    // ✅ FIXED /api/tickets POST endpoint - Schema v0.4.0 aligned
+    app.post("/api/tickets", authenticateUser, async (req: Request<unknown, unknown, TicketCreateInput>, res: Response) => {
+      try {
+        console.log("Creating ticket:", req.body);
+        
+        // Validate required fields per schema
+        const { title, description, type, submittedById } = req.body;
+        if (!title || !description || !type || !submittedById) {
+          return res.status(400).json({ 
+            message: "Missing required fields: title, description, type, and submittedById are required" 
+          });
+        }
 
-      // Validate required fields per schema
-      if (!ticketData.submittedById || !ticketData.description || !ticketData.title) {
-        throw new ValidationError("Missing required fields: submittedById, description, and title are required");
-      }
-      
-      // Type validation
-      const typeValues = Object.values(ticketTypeEnum);
-      if (!typeValues.includes(ticketData.type)) {
-        throw new ValidationError(
-          `Invalid ticket type: "${String(ticketData.type)}". Must be one of: ${typeValues.join(", ")}`
-        );
-      }
+        // Get request data with defaults from schema
+        const ticketData: InsertTicket = {
+          submittedById: parseInt(submittedById.toString()),
+          assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
+          relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
+          type: (req.body.type || 'Incident') as ValueOf<typeof ticketTypeEnum>,
+          category: req.body.category || 'General',
+          title: req.body.title,                             // ✅ Fixed: using title
+          description: req.body.description,
+          urgency: (req.body.urgency || 'Medium') as ValueOf<typeof ticketUrgencyEnum>,
+          impact: (req.body.impact || 'Medium') as ValueOf<typeof ticketImpactEnum>,
+          timeSpent: req.body.timeSpent ? parseInt(req.body.timeSpent.toString()) : null,
+          dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+          slaTarget: req.body.slaTarget ? new Date(req.body.slaTarget) : null,
+          priority: 'Medium' as ValueOf<typeof ticketPriorityEnum>, // Will be updated based on urgency × impact
+          status: 'Open' as ValueOf<typeof ticketStatusEnum>
+        };
 
-      // Urgency and impact validation
-      const urgencyValues = Object.values(ticketUrgencyEnum);
-      if (!urgencyValues.includes(ticketData.urgency)) {
-        throw new ValidationError(
-          `Invalid urgency value: "${String(ticketData.urgency)}". Must be one of: ${urgencyValues.join(", ")}`
-        );
-      }
+        // Validate employee exists (submittedById validation)
+        const employeeId = parseInt(submittedById.toString());
+        const employees = await storage.getAllEmployees();
+        const employeeRecord = employees.find(emp => emp.id === employeeId);
+        
+        if (!employeeRecord) {
+          return res.status(400).json({ 
+            message: `No employee record found for employee ID ${employeeId}. Please contact administrator.` 
+          });
+        }
 
-      const impactValues = Object.values(ticketImpactEnum);
-      if (!impactValues.includes(ticketData.impact)) {
-        throw new ValidationError(
-          `Invalid impact value: "${String(ticketData.impact)}". Must be one of: ${impactValues.join(", ")}`
-        );
-      }
+        // Auto-calculate priority based on urgency and impact
+        if (ticketData.urgency && ticketData.impact) {
+          const calculatedPriority = calculatePriority(
+            ticketData.urgency as UrgencyLevel, 
+            ticketData.impact as ImpactLevel
+          );
+          ticketData.priority = calculatedPriority as ValueOf<typeof ticketPriorityEnum>;
+        }
 
-      // Calculate priority based on urgency × impact
-      ticketData.priority = calculatePriority(ticketData.urgency, ticketData.impact) as ValueOf<typeof ticketPriorityEnum>;
-
-      // Validate employee ID exists
-      const employeeRecord = await db
-        .select()
-        .from(employees)
-        .where(eq(employees.id, ticketData.submittedById))
-        .limit(1)
-        .then((results: Array<typeof employees.$inferSelect>) => results[0]);
-      
-      if (!employeeRecord) {
-        throw new ValidationError(`No employee record found for employee ID ${ticketData.submittedById}`);
-      }
-
-      // Create ticket with validated data
-      const ticket = await storage.createTicket(ticketData);
-
-      // Create initial history entry
-      if (ticket) {
-        await storage.addTicketHistory({
-          ticketId: ticket.id,
-          userId: (req.user as AuthUser)?.id || 0,
-          action: 'Created',
-          fieldChanged: null,
-          oldValue: null,
-          newValue: JSON.stringify({
-            id: ticket.id,
-            status: ticket.status,
-            priority: ticket.priority,
-            type: ticket.type
-          }),
-          notes: `Ticket created with status ${ticket.status} and priority ${ticket.priority}`,
+        // Create the ticket
+        const newTicket = await storage.createTicket(ticketData);
+        
+        // Log activity
+        await storage.logActivity({
+          action: "Created",
+          entityType: "Ticket",
+          entityId: newTicket.id,
+          userId: req.user?.id || employeeId,
+          details: { 
+            ticketId: newTicket.ticketId, 
+            title: newTicket.title,
+            type: newTicket.type,
+            priority: newTicket.priority 
+          }
         });
+        
+        console.log("Ticket created successfully:", newTicket);
+        res.status(201).json(newTicket);
+      } catch (error: unknown) {
+        console.error("Create ticket error:", error);
+        res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
       }
-
-      res.status(201).json({ 
-        message: 'Ticket created successfully',
-        ticket 
-      });
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        res.status(400).json({ message: error.message });
-      } else {
-        console.error('Error creating ticket:', error);
-        res.status(500).json({ message: 'Internal server error while creating ticket' });
-      }
-    }
-          message: `Invalid urgency value: "${ticketUrgency}". Must be one of: ${Object.values(ticketUrgencyEnum).join(", ")}`
-        });
-      }
+    });
 
       if (!Object.values(ticketImpactEnum).includes(ticketImpact)) {
         return res.status(400).json({
@@ -4314,6 +4283,39 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
       res.status(201).json(newTicket);
     } catch (error: unknown) {
       console.error("Ticket creation error:", error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+    app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
+      const userId = req.user.id;
+      
+      const success = await storage.deleteTicket(ticketId, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Log deletion activity
+      await storage.logActivity({
+        action: "Deleted",
+        entityType: "Ticket",
+        entityId: ticketId,
+        userId,
+        details: { ticketId }
+      });
+      
+      res.json({ success: true, message: "Ticket deleted successfully" });
+    } catch (error: unknown) {
+      if (error.message && error.message.includes("Unauthorized")) {
+        return res.status(403).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+      }
+      console.error("Delete ticket error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
@@ -4773,85 +4775,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const data = await storage.getAllTickets();
-      
-      const csvData = data.map(item => ({
-        ticketId: item.ticketId || '',
-        summary: item.summary || '',
-        description: item.description || '',
-        category: item.category || '',
-        requestType: item.requestType || '',
-        urgency: item.urgency || '',
-        impact: item.impact || '',
-        priority: item.priority || '',
-        status: item.status || '',
-        submittedById: item.submittedById || '',
-        assignedToId: item.assignedToId || '',
-        relatedAssetId: item.relatedAssetId || '',
-        dueDate: item.dueDate || '',
-        slaTarget: item.slaTarget || '',
-        escalationLevel: item.escalationLevel || '',
-        tags: item.tags || '',
-        rootCause: item.rootCause || '',
-        workaround: item.workaround || '',
-        resolution: item.resolution || '',
-        resolutionNotes: item.resolutionNotes || '',
-        privateNotes: item.privateNotes || '',
-        createdAt: item.createdAt || '',
-        updatedAt: item.updatedAt || ''
-      }));
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-
-
-  app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const data = await storage.getAllTickets();
-      
-      const csvData = data.map(item => ({
-        ticketId: item.ticketId || '',
-        submittedById: item.submittedById || '',
-        requestType: item.requestType || '',
-        category: item.category || '',
-        priority: item.priority || '',
-        urgency: item.urgency || '',
-        impact: item.impact || '',
-        summary: item.summary || '',
-        description: item.description || '',
-        relatedAssetId: item.relatedAssetId || '',
-        status: item.status || '',
-        assignedToId: item.assignedToId || '',
-        resolution: item.resolution || '',
-        dueDate: item.dueDate || '',
-        tags: item.tags || ''
-      }));
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
 
   // Import routes
   app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
@@ -4953,33 +4876,48 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
       let successful = 0;
       const errors = [];
 
+      // Find a default employee for tickets without submittedById
+      const employees = await storage.getAllEmployees();
+      const defaultEmployee = employees.find(emp => emp.status === 'Active') || employees[0];
+      
+      if (!defaultEmployee) {
+        return res.status(400).json({ message: "No employees found to assign as ticket submitter" });
+      }
+
       for (const item of data) {
         try {
-          // Database will auto-generate ticket_id, no need to generate manually
+          // Create ticket with proper field mapping
           const result = await storage.createTicket({
-            // ticketId removed - database will auto-generate
-            submittedById: item.submittedById ? parseInt(item.submittedById.toString()) : 1,
-            requestType: item.requestType || 'Service Request',
-            category: item.category || 'General',
-            priority: item.priority || 'Medium',
-            urgency: item.urgency || 'Medium',
-            impact: item.impact || 'Low',
-            summary: item.title || item.summary || 'Imported Ticket',
+            // Database will auto-generate ticketId
+            title: item.title || item.summary || 'Imported Ticket',           // ✅ Fixed: title with fallback
             description: item.description || 'No description provided',
-            relatedAssetId: item.relatedAssetId ? parseInt(item.relatedAssetId.toString()) : null,
+            type: item.type || item.requestType || 'Incident',                // ✅ Fixed: type with fallback
+            category: item.category || 'General',
+            urgency: item.urgency || 'Medium',
+            impact: item.impact || 'Medium',
+            priority: item.priority || 'Medium',                              // Will be auto-calculated
             status: item.status || 'Open',
+            submittedById: item.submittedById ? parseInt(item.submittedById.toString()) : defaultEmployee.id,
             assignedToId: item.assignedToId ? parseInt(item.assignedToId.toString()) : null,
-            resolution: item.resolution || null,
+            relatedAssetId: item.relatedAssetId ? parseInt(item.relatedAssetId.toString()) : null,
+            timeSpent: item.timeSpent ? parseInt(item.timeSpent.toString()) : null,    // ✅ Added: new field
             dueDate: item.dueDate || null,
-            tags: item.tags || null
+            slaTarget: item.slaTarget || null,
+            resolution: item.resolution || null                                        // ✅ Added: new field
+            // ✅ Removed deprecated fields: tags, escalationLevel, rootCause, etc.
           });
           successful++;
         } catch (error: any) {
-          errors.push(`Ticket ${item.summary}: ${error.message}`);
+          errors.push(`Ticket ${item.title || item.summary || 'Unknown'}: ${error.message}`);
         }
       }
 
-      res.json({ successful, failed: errors.length, errors });
+      res.json({ 
+        successful, 
+        failed: errors.length, 
+        errors,
+        message: `Successfully imported ${successful} tickets with ${errors.length} failures`
+      });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
@@ -6358,35 +6296,45 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const tickets = await storage.getAllTickets();
-      const csvData = tickets.map(ticket => ({
-        'Ticket ID': ticket.ticketId,
-        'Description': ticket.description,
-        'Request Type': ticket.requestType,
-        'Priority': ticket.priority,
-        'Status': ticket.status,
-        'Submitted By': ticket.submittedById,
-        'Assigned To': ticket.assignedToId || '',
-        'Created Date': ticket.createdAt?.toISOString() || '',
-        'Resolution': ticket.resolution || '',
-        'Time Spent': ticket.timeSpent || ''
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="tickets.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+  try {
+    const data = await storage.getAllTickets();
+    
+    const csvData = data.map(item => ({
+      ticketId: item.ticketId || '',
+      title: item.title || '',                    // ✅ Fixed: was summary
+      description: item.description || '',
+      type: item.type || '',                      // ✅ Fixed: was requestType
+      category: item.category || '',
+      urgency: item.urgency || '',
+      impact: item.impact || '',
+      priority: item.priority || '',
+      status: item.status || '',
+      submittedById: item.submittedById || '',
+      assignedToId: item.assignedToId || '',
+      relatedAssetId: item.relatedAssetId || '',
+      timeSpent: item.timeSpent || 0,             // ✅ Added: new schema field
+      dueDate: item.dueDate || '',
+      slaTarget: item.slaTarget || '',
+      completionTime: item.completionTime || '',  // ✅ Added: new schema field
+      resolution: item.resolution || '',
+      createdAt: item.createdAt || '',
+      updatedAt: item.updatedAt || ''
+      // ✅ Removed deprecated fields: escalationLevel, tags, rootCause, workaround, resolutionNotes, privateNotes
+    }));
+    
+    const csv = [
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
+    res.send(csv);
+  } catch (error: unknown) {
+    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+  }
+});
 
   // Import API endpoints
   app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
@@ -6632,16 +6580,20 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Feature 3: Ticket History operations
-  app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const history = await storage.getTicketHistory(ticketId);
-      res.json(history);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ message: "Invalid ticket ID" });
     }
-  });
+    
+    const history = await storage.getTicketHistory(ticketId);
+    res.json(history);
+  } catch (error: unknown) {
+    console.error("Get ticket history error:", error);
+    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+  }
+});
 
   // Get ticket comments
   app.get("/api/tickets/:id/comments", authenticateUser, async (req, res) => {
@@ -6654,25 +6606,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Feature 4: Delete Ticket (admin only)
-  app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const userId = (req.user as schema.User).id;
-      
-      const success = await storage.deleteTicket(ticketId, userId);
-      if (!success) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json({ success: true, message: "Ticket deleted successfully" });
-    } catch (error: unknown) {
-      if (error.message.includes("Unauthorized")) {
-        return res.status(403).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-      }
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+
 
   // Feature 5: Enhanced Ticket Update with history tracking
   app.put("/api/tickets/:id/enhanced", authenticateUser, async (req, res) => {
@@ -6725,43 +6659,29 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Add comment to ticket
-  app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
-    try {
-      const { ticketId, content, isPrivate, attachments } = req.body;
-      const userId = req.user.id;
-      
-      const comment = await storage.addTicketComment({
-        ticketId,
-        content,
-        userId,
-        isPrivate: isPrivate || false,
-        attachments: attachments || []
-      });
-      
-      res.json(comment);
-    } catch (error: unknown) {
-      console.error("Add comment error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // Add time entry to ticket
   app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ message: "Invalid ticket ID" });
+      }
+      
       const { hours, description } = req.body;
+      
+      if (!hours || hours <= 0) {
+        return res.status(400).json({ message: "Valid hours value is required" });
+      }
+      
       const userId = req.user.id;
       
-      const timeEntry = await storage.addTimeEntry(ticketId, hours, description, userId);
+      const timeEntry = await storage.addTimeEntry(ticketId, hours, description || '', userId);
       
-      res.json(timeEntry);
+      res.status(201).json(timeEntry);
     } catch (error: unknown) {
       console.error("Add time entry error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   // Assign ticket to user
   app.post("/api/tickets/:id/assign", authenticateUser, async (req, res) => {
     try {
@@ -6789,66 +6709,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Enhanced ticket creation with history
-  app.post("/api/tickets/enhanced", authenticateUser, async (req, res) => {
-    try {
-      console.log("Creating enhanced ticket with history:", req.body);
-      
-      // Validate required fields
-      const { submittedById, requestType, priority, description } = req.body;
-      if (!submittedById || !requestType || !priority || !description) {
-        console.log("Missing required fields:", { submittedById, requestType, priority, description });
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      // Get system config for ticket ID prefix
-      const sysConfig = await storage.getSystemConfig();
-      let ticketIdPrefix = "TKT-";
-      if (sysConfig && sysConfig.ticketIdPrefix) {
-        ticketIdPrefix = sysConfig.ticketIdPrefix;
-      }
-      
-      // Generate ticket ID
-      const allTickets = await storage.getAllTickets();
-      const nextId = allTickets.length + 1;
-      const ticketId = `${ticketIdPrefix}${nextId.toString().padStart(4, '0')}`;
-      
-      // Create ticket data with proper field mapping
-      const ticketData = {
-        ticketId,
-        submittedById: parseInt(submittedById.toString()),
-        requestType,
-        priority,
-        description,
-        status: 'Open' as const,
-        relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : undefined,
-        assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : undefined
-      };
-      
-      console.log("Formatted ticket data:", ticketData);
-      
-      // Create the ticket using the standard method 
-      const newTicket = await storage.createTicket(ticketData);
-      
-      console.log("Enhanced ticket creation successful:", newTicket);
-      res.status(201).json(newTicket);
-    } catch (error: unknown) {
-      console.error("Enhanced ticket creation error:", error.message, error.stack);
-      res.status(500).json({ message: `Failed to create ticket: ${error.message}` });
-    }
-  });
-
-  // Enhanced tickets endpoint with detailed information
-  app.get("/api/tickets/enhanced", authenticateUser, async (req, res) => {
-    try {
-      const tickets = await storage.getEnhancedTickets();
-      res.json(tickets);
-    } catch (error: unknown) {
-      console.error("Error fetching enhanced tickets:", error);
-      res.status(500).json({ message: "Failed to fetch enhanced tickets" });
-    }
-  });
-
   // Get ticket categories
   app.get("/api/tickets/categories", authenticateUser, async (req, res) => {
     try {
@@ -6872,119 +6732,27 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Add ticket comment
   app.post("/api/tickets/comments", authenticateUser, async (req, res) => {
     try {
-      const commentData = {
-        ...req.body,
-        userId: req.user.id
-      };
-      const comment = await storage.addTicketComment(commentData);
+      const { ticketId, content, isPrivate, attachments } = req.body;
+      
+      if (!ticketId || !content) {
+        return res.status(400).json({ message: "Ticket ID and content are required" });
+      }
+      
+      const userId = req.user.id;
+      
+      const comment = await storage.addTicketComment({
+        ticketId: parseInt(ticketId),
+        content,
+        userId,
+        isPrivate: isPrivate || false,
+        attachments: attachments || []
+      });
       
       res.status(201).json(comment);
     } catch (error: unknown) {
-      console.error("Error adding ticket comment:", error);
-      res.status(500).json({ message: "Failed to add ticket comment" });
-    }
-  });
-
-  // Add time entry to ticket
-  app.post("/api/tickets/:id/time", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const { hours, description } = req.body;
-      
-      const result = await storage.addTimeEntry(ticketId, hours, description, req.user.id);
-      
-      res.json(result);
-    } catch (error: unknown) {
-      console.error("Error adding time entry:", error);
-      res.status(500).json({ message: "Failed to add time entry" });
-    }
-  });
-
-  // Merge tickets
-  app.post("/api/tickets/merge", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const { primaryTicketId, secondaryTicketIds } = req.body;
-      const result = await storage.mergeTickets(primaryTicketId, secondaryTicketIds, req.user.id);
-      
-      res.json(result);
-    } catch (error: unknown) {
-      console.error("Error merging tickets:", error);
-      res.status(500).json({ message: "Failed to merge tickets" });
-    }
-  });
-
-  // Time tracking endpoints
-  app.post("/api/tickets/:id/start-tracking", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      if (isNaN(ticketId)) {
-        return res.status(400).json({ message: "Invalid ticket ID" });
-      }
-      
-      const userId = (req.user as any)?.id || 1; // Fallback to admin if user not properly set
-      
-      const updatedTicket = await storage.startTicketTimeTracking(ticketId, userId);
-      if (!updatedTicket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json(updatedTicket);
-    } catch (error: unknown) {
-      console.error("Start time tracking error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.post("/api/tickets/:id/stop-tracking", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      if (isNaN(ticketId)) {
-        return res.status(400).json({ message: "Invalid ticket ID" });
-      }
-      
-      const userId = (req.user as any)?.id || 1; // Fallback to admin if user not properly set
-      
-      const updatedTicket = await storage.stopTicketTimeTracking(ticketId, userId);
-      if (!updatedTicket) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json(updatedTicket);
-    } catch (error: unknown) {
-      console.error("Stop time tracking error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // Ticket history endpoint
-  app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const history = await storage.getTicketHistory(ticketId);
-      res.json(history);
-    } catch (error: unknown) {
-      console.error("Get ticket history error:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // Admin delete ticket endpoint
-  app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const ticketId = parseInt(req.params.id);
-      const userId = req.user.id;
-      
-      const success = await storage.deleteTicket(ticketId, userId);
-      if (!success) {
-        return res.status(404).json({ message: "Ticket not found" });
-      }
-      
-      res.json({ message: "Ticket deleted successfully" });
-    } catch (error: unknown) {
-      console.error("Delete ticket error:", error);
+      console.error("Add comment error:", error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });

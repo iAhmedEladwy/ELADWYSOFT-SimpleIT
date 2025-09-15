@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useTicketTranslations } from '@/lib/translations/tickets';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/authContext';
@@ -13,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   ArrowLeft, 
   Edit2, 
@@ -26,69 +29,76 @@ import {
   Monitor,
   Clock,
   MessageSquare,
-  Calendar
+  Calendar as CalendarIcon,
+  Target,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { calculatePriority, type UrgencyLevel, type ImpactLevel } from '@shared/priorityUtils';
+
+interface EditForm {
+  title: string;
+  description: string;
+  type: string;
+  category: string;
+  priority: string;
+  urgency: string;
+  impact: string;
+  status: string;
+  assignedToId: string;
+  timeSpent: number;
+  dueDate: string;
+  slaTarget: string;
+  resolution: string;
+}
 
 export default function TicketDetails() {
   const [, params] = useRoute('/tickets/:id');
   const [, navigate] = useLocation();
   const { language } = useLanguage();
+  const t = useTicketTranslations(language);
   const { toast } = useToast();
   const { user, hasAccess } = useAuth();
   const queryClient = useQueryClient();
   
   const ticketId = params?.id;
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<EditForm>({
+    title: '',
+    description: '',
+    type: 'Incident',
+    category: 'General',
+    priority: 'Medium',
+    urgency: 'Medium',
+    impact: 'Medium',
+    status: 'Open',
+    assignedToId: '',
+    timeSpent: 0,
+    dueDate: '',
+    slaTarget: '',
+    resolution: ''
+  });
 
-  // Early return if no ticket ID to prevent white pages
+  // Early return if no ticket ID
   if (!ticketId) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {language === 'English' ? 'Invalid Ticket ID' : 'معرف تذكرة غير صالح'}
+            {t.ticketNotFound}
           </h2>
           <Button onClick={() => navigate('/tickets')} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {language === 'English' ? 'Back to Tickets' : 'العودة للتذاكر'}
+            {t.backToTickets}
           </Button>
         </div>
       </div>
     );
   }
 
-  // Translations
-  const translations = {
-    backToTickets: language === 'English' ? 'Back to Tickets' : 'العودة للتذاكر',
-    ticketDetails: language === 'English' ? 'Ticket Details' : 'تفاصيل التذكرة',
-    edit: language === 'English' ? 'Edit' : 'تعديل',
-    save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
-    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
-    summary: language === 'English' ? 'Summary' : 'الملخص',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
-    category: language === 'English' ? 'Category' : 'الفئة',
-    priority: language === 'English' ? 'Priority' : 'الأولوية',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    submittedBy: language === 'English' ? 'Submitted By' : 'مُقدم من',
-    assignedTo: language === 'English' ? 'Assigned To' : 'مُكلف إلى',
-    relatedAsset: language === 'English' ? 'Related Asset' : 'الأصل المرتبط',
-    timeSpent: language === 'English' ? 'Time Spent (hours)' : 'الوقت المستغرق (ساعات)',
-    createdAt: language === 'English' ? 'Created' : 'تاريخ الإنشاء',
-    updatedAt: language === 'English' ? 'Last Updated' : 'آخر تحديث',
-    resolution: language === 'English' ? 'Resolution' : 'الحل',
-    resolutionNotes: language === 'English' ? 'Resolution Notes' : 'ملاحظات الحل',
-    ticketNotFound: language === 'English' ? 'Ticket not found' : 'التذكرة غير موجودة',
-    ticketUpdated: language === 'English' ? 'Ticket updated successfully' : 'تم تحديث التذكرة بنجاح',
-    error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير مُكلف',
-  };
-
-  // Fetch ticket details with optimized caching and prefetching
+  // Fetch ticket details
   const { 
     data: ticket, 
     isLoading: ticketLoading,
@@ -97,75 +107,46 @@ export default function TicketDetails() {
     queryKey: ['/api/tickets', ticketId],
     queryFn: () => apiRequest(`/api/tickets/${ticketId}`, 'GET'),
     enabled: !!ticketId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache for ticket details
-    gcTime: 1000 * 60 * 15, // Keep in cache for 15 minutes
-    // Try to get initial data from tickets list cache if available
-    initialData: () => {
-      const ticketsCache = queryClient.getQueryData(['/api/tickets']);
-      if (ticketsCache && Array.isArray(ticketsCache)) {
-        return ticketsCache.find((t: any) => t.id.toString() === ticketId);
-      }
-      return undefined;
-    },
-    initialDataUpdatedAt: () => {
-      return queryClient.getQueryState(['/api/tickets'])?.dataUpdatedAt;
-    },
+    staleTime: 1000 * 30, // 30 seconds
+    gcTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Fetch employees for submitter/assignee info with improved caching
+  // Fetch employees for assignment
   const { data: employees = [] } = useQuery({
     queryKey: ['/api/employees'],
-    staleTime: 1000 * 60 * 15, // 15 minutes cache
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    queryFn: () => apiRequest('/api/employees', 'GET'),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Fetch assets for related asset info with improved caching
-  const { data: assets = [] } = useQuery({
-    queryKey: ['/api/assets'],
-    staleTime: 1000 * 60 * 15, // 15 minutes cache
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
-  });
-
-  // Fetch users for assignee info with improved caching
+  // Fetch users for assignment
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users'],
-    staleTime: 1000 * 60 * 15, // 15 minutes cache
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
-    enabled: hasAccess(2),
+    queryFn: () => apiRequest('/api/users', 'GET'),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Prefetch comments and history for smoother experience
-  useQuery({
-    queryKey: ['/api/tickets', ticketId, 'comments'],
-    queryFn: () => apiRequest(`/api/tickets/${ticketId}/comments`),
-    enabled: !!ticketId && !!ticket,
-    staleTime: 1000 * 60 * 2, // 2 minutes cache for comments
-    gcTime: 1000 * 60 * 10,
-  });
-
-  useQuery({
-    queryKey: ['/api/tickets', ticketId, 'history'],
-    queryFn: () => apiRequest(`/api/tickets/${ticketId}/history`),
-    enabled: !!ticketId && !!ticket,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache for history
-    gcTime: 1000 * 60 * 15,
+  // Fetch assets for relation
+  const { data: assets = [] } = useQuery({
+    queryKey: ['/api/assets'],
+    queryFn: () => apiRequest('/api/assets', 'GET'),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Update ticket mutation
   const updateTicketMutation = useMutation({
-    mutationFn: async (updates: any) => {
+    mutationFn: async (updates: Partial<EditForm>) => {
       return apiRequest(`/api/tickets/${ticketId}`, 'PATCH', updates);
     },
     onSuccess: () => {
-      toast({ title: translations.ticketUpdated });
+      toast({ title: t.ticketUpdated });
       setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
     },
     onError: (error: any) => {
       toast({
-        title: translations.error,
-        description: error.message || 'Failed to update ticket',
+        title: t.error,
+        description: error.message || t.errorUpdating,
         variant: 'destructive',
       });
     },
@@ -175,40 +156,59 @@ export default function TicketDetails() {
   useEffect(() => {
     if (ticket && !isEditing) {
       setEditForm({
-        summary: ticket.summary || '',
+        title: ticket.title || '',
         description: ticket.description || '',
-        requestType: ticket.requestType || 'Hardware',
-        category: ticket.category || 'Incident',
+        type: ticket.type || 'Incident',
+        category: ticket.category || 'General',
         priority: ticket.priority || 'Medium',
+        urgency: ticket.urgency || 'Medium',
+        impact: ticket.impact || 'Medium',
         status: ticket.status || 'Open',
         assignedToId: ticket.assignedToId?.toString() || '',
         timeSpent: ticket.timeSpent || 0,
-        resolution: ticket.resolution || '',
-        resolutionNotes: ticket.resolutionNotes || '',
+        dueDate: ticket.dueDate || '',
+        slaTarget: ticket.slaTarget || '',
+        resolution: ticket.resolution || ''
       });
     }
   }, [ticket, isEditing]);
 
+  // Calculate priority when urgency or impact changes
+  useEffect(() => {
+    if (isEditing) {
+      const calculatedPriority = calculatePriority(
+        editForm.urgency as UrgencyLevel, 
+        editForm.impact as ImpactLevel
+      );
+      if (calculatedPriority !== editForm.priority) {
+        setEditForm(prev => ({ ...prev, priority: calculatedPriority }));
+      }
+    }
+  }, [editForm.urgency, editForm.impact, isEditing]);
+
   const handleSave = () => {
     if (!ticket) return;
 
-    const updates: any = {};
+    const updates: Partial<EditForm> = {};
     
     // Only include changed fields
-    if (editForm.summary !== ticket.summary) {
-      updates.summary = editForm.summary;
+    if (editForm.title !== ticket.title) {
+      updates.title = editForm.title;
     }
     if (editForm.description !== ticket.description) {
       updates.description = editForm.description;
     }
-    if (editForm.requestType !== ticket.requestType) {
-      updates.requestType = editForm.requestType;
+    if (editForm.type !== ticket.type) {
+      updates.type = editForm.type;
     }
     if (editForm.category !== ticket.category) {
       updates.category = editForm.category;
     }
-    if (editForm.priority !== ticket.priority) {
-      updates.priority = editForm.priority;
+    if (editForm.urgency !== ticket.urgency) {
+      updates.urgency = editForm.urgency;
+    }
+    if (editForm.impact !== ticket.impact) {
+      updates.impact = editForm.impact;
     }
     if (editForm.status !== ticket.status) {
       updates.status = editForm.status;
@@ -217,117 +217,101 @@ export default function TicketDetails() {
       updates.assignedToId = editForm.assignedToId ? parseInt(editForm.assignedToId) : null;
     }
     if (editForm.timeSpent !== ticket.timeSpent) {
-      updates.timeSpent = parseFloat(editForm.timeSpent) || 0;
+      updates.timeSpent = editForm.timeSpent;
     }
-    if (editForm.resolution !== (ticket.resolution || '')) {
+    if (editForm.dueDate !== ticket.dueDate) {
+      updates.dueDate = editForm.dueDate;
+    }
+    if (editForm.slaTarget !== ticket.slaTarget) {
+      updates.slaTarget = editForm.slaTarget;
+    }
+    if (editForm.resolution !== ticket.resolution) {
       updates.resolution = editForm.resolution;
     }
-    if (editForm.resolutionNotes !== (ticket.resolutionNotes || '')) {
-      updates.resolutionNotes = editForm.resolutionNotes;
-    }
 
-    if (Object.keys(updates).length > 0) {
-      updateTicketMutation.mutate(updates);
-    } else {
-      setIsEditing(false);
-    }
+    // Execute update
+    updateTicketMutation.mutate(updates);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Open':
-        return <AlertCircle className="h-4 w-4 text-blue-500" />;
-      case 'In Progress':
-        return <Timer className="h-4 w-4 text-yellow-500" />;
-      case 'Resolved':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'Closed':
-        return <XCircle className="h-4 w-4 text-gray-500" />;
-      default:
-        return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
+  // Helper functions for badge colors
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-800';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    switch (priority?.toLowerCase()) {
+      case 'critical': return 'destructive';
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
+      case 'low': return 'secondary';
+      default: return 'default';
     }
   };
 
-  if (ticketLoading && !ticket) {
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'open': return 'destructive';
+      case 'in progress': return 'default';
+      case 'resolved': return 'default';
+      case 'closed': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'incident': return 'destructive';
+      case 'service request': return 'default';
+      case 'problem': return 'destructive';
+      case 'change': return 'default';
+      default: return 'default';
+    }
+  };
+
+  // Find related data
+  const submittedByEmployee = employees.find((emp: any) => emp.id === ticket?.submittedById);
+  const assignedToUser = users.find((user: any) => user.id === ticket?.assignedToId);
+  const relatedAsset = assets.find((asset: any) => asset.id === ticket?.relatedAssetId);
+
+  if (ticketLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
   }
 
-  if (ticketError) {
-    console.error('Ticket loading error:', ticketError);
-    return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {language === 'English' ? 'Error Loading Ticket' : 'خطأ في تحميل التذكرة'}
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {ticketError?.message || (language === 'English' ? 'Unable to load ticket details' : 'غير قادر على تحميل تفاصيل التذكرة')}
-          </p>
-          <Button onClick={() => navigate('/tickets')} variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {translations.backToTickets}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!ticket) {
+  if (ticketError || !ticket) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {translations.ticketNotFound}
+            {t.ticketNotFound}
           </h2>
           <Button onClick={() => navigate('/tickets')} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {translations.backToTickets}
+            {t.backToTickets}
           </Button>
         </div>
       </div>
     );
   }
 
-  const submittedByEmployee = (employees as any[]).find((e: any) => e.id === ticket.submittedById);
-  const assignedToUser = (users as any[]).find((u: any) => u.id === ticket.assignedToId);
-  const relatedAsset = (assets as any[]).find((a: any) => a.id === ticket.relatedAssetId);
-
   return (
-    <div className="p-6">
+    <div className="container mx-auto p-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Button onClick={() => navigate('/tickets')} variant="outline" size="sm">
+          <Button onClick={() => navigate('/tickets')} variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {translations.backToTickets}
+            {t.backToTickets}
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {translations.ticketDetails}
+              {t.ticketDetails}
             </h1>
-            <p className="text-gray-600">{ticket.ticketId}</p>
+            <p className="text-gray-600">#{ticket.ticketId}</p>
           </div>
         </div>
         
@@ -335,333 +319,425 @@ export default function TicketDetails() {
           {!isEditing ? (
             <Button onClick={() => setIsEditing(true)} size="sm">
               <Edit2 className="h-4 w-4 mr-2" />
-              {translations.edit}
+              {t.edit}
             </Button>
           ) : (
-            <>
-              <Button
-                onClick={() => setIsEditing(false)}
-                variant="outline"
-                size="sm"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {translations.cancel}
-              </Button>
-              <Button
-                onClick={handleSave}
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleSave} 
                 size="sm"
                 disabled={updateTicketMutation.isPending}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {translations.save}
+                {t.save}
               </Button>
-            </>
+              <Button 
+                onClick={() => setIsEditing(false)} 
+                variant="outline" 
+                size="sm"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {t.cancel}
+              </Button>
+            </div>
           )}
         </div>
       </div>
 
+      {/* Status Badges */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <Badge variant={getStatusColor(ticket.status)}>
+          {ticket.status}
+        </Badge>
+        <Badge variant={getPriorityColor(ticket.priority)}>
+          {t.priority}: {ticket.priority}
+        </Badge>
+        <Badge variant={getTypeColor(ticket.type)}>
+          {ticket.type}
+        </Badge>
+        {ticket.category && (
+          <Badge variant="outline">
+            {ticket.category}
+          </Badge>
+        )}
+      </div>
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Primary Details */}
+        
+        {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-6">
+          
+          {/* Title and Description */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5" />
-                <span>{translations.summary}</span>
-              </CardTitle>
+              <CardTitle>{t.ticketDetails}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label>{translations.summary}</Label>
-                    <Input
-                      value={editForm.summary}
-                      onChange={(e) => setEditForm((prev: any) => ({ ...prev, summary: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>{translations.description}</Label>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.title_field}
+                </Label>
+                {isEditing ? (
+                  <Input
+                    value={editForm.title}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm font-semibold">{ticket.title}</p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.description_field}
+                </Label>
+                {isEditing ? (
+                  <Textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                    rows={4}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{ticket.description}</p>
+                )}
+              </div>
+
+              {/* Resolution */}
+              {(ticket.resolution || isEditing) && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.resolution}
+                  </Label>
+                  {isEditing ? (
                     <Textarea
-                      value={editForm.description}
-                      onChange={(e) => setEditForm((prev: any) => ({ ...prev, description: e.target.value }))}
-                      rows={6}
+                      value={editForm.resolution}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, resolution: e.target.value }))}
+                      rows={3}
+                      className="mt-1"
+                      placeholder={t.resolutionPlaceholder}
                     />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-lg">{ticket.summary}</h3>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-600">{translations.description}</Label>
-                    <p className="mt-1 text-gray-900 whitespace-pre-wrap">{ticket.description}</p>
-                  </div>
+                  ) : (
+                    <p className="mt-1 text-sm whitespace-pre-wrap">{ticket.resolution}</p>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Resolution Section */}
-          {(ticket.status === 'Resolved' || ticket.status === 'Closed' || isEditing) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>{translations.resolution}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div>
-                      <Label>{translations.resolution}</Label>
-                      <Textarea
-                        value={editForm.resolution}
-                        onChange={(e) => setEditForm((prev: any) => ({ ...prev, resolution: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label>{translations.resolutionNotes}</Label>
-                      <Textarea
-                        value={editForm.resolutionNotes}
-                        onChange={(e) => setEditForm((prev: any) => ({ ...prev, resolutionNotes: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {ticket.resolution && (
-                      <div>
-                        <Label className="text-sm text-gray-600">{translations.resolution}</Label>
-                        <p className="mt-1 text-gray-900 whitespace-pre-wrap">{ticket.resolution}</p>
-                      </div>
-                    )}
-                    {ticket.resolutionNotes && (
-                      <div>
-                        <Label className="text-sm text-gray-600">{translations.resolutionNotes}</Label>
-                        <p className="mt-1 text-gray-900 whitespace-pre-wrap">{ticket.resolutionNotes}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status & Priority */}
+          {/* Classification */}
           <Card>
             <CardHeader>
-              <CardTitle>Status & Priority</CardTitle>
+              <CardTitle className="flex items-center">
+                <Activity className="h-5 w-5 mr-2" />
+                Classification & Priority
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>{translations.status}</Label>
-                {isEditing ? (
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Resolved">Resolved</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(ticket.status)}
-                    <span>{ticket.status}</span>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.type}
+                  </Label>
+                  {isEditing ? (
+                    <Select 
+                      value={editForm.type} 
+                      onValueChange={(value) => setEditForm(prev => ({ ...prev, type: value }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Incident">{t.typeIncident}</SelectItem>
+                        <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
+                        <SelectItem value="Problem">{t.typeProblem}</SelectItem>
+                        <SelectItem value="Change">{t.typeChange}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="mt-1 text-sm">{ticket.type}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.category}
+                  </Label>
+                  {isEditing ? (
+                    <Select 
+                      value={editForm.category} 
+                      onValueChange={(value) => setEditForm(prev => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hardware">{t.categoryHardware}</SelectItem>
+                        <SelectItem value="Software">{t.categorySoftware}</SelectItem>
+                        <SelectItem value="Network">{t.categoryNetwork}</SelectItem>
+                        <SelectItem value="Access">{t.categoryAccess}</SelectItem>
+                        <SelectItem value="Other">{t.categoryOther}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="mt-1 text-sm">{ticket.category}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.urgency}
+                  </Label>
+                  {isEditing ? (
+                    <Select 
+                      value={editForm.urgency} 
+                      onValueChange={(value) => setEditForm(prev => ({ ...prev, urgency: value }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">{t.urgencyLow}</SelectItem>
+                        <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
+                        <SelectItem value="High">{t.urgencyHigh}</SelectItem>
+                        <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="mt-1 text-sm">{ticket.urgency}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.impact}
+                  </Label>
+                  {isEditing ? (
+                    <Select 
+                      value={editForm.impact} 
+                      onValueChange={(value) => setEditForm(prev => ({ ...prev, impact: value }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">{t.impactLow}</SelectItem>
+                        <SelectItem value="Medium">{t.impactMedium}</SelectItem>
+                        <SelectItem value="High">{t.impactHigh}</SelectItem>
+                        <SelectItem value="Critical">{t.impactCritical}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="mt-1 text-sm">{ticket.impact}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Calculated Priority Display */}
+              {isEditing && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center">
+                    <Target className="h-4 w-4 text-blue-600 mr-2" />
+                    <span className="text-sm font-medium text-blue-800">
+                      {t.priority}: {editForm.priority}
+                    </span>
                   </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>{translations.priority}</Label>
-                {isEditing ? (
-                  <Select
-                    value={editForm.priority}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, priority: value }))}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge className={getPriorityColor(ticket.priority)}>
-                    {ticket.priority}
-                  </Badge>
-                )}
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <Label>{translations.requestType}</Label>
-                {isEditing ? (
-                  <Select
-                    value={editForm.requestType}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, requestType: value }))}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Hardware">Hardware</SelectItem>
-                      <SelectItem value="Software">Software</SelectItem>
-                      <SelectItem value="Network">Network</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span>{ticket.requestType}</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>{translations.category}</Label>
-                {isEditing ? (
-                  <Select
-                    value={editForm.category}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Incident">Incident</SelectItem>
-                      <SelectItem value="Request">Request</SelectItem>
-                      <SelectItem value="Problem">Problem</SelectItem>
-                      <SelectItem value="Change">Change</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span>{ticket.category}</span>
-                )}
-              </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Calculated from {editForm.urgency} urgency × {editForm.impact} impact
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* Assignment & Relations */}
+        {/* Right Column - Assignment & Metadata */}
+        <div className="space-y-6">
+          
+          {/* Assignment */}
           <Card>
             <CardHeader>
-              <CardTitle>Assignment & Relations</CardTitle>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Assignment
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm text-gray-600 flex items-center">
-                  <User className="h-4 w-4 mr-1" />
-                  {translations.submittedBy}
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.submittedBy}
                 </Label>
-                <p className="mt-1 font-medium">
-                  {submittedByEmployee?.englishName || submittedByEmployee?.name || 'Unknown'}
+                <p className="mt-1 text-sm">
+                  {submittedByEmployee?.englishName || t.none}
                 </p>
               </div>
 
               <div>
-                <Label className="text-sm text-gray-600 flex items-center">
-                  <User className="h-4 w-4 mr-1" />
-                  {translations.assignedTo}
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.assignedTo}
                 </Label>
                 {isEditing ? (
-                  <Select
-                    value={editForm.assignedToId || "unassigned"}
-                    onValueChange={(value) => setEditForm((prev: any) => ({ ...prev, assignedToId: value === "unassigned" ? null : value }))}
+                  <Select 
+                    value={editForm.assignedToId || "unassigned"} 
+                    onValueChange={(value) => setEditForm(prev => ({ 
+                      ...prev, 
+                      assignedToId: value === "unassigned" ? "" : value 
+                    }))}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder={translations.unassigned} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
-                      {(users as any[]).map((user: any) => (
+                      <SelectItem value="unassigned">{t.unassigned}</SelectItem>
+                      {users.map((user: any) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.fullName || user.username}
+                          {user.username}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="mt-1 font-medium">
-                    {assignedToUser?.fullName || assignedToUser?.username || translations.unassigned}
+                  <p className="mt-1 text-sm">
+                    {assignedToUser?.username || t.unassigned}
                   </p>
                 )}
               </div>
 
-              {relatedAsset && (
-                <div>
-                  <Label className="text-sm text-gray-600 flex items-center">
-                    <Monitor className="h-4 w-4 mr-1" />
-                    {translations.relatedAsset}
-                  </Label>
-                  <p className="mt-1 font-medium cursor-pointer hover:text-blue-600" 
-                     onClick={() => navigate(`/assets?view=${relatedAsset.id}`)}>
-                    {relatedAsset.assetId} - {relatedAsset.name || relatedAsset.title || 'Unnamed'}
-                  </p>
-                </div>
-              )}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.status}
+                </Label>
+                {isEditing ? (
+                  <Select 
+                    value={editForm.status} 
+                    onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Open">{t.statusOpen}</SelectItem>
+                      <SelectItem value="In Progress">{t.statusInProgress}</SelectItem>
+                      <SelectItem value="Resolved">{t.statusResolved}</SelectItem>
+                      <SelectItem value="Closed">{t.statusClosed}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm">{ticket.status}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Time Tracking */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="h-5 w-5 mr-2" />
+                Time Tracking
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.createdAt}
+                </Label>
+                <p className="mt-1 text-sm">
+                  {ticket.createdAt ? format(new Date(ticket.createdAt), 'PPpp') : t.none}
+                </p>
+              </div>
 
               <div>
-                <Label className="text-sm text-gray-600 flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {translations.timeSpent}
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.updatedAt}
+                </Label>
+                <p className="mt-1 text-sm">
+                  {ticket.updatedAt ? format(new Date(ticket.updatedAt), 'PPpp') : t.none}
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  {t.timeSpent} (minutes)
                 </Label>
                 {isEditing ? (
                   <Input
                     type="number"
-                    step="0.5"
-                    min="0"
                     value={editForm.timeSpent}
-                    onChange={(e) => setEditForm((prev: any) => ({ ...prev, timeSpent: e.target.value }))}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, timeSpent: parseInt(e.target.value) || 0 }))}
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 font-medium">{ticket.timeSpent || 0} hours</p>
+                  <p className="mt-1 text-sm">{ticket.timeSpent || 0}</p>
                 )}
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Timestamps */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5" />
-                <span>Timeline</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label className="text-sm text-gray-600">{translations.createdAt}</Label>
-                <p className="mt-1 text-sm">
-                  {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy HH:mm')}
-                </p>
-              </div>
-              {ticket.updatedAt && ticket.updatedAt !== ticket.createdAt && (
+              {(ticket.dueDate || isEditing) && (
                 <div>
-                  <Label className="text-sm text-gray-600">{translations.updatedAt}</Label>
-                  <p className="mt-1 text-sm">
-                    {format(new Date(ticket.updatedAt), 'MMM d, yyyy HH:mm')}
-                  </p>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.dueDate}
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      type="datetime-local"
+                      value={editForm.dueDate}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm">
+                      {ticket.dueDate ? format(new Date(ticket.dueDate), 'PPpp') : t.none}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(ticket.slaTarget || isEditing) && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    {t.slaTarget}
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      type="datetime-local"
+                      value={editForm.slaTarget}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, slaTarget: e.target.value }))}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1 text-sm">
+                      {ticket.slaTarget ? format(new Date(ticket.slaTarget), 'PPpp') : t.none}
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Related Asset */}
+          {relatedAsset && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Monitor className="h-5 w-5 mr-2" />
+                  {t.relatedAsset}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm">
+                  <p className="font-medium">{relatedAsset.assetId}</p>
+                  <p className="text-gray-600">
+                    {relatedAsset.type} - {relatedAsset.brand}
+                  </p>
+                  {relatedAsset.modelName && (
+                    <p className="text-gray-500">{relatedAsset.modelName}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

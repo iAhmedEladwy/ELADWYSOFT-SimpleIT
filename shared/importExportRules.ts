@@ -1,43 +1,47 @@
-import { CSVValidationRule, parseBoolean } from './csvUtils';
+/**
+ * Import/Export validation rules and field mappings for SimpleIT
+ * Updated to align with v0.4.0 schema changes
+ */
+
+export interface CSVValidationRule {
+  field: string;
+  required: boolean;
+  type: 'string' | 'number' | 'boolean' | 'date' | 'email';
+  pattern?: RegExp;
+  validate?: (value: any) => boolean | string;
+  transform?: (value: any) => any;
+}
+
+// Helper function for boolean parsing
+const parseBoolean = (value: any): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return ['true', '1', 'yes', 'y'].includes(value.toLowerCase());
+  }
+  return Boolean(value);
+};
 
 /**
  * Asset Import/Export Rules
  */
 export const assetValidationRules: CSVValidationRule[] = [
   {
+    field: 'assetId',
+    required: false,
+    type: 'string',
+    pattern: /^[A-Z0-9-]+$/
+  },
+  {
     field: 'type',
     required: true,
     type: 'string',
-    validate: (value) => {
-      const validTypes = ['Desktop', 'Laptop', 'Server', 'Printer', 'Monitor', 'Phone', 'Tablet', 'Network Equipment', 'Software License', 'Other'];
-      return validTypes.includes(value) || `Type must be one of: ${validTypes.join(', ')}`;
-    }
+    validate: (value) => value.length >= 2 || 'Asset type must be at least 2 characters'
   },
   {
     field: 'brand',
     required: true,
-    type: 'string'
-  },
-  {
-    field: 'assetId',
-    required: true,
     type: 'string',
-    pattern: /^[A-Z0-9-]+$/,
-    validate: (value) => value.length >= 3 || 'Asset ID must be at least 3 characters'
-  },
-  {
-    field: 'serialNumber',
-    required: true,
-    type: 'string'
-  },
-  {
-    field: 'status',
-    required: true,
-    type: 'string',
-    validate: (value) => {
-      const validStatuses = ['Active', 'Inactive', 'Maintenance', 'Disposed', 'Lost', 'Stolen'];
-      return validStatuses.includes(value) || `Status must be one of: ${validStatuses.join(', ')}`;
-    }
+    validate: (value) => value.length >= 2 || 'Brand must be at least 2 characters'
   },
   {
     field: 'modelNumber',
@@ -48,6 +52,12 @@ export const assetValidationRules: CSVValidationRule[] = [
     field: 'modelName',
     required: false,
     type: 'string'
+  },
+  {
+    field: 'serialNumber',
+    required: true,
+    type: 'string',
+    validate: (value) => value.length >= 3 || 'Serial number must be at least 3 characters'
   },
   {
     field: 'specs',
@@ -68,6 +78,12 @@ export const assetValidationRules: CSVValidationRule[] = [
     field: 'storage',
     required: false,
     type: 'string'
+  },
+  {
+    field: 'status',
+    required: false,
+    type: 'string',
+    transform: (value) => value || 'Available'
   },
   {
     field: 'purchaseDate',
@@ -91,18 +107,13 @@ export const assetValidationRules: CSVValidationRule[] = [
   {
     field: 'lifeSpan',
     required: false,
-    type: 'string'
+    type: 'number',
+    transform: (value) => value ? parseInt(value) : null
   },
   {
     field: 'outOfBoxOs',
     required: false,
     type: 'string'
-  },
-  {
-    field: 'assignedToId',
-    required: false,
-    type: 'string',
-    transform: (value) => value ? String(value) : null
   },
   {
     field: 'assignedEmployeeId',
@@ -118,16 +129,15 @@ export const assetValidationRules: CSVValidationRule[] = [
 export const employeeValidationRules: CSVValidationRule[] = [
   {
     field: 'empId',
-    required: true,
+    required: false,
     type: 'string',
-    pattern: /^[A-Z0-9-]+$/,
-    validate: (value) => value.length >= 3 || 'Employee ID must be at least 3 characters'
+    pattern: /^[A-Z0-9-]+$/
   },
   {
     field: 'englishName',
     required: true,
     type: 'string',
-    validate: (value) => value.length >= 2 || 'English name must be at least 2 characters'
+    validate: (value) => value.length >= 3 || 'Name must be at least 3 characters'
   },
   {
     field: 'arabicName',
@@ -135,62 +145,71 @@ export const employeeValidationRules: CSVValidationRule[] = [
     type: 'string'
   },
   {
-    field: 'email',
-    required: true,
-    type: 'email'
-  },
-  {
     field: 'department',
     required: true,
-    type: 'string'
-  },
-  {
-    field: 'position',
-    required: true,
-    type: 'string'
-  },
-  {
-    field: 'phone',
-    required: false,
     type: 'string',
-    pattern: /^[\+]?[1-9][\d]{0,15}$/
+    validate: (value) => value.length >= 2 || 'Department must be at least 2 characters'
   },
   {
-    field: 'address',
-    required: false,
-    type: 'string'
+    field: 'title',
+    required: true,
+    type: 'string',
+    validate: (value) => value.length >= 2 || 'Job title must be at least 2 characters'
   },
   {
-    field: 'emergencyContact',
-    required: false,
-    type: 'string'
+    field: 'employmentType',
+    required: true,
+    type: 'string',
+    validate: (value) => {
+      const validTypes = ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance'];
+      return validTypes.includes(value) || `Employment type must be one of: ${validTypes.join(', ')}`;
+    }
   },
   {
-    field: 'nationalId',
-    required: false,
-    type: 'string'
+    field: 'joiningDate',
+    required: true,
+    type: 'date',
+    transform: (value) => new Date(value).toISOString().split('T')[0]
   },
   {
-    field: 'startDate',
+    field: 'exitDate',
     required: false,
     type: 'date',
     transform: (value) => value ? new Date(value).toISOString().split('T')[0] : null
   },
   {
-    field: 'salary',
+    field: 'personalEmail',
     required: false,
-    type: 'string',
-    pattern: /^\d+(\.\d{2})?$/,
-    transform: (value) => value ? parseFloat(value).toFixed(2) : null
+    type: 'email'
   },
   {
-    field: 'employmentType',
+    field: 'corporateEmail',
+    required: false,
+    type: 'email'
+  },
+  {
+    field: 'personalMobile',
     required: false,
     type: 'string',
-    validate: (value) => {
-      const validTypes = ['Full-time', 'Part-time', 'Contract', 'Intern'];
-      return !value || validTypes.includes(value) || `Employment type must be one of: ${validTypes.join(', ')}`;
-    }
+    pattern: /^[\+]?[0-9\-\s\(\)]+$/
+  },
+  {
+    field: 'workMobile',
+    required: false,
+    type: 'string',
+    pattern: /^[\+]?[0-9\-\s\(\)]+$/
+  },
+  {
+    field: 'idNumber',
+    required: true,
+    type: 'string',
+    validate: (value) => value.length >= 5 || 'ID number must be at least 5 characters'
+  },
+  {
+    field: 'directManager',
+    required: false,
+    type: 'number',
+    transform: (value) => value ? parseInt(value) : null
   },
   {
     field: 'status',
@@ -199,46 +218,13 @@ export const employeeValidationRules: CSVValidationRule[] = [
     validate: (value) => {
       const validStatuses = ['Active', 'Resigned', 'Terminated', 'On Leave'];
       return !value || validStatuses.includes(value) || `Status must be one of: ${validStatuses.join(', ')}`;
-    }
-  },
-  {
-    field: 'managerId',
-    required: false,
-    type: 'string'
-  },
-  {
-    field: 'managerId',
-    required: false,
-    type: 'number',
-    transform: (value) => value ? parseInt(value) : null
-  },
-  {
-    field: 'startDate',
-    required: false,
-    type: 'date',
-    transform: (value) => value ? new Date(value).toISOString().split('T')[0] : null
-  },
-  {
-    field: 'salary',
-    required: false,
-    type: 'string',
-    pattern: /^\d+(\.\d{2})?$/,
-    transform: (value) => value ? parseFloat(value).toFixed(2) : null
-  },
-  {
-    field: 'status',
-    required: false,
-    type: 'string',
-    validate: (value) => {
-      const validStatuses = ['Active', 'Inactive', 'Terminated', 'On Leave'];
-      return !value || validStatuses.includes(value) || `Status must be one of: ${validStatuses.join(', ')}`;
     },
     transform: (value) => value || 'Active'
   }
 ];
 
 /**
- * Ticket Import/Export Rules
+ * Ticket Import/Export Rules - Updated for v0.4.0 schema
  */
 export const ticketValidationRules: CSVValidationRule[] = [
   {
@@ -260,21 +246,21 @@ export const ticketValidationRules: CSVValidationRule[] = [
     validate: (value) => value.length >= 10 || 'Description must be at least 10 characters'
   },
   {
+    field: 'type',
+    required: true,
+    type: 'string',
+    validate: (value) => {
+      const validTypes = ['Incident', 'Service Request', 'Problem', 'Change'];
+      return validTypes.includes(value) || `Type must be one of: ${validTypes.join(', ')}`;
+    }
+  },
+  {
     field: 'category',
     required: true,
     type: 'string',
     validate: (value) => {
       const validCategories = ['Hardware', 'Software', 'Network', 'Access', 'Other'];
       return validCategories.includes(value) || `Category must be one of: ${validCategories.join(', ')}`;
-    }
-  },
-  {
-    field: 'requestType',
-    required: true,
-    type: 'string',
-    validate: (value) => {
-      const validTypes = ['Incident', 'Service Request', 'Change Request', 'Problem'];
-      return validTypes.includes(value) || `Request type must be one of: ${validTypes.join(', ')}`;
     }
   },
   {
@@ -294,6 +280,16 @@ export const ticketValidationRules: CSVValidationRule[] = [
       const validImpacts = ['Low', 'Medium', 'High', 'Critical'];
       return validImpacts.includes(value) || `Impact must be one of: ${validImpacts.join(', ')}`;
     }
+  },
+  {
+    field: 'priority',
+    required: false,
+    type: 'string',
+    validate: (value) => {
+      const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+      return !value || validPriorities.includes(value) || `Priority must be one of: ${validPriorities.join(', ')}`;
+    },
+    transform: (value) => value || 'Medium' // Default if not provided (will be auto-calculated)
   },
   {
     field: 'status',
@@ -318,10 +314,33 @@ export const ticketValidationRules: CSVValidationRule[] = [
     transform: (value) => value ? parseInt(value) : null
   },
   {
+    field: 'relatedAssetId',
+    required: false,
+    type: 'number',
+    transform: (value) => value ? parseInt(value) : null
+  },
+  {
+    field: 'timeSpent',
+    required: false,
+    type: 'number',
+    transform: (value) => value ? parseInt(value) : null
+  },
+  {
     field: 'dueDate',
     required: false,
     type: 'date',
     transform: (value) => value ? new Date(value).toISOString() : null
+  },
+  {
+    field: 'slaTarget',
+    required: false,
+    type: 'date',
+    transform: (value) => value ? new Date(value).toISOString() : null
+  },
+  {
+    field: 'resolution',
+    required: false,
+    type: 'string'
   }
 ];
 
@@ -481,7 +500,7 @@ export const assetTransactionValidationRules: CSVValidationRule[] = [
 ];
 
 /**
- * Export column mappings for each entity type
+ * Export column mappings for each entity type - Updated for v0.4.0 schema
  */
 export const assetExportColumns = [
   'id', 'assetId', 'type', 'brand', 'modelNumber', 'modelName', 'serialNumber', 
@@ -494,15 +513,14 @@ export const employeeExportColumns = [
   'id', 'empId', 'englishName', 'arabicName', 'department', 'idNumber', 'title', 
   'directManager', 'employmentType', 'joiningDate', 'exitDate', 'status', 
   'personalMobile', 'workMobile', 'personalEmail', 'corporateEmail', 'userId',
-  'email', 'phone', 'position', 'createdAt', 'updatedAt'
+  'createdAt', 'updatedAt'
 ];
 
 export const ticketExportColumns = [
-  'id', 'ticketId', 'title', 'description', 'category', 'requestType', 
+  'id', 'ticketId', 'title', 'description', 'type', 'category',
   'urgency', 'impact', 'priority', 'status', 'submittedById', 'assignedToId', 
-  'relatedAssetId', 'dueDate', 'slaTarget', 'escalationLevel', 'tags',
-  'rootCause', 'workaround', 'resolution', 'resolutionNotes', 'privateNotes',
-  'createdAt', 'updatedAt'
+  'relatedAssetId', 'timeSpent', 'dueDate', 'slaTarget', 'completionTime',
+  'resolution', 'createdAt', 'updatedAt'
 ];
 
 export const userExportColumns = [
