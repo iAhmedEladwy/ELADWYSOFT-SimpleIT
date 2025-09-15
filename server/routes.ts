@@ -3381,28 +3381,37 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     const user = req.user as schema.User;
     const { status, notes } = req.body;
     
+    console.log('Updating upgrade status:', { upgradeId, status, userId: user.id });
+    
     const validStatuses = ['Draft', 'Pending Approval', 'Approved', 'In Progress', 'Completed', 'Cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
+
+    // Use Drizzle ORM instead of raw SQL
+    const result = await db
+      .update(schema.assetUpgrades)
+      .set({ 
+        status: status,
+        updatedById: user.id,
+        updatedAt: new Date()
+      })
+      .where(eq(schema.assetUpgrades.id, upgradeId))
+      .returning();
     
-    const query = `
-      UPDATE asset_upgrades 
-      SET status = $1, updated_by_id = $2, updated_at = NOW()
-      WHERE id = $3
-      RETURNING *
-    `;
-    
-    const result = await storage.pool.query(query, [status, user.id, upgradeId]);
-    
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ message: 'Upgrade not found' });
     }
-    
-    res.json(result.rows[0]);
+
+    console.log('Upgrade status updated successfully:', result[0]);
+    res.json(result[0]);
   } catch (error: unknown) {
-    console.error('Error updating upgrade status:', error);
-    res.status(500).json({ message: 'Error updating upgrade status' });
+    console.error('Error updating upgrade status - detailed:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    res.status(500).json({ message: 'Error updating upgrade status', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
   // Asset Transaction APIs
