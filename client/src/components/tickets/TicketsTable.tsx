@@ -45,6 +45,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { DateInput } from '@/components/ui/date-input';
 import {
   Popover,
   PopoverContent,
@@ -94,7 +95,6 @@ export default function TicketsTable({
   }>({ open: false, ticketId: null, newStatus: '' });
 
   const [resolution, setResolution] = useState('');
-  const [dueDatePopoverOpen, setDueDatePopoverOpen] = useState<{[key: number]: boolean}>({});
   
     // Handle checkbox selection
     const handleTicketSelection = (ticketId: number, checked: boolean) => {
@@ -593,45 +593,17 @@ export default function TicketsTable({
                 
                 {/* Due Date */}
                 <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Popover 
-                    open={dueDatePopoverOpen[ticket.id] || false} 
-                    onOpenChange={(open) => setDueDatePopoverOpen(prev => ({ ...prev, [ticket.id]: open }))}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start text-left font-normal p-1 h-auto hover:bg-gray-50",
-                          !ticket.dueDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
-                        {ticket.dueDate ? (
-                          format(new Date(ticket.dueDate), "MMM dd, yyyy")
-                        ) : (
-                          <span className="text-gray-400">{language === 'English' ? 'Set due date' : 'تحديد تاريخ الاستحقاق'}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={ticket.dueDate ? new Date(ticket.dueDate) : undefined}
-                        onSelect={(date) => {
-                          const isoString = date ? date.toISOString().split('T')[0] : null;
-                          updateTicketMutation.mutate({ 
-                            id: ticket.id, 
-                            updates: { dueDate: isoString } 
-                          });
-                          setDueDatePopoverOpen(prev => ({ ...prev, [ticket.id]: false }));
-                        }}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DateInput
+                    value={ticket.dueDate || ''}
+                    onChange={(value) => {
+                      updateTicketMutation.mutate({ 
+                        id: ticket.id, 
+                        updates: { dueDate: value || null } 
+                      });
+                    }}
+                    placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                    className="w-full h-8 text-sm"
+                  />
                 </TableCell>
               </TableRow>
             ))}

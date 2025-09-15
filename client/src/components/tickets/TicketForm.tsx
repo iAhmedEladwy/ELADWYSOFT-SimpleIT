@@ -59,6 +59,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { DateInput } from "@/components/ui/date-input";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -126,8 +127,6 @@ export default function TicketForm({
   const [activeTab, setActiveTab] = useState('details');
   const [commentText, setCommentText] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
-  const [dueDateOpen, setDueDateOpen] = useState(false);
-  const [dueDateOpen2, setDueDateOpen2] = useState(false);
 
   // Fetch data with improved caching and loading states
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<UserResponse[]>({ 
@@ -946,33 +945,14 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
-                          <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {field.value ? format(new Date(field.value), "PPP") : (language === 'English' ? 'Pick a date' : 'اختر التاريخ')}
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => {
-                                  field.onChange(date ? date.toISOString().split('T')[0] : '');
-                                  setDueDateOpen(false);
-                                }}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <FormControl>
+                            <DateInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                              className="w-full"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1405,42 +1385,17 @@ const { data: allAssets = [], isLoading: isLoadingAssets } = useQuery<AssetRespo
                                 <FormItem>
                                   <FormLabel>{language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق'}</FormLabel>
                                   <FormControl>
-                                    <Popover open={dueDateOpen2} onOpenChange={setDueDateOpen2}>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !field.value && "text-muted-foreground"
-                                          )}
-                                        >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {field.value ? (
-                                            format(new Date(field.value), "PPP")
-                                          ) : (
-                                            <span>{language === 'English' ? 'Pick a due date' : 'اختر تاريخ الاستحقاق'}</span>
-                                          )}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                          mode="single"
-                                          selected={field.value ? new Date(field.value) : undefined}
-                                          onSelect={(date) => {
-                                            if (date) {
-                                              const isoString = date.toISOString().split('T')[0];
-                                              field.onChange(isoString);
-                                              handleAutoSave('dueDate', isoString);
-                                            }
-                                            setDueDateOpen2(false);
-                                          }}
-                                          disabled={(date) =>
-                                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
+                                    <DateInput
+                                      value={field.value}
+                                      onChange={(value) => {
+                                        field.onChange(value);
+                                        if (value) {
+                                          handleAutoSave('dueDate', value);
+                                        }
+                                      }}
+                                      placeholder={language === 'English' ? 'MM/DD/YYYY' : 'MM/DD/YYYY'}
+                                      className="w-full"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>

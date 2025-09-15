@@ -25,7 +25,7 @@ function Calendar({
   
   const years = React.useMemo(() => {
     const currentYear = new Date().getFullYear()
-    const startYear = currentYear - 100
+    const startYear = 1955  // Changed from currentYear - 100
     const endYear = currentYear + 10
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
   }, [])
