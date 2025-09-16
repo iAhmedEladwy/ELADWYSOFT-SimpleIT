@@ -707,8 +707,8 @@ export default function TicketForm({
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder={
-                                    !selectedEmployeeId ? t.selectEmployeeFirst : 
+                                 <SelectValue placeholder={
+                                    !form.watch('submittedById') ? t.selectEmployeeFirst : 
                                     filteredAssets.length === 0 ? t.noAssetsForEmployee :
                                     t.selectAsset
                                   } />
