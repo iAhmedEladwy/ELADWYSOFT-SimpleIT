@@ -142,10 +142,7 @@ export default function Tickets() {
 
   const updateTicketStatusMutation = useMutation({
     mutationFn: ({ id, status, resolutionNotes }: { id: number; status: string; resolutionNotes?: string }) =>
-      apiRequest(`/api/tickets/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status, resolution: resolutionNotes }),
-      }),
+    apiRequest(`/api/tickets/${id}`, 'PUT', { status, resolution: resolutionNotes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({ title: t.success, description: t.ticketUpdated });
@@ -161,10 +158,7 @@ export default function Tickets() {
 
   const assignTicketMutation = useMutation({
     mutationFn: ({ id, userId }: { id: number; userId: number }) =>
-      apiRequest(`/api/tickets/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ assignedToId: userId }),
-      }),
+      apiRequest(`/api/tickets/${id}`, 'PUT', { assignedToId: userId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({ title: t.success, description: t.ticketAssigned });

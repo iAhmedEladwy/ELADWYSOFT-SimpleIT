@@ -454,8 +454,6 @@ export default function TicketsTable({
               <TableHead>{t.type || 'Type'}</TableHead>
               <TableHead>{t.category || 'Category'}</TableHead>
               <TableHead>{t.priority || 'Priority'}</TableHead>
-              <TableHead>{t.urgency || 'Urgency'}</TableHead>
-              <TableHead>{t.impact || 'Impact'}</TableHead>
               <TableHead>{t.status || 'Status'}</TableHead>
               <TableHead>{t.submittedBy || 'Submitted By'}</TableHead>
               <TableHead>{t.assignedTo || 'Assigned To'}</TableHead>
@@ -520,36 +518,16 @@ export default function TicketsTable({
                     </div>
                   </TableCell>
                   
-                  {/* Type - Inline Edit with validation */}
-                  <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={ticket.type || 'Incident'}
-                      onValueChange={(value) => {
-                        if (isValidType(value)) {
-                          updateTicketMutation.mutate({ 
-                            id: ticket.id, 
-                            updates: { type: value } 
-                          });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                        <SelectValue>
-                          {ticket.type === 'Incident' ? (t.typeIncident || 'Incident') :
-                           ticket.type === 'Service Request' ? (t.typeServiceRequest || 'Service Request') :
-                           ticket.type === 'Problem' ? (t.typeProblem || 'Problem') :
-                           ticket.type === 'Change' ? (t.typeChange || 'Change') :
-                           ticket.type}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="relative z-50">
-                        <SelectItem value="Incident">{t.typeIncident || 'Incident'}</SelectItem>
-                        <SelectItem value="Service Request">{t.typeServiceRequest || 'Service Request'}</SelectItem>
-                        <SelectItem value="Problem">{t.typeProblem || 'Problem'}</SelectItem>
-                        <SelectItem value="Change">{t.typeChange || 'Change'}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
+                  {/* Type - Non-Inline Edit with validation */}
+                 <TableCell className="min-w-[120px] text-sm">
+                  <Badge variant="outline" className="text-xs">
+                    {ticket.type === 'Incident' ? (t.typeIncident || 'Incident') :
+                    ticket.type === 'Service Request' ? (t.typeServiceRequest || 'Service Request') :
+                    ticket.type === 'Problem' ? (t.typeProblem || 'Problem') :
+                    ticket.type === 'Change' ? (t.typeChange || 'Change') :
+                    ticket.type || 'Incident'}
+                  </Badge>
+                </TableCell>
 
                   {/* Category */}
                   <TableCell className="min-w-[100px] text-sm">
@@ -567,54 +545,6 @@ export default function TicketsTable({
                        ticket.priority === 'Critical' ? (t.priorityCritical || 'Critical') :
                        ticket.priority || 'Medium'}
                     </Badge>
-                  </TableCell>
-                  
-                  {/* Urgency - Inline Edit with Priority Calculation */}
-                  <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={ticket.urgency || 'Medium'}
-                      onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'urgency', value, ticket)}
-                    >
-                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                        <SelectValue>
-                          {ticket.urgency === 'Low' ? (t.urgencyLow || 'Low') :
-                           ticket.urgency === 'Medium' ? (t.urgencyMedium || 'Medium') :
-                           ticket.urgency === 'High' ? (t.urgencyHigh || 'High') :
-                           ticket.urgency === 'Critical' ? (t.urgencyCritical || 'Critical') :
-                           ticket.urgency || 'Medium'}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="relative z-50">
-                        <SelectItem value="Low">{t.urgencyLow || 'Low'}</SelectItem>
-                        <SelectItem value="Medium">{t.urgencyMedium || 'Medium'}</SelectItem>
-                        <SelectItem value="High">{t.urgencyHigh || 'High'}</SelectItem>
-                        <SelectItem value="Critical">{t.urgencyCritical || 'Critical'}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  
-                  {/* Impact - Inline Edit with Priority Calculation */}
-                  <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
-                    <Select
-                      value={ticket.impact || 'Medium'}
-                      onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'impact', value, ticket)}
-                    >
-                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                        <SelectValue>
-                          {ticket.impact === 'Low' ? (t.impactLow || 'Low') :
-                           ticket.impact === 'Medium' ? (t.impactMedium || 'Medium') :
-                           ticket.impact === 'High' ? (t.impactHigh || 'High') :
-                           ticket.impact === 'Critical' ? (t.impactCritical || 'Critical') :
-                           ticket.impact || 'Medium'}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="relative z-50">
-                        <SelectItem value="Low">{t.impactLow || 'Low'}</SelectItem>
-                        <SelectItem value="Medium">{t.impactMedium || 'Medium'}</SelectItem>
-                        <SelectItem value="High">{t.impactHigh || 'High'}</SelectItem>
-                        <SelectItem value="Critical">{t.impactCritical || 'Critical'}</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </TableCell>
                   
                   {/* Status - Inline Edit with Resolution Dialog */}
@@ -704,10 +634,21 @@ export default function TicketsTable({
                     </Select>
                   </TableCell>
                   
-                  {/* Related Asset */}
-                  <TableCell className="min-w-[120px] text-sm">
-                    {ticket.relatedAssetId ? getAssetName(ticket.relatedAssetId) : (t.none || 'None')}
-                  </TableCell>
+                 {/* Related Asset - Enhanced with Brand + Type + Model */}
+                    <TableCell className="min-w-[150px] text-sm">
+                      {ticket.relatedAssetId ? (() => {
+                        const asset = assets.find((a: any) => a && a.id === ticket.relatedAssetId);
+                        if (!asset) return t.none || 'None';
+                        
+                        // Create enhanced display: "Brand Type Model" format
+                        const displayParts = [];
+                        if (asset.brand) displayParts.push(asset.brand);
+                        if (asset.type) displayParts.push(asset.type);
+                        if (asset.modelName) displayParts.push(asset.modelName);
+                        
+                        return displayParts.length > 0 ? displayParts.join(' ') : (asset.assetId || t.none || 'None');
+                      })() : (t.none || 'None')}
+                    </TableCell>
                   
                   {/* Actions Dropdown */}
                   <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>

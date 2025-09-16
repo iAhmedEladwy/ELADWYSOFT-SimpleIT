@@ -210,16 +210,10 @@ export default function TicketForm({
   // Create/Update ticket mutations - Using correct endpoints
   const createTicketMutation = useMutation({
     mutationFn: async (data: TicketCreateRequest) => {
-      return apiRequest('/api/tickets', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...data,
-          priority: calculatedPriority, // Backend will also calculate this
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return apiRequest('/api/tickets', 'POST', {
+      ...data,
+      priority: calculatedPriority, // Backend will also calculate this
+    });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -245,16 +239,10 @@ export default function TicketForm({
   const updateTicketMutation = useMutation({
     mutationFn: async (data: TicketUpdateRequest) => {
       if (!ticket?.id) throw new Error('Ticket ID is required for update');
-      return apiRequest(`/api/tickets/${ticket.id}`, {
-        method: 'PATCH', // Using PATCH for updates
-        body: JSON.stringify({
-          ...data,
-          priority: calculatedPriority, // Include calculated priority
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    return apiRequest(`/api/tickets/${ticket.id}`, 'PATCH', {
+    ...data,
+    priority: calculatedPriority, // Include calculated priority
+  });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -282,13 +270,7 @@ export default function TicketForm({
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!ticket?.id) throw new Error('Ticket ID is required');
-      return apiRequest(`/api/tickets/${ticket.id}/comments`, {
-        method: 'POST',
-        body: JSON.stringify({ content }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    return apiRequest(`/api/tickets/${ticket.id}/comments`, 'POST', { content });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticket?.id, 'comments'] });
