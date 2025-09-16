@@ -182,6 +182,17 @@ export default function TicketForm({
     staleTime: 300000, // 5 minutes
   });
 
+  // ADD THIS: Filter assets by selected employee
+  const submittedById = form.watch('submittedById');
+  const filteredAssets = submittedById 
+    ? assets.filter(asset => {
+        const employeeIdNum = parseInt(submittedById.toString());
+        if (isNaN(employeeIdNum)) return false;
+        // Check if asset is assigned to this employee
+        return asset.assignedEmployeeId === employeeIdNum;
+      })
+    : [];
+
   const { data: comments = [] } = useQuery({
     queryKey: ['/api/tickets', ticket?.id, 'comments'],
     queryFn: () => apiRequest(`/api/tickets/${ticket?.id}/comments`),
