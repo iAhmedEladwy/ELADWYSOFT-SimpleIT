@@ -415,11 +415,8 @@ export default function TicketForm({
             )}
           </TabsList>
 
-          {/* FIXED: Consistent content container for all tabs */}
-          <div className="mt-4 min-h-[600px]">
-
           {/* Main Details Tab */}
-          <TabsContent value="details" className="space-y-3">
+          <TabsContent value="details" className="mt-4 min-h-[600px] space-y-3">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 
@@ -735,17 +732,16 @@ export default function TicketForm({
                         </FormItem>
                       )}
                     />
-                  </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
 
                       {/* Assigned To (User) */}
                       <FormField
@@ -803,26 +799,23 @@ export default function TicketForm({
                                           setUserSearchOpen(false);
                                         }}
                                       >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            field.value === assignableUser.id ? "opacity-100" : "opacity-0"
-                                          )}
-                                        />
-                                        {assignableUser.username || `User ${assignableUser.id}`}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                  {/* Related Asset - FIXED: No empty string values */}
+                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === assignableUser.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {assignableUser.username || `User ${assignableUser.id}`}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />                  {/* Related Asset - FIXED: No empty string values */}
                   <FormField
                     control={form.control}
                     name="relatedAssetId"
@@ -1316,6 +1309,7 @@ export default function TicketForm({
               </Card>
             </TabsContent>
           )}
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
