@@ -1093,7 +1093,32 @@ export class DatabaseStorage implements IStorage {
   // Ticket operations
   async getTicket(id: number): Promise<Ticket | undefined> {
     try {
-      const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+      const [ticket] = await db
+        .select({
+          id: tickets.id,
+          ticketId: tickets.ticketId,
+          submittedById: tickets.submittedById,
+          assignedToId: tickets.assignedToId,
+          relatedAssetId: tickets.relatedAssetId,
+          type: tickets.type,
+          categoryId: tickets.categoryId,
+          category: sql<string>`COALESCE(${categories.name}, 'General')`.as('category'),
+          priority: tickets.priority,
+          urgency: tickets.urgency,
+          impact: tickets.impact,
+          title: tickets.title,
+          description: tickets.description,
+          resolution: tickets.resolution,
+          status: tickets.status,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+          completionTime: tickets.completionTime,
+          timeSpent: tickets.timeSpent,
+          dueDate: tickets.dueDate,
+        })
+        .from(tickets)
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
+        .where(eq(tickets.id, id));
       return ticket;
     } catch (error) {
       console.error('Error fetching ticket:', error);
@@ -1243,7 +1268,34 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAllTickets(): Promise<Ticket[]> {
     try {
-      return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+      const result = await db
+        .select({
+          id: tickets.id,
+          ticketId: tickets.ticketId,
+          submittedById: tickets.submittedById,
+          assignedToId: tickets.assignedToId,
+          relatedAssetId: tickets.relatedAssetId,
+          type: tickets.type,
+          categoryId: tickets.categoryId,
+          category: sql<string>`COALESCE(${categories.name}, 'General')`.as('category'), // Category name for backward compatibility
+          priority: tickets.priority,
+          urgency: tickets.urgency,
+          impact: tickets.impact,
+          title: tickets.title,
+          description: tickets.description,
+          resolution: tickets.resolution,
+          status: tickets.status,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+          completionTime: tickets.completionTime,
+          timeSpent: tickets.timeSpent,
+          dueDate: tickets.dueDate,
+        })
+        .from(tickets)
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
+        .orderBy(desc(tickets.createdAt));
+      
+      return result;
     } catch (error) {
       console.error('Error fetching tickets:', error);
       return [];
@@ -2221,27 +2273,6 @@ async deleteTicket(id: number): Promise<boolean> {
     return result.rowCount > 0;
   }
 
-  // Initialize default request types in database
-  private async initializeDefaultRequestTypes(): Promise<void> {
-    const defaultRequestTypes = [
-      { name: 'Hardware', description: 'Hardware related requests and issues' },
-      { name: 'Software', description: 'Software installation and support requests' },
-      { name: 'Network', description: 'Network connectivity and infrastructure issues' },
-      { name: 'Access Control', description: 'User access and permission requests' },
-      { name: 'Security', description: 'Security incidents and compliance issues' }
-    ];
-
-    try {
-      for (const requestType of defaultRequestTypes) {
-        await db.insert(customRequestTypes)
-          .values(requestType)
-          .onConflictDoNothing();
-      }
-    } catch (error) {
-      console.error('Error initializing default request types:', error);
-    }
-  }
-
   private async initializeDefaultAssetStatuses(): Promise<void> {
     const defaultAssetStatuses = [
       { name: 'Available', description: 'Asset is ready for assignment', color: '#22c55e' },
@@ -2418,8 +2449,8 @@ async deleteTicket(id: number): Promise<boolean> {
       if (ticketData.assignedToId && ticketData.assignedToId !== currentTicket.assignedToId) {
         changes.push(`Assignment changed`);
       }
-      if (ticketData.requestType && ticketData.requestType !== currentTicket.requestType) {
-        changes.push(`Request type changed from "${currentTicket.requestType}" to "${ticketData.requestType}"`);
+      if (ticketData.categoryId && ticketData.categoryId !== currentTicket.categoryId) {
+        changes.push(`Category changed`);
       }
 
       // Prepare update data with proper field type handling

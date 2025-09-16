@@ -22,7 +22,7 @@ export class MemoryStorage implements IStorage {
   private customAssetBrands: schema.CustomAssetBrand[] = [];
   private customAssetStatuses: schema.CustomAssetStatus[] = [];
   private serviceProviders: schema.ServiceProvider[] = [];
-  private customRequestTypes: schema.CustomRequestType[] = [];
+  private categories: schema.Category[] = [];
   private ticketHistory: schema.TicketHistory[] = [];
   private ticketCategories: schema.TicketCategory[] = [];
   private ticketComments: schema.TicketComment[] = [];
@@ -45,7 +45,7 @@ export class MemoryStorage implements IStorage {
     customAssetBrands: 1,
     customAssetStatuses: 1,
     serviceProviders: 1,
-    customRequestTypes: 1,
+    categories: 1,
     ticketHistory: 1,
     ticketCategories: 1,
     timeEntries: 1,
@@ -57,7 +57,7 @@ export class MemoryStorage implements IStorage {
     // Initialize with admin user only
     this.initializeAdminUser();
     this.initializeSystemConfig();
-    this.initializeDefaultRequestTypes();
+    this.initializeDefaultCategories();
     this.initializeDefaultAssetStatuses();
   }
 
@@ -107,16 +107,16 @@ export class MemoryStorage implements IStorage {
 
   // Custom asset data removed for clean production deployment
 
-  private initializeDefaultRequestTypes() {
-    // Check for existing request types to prevent duplicates
-    if (this.customRequestTypes.length > 0) {
+  private initializeDefaultCategories() {
+    // Check for existing categories to prevent duplicates
+    if (this.categories.length > 0) {
       return;
     }
     
-    // Default request types for tickets
-    this.customRequestTypes = [
+    // Default categories for tickets
+    this.categories = [
       {
-        id: this.idCounters.customRequestTypes++,
+        id: this.idCounters.categories++,
         name: "Hardware",
         description: "Hardware-related issues and requests",
         isActive: true,
@@ -124,7 +124,7 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       },
       {
-        id: this.idCounters.customRequestTypes++,
+        id: this.idCounters.categories++,
         name: "Software", 
         description: "Software installation and application support",
         isActive: true,
@@ -132,7 +132,7 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       },
       {
-        id: this.idCounters.customRequestTypes++,
+        id: this.idCounters.categories++,
         name: "Network",
         description: "Network connectivity and infrastructure issues", 
         isActive: true,
@@ -140,7 +140,7 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       },
       {
-        id: this.idCounters.customRequestTypes++,
+        id: this.idCounters.categories++,
         name: "Access Control",
         description: "User access and permission requests",
         isActive: true,
@@ -148,7 +148,7 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       },
       {
-        id: this.idCounters.customRequestTypes++,
+        id: this.idCounters.categories++,
         name: "Security",
         description: "Security incidents and compliance issues",
         isActive: true,
@@ -1250,77 +1250,77 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Custom Request Types operations (Feature 1: Change Category to Request Type)
-  async getCustomRequestTypes(): Promise<schema.CustomRequestType[]> {
-    return this.customRequestTypes.filter(type => type.isActive);
+  // Categories operations (replaces Custom Request Types)
+  async getCategories(): Promise<schema.Category[]> {
+    return this.categories.filter(category => category.isActive);
   }
 
-  async getAllCustomRequestTypes(): Promise<schema.CustomRequestType[]> {
-    return this.customRequestTypes;
+  async getAllCategories(): Promise<schema.Category[]> {
+    return this.categories;
   }
 
-  async createCustomRequestType(requestType: schema.InsertCustomRequestType): Promise<schema.CustomRequestType> {
-    const newRequestType: schema.CustomRequestType = {
-      id: this.idCounters.customRequestTypes++,
-      ...requestType,
-      isActive: requestType.isActive ?? true,
+  async createCategory(category: schema.InsertCategory): Promise<schema.Category> {
+    const newCategory: schema.Category = {
+      id: this.idCounters.categories++,
+      ...category,
+      isActive: category.isActive ?? true,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    this.customRequestTypes.push(newRequestType);
+    this.categories.push(newCategory);
     
     // Log activity
     await this.logActivity({
       action: "Created",
-      entityType: "Request Type",
-      entityId: newRequestType.id,
+      entityType: "Category",
+      entityId: newCategory.id,
       userId: 1, // System user
-      details: { name: newRequestType.name, description: newRequestType.description }
+      details: { name: newCategory.name, description: newCategory.description }
     });
     
-    return newRequestType;
+    return newCategory;
   }
 
-  async updateCustomRequestType(id: number, requestType: Partial<schema.InsertCustomRequestType>): Promise<schema.CustomRequestType | undefined> {
-    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+  async updateCategory(id: number, category: Partial<schema.InsertCategory>): Promise<schema.Category | undefined> {
+    const index = this.categories.findIndex(cat => cat.id === id);
     if (index === -1) return undefined;
     
-    const oldRequestType = { ...this.customRequestTypes[index] };
-    this.customRequestTypes[index] = {
-      ...this.customRequestTypes[index],
-      ...requestType,
+    const oldCategory = { ...this.categories[index] };
+    this.categories[index] = {
+      ...this.categories[index],
+      ...category,
       updatedAt: new Date()
     };
     
     // Log activity
     await this.logActivity({
       action: "Updated",
-      entityType: "Request Type",
+      entityType: "Category",
       entityId: id,
       userId: 1, // System user
       details: { 
-        old: { name: oldRequestType.name, description: oldRequestType.description },
-        new: { name: this.customRequestTypes[index].name, description: this.customRequestTypes[index].description }
+        old: { name: oldCategory.name, description: oldCategory.description },
+        new: { name: this.categories[index].name, description: this.categories[index].description }
       }
     });
     
-    return this.customRequestTypes[index];
+    return this.categories[index];
   }
 
-  async deleteCustomRequestType(id: number): Promise<boolean> {
-    const index = this.customRequestTypes.findIndex(rt => rt.id === id);
+  async deleteCategory(id: number): Promise<boolean> {
+    const index = this.categories.findIndex(cat => cat.id === id);
     if (index === -1) return false;
     
-    const requestType = this.customRequestTypes[index];
-    this.customRequestTypes.splice(index, 1);
+    const category = this.categories[index];
+    this.categories.splice(index, 1);
     
     // Log activity
     await this.logActivity({
       action: "Deleted",
-      entityType: "Request Type",
+      entityType: "Category",
       entityId: id,
       userId: 1, // System user
-      details: { name: requestType.name }
+      details: { name: category.name }
     });
     
     return true;
@@ -1418,8 +1418,10 @@ export class MemoryStorage implements IStorage {
     if (ticketData.description && ticketData.description !== ticket.description) {
       changes.push("Description updated");
     }
-    if (ticketData.requestType && ticketData.requestType !== ticket.requestType) {
-      changes.push(`Request type changed from "${ticket.requestType}" to "${ticketData.requestType}"`);
+    if (ticketData.categoryId && ticketData.categoryId !== ticket.categoryId) {
+      const oldCategory = this.categories.find(c => c.id === ticket.categoryId);
+      const newCategory = this.categories.find(c => c.id === ticketData.categoryId);
+      changes.push(`Category changed from "${oldCategory?.name || 'None'}" to "${newCategory?.name || 'None'}"`);
     }
     
     // Update ticket
@@ -1437,13 +1439,13 @@ export class MemoryStorage implements IStorage {
           status: oldTicket.status,
           priority: oldTicket.priority,
           assignedToId: oldTicket.assignedToId,
-          requestType: oldTicket.requestType
+          categoryId: oldTicket.categoryId
         }),
         newValues: JSON.stringify({
           status: ticket.status,
           priority: ticket.priority,
           assignedToId: ticket.assignedToId,
-          requestType: ticket.requestType
+          categoryId: ticket.categoryId
         })
       });
       
@@ -1511,7 +1513,7 @@ export class MemoryStorage implements IStorage {
       newValues: JSON.stringify({
         status: newTicket.status,
         priority: newTicket.priority,
-        requestType: newTicket.requestType
+        categoryId: newTicket.categoryId
       })
     });
     

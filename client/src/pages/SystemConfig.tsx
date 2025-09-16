@@ -81,10 +81,10 @@ function SystemConfig() {
   const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
   const [editedDeptName, setEditedDeptName] = useState('');
   
-  // Request type management states
-  const [newRequestTypeName, setNewRequestTypeName] = useState('');
-  const [newRequestTypeDescription, setNewRequestTypeDescription] = useState('');
-  const [isRequestTypeDialogOpen, setIsRequestTypeDialogOpen] = useState(false);
+  // Category management states
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   
   // Email configuration states
   const [emailHost, setEmailHost] = useState('');
@@ -115,16 +115,11 @@ function SystemConfig() {
   const [newStatusName, setNewStatusName] = useState('');
   const [newStatusDescription, setNewStatusDescription] = useState('');
   const [newStatusColor, setNewStatusColor] = useState('#3B82F6');
-  const [newProviderName, setNewProviderName] = useState('');
-  const [newProviderContact, setNewProviderContact] = useState('');
-  const [newProviderPhone, setNewProviderPhone] = useState('');
-  const [newProviderEmail, setNewProviderEmail] = useState('');
 
   // Asset Management dialog states
   const [isAssetTypeDialogOpen, setIsAssetTypeDialogOpen] = useState(false);
   const [isAssetBrandDialogOpen, setIsAssetBrandDialogOpen] = useState(false);
   const [isAssetStatusDialogOpen, setIsAssetStatusDialogOpen] = useState(false);
-  const [isServiceProviderDialogOpen, setIsServiceProviderDialogOpen] = useState(false);
   
   // Department dialog state
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
@@ -133,8 +128,7 @@ function SystemConfig() {
   const [assetTypeSearch, setAssetTypeSearch] = useState('');
   const [assetBrandSearch, setAssetBrandSearch] = useState('');
   const [assetStatusSearch, setAssetStatusSearch] = useState('');
-  const [serviceProviderSearch, setServiceProviderSearch] = useState('');
-  const [requestTypeSearch, setRequestTypeSearch] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
 
   // Editing states for asset management
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null);
@@ -147,14 +141,9 @@ function SystemConfig() {
   const [editedStatusName, setEditedStatusName] = useState('');
   const [editedStatusDescription, setEditedStatusDescription] = useState('');
   const [editedStatusColor, setEditedStatusColor] = useState('#3B82F6');
-  const [editingProviderId, setEditingProviderId] = useState<number | null>(null);
-  const [editedProviderName, setEditedProviderName] = useState('');
-  const [editedProviderContact, setEditedProviderContact] = useState('');
-  const [editedProviderPhone, setEditedProviderPhone] = useState('');
-  const [editedProviderEmail, setEditedProviderEmail] = useState('');
-  const [editingRequestTypeId, setEditingRequestTypeId] = useState<number | null>(null);
-  const [editedRequestTypeName, setEditedRequestTypeName] = useState('');
-  const [editedRequestTypeDescription, setEditedRequestTypeDescription] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editedCategoryName, setEditedCategoryName] = useState('');
+  const [editedCategoryDescription, setEditedCategoryDescription] = useState('');
   
   // Clear audit logs states
   const [clearLogsDialogOpen, setClearLogsDialogOpen] = useState(false);
@@ -223,8 +212,8 @@ function SystemConfig() {
     enabled: hasAccess(3),
   });
 
-  const { data: customRequestTypes = [] } = useQuery<any[]>({
-    queryKey: ['/api/custom-request-types'],
+  const { data: categories = [] } = useQuery<any[]>({
+    queryKey: ['/api/categories'],
     enabled: hasAccess(4), // Admin only
   });
 
@@ -240,11 +229,6 @@ function SystemConfig() {
 
   const { data: customAssetStatuses = [] } = useQuery<any[]>({
     queryKey: ['/api/custom-asset-statuses'],
-    enabled: hasAccess(4), // Admin only
-  });
-
-  const { data: serviceProviders = [] } = useQuery<any[]>({
-    queryKey: ['/api/service-providers'],
     enabled: hasAccess(4), // Admin only
   });
 
@@ -273,12 +257,8 @@ function SystemConfig() {
     status.name.toLowerCase().includes(assetStatusSearch.toLowerCase())
   );
 
-  const filteredServiceProviders = serviceProviders.filter((provider: any) =>
-    provider.name.toLowerCase().includes(serviceProviderSearch.toLowerCase())
-  );
-
-  const filteredRequestTypes = customRequestTypes.filter((requestType: any) =>
-    requestType.name.toLowerCase().includes(requestTypeSearch.toLowerCase())
+  const filteredCategories = categories.filter((category: any) =>
+    category.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
 
   // Update local state when config data is loaded
@@ -334,19 +314,19 @@ function SystemConfig() {
     }
   });
 
-  // Create custom request type mutation
-  const createRequestTypeMutation = useMutation({
+  // Create category mutation
+  const createCategoryMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) => 
-      apiRequest('/api/custom-request-types', 'POST', data),
+      apiRequest('/api/categories', 'POST', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type added successfully' : 'تمت إضافة نوع الطلب بنجاح',
+        description: language === 'English' ? 'Category added successfully' : 'تمت إضافة الفئة بنجاح',
       });
-      setNewRequestTypeName('');
-      setNewRequestTypeDescription('');
-      setIsRequestTypeDialogOpen(false);
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+      setIsCategoryDialogOpen(false);
     },
     onError: (error) => {
       toast({
@@ -432,31 +412,6 @@ function SystemConfig() {
   });
 
   // Create service provider mutation
-  const createServiceProviderMutation = useMutation({
-    mutationFn: (data: { name: string; contact?: string; phone?: string; email?: string }) => 
-      apiRequest('/api/service-providers', 'POST', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider added successfully' : 'تمت إضافة مقدم الخدمة بنجاح',
-      });
-      setNewProviderName('');
-      setNewProviderContact('');
-      setNewProviderPhone('');
-      setNewProviderEmail('');
-      setIsServiceProviderDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to add service provider' : 'فشل إضافة مقدم الخدمة',
-        variant: 'destructive'
-      });
-      console.error('Failed to create service provider:', error);
-    }
-  });
-
   // User management mutations
   const createUserMutation = useMutation({
     mutationFn: async (userData: any) => {
@@ -619,39 +574,20 @@ function SystemConfig() {
     }
   });
 
-  // Delete Request Type Mutation
-  const deleteRequestTypeMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/custom-request-types/${id}`, 'DELETE'),
+  // Delete Category Mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/categories/${id}`, 'DELETE'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type deleted successfully' : 'تم حذف نوع الطلب بنجاح',
+        description: language === 'English' ? 'Category deleted successfully' : 'تم حذف الفئة بنجاح',
       });
     },
     onError: (error: any) => {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to delete request type' : 'فشل حذف نوع الطلب'),
-        variant: 'destructive'
-      });
-    }
-  });
-
-  // Delete Service Provider Mutation
-  const deleteServiceProviderMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/service-providers/${id}`, 'DELETE'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider deleted successfully' : 'تم حذف مقدم الخدمة بنجاح',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to delete service provider' : 'فشل حذف مقدم الخدمة'),
+        description: error.message || (language === 'English' ? 'Failed to delete category' : 'فشل حذف الفئة'),
         variant: 'destructive'
       });
     }
@@ -729,49 +665,24 @@ function SystemConfig() {
     }
   });
 
-  // Update Request Type Mutation
-  const updateRequestTypeMutation = useMutation({
+  // Update Category Mutation
+  const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
-      apiRequest(`/api/custom-request-types/${id}`, 'PUT', data),
+      apiRequest(`/api/categories/${id}`, 'PUT', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/custom-request-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Request type updated successfully' : 'تم تحديث نوع الطلب بنجاح',
+        description: language === 'English' ? 'Category updated successfully' : 'تم تحديث الفئة بنجاح',
       });
-      setEditingRequestTypeId(null);
-      setEditedRequestTypeName('');
-      setEditedRequestTypeDescription('');
+      setEditingCategoryId(null);
+      setEditedCategoryName('');
+      setEditedCategoryDescription('');
     },
     onError: (error: any) => {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: error.message || (language === 'English' ? 'Failed to update request type' : 'فشل تحديث نوع الطلب'),
-        variant: 'destructive'
-      });
-    }
-  });
-
-  // Update Service Provider Mutation
-  const updateServiceProviderMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name: string; contactPerson?: string; phone?: string; email?: string } }) => 
-      apiRequest(`/api/service-providers/${id}`, 'PUT', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-providers'] });
-      toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Service provider updated successfully' : 'تم تحديث مقدم الخدمة بنجاح',
-      });
-      setEditingProviderId(null);
-      setEditedProviderName('');
-      setEditedProviderContact('');
-      setEditedProviderPhone('');
-      setEditedProviderEmail('');
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: error.message || (language === 'English' ? 'Failed to update service provider' : 'فشل تحديث مقدم الخدمة'),
         variant: 'destructive'
       });
     }
@@ -1206,15 +1117,9 @@ const parseCSVLine = (line: string): string[] => {
     }
   };
 
-  const handleDeleteRequestType = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this request type?' : 'هل أنت متأكد من حذف نوع الطلب هذا؟')) {
-      deleteRequestTypeMutation.mutate(id);
-    }
-  };
-
-  const handleDeleteServiceProvider = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this service provider?' : 'هل أنت متأكد من حذف مقدم الخدمة هذا؟')) {
-      deleteServiceProviderMutation.mutate(id);
+  const handleDeleteCategory = (id: number) => {
+    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this category?' : 'هل أنت متأكد من حذف هذه الفئة؟')) {
+      deleteCategoryMutation.mutate(id);
     }
   };
 
@@ -1278,8 +1183,6 @@ const parseCSVLine = (line: string): string[] => {
       updateConfigMutation.mutate(configData);
     }
   };
-
-  // EDIT HANDLER FUNCTIONS FOR CUSTOM FIELDS
 
   // Asset Type Edit Handlers
   const startEditAssetType = (type: any) => {
@@ -1359,63 +1262,30 @@ const parseCSVLine = (line: string): string[] => {
     setEditedStatusColor('#3B82F6');
   };
 
-  // Request Type Edit Handlers
-  const startEditRequestType = (requestType: any) => {
-    setEditingRequestTypeId(requestType.id);
-    setEditedRequestTypeName(requestType.name);
-    setEditedRequestTypeDescription(requestType.description || '');
+  // Category Edit Handlers
+  const startEditCategory = (category: any) => {
+    setEditingCategoryId(category.id);
+    setEditedCategoryName(category.name);
+    setEditedCategoryDescription(category.description || '');
   };
 
-  const handleSaveRequestType = () => {
-    if (editingRequestTypeId && editedRequestTypeName.trim()) {
-      updateRequestTypeMutation.mutate({
-        id: editingRequestTypeId,
+  const handleSaveCategory = () => {
+    if (editingCategoryId && editedCategoryName.trim()) {
+      updateCategoryMutation.mutate({
+        id: editingCategoryId,
         data: {
-          name: editedRequestTypeName.trim(),
-          description: editedRequestTypeDescription.trim()
+          name: editedCategoryName.trim(),
+          description: editedCategoryDescription.trim()
         }
       });
     }
   };
 
-  const handleCancelRequestTypeEdit = () => {
-    setEditingRequestTypeId(null);
-    setEditedRequestTypeName('');
-    setEditedRequestTypeDescription('');
+  const handleCancelCategoryEdit = () => {
+    setEditingCategoryId(null);
+    setEditedCategoryName('');
+    setEditedCategoryDescription('');
   };
-
-  // Service Provider Edit Handlers
-  const startEditServiceProvider = (provider: any) => {
-    setEditingProviderId(provider.id);
-    setEditedProviderName(provider.name);
-    setEditedProviderContact(provider.contactPerson || '');
-    setEditedProviderPhone(provider.phone || '');
-    setEditedProviderEmail(provider.email || '');
-  };
-
-  const handleSaveServiceProvider = () => {
-    if (editingProviderId && editedProviderName.trim()) {
-      updateServiceProviderMutation.mutate({
-        id: editingProviderId,
-        data: {
-          name: editedProviderName.trim(),
-          contactPerson: editedProviderContact.trim(),
-          phone: editedProviderPhone.trim(),
-          email: editedProviderEmail.trim()
-        }
-      });
-    }
-  };
-
-  const handleCancelServiceProviderEdit = () => {
-    setEditingProviderId(null);
-    setEditedProviderName('');
-    setEditedProviderContact('');
-    setEditedProviderPhone('');
-    setEditedProviderEmail('');
-  };
-
-
 
   const handleCancelDepartmentEdit = () => {
     setEditingDeptIndex(null);
@@ -2147,13 +2017,13 @@ const parseCSVLine = (line: string): string[] => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Manage asset types, brands, statuses, and service providers for comprehensive asset tracking.'
-                  : 'إدارة أنواع الأصول والعلامات التجارية والحالات ومقدمي الخدمات لتتبع شامل للأصول.'}
+                  ? 'Manage asset types, brands, and statuses for comprehensive asset tracking.'
+                  : 'إدارة أنواع الأصول والعلامات التجارية والحالات لتتبع شامل للأصول.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="types" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="types" className="text-xs">
                     {language === 'English' ? 'Types' : 'الأنواع'}
                   </TabsTrigger>
@@ -2162,9 +2032,6 @@ const parseCSVLine = (line: string): string[] => {
                   </TabsTrigger>
                   <TabsTrigger value="statuses" className="text-xs">
                     {language === 'English' ? 'Statuses' : 'الحالات'}
-                  </TabsTrigger>
-                  <TabsTrigger value="providers" className="text-xs">
-                    {language === 'English' ? 'Providers' : 'المقدمون'}
                   </TabsTrigger>
                 </TabsList>
 
@@ -2787,289 +2654,6 @@ const parseCSVLine = (line: string): string[] => {
                   </div>
                 </TabsContent>
 
-                {/* Service Providers Tab */}
-                <TabsContent value="providers" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder={language === 'English' ? 'Search providers...' : 'البحث في المقدمين...'}
-                        value={serviceProviderSearch}
-                        onChange={(e) => setServiceProviderSearch(e.target.value)}
-                        className="w-48"
-                      />
-                    </div>
-                  <Dialog open={isServiceProviderDialogOpen} onOpenChange={setIsServiceProviderDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {language === 'English' ? 'Add Provider' : 'إضافة مقدم خدمة'}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>{language === 'English' ? 'Add Service Provider' : 'إضافة مقدم خدمة'}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة'}</Label>
-                          <Input 
-                            value={newProviderName} 
-                            onChange={(e) => setNewProviderName(e.target.value)}
-                            placeholder={language === 'English' ? 'e.g., TechCorp Services' : 'مثال: خدمات تك كورب'}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Contact Person' : 'الشخص المسؤول'}</Label>
-                          <Input 
-                            value={newProviderContact} 
-                            onChange={(e) => setNewProviderContact(e.target.value)}
-                            placeholder={language === 'English' ? 'Contact person name...' : 'اسم الشخص المسؤول...'}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Phone' : 'الهاتف'}</Label>
-                          <Input 
-                            value={newProviderPhone} 
-                            onChange={(e) => setNewProviderPhone(e.target.value)}
-                            placeholder={language === 'English' ? 'Phone number...' : 'رقم الهاتف...'}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
-                          <Input 
-                            type="email"
-                            value={newProviderEmail} 
-                            onChange={(e) => setNewProviderEmail(e.target.value)}
-                            placeholder={language === 'English' ? 'Email address...' : 'عنوان البريد الإلكتروني...'}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setIsServiceProviderDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
-                          </Button>
-                          <Button 
-                            onClick={() => {
-                              if (newProviderName.trim()) {
-                                createServiceProviderMutation.mutate({
-                                  name: newProviderName.trim(),
-                                  contact: newProviderContact.trim(),
-                                  phone: newProviderPhone.trim(),
-                                  email: newProviderEmail.trim()
-                                });
-                              }
-                            }}
-                            disabled={createServiceProviderMutation.isPending || !newProviderName.trim()}
-                          >
-                            {createServiceProviderMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
-                              </>
-                            ) : (
-                              language === 'English' ? 'Add' : 'إضافة'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                
-                <div className="border rounded-lg bg-white shadow-sm">
-                  {!filteredServiceProviders?.length ? (
-                    <div className="p-6 text-center">
-                      <Users className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <h3 className="text-sm font-medium text-gray-900 mb-1">
-                        {language === 'English' ? 'No Service Providers' : 'لا يوجد مقدمو خدمة'}
-                      </h3>
-                      <p className="text-xs text-gray-600">
-                        {language === 'English' ? 'Add service providers for maintenance and support.' : 'أضف مقدمي الخدمة للصيانة والدعم.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Provider Name' : 'اسم مقدم الخدمة'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Contact' : 'المسؤول'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Phone' : 'الهاتف'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Email' : 'البريد'}</TableHead>
-                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredServiceProviders.map((provider: any) => (
-                            <TableRow key={provider.id}>
-                              <TableCell className="font-medium">
-                                {editingProviderId === provider.id ? (
-                                  <Input
-                                    value={editedProviderName}
-                                    onChange={(e) => setEditedProviderName(e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        updateServiceProviderMutation.mutate({
-                                          id: provider.id,
-                                          data: {
-                                            name: editedProviderName.trim(),
-                                            contactPerson: editedProviderContact.trim(),
-                                            phone: editedProviderPhone.trim(),
-                                            email: editedProviderEmail.trim()
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    className="h-8"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  provider.name
-                                )}
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                {editingProviderId === provider.id ? (
-                                  <Input
-                                    value={editedProviderContact}
-                                    onChange={(e) => setEditedProviderContact(e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        updateServiceProviderMutation.mutate({
-                                          id: provider.id,
-                                          data: {
-                                            name: editedProviderName.trim(),
-                                            contactPerson: editedProviderContact.trim(),
-                                            phone: editedProviderPhone.trim(),
-                                            email: editedProviderEmail.trim()
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    className="h-8"
-                                    placeholder="Contact person..."
-                                  />
-                                ) : (
-                                  provider.contactPerson
-                                )}
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                {editingProviderId === provider.id ? (
-                                  <Input
-                                    value={editedProviderPhone}
-                                    onChange={(e) => setEditedProviderPhone(e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        updateServiceProviderMutation.mutate({
-                                          id: provider.id,
-                                          data: {
-                                            name: editedProviderName.trim(),
-                                            contactPerson: editedProviderContact.trim(),
-                                            phone: editedProviderPhone.trim(),
-                                            email: editedProviderEmail.trim()
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    className="h-8"
-                                    placeholder="Phone..."
-                                  />
-                                ) : (
-                                  provider.phone
-                                )}
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                {editingProviderId === provider.id ? (
-                                  <Input
-                                    type="email"
-                                    value={editedProviderEmail}
-                                    onChange={(e) => setEditedProviderEmail(e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        updateServiceProviderMutation.mutate({
-                                          id: provider.id,
-                                          data: {
-                                            name: editedProviderName.trim(),
-                                            contactPerson: editedProviderContact.trim(),
-                                            phone: editedProviderPhone.trim(),
-                                            email: editedProviderEmail.trim()
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    className="h-8"
-                                    placeholder="Email..."
-                                  />
-                                ) : (
-                                  provider.email
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  {editingProviderId === provider.id ? (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          updateServiceProviderMutation.mutate({
-                                            id: provider.id,
-                                            data: {
-                                              name: editedProviderName.trim(),
-                                              contactPerson: editedProviderContact.trim(),
-                                              phone: editedProviderPhone.trim(),
-                                              email: editedProviderEmail.trim()
-                                            }
-                                          });
-                                        }}
-                                        className="h-7 w-7 p-0"
-                                        disabled={updateServiceProviderMutation.isPending}
-                                      >
-                                        <Check className="h-3 w-3 text-green-600" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          setEditingProviderId(null);
-                                          setEditedProviderName('');
-                                          setEditedProviderContact('');
-                                          setEditedProviderPhone('');
-                                          setEditedProviderEmail('');
-                                        }}
-                                        className="h-7 w-7 p-0"
-                                      >
-                                        <X className="h-3 w-3 text-red-600" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-7 w-7 p-0"
-                                        onClick={() => startEditServiceProvider(provider)}
-                                      >
-                                        <Edit className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-7 w-7 p-0 text-red-600"
-                                        onClick={() => handleDeleteServiceProvider(provider.id)}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </div>
-                </TabsContent>
-
               </Tabs>
             </CardContent>
           </Card>
@@ -3085,78 +2669,78 @@ const parseCSVLine = (line: string): string[] => {
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
-                  ? 'Manage ticket request types, priorities, and workflow settings for efficient support operations.'
-                  : 'إدارة أنواع طلبات التذاكر والأولويات وإعدادات سير العمل لعمليات دعم فعالة.'}
+                  ? 'Manage ticket categories, priorities, and workflow settings for efficient support operations.'
+                  : 'إدارة فئات التذاكر والأولويات وإعدادات سير العمل لعمليات دعم فعالة.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Request Types Management */}
+              {/* Categories Management */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Request Types' : 'أنواع الطلبات'}
+                    {language === 'English' ? 'Categories' : 'الفئات'}
                   </h3>
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input
-                        placeholder={language === 'English' ? 'Search request types...' : 'البحث في أنواع الطلبات...'}
-                        value={requestTypeSearch}
-                        onChange={(e) => setRequestTypeSearch(e.target.value)}
+                        placeholder={language === 'English' ? 'Search categories...' : 'البحث في الفئات...'}
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
                         className="pl-10 w-48"
                       />
                     </div>
-                    <Dialog open={isRequestTypeDialogOpen} onOpenChange={setIsRequestTypeDialogOpen}>
+                    <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" className="flex items-center gap-2">
                           <Plus className="h-4 w-4" />
-                          {language === 'English' ? 'Add Type' : 'إضافة نوع'}
+                          {language === 'English' ? 'Add Category' : 'إضافة فئة'}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>{language === 'English' ? 'Add Request Type' : 'إضافة نوع طلب'}</DialogTitle>
+                          <DialogTitle>{language === 'English' ? 'Add Category' : 'إضافة فئة'}</DialogTitle>
                           <DialogDescription>
-                            {language === 'English' ? 'Create a new request type for ticket categorization.' : 'إنشاء نوع طلب جديد لتصنيف التذاكر.'}
+                            {language === 'English' ? 'Create a new category for ticket classification.' : 'إنشاء فئة جديدة لتصنيف التذاكر.'}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label>{language === 'English' ? 'Request Type Name' : 'اسم نوع الطلب'}</Label>
+                            <Label>{language === 'English' ? 'Category Name' : 'اسم الفئة'}</Label>
                             <Input 
-                              value={newRequestTypeName} 
-                              onChange={(e) => setNewRequestTypeName(e.target.value)}
+                              value={newCategoryName} 
+                              onChange={(e) => setNewCategoryName(e.target.value)}
                               placeholder={language === 'English' ? 'e.g., Hardware Issue, Software Support' : 'مثال: مشكلة أجهزة، دعم برمجيات'}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
                             <Input 
-                              value={newRequestTypeDescription} 
-                              onChange={(e) => setNewRequestTypeDescription(e.target.value)}
-                              placeholder={language === 'English' ? 'Brief description of this request type...' : 'وصف مختصر لهذا النوع من الطلبات...'}
+                              value={newCategoryDescription} 
+                              onChange={(e) => setNewCategoryDescription(e.target.value)}
+                              placeholder={language === 'English' ? 'Brief description of this category...' : 'وصف مختصر لهذه الفئة...'}
                             />
                           </div>
                           <div className="flex justify-end space-x-2">
                             <Button variant="outline" onClick={() => {
-                              setIsRequestTypeDialogOpen(false);
-                              setNewRequestTypeName('');
-                              setNewRequestTypeDescription('');
+                              setIsCategoryDialogOpen(false);
+                              setNewCategoryName('');
+                              setNewCategoryDescription('');
                             }}>
                               {language === 'English' ? 'Cancel' : 'إلغاء'}
                             </Button>
                             <Button 
                               onClick={() => {
-                                if (newRequestTypeName.trim()) {
-                                  createRequestTypeMutation.mutate({
-                                    name: newRequestTypeName.trim(),
-                                    description: newRequestTypeDescription.trim()
+                                if (newCategoryName.trim()) {
+                                  createCategoryMutation.mutate({
+                                    name: newCategoryName.trim(),
+                                    description: newCategoryDescription.trim()
                                   });
                                 }
                               }}
-                              disabled={createRequestTypeMutation.isPending || !newRequestTypeName.trim()}
+                              disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
                             >
-                              {createRequestTypeMutation.isPending ? (
+                              {createCategoryMutation.isPending ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
@@ -3173,40 +2757,40 @@ const parseCSVLine = (line: string): string[] => {
                 </div>
                 
                 <div className="border rounded-lg bg-white shadow-sm">
-                  {!filteredRequestTypes?.length ? (
+                  {!filteredCategories?.length ? (
                     <div className="p-8 text-center">
                       <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {language === 'English' ? 'No Request Types' : 'لا توجد أنواع طلبات'}
+                        {language === 'English' ? 'No Categories' : 'لا توجد فئات'}
                       </h3>
                       <p className="text-gray-600">
-                        {language === 'English' ? 'Add request types to categorize support tickets.' : 'أضف أنواع الطلبات لتصنيف تذاكر الدعم.'}
+                        {language === 'English' ? 'Add categories to classify support tickets.' : 'أضف الفئات لتصنيف تذاكر الدعم.'}
                       </p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Request Type' : 'نوع الطلب'}</TableHead>
+                          <TableHead className="font-semibold">{language === 'English' ? 'Category' : 'الفئة'}</TableHead>
                           <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
                           <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredRequestTypes.map((requestType: any) => (
-                          <TableRow key={requestType.id} className="hover:bg-gray-50">
+                        {filteredCategories.map((category: any) => (
+                          <TableRow key={category.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium">
-                              {editingRequestTypeId === requestType.id ? (
+                              {editingCategoryId === category.id ? (
                                 <Input
-                                  value={editedRequestTypeName}
-                                  onChange={(e) => setEditedRequestTypeName(e.target.value)}
+                                  value={editedCategoryName}
+                                  onChange={(e) => setEditedCategoryName(e.target.value)}
                                   onKeyPress={(e) => {
                                     if (e.key === 'Enter') {
-                                      updateRequestTypeMutation.mutate({
-                                        id: requestType.id,
+                                      updateCategoryMutation.mutate({
+                                        id: category.id,
                                         data: {
-                                          name: editedRequestTypeName.trim(),
-                                          description: editedRequestTypeDescription.trim()
+                                          name: editedCategoryName.trim(),
+                                          description: editedCategoryDescription.trim()
                                         }
                                       });
                                     }
@@ -3215,21 +2799,21 @@ const parseCSVLine = (line: string): string[] => {
                                   autoFocus
                                 />
                               ) : (
-                                requestType.name
+                                category.name
                               )}
                             </TableCell>
                             <TableCell className="text-gray-600">
-                              {editingRequestTypeId === requestType.id ? (
+                              {editingCategoryId === category.id ? (
                                 <Input
-                                  value={editedRequestTypeDescription}
-                                  onChange={(e) => setEditedRequestTypeDescription(e.target.value)}
+                                  value={editedCategoryDescription}
+                                  onChange={(e) => setEditedCategoryDescription(e.target.value)}
                                   onKeyPress={(e) => {
                                     if (e.key === 'Enter') {
-                                      updateRequestTypeMutation.mutate({
-                                        id: requestType.id,
+                                      updateCategoryMutation.mutate({
+                                        id: category.id,
                                         data: {
-                                          name: editedRequestTypeName.trim(),
-                                          description: editedRequestTypeDescription.trim()
+                                          name: editedCategoryName.trim(),
+                                          description: editedCategoryDescription.trim()
                                         }
                                       });
                                     }
@@ -3238,27 +2822,27 @@ const parseCSVLine = (line: string): string[] => {
                                   placeholder="Description..."
                                 />
                               ) : (
-                                requestType.description
+                                category.description
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {editingRequestTypeId === requestType.id ? (
+                                {editingCategoryId === category.id ? (
                                   <>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        updateRequestTypeMutation.mutate({
-                                          id: requestType.id,
+                                        updateCategoryMutation.mutate({
+                                          id: category.id,
                                           data: {
-                                            name: editedRequestTypeName.trim(),
-                                            description: editedRequestTypeDescription.trim()
+                                            name: editedCategoryName.trim(),
+                                            description: editedCategoryDescription.trim()
                                           }
                                         });
                                       }}
                                       className="h-8 w-8 p-0"
-                                      disabled={updateRequestTypeMutation.isPending}
+                                      disabled={updateCategoryMutation.isPending}
                                     >
                                       <Check className="h-4 w-4 text-green-600" />
                                     </Button>
@@ -3266,9 +2850,9 @@ const parseCSVLine = (line: string): string[] => {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        setEditingRequestTypeId(null);
-                                        setEditedRequestTypeName('');
-                                        setEditedRequestTypeDescription('');
+                                        setEditingCategoryId(null);
+                                        setEditedCategoryName('');
+                                        setEditedCategoryDescription('');
                                       }}
                                       className="h-8 w-8 p-0"
                                     >
@@ -3281,7 +2865,7 @@ const parseCSVLine = (line: string): string[] => {
                                       variant="ghost" 
                                       size="sm" 
                                       className="h-8 w-8 p-0"
-                                      onClick={() => startEditRequestType(requestType)}
+                                      onClick={() => startEditCategory(category)}
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
@@ -3289,7 +2873,7 @@ const parseCSVLine = (line: string): string[] => {
                                       variant="ghost" 
                                       size="sm" 
                                       className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={() => handleDeleteRequestType(requestType.id)}
+                                      onClick={() => handleDeleteCategory(category.id)}
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>

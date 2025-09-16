@@ -210,47 +210,47 @@ export default function Reports() {
   const hasErrors = employeeReportsError || assetReportsError || ticketReportsError;
 
   // Prepare chart data
-  const activeVsExitedData = employeeReports ? [
+  const activeVsExitedData = employeeReports?.activeVsExited ? [
     { name: translations.active, value: employeeReports.activeVsExited.active },
     { name: translations.exited, value: employeeReports.activeVsExited.exited }
   ] : [];
 
-  const departmentData = employeeReports ? Object.entries(employeeReports.departmentCounts).map(([name, value]) => ({
+  const departmentData = employeeReports?.departmentCounts ? Object.entries(employeeReports.departmentCounts).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const employmentTypeData = employeeReports ? Object.entries(employeeReports.employmentTypes).map(([name, value]) => ({
+  const employmentTypeData = employeeReports?.employmentTypes ? Object.entries(employeeReports.employmentTypes).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const assetsByTypeData = assetReports ? Object.entries(assetReports.assetsByType).map(([name, value]) => ({
+  const assetsByTypeData = assetReports?.assetsByType ? Object.entries(assetReports.assetsByType).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const assetsByStatusData = assetReports ? Object.entries(assetReports.assetsByStatus).map(([name, value]) => ({
+  const assetsByStatusData = assetReports?.assetsByStatus ? Object.entries(assetReports.assetsByStatus).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const assignedVsUnassignedData = assetReports ? [
+  const assignedVsUnassignedData = assetReports?.assignedVsUnassigned ? [
     { name: translations.assigned, value: assetReports.assignedVsUnassigned.assigned },
     { name: translations.unassigned, value: assetReports.assignedVsUnassigned.unassigned }
   ] : [];
 
-  const ticketsByStatusData = ticketReports ? Object.entries(ticketReports.ticketsByStatus).map(([name, value]) => ({
+  const ticketsByStatusData = ticketReports?.ticketsByStatus ? Object.entries(ticketReports.ticketsByStatus).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const ticketsByPriorityData = ticketReports ? Object.entries(ticketReports.ticketsByPriority).map(([name, value]) => ({
+  const ticketsByPriorityData = ticketReports?.ticketsByPriority ? Object.entries(ticketReports.ticketsByPriority).map(([name, value]) => ({
     name,
     value
   })) : [];
 
-  const ticketsByCategoryData = ticketReports ? Object.entries(ticketReports.ticketsByRequestType).map(([name, value]) => ({
+  const ticketsByCategoryData = ticketReports?.ticketsByRequestType ? Object.entries(ticketReports.ticketsByRequestType).map(([name, value]) => ({
     name,
     value
   })) : [];
@@ -891,7 +891,7 @@ export default function Reports() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {employeeReports.upcomingExits.map((employee: any) => (
+                        {employeeReports?.upcomingExits?.map((employee: any) => (
                           <tr key={employee.id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {employee.englishName}
@@ -1041,7 +1041,7 @@ export default function Reports() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {assetReports.nearingWarrantyExpiry.map((asset: any) => (
+                        {assetReports?.nearingWarrantyExpiry?.map((asset: any) => (
                           <tr key={asset.id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {asset.assetId}
@@ -1109,7 +1109,7 @@ export default function Reports() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {assetReports.assetLifespanUtilization.map((asset: any) => (
+                        {assetReports?.assetLifespanUtilization?.map((asset: any) => (
                           <tr key={asset.assetId}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {asset.assetId}

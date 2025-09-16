@@ -2295,7 +2295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 summary: mappedRecord.summary || `Imported Ticket ${index + 1}`,
                 description: mappedRecord.description || 'No description provided',
                 category: mappedRecord.category || 'General',
-                requestType: mappedRecord.requestType || 'Other',
+                categoryId: mappedRecord.categoryId ? parseInt(mappedRecord.categoryId) : null,
                 urgency: mappedRecord.urgency || 'Medium',
                 impact: mappedRecord.impact || 'Medium',
                 priority: mappedRecord.priority || 'Medium',
@@ -4809,8 +4809,8 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
             // Database will auto-generate ticketId
             title: item.title || item.summary || 'Imported Ticket',           // ✅ Fixed: title with fallback
             description: item.description || 'No description provided',
-            type: item.type || item.requestType || 'Incident',                // ✅ Fixed: type with fallback
-            category: item.category || 'General',
+            type: item.type || 'Incident',                                    // ✅ Fixed: removed requestType fallback
+            categoryId: item.categoryId ? parseInt(item.categoryId.toString()) : null,
             urgency: item.urgency || 'Medium',
             impact: item.impact || 'Medium',
             priority: item.priority || 'Medium',                              // Will be auto-calculated
@@ -6223,7 +6223,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
       title: item.title || '',                    // ✅ Fixed: was summary
       description: item.description || '',
       type: item.type || '',                      // ✅ Fixed: was requestType
-      category: item.category || '',
+      categoryId: item.categoryId || '',          // ✅ Fixed: use categoryId instead of category
       urgency: item.urgency || '',
       impact: item.impact || '',
       priority: item.priority || '',
@@ -6442,61 +6442,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
     console.error("Error creating admin user:", error);
   }
 
-  // ===== ENHANCED TICKET MODULE API ROUTES =====
-  
-  // Feature 1: Custom Request Types operations (replaces Category)
-  app.get("/api/request-types", authenticateUser, async (req, res) => {
-    try {
-      const requestTypes = await storage.getCustomRequestTypes();
-      res.json(requestTypes);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
 
-  app.get("/api/request-types/all", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const requestTypes = await storage.getAllCustomRequestTypes();
-      res.json(requestTypes);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.post("/api/request-types", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const requestType = await storage.createCustomRequestType(req.body);
-      res.status(201).json(requestType);
-    } catch (error: unknown) {
-      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.put("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const requestType = await storage.updateCustomRequestType(id, req.body);
-      if (!requestType) {
-        return res.status(404).json({ message: "Request type not found" });
-      }
-      res.json(requestType);
-    } catch (error: unknown) {
-      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.delete("/api/request-types/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteCustomRequestType(id);
-      if (!success) {
-        return res.status(404).json({ message: "Request type not found" });
-      }
-      res.json({ success: true });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
 
 app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   try {

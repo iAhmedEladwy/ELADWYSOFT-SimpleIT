@@ -108,7 +108,7 @@ export interface TicketResponse {
   // Request Classification
   type: 'Incident' | 'Service Request' | 'Problem' | 'Change'; // Nature of request
   categoryId?: number; // Reference to categories table
-  category?: CategoryResponse; // Populated category data
+  category?: string; // Category name (for backward compatibility and display)
   
   // Priority Management (calculated based on urgency × impact)
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
