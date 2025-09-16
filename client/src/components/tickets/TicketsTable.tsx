@@ -6,8 +6,6 @@ import { useTicketTranslations } from '@/lib/translations/tickets';
 import { useAuth } from '@/lib/authContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { calculatePriority } from '@shared/priorityUtils';
-import type { UrgencyLevel, ImpactLevel } from '@shared/priorityUtils';
 
 import {
   Table,
@@ -47,16 +45,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MoreHorizontal, Edit, Eye, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { getPriorityColor } from '@/lib/utils/ticketUtils';
+
 
 // Validation utilities
-const isValidUrgencyLevel = (value: string): value is UrgencyLevel => {
-  return ['Low', 'Medium', 'High', 'Critical'].includes(value);
-};
-
-const isValidImpactLevel = (value: string): value is ImpactLevel => {
-  return ['Low', 'Medium', 'High', 'Critical'].includes(value);
-};
-
 const isValidStatus = (value: string): boolean => {
   return ['Open', 'In Progress', 'Resolved', 'Closed'].includes(value);
 };
@@ -114,15 +106,6 @@ export default function TicketsTable({
       // Validate updates object
       if (!updates || typeof updates !== 'object') {
         throw new Error('Invalid update data');
-      }
-
-      // Validate enum values if present
-      if (updates.urgency && !isValidUrgencyLevel(updates.urgency)) {
-        throw new Error('Invalid urgency level');
-      }
-
-      if (updates.impact && !isValidImpactLevel(updates.impact)) {
-        throw new Error('Invalid impact level');
       }
 
       if (updates.status && !isValidStatus(updates.status)) {
@@ -233,10 +216,6 @@ export default function TicketsTable({
       // Validate inputs
       if (!ticketId || ticketId <= 0) {
         throw new Error('Invalid ticket ID');
-      }
-
-      if (!field || !['urgency', 'impact'].includes(field)) {
-        throw new Error('Invalid field');
       }
 
       if (!value || !['Low', 'Medium', 'High', 'Critical'].includes(value)) {
