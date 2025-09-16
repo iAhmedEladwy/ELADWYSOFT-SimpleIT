@@ -138,13 +138,7 @@ export default function TicketsTable({
         throw new Error('Invalid assigned user ID');
       }
 
-      return apiRequest(`/api/tickets/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+   return apiRequest(`/api/tickets/${id}`, 'PATCH', updates);
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
