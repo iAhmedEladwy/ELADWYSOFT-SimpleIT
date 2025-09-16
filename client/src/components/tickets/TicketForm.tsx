@@ -182,7 +182,7 @@ export default function TicketForm({
     staleTime: 300000, // 5 minutes
   });
 
-  // ADD THIS: Filter assets by selected employee
+  // Filter assets by selected employee
   const submittedById = form.watch('submittedById');
   const filteredAssets = submittedById 
     ? assets.filter(asset => {
@@ -193,6 +193,7 @@ export default function TicketForm({
       })
     : [];
 
+  // Comments and History queries - RESTORED
   const { data: comments = [] } = useQuery({
     queryKey: ['/api/tickets', ticket?.id, 'comments'],
     queryFn: () => apiRequest(`/api/tickets/${ticket?.id}/comments`),
@@ -207,7 +208,7 @@ export default function TicketForm({
     staleTime: 30000, // 30 seconds
   });
 
-  // Watch urgency, impact, and selected employee for various effects
+  // Watch urgency and impact to calculate priority - RESTORED
   const urgency = form.watch('urgency');
   const impact = form.watch('impact');
 
@@ -218,13 +219,35 @@ export default function TicketForm({
     }
   }, [urgency, impact]);
 
-  // Create/Update ticket mutations - Using correct endpoints
+  // Reset form when ticket changes - RESTORED
+  useEffect(() => {
+    if (ticket) {
+      form.reset({
+        submittedById: ticket.submittedById,
+        assignedToId: ticket.assignedToId || undefined,
+        relatedAssetId: ticket.relatedAssetId || undefined,
+        type: ticket.type,
+        category: ticket.category,
+        urgency: ticket.urgency,
+        impact: ticket.impact,
+        status: ticket.status,
+        title: ticket.title,
+        description: ticket.description,
+        resolution: ticket.resolution || '',
+        timeSpent: ticket.timeSpent || undefined,
+        dueDate: ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : '',
+        slaTarget: ticket.slaTarget ? format(new Date(ticket.slaTarget), 'yyyy-MM-dd') : '',
+      });
+    }
+  }, [ticket, form]);
+
+  // Create/Update ticket mutations - RESTORED with correct endpoints
   const createTicketMutation = useMutation({
     mutationFn: async (data: TicketCreateRequest) => {
       return apiRequest('/api/tickets', 'POST', {
-      ...data,
-      priority: calculatedPriority, // Backend will also calculate this
-    });
+        ...data,
+        priority: calculatedPriority, // Backend will also calculate this
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -250,10 +273,10 @@ export default function TicketForm({
   const updateTicketMutation = useMutation({
     mutationFn: async (data: TicketUpdateRequest) => {
       if (!ticket?.id) throw new Error('Ticket ID is required for update');
-    return apiRequest(`/api/tickets/${ticket.id}`, 'PATCH', {
-    ...data,
-    priority: calculatedPriority, // Include calculated priority
-  });
+      return apiRequest(`/api/tickets/${ticket.id}`, 'PATCH', {
+        ...data,
+        priority: calculatedPriority, // Include calculated priority
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
@@ -277,11 +300,11 @@ export default function TicketForm({
     },
   });
 
-  // Add comment mutation
+  // Add comment mutation - RESTORED
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!ticket?.id) throw new Error('Ticket ID is required');
-    return apiRequest(`/api/tickets/${ticket.id}/comments`, 'POST', { content });
+      return apiRequest(`/api/tickets/${ticket.id}/comments`, 'POST', { content });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticket?.id, 'comments'] });
@@ -303,7 +326,7 @@ export default function TicketForm({
     },
   });
 
-  // Form submit handler
+  // Form submit handler - RESTORED
   const onSubmit = async (data: TicketFormData) => {
     setIsSubmitting(true);
     
@@ -325,7 +348,7 @@ export default function TicketForm({
     }
   };
 
-  // Helper functions
+  // Helper functions - RESTORED
   const getEmployeeName = (employeeId: number) => {
     const employee = employees.find((emp: any) => emp.id === employeeId);
     return employee ? (employee.englishName || employee.name || `Employee ${employeeId}`) : t.selectEmployee;
@@ -341,14 +364,14 @@ export default function TicketForm({
     return asset ? (asset.name || asset.assetId || `Asset ${assetId}`) : t.selectAsset;
   };
 
-  // Add comment handler
+  // Add comment handler - RESTORED
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     setAddingComment(true);
     addCommentMutation.mutate(newComment.trim());
   };
 
-  // Filter active employees and assignable users
+  // Filter active employees and assignable users - RESTORED
   const activeEmployees = useMemo(() => {
     return employees.filter((emp: any) => emp.status === 'Active' || !emp.status);
   }, [employees]);
@@ -444,7 +467,7 @@ export default function TicketForm({
                             <FormLabel>{t.type} *</FormLabel>
                             <Select
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              value={field.value}
                               disabled={isSubmitting}
                             >
                               <FormControl>
@@ -485,6 +508,217 @@ export default function TicketForm({
                   </CardContent>
                 </Card>
 
+                {/* Assignment Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{t.assignmentInformation}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    
+                    {/* Submitted By and Assigned To Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Submitted By (Employee) */}
+                      <FormField
+                        control={form.control}
+                        name="submittedById"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t.submittedBy} *</FormLabel>
+                            <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      "w-full justify-between",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                    disabled={isSubmitting}
+                                  >
+                                    {field.value
+                                      ? activeEmployees.find((employee: EmployeeResponse) => employee.id === field.value)?.englishName || 
+                                        activeEmployees.find((employee: EmployeeResponse) => employee.id === field.value)?.name ||
+                                        `Employee ${field.value}`
+                                      : t.selectEmployee
+                                    }
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder={t.searchEmployee} />
+                                  <CommandEmpty>{t.noEmployeeFound}</CommandEmpty>
+                                  <CommandGroup className="max-h-64 overflow-y-auto">
+                                    {activeEmployees.map((employee: EmployeeResponse) => (
+                                      <CommandItem
+                                        key={employee.id}
+                                        value={`${employee.englishName || employee.name || ''} ${employee.department || ''}`}
+                                        onSelect={() => {
+                                          const newValue = employee.id.toString();
+                                          field.onChange(parseInt(newValue));
+                                          setEmployeeSearchOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value === employee.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex flex-col">
+                                          <span>{employee.englishName || employee.name || 'Unknown'}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {employee.department || t.noDepartment}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Assigned To (User) */}
+                      <FormField
+                        control={form.control}
+                        name="assignedToId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t.assignedTo}</FormLabel>
+                            <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                      "w-full justify-between",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                    disabled={isSubmitting}
+                                  >
+                                    {field.value
+                                      ? assignableUsers.find((user: UserResponse) => user.id === field.value)?.username || `User ${field.value}`
+                                      : t.selectUser
+                                    }
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder={t.searchUser} />
+                                  <CommandEmpty>{t.noUserFound}</CommandEmpty>
+                                  <CommandGroup className="max-h-64 overflow-y-auto">
+                                    <CommandItem
+                                      value="unassigned"
+                                      onSelect={() => {
+                                        field.onChange(undefined);
+                                        setUserSearchOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          !field.value ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {t.unassigned}
+                                    </CommandItem>
+                                    {assignableUsers.map((assignableUser: UserResponse) => (
+                                      <CommandItem
+                                        key={assignableUser.id}
+                                        value={assignableUser.username || `user-${assignableUser.id}`}
+                                        onSelect={() => {
+                                          field.onChange(assignableUser.id);
+                                          setUserSearchOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value === assignableUser.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {assignableUser.username || `User ${assignableUser.id}`}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Related Asset - FIXED: No empty string values */}
+                    <FormField
+                      control={form.control}
+                      name="relatedAssetId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.relatedAsset}</FormLabel>
+                          <Select
+                            onValueChange={(value) => {
+                              // FIXED: Proper value handling without empty strings
+                              if (value === 'none') {
+                                field.onChange(undefined);
+                              } else {
+                                field.onChange(parseInt(value));
+                              }
+                            }}
+                            value={field.value ? field.value.toString() : 'none'}
+                            disabled={isSubmitting || !form.watch('submittedById')}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                               <SelectValue placeholder={
+                                  !form.watch('submittedById') ? t.selectEmployeeFirst : 
+                                  filteredAssets.length === 0 ? t.noAssetsForEmployee :
+                                  t.selectAsset
+                                } />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-64">
+                              {/* FIXED: Use 'none' instead of empty string */}
+                              <SelectItem value="none">{t.noAsset}</SelectItem>
+                              {filteredAssets.map((asset: AssetResponse) => {
+                                // Enhanced asset display format: "AST-001, Laptop Dell XPS 13"
+                                const displayParts = [asset.assetId || `Asset ${asset.id}`];
+                                const deviceInfo = [];
+                                
+                                if (asset.type) deviceInfo.push(asset.type);
+                                if (asset.brand) deviceInfo.push(asset.brand);
+                                if (asset.modelName) deviceInfo.push(asset.modelName);
+                                
+                                const displayString = deviceInfo.length > 0 
+                                  ? `${asset.assetId}, ${deviceInfo.join(' ')}`
+                                  : asset.assetId;
+                                
+                                return (
+                                  <SelectItem key={asset.id} value={asset.id.toString()}>
+                                    {displayString}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
                 {/* Priority Management */}
                 <Card>
                   <CardHeader>
@@ -502,7 +736,7 @@ export default function TicketForm({
                             <FormLabel>{t.urgency} *</FormLabel>
                             <Select
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              value={field.value}
                               disabled={isSubmitting}
                             >
                               <FormControl>
@@ -530,7 +764,7 @@ export default function TicketForm({
                             <FormLabel>{t.impact} *</FormLabel>
                             <Select
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              value={field.value}
                               disabled={isSubmitting}
                             >
                               <FormControl>
@@ -562,223 +796,23 @@ export default function TicketForm({
                            t.priorityCritical}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {getPriorityExplanation(urgency as UrgencyLevel, impact as ImpactLevel)}
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {getPriorityExplanation(urgency, impact, language)}
                       </p>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Assignment & Related Data */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{t.assignmentInformation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    
-                    {/* Submitted By Field */}
-                    <FormField
-                      control={form.control}
-                      name="submittedById"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>{t.submittedBy} *</FormLabel>
-                          <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                  disabled={isSubmitting}
-                                >
-                                  {field.value ? getEmployeeName(field.value) : t.selectEmployee}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                              <Command>
-                                <CommandInput placeholder={t.searchEmployees} />
-                                <CommandEmpty>{t.noEmployeeFound}</CommandEmpty>
-                                <CommandGroup className="max-h-64 overflow-auto">
-                                  {activeEmployees.map((employee: any) => (
-                                    <CommandItem
-                                      key={employee.id}
-                                      value={employee.englishName || employee.name || `Employee ${employee.id}`}
-                                      onSelect={() => {
-                                        field.onChange(employee.id);
-                                        setEmployeeSearchOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === employee.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {employee.englishName || employee.name || `Employee ${employee.id}`}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Assigned To and Related Asset Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      
-                      <FormField
-                        control={form.control}
-                        name="assignedToId"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>{t.assignedTo}</FormLabel>
-                            <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                      "w-full justify-between",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                    disabled={isSubmitting}
-                                  >
-                                    {field.value ? getUserName(field.value) : t.unassigned}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-full p-0">
-                                <Command>
-                                  <CommandInput placeholder={t.searchUsers} />
-                                  <CommandEmpty>{t.noUserFound}</CommandEmpty>
-                                  <CommandGroup className="max-h-64 overflow-auto">
-                                    <CommandItem
-                                      value="unassigned"
-                                      onSelect={() => {
-                                        field.onChange(undefined);
-                                        setUserSearchOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          !field.value ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {t.unassigned}
-                                    </CommandItem>
-                                    {assignableUsers.map((assignableUser: any) => (
-                                      <CommandItem
-                                        key={assignableUser.id}
-                                        value={assignableUser.username || `User ${assignableUser.id}`}
-                                        onSelect={() => {
-                                          field.onChange(assignableUser.id);
-                                          setUserSearchOpen(false);
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            field.value === assignableUser.id ? "opacity-100" : "opacity-0"
-                                          )}
-                                        />
-                                        {assignableUser.username || `User ${assignableUser.id}`}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="relatedAssetId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.relatedAsset}</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
-                              value={field.value?.toString() || ''}
-                              disabled={isSubmitting || !form.watch('submittedById')}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                 <SelectValue placeholder={
-                                    !form.watch('submittedById') ? t.selectEmployeeFirst : 
-                                    filteredAssets.length === 0 ? t.noAssetsForEmployee :
-                                    t.selectAsset
-                                  } />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="max-h-64">
-                                <SelectItem value="">{t.noAsset}</SelectItem>
-                                {filteredAssets.map((asset: any) => {
-                                  // Enhanced asset display format: "AST-001, Laptop Dell XPS 13"
-                                  const displayParts = [asset.assetId || `Asset ${asset.id}`];
-                                  const deviceInfo = [];
-                                  
-                                  if (asset.type) deviceInfo.push(asset.type);
-                                  if (asset.brand) deviceInfo.push(asset.brand);
-                                  if (asset.modelName) deviceInfo.push(asset.modelName);
-                                  
-                                  const displayString = deviceInfo.length > 0 
-                                    ? `${displayParts[0]}, ${deviceInfo.join(' ')}`
-                                    : displayParts[0];
-                                  
-                                  return (
-                                    <SelectItem key={asset.id} value={asset.id.toString()}>
-                                      {displayString}
-                                    </SelectItem>
-                                  );
-                                })}
-                                {filteredAssets.length === 0 && form.watch('submittedById') && (
-                                  <SelectItem value="no-assets" disabled>
-                                    {t.noAssetsForEmployee}
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              {form.watch('submittedById') ? 
-                                (filteredAssets.length > 0 ? 
-                                  `${filteredAssets.length} ${language === 'English' ? 'assets assigned to selected employee' : 'أصل مخصص للموظف المحدد'}` :
-                                  language === 'English' ? 'Selected employee has no assigned assets' : 'الموظف المحدد لا يملك أصول مخصصة'
-                                ) :
-                                language === 'English' ? 'Select an employee first to see their assigned assets' : 'اختر موظفًا أولاً لرؤية الأصول المخصصة له'
-                              }
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Status and Time Management */}
+                {/* Status and Resolution */}
                 {mode === 'edit' && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">{t.statusManagement}</CardTitle>
+                      <CardTitle className="text-lg">{t.statusAndResolution}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Status and Time Spent Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="status"
@@ -787,7 +821,7 @@ export default function TicketForm({
                               <FormLabel>{t.status}</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 disabled={isSubmitting}
                               >
                                 <FormControl>
@@ -822,68 +856,11 @@ export default function TicketForm({
                                   value={field.value || ''}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    field.onChange(value === '' ? undefined : parseInt(value, 10));
+                                    field.onChange(value === '' ? undefined : parseInt(value));
                                   }}
                                   disabled={isSubmitting}
                                 />
                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="dueDate"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>{t.dueDate}</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "w-full pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                      )}
-                                      disabled={isSubmitting}
-                                    >
-                                      {field.value ? (
-                                        (() => {
-                                          try {
-                                            return format(new Date(field.value), "PPP");
-                                          } catch {
-                                            return t.pickDate || 'Pick a date';
-                                          }
-                                        })()
-                                      ) : (
-                                        <span>{t.pickDate || 'Pick a date'}</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value ? (() => {
-                                      try {
-                                        return new Date(field.value);
-                                      } catch {
-                                        return undefined;
-                                      }
-                                    })() : undefined}
-                                    onSelect={(date) => {
-                                      field.onChange(date ? safeDateFormat(date) : '');
-                                    }}
-                                    disabled={(date) =>
-                                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -913,19 +890,70 @@ export default function TicketForm({
                   </Card>
                 )}
 
-                {/* Form Actions */}
-                <DialogFooter className="flex justify-between">
+                {/* Dates */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{t.dateInformation}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Due Date */}
+                      <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t.dueDate}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...field}
+                                disabled={isSubmitting}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* SLA Target */}
+                      <FormField
+                        control={form.control}
+                        name="slaTarget"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t.slaTarget}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...field}
+                                disabled={isSubmitting}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Action Buttons */}
+                <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => onOpenChange && onOpenChange(false)}
+                    onClick={() => onOpenChange?.(false)}
                     disabled={isSubmitting}
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="w-4 h-4 mr-2" />
                     {t.cancel}
                   </Button>
-                  
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -943,7 +971,7 @@ export default function TicketForm({
             </Form>
           </TabsContent>
 
-          {/* Comments Tab */}
+          {/* Comments Tab - RESTORED COMPLETE */}
           {mode === 'edit' && (
             <TabsContent value="comments" className="space-y-4">
               <Card>
@@ -1014,7 +1042,7 @@ export default function TicketForm({
             </TabsContent>
           )}
 
-          {/* History Tab */}
+          {/* History Tab - RESTORED COMPLETE */}
           {mode === 'edit' && (
             <TabsContent value="history" className="space-y-4">
               <Card>

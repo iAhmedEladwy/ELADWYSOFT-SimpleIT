@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useTicketTranslations } from '@/lib/translations/tickets';
-import { apiRequest } from '@/lib/queryClient';
-import type { AssetResponse, UserResponse } from '@shared/types';
+import type { EmployeeResponse, UserResponse, AssetResponse } from '@shared/types';
 
 import {
   FormControl,
@@ -35,75 +34,55 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Employee {
-  id: number;
-  englishName?: string;
-  arabicName?: string;
-  name?: string;
-  department?: string;
-}
-
 interface TicketAssetSelectorProps {
   control: any;
   submittedByValue?: string;
-  onSubmittedByChange?: (value: string) => void;
-  onAssetChange?: (value: string) => void;
+  onEmployeeChange?: (value: string) => void;
   onAssignedToChange?: (value: string) => void;
+  onAssetChange?: (value: string) => void;
 }
 
-export default function TicketAssetSelector({
-  control,
+export default function TicketAssetSelector({ 
+  control, 
   submittedByValue,
-  onSubmittedByChange,
-  onAssetChange,
+  onEmployeeChange,
   onAssignedToChange,
+  onAssetChange 
 }: TicketAssetSelectorProps) {
   const { language } = useLanguage();
   const t = useTicketTranslations(language);
   const [employeePopoverOpen, setEmployeePopoverOpen] = useState(false);
 
-  // Fetch employees
-  const { data: employees = [] } = useQuery<Employee[]>({
+  // Data queries
+  const { data: employees = [] } = useQuery<EmployeeResponse[]>({
     queryKey: ['/api/employees'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/employees');
-      return Array.isArray(response) ? response.filter(emp => emp && emp.id) : [];
-    },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 300000, // 5 minutes
   });
 
-  // Fetch users for assignment
   const { data: users = [] } = useQuery<UserResponse[]>({
     queryKey: ['/api/users'],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 300000, // 5 minutes
   });
 
-  // Fetch assets and filter by selected employee
-  const { data: allAssets = [] } = useQuery<AssetResponse[]>({
+  const { data: assets = [] } = useQuery<AssetResponse[]>({
     queryKey: ['/api/assets'],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 300000, // 5 minutes
   });
 
   // Filter assets by selected employee
-  const filteredAssets = submittedByValue && submittedByValue !== '' 
-    ? allAssets.filter(asset => {
-        const employeeIdNum = parseInt(submittedByValue);
-        if (isNaN(employeeIdNum)) return false;
-        
-        // Check if asset is assigned to this employee
-        return asset.assignedToId === employeeIdNum;
-      })
+  const submittedByEmployeeId = submittedByValue ? parseInt(submittedByValue) : null;
+  const filteredAssets = submittedByEmployeeId 
+    ? assets.filter((asset: AssetResponse) => asset.assignedEmployeeId === submittedByEmployeeId)
     : [];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      
-      {/* Submitted By (Employee Search) */}
+    <div className="space-y-4">
+      {/* Submitted By (Employee Selection) */}
       <FormField
         control={control}
         name="submittedById"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem>
             <FormLabel>{t.submittedBy} *</FormLabel>
             <Popover open={employeePopoverOpen} onOpenChange={setEmployeePopoverOpen}>
               <PopoverTrigger asChild>
@@ -111,34 +90,36 @@ export default function TicketAssetSelector({
                   <Button
                     variant="outline"
                     role="combobox"
-                    aria-expanded={employeePopoverOpen}
                     className={cn(
                       "w-full justify-between",
                       !field.value && "text-muted-foreground"
                     )}
                   >
-                    {field.value && Array.isArray(employees)
-                      ? employees.find(emp => emp.id.toString() === field.value)?.englishName || t.selectEmployee
-                      : t.selectEmployee}
+                    {field.value
+                      ? employees.find((employee: EmployeeResponse) => employee.id.toString() === field.value)?.englishName || 
+                        employees.find((employee: EmployeeResponse) => employee.id.toString() === field.value)?.name ||
+                        `Employee ${field.value}`
+                      : t.selectEmployee
+                    }
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </FormControl>
               </PopoverTrigger>
-              <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+              <PopoverContent className="w-full p-0" align="start">
                 <Command>
-                  <CommandInput placeholder={t.searchEmployee} className="h-9" />
+                  <CommandInput placeholder={t.searchEmployee} />
                   <CommandEmpty>{t.noEmployeeFound}</CommandEmpty>
-                  <CommandGroup className="max-h-[200px] overflow-auto">
-                    {employees.map((employee) => (
+                  <CommandGroup className="max-h-64 overflow-y-auto">
+                    {employees.map((employee: EmployeeResponse) => (
                       <CommandItem
                         key={employee.id}
-                        value={`${employee.englishName || ''} ${employee.arabicName || ''} ${employee.department || ''}`}
+                        value={`${employee.englishName || employee.name || ''} ${employee.department || ''}`}
                         onSelect={() => {
                           const newValue = employee.id.toString();
                           field.onChange(newValue);
-                          onSubmittedByChange?.(newValue);
+                          onEmployeeChange?.(newValue);
                           // Reset asset selection when employee changes
-                          onAssetChange?.('');
+                          onAssetChange?.('none');
                           setEmployeePopoverOpen(false);
                         }}
                       >
@@ -174,7 +155,12 @@ export default function TicketAssetSelector({
             <FormLabel>{t.assignedTo}</FormLabel>
             <Select 
               onValueChange={(value) => {
-                field.onChange(value === 'unassigned' ? undefined : parseInt(value));
+                // FIXED: Proper value handling without empty strings
+                if (value === 'unassigned') {
+                  field.onChange(undefined);
+                } else {
+                  field.onChange(parseInt(value));
+                }
                 onAssignedToChange?.(value);
               }} 
               value={field.value ? field.value.toString() : 'unassigned'}
@@ -198,7 +184,7 @@ export default function TicketAssetSelector({
         )}
       />
 
-      {/* Related Asset (Filtered by Employee) */}
+      {/* Related Asset (Filtered by Employee) - FIXED: No empty strings */}
       <FormField
         control={control}
         name="relatedAssetId"
@@ -207,7 +193,12 @@ export default function TicketAssetSelector({
             <FormLabel>{t.relatedAsset}</FormLabel>
             <Select 
               onValueChange={(value) => {
-                field.onChange(value === 'none' ? undefined : parseInt(value));
+                // FIXED: Proper value handling without empty strings
+                if (value === 'none') {
+                  field.onChange(undefined);
+                } else {
+                  field.onChange(parseInt(value));
+                }
                 onAssetChange?.(value);
               }}
               value={field.value ? field.value.toString() : 'none'}
@@ -221,6 +212,7 @@ export default function TicketAssetSelector({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
+                {/* FIXED: Use 'none' instead of empty string */}
                 <SelectItem value="none">{t.noAsset}</SelectItem>
                 {filteredAssets.length > 0 ? (
                   filteredAssets.map((asset) => {
@@ -243,7 +235,7 @@ export default function TicketAssetSelector({
                   })
                 ) : (
                   submittedByValue && (
-                    <SelectItem value="no-assets" disabled>
+                    <SelectItem value="no-assets-available" disabled>
                       {t.noAssetsForEmployee}
                     </SelectItem>
                   )
