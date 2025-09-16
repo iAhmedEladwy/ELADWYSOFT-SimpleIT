@@ -1319,8 +1319,6 @@ export default function TicketForm({
               </Card>
             </TabsContent>
           )}
-          </div>
-        </Tabs>
       </DialogContent>
     </Dialog>
   );
