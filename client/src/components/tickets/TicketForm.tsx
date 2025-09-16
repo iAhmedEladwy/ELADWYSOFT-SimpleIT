@@ -310,7 +310,10 @@ export default function TicketForm({
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!ticket?.id) throw new Error('Ticket ID is required');
-      return apiRequest(`/api/tickets/${ticket.id}/comments`, 'POST', { content });
+      return apiRequest('/api/tickets/comments', 'POST', { 
+        ticketId: ticket.id,
+        content 
+      });
     },
     onSuccess: async (data, variables, context) => {
       const ticketId = ticket?.id;

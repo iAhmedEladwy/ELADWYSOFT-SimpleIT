@@ -2401,10 +2401,11 @@ async deleteTicket(id: number): Promise<boolean> {
       ]);
 
       // Update ticket's last activity
-      await db
-        .update(tickets)
-        .set({ lastActivityAt: new Date(), updatedAt: new Date() })
-        .where(eq(tickets.id, commentData.ticketId));
+      await pool.query(`
+        UPDATE tickets 
+        SET updated_at = NOW() 
+        WHERE id = $1
+      `, [commentData.ticketId]);
 
       // Add to history
       await this.addTicketHistory({
