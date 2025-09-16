@@ -418,7 +418,7 @@ export default function TicketForm({
           {/* FIXED: Consistent content container for all tabs */}
           <div className="mt-4 min-h-[600px]">
 
-          {/* Main Details Tab - FIXED: Flat layout without Card wrappers */}
+          {/* Main Details Tab */}
           <TabsContent value="details" className="space-y-3">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -996,33 +996,30 @@ export default function TicketForm({
                           </FormItem>
                         )}
                       />
+                  </div>
+                  
+                  {/* Calculated Priority Display */}
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Label>{t.calculatedPriority}:</Label>
+                      <Badge variant={getPriorityBadgeVariant(calculatedPriority)}>
+                        {calculatedPriority === 'Low' ? t.priorityLow :
+                         calculatedPriority === 'Medium' ? t.priorityMedium :
+                         calculatedPriority === 'High' ? t.priorityHigh :
+                         t.priorityCritical}
+                      </Badge>
                     </div>
-
-                    {/* Calculated Priority Display */}
-                    <div className="p-4 bg-muted rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Label>{t.calculatedPriority}:</Label>
-                        <Badge variant={getPriorityBadgeVariant(calculatedPriority)}>
-                          {calculatedPriority === 'Low' ? t.priorityLow :
-                           calculatedPriority === 'Medium' ? t.priorityMedium :
-                           calculatedPriority === 'High' ? t.priorityHigh :
-                           t.priorityCritical}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {getPriorityExplanation(urgency, impact, language)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {getPriorityExplanation(urgency, impact, language)}
+                    </p>
+                  </div>
+                </div>
 
                 {/* Status and Resolution */}
                 {mode === 'edit' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{t.statusAndResolution}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-medium border-b pb-2">{t.statusAndResolution}</h3>
+                    <div className="space-y-3">
                       
                       {/* Status and Time Spent Row - FIXED: Reduced spacing */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
