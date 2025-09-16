@@ -934,61 +934,6 @@ export default function TicketForm({
                       )}
                     />
                   </div>
-                      <FormField
-                        control={form.control}
-                        name="urgency"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.urgency} *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={isSubmitting}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.selectUrgency} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Low">{t.urgencyLow}</SelectItem>
-                                <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
-                                <SelectItem value="High">{t.urgencyHigh}</SelectItem>
-                                <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="impact"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.impact} *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={isSubmitting}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.selectImpact} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Low">{t.impactLow}</SelectItem>
-                                <SelectItem value="Medium">{t.impactMedium}</SelectItem>
-                                <SelectItem value="High">{t.impactHigh}</SelectItem>
-                                <SelectItem value="Critical">{t.impactCritical}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                   </div>
                   
                   {/* Calculated Priority Display */}
