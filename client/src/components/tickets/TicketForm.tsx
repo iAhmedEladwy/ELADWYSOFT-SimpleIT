@@ -418,132 +418,125 @@ export default function TicketForm({
           {/* FIXED: Consistent content container for all tabs */}
           <div className="mt-4 min-h-[600px]">
 
-          {/* Main Details Tab - FIXED: Further reduced white space */}
-          <TabsContent value="details" className="space-y-2">
+          {/* Main Details Tab - FIXED: Flat layout without Card wrappers */}
+          <TabsContent value="details" className="space-y-3">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 
-                {/* Basic Information - FIXED: Reduced card spacing */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{t.basicInformation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    
-                    {/* Title Field - FIXED: Correct label */}
+                {/* Basic Information Section - FIXED: No Card wrapper */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium border-b pb-2">{t.basicInformation}</h3>
+                  
+                  {/* Title Field - FIXED: Correct label */}
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.title_field} *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t.titlePlaceholder}
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Description Field - FIXED: Correct label */}
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.description_field} *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t.descriptionPlaceholder}
+                            rows={4}
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Type and Category Row - FIXED: Further reduced spacing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
-                      name="title"
+                      name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.title_field} *</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t.titlePlaceholder}
-                              {...field}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
+                          <FormLabel>{t.type} *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={isSubmitting}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t.selectType} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Incident">{t.typeIncident}</SelectItem>
+                              <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
+                              <SelectItem value="Problem">{t.typeProblem}</SelectItem>
+                              <SelectItem value="Change">{t.typeChange}</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    {/* Description Field - FIXED: Correct label */}
+                    {/* FIXED: Category dropdown with API data */}
                     <FormField
                       control={form.control}
-                      name="description"
+                      name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.description_field} *</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder={t.descriptionPlaceholder}
-                              rows={4}
-                              {...field}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
+                          <FormLabel>{t.category} *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={isSubmitting}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t.selectCategory} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.length === 0 && (
+                                <SelectItem value="General">General</SelectItem>
+                              )}
+                              {categories.map((category: any) => (
+                                <SelectItem key={category.id} value={category.name}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                  </div>
+                </div>
 
-                    {/* Type and Category Row - FIXED: Further reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.type} *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={isSubmitting}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.selectType} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Incident">{t.typeIncident}</SelectItem>
-                                <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
-                                <SelectItem value="Problem">{t.typeProblem}</SelectItem>
-                                <SelectItem value="Change">{t.typeChange}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* FIXED: Category dropdown with API data */}
-                      <FormField
-                        control={form.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.category} *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={isSubmitting}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t.selectCategory} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {categories.length === 0 && (
-                                  <SelectItem value="General">General</SelectItem>
-                                )}
-                                {categories.map((category: any) => (
-                                  <SelectItem key={category.id} value={category.name}>
-                                    {category.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Assignment Section - FIXED: Reduced card spacing */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{t.assignmentInformation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    
-                    {/* Submitted By and Assigned To Row - FIXED: Further reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Assignment Information Section - FIXED: No Card wrapper */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium border-b pb-2">{t.assignmentInformation}</h3>
+                  
+                  {/* Submitted By and Assigned To Row - FIXED: Further reduced spacing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       
                       {/* Submitted By (Employee) */}
                       <FormField
@@ -687,74 +680,70 @@ export default function TicketForm({
                       />
                     </div>
 
-                    {/* Related Asset - FIXED: No empty string values */}
-                    <FormField
-                      control={form.control}
-                      name="relatedAssetId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t.relatedAsset}</FormLabel>
-                          <Select
-                            onValueChange={(value) => {
-                              // FIXED: Proper value handling without empty strings
-                              if (value === 'none') {
-                                field.onChange(undefined);
-                              } else {
-                                field.onChange(parseInt(value));
-                              }
-                            }}
-                            value={field.value ? field.value.toString() : 'none'}
-                            disabled={isSubmitting || !form.watch('submittedById')}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                               <SelectValue placeholder={
-                                  !form.watch('submittedById') ? t.selectEmployeeFirst : 
-                                  filteredAssets.length === 0 ? t.noAssetsForEmployee :
-                                  t.selectAsset
-                                } />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-64">
-                              {/* FIXED: Use 'none' instead of empty string */}
-                              <SelectItem value="none">{t.noAsset}</SelectItem>
-                              {filteredAssets.map((asset: AssetResponse) => {
-                                // Enhanced asset display format: "AST-001, Laptop Dell XPS 13"
-                                const displayParts = [asset.assetId || `Asset ${asset.id}`];
-                                const deviceInfo = [];
-                                
-                                if (asset.type) deviceInfo.push(asset.type);
-                                if (asset.brand) deviceInfo.push(asset.brand);
-                                if (asset.modelName) deviceInfo.push(asset.modelName);
-                                
-                                const displayString = deviceInfo.length > 0 
-                                  ? `${asset.assetId}, ${deviceInfo.join(' ')}`
-                                  : asset.assetId;
-                                
-                                return (
-                                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                                    {displayString}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
+                  {/* Related Asset - FIXED: No empty string values */}
+                  <FormField
+                    control={form.control}
+                    name="relatedAssetId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.relatedAsset}</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            // FIXED: Proper value handling without empty strings
+                            if (value === 'none') {
+                              field.onChange(undefined);
+                            } else {
+                              field.onChange(parseInt(value));
+                            }
+                          }}
+                          value={field.value ? field.value.toString() : 'none'}
+                          disabled={isSubmitting || !form.watch('submittedById')}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                             <SelectValue placeholder={
+                                !form.watch('submittedById') ? t.selectEmployeeFirst : 
+                                filteredAssets.length === 0 ? t.noAssetsForEmployee :
+                                t.selectAsset
+                              } />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-64">
+                            {/* FIXED: Use 'none' instead of empty string */}
+                            <SelectItem value="none">{t.noAsset}</SelectItem>
+                            {filteredAssets.map((asset: AssetResponse) => {
+                              // Enhanced asset display format: "AST-001, Laptop Dell XPS 13"
+                              const displayParts = [asset.assetId || `Asset ${asset.id}`];
+                              const deviceInfo = [];
+                              
+                              if (asset.type) deviceInfo.push(asset.type);
+                              if (asset.brand) deviceInfo.push(asset.brand);
+                              if (asset.modelName) deviceInfo.push(asset.modelName);
+                              
+                              const displayString = deviceInfo.length > 0 
+                                ? `${asset.assetId}, ${deviceInfo.join(' ')}`
+                                : asset.assetId;
+                              
+                              return (
+                                <SelectItem key={asset.id} value={asset.id.toString()}>
+                                  {displayString}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                {/* Priority Management - FIXED: Reduced card spacing */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{t.priorityManagement}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    
-                    {/* Urgency and Impact Row - FIXED: Further reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Priority Management Section - FIXED: No Card wrapper */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium border-b pb-2">{t.priorityManagement}</h3>
+                  
+                  {/* Urgency and Impact Row - FIXED: Further reduced spacing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name="urgency"
@@ -913,17 +902,14 @@ export default function TicketForm({
                           </FormItem>
                         )}
                       />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
 
-                {/* Dates - FIXED: Reduced card spacing and using modern unified datepicker */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{t.dateInformation}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Dates Section - FIXED: No Card wrapper, modern datepicker */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium border-b pb-2">{t.dateInformation}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       
                       {/* Due Date - FIXED: Modern datepicker */}
                       <FormField
@@ -946,29 +932,28 @@ export default function TicketForm({
                         )}
                       />
 
-                      {/* SLA Target - FIXED: Modern datepicker */}
-                      <FormField
-                        control={form.control}
-                        name="slaTarget"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.slaTarget}</FormLabel>
-                            <FormControl>
-                              <Calendar
-                                mode="picker"
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder={t.selectSlaTarget}
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                    {/* SLA Target - FIXED: Modern datepicker */}
+                    <FormField
+                      control={form.control}
+                      name="slaTarget"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.slaTarget}</FormLabel>
+                          <FormControl>
+                            <Calendar
+                              mode="picker"
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder={t.selectSlaTarget}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <DialogFooter>
