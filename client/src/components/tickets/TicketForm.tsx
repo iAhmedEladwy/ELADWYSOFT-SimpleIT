@@ -594,6 +594,148 @@ export default function TicketForm({
                                             {employee.department || t.noDepartment}
                                           </span>
                                         </div>
+
+                    {/* Submitted By (Employee) */}
+                    <FormField
+                      control={form.control}
+                      name="submittedById"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.submittedBy} *</FormLabel>
+                          <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                  disabled={isSubmitting}
+                                >
+                                  {field.value
+                                    ? activeEmployees.find((employee: EmployeeResponse) => employee.id === field.value)?.englishName || 
+                                      activeEmployees.find((employee: EmployeeResponse) => employee.id === field.value)?.name ||
+                                      `Employee ${field.value}`
+                                    : t.selectEmployee
+                                  }
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder={t.searchEmployee} />
+                                <CommandEmpty>{t.noEmployeeFound}</CommandEmpty>
+                                <CommandGroup className="max-h-64 overflow-y-auto">
+                                  {activeEmployees.map((employee: EmployeeResponse) => (
+                                    <CommandItem
+                                      key={employee.id}
+                                      value={`${employee.englishName || employee.name || ''} ${employee.department || ''}`}
+                                      onSelect={() => {
+                                        const newValue = employee.id.toString();
+                                        field.onChange(parseInt(newValue));
+                                        setEmployeeSearchOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === employee.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{employee.englishName || employee.name || 'Unknown'}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {employee.department || t.noDepartment}
+                                        </span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Assigned To (User) */}
+                    <FormField
+                      control={form.control}
+                      name="assignedToId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.assignedTo}</FormLabel>
+                          <Popover open={userSearchOpen} onOpenChange={setUserSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                  disabled={isSubmitting}
+                                >
+                                  {field.value
+                                    ? assignableUsers.find((user: UserResponse) => user.id === field.value)?.username || `User ${field.value}`
+                                    : t.selectUser
+                                  }
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder={t.searchUser} />
+                                <CommandEmpty>{t.noUserFound}</CommandEmpty>
+                                <CommandGroup className="max-h-64 overflow-y-auto">
+                                  <CommandItem
+                                    value="unassigned"
+                                    onSelect={() => {
+                                      field.onChange(undefined);
+                                      setUserSearchOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !field.value ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {t.unassigned}
+                                  </CommandItem>
+                                  {assignableUsers.map((assignableUser: UserResponse) => (
+                                    <CommandItem
+                                      key={assignableUser.id}
+                                      value={assignableUser.username || `user-${assignableUser.id}`}
+                                      onSelect={() => {
+                                        field.onChange(assignableUser.id);
+                                        setUserSearchOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === assignableUser.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {assignableUser.username || `User ${assignableUser.id}`}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                                       </CommandItem>
                                     ))}
                                   </CommandGroup>
@@ -742,8 +884,63 @@ export default function TicketForm({
                 <div className="space-y-3">
                   <h3 className="text-lg font-medium border-b pb-2">{t.priorityManagement}</h3>
                   
-                  {/* Urgency and Impact Row - FIXED: Further reduced spacing */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="urgency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.urgency} *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={isSubmitting}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t.selectUrgency} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Low">{t.urgencyLow}</SelectItem>
+                              <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
+                              <SelectItem value="High">{t.urgencyHigh}</SelectItem>
+                              <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="impact"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t.impact} *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={isSubmitting}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t.selectImpact} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Low">{t.impactLow}</SelectItem>
+                              <SelectItem value="Medium">{t.impactMedium}</SelectItem>
+                              <SelectItem value="High">{t.impactHigh}</SelectItem>
+                              <SelectItem value="Critical">{t.impactCritical}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                       <FormField
                         control={form.control}
                         name="urgency"
@@ -1122,7 +1319,7 @@ export default function TicketForm({
               </Card>
             </TabsContent>
           )}
-        </div>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
