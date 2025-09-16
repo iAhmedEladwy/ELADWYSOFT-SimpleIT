@@ -182,6 +182,12 @@ export default function TicketForm({
     staleTime: 300000, // 5 minutes
   });
 
+  // FIXED: Categories query for dropdown
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/api/categories'],
+    staleTime: 300000, // 5 minutes
+  });
+
   // Filter assets by selected employee
   const submittedById = form.watch('submittedById');
   const filteredAssets = submittedById 
@@ -406,25 +412,28 @@ export default function TicketForm({
             )}
           </TabsList>
 
-          {/* Main Details Tab */}
-          <TabsContent value="details" className="space-y-6">
+          {/* FIXED: Consistent content container for all tabs */}
+          <div className="mt-4 min-h-[600px]">
+
+          {/* Main Details Tab - FIXED: Reduced white space */}
+          <TabsContent value="details" className="space-y-4">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 
                 {/* Basic Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">{t.basicInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     
-                    {/* Title Field - Fixed field name */}
+                    {/* Title Field - FIXED: Correct label */}
                     <FormField
                       control={form.control}
                       name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.title} *</FormLabel>
+                          <FormLabel>{t.title_field} *</FormLabel>
                           <FormControl>
                             <Input
                               placeholder={t.titlePlaceholder}
@@ -437,13 +446,13 @@ export default function TicketForm({
                       )}
                     />
 
-                    {/* Description Field */}
+                    {/* Description Field - FIXED: Correct label */}
                     <FormField
                       control={form.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.description} *</FormLabel>
+                          <FormLabel>{t.description_field} *</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder={t.descriptionPlaceholder}
@@ -457,8 +466,8 @@ export default function TicketForm({
                       )}
                     />
 
-                    {/* Type and Category Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Type and Category Row - FIXED: Reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name="type"
@@ -487,19 +496,34 @@ export default function TicketForm({
                         )}
                       />
 
+                      {/* FIXED: Category dropdown with API data */}
                       <FormField
                         control={form.control}
                         name="category"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>{t.category} *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={t.categoryPlaceholder}
-                                {...field}
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={isSubmitting}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t.selectCategory} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {categories.length === 0 && (
+                                  <SelectItem value="General">General</SelectItem>
+                                )}
+                                {categories.map((category: any) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -513,10 +537,10 @@ export default function TicketForm({
                   <CardHeader>
                     <CardTitle className="text-lg">{t.assignmentInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     
-                    {/* Submitted By and Assigned To Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Submitted By and Assigned To Row - FIXED: Reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       
                       {/* Submitted By (Employee) */}
                       <FormField
@@ -724,10 +748,10 @@ export default function TicketForm({
                   <CardHeader>
                     <CardTitle className="text-lg">{t.priorityManagement}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     
-                    {/* Urgency and Impact Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Urgency and Impact Row - FIXED: Reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name="urgency"
@@ -809,10 +833,10 @@ export default function TicketForm({
                     <CardHeader>
                       <CardTitle className="text-lg">{t.statusAndResolution}</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3">
                       
-                      {/* Status and Time Spent Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Status and Time Spent Row - FIXED: Reduced spacing */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <FormField
                           control={form.control}
                           name="status"
@@ -890,15 +914,15 @@ export default function TicketForm({
                   </Card>
                 )}
 
-                {/* Dates */}
+                {/* Dates - FIXED: Using modern unified datepicker */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">{t.dateInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       
-                      {/* Due Date */}
+                      {/* Due Date - FIXED: Modern datepicker */}
                       <FormField
                         control={form.control}
                         name="dueDate"
@@ -906,9 +930,11 @@ export default function TicketForm({
                           <FormItem>
                             <FormLabel>{t.dueDate}</FormLabel>
                             <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
+                              <Calendar
+                                mode="picker"
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder={t.selectDueDate}
                                 disabled={isSubmitting}
                               />
                             </FormControl>
@@ -917,7 +943,7 @@ export default function TicketForm({
                         )}
                       />
 
-                      {/* SLA Target */}
+                      {/* SLA Target - FIXED: Modern datepicker */}
                       <FormField
                         control={form.control}
                         name="slaTarget"
@@ -925,9 +951,11 @@ export default function TicketForm({
                           <FormItem>
                             <FormLabel>{t.slaTarget}</FormLabel>
                             <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
+                              <Calendar
+                                mode="picker"
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder={t.selectSlaTarget}
                                 disabled={isSubmitting}
                               />
                             </FormControl>
@@ -971,9 +999,9 @@ export default function TicketForm({
             </Form>
           </TabsContent>
 
-          {/* Comments Tab - RESTORED COMPLETE */}
+          {/* Comments Tab - RESTORED COMPLETE - FIXED: Consistent height */}
           {mode === 'edit' && (
-            <TabsContent value="comments" className="space-y-4">
+            <TabsContent value="comments" className="space-y-4 min-h-[600px]">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1042,9 +1070,9 @@ export default function TicketForm({
             </TabsContent>
           )}
 
-          {/* History Tab - RESTORED COMPLETE */}
+          {/* History Tab - RESTORED COMPLETE - FIXED: Consistent height */}
           {mode === 'edit' && (
-            <TabsContent value="history" className="space-y-4">
+            <TabsContent value="history" className="space-y-4 min-h-[600px]">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1106,6 +1134,7 @@ export default function TicketForm({
               </Card>
             </TabsContent>
           )}
+        </div>
         </Tabs>
       </DialogContent>
     </Dialog>
