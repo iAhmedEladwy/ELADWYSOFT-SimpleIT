@@ -267,7 +267,7 @@ export const tickets = pgTable("tickets", {
   
   // Request Classification
   type: ticketTypeEnum("type").notNull().default('Incident'), // Nature of request
-  category: varchar("category", { length: 100 }).notNull().default('General'), // Custom request type from system config
+  categoryId: integer("category_id").references(() => categories.id), // Reference to dynamic categories table
   
   // Priority Management (calculated based on urgency × impact)
   priority: ticketPriorityEnum("priority").notNull().default('Medium'),
@@ -387,12 +387,9 @@ export const customAssetTypes = pgTable("custom_asset_types", {
 // Categories table (formerly Custom Request Types)
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
   description: text("description"),
-  color: varchar("color", { length: 7 }).default('#3B82F6'),
-  isActive: boolean("is_active").default(true),
-  priority: varchar("priority", { length: 20 }).default('Medium'),
-  slaHours: integer("sla_hours").default(24),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -455,8 +452,13 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   submittedByEmployee: one(employees, { fields: [tickets.submittedById], references: [employees.id] }),
   assignedToUser: one(users, { fields: [tickets.assignedToId], references: [users.id] }),
   relatedAsset: one(assets, { fields: [tickets.relatedAssetId], references: [assets.id] }),
+  category: one(categories, { fields: [tickets.categoryId], references: [categories.id] }),
   comments: many(ticketComments),
   history: many(ticketHistory),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  tickets: many(tickets),
 }));
 
 // Insert schemas for form validation
@@ -464,6 +466,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true, empId: true });
 export const insertAssetSchema = createInsertSchema(assets).omit({ id: true, createdAt: true, updatedAt: true, assetId: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true, ticketId: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAssetMaintenanceSchema = createInsertSchema(assetMaintenance).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 
@@ -485,6 +488,8 @@ export type Asset = typeof assets.$inferSelect;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type AssetMaintenance = typeof assetMaintenance.$inferSelect;
 export type InsertAssetMaintenance = z.infer<typeof insertAssetMaintenanceSchema>;
 export type Notification = typeof notifications.$inferSelect;

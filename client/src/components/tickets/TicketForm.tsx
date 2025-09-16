@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +29,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -84,7 +83,7 @@ const ticketFormSchema = z.object({
   
   // Request Classification - Fixed enums
   type: z.enum(['Incident', 'Service Request', 'Problem', 'Change']).default('Incident'),
-  category: z.string().min(1, 'Category is required').default('General'),
+  categoryId: z.number().min(1, 'Category is required'), // Reference to categories table
   
   // Priority Management - Proper enums (priority calculated automatically)
   urgency: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
@@ -153,7 +152,7 @@ export default function TicketForm({
       assignedToId: ticket?.assignedToId || undefined,
       relatedAssetId: ticket?.relatedAssetId || undefined,
       type: ticket?.type || 'Incident',
-      category: ticket?.category || 'General',
+      categoryId: ticket?.categoryId || undefined,
       urgency: ticket?.urgency || 'Medium',
       impact: ticket?.impact || 'Medium',
       status: ticket?.status || 'Open',
@@ -200,11 +199,12 @@ export default function TicketForm({
     : [];
 
   // Comments and History queries - RESTORED
-  const { data: comments = [] } = useQuery({
+  const { data: comments = [], refetch: refetchComments } = useQuery({
     queryKey: ['/api/tickets', ticket?.id, 'comments'],
     queryFn: () => apiRequest(`/api/tickets/${ticket?.id}/comments`),
     enabled: mode === 'edit' && !!ticket?.id,
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Always consider stale to ensure fresh data
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 
   const { data: history = [] } = useQuery({
@@ -233,7 +233,7 @@ export default function TicketForm({
         assignedToId: ticket.assignedToId || undefined,
         relatedAssetId: ticket.relatedAssetId || undefined,
         type: ticket.type,
-        category: ticket.category,
+        categoryId: ticket.categoryId || undefined,
         urgency: ticket.urgency,
         impact: ticket.impact,
         status: ticket.status,
@@ -312,8 +312,13 @@ export default function TicketForm({
       if (!ticket?.id) throw new Error('Ticket ID is required');
       return apiRequest(`/api/tickets/${ticket.id}/comments`, 'POST', { content });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticket?.id, 'comments'] });
+    onSuccess: async (data, variables, context) => {
+      const ticketId = ticket?.id;
+      if (ticketId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId, 'comments'] });
+        // Also manually refetch to ensure immediate update
+        await refetchComments();
+      }
       setNewComment('');
       toast({
         title: t.success,
@@ -498,13 +503,13 @@ export default function TicketForm({
                       {/* FIXED: Category dropdown with API data */}
                       <FormField
                         control={form.control}
-                        name="category"
+                        name="categoryId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>{t.category} *</FormLabel>
                             <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              value={field.value?.toString()}
                               disabled={isSubmitting}
                             >
                               <FormControl>
@@ -514,10 +519,10 @@ export default function TicketForm({
                               </FormControl>
                               <SelectContent>
                                 {categories.length === 0 && (
-                                  <SelectItem value="General">General</SelectItem>
+                                  <SelectItem value="1" disabled>Loading categories...</SelectItem>
                                 )}
                                 {categories.map((category: any) => (
-                                  <SelectItem key={category.id} value={category.name}>
+                                  <SelectItem key={category.id} value={category.id.toString()}>
                                     {category.name}
                                   </SelectItem>
                                 ))}

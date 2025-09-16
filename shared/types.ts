@@ -70,6 +70,27 @@ export interface AssetResponse {
   specifications?: Record<string, string>;
 }
 
+// Category-related types
+export interface CategoryResponse {
+  id: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryCreateRequest {
+  name: string;
+  description?: string;
+}
+
+export interface CategoryUpdateRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 // Ticket-related types - v0.4.0 Simplified Schema (21 core fields)
 export interface TicketResponse {
   // Core Identity & Tracking
@@ -86,7 +107,8 @@ export interface TicketResponse {
   
   // Request Classification
   type: 'Incident' | 'Service Request' | 'Problem' | 'Change'; // Nature of request
-  category: 'Hardware' | 'Software' | 'Network' | 'Access' | 'Other'; // Classification for reporting
+  categoryId?: number; // Reference to categories table
+  category?: CategoryResponse; // Populated category data
   
   // Priority Management (calculated based on urgency × impact)
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
@@ -114,7 +136,7 @@ export interface TicketCreateRequest {
   title: string;
   description: string;
   type: 'Incident' | 'Service Request' | 'Problem' | 'Change';
-  category: 'Hardware' | 'Software' | 'Network' | 'Access' | 'Other';
+  categoryId: number;
   urgency: 'Low' | 'Medium' | 'High' | 'Critical';
   impact: 'Low' | 'Medium' | 'High' | 'Critical';
   submittedById: number;
@@ -127,7 +149,7 @@ export interface TicketUpdateRequest {
   title?: string;
   description?: string;
   type?: 'Incident' | 'Service Request' | 'Problem' | 'Change';
-  category?: 'Hardware' | 'Software' | 'Network' | 'Access' | 'Other';
+  categoryId?: number;
   urgency?: 'Low' | 'Medium' | 'High' | 'Critical';
   impact?: 'Low' | 'Medium' | 'High' | 'Critical';
   status?: 'Open' | 'In Progress' | 'Resolved' | 'Closed';

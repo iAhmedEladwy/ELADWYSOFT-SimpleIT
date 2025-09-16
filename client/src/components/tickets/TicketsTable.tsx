@@ -43,7 +43,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MoreHorizontal, Edit, Eye, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
+import { MoreHorizontal, Edit, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { getPriorityColor } from '@/lib/utils/ticketUtils';
 
@@ -436,7 +436,6 @@ export default function TicketsTable({
               <TableHead>{t.status || 'Status'}</TableHead>
               <TableHead>{t.submittedBy || 'Submitted By'}</TableHead>
               <TableHead>{t.assignedTo || 'Assigned To'}</TableHead>
-              <TableHead>{t.relatedAsset || 'Related Asset'}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -613,22 +612,6 @@ export default function TicketsTable({
                     </Select>
                   </TableCell>
                   
-                 {/* Related Asset - Enhanced with Brand + Type + Model */}
-                    <TableCell className="min-w-[150px] text-sm">
-                      {ticket.relatedAssetId ? (() => {
-                        const asset = assets.find((a: any) => a && a.id === ticket.relatedAssetId);
-                        if (!asset) return t.none || 'None';
-                        
-                        // Create enhanced display: "Brand Type Model" format
-                        const displayParts = [];
-                        if (asset.brand) displayParts.push(asset.brand);
-                        if (asset.type) displayParts.push(asset.type);
-                        if (asset.modelName) displayParts.push(asset.modelName);
-                        
-                        return displayParts.length > 0 ? displayParts.join(' ') : (asset.assetId || t.none || 'None');
-                      })() : (t.none || 'None')}
-                    </TableCell>
-                  
                   {/* Actions Dropdown */}
                   <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
@@ -643,16 +626,6 @@ export default function TicketsTable({
                         <DropdownMenuItem onClick={() => onEdit && onEdit(ticket)}>
                           <Edit className="mr-2 h-4 w-4" />
                           {t.editTicket || 'Edit Ticket'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          try {
-                            navigate(`/tickets/${ticket.id}`);
-                          } catch (error) {
-                            console.error('Navigation error:', error);
-                          }
-                        }}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          {t.viewDetails || 'View Details'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

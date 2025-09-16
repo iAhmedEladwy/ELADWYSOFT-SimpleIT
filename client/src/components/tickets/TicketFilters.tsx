@@ -54,6 +54,7 @@ export default function TicketFilters({
     priority: language === 'Arabic' ? 'الأولوية' : 'Priority',
     category: language === 'Arabic' ? 'الفئة' : 'Category',
     type: language === 'Arabic' ? 'نوع التذكرة' : 'Ticket Type',
+    requestType: language === 'Arabic' ? 'نوع الطلب' : 'Request Type',
     assignedTo: language === 'Arabic' ? 'مُسند إلى' : 'Assigned To',
     creator: language === 'Arabic' ? 'المنشئ' : 'Creator',
     clearFilters: language === 'Arabic' ? 'مسح الفلاتر' : 'Clear Filters',
@@ -70,7 +71,7 @@ export default function TicketFilters({
   // Filter options
   const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
   const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
-  const ticketCategories = ['Hardware', 'Software', 'Network', 'Security', 'Access Control', 'General'];
+  const ticketTypes = ['Incident', 'Service Request', 'Problem', 'Change']; // Static dropdown
 
    const statusCounts = useMemo(() => {
     if (!Array.isArray(tickets)) return {};
@@ -82,10 +83,10 @@ export default function TicketFilters({
   }, [tickets, ticketStatuses]); 
 
 
-  const { data: requestTypesData } = useQuery({
-    queryKey: ['/api/custom-request-types'],
+  const { data: categoriesData } = useQuery({
+    queryKey: ['/api/categories'],
   });
-  const requestTypes = requestTypesData || [];
+  const categories = categoriesData || [];
 
   // Count active filters
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => 
@@ -139,10 +140,10 @@ export default function TicketFilters({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* First Row - Search Field */}
+        {/* Search Field */}
         <div className="grid grid-cols-1 gap-3">
-          <div>
-            <Label className="text-xs">{translations.search}</Label>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.search}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               <Input
@@ -157,10 +158,10 @@ export default function TicketFilters({
           </div>
         </div>
 
-        {/* Second Row - Dropdown Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div>
-            <Label className="text-xs">{translations.status}</Label>
+        {/* Dropdown Filters - Improved responsive layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.status}</Label>
           <Select value={filters.status || 'all'} onValueChange={(value: string) => updateFilter('status', value === 'all' ? undefined : value)}>
           <SelectTrigger className="h-8 text-sm">
             <SelectValue placeholder={translations.allStatuses} />
@@ -188,8 +189,8 @@ export default function TicketFilters({
         </Select>
           </div>
 
-          <div>
-            <Label className="text-xs">{translations.priority}</Label>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.priority}</Label>
             <Select value={filters.priority || 'all'} onValueChange={(value) => updateFilter('priority', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allPriorities} />
@@ -203,23 +204,23 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          <div>
-            <Label className="text-xs">{translations.requestType}</Label>
-            <Select value={filters.requestType || 'all'} onValueChange={(value) => updateFilter('requestType', value === 'all' ? undefined : value)}>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.type}</Label>
+            <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder={translations.allRequestTypes} />
+                <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{translations.allRequestTypes}</SelectItem>
-                {requestTypes?.map((requestType: any) => (
-                  <SelectItem key={requestType.id} value={requestType.name}>{requestType.name}</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
+                {ticketTypes?.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label className="text-xs">{translations.assignedTo}</Label>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.assignedTo}</Label>
             <Select value={filters.assignedTo || 'all'} onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allUsers} />
@@ -236,16 +237,16 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          <div>
-            <Label className="text-xs">{translations.category}</Label>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">{translations.category}</Label>
             <Select value={filters.category || 'all'} onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder={translations.allCategories} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{translations.allCategories}</SelectItem>
-                {ticketCategories?.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                {categories?.map((category: any) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>{category.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
