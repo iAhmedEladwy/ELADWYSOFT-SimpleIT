@@ -247,12 +247,12 @@ export default function TicketForm({
     }
   }, [ticket, form]);
 
-  // Create/Update ticket mutations - RESTORED with correct endpoints
+  // Create/Update ticket mutations - FIXED: Remove duplicate date conversion
   const createTicketMutation = useMutation({
     mutationFn: async (data: TicketCreateRequest) => {
       return apiRequest('/api/tickets', 'POST', {
         ...data,
-        priority: calculatedPriority, // Backend will also calculate this
+        // Priority is already included in submitData
       });
     },
     onSuccess: (data) => {
@@ -281,7 +281,7 @@ export default function TicketForm({
       if (!ticket?.id) throw new Error('Ticket ID is required for update');
       return apiRequest(`/api/tickets/${ticket.id}`, 'PATCH', {
         ...data,
-        priority: calculatedPriority, // Include calculated priority
+        // Priority is already included in submitData
       });
     },
     onSuccess: (data) => {
@@ -332,15 +332,18 @@ export default function TicketForm({
     },
   });
 
-  // Form submit handler - RESTORED
+  // Form submit handler - FIXED: Proper date handling
   const onSubmit = async (data: TicketFormData) => {
     setIsSubmitting(true);
     
     try {
-      // Prepare data for submission
+      // Prepare data for submission with proper date conversion
       const submitData = {
         ...data,
         priority: calculatedPriority,
+        // FIXED: Proper date conversion for modern Calendar component
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        slaTarget: data.slaTarget ? new Date(data.slaTarget).toISOString() : undefined,
       };
 
       if (mode === 'create') {
@@ -415,17 +418,17 @@ export default function TicketForm({
           {/* FIXED: Consistent content container for all tabs */}
           <div className="mt-4 min-h-[600px]">
 
-          {/* Main Details Tab - FIXED: Reduced white space */}
-          <TabsContent value="details" className="space-y-4">
+          {/* Main Details Tab - FIXED: Further reduced white space */}
+          <TabsContent value="details" className="space-y-2">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
                 
-                {/* Basic Information */}
+                {/* Basic Information - FIXED: Reduced card spacing */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{t.basicInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2">
                     
                     {/* Title Field - FIXED: Correct label */}
                     <FormField
@@ -466,8 +469,8 @@ export default function TicketForm({
                       )}
                     />
 
-                    {/* Type and Category Row - FIXED: Reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Type and Category Row - FIXED: Further reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <FormField
                         control={form.control}
                         name="type"
@@ -532,15 +535,15 @@ export default function TicketForm({
                   </CardContent>
                 </Card>
 
-                {/* Assignment Section */}
+                {/* Assignment Section - FIXED: Reduced card spacing */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{t.assignmentInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2">
                     
-                    {/* Submitted By and Assigned To Row - FIXED: Reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Submitted By and Assigned To Row - FIXED: Further reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       
                       {/* Submitted By (Employee) */}
                       <FormField
@@ -743,15 +746,15 @@ export default function TicketForm({
                   </CardContent>
                 </Card>
 
-                {/* Priority Management */}
+                {/* Priority Management - FIXED: Reduced card spacing */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{t.priorityManagement}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2">
                     
-                    {/* Urgency and Impact Row - FIXED: Reduced spacing */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Urgency and Impact Row - FIXED: Further reduced spacing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <FormField
                         control={form.control}
                         name="urgency"
@@ -914,13 +917,13 @@ export default function TicketForm({
                   </Card>
                 )}
 
-                {/* Dates - FIXED: Using modern unified datepicker */}
+                {/* Dates - FIXED: Reduced card spacing and using modern unified datepicker */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{t.dateInformation}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <CardContent className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       
                       {/* Due Date - FIXED: Modern datepicker */}
                       <FormField
