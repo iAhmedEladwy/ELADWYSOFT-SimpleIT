@@ -48,6 +48,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { MoreHorizontal, Edit, Eye, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { format } from 'date-fns';
 
+// Validation utilities
+const isValidUrgencyLevel = (value: string): value is UrgencyLevel => {
+  return ['Low', 'Medium', 'High', 'Critical'].includes(value);
+};
+
+const isValidImpactLevel = (value: string): value is ImpactLevel => {
+  return ['Low', 'Medium', 'High', 'Critical'].includes(value);
+};
+
+const isValidStatus = (value: string): boolean => {
+  return ['Open', 'In Progress', 'Resolved', 'Closed'].includes(value);
+};
+
+const isValidType = (value: string): boolean => {
+  return ['Incident', 'Service Request', 'Problem', 'Change'].includes(value);
+};
+
 interface TicketsTableProps {
   tickets: any[];
   employees: any[];
@@ -86,10 +103,41 @@ export default function TicketsTable({
   }>({ open: false, ticketId: null, newStatus: '' });
   const [resolutionNotes, setResolutionNotes] = useState('');
 
-  // Update ticket mutation for inline editing - Using PATCH endpoint
+  // FIXED: Enhanced update ticket mutation with comprehensive validation
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      // Use the PATCH endpoint with history tracking
+      // Validate the ticket ID
+      if (!id || id <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      // Validate updates object
+      if (!updates || typeof updates !== 'object') {
+        throw new Error('Invalid update data');
+      }
+
+      // Validate enum values if present
+      if (updates.urgency && !isValidUrgencyLevel(updates.urgency)) {
+        throw new Error('Invalid urgency level');
+      }
+
+      if (updates.impact && !isValidImpactLevel(updates.impact)) {
+        throw new Error('Invalid impact level');
+      }
+
+      if (updates.status && !isValidStatus(updates.status)) {
+        throw new Error('Invalid status');
+      }
+
+      if (updates.type && !isValidType(updates.type)) {
+        throw new Error('Invalid ticket type');
+      }
+
+      // Validate assignedToId if present
+      if (updates.assignedToId !== undefined && updates.assignedToId !== null && updates.assignedToId <= 0) {
+        throw new Error('Invalid assigned user ID');
+      }
+
       return apiRequest(`/api/tickets/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(updates),
@@ -98,58 +146,71 @@ export default function TicketsTable({
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      // No toast for inline edits - too noisy, but log success
-      console.log('Ticket updated successfully');
+      
+      // Show success toast only for major updates
+      if (variables.updates.status || variables.updates.assignedToId !== undefined) {
+        toast({
+          title: t.success || 'Success',
+          description: t.ticketUpdated || 'Ticket updated successfully',
+        });
+      }
     },
-    onError: (error: any) => {
-      console.error('Failed to update ticket:', error);
+    onError: (error: any, variables) => {
+      console.error('Failed to update ticket:', error, variables);
       toast({
-        title: t.error,
-        description: error.message || t.errorUpdating,
+        title: t.error || 'Error',
+        description: error.message || t.errorUpdating || 'Failed to update ticket',
         variant: 'destructive',
       });
     },
   });
 
-  // Helper functions
+  // FIXED: Safe helper functions with comprehensive validation
   const getEmployeeName = (employeeId: number) => {
     try {
-      if (!Array.isArray(employees)) return t.none;
+      if (!Array.isArray(employees) || !employeeId || employeeId <= 0) return t.none || 'None';
       const employee = employees.find((emp: any) => emp && emp.id === employeeId);
-      return employee && employee.englishName ? employee.englishName : t.none;
+      return employee && employee.englishName ? employee.englishName : (t.none || 'None');
     } catch (error) {
       console.error('Error getting employee name:', error);
-      return t.none;
+      return t.none || 'None';
     }
   };
 
   const getUserName = (userId: number) => {
     try {
-      if (!Array.isArray(users)) return t.unassigned;
+      if (!Array.isArray(users) || !userId || userId <= 0) return t.unassigned || 'Unassigned';
       const assignedUser = users.find((u: any) => u && u.id === userId);
-      return assignedUser && assignedUser.username ? assignedUser.username : t.unassigned;
+      return assignedUser && assignedUser.username ? assignedUser.username : (t.unassigned || 'Unassigned');
     } catch (error) {
       console.error('Error getting user name:', error);
-      return t.unassigned;
+      return t.unassigned || 'Unassigned';
     }
   };
 
   const getAssetName = (assetId: number) => {
     try {
-      if (!Array.isArray(assets)) return t.none;
+      if (!Array.isArray(assets) || !assetId || assetId <= 0) return t.none || 'None';
       const asset = assets.find((a: any) => a && a.id === assetId);
-      return asset && asset.name ? asset.name : asset && asset.assetId ? asset.assetId : t.none;
+      return asset && (asset.name || asset.assetId) ? 
+        (asset.name || asset.assetId) : 
+        (t.none || 'None');
     } catch (error) {
       console.error('Error getting asset name:', error);
-      return t.none;
+      return t.none || 'None';
     }
   };
 
-  // Get available statuses based on current status and user permissions
+  // FIXED: Enhanced status permissions with validation
   const getAvailableStatuses = (currentStatus: string): string[] => {
     try {
+      // Validate current status
+      if (!currentStatus || !isValidStatus(currentStatus)) {
+        return ['Open', 'In Progress', 'Resolved', 'Closed'];
+      }
+
       // Full access for admins, managers, and agents
       if (user && ['admin', 'manager', 'agent'].includes(user.role)) {
         return ['Open', 'In Progress', 'Resolved', 'Closed'];
@@ -172,104 +233,199 @@ export default function TicketsTable({
     }
   };
 
-  // Handle urgency/impact change with automatic priority calculation
+  // FIXED: Enhanced urgency/impact change handler with comprehensive validation
   const handleUrgencyImpactChange = (ticketId: number, field: 'urgency' | 'impact', value: string, currentTicket: any) => {
-    const newUrgency = field === 'urgency' ? value as UrgencyLevel : currentTicket.urgency as UrgencyLevel;
-    const newImpact = field === 'impact' ? value as ImpactLevel : currentTicket.impact as ImpactLevel;
-    
-    // Calculate new priority using the shared utility
-    const newPriority = calculatePriority(newUrgency, newImpact);
-    
-    // Update both the changed field and the calculated priority
-    // The backend will also validate and set priority via triggers
-    updateTicketMutation.mutate({ 
-      id: ticketId, 
-      updates: { 
-        [field]: value,
-        // Include priority in case backend doesn't have triggers set up yet
-        priority: newPriority
-      } 
-    });
-  };
+    try {
+      // Validate inputs
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
 
-  const handleTicketSelection = (ticketId: number, checked: boolean) => {
-    if (!onSelectionChange) return;
-    
-    if (checked) {
-      onSelectionChange([...selectedTickets, ticketId]);
-    } else {
-      onSelectionChange(selectedTickets.filter(id => id !== ticketId));
-    }
-  };
+      if (!field || !['urgency', 'impact'].includes(field)) {
+        throw new Error('Invalid field');
+      }
 
-  const handleRowClick = (ticket: any, event: React.MouseEvent) => {
-    // Don't trigger row click if clicking on interactive elements
-    const target = event.target as HTMLElement;
-    if (
-      target.closest('.inline-edit-cell') ||
-      target.closest('[data-checkbox-cell]') ||
-      target.closest('[role="checkbox"]') ||
-      target.closest('button') ||
-      target.closest('[role="button"]') ||
-      target.closest('input') ||
-      target.closest('[role="combobox"]') ||
-      target.tagName === 'SELECT' ||
-      target.closest('[type="checkbox"]') ||
-      target.closest('[data-dropdown-trigger]')
-    ) {
-      return;
-    }
-    
-    // Direct edit - open TicketForm in edit mode
-    if (onEdit && ticket) {
-      onEdit(ticket);
-    }
-  };
+      if (!value || !['Low', 'Medium', 'High', 'Critical'].includes(value)) {
+        throw new Error('Invalid field value');
+      }
 
-  // Handle status change with resolution dialog for resolved/closed statuses
-  const handleStatusChange = (ticketId: number, newStatus: string) => {
-    if (newStatus === 'Resolved' || newStatus === 'Closed') {
-      setResolutionDialog({ open: true, ticketId, newStatus });
-    } else {
+      if (!currentTicket || typeof currentTicket !== 'object') {
+        throw new Error('Invalid ticket data');
+      }
+
+      // Get current values with fallbacks
+      const currentUrgency = currentTicket.urgency || 'Medium';
+      const currentImpact = currentTicket.impact || 'Medium';
+
+      // Calculate new values
+      const newUrgency = field === 'urgency' ? value : currentUrgency;
+      const newImpact = field === 'impact' ? value : currentImpact;
+      
+      // Validate enum values
+      if (!isValidUrgencyLevel(newUrgency)) {
+        throw new Error('Invalid urgency level');
+      }
+
+      if (!isValidImpactLevel(newImpact)) {
+        throw new Error('Invalid impact level');
+      }
+
+      // Calculate new priority using the shared utility
+      const newPriority = calculatePriority(newUrgency, newImpact);
+      
+      // Update both the changed field and the calculated priority
       updateTicketMutation.mutate({ 
         id: ticketId, 
-        updates: { status: newStatus } 
+        updates: { 
+          [field]: value,
+          priority: newPriority
+        } 
+      });
+    } catch (error) {
+      console.error('Error handling urgency/impact change:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update priority',
+        variant: 'destructive',
       });
     }
   };
 
-  // Handle resolution dialog submit - Use PATCH with resolution
+  // FIXED: Safe ticket selection handler
+  const handleTicketSelection = (ticketId: number, checked: boolean) => {
+    try {
+      if (!onSelectionChange || !ticketId || ticketId <= 0) return;
+      
+      if (checked) {
+        onSelectionChange([...selectedTickets, ticketId]);
+      } else {
+        onSelectionChange(selectedTickets.filter(id => id !== ticketId));
+      }
+    } catch (error) {
+      console.error('Error handling ticket selection:', error);
+    }
+  };
+
+  // FIXED: Enhanced row click handler with better event handling
+  const handleRowClick = (ticket: any, event: React.MouseEvent) => {
+    try {
+      if (!ticket || !ticket.id) return;
+
+      // Don't trigger row click if clicking on interactive elements
+      const target = event.target as HTMLElement;
+      if (
+        target.closest('.inline-edit-cell') ||
+        target.closest('[data-checkbox-cell]') ||
+        target.closest('[role="checkbox"]') ||
+        target.closest('button') ||
+        target.closest('[role="button"]') ||
+        target.closest('input') ||
+        target.closest('[role="combobox"]') ||
+        target.tagName === 'SELECT' ||
+        target.closest('[type="checkbox"]') ||
+        target.closest('[data-dropdown-trigger]')
+      ) {
+        return;
+      }
+      
+      // Direct edit - open TicketForm in edit mode
+      if (onEdit && typeof onEdit === 'function') {
+        onEdit(ticket);
+      }
+    } catch (error) {
+      console.error('Error handling row click:', error);
+    }
+  };
+
+  // FIXED: Enhanced status change with validation
+  const handleStatusChange = (ticketId: number, newStatus: string) => {
+    try {
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      if (!newStatus || !isValidStatus(newStatus)) {
+        throw new Error('Invalid status');
+      }
+
+      if (newStatus === 'Resolved' || newStatus === 'Closed') {
+        setResolutionDialog({ open: true, ticketId, newStatus });
+      } else {
+        updateTicketMutation.mutate({ 
+          id: ticketId, 
+          updates: { status: newStatus } 
+        });
+      }
+    } catch (error) {
+      console.error('Error handling status change:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // FIXED: Enhanced resolution dialog submit with validation
   const handleResolutionSubmit = () => {
-    if (resolutionDialog.ticketId && resolutionNotes.trim()) {
+    try {
+      if (!resolutionDialog.ticketId || resolutionDialog.ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      if (!resolutionNotes.trim()) {
+        throw new Error('Resolution notes are required');
+      }
+
+      if (!resolutionDialog.newStatus || !isValidStatus(resolutionDialog.newStatus)) {
+        throw new Error('Invalid status');
+      }
+
       updateTicketMutation.mutate({ 
         id: resolutionDialog.ticketId, 
         updates: { 
           status: resolutionDialog.newStatus,
-          resolution: resolutionNotes // Backend expects 'resolution' field
+          resolution: resolutionNotes.trim() // Backend expects 'resolution' field
         } 
       });
+      
       setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
       setResolutionNotes('');
+    } catch (error) {
+      console.error('Error submitting resolution:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to submit resolution',
+        variant: 'destructive',
+      });
     }
   };
 
-  // Get priority badge color
+  // FIXED: Enhanced priority color with validation
   const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'critical': return 'destructive';
-      case 'high': return 'destructive';
-      case 'medium': return 'default';
-      case 'low': return 'secondary';
-      default: return 'default';
+    try {
+      if (!priority || typeof priority !== 'string') return 'default';
+      
+      switch (priority.toLowerCase()) {
+        case 'critical': return 'destructive';
+        case 'high': return 'destructive';
+        case 'medium': return 'default';
+        case 'low': return 'secondary';
+        default: return 'default';
+      }
+    } catch (error) {
+      console.error('Error getting priority color:', error);
+      return 'default';
     }
   };
 
-  const safeTickets = Array.isArray(tickets) ? tickets : [];
+  // FIXED: Safe tickets array with comprehensive validation
+  const safeTickets = Array.isArray(tickets) ? tickets.filter(ticket => ticket && ticket.id) : [];
 
   if (safeTickets.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        {t.noTicketsFound}
+        {t.noTicketsFound || 'No tickets found'}
       </div>
     );
   }
@@ -285,282 +441,311 @@ export default function TicketsTable({
                   <Checkbox
                     checked={selectedTickets.length === safeTickets.length && safeTickets.length > 0}
                     onCheckedChange={(checked) => {
-                      if (checked) {
-                        onSelectionChange(safeTickets.map(ticket => ticket.id));
-                      } else {
-                        onSelectionChange([]);
+                      try {
+                        if (checked) {
+                          onSelectionChange(safeTickets.map(ticket => ticket.id));
+                        } else {
+                          onSelectionChange([]);
+                        }
+                      } catch (error) {
+                        console.error('Error handling select all:', error);
                       }
                     }}
                   />
                 </TableHead>
               )}
-              <TableHead>{t.ticketId}</TableHead>
-              <TableHead>{t.dateCreated}</TableHead>
-              <TableHead>{t.title}</TableHead>
-              <TableHead>{t.type}</TableHead>
-              <TableHead>{t.category}</TableHead>
-              <TableHead>{t.priority}</TableHead>
-              <TableHead>{t.urgency}</TableHead>
-              <TableHead>{t.impact}</TableHead>
-              <TableHead>{t.status}</TableHead>
-              <TableHead>{t.submittedBy}</TableHead>
-              <TableHead>{t.assignedTo}</TableHead>
-              <TableHead>{t.relatedAsset}</TableHead>
+              <TableHead>{t.ticketId || 'Ticket ID'}</TableHead>
+              <TableHead>{t.dateCreated || 'Date Created'}</TableHead>
+              <TableHead>{t.title || 'Title'}</TableHead>
+              <TableHead>{t.type || 'Type'}</TableHead>
+              <TableHead>{t.category || 'Category'}</TableHead>
+              <TableHead>{t.priority || 'Priority'}</TableHead>
+              <TableHead>{t.urgency || 'Urgency'}</TableHead>
+              <TableHead>{t.impact || 'Impact'}</TableHead>
+              <TableHead>{t.status || 'Status'}</TableHead>
+              <TableHead>{t.submittedBy || 'Submitted By'}</TableHead>
+              <TableHead>{t.assignedTo || 'Assigned To'}</TableHead>
+              <TableHead>{t.relatedAsset || 'Related Asset'}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {safeTickets.map((ticket: any) => (
-              <TableRow 
-                key={ticket.id} 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={(e) => handleRowClick(ticket, e)}
-              >
-                {/* Selection Checkbox */}
-                {onSelectionChange && (
-                  <TableCell data-checkbox-cell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedTickets.includes(ticket.id)}
-                        onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
-                      />
+            {safeTickets.map((ticket: any) => {
+              // Skip invalid tickets
+              if (!ticket || !ticket.id) return null;
+
+              return (
+                <TableRow 
+                  key={ticket.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={(e) => handleRowClick(ticket, e)}
+                >
+                  {/* Selection Checkbox */}
+                  {onSelectionChange && (
+                    <TableCell data-checkbox-cell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedTickets.includes(ticket.id)}
+                          onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                        />
+                      </div>
+                    </TableCell>
+                  )}
+                  
+                  {/* Ticket ID */}
+                  <TableCell className="font-medium min-w-[100px]">
+                    <Badge variant="outline" className="text-xs">
+                      {ticket.ticketId || `TKT-${ticket.id}`}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Date Created */}
+                  <TableCell className="min-w-[110px] text-sm text-muted-foreground">
+                    {ticket.createdAt ? (() => {
+                      try {
+                        return format(new Date(ticket.createdAt), 'MMM d, yyyy');
+                      } catch {
+                        return 'Invalid date';
+                      }
+                    })() : '-'}
+                  </TableCell>
+                  
+                  {/* Title (Fixed: using title instead of summary) */}
+                  <TableCell className="min-w-[200px] max-w-xs">
+                    <div className="space-y-1">
+                      <div className="font-medium truncate" title={ticket.title || ticket.description}>
+                        {ticket.title || (ticket.description ? `${ticket.description.substring(0, 50)}...` : (t.none || 'No title'))}
+                      </div>
+                      {ticket.description && ticket.title && (
+                        <div className="text-xs text-muted-foreground truncate max-w-[250px]" title={ticket.description}>
+                          {ticket.description.length > 50 
+                            ? `${ticket.description.substring(0, 50)}...` 
+                            : ticket.description}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
-                )}
-                
-                {/* Ticket ID */}
-                <TableCell className="font-medium min-w-[100px]">
-                  <Badge variant="outline" className="text-xs">
-                    {ticket.ticketId}
-                  </Badge>
-                </TableCell>
-                
-                {/* Date Created */}
-                <TableCell className="min-w-[110px] text-sm text-muted-foreground">
-                  {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
-                </TableCell>
-                
-                {/* Title (Fixed: using title instead of summary) */}
-                <TableCell className="min-w-[200px] max-w-xs">
-                  <div className="space-y-1">
-                    <div className="font-medium truncate" title={ticket.title}>
-                      {ticket.title || ticket.description?.substring(0, 50) + '...' || t.none}
-                    </div>
-                    {ticket.description && ticket.title && (
-                      <div className="text-xs text-muted-foreground truncate max-w-[250px]" title={ticket.description}>
-                        {ticket.description.length > 50 
-                          ? `${ticket.description.substring(0, 50)}...` 
-                          : ticket.description}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                
-                {/* Type - Inline Edit */}
-                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.type || 'Incident'}
-                    onValueChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { type: value } 
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        {ticket.type === 'Incident' ? t.typeIncident :
-                         ticket.type === 'Service Request' ? t.typeServiceRequest :
-                         ticket.type === 'Problem' ? t.typeProblem :
-                         ticket.type === 'Change' ? t.typeChange :
-                         ticket.type}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="Incident">{t.typeIncident}</SelectItem>
-                      <SelectItem value="Service Request">{t.typeServiceRequest}</SelectItem>
-                      <SelectItem value="Problem">{t.typeProblem}</SelectItem>
-                      <SelectItem value="Change">{t.typeChange}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
+                  
+                  {/* Type - Inline Edit with validation */}
+                  <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.type || 'Incident'}
+                      onValueChange={(value) => {
+                        if (isValidType(value)) {
+                          updateTicketMutation.mutate({ 
+                            id: ticket.id, 
+                            updates: { type: value } 
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          {ticket.type === 'Incident' ? (t.typeIncident || 'Incident') :
+                           ticket.type === 'Service Request' ? (t.typeServiceRequest || 'Service Request') :
+                           ticket.type === 'Problem' ? (t.typeProblem || 'Problem') :
+                           ticket.type === 'Change' ? (t.typeChange || 'Change') :
+                           ticket.type}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        <SelectItem value="Incident">{t.typeIncident || 'Incident'}</SelectItem>
+                        <SelectItem value="Service Request">{t.typeServiceRequest || 'Service Request'}</SelectItem>
+                        <SelectItem value="Problem">{t.typeProblem || 'Problem'}</SelectItem>
+                        <SelectItem value="Change">{t.typeChange || 'Change'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
 
-                {/* Category */}
-                <TableCell className="min-w-[100px] text-sm">
-                  <Badge variant="secondary" className="text-xs">
-                    {ticket.category || 'General'}
-                  </Badge>
-                </TableCell>
-                
-                {/* Priority - Read-only (auto-calculated) */}
-                <TableCell className="min-w-[80px]">
-                  <Badge variant={getPriorityColor(ticket.priority)} className="text-xs">
-                    {ticket.priority === 'Low' ? t.priorityLow :
-                     ticket.priority === 'Medium' ? t.priorityMedium :
-                     ticket.priority === 'High' ? t.priorityHigh :
-                     ticket.priority === 'Critical' ? t.priorityCritical :
-                     ticket.priority}
-                  </Badge>
-                </TableCell>
-                
-                {/* Urgency - Inline Edit with Priority Calculation */}
-                <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.urgency || 'Medium'}
-                    onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'urgency', value, ticket)}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        {ticket.urgency === 'Low' ? t.urgencyLow :
-                         ticket.urgency === 'Medium' ? t.urgencyMedium :
-                         ticket.urgency === 'High' ? t.urgencyHigh :
-                         ticket.urgency === 'Critical' ? t.urgencyCritical :
-                         ticket.urgency}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="Low">{t.urgencyLow}</SelectItem>
-                      <SelectItem value="Medium">{t.urgencyMedium}</SelectItem>
-                      <SelectItem value="High">{t.urgencyHigh}</SelectItem>
-                      <SelectItem value="Critical">{t.urgencyCritical}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Impact - Inline Edit with Priority Calculation */}
-                <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.impact || 'Medium'}
-                    onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'impact', value, ticket)}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        {ticket.impact === 'Low' ? t.impactLow :
-                         ticket.impact === 'Medium' ? t.impactMedium :
-                         ticket.impact === 'High' ? t.impactHigh :
-                         ticket.impact === 'Critical' ? t.impactCritical :
-                         ticket.impact}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="Low">{t.impactLow}</SelectItem>
-                      <SelectItem value="Medium">{t.impactMedium}</SelectItem>
-                      <SelectItem value="High">{t.impactHigh}</SelectItem>
-                      <SelectItem value="Critical">{t.impactCritical}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Status - Inline Edit with Resolution Dialog */}
-                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.status || 'Open'}
-                    onValueChange={(value) => handleStatusChange(ticket.id, value)}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        <Badge 
-                          variant={
-                            ticket.status === 'Open' ? 'default' :
-                            ticket.status === 'In Progress' ? 'secondary' :
-                            ticket.status === 'Resolved' ? 'outline' :
-                            ticket.status === 'Closed' ? 'destructive' : 'default'
+                  {/* Category */}
+                  <TableCell className="min-w-[100px] text-sm">
+                    <Badge variant="secondary" className="text-xs">
+                      {ticket.category || 'General'}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Priority - Read-only (auto-calculated) */}
+                  <TableCell className="min-w-[80px]">
+                    <Badge variant={getPriorityColor(ticket.priority)} className="text-xs">
+                      {ticket.priority === 'Low' ? (t.priorityLow || 'Low') :
+                       ticket.priority === 'Medium' ? (t.priorityMedium || 'Medium') :
+                       ticket.priority === 'High' ? (t.priorityHigh || 'High') :
+                       ticket.priority === 'Critical' ? (t.priorityCritical || 'Critical') :
+                       ticket.priority || 'Medium'}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Urgency - Inline Edit with Priority Calculation */}
+                  <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.urgency || 'Medium'}
+                      onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'urgency', value, ticket)}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          {ticket.urgency === 'Low' ? (t.urgencyLow || 'Low') :
+                           ticket.urgency === 'Medium' ? (t.urgencyMedium || 'Medium') :
+                           ticket.urgency === 'High' ? (t.urgencyHigh || 'High') :
+                           ticket.urgency === 'Critical' ? (t.urgencyCritical || 'Critical') :
+                           ticket.urgency || 'Medium'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        <SelectItem value="Low">{t.urgencyLow || 'Low'}</SelectItem>
+                        <SelectItem value="Medium">{t.urgencyMedium || 'Medium'}</SelectItem>
+                        <SelectItem value="High">{t.urgencyHigh || 'High'}</SelectItem>
+                        <SelectItem value="Critical">{t.urgencyCritical || 'Critical'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Impact - Inline Edit with Priority Calculation */}
+                  <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.impact || 'Medium'}
+                      onValueChange={(value) => handleUrgencyImpactChange(ticket.id, 'impact', value, ticket)}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          {ticket.impact === 'Low' ? (t.impactLow || 'Low') :
+                           ticket.impact === 'Medium' ? (t.impactMedium || 'Medium') :
+                           ticket.impact === 'High' ? (t.impactHigh || 'High') :
+                           ticket.impact === 'Critical' ? (t.impactCritical || 'Critical') :
+                           ticket.impact || 'Medium'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        <SelectItem value="Low">{t.impactLow || 'Low'}</SelectItem>
+                        <SelectItem value="Medium">{t.impactMedium || 'Medium'}</SelectItem>
+                        <SelectItem value="High">{t.impactHigh || 'High'}</SelectItem>
+                        <SelectItem value="Critical">{t.impactCritical || 'Critical'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Status - Inline Edit with Resolution Dialog */}
+                  <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.status || 'Open'}
+                      onValueChange={(value) => handleStatusChange(ticket.id, value)}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          <Badge 
+                            variant={
+                              ticket.status === 'Open' ? 'default' :
+                              ticket.status === 'In Progress' ? 'secondary' :
+                              ticket.status === 'Resolved' ? 'outline' :
+                              ticket.status === 'Closed' ? 'destructive' : 'default'
+                            }
+                            className="text-xs"
+                          >
+                            {ticket.status === 'Open' ? (t.statusOpen || 'Open') :
+                             ticket.status === 'In Progress' ? (t.statusInProgress || 'In Progress') :
+                             ticket.status === 'Resolved' ? (t.statusResolved || 'Resolved') :
+                             ticket.status === 'Closed' ? (t.statusClosed || 'Closed') :
+                             ticket.status || 'Open'}
+                          </Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        {getAvailableStatuses(ticket.status || 'Open').map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status === 'Open' ? (t.statusOpen || 'Open') :
+                             status === 'In Progress' ? (t.statusInProgress || 'In Progress') :
+                             status === 'Resolved' ? (t.statusResolved || 'Resolved') :
+                             (t.statusClosed || 'Closed')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Submitted By */}
+                  <TableCell className="min-w-[150px] text-sm">
+                    {ticket.submittedById ? getEmployeeName(ticket.submittedById) : (t.none || 'None')}
+                  </TableCell>
+                  
+                  {/* Assigned To - Inline Edit with proper user filtering */}
+                  <TableCell className="inline-edit-cell relative min-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.assignedToId?.toString() || 'unassigned'}
+                      onValueChange={(value) => {
+                        try {
+                          if (value === 'unassigned') {
+                            updateTicketMutation.mutate({ 
+                              id: ticket.id, 
+                              updates: { assignedToId: null } 
+                            });
+                          } else {
+                            const userId = parseInt(value);
+                            if (!isNaN(userId) && userId > 0) {
+                              updateTicketMutation.mutate({ 
+                                id: ticket.id, 
+                                updates: { assignedToId: userId } 
+                              });
+                            }
                           }
-                          className="text-xs"
-                        >
-                          {ticket.status === 'Open' ? t.statusOpen :
-                           ticket.status === 'In Progress' ? t.statusInProgress :
-                           ticket.status === 'Resolved' ? t.statusResolved :
-                           ticket.status === 'Closed' ? t.statusClosed :
-                           ticket.status}
-                        </Badge>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      {getAvailableStatuses(ticket.status).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status === 'Open' ? t.statusOpen :
-                           status === 'In Progress' ? t.statusInProgress :
-                           status === 'Resolved' ? t.statusResolved :
-                           t.statusClosed}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Submitted By */}
-                <TableCell className="min-w-[150px] text-sm">
-                  {ticket.submittedById ? getEmployeeName(ticket.submittedById) : t.none}
-                </TableCell>
-                
-                {/* Assigned To - Inline Edit with proper user filtering */}
-                <TableCell className="inline-edit-cell relative min-w-[150px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.assignedToId?.toString() || 'unassigned'}
-                    onValueChange={(value) => {
-                      if (value === 'unassigned') {
-                        updateTicketMutation.mutate({ 
-                          id: ticket.id, 
-                          updates: { assignedToId: null } 
-                        });
-                      } else {
-                        const userId = parseInt(value);
-                        updateTicketMutation.mutate({ 
-                          id: ticket.id, 
-                          updates: { assignedToId: userId } 
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        {ticket.assignedToId ? getUserName(ticket.assignedToId) : t.unassigned}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="unassigned">{t.unassigned}</SelectItem>
-                      {/* Filter users who can be assigned tickets (agents, managers, admins) */}
-                      {Array.isArray(users) && users
-                        .filter((u: any) => u && ['agent', 'manager', 'admin'].includes(u.role))
-                        .map((u: any) => (
-                        <SelectItem key={u.id} value={u.id.toString()}>
-                          {u.username || `User ${u.id}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Related Asset */}
-                <TableCell className="min-w-[120px] text-sm">
-                  {ticket.relatedAssetId ? getAssetName(ticket.relatedAssetId) : t.none}
-                </TableCell>
-                
-                {/* Actions Dropdown */}
-                <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild data-dropdown-trigger>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">{t.openMenu}</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="relative z-50">
-                      <DropdownMenuLabel>{t.actions}</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onEdit && onEdit(ticket)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        {t.editTicket}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/tickets/${ticket.id}`)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        {t.viewDetails}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                        } catch (error) {
+                          console.error('Error updating assignment:', error);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          {ticket.assignedToId ? getUserName(ticket.assignedToId) : (t.unassigned || 'Unassigned')}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        <SelectItem value="unassigned">{t.unassigned || 'Unassigned'}</SelectItem>
+                        {/* Filter users who can be assigned tickets (agents, managers, admins) */}
+                        {Array.isArray(users) && users
+                          .filter((u: any) => u && ['agent', 'manager', 'admin'].includes(u.role))
+                          .map((u: any) => (
+                          <SelectItem key={u.id} value={u.id.toString()}>
+                            {u.username || `User ${u.id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Related Asset */}
+                  <TableCell className="min-w-[120px] text-sm">
+                    {ticket.relatedAssetId ? getAssetName(ticket.relatedAssetId) : (t.none || 'None')}
+                  </TableCell>
+                  
+                  {/* Actions Dropdown */}
+                  <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild data-dropdown-trigger>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">{t.openMenu || 'Open menu'}</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="relative z-50">
+                        <DropdownMenuLabel>{t.actions || 'Actions'}</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => onEdit && onEdit(ticket)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t.editTicket || 'Edit Ticket'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          try {
+                            navigate(`/tickets/${ticket.id}`);
+                          } catch (error) {
+                            console.error('Navigation error:', error);
+                          }
+                        }}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          {t.viewDetails || 'View Details'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -569,7 +754,7 @@ export default function TicketsTable({
       <Dialog open={resolutionDialog.open} onOpenChange={(open) => setResolutionDialog({ ...resolutionDialog, open })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t.addResolution}</DialogTitle>
+            <DialogTitle>{t.addResolution || 'Add Resolution'}</DialogTitle>
             <DialogDescription>
               {language === 'English' 
                 ? 'Please provide resolution notes before marking this ticket as resolved or closed.'
@@ -580,7 +765,7 @@ export default function TicketsTable({
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="resolution-notes">{t.resolutionNotes}</Label>
+              <Label htmlFor="resolution-notes">{t.resolutionNotes || 'Resolution Notes'}</Label>
               <Textarea
                 id="resolution-notes"
                 value={resolutionNotes}
@@ -597,15 +782,18 @@ export default function TicketsTable({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setResolutionDialog({ open: false, ticketId: null, newStatus: '' })}
+              onClick={() => {
+                setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+                setResolutionNotes('');
+              }}
             >
-              {t.cancel}
+              {t.cancel || 'Cancel'}
             </Button>
             <Button 
               onClick={handleResolutionSubmit}
               disabled={!resolutionNotes.trim()}
             >
-              {t.saveResolution}
+              {t.saveResolution || 'Save Resolution'}
             </Button>
           </DialogFooter>
         </DialogContent>

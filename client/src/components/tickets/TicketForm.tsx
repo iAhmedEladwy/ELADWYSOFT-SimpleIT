@@ -1,6 +1,3 @@
-// File: client/src/components/tickets/TicketForm.tsx
-// Fixed unified ticket form with proper v0.4.0 schema compliance
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -724,7 +721,7 @@ export default function TicketForm({
                             <Select
                               onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
                               value={field.value?.toString() || ''}
-                              disabled={isSubmitting || !selectedEmployeeId}
+                              disabled={isSubmitting || !form.watch('submittedById')}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -756,7 +753,7 @@ export default function TicketForm({
                                     </SelectItem>
                                   );
                                 })}
-                                {filteredAssets.length === 0 && selectedEmployeeId && (
+                                {filteredAssets.length === 0 && form.watch('submittedById') && (
                                   <SelectItem value="no-assets" disabled>
                                     {t.noAssetsForEmployee}
                                   </SelectItem>
@@ -764,7 +761,7 @@ export default function TicketForm({
                               </SelectContent>
                             </Select>
                             <FormDescription>
-                              {selectedEmployeeId ? 
+                              {form.watch('submittedById') ? 
                                 (filteredAssets.length > 0 ? 
                                   `${filteredAssets.length} ${language === 'English' ? 'assets assigned to selected employee' : 'أصل مخصص للموظف المحدد'}` :
                                   language === 'English' ? 'Selected employee has no assigned assets' : 'الموظف المحدد لا يملك أصول مخصصة'
@@ -860,9 +857,15 @@ export default function TicketForm({
                                       disabled={isSubmitting}
                                     >
                                       {field.value ? (
-                                        format(new Date(field.value), "PPP")
+                                        (() => {
+                                          try {
+                                            return format(new Date(field.value), "PPP");
+                                          } catch {
+                                            return t.pickDate || 'Pick a date';
+                                          }
+                                        })()
                                       ) : (
-                                        <span>{t.pickDate}</span>
+                                        <span>{t.pickDate || 'Pick a date'}</span>
                                       )}
                                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                     </Button>
@@ -871,9 +874,15 @@ export default function TicketForm({
                                 <PopoverContent className="w-auto p-0" align="start">
                                   <Calendar
                                     mode="single"
-                                    selected={field.value ? new Date(field.value) : undefined}
+                                    selected={field.value ? (() => {
+                                      try {
+                                        return new Date(field.value);
+                                      } catch {
+                                        return undefined;
+                                      }
+                                    })() : undefined}
                                     onSelect={(date) => {
-                                      field.onChange(date ? format(date, 'yyyy-MM-dd') : '');
+                                      field.onChange(date ? safeDateFormat(date) : '');
                                     }}
                                     disabled={(date) =>
                                       date < new Date(new Date().setHours(0, 0, 0, 0))
