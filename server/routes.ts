@@ -7330,7 +7330,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  / GET /api/admin/backups - Get list of backups
+  // GET /api/admin/backups - Get list of backups
 app.get('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
   try {
     const backups = await backupService.getBackupList();
