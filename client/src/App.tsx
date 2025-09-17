@@ -29,6 +29,8 @@ import { AuthProvider, useAuth } from "@/lib/authContext";
 import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import BackupRestore from '@/pages/admin-console/BackupRestore';
+import SystemHealth from '@/pages/admin-console/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -202,6 +204,28 @@ function Router() {
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
                 <Users />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+                {/* NEW: Backup & Restore Route */}
+        <Route path="/admin-console/backup-restore">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <BackupRestore />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        {/* NEW: System Health Route */}
+        <Route path="/admin-console/system-health">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <SystemHealth />
               </RoleGuard>
             )} />
           </Layout>

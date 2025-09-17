@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowUpCircle,
+  Database,
   Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,8 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     PinSidebar: language === 'English' ? 'Pin Sidebar' : 'تثبيت الشريط الجانبي',
     UnpinSidebar: language === 'English' ? 'Unpin Sidebar' : 'إلغاء تثبيت الشريط الجانبي',
     BulkOperations: language === 'English' ? 'Bulk Operations History' : 'سجل العمليات المجمعة',
+    BackupRestore: language === 'English' ? 'Backup & Restore' : 'النسخ الاحتياطي والاستعادة',
+    SystemHealth: language === 'English' ? 'System Health' : 'حالة النظام',
   };
 
   // Get class for sidebar item based on active path
@@ -232,7 +235,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
               )}
             </div>
             
-            {/* Admin Console Submenu Items */}
+           {/* Admin Console Submenu Items */}
             {isAdminConsoleOpen && (
               <div className={`ml-6 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
                 {/* Manage Users */}
@@ -243,6 +246,26 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                 >
                   <Users className="h-4 w-4" />
                   <span>{translations.Users}</span>
+                </Link>
+                
+                {/* Backup & Restore - NEW */}
+                <Link 
+                  href="/admin-console/backup-restore" 
+                  className={`${getLinkClass('/admin-console/backup-restore')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Database className="h-4 w-4" />
+                  <span>{translations.BackupRestore}</span>
+                </Link>
+                
+                {/* System Health - NEW */}
+                <Link 
+                  href="/admin-console/system-health" 
+                  className={`${getLinkClass('/admin-console/system-health')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{translations.SystemHealth}</span>
                 </Link>
                 
                 {/* Audit Logs */}
@@ -256,14 +279,14 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                 </Link>
                 
                 {/* Upgrade Requests */}
-                       <Link 
-                          href="/admin-console/upgrade-requests" 
-                          className={`${getLinkClass('/admin-console/upgrade-requests')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                          onClick={handleLinkClick}
-                        >
-                          <ArrowUpCircle className="h-4 w-4" />
-                          <span>{translations.UpgradeRequests}</span>
-                        </Link>
+                <Link 
+                  href="/admin-console/upgrade-requests" 
+                  className={`${getLinkClass('/admin-console/upgrade-requests')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <ArrowUpCircle className="h-4 w-4" />
+                  <span>{translations.UpgradeRequests}</span>
+                </Link>
                 
                 {/* Bulk Operations History */}
                 <Link 
@@ -278,9 +301,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             )}
           </div>
         </RoleGuard>
-
-        
-
 
         <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
           <Link href="/profile" className={getLinkClass('/profile')} onClick={handleLinkClick}>

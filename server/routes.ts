@@ -9,6 +9,8 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
+import { BackupService } from './services/backupService';
+
 
 // Authenticated user type (from auth middleware)
 interface AuthUser {
@@ -54,6 +56,11 @@ import { emailService } from "./emailService";
 import { calculatePriority, validatePriority, type UrgencyLevel, type ImpactLevel } from "@shared/priorityUtils";
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
+
+
+// Initialize backup service
+const backupService = new BackupService();
+
 
 // Enhanced ID generation with system config support
 const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
@@ -7322,6 +7329,122 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
       });
     }
   });
+
+  / GET /api/admin/backups - Get list of backups
+app.get('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const backups = await backupService.getBackupList();
+    res.json(backups);
+  } catch (error) {
+    console.error('Failed to get backup list:', error);
+    res.status(500).json({ error: 'Failed to get backup list' });
+  }
+});
+
+// POST /api/admin/backups - Create manual backup
+app.post('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { description } = req.body;
+    const userId = req.session.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const result = await backupService.createManualBackup(userId, description);
+    
+    if (result.success) {
+      res.json({ message: 'Backup created successfully', backupId: result.backupId });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to create backup:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
+// POST /api/admin/restore/:backupId - Restore from backup
+app.post('/api/admin/restore/:backupId', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.backupId);
+    const userId = req.session.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.restoreFromBackup(backupId, userId);
+    
+    if (result.success) {
+      res.json({ 
+        message: 'Database restored successfully', 
+        recordsRestored: result.recordsRestored 
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to restore backup:', error);
+    res.status(500).json({ error: 'Failed to restore backup' });
+  }
+});
+
+// DELETE /api/admin/backups/:id - Delete backup
+app.delete('/api/admin/backups/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.id);
+    
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.deleteBackup(backupId);
+    
+    if (result.success) {
+      res.json({ message: 'Backup deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to delete backup:', error);
+    res.status(500).json({ error: 'Failed to delete backup' });
+  }
+});
+
+// GET /api/admin/system-health - Get system health metrics
+app.get('/api/admin/system-health', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const healthMetrics = await backupService.getSystemHealth();
+    res.json(healthMetrics);
+  } catch (error) {
+    console.error('Failed to get system health:', error);
+    res.status(500).json({ error: 'Failed to get system health' });
+  }
+});
+
+// GET /api/admin/restore-history - Get restore history
+app.get('/api/admin/restore-history', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const history = await backupService.getRestoreHistory();
+    res.json(history);
+  } catch (error) {
+    console.error('Failed to get restore history:', error);
+    res.status(500).json({ error: 'Failed to get restore history' });
+  }
+});
+
+// Helper function to check admin access
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.session.user || req.session.user.accessLevel !== 4) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
 
   const httpServer = createServer(app);
   return httpServer;
