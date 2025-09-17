@@ -18,6 +18,35 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+  version: "0.4.1",
+  date: "2025-09-17",
+  title: "SystemConfig Cleanup & User Management Consolidation",
+  type: "minor",
+  changes: {
+    improvements: [
+      "🧹 SystemConfig Component Cleanup:",
+      "   ✅ Removed duplicate user management functionality from SystemConfig page",
+      "   ✅ Consolidated user management to dedicated Admin Console section",
+      "   ✅ Eliminated redundant user-related state variables and mutations",
+      "   ✅ Streamlined SystemConfig to focus on system-wide settings only",
+      "   ✅ Removed user management UI components, forms, and dialogs",
+      "   ✅ Cleaned up user-related imports and handler functions",
+      "🎯 Architecture Improvements:",
+      "   ✅ Better separation of concerns between SystemConfig and AdminConsole",
+      "   ✅ Reduced component complexity by removing duplicate functionality",
+      "   ✅ Improved maintainability by eliminating code duplication",
+      "   ✅ Enhanced user experience with dedicated user management section"
+    ],
+    bugfixes: [
+      "🔧 Component Structure Fixes:",
+      "   ✅ Fixed file corruption issues during user management removal",
+      "   ✅ Resolved duplicate export statements in SystemConfig component",
+      "   ✅ Cleaned up orphaned JSX content and malformed component structure",
+      "   ✅ Corrected component imports and removed unused dependencies"
+    ]
+  }
+},
+{
   version: "0.4.0",
   date: "2025-09-17",
   title: "Tickets Module Overhaul & System-Wide Code Cleanup",
