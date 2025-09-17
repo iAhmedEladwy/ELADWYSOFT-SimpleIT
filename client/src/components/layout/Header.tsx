@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -19,7 +20,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Menu, Globe, FileText } from 'lucide-react';
+import { 
+  Menu, 
+  Globe, 
+  FileText, 
+  User, 
+  LogOut, 
+  Shield, 
+  Mail, 
+  Hash,
+  Bell,
+  UserCheck
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useMobile } from '@/hooks/use-mobile';
@@ -60,6 +72,35 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
   // Get initials from username for avatar
   const getInitials = (name: string) => {
     return name.substring(0, 2).toUpperCase();
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user?.username || 'User';
+  };
+
+  // Get role badge color
+  const getRoleColor = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'manager':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'agent':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'employee':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Format role for display
+  const formatRole = (role: string) => {
+    return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
   return (
@@ -118,26 +159,94 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity">
-                <span className="hidden md:inline">{user?.username || 'User'}</span>
+                <span className="hidden md:inline">{getUserDisplayName()}</span>
                 <Avatar className="h-8 w-8 bg-primary text-white">
-                  <AvatarFallback>{user ? getInitials(user.username) : 'U'}</AvatarFallback>
+                  <AvatarFallback>{user ? getInitials(getUserDisplayName()) : 'U'}</AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                {language === 'English' ? 'My Account' : 'حسابي'}
+            <DropdownMenuContent align="end" className="w-72">
+              {/* Enhanced User Info Header */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 bg-primary text-white">
+                    <AvatarFallback className="text-lg font-semibold">
+                      {user ? getInitials(getUserDisplayName()) : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {getUserDisplayName()}
+                      </p>
+                      {user?.role && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs px-2 py-0.5 ${getRoleColor(user.role)}`}
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          {formatRole(user.role)}
+                        </Badge>
+                      )}
+                    </div>
+                    {user?.email && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                        <Mail className="h-3 w-3" />
+                        <span className="truncate">{user.email}</span>
+                      </div>
+                    )}
+                    {user?.employeeId && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Hash className="h-3 w-3" />
+                        <span>{language === 'English' ? 'Employee ID:' : 'معرف الموظف:'} {user.employeeId}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <DropdownMenuLabel className="px-4 py-2 text-xs text-gray-500 font-medium">
+                {language === 'English' ? 'Account Menu' : 'قائمة الحساب'}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setLocation('/profile')}>
+              
+              <DropdownMenuItem onClick={() => setLocation('/profile')} className="px-4 py-2 cursor-pointer">
+                <User className="mr-3 h-4 w-4" />
                 {language === 'English' ? 'Profile' : 'الملف الشخصي'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation('/changes-log')}>
-                <FileText className="mr-2 h-4 w-4" />
+              
+              <DropdownMenuItem onClick={() => setLocation('/changes-log')} className="px-4 py-2 cursor-pointer">
+                <FileText className="mr-3 h-4 w-4" />
                 {language === 'English' ? 'Changes Log' : 'سجل التغييرات'}
               </DropdownMenuItem>
+
+              {/* Status Indicators Section */}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuLabel className="px-4 py-2 text-xs text-gray-500 font-medium">
+                {language === 'English' ? 'Notifications' : 'الإشعارات'}
+              </DropdownMenuLabel>
+              
+              <DropdownMenuItem className="px-4 py-2 cursor-pointer">
+                <Bell className="mr-3 h-4 w-4" />
+                <span className="flex-1">{language === 'English' ? 'Notifications' : 'الإشعارات'}</span>
+                <Badge variant="secondary" className="ml-2 px-2 py-0.5 text-xs">
+                  0
+                </Badge>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="px-4 py-2 cursor-pointer">
+                <UserCheck className="mr-3 h-4 w-4" />
+                <span className="flex-1">{language === 'English' ? 'Pending Approvals' : 'الموافقات المعلقة'}</span>
+                <Badge variant="secondary" className="ml-2 px-2 py-0.5 text-xs">
+                  0
+                </Badge>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                className="px-4 py-2 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="mr-3 h-4 w-4" />
                 {language === 'English' ? 'Log out' : 'تسجيل الخروج'}
               </DropdownMenuItem>
             </DropdownMenuContent>
