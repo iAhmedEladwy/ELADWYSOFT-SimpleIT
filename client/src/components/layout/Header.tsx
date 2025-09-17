@@ -160,8 +160,10 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity">
                 <span className="hidden md:inline">{getUserDisplayName()}</span>
-                <Avatar className="h-8 w-8 bg-primary text-white">
-                  <AvatarFallback>{user ? getInitials(getUserDisplayName()) : 'U'}</AvatarFallback>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                    {user ? getInitials(getUserDisplayName()) : 'U'}
+                  </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
@@ -169,8 +171,8 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
               {/* Enhanced User Info Header */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 bg-primary text-white">
-                    <AvatarFallback className="text-lg font-semibold">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-blue-600 text-white text-lg font-semibold">
                       {user ? getInitials(getUserDisplayName()) : 'U'}
                     </AvatarFallback>
                   </Avatar>
