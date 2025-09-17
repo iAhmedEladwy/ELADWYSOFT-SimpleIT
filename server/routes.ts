@@ -7427,6 +7427,17 @@ app.get('/api/admin/system-health', requireAuth, requireAdmin, async (req, res) 
   }
 });
 
+// GET /api/admin/system-overview - Get system overview statistics
+app.get('/api/admin/system-overview', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const systemOverview = await backupService.getSystemOverview();
+    res.json(systemOverview);
+  } catch (error) {
+    console.error('Failed to get system overview:', error);
+    res.status(500).json({ error: 'Failed to get system overview' });
+  }
+});
+
 // GET /api/admin/restore-history - Get restore history
 app.get('/api/admin/restore-history', requireAuth, requireAdmin, async (req, res) => {
   try {

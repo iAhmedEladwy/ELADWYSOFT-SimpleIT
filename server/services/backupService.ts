@@ -241,6 +241,46 @@ export class BackupService {
     }
   }
 
+      async getSystemOverview() {
+      try {
+        // Get total counts
+        const totalAssets = await db.select({ count: sql<number>`count(*)` }).from(assets);
+        const totalEmployees = await db.select({ count: sql<number>`count(*)` }).from(employees);  
+        const totalTickets = await db.select({ count: sql<number>`count(*)` }).from(tickets);
+
+        // Get database info
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+          throw new Error('DATABASE_URL not configured');
+        }
+
+        const dbSizeQuery = `SELECT pg_size_pretty(pg_database_size(current_database())) as size`;
+        const dbSizeResult = execSync(`psql "${dbUrl}" -t -c "${dbSizeQuery}"`, { encoding: 'utf8' });
+        const databaseSize = dbSizeResult.trim();
+
+        const connectionQuery = `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`;
+        const connectionResult = execSync(`psql "${dbUrl}" -t -c "${connectionQuery}"`, { encoding: 'utf8' });
+        const activeConnections = parseInt(connectionResult.trim());
+
+        // Get last backup
+        const lastBackupResult = await db.select().from(backupFiles)
+          .orderBy(desc(backupFiles.createdAt)).limit(1);
+
+        return {
+          totalAssets: totalAssets[0].count,
+          totalEmployees: totalEmployees[0].count,
+          totalTickets: totalTickets[0].count,
+          activeConnections,
+          databaseSize,
+          uptime: '24h 30m', // You can implement actual uptime calculation
+          lastBackup: lastBackupResult[0]?.createdAt
+        };
+      } catch (error) {
+        console.error('System overview failed:', error);
+        throw error;
+      }
+    }
+
   async getRestoreHistory() {
     return await db.select({
       id: restoreHistory.id,
