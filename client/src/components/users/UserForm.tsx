@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -89,6 +89,18 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
       role: initialData?.role || 'employee',
     },
   });
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    form.reset({
+      username: initialData?.username || '',
+      firstName: initialData?.firstName || '',
+      lastName: initialData?.lastName || '',
+      email: initialData?.email || '',
+      password: '',
+      role: initialData?.role || 'employee',
+    });
+  }, [initialData, form]);
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof userFormSchema>) => {

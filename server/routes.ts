@@ -6799,6 +6799,56 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
+  // Change user password endpoint
+  app.put("/api/users/:id/change-password", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      // Get current user for activity logging
+      const currentUser = await storage.getUser(id);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hash(password, 10);
+      
+      // Update only the password
+      const updatedUser = await storage.updateUser(id, { password: hashedPassword });
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Change User Password",
+          entityType: "User",
+          entityId: id,
+          details: { 
+            username: currentUser.username,
+            changedByUser: (req.user as schema.User).username
+          }
+        });
+      }
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error: unknown) {
+      console.error("Password change error:", error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // Bulk Asset Operations
   
   // Sell multiple assets

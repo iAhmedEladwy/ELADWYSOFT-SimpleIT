@@ -290,9 +290,19 @@ export default function Users() {
             <RefreshCw className="h-4 w-4 mr-2" />
             {translations.refresh}
           </Button>
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <Dialog open={openDialog} onOpenChange={(open) => {
+            setOpenDialog(open);
+            if (!open) {
+              // Clear editing user when dialog closes
+              setEditingUser(null);
+            }
+          }}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" onClick={() => {
+                // Clear any previous editing state when opening for new user
+                setEditingUser(null);
+                setOpenDialog(true);
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 {translations.addUser}
               </Button>
