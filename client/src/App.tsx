@@ -29,8 +29,8 @@ import { AuthProvider, useAuth } from "@/lib/authContext";
 import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import BackupRestore from '@/pages/admin-console/BackupRestore';
-import SystemHealth from '@/pages/admin-console/SystemHealth';
+import BackupRestore from '@/pages/admin/BackupRestore';
+import SystemHealth from '@/pages/admin/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
