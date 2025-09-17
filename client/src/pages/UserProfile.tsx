@@ -48,6 +48,8 @@ export default function UserProfile() {
       ? 'Current password is incorrect'
       : 'كلمة المرور الحالية غير صحيحة',
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
+    firstName: language === 'English' ? 'First Name' : 'الاسم الأول',
+    lastName: language === 'English' ? 'Last Name' : 'الاسم الأخير',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
     profileTab: language === 'English' ? 'Profile' : 'الملف الشخصي'
   };
@@ -158,6 +160,22 @@ export default function UserProfile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">{translations.firstName}</Label>
+                  <Input 
+                    id="firstName" 
+                    value={user?.firstName || ''} 
+                    disabled 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">{translations.lastName}</Label>
+                  <Input 
+                    id="lastName" 
+                    value={user?.lastName || ''} 
+                    disabled 
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">{translations.username}</Label>
                   <Input 
