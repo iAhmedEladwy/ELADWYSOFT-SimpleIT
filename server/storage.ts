@@ -417,8 +417,20 @@ export class DatabaseStorage implements IStorage {
       if (isNaN(numericId)) {
         return undefined;
       }
-      const [user] = await db.select().from(users).where(eq(users.id, numericId));
-      return user;
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        password: users.password,
+        accessLevel: users.accessLevel,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      }).from(users).where(eq(users.id, numericId));
+      return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user:', error);
       return undefined;
@@ -431,9 +443,12 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         username: users.username,
         email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
         password: users.password,
         accessLevel: users.accessLevel,
         role: users.role,
+        isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).where(eq(users.username, username));
@@ -455,13 +470,16 @@ export class DatabaseStorage implements IStorage {
         ? await hash(userData.password, 10)  // Hash if plain text
         : await hash('defaultPassword123', 10);  // Default
 
-    // Rest of your code remains the same...
+    // Include firstName and lastName in the database insert
     const dbUserData = {
       username: userData.username,
       email: userData.email,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
       password: hashedPassword,
       accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
       role: userData.role || 'employee',
+      isActive: userData.isActive !== undefined ? userData.isActive : true,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -503,14 +521,12 @@ export class DatabaseStorage implements IStorage {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
+      firstName: dbUser.firstName || dbUser.first_name || null,
+      lastName: dbUser.lastName || dbUser.last_name || null,
       password: dbUser.password,
+      accessLevel: dbUser.accessLevel || dbUser.access_level,
       role: dbUser.role || this.accessLevelToRole(dbUser.accessLevel || dbUser.access_level),
-      firstName: null,
-      lastName: null,
-      profileImageUrl: null,
-      employeeId: null,
-      managerId: null,
-      isActive: true,
+      isActive: dbUser.isActive !== undefined ? dbUser.isActive : (dbUser.is_active !== undefined ? dbUser.is_active : true),
       createdAt: dbUser.createdAt || dbUser.created_at,
       updatedAt: dbUser.updatedAt || dbUser.updated_at
     };

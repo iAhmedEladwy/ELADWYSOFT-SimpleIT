@@ -48,6 +48,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
 
   // Translations
   const translations = {
+    name: language === 'English' ? 'Name' : 'الاسم',
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
     role: language === 'English' ? 'Role' : 'الدور',
@@ -94,7 +95,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             <Shield className="h-3.5 w-3.5 mr-1" />
-            {translations.user}
+            {translations.employee}
           </Badge>
         );
       default:
@@ -115,7 +116,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{translations.username}</TableHead>
+            <TableHead>{translations.name}</TableHead>
             <TableHead>{translations.email}</TableHead>
             <TableHead>{translations.role}</TableHead>
             <TableHead className="text-right">{translations.actions}</TableHead>
@@ -125,7 +126,18 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
           {users.length > 0 ? (
             users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.username}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {user.firstName && user.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user.username}
+                    </span>
+                    {user.firstName && user.lastName && (
+                      <span className="text-sm text-muted-foreground">@{user.username}</span>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{getRoleBadge(user.role)}</TableCell>
                 <TableCell className="text-right">

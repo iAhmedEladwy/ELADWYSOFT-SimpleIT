@@ -26,6 +26,8 @@ import {
 const userFormSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Please enter a valid email'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
   role: z.string(),
 });
@@ -44,6 +46,10 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
   const translations = {
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
     usernameDesc: language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم',
+    firstName: language === 'English' ? 'First Name' : 'الاسم الأول',
+    firstNameDesc: language === 'English' ? 'The user\'s first name' : 'الاسم الأول للمستخدم',
+    lastName: language === 'English' ? 'Last Name' : 'الاسم الأخير',
+    lastNameDesc: language === 'English' ? 'The user\'s last name' : 'الاسم الأخير للمستخدم',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
     emailDesc: language === 'English' ? 'The user\'s email address' : 'عنوان البريد الإلكتروني للمستخدم',
     password: language === 'English' ? 'Password' : 'كلمة المرور',
@@ -66,6 +72,8 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       username: initialData?.username || '',
+      firstName: initialData?.firstName || '',
+      lastName: initialData?.lastName || '',
       email: initialData?.email || '',
       password: '',
       role: initialData?.role || 'employee',
@@ -100,6 +108,38 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{translations.firstName}</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormDescription>{translations.firstNameDesc}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{translations.lastName}</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormDescription>{translations.lastNameDesc}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}

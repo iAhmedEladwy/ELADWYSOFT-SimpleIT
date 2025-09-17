@@ -69,6 +69,8 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 50 }).notNull().unique(),
   password: text("password").notNull(),
   email: varchar("email", { length: 100 }).notNull().unique(),
+  firstName: varchar("first_name", { length: 50 }),
+  lastName: varchar("last_name", { length: 50 }),
   accessLevel: accessLevelEnum("access_level").notNull().default('1'),
   role: roleEnum("role").notNull().default('employee'),
   isActive: boolean("is_active").default(true),
