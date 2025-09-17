@@ -21,7 +21,7 @@ import {
   XCircle,
   RefreshCw
 } from 'lucide-react';
-import { apiRequest } from '@/lib/apiRequest';
+import { apiRequest } from '@/lib/queryClient'; 
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
@@ -79,19 +79,19 @@ export default function SystemHealth() {
     errorLoading: language === 'English' ? 'Error loading metrics' : 'خطأ في تحميل المقاييس'
   };
 
-  // Fetch system overview
-  const { data: systemOverview, isLoading: overviewLoading, refetch: refetchOverview } = useQuery({
-    queryKey: ['admin-system-overview'],
-    queryFn: () => apiRequest<SystemOverview>('/api/admin/system-overview', { method: 'GET' }),
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
+    // Fetch system overview - CORRECTED
+    const { data: systemOverview, isLoading: overviewLoading, refetch: refetchOverview } = useQuery({
+      queryKey: ['admin-system-overview'],
+      queryFn: () => apiRequest('/api/admin/system-overview', 'GET'),
+      refetchInterval: 30000 // Refresh every 30 seconds
+    });
 
-  // Fetch system health metrics
-  const { data: healthMetrics = [], isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
-    queryKey: ['admin-system-health'],
-    queryFn: () => apiRequest<SystemHealthMetric[]>('/api/admin/system-health', { method: 'GET' }),
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
+    // Fetch system health metrics - CORRECTED
+    const { data: healthMetrics = [], isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
+      queryKey: ['admin-system-health'],
+      queryFn: () => apiRequest('/api/admin/system-health', 'GET'),
+      refetchInterval: 30000 // Refresh every 30 seconds
+    });
 
   const handleRefreshAll = async () => {
     setRefreshing(true);

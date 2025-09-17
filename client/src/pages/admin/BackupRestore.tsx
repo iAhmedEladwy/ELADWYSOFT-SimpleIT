@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
 import { Database, Download, Upload, Trash2, ArrowLeft, Clock } from 'lucide-react';
-import { apiRequest } from '@/lib/apiRequest';
+import { apiRequest } from '@/lib/queryClient'; 
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
@@ -80,76 +80,73 @@ export default function BackupRestore() {
     cancel: language === 'English' ? 'Cancel' : 'إلغاء'
   };
 
-  // Fetch backups
-  const { data: backups = [], isLoading: backupsLoading } = useQuery({
-    queryKey: ['admin-backups'],
-    queryFn: () => apiRequest<BackupFile[]>('/api/admin/backups', { method: 'GET' })
-  });
+    // Fetch backups 
+    const { data: backups = [], isLoading: backupsLoading } = useQuery({
+      queryKey: ['admin-backups'],
+      queryFn: () => apiRequest('/api/admin/backups', 'GET')
+    });
 
-  // Fetch restore history
-  const { data: restoreHistory = [], isLoading: historyLoading } = useQuery({
-    queryKey: ['admin-restore-history'],
-    queryFn: () => apiRequest<RestoreHistoryItem[]>('/api/admin/restore-history', { method: 'GET' })
-  });
+    // Fetch restore history 
+    const { data: restoreHistory = [], isLoading: historyLoading } = useQuery({
+      queryKey: ['admin-restore-history'],
+      queryFn: () => apiRequest('/api/admin/restore-history', 'GET')
+    });
 
-  // Create backup mutation
-  const createBackupMutation = useMutation({
-    mutationFn: (description: string) => 
-      apiRequest('/api/admin/backups', { 
-        method: 'POST', 
-        body: JSON.stringify({ description }) 
-      }),
-    onSuccess: () => {
-      toast({ 
-        title: language === 'English' ? 'Backup created successfully' : 'تم إنشاء النسخة الاحتياطية بنجاح' 
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-backups'] });
-      setIsBackupDialogOpen(false);
-      setBackupDescription('');
-    },
-    onError: () => {
-      toast({ 
-        title: language === 'English' ? 'Failed to create backup' : 'فشل في إنشاء النسخة الاحتياطية', 
-        variant: 'destructive' 
-      });
-    }
-  });
+    // Create backup mutation 
+    const createBackupMutation = useMutation({
+      mutationFn: (description: string) => 
+        apiRequest('/api/admin/backups', 'POST', { description }),
+      onSuccess: () => {
+        toast({ 
+          title: language === 'English' ? 'Backup created successfully' : 'تم إنشاء النسخة الاحتياطية بنجاح' 
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-backups'] });
+        setIsBackupDialogOpen(false);
+        setBackupDescription('');
+      },
+      onError: () => {
+        toast({ 
+          title: language === 'English' ? 'Failed to create backup' : 'فشل في إنشاء النسخة الاحتياطية', 
+          variant: 'destructive' 
+        });
+      }
+    });
 
-  // Restore backup mutation
-  const restoreBackupMutation = useMutation({
-    mutationFn: (backupId: number) => 
-      apiRequest(`/api/admin/restore/${backupId}`, { method: 'POST' }),
-    onSuccess: () => {
-      toast({ 
-        title: language === 'English' ? 'Data restored successfully' : 'تم استعادة البيانات بنجاح' 
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-restore-history'] });
-    },
-    onError: () => {
-      toast({ 
-        title: language === 'English' ? 'Failed to restore data' : 'فشل في استعادة البيانات', 
-        variant: 'destructive' 
-      });
-    }
-  });
+    // Restore backup mutation - CORRECTED
+    const restoreBackupMutation = useMutation({
+      mutationFn: (backupId: number) => 
+        apiRequest(`/api/admin/restore/${backupId}`, 'POST'),
+      onSuccess: () => {
+        toast({ 
+          title: language === 'English' ? 'Data restored successfully' : 'تم استعادة البيانات بنجاح' 
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-restore-history'] });
+      },
+      onError: () => {
+        toast({ 
+          title: language === 'English' ? 'Failed to restore data' : 'فشل في استعادة البيانات', 
+          variant: 'destructive' 
+        });
+      }
+    });
 
-  // Delete backup mutation
-  const deleteBackupMutation = useMutation({
-    mutationFn: (backupId: number) => 
-      apiRequest(`/api/admin/backups/${backupId}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      toast({ 
-        title: language === 'English' ? 'Backup deleted successfully' : 'تم حذف النسخة الاحتياطية بنجاح' 
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-backups'] });
-    },
-    onError: () => {
-      toast({ 
-        title: language === 'English' ? 'Failed to delete backup' : 'فشل في حذف النسخة الاحتياطية', 
-        variant: 'destructive' 
-      });
-    }
-  });
+    // Delete backup mutation - CORRECTED
+    const deleteBackupMutation = useMutation({
+      mutationFn: (backupId: number) => 
+        apiRequest(`/api/admin/backups/${backupId}`, 'DELETE'),
+      onSuccess: () => {
+        toast({ 
+          title: language === 'English' ? 'Backup deleted successfully' : 'تم حذف النسخة الاحتياطية بنجاح' 
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-backups'] });
+      },
+      onError: () => {
+        toast({ 
+          title: language === 'English' ? 'Failed to delete backup' : 'فشل في حذف النسخة الاحتياطية', 
+          variant: 'destructive' 
+        });
+      }
+    });
 
   const formatFileSize = (bytes: number) => {
     const units = ['B', 'KB', 'MB', 'GB'];
