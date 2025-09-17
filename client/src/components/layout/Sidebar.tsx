@@ -235,6 +235,16 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             {/* Admin Console Submenu Items */}
             {isAdminConsoleOpen && (
               <div className={`ml-6 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
+                {/* Manage Users */}
+                <Link 
+                  href="/admin-console/users" 
+                  className={`${getLinkClass('/admin-console/users')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>{translations.Users}</span>
+                </Link>
+                
                 {/* Audit Logs */}
                 <Link 
                   href="/admin-console/audit-logs" 

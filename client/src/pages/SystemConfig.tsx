@@ -149,31 +149,22 @@ function SystemConfig() {
   const [clearLogsDialogOpen, setClearLogsDialogOpen] = useState(false);
   const [clearLogsTimeframe, setClearLogsTimeframe] = useState('month');
   
-  // User management states
+  // User management states - Unified for create and edit
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
-  const [newUserUsername, setNewUserUsername] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserFirstName, setNewUserFirstName] = useState('');
-  const [newUserLastName, setNewUserLastName] = useState('');
-  const [newUserRole, setNewUserRole] = useState('employee');
-  const [newUserAccessLevel, setNewUserAccessLevel] = useState('1');
-  const [newUserEmployeeId, setNewUserEmployeeId] = useState<number | null>(null);
-  const [newUserManagerId, setNewUserManagerId] = useState<number | null>(null);
-  const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserIsActive, setNewUserIsActive] = useState(true);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
-  const [editedUserUsername, setEditedUserUsername] = useState('');
-  const [editedUserEmail, setEditedUserEmail] = useState('');
-  const [editedUserFirstName, setEditedUserFirstName] = useState('');
-  const [editedUserLastName, setEditedUserLastName] = useState('');
-  const [editedUserRole, setEditedUserRole] = useState('');
-  const [editedUserAccessLevel, setEditedUserAccessLevel] = useState('1');
-  const [editedUserEmployeeId, setEditedUserEmployeeId] = useState<number | null>(null);
-  const [editedUserManagerId, setEditedUserManagerId] = useState<number | null>(null);
-  const [editedUserPassword, setEditedUserPassword] = useState('');
-  const [editedUserIsActive, setEditedUserIsActive] = useState(true);
+  const [userFormData, setUserFormData] = useState({
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'employee',
+    accessLevel: '1',
+    employeeId: null as number | null,
+    managerId: null as number | null,
+    password: '',
+    isActive: true
+  });
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   
   // Password change states
   const [isPasswordChangeDialogOpen, setIsPasswordChangeDialogOpen] = useState(false);
@@ -260,6 +251,10 @@ function SystemConfig() {
   const filteredCategories = categories.filter((category: any) =>
     category.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
+
+  // Check if we're in edit mode for user dialog
+  const isEditMode = editingUserId !== null;
+  const editingUser = allUsers?.find((u: any) => u.id === editingUserId);
 
   // Update local state when config data is loaded
   useEffect(() => {
@@ -421,16 +416,19 @@ function SystemConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsUserDialogOpen(false);
-      setNewUserUsername('');
-      setNewUserEmail('');
-      setNewUserFirstName('');
-      setNewUserLastName('');
-      setNewUserRole('employee');
-      setNewUserAccessLevel('employee');
-      setNewUserEmployeeId(null);
-      setNewUserManagerId(null);
-      setNewUserPassword('');
-      setNewUserIsActive(true);
+      setEditingUserId(null);
+      setUserFormData({
+        username: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        role: 'employee',
+        accessLevel: '1',
+        employeeId: null,
+        managerId: null,
+        password: '',
+        isActive: true
+      });
       toast({
         title: language === 'English' ? 'Success' : 'تم بنجاح',
         description: language === 'English' ? 'User created successfully' : 'تم إنشاء المستخدم بنجاح',
@@ -466,8 +464,20 @@ function SystemConfig() {
       
       // Only close dialog if it's an edit form update, not a status toggle
       if (editingUserId === variables.id) {
-        setIsEditUserDialogOpen(false);
+        setIsUserDialogOpen(false);
         setEditingUserId(null);
+        setUserFormData({
+          username: '',
+          email: '',
+          firstName: '',
+          lastName: '',
+          role: 'employee',
+          accessLevel: '1',
+          employeeId: null,
+          managerId: null,
+          password: '',
+          isActive: true
+        });
       }
       
       toast({
@@ -1003,53 +1013,73 @@ const parseCSVLine = (line: string): string[] => {
 
   const handleAddUser = () => {
     const userData = {
-      username: newUserUsername.trim(),
-      email: newUserEmail.trim(),
-      firstName: newUserFirstName.trim(),
-      lastName: newUserLastName.trim(),
-      role: newUserRole,
-      employeeId: newUserEmployeeId,
-      managerId: newUserManagerId,
-      password: newUserPassword,
-      isActive: newUserIsActive,
+      username: userFormData.username.trim(),
+      email: userFormData.email.trim(),
+      firstName: userFormData.firstName.trim(),
+      lastName: userFormData.lastName.trim(),
+      role: userFormData.role,
+      employeeId: userFormData.employeeId,
+      managerId: userFormData.managerId,
+      password: userFormData.password,
+      isActive: userFormData.isActive,
     };
     createUserMutation.mutate(userData);
   };
 
   const handleEditUser = (user: any) => {
     setEditingUserId(user.id);
-    setEditedUserUsername(user.username);
-    setEditedUserEmail(user.email);
-    setEditedUserFirstName(user.firstName || '');
-    setEditedUserLastName(user.lastName || '');
-    setEditedUserRole(user.role);
-    setEditedUserEmployeeId(user.employeeId);
-    setEditedUserManagerId(user.managerId);
-    setEditedUserPassword('');
-    setEditedUserIsActive(user.isActive);
-    setIsEditUserDialogOpen(true);
+    setUserFormData({
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      role: user.role,
+      accessLevel: user.accessLevel || '1',
+      employeeId: user.employeeId,
+      managerId: user.managerId,
+      password: '',
+      isActive: user.isActive,
+    });
+    setIsUserDialogOpen(true);
   };
 
   const handleUpdateUser = () => {
     if (!editingUserId) return;
     
     const userData: any = {
-      username: editedUserUsername.trim(),
-      email: editedUserEmail.trim(),
-      firstName: editedUserFirstName.trim(),
-      lastName: editedUserLastName.trim(),
-      role: editedUserRole,
-      employeeId: editedUserEmployeeId,
-      managerId: editedUserManagerId,
-      isActive: editedUserIsActive,
+      username: userFormData.username.trim(),
+      email: userFormData.email.trim(),
+      firstName: userFormData.firstName.trim(),
+      lastName: userFormData.lastName.trim(),
+      role: userFormData.role,
+      employeeId: userFormData.employeeId,
+      managerId: userFormData.managerId,
+      isActive: userFormData.isActive,
     };
     
     // Only include password if it's provided
-    if (editedUserPassword.trim()) {
-      userData.password = editedUserPassword.trim();
+    if (userFormData.password.trim()) {
+      userData.password = userFormData.password.trim();
     }
     
     updateUserMutation.mutate({ id: editingUserId, userData });
+  };
+
+  const handleOpenCreateUserDialog = () => {
+    setEditingUserId(null);
+    setUserFormData({
+      username: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      role: 'employee',
+      accessLevel: '1',
+      employeeId: null,
+      managerId: null,
+      password: '',
+      isActive: true
+    });
+    setIsUserDialogOpen(true);
   };
 
   const handleToggleUserStatus = (userId: number, newStatus: boolean) => {
@@ -3088,24 +3118,32 @@ const parseCSVLine = (line: string): string[] => {
                 {/* Add User Button */}
                 <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2">
+                    <Button className="flex items-center gap-2" onClick={handleOpenCreateUserDialog}>
                       <Plus className="h-4 w-4" />
                       {language === 'English' ? 'Add User' : 'إضافة مستخدم'}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>{language === 'English' ? 'Create New User' : 'إنشاء مستخدم جديد'}</DialogTitle>
+                      <DialogTitle>
+                        {isEditMode 
+                          ? (language === 'English' ? `Edit User: ${editingUser?.username || ''}` : `تعديل المستخدم: ${editingUser?.username || ''}`)
+                          : (language === 'English' ? 'Create New User' : 'إنشاء مستخدم جديد')
+                        }
+                      </DialogTitle>
                       <DialogDescription>
-                        {language === 'English' ? 'Add a new user to the system with role-based access control.' : 'إضافة مستخدم جديد إلى النظام مع التحكم في الوصول القائم على الأدوار.'}
+                        {isEditMode 
+                          ? (language === 'English' ? 'Update user information and access permissions.' : 'تحديث معلومات المستخدم وصلاحيات الوصول.')
+                          : (language === 'English' ? 'Add a new user to the system with role-based access control.' : 'إضافة مستخدم جديد إلى النظام مع التحكم في الوصول القائم على الأدوار.')
+                        }
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
                         <Input 
-                          value={newUserUsername} 
-                          onChange={(e) => setNewUserUsername(e.target.value)}
+                          value={userFormData.username} 
+                          onChange={(e) => setUserFormData(prev => ({ ...prev, username: e.target.value }))}
                           placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -3116,16 +3154,16 @@ const parseCSVLine = (line: string): string[] => {
                         <div className="space-y-2">
                           <Label>{language === 'English' ? 'First Name' : 'الاسم الأول'}</Label>
                           <Input 
-                            value={newUserFirstName} 
-                            onChange={(e) => setNewUserFirstName(e.target.value)}
+                            value={userFormData.firstName} 
+                            onChange={(e) => setUserFormData(prev => ({ ...prev, firstName: e.target.value }))}
                             placeholder={language === 'English' ? 'Enter first name' : 'أدخل الاسم الأول'}
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>{language === 'English' ? 'Last Name' : 'الاسم الأخير'}</Label>
                           <Input 
-                            value={newUserLastName} 
-                            onChange={(e) => setNewUserLastName(e.target.value)}
+                            value={userFormData.lastName} 
+                            onChange={(e) => setUserFormData(prev => ({ ...prev, lastName: e.target.value }))}
                             placeholder={language === 'English' ? 'Enter last name' : 'أدخل الاسم الأخير'}
                           />
                         </div>
@@ -3134,8 +3172,8 @@ const parseCSVLine = (line: string): string[] => {
                         <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
                         <Input 
                           type="email"
-                          value={newUserEmail} 
-                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          value={userFormData.email} 
+                          onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
                           placeholder={language === 'English' ? 'Enter email address' : 'أدخل عنوان البريد الإلكتروني'}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -3146,9 +3184,9 @@ const parseCSVLine = (line: string): string[] => {
                         <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
                         <Input 
                           type="password"
-                          value={newUserPassword} 
-                          onChange={(e) => setNewUserPassword(e.target.value)}
-                          placeholder={language === 'English' ? 'Enter password' : 'أدخل كلمة المرور'}
+                          value={userFormData.password} 
+                          onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                          placeholder={language === 'English' ? (isEditMode ? 'Leave blank to keep current' : 'Enter password') : (isEditMode ? 'اتركه فارغاً للإبقاء على الحالي' : 'أدخل كلمة المرور')}
                         />
                         <p className="text-xs text-muted-foreground">
                           {language === 'English' ? 'Minimum 6 characters required' : 'مطلوب 6 أحرف على الأقل'}
@@ -3156,7 +3194,7 @@ const parseCSVLine = (line: string): string[] => {
                       </div>
                       <div className="space-y-2">
                         <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                        <Select value={newUserRole} onValueChange={setNewUserRole}>
+                        <Select value={userFormData.role} onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}>
                           <SelectTrigger>
                             <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
                           </SelectTrigger>
@@ -3170,7 +3208,7 @@ const parseCSVLine = (line: string): string[] => {
                       </div>
                       <div className="space-y-2">
                         <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
-                        <Select value={newUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setNewUserIsActive(value === 'active')}>
+                        <Select value={userFormData.isActive ? 'active' : 'inactive'} onValueChange={(value) => setUserFormData(prev => ({ ...prev, isActive: value === 'active' }))}>
                           <SelectTrigger>
                             <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
                           </SelectTrigger>
@@ -3188,16 +3226,26 @@ const parseCSVLine = (line: string): string[] => {
                           {language === 'English' ? 'Cancel' : 'إلغاء'}
                         </Button>
                         <Button 
-                          onClick={handleAddUser}
-                          disabled={createUserMutation.isPending || !newUserUsername.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
+                          onClick={isEditMode ? handleUpdateUser : handleAddUser}
+                          disabled={
+                            (isEditMode ? updateUserMutation.isPending : createUserMutation.isPending) || 
+                            !userFormData.username.trim() || 
+                            !userFormData.email.trim() || 
+                            (!isEditMode && !userFormData.password.trim())
+                          }
                         >
-                          {createUserMutation.isPending ? (
+                          {(isEditMode ? updateUserMutation.isPending : createUserMutation.isPending) ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                              {isEditMode 
+                                ? (language === 'English' ? 'Updating...' : 'جارٍ التحديث...') 
+                                : (language === 'English' ? 'Adding...' : 'جارٍ الإضافة...')
+                              }
                             </>
                           ) : (
-                            language === 'English' ? 'Add User' : 'إضافة مستخدم'
+                            isEditMode 
+                              ? (language === 'English' ? 'Update User' : 'تحديث المستخدم')
+                              : (language === 'English' ? 'Add User' : 'إضافة مستخدم')
                           )}
                         </Button>
                       </div>
@@ -3369,101 +3417,7 @@ const parseCSVLine = (line: string): string[] => {
                 )}
               </div>
 
-              {/* Edit User Dialog */}
-              <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>{language === 'English' ? 'Edit User' : 'تعديل المستخدم'}</DialogTitle>
-                    <DialogDescription>
-                      {language === 'English' ? 'Update user information and settings. Leave password field blank to keep current password.' : 'تحديث معلومات المستخدم والإعدادات. اترك حقل كلمة المرور فارغاً للاحتفاظ بكلمة المرور الحالية.'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
-                      <Input 
-                        value={editedUserUsername} 
-                        onChange={(e) => setEditedUserUsername(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter username' : 'أدخل اسم المستخدم'}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'English' ? 'The unique identifier for this user' : 'المعرف الفريد لهذا المستخدم'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
-                      <Input 
-                        type="email"
-                        value={editedUserEmail} 
-                        onChange={(e) => setEditedUserEmail(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter email' : 'أدخل البريد الإلكتروني'}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'English' ? "The user's email address" : 'عنوان البريد الإلكتروني للمستخدم'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'English' ? 'New Password' : 'كلمة المرور الجديدة'}</Label>
-                      <Input 
-                        type="password"
-                        value={editedUserPassword} 
-                        onChange={(e) => setEditedUserPassword(e.target.value)}
-                        placeholder={language === 'English' ? 'Enter new password' : 'أدخل كلمة مرور جديدة'}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'English' ? 'Leave blank to keep current password' : 'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'English' ? 'Role' : 'الدور'}</Label>
-                      <Select value={editedUserRole} onValueChange={setEditedUserRole}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={language === 'English' ? 'Select role' : 'اختر الدور'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">{language === 'English' ? 'Admin (Full Access)' : 'مشرف (وصول كامل)'}</SelectItem>
-                          <SelectItem value="manager">{language === 'English' ? 'Manager (Supervisory)' : 'مدير (إشرافي)'}</SelectItem>
-                          <SelectItem value="agent">{language === 'English' ? 'Agent (Tickets & Assets)' : 'وكيل (التذاكر والأصول)'}</SelectItem>
-                          <SelectItem value="employee">{language === 'English' ? 'Employee (Basic Access)' : 'موظف (وصول أساسي)'}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'English' ? 'Status' : 'الحالة'}</Label>
-                      <Select value={editedUserIsActive ? 'active' : 'inactive'} onValueChange={(value) => setEditedUserIsActive(value === 'active')}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={language === 'English' ? 'Select status' : 'اختر الحالة'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">{language === 'English' ? 'Active' : 'نشط'}</SelectItem>
-                          <SelectItem value="inactive">{language === 'English' ? 'Inactive' : 'غير نشط'}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'English' ? 'Active users can log in and access the system' : 'المستخدمون النشطون يمكنهم تسجيل الدخول والوصول إلى النظام'}
-                      </p>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
-                        {language === 'English' ? 'Cancel' : 'إلغاء'}
-                      </Button>
-                      <Button 
-                        onClick={handleUpdateUser}
-                        disabled={updateUserMutation.isPending || !editedUserUsername.trim() || !editedUserEmail.trim()}
-                      >
-                        {updateUserMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {language === 'English' ? 'Updating...' : 'جارٍ التحديث...'}
-                          </>
-                        ) : (
-                          language === 'English' ? 'Update' : 'تحديث'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {/* Password Change Dialog */}
 
               {/* Password Change Dialog */}
               <Dialog open={isPasswordChangeDialogOpen} onOpenChange={setIsPasswordChangeDialogOpen}>
