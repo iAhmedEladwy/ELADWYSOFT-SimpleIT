@@ -58,7 +58,6 @@ export default function BackupRestore() {
     type: language === 'English' ? 'Type' : 'النوع',
     created: language === 'English' ? 'Created' : 'تاريخ الإنشاء',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
-    description: language === 'English' ? 'Description (Optional)' : 'الوصف (اختياري)',
     confirmRestore: language === 'English' ? 'Confirm Restore' : 'تأكيد الاستعادة',
     restoreWarning: language === 'English' 
       ? 'This will completely replace all current data with the backup data. This action cannot be undone.' 
