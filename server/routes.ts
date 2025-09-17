@@ -7200,8 +7200,6 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-
-
   app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const { assetIds } = req.body;
@@ -7331,7 +7329,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   });
 
   // GET /api/admin/backups - Get list of backups
-app.get('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
+app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const backups = await backupService.getBackupList();
     res.json(backups);
@@ -7342,7 +7340,7 @@ app.get('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // POST /api/admin/backups - Create manual backup
-app.post('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
+app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const { description } = req.body;
     const userId = req.session.user?.id;
@@ -7365,7 +7363,7 @@ app.post('/api/admin/backups', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // POST /api/admin/restore/:backupId - Restore from backup
-app.post('/api/admin/restore/:backupId', requireAuth, requireAdmin, async (req, res) => {
+app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const backupId = parseInt(req.params.backupId);
     const userId = req.session.user?.id;
@@ -7395,7 +7393,7 @@ app.post('/api/admin/restore/:backupId', requireAuth, requireAdmin, async (req, 
 });
 
 // DELETE /api/admin/backups/:id - Delete backup
-app.delete('/api/admin/backups/:id', requireAuth, requireAdmin, async (req, res) => {
+app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const backupId = parseInt(req.params.id);
     
@@ -7417,7 +7415,7 @@ app.delete('/api/admin/backups/:id', requireAuth, requireAdmin, async (req, res)
 });
 
 // GET /api/admin/system-health - Get system health metrics
-app.get('/api/admin/system-health', requireAuth, requireAdmin, async (req, res) => {
+app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const healthMetrics = await backupService.getSystemHealth();
     res.json(healthMetrics);
@@ -7428,7 +7426,7 @@ app.get('/api/admin/system-health', requireAuth, requireAdmin, async (req, res) 
 });
 
 // GET /api/admin/system-overview - Get system overview statistics
-app.get('/api/admin/system-overview', requireAuth, requireAdmin, async (req, res) => {
+app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const systemOverview = await backupService.getSystemOverview();
     res.json(systemOverview);
@@ -7439,7 +7437,7 @@ app.get('/api/admin/system-overview', requireAuth, requireAdmin, async (req, res
 });
 
 // GET /api/admin/restore-history - Get restore history
-app.get('/api/admin/restore-history', requireAuth, requireAdmin, async (req, res) => {
+app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const history = await backupService.getRestoreHistory();
     res.json(history);
@@ -7449,13 +7447,13 @@ app.get('/api/admin/restore-history', requireAuth, requireAdmin, async (req, res
   }
 });
 
-// Helper function to check admin access
-function requireAdmin(req: any, res: any, next: any) {
-  if (!req.session.user || req.session.user.accessLevel !== 4) {
-    return res.status(403).json({ error: 'Admin access required' });
+  // Helper function to check admin access
+  function requireAdmin(req: any, res: any, next: any) {
+    if (!req.session.user || req.session.user.accessLevel !== 4) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
   }
-  next();
-}
 
   const httpServer = createServer(app);
   return httpServer;
