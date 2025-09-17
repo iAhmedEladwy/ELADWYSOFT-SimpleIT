@@ -13,7 +13,6 @@ import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
 import Tickets from "@/pages/Tickets";
-import TicketDetails from "@/pages/TicketDetails";
 import Reports from "@/pages/Reports";
 import SystemConfig from "@/pages/SystemConfig";
 import AuditLogs from "@/pages/AuditLogs";
@@ -140,11 +139,6 @@ function Router() {
             <PrivateRoute component={Tickets} />
           </Layout>
         </Route>
-        <Route path="/tickets/:id">
-          <Layout>
-            <PrivateRoute component={TicketDetails} />
-          </Layout>
-        </Route>
         <Route path="/reports">
           <Layout>
             <PrivateRoute component={() => (
@@ -177,15 +171,6 @@ function Router() {
             <PrivateRoute component={UserProfile} />
           </Layout>
         </Route>
-        <Route path="/users">
-          <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
-                <Users />
-              </RoleGuard>
-            )} />
-          </Layout>
-        </Route>
         <Route path="/maintenance">
           <Layout>
             <PrivateRoute component={() => (
@@ -207,6 +192,16 @@ function Router() {
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
                 <AdminConsole />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/users">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+                <Users />
               </RoleGuard>
             )} />
           </Layout>

@@ -17,11 +17,92 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
+  {
+  version: "0.4.0",
+  date: "2025-09-17",
+  title: "Tickets Module Overhaul & System-Wide Code Cleanup",
+  type: "major",
+  changes: {
+    features: [
+      "🎫 Complete Tickets Module Restructuring:",
+      "   ✅ Simplified tickets table schema to 21 core fields (vs. previous 30+ fields)",
+      "   ✅ Implemented ITIL-compliant priority auto-calculation using urgency × impact matrix",
+      "   ✅ Added PostgreSQL trigger functions for automatic priority calculation on create/update",
+      "   ✅ Enhanced TicketForm with unified validation and proper field mapping",
+      "   ✅ Streamlined TicketsTable with consolidated inline editing capabilities",
+      "   ✅ Introduced priority utility functions with TypeScript type safety",
+      "🗑️ System-Wide Code Cleanup:",
+      "   ✅ Removed unused Service Provider system (service_providers, asset_service_providers tables)",
+      "   ✅ Eliminated obsolete enum types (asset_type_enum, upgrade_risk_enum, upgrade_priority_enum)",
+      "   ✅ Cleaned up redundant storage methods from application layer",
+      "   ✅ Consolidated duplicate form components and validation logic",
+      "🔧 Enhanced Form Architecture:",
+      "   ✅ Unified Calendar component integration across all ticket forms",
+      "   ✅ Improved date handling with ISO format conversion",
+      "   ✅ Enhanced validation with Zod schema for type safety",
+      "   ✅ Streamlined comment system with real-time updates"
+    ],
+    improvements: [
+      "⚡ Performance Optimizations:",
+      "   ✅ Reduced tickets table complexity by 30% through schema simplification",
+      "   ✅ Added database indexes for priority, urgency, and impact fields",
+      "   ✅ Implemented efficient query patterns for status-priority combinations",
+      "   ✅ Optimized mutation handling with proper error boundaries",
+      "🎯 User Experience Enhancements:",
+      "   ✅ Priority now auto-calculates and displays as read-only with explanations",
+      "   ✅ Enhanced inline editing with better event handling and validation",
+      "   ✅ Improved form responsiveness with consolidated state management",
+      "   ✅ Streamlined ticket creation workflow with simplified field structure",
+      "📋 Code Quality Improvements:",
+      "   ✅ Eliminated duplicate dialog components across ticket management",
+      "   ✅ Consolidated validation logic into centralized utility functions",
+      "   ✅ Enhanced TypeScript interfaces with stricter type definitions",
+      "   ✅ Improved error handling with comprehensive try-catch blocks"
+    ],
+    bugfixes: [
+      "🔧 Schema & Database Fixes:",
+      "   ✅ Removed problematic merged_into_id column from tickets table",
+      "   ✅ Eliminated unused time tracking columns (is_time_tracking, time_tracking_started_at)",
+      "   ✅ Fixed priority calculation inconsistencies across urgency/impact combinations",
+      "   ✅ Resolved database constraint conflicts with simplified schema",
+      "🎫 Ticket Management Fixes:",
+      "   ✅ Fixed ticket creation form crashes during employee selection",
+      "   ✅ Resolved priority display inconsistencies in table views",
+      "   ✅ Fixed status change validation preventing invalid transitions",
+      "   ✅ Corrected assignment logic with proper user role validation",
+      "📝 Form & Validation Fixes:",
+      "   ✅ Fixed date picker integration issues with Calendar component",
+      "   ✅ Resolved form submission errors with proper data transformation",
+      "   ✅ Fixed inline editing conflicts with row click handlers",
+      "   ✅ Corrected comment system real-time update failures",
+      "🗑️ Cleanup & Migration Fixes:",
+      "   ✅ Removed orphaned service provider references causing build errors",
+      "   ✅ Fixed migration script compatibility with PostgreSQL versions",
+      "   ✅ Resolved enum type conflicts during schema cleanup",
+      "   ✅ Fixed storage method references to removed functionality"
+    ],
+    breaking: [
+      "⚠️  Database Schema Changes (Migration Required):",
+      "   • Tickets table simplified to 21 core fields",
+      "   • Removed service_providers and asset_service_providers tables",
+      "   • Removed obsolete enum types (requires `npm run db:push`)",
+      "   • Priority field now auto-calculated (manual priority setting removed)",
+      "⚠️  API Interface Changes:",
+      "   • Priority field is now read-only in ticket creation/update requests",
+      "   • Removed service provider endpoints and related API methods",
+      "   • Updated ticket validation schema with simplified field structure",
+      "⚠️  Component Interface Changes:",
+      "   • TicketForm props updated to reflect simplified schema",
+      "   • Removed time tracking related components and props",
+      "   • Priority selection components replaced with display-only badges"
+    ]
+  }
+},
 {
   version: "0.3.7",
   date: "2025-09-15",
   title: "Unified Calendar System & Enhanced Export Functionality",
-  type: "minor",
+  type: "major",
   changes: {
     features: [
       "📅 Unified Calendar Component System:",

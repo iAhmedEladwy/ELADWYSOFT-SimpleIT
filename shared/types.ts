@@ -70,31 +70,93 @@ export interface AssetResponse {
   specifications?: Record<string, string>;
 }
 
-// Ticket-related types
+// Category-related types
+export interface CategoryResponse {
+  id: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryCreateRequest {
+  name: string;
+  description?: string;
+}
+
+export interface CategoryUpdateRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+// Ticket-related types - v0.4.0 Simplified Schema (21 core fields)
 export interface TicketResponse {
+  // Core Identity & Tracking
   id: number;
   ticketId: string;
-  title: string;
-  description: string;
-  summary?: string;
-  category?: string;
-  priority: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'Open' | 'In Progress' | 'Pending' | 'Resolved' | 'Closed';
-  submitterId: number;
-  submitter?: UserResponse;
+  
+  // Relationships
+  submittedById: number;
+  submittedBy?: EmployeeResponse;
   assignedToId?: number;
   assignedTo?: UserResponse;
   relatedAssetId?: number;
   relatedAsset?: AssetResponse;
-  requestType?: string;
-  urgency?: 'Low' | 'Medium' | 'High' | 'Critical';
-  impact?: 'Low' | 'Medium' | 'High' | 'Critical';
+  
+  // Request Classification
+  type: 'Incident' | 'Service Request' | 'Problem' | 'Change'; // Nature of request
+  categoryId?: number; // Reference to categories table
+  category?: string; // Category name (for backward compatibility and display)
+  
+  // Priority Management (calculated based on urgency × impact)
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  urgency: 'Low' | 'Medium' | 'High' | 'Critical';
+  impact: 'Low' | 'Medium' | 'High' | 'Critical';
+  
+  // Content
+  title: string; // Renamed from summary
+  description: string;
+  resolution?: string;
+  
+  // Status & Workflow
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  
+  // Time Management
   createdAt: string;
   updatedAt: string;
+  completionTime?: string;
+  timeSpent?: number; // in minutes
   dueDate?: string;
-  resolutionNotes?: string;
-  rootCause?: string;
-  workaround?: string;
+  slaTarget?: string;
+}
+
+export interface TicketCreateRequest {
+  title: string;
+  description: string;
+  type: 'Incident' | 'Service Request' | 'Problem' | 'Change';
+  categoryId: number;
+  urgency: 'Low' | 'Medium' | 'High' | 'Critical';
+  impact: 'Low' | 'Medium' | 'High' | 'Critical';
+  submittedById: number;
+  assignedToId?: number;
+  relatedAssetId?: number;
+  dueDate?: string;
+}
+
+export interface TicketUpdateRequest {
+  title?: string;
+  description?: string;
+  type?: 'Incident' | 'Service Request' | 'Problem' | 'Change';
+  categoryId?: number;
+  urgency?: 'Low' | 'Medium' | 'High' | 'Critical';
+  impact?: 'Low' | 'Medium' | 'High' | 'Critical';
+  status?: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  assignedToId?: number;
+  resolution?: string;
+  timeSpent?: number;
+  completionTime?: string;
 }
 
 // System configuration types
@@ -212,7 +274,7 @@ export interface AssetFilters {
 export interface TicketFilters {
   status?: string;
   priority?: string;
-  requestType?: string;
+  type?: string;
   assignedTo?: string;
   category?: string;
   createdBy?: string;

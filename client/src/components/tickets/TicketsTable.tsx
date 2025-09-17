@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
+import { useTicketTranslations } from '@/lib/translations/tickets';
 import { useAuth } from '@/lib/authContext';
-import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils'; 
+import { apiRequest } from '@/lib/queryClient';
 
 import {
   Table,
@@ -44,9 +43,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
+import { MoreHorizontal, Edit, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { MoreHorizontal, UserCircle2, Calendar as CalendarIconLucide, Clock, CalendarIcon } from 'lucide-react';
+import { getPriorityColor } from '@/lib/utils/ticketUtils';
+
+
+// Validation utilities
+const isValidStatus = (value: string): boolean => {
+  return ['Open', 'In Progress', 'Resolved', 'Closed'].includes(value);
+};
+
+const isValidType = (value: string): boolean => {
+  return ['Incident', 'Service Request', 'Problem', 'Change'].includes(value);
+};
 
 interface TicketsTableProps {
   tickets: any[];
@@ -72,250 +81,115 @@ export default function TicketsTable({
   onSelectionChange,
 }: TicketsTableProps) {
   const { language } = useLanguage();
+  const t = useTicketTranslations(language);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [openStatusDialog, setOpenStatusDialog] = useState(false);
-  const [openAssignDialog, setOpenAssignDialog] = useState(false);
-  const [resolutionNotes, setResolutionNotes] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
+
+  // Dialog states for resolution handling
   const [resolutionDialog, setResolutionDialog] = useState<{
     open: boolean;
     ticketId: number | null;
     newStatus: string;
   }>({ open: false, ticketId: null, newStatus: '' });
+  const [resolutionNotes, setResolutionNotes] = useState('');
 
-  const [resolution, setResolution] = useState('');
-  
-    // Handle checkbox selection
-    const handleTicketSelection = (ticketId: number, checked: boolean) => {
-      if (!onSelectionChange) return;
-      
-      if (checked) {
-        onSelectionChange([...selectedTickets, ticketId]);
-      } else {
-        onSelectionChange(selectedTickets.filter(id => id !== ticketId));
-      }
-    };
-
-    // Handle resolution dialog submit
-  const handleResolutionSubmit = () => {
-    if (resolutionDialog.ticketId && resolutionNotes.trim()) {
-      updateTicketMutation.mutate({ 
-        id: resolutionDialog.ticketId, 
-        updates: { 
-          status: resolutionDialog.newStatus,
-          resolution: resolutionNotes
-        } 
-      });
-      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-      setResolutionNotes('');
-    }
-  };
-
-  // Handle status update from dialog
-  const handleStatusUpdate = () => {
-    if (selectedTicket && selectedStatus) {
-      onStatusChange(selectedTicket.id, selectedStatus);
-      setOpenStatusDialog(false);
-      setSelectedStatus('');
-      setSelectedTicket(null);
-    }
-  };
-  // Fetch request types from system configuration with loading state
-  const { data: customRequestTypes = [], isLoading: isLoadingRequestTypes } = useQuery({
-    queryKey: ['/api/custom-request-types'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/custom-request-types');
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to improve performance
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
-  });
-
-  // Use only request types from system configuration
-  const requestTypes = customRequestTypes.filter((type: any) => type.isActive !== false);
-
-  // Update ticket mutation
-    const updateTicketMutation = useMutation({
+  // FIXED: Enhanced update ticket mutation with comprehensive validation
+  const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      // Fix: apiRequest expects separate parameters, not an object
-      return apiRequest(
-        `/api/tickets/${id}`,  // url
-        'PATCH',                // method
-        updates                 // data
-      );
+      // Validate the ticket ID
+      if (!id || id <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      // Validate updates object
+      if (!updates || typeof updates !== 'object') {
+        throw new Error('Invalid update data');
+      }
+
+      if (updates.status && !isValidStatus(updates.status)) {
+        throw new Error('Invalid status');
+      }
+
+      if (updates.type && !isValidType(updates.type)) {
+        throw new Error('Invalid ticket type');
+      }
+
+      // Validate assignedToId if present
+      if (updates.assignedToId !== undefined && updates.assignedToId !== null && updates.assignedToId <= 0) {
+        throw new Error('Invalid assigned user ID');
+      }
+
+   return apiRequest(`/api/tickets/${id}`, 'PATCH', updates);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
-      // No toast on success - too noisy for inline edits
+      
+      // Show success toast only for major updates
+      if (variables.updates.status || variables.updates.assignedToId !== undefined) {
+        toast({
+          title: t.success || 'Success',
+          description: t.ticketUpdated || 'Ticket updated successfully',
+        });
+      }
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
+      console.error('Failed to update ticket:', error, variables);
       toast({
-        title: language === 'English' ? 'Error updating ticket' : 'خطأ في تحديث التذكرة',
-        description: error.message || 'Please try again',
+        title: t.error || 'Error',
+        description: error.message || t.errorUpdating || 'Failed to update ticket',
         variant: 'destructive',
       });
     },
   });
 
-  // Translations
-  const translations = {
-    ticketId: language === 'English' ? 'Ticket ID' : 'رقم التذكرة',
-    dateCreated: language === 'English' ? 'Date Created' : 'تاريخ الإنشاء',
-    summary: language === 'English' ? 'Summary' : 'الملخص',
-    requestType: language === 'English' ? 'Request Type' : 'نوع الطلب',
-    priority: language === 'English' ? 'Priority' : 'الأولوية',
-    status: language === 'English' ? 'Status' : 'الحالة',
-    submittedBy: language === 'English' ? 'Submitted By' : 'مقدم من',
-    relatedAsset: language === 'English' ? 'Related Asset' : 'الأصل المرتبط',
-    assignedTo: language === 'English' ? 'Assigned To' : 'معين إلى',
-    description: language === 'English' ? 'Description' : 'الوصف',
-    updateStatus: language === 'English' ? 'Update Status' : 'تحديث الحالة',
-    assignTicket: language === 'English' ? 'Assign Ticket' : 'تعيين التذكرة',
-    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
-    update: language === 'English' ? 'Update' : 'تحديث',
-    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
-    assign: language === 'English' ? 'Assign' : 'تعيين',
-    selectUser: language === 'English' ? 'Select User' : 'اختر المستخدم',
-    selectStatus: language === 'English' ? 'Select Status' : 'اختر الحالة',
-    noTickets: language === 'English' ? 'No tickets found' : 'لم يتم العثور على تذاكر',
-    open: language === 'English' ? 'Open' : 'مفتوح',
-    save: language === 'English' ? 'Save' : 'حفظ',
-    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
-    resolved: language === 'English' ? 'Resolved' : 'تم الحل',
-    closed: language === 'English' ? 'Closed' : 'مغلق',
-    low: language === 'English' ? 'Low' : 'منخفض',
-    medium: language === 'English' ? 'Medium' : 'متوسط',
-    high: language === 'English' ? 'High' : 'مرتفع',
-    hardware: language === 'English' ? 'Hardware' : 'أجهزة',
-    software: language === 'English' ? 'Software' : 'برمجيات',
-    network: language === 'English' ? 'Network' : 'شبكة',
-    other: language === 'English' ? 'Other' : 'أخرى',
-    none: language === 'English' ? 'None' : 'لا يوجد',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير معين',
-    dueDate: language === 'English' ? 'Due Date' : 'تاريخ الاستحقاق',
-    resolveTicket: language === 'English' ? 'Resolve Ticket' : 'حل التذكرة',
-    closeTicket: language === 'English' ? 'Close Ticket' : 'إغلاق التذكرة',
-    resolutionType: language === 'English' ? 'Resolution Type' : 'نوع الحل',
-    resolutionDetails: language === 'English' ? 'Please provide resolution details' : 'يرجى تقديم تفاصيل الحل',
-    selectResolutionType: language === 'English' ? 'Select resolution type' : 'اختر نوع الحل',
-    describeResolution: language === 'English' ? 'Describe how the issue was resolved...' : 'اصف كيف تم حل المشكلة...',
-    problemSolved: language === 'English' ? 'Problem Solved' : 'تم حل المشكلة',
-    workaroundProvided: language === 'English' ? 'Workaround Provided' : 'تم تقديم حل بديل',
-    duplicateTicket: language === 'English' ? 'Duplicate Ticket' : 'تذكرة مكررة',
-    noIssueFound: language === 'English' ? 'No Issue Found' : 'لم يتم العثور على مشكلة',
-    wontFix: language === 'English' ? "Won't Fix" : 'لن يتم الإصلاح',
-    setDate: language === 'English' ? 'Set date' : 'تعيين التاريخ',
-  };
-
-  const handleUpdateStatus = () => {
-    if (selectedTicket && selectedStatus) {
-      onStatusChange(selectedTicket.id, selectedStatus, resolutionNotes);
-      setOpenStatusDialog(false);
-      setResolutionNotes('');
-      setSelectedStatus('');
-    }
-  };
-
-  const handleAssignTicket = () => {
-    if (selectedTicket && selectedUserId !== '') {
-      onAssign(selectedTicket.id, selectedUserId as number);
-      setOpenAssignDialog(false);
-      setSelectedUserId('');
-    }
-  };
-
-    const getTicketById = (ticketId: number) => {
-    return tickets.find((t: any) => t.id === ticketId);
-  };
-
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" | "destructive" | null | undefined => {
-    switch (status) {
-      case 'Open':
-        return 'default';
-      case 'In Progress':
-        return 'secondary';
-      case 'Resolved':
-        return 'outline';
-      case 'Closed':
-        return 'outline';
-      default:
-        return 'default';
-    }
-  };
-
-  const getPriorityBadgeVariant = (priority: string): "default" | "secondary" | "outline" | "destructive" | null | undefined => {
-    switch (priority) {
-      case 'High':
-        return 'destructive';
-      case 'Medium':
-        return 'secondary';
-      case 'Low':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
-  const getEmployeeName = (id: number) => {
+  // FIXED: Safe helper functions with comprehensive validation
+  const getEmployeeName = (employeeId: number) => {
     try {
-      if (!Array.isArray(employees)) return translations.none;
-      const employee = employees.find(emp => emp && emp.id === id);
-      return employee && employee.englishName ? employee.englishName : translations.none;
+      if (!Array.isArray(employees) || !employeeId || employeeId <= 0) return t.none || 'None';
+      const employee = employees.find((emp: any) => emp && emp.id === employeeId);
+      return employee && employee.englishName ? employee.englishName : (t.none || 'None');
     } catch (error) {
       console.error('Error getting employee name:', error);
-      return translations.none;
+      return t.none || 'None';
     }
   };
 
-  const getAssetName = (id: number) => {
+  const getUserName = (userId: number) => {
     try {
-      if (!Array.isArray(assets)) return translations.none;
-      const asset = assets.find(a => a && a.id === id);
-      return asset && asset.name ? asset.name : translations.none;
-    } catch (error) {
-      console.error('Error getting asset name:', error);
-      return translations.none;
-    }
-  };
-
-  const getUserName = (id: number) => {
-    try {
-      if (!Array.isArray(users)) return translations.unassigned;
-      const assignedUser = users.find(u => u && u.id === id);
-      return assignedUser && assignedUser.username ? assignedUser.username : translations.unassigned;
+      if (!Array.isArray(users) || !userId || userId <= 0) return t.unassigned || 'Unassigned';
+      const assignedUser = users.find((u: any) => u && u.id === userId);
+      return assignedUser && assignedUser.username ? assignedUser.username : (t.unassigned || 'Unassigned');
     } catch (error) {
       console.error('Error getting user name:', error);
-      return translations.unassigned;
+      return t.unassigned || 'Unassigned';
     }
   };
 
-  const canUpdateStatus = (ticketStatus: string) => {
-    // Only allow status changes in a forward direction
-    if (user && ['admin', 'manager'].includes(user.role)) return true; // Admins and managers can change to any status
-    
-    // Non-admin users can only move tickets forward in workflow
-    switch (ticketStatus) {
-      case 'Open':
-        return ['In Progress'].includes(selectedStatus);
-      case 'In Progress':
-        return ['Resolved'].includes(selectedStatus);
-      case 'Resolved':
-        return ['Closed'].includes(selectedStatus);
-      default:
-        return false;
-    }
-  };
-
-  const getAvailableStatuses = (currentStatus: string): string[] => {
-    // Ensure we always return an array to prevent .join errors
+  const getAssetName = (assetId: number) => {
     try {
-      // Full access for admins and managers
-      if (user && Array.isArray(user.role ? [user.role] : []) && ['admin', 'manager', 'agent'].includes(user.role)) {
+      if (!Array.isArray(assets) || !assetId || assetId <= 0) return t.none || 'None';
+      const asset = assets.find((a: any) => a && a.id === assetId);
+      return asset && (asset.name || asset.assetId) ? 
+        (asset.name || asset.assetId) : 
+        (t.none || 'None');
+    } catch (error) {
+      console.error('Error getting asset name:', error);
+      return t.none || 'None';
+    }
+  };
+
+  // FIXED: Enhanced status permissions with validation
+  const getAvailableStatuses = (currentStatus: string): string[] => {
+    try {
+      // Validate current status
+      if (!currentStatus || !isValidStatus(currentStatus)) {
+        return ['Open', 'In Progress', 'Resolved', 'Closed'];
+      }
+
+      // Full access for admins, managers, and agents
+      if (user && ['admin', 'manager', 'agent'].includes(user.role)) {
         return ['Open', 'In Progress', 'Resolved', 'Closed'];
       }
       
@@ -328,349 +202,489 @@ export default function TicketsTable({
         case 'Resolved':
           return ['Closed'];
         default:
-          return ['Open', 'In Progress', 'Resolved', 'Closed']; // Fallback to all statuses
+          return ['Open', 'In Progress', 'Resolved', 'Closed'];
       }
     } catch (error) {
       console.error('Error getting available statuses:', error);
-      return ['Open', 'In Progress', 'Resolved', 'Closed']; // Safe fallback
+      return ['Open', 'In Progress', 'Resolved', 'Closed'];
     }
   };
 
-  // Ensure tickets is always an array to prevent runtime errors
-  const safeTickets = Array.isArray(tickets) ? tickets : [];
-  
+  // FIXED: Enhanced urgency/impact change handler with comprehensive validation
+  const handleUrgencyImpactChange = (ticketId: number, field: 'urgency' | 'impact', value: string, currentTicket: any) => {
+    try {
+      // Validate inputs
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      if (!value || !['Low', 'Medium', 'High', 'Critical'].includes(value)) {
+        throw new Error('Invalid field value');
+      }
+
+      if (!currentTicket || typeof currentTicket !== 'object') {
+        throw new Error('Invalid ticket data');
+      }
+
+      // Get current values with fallbacks
+      const currentUrgency = currentTicket.urgency || 'Medium';
+      const currentImpact = currentTicket.impact || 'Medium';
+
+      // Calculate new values
+      const newUrgency = field === 'urgency' ? value : currentUrgency;
+      const newImpact = field === 'impact' ? value : currentImpact;
+      
+      // Validate enum values
+      if (!isValidUrgencyLevel(newUrgency)) {
+        throw new Error('Invalid urgency level');
+      }
+
+      if (!isValidImpactLevel(newImpact)) {
+        throw new Error('Invalid impact level');
+      }
+
+      // Calculate new priority using the shared utility
+      const newPriority = calculatePriority(newUrgency, newImpact);
+      
+      // Update both the changed field and the calculated priority
+      updateTicketMutation.mutate({ 
+        id: ticketId, 
+        updates: { 
+          [field]: value,
+          priority: newPriority
+        } 
+      });
+    } catch (error) {
+      console.error('Error handling urgency/impact change:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update priority',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // FIXED: Safe ticket selection handler
+  const handleTicketSelection = (ticketId: number, checked: boolean) => {
+    try {
+      if (!onSelectionChange || !ticketId || ticketId <= 0) return;
+      
+      if (checked) {
+        onSelectionChange([...selectedTickets, ticketId]);
+      } else {
+        onSelectionChange(selectedTickets.filter(id => id !== ticketId));
+      }
+    } catch (error) {
+      console.error('Error handling ticket selection:', error);
+    }
+  };
+
+  // FIXED: Enhanced row click handler with better event handling
+  const handleRowClick = (ticket: any, event: React.MouseEvent) => {
+    try {
+      if (!ticket || !ticket.id) return;
+
+      // Don't trigger row click if clicking on interactive elements
+      const target = event.target as HTMLElement;
+      if (
+        target.closest('.inline-edit-cell') ||
+        target.closest('[data-checkbox-cell]') ||
+        target.closest('[role="checkbox"]') ||
+        target.closest('button') ||
+        target.closest('[role="button"]') ||
+        target.closest('input') ||
+        target.closest('[role="combobox"]') ||
+        target.tagName === 'SELECT' ||
+        target.closest('[type="checkbox"]') ||
+        target.closest('[data-dropdown-trigger]')
+      ) {
+        return;
+      }
+      
+      // Direct edit - open TicketForm in edit mode
+      if (onEdit && typeof onEdit === 'function') {
+        onEdit(ticket);
+      }
+    } catch (error) {
+      console.error('Error handling row click:', error);
+    }
+  };
+
+  // FIXED: Enhanced status change with validation
+  const handleStatusChange = (ticketId: number, newStatus: string) => {
+    try {
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      if (!newStatus || !isValidStatus(newStatus)) {
+        throw new Error('Invalid status');
+      }
+
+      if (newStatus === 'Resolved' || newStatus === 'Closed') {
+        setResolutionDialog({ open: true, ticketId, newStatus });
+      } else {
+        updateTicketMutation.mutate({ 
+          id: ticketId, 
+          updates: { status: newStatus } 
+        });
+      }
+    } catch (error) {
+      console.error('Error handling status change:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // FIXED: Enhanced resolution dialog submit with validation
+  const handleResolutionSubmit = () => {
+    try {
+      if (!resolutionDialog.ticketId || resolutionDialog.ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      if (!resolutionNotes.trim()) {
+        throw new Error('Resolution notes are required');
+      }
+
+      if (!resolutionDialog.newStatus || !isValidStatus(resolutionDialog.newStatus)) {
+        throw new Error('Invalid status');
+      }
+
+      updateTicketMutation.mutate({ 
+        id: resolutionDialog.ticketId, 
+        updates: { 
+          status: resolutionDialog.newStatus,
+          resolution: resolutionNotes.trim() // Backend expects 'resolution' field
+        } 
+      });
+      
+      setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+      setResolutionNotes('');
+    } catch (error) {
+      console.error('Error submitting resolution:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to submit resolution',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // FIXED: Enhanced priority color with validation
+  const getPriorityColor = (priority: string) => {
+    try {
+      if (!priority || typeof priority !== 'string') return 'default';
+      
+      switch (priority.toLowerCase()) {
+        case 'critical': return 'destructive';
+        case 'high': return 'destructive';
+        case 'medium': return 'default';
+        case 'low': return 'secondary';
+        default: return 'default';
+      }
+    } catch (error) {
+      console.error('Error getting priority color:', error);
+      return 'default';
+    }
+  };
+
+  // FIXED: Safe tickets array with comprehensive validation
+  const safeTickets = Array.isArray(tickets) ? tickets.filter(ticket => ticket && ticket.id) : [];
+
   if (safeTickets.length === 0) {
-    return <div className="text-center py-8 text-gray-500">{translations.noTickets}</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        {t.noTicketsFound || 'No tickets found'}
+      </div>
+    );
   }
 
   return (
-      <>
+    <div className="space-y-4">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               {onSelectionChange && (
-                <TableHead className="w-12 text-center">
+                <TableHead className="w-[40px]">
                   <Checkbox
-                    checked={selectedTickets.length === tickets.length && tickets.length > 0}
+                    checked={selectedTickets.length === safeTickets.length && safeTickets.length > 0}
                     onCheckedChange={(checked) => {
-                      if (checked) {
-                        onSelectionChange(tickets.map(t => t.id));
-                      } else {
-                        onSelectionChange([]);
+                      try {
+                        if (checked) {
+                          onSelectionChange(safeTickets.map(ticket => ticket.id));
+                        } else {
+                          onSelectionChange([]);
+                        }
+                      } catch (error) {
+                        console.error('Error handling select all:', error);
                       }
                     }}
                   />
                 </TableHead>
               )}
-              <TableHead className="min-w-[100px]">{translations.ticketId}</TableHead>
-              <TableHead className="min-w-[110px]">{translations.dateCreated}</TableHead>
-              <TableHead className="min-w-[200px]">{translations.summary}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.requestType}</TableHead>
-              <TableHead className="min-w-[100px]">{translations.priority}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.status}</TableHead>
-              <TableHead className="min-w-[150px]">{translations.submittedBy}</TableHead>
-              <TableHead className="min-w-[150px]">{translations.assignedTo}</TableHead>
-              <TableHead className="min-w-[120px]">{translations.dueDate}</TableHead>
+              <TableHead>{t.ticketId || 'Ticket ID'}</TableHead>
+              <TableHead>{t.dateCreated || 'Date Created'}</TableHead>
+              <TableHead>{t.title || 'Title'}</TableHead>
+              <TableHead>{t.type || 'Type'}</TableHead>
+              <TableHead>{t.category || 'Category'}</TableHead>
+              <TableHead>{t.priority || 'Priority'}</TableHead>
+              <TableHead>{t.status || 'Status'}</TableHead>
+              <TableHead>{t.submittedBy || 'Submitted By'}</TableHead>
+              <TableHead>{t.assignedTo || 'Assigned To'}</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {safeTickets.map((ticket: any) => (
-              <TableRow 
-                key={ticket.id}
-                className="group hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-transparent hover:border-l-blue-500 cursor-pointer"
-                onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (
-                    target.closest('.inline-edit-cell') ||
-                    target.closest('[data-checkbox-cell]') ||
-                    target.closest('[role="checkbox"]') ||
-                    target.closest('button') ||
-                    target.closest('[role="button"]') ||
-                    target.closest('input') ||
-                    target.closest('[role="combobox"]') ||
-                    target.tagName === 'SELECT' ||
-                    target.closest('[type="checkbox"]')
-                  ) {
-                    return;
-                  }
+            {safeTickets.map((ticket: any) => {
+              // Skip invalid tickets
+              if (!ticket || !ticket.id) return null;
+
+              return (
+                <TableRow 
+                  key={ticket.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={(e) => handleRowClick(ticket, e)}
+                >
+                  {/* Selection Checkbox */}
+                  {onSelectionChange && (
+                    <TableCell data-checkbox-cell className="w-[40px]" onClick={(e) => e.stopPropagation()}>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedTickets.includes(ticket.id)}
+                          onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
+                        />
+                      </div>
+                    </TableCell>
+                  )}
                   
-                  if (onEdit && ticket) {
-                    onEdit(ticket);
-                  }
-                }}
-              >
-                {/* Checkbox column */}
-                {onSelectionChange && (
-                  <TableCell 
-                    data-checkbox-cell 
-                    className="cursor-pointer hover:bg-gray-50 w-12 text-center" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleTicketSelection(ticket.id, !selectedTickets.includes(ticket.id));
-                    }}
-                  >
-                    <div className="flex items-center justify-center p-1">
-                      <Checkbox
-                        checked={selectedTickets.includes(ticket.id)}
-                        onCheckedChange={(checked) => handleTicketSelection(ticket.id, checked as boolean)}
-                      />
+                  {/* Ticket ID */}
+                  <TableCell className="font-medium min-w-[100px]">
+                    <Badge variant="outline" className="text-xs">
+                      {ticket.ticketId || `TKT-${ticket.id}`}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Date Created */}
+                  <TableCell className="min-w-[110px] text-sm text-muted-foreground">
+                    {ticket.createdAt ? (() => {
+                      try {
+                        return format(new Date(ticket.createdAt), 'MMM d, yyyy');
+                      } catch {
+                        return 'Invalid date';
+                      }
+                    })() : '-'}
+                  </TableCell>
+                  
+                  {/* Title (Fixed: using title instead of summary) */}
+                  <TableCell className="min-w-[200px] max-w-xs">
+                    <div className="space-y-1">
+                      <div className="font-medium truncate" title={ticket.title || ticket.description}>
+                        {ticket.title || (ticket.description ? `${ticket.description.substring(0, 50)}...` : (t.none || 'No title'))}
+                      </div>
+                      {ticket.description && ticket.title && (
+                        <div className="text-xs text-muted-foreground truncate max-w-[250px]" title={ticket.description}>
+                          {ticket.description.length > 50 
+                            ? `${ticket.description.substring(0, 50)}...` 
+                            : ticket.description}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
-                )}
-                
-                {/* Ticket ID */}
-                <TableCell className="font-medium min-w-[100px]">
-                  {ticket.ticketId}
+                  
+                  {/* Type - Non-Inline Edit with validation */}
+                 <TableCell className="min-w-[120px] text-sm">
+                  <Badge variant="outline" className="text-xs">
+                    {ticket.type === 'Incident' ? (t.typeIncident || 'Incident') :
+                    ticket.type === 'Service Request' ? (t.typeServiceRequest || 'Service Request') :
+                    ticket.type === 'Problem' ? (t.typeProblem || 'Problem') :
+                    ticket.type === 'Change' ? (t.typeChange || 'Change') :
+                    ticket.type || 'Incident'}
+                  </Badge>
                 </TableCell>
-                
-                {/* Date Created */}
-                <TableCell className="min-w-[110px]">
-                  {ticket.createdAt && format(new Date(ticket.createdAt), 'MMM d, yyyy')}
-                </TableCell>
-                
-                {/* Summary */}
-                <TableCell className="min-w-[200px] max-w-xs truncate" title={ticket.summary}>
-                  {ticket.summary || ticket.description?.substring(0, 50) + '...' || 'No summary'}
-                </TableCell>
-                
-                {/* Request Type */}
-                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.requestType || 'Hardware'}
-                    onValueChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { requestType: value } 
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      {isLoadingRequestTypes ? (
-                        <SelectItem value="loading" disabled>Loading...</SelectItem>
-                      ) : requestTypes && Array.isArray(requestTypes) && requestTypes.length > 0 ? (
-                        requestTypes.map((type: any) => (
-                          <SelectItem key={type.id || type.name} value={type.name || 'Hardware'}>
-                            {type.name || 'Hardware'}
+
+                  {/* Category */}
+                  <TableCell className="min-w-[100px] text-sm">
+                    <Badge variant="secondary" className="text-xs">
+                      {ticket.category || 'General'}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Priority - Read-only (auto-calculated) */}
+                  <TableCell className="min-w-[80px]">
+                    <Badge variant={getPriorityColor(ticket.priority)} className="text-xs">
+                      {ticket.priority === 'Low' ? (t.priorityLow || 'Low') :
+                       ticket.priority === 'Medium' ? (t.priorityMedium || 'Medium') :
+                       ticket.priority === 'High' ? (t.priorityHigh || 'High') :
+                       ticket.priority === 'Critical' ? (t.priorityCritical || 'Critical') :
+                       ticket.priority || 'Medium'}
+                    </Badge>
+                  </TableCell>
+                  
+                  {/* Status - Inline Edit with Resolution Dialog */}
+                  <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.status || 'Open'}
+                      onValueChange={(value) => handleStatusChange(ticket.id, value)}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          <Badge 
+                            variant={
+                              ticket.status === 'Open' ? 'default' :
+                              ticket.status === 'In Progress' ? 'secondary' :
+                              ticket.status === 'Resolved' ? 'outline' :
+                              ticket.status === 'Closed' ? 'destructive' : 'default'
+                            }
+                            className="text-xs"
+                          >
+                            {ticket.status === 'Open' ? (t.statusOpen || 'Open') :
+                             ticket.status === 'In Progress' ? (t.statusInProgress || 'In Progress') :
+                             ticket.status === 'Resolved' ? (t.statusResolved || 'Resolved') :
+                             ticket.status === 'Closed' ? (t.statusClosed || 'Closed') :
+                             ticket.status || 'Open'}
+                          </Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        {getAvailableStatuses(ticket.status || 'Open').map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status === 'Open' ? (t.statusOpen || 'Open') :
+                             status === 'In Progress' ? (t.statusInProgress || 'In Progress') :
+                             status === 'Resolved' ? (t.statusResolved || 'Resolved') :
+                             (t.statusClosed || 'Closed')}
                           </SelectItem>
-                        ))
-                      ) : (
-                        <>
-                          <SelectItem value="Hardware">Hardware</SelectItem>
-                          <SelectItem value="Software">Software</SelectItem>
-                          <SelectItem value="Network">Network</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Priority */}
-                <TableCell className="inline-edit-cell relative min-w-[100px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.priority || 'Medium'}
-                    onValueChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { priority: value } 
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
-                      <Badge 
-                        variant={getPriorityBadgeVariant(ticket.priority)}
-                        className="w-full justify-center cursor-pointer"
-                      >
-                        {ticket.priority || 'Medium'}
-                      </Badge>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="Low">{translations.low}</SelectItem>
-                      <SelectItem value="Medium">{translations.medium}</SelectItem>
-                      <SelectItem value="High">{translations.high}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Status */}
-                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.status || 'Open'}
-                    onValueChange={(value) => {
-                      if (value === 'Resolved' || value === 'Closed') {
-                        setResolutionNotes(ticket.resolution || '');
-                        setResolutionDialog({ 
-                          open: true, 
-                          ticketId: ticket.id, 
-                          newStatus: value 
-                        });
-                      } else {
-                        onStatusChange(ticket.id, value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0 p-0">
-                      <Badge 
-                        className={`w-full justify-center cursor-pointer ${
-                          ticket.status === 'Open' ? 'bg-blue-100 text-blue-800' :
-                          ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                          ticket.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {ticket.status === 'Open' ? translations.open :
-                        ticket.status === 'In Progress' ? translations.inProgress :
-                        ticket.status === 'Resolved' ? translations.resolved :
-                        ticket.status === 'Closed' ? translations.closed :
-                        ticket.status}
-                      </Badge>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      {getAvailableStatuses(ticket.status).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status === 'Open' ? translations.open :
-                          status === 'In Progress' ? translations.inProgress :
-                          status === 'Resolved' ? translations.resolved :
-                          translations.closed}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Submitted By */}
-                <TableCell className="min-w-[150px]">
-                  {ticket.submittedById ? getEmployeeName(ticket.submittedById) : translations.none}
-                </TableCell>
-                
-                {/* Assigned To */}
-                <TableCell className="inline-edit-cell relative min-w-[150px]" onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={ticket.assignedToId?.toString() || 'unassigned'}
-                    onValueChange={(value) => {
-                      if (value === 'unassigned') {
-                        updateTicketMutation.mutate({ 
-                          id: ticket.id, 
-                          updates: { assignedToId: null } 
-                        });
-                      } else {
-                        const userId = parseInt(value);
-                        onAssign(ticket.id, userId);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
-                      <SelectValue>
-                        {ticket.assignedToId ? 
-                          getUserName(ticket.assignedToId) : 
-                          <span className="text-gray-400">{translations.unassigned}</span>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Submitted By */}
+                  <TableCell className="min-w-[150px] text-sm">
+                    {ticket.submittedById ? getEmployeeName(ticket.submittedById) : (t.none || 'None')}
+                  </TableCell>
+                  
+                  {/* Assigned To - Inline Edit with proper user filtering */}
+                  <TableCell className="inline-edit-cell relative min-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={ticket.assignedToId?.toString() || 'unassigned'}
+                      onValueChange={(value) => {
+                        try {
+                          if (value === 'unassigned') {
+                            updateTicketMutation.mutate({ 
+                              id: ticket.id, 
+                              updates: { assignedToId: null } 
+                            });
+                          } else {
+                            const userId = parseInt(value);
+                            if (!isNaN(userId) && userId > 0) {
+                              updateTicketMutation.mutate({ 
+                                id: ticket.id, 
+                                updates: { assignedToId: userId } 
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Error updating assignment:', error);
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="relative z-50">
-                      <SelectItem value="unassigned">
-                        <span className="text-gray-400">{translations.unassigned}</span>
-                      </SelectItem>
-                      {users?.map((user: any) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.firstName && user.lastName 
-                            ? `${user.firstName} ${user.lastName}` 
-                            : user.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                
-                {/* Due Date */}
-                <TableCell className="inline-edit-cell relative min-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                  <Calendar
-                    mode="picker"
-                    value={ticket.dueDate || ''}
-                    onChange={(value) => {
-                      updateTicketMutation.mutate({ 
-                        id: ticket.id, 
-                        updates: { dueDate: value || null } 
-                      });
-                    }}
-                    placeholder={language === 'English' ? 'Pick due date' : 'اختر تاريخ الاستحقاق'}
-                    className="w-full h-8 text-sm"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+                      }}
+                    >
+                      <SelectTrigger className="h-8 border-0 bg-transparent hover:bg-gray-50 focus:ring-0">
+                        <SelectValue>
+                          {ticket.assignedToId ? getUserName(ticket.assignedToId) : (t.unassigned || 'Unassigned')}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="relative z-50">
+                        <SelectItem value="unassigned">{t.unassigned || 'Unassigned'}</SelectItem>
+                        {/* Filter users who can be assigned tickets (agents, managers, admins) */}
+                        {Array.isArray(users) && users
+                          .filter((u: any) => u && ['agent', 'manager', 'admin'].includes(u.role))
+                          .map((u: any) => (
+                          <SelectItem key={u.id} value={u.id.toString()}>
+                            {u.username || `User ${u.id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  
+                  {/* Actions Dropdown */}
+                  <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild data-dropdown-trigger>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">{t.openMenu || 'Open menu'}</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="relative z-50">
+                        <DropdownMenuLabel>{t.actions || 'Actions'}</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => onEdit && onEdit(ticket)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t.editTicket || 'Edit Ticket'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
-      <Dialog open={resolutionDialog.open} onOpenChange={(open) => {
-          if (!open) {
-            setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-            setResolutionNotes('');
-          }
-        }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {resolutionNotes ? 'Update Resolution' : 'Add Resolution Details'}
-              </DialogTitle>
-              <DialogDescription>
-               {resolutionDialog.ticketId && (
-                  <>
-                    <p className="font-medium">
-                      Ticket: {getTicketById(resolutionDialog.ticketId)?.title || getTicketById(resolutionDialog.ticketId)?.ticketId}
-                    </p>
-                    <br />
-                  </>
-                )}
-                {resolutionNotes 
-                  ? `Review or update the resolution before marking this ticket as ${resolutionDialog.newStatus}.`
-                  : `Please provide resolution details before marking this ticket as ${resolutionDialog.newStatus}.`
+      </div>
+
+      {/* Resolution Dialog */}
+      <Dialog open={resolutionDialog.open} onOpenChange={(open) => setResolutionDialog({ ...resolutionDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.addResolution || 'Add Resolution'}</DialogTitle>
+            <DialogDescription>
+              {language === 'English' 
+                ? 'Please provide resolution notes before marking this ticket as resolved or closed.'
+                : 'يرجى تقديم ملاحظات الحل قبل تصنيف هذه التذكرة كمحلولة أو مغلقة.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="resolution-notes">{t.resolutionNotes || 'Resolution Notes'}</Label>
+              <Textarea
+                id="resolution-notes"
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder={language === 'English' 
+                  ? 'Describe how this ticket was resolved...'
+                  : 'اشرح كيف تم حل هذه التذكرة...'
                 }
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="resolution">
-                  Resolution {!resolutionNotes && <span className="text-red-500">*</span>}
-                </Label>
-                <Textarea
-                  id="resolution"
-                  value={resolutionNotes}
-                  onChange={(e) => setResolutionNotes(e.target.value)}
-                  placeholder="Enter how this ticket was resolved..."
-                  className="min-h-[100px]"
-                  autoFocus
-                />
-                {resolutionNotes && (
-                  <p className="text-sm text-muted-foreground">
-                    Tip: You can update the resolution or leave it as is.
-                  </p>
-                )}
-              </div>
+                rows={4}
+              />
             </div>
-            
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
-                  setResolutionNotes('');
-                }}
-              >
-                {translations.cancel}
-              </Button>
-              <Button 
-                onClick={() => handleResolutionSubmit()}
-                disabled={!resolutionNotes.trim()} // Require resolution text
-              >
-                {resolutionNotes ? 'Update & Save' : translations.save}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResolutionDialog({ open: false, ticketId: null, newStatus: '' });
+                setResolutionNotes('');
+              }}
+            >
+              {t.cancel || 'Cancel'}
+            </Button>
+            <Button 
+              onClick={handleResolutionSubmit}
+              disabled={!resolutionNotes.trim()}
+            >
+              {t.saveResolution || 'Save Resolution'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

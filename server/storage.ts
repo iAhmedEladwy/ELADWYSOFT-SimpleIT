@@ -12,10 +12,11 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, customRequestTypes, serviceProviders, assetServiceProviders,
+  customAssetTypes, customAssetBrands, customAssetStatuses, categories,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
+import { calculatePriority, type UrgencyLevel, type ImpactLevel } from "@shared/priorityUtils";
 import { db, pool } from "./db";
 import { eq, and, like, desc, or, asc, gte, lt, sql } from "drizzle-orm";
 import { compare, hash } from 'bcrypt';
@@ -39,8 +40,7 @@ import type {
   TicketResponse,
   CustomAssetType,
   CustomAssetBrand,
-  CustomAssetStatus,
-  ServiceProvider
+  CustomAssetStatus
 } from '@shared/types';
 
 export interface IStorage {
@@ -180,21 +180,12 @@ export interface IStorage {
   getAssetStatusByName(name: string): Promise<AssetStatus | undefined>;
   ensureAssetStatus(name: string, color?: string): Promise<AssetStatus>;
   
-  getServiceProviders(): Promise<any[]>;
-  createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
-  updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any>;
-  deleteServiceProvider(id: number): Promise<boolean>;
-  
   // Custom Request Types operations (Feature 1: Change Category to Request Type)
-  getCustomRequestTypes(): Promise<any[]>;
-  getAllCustomRequestTypes(): Promise<any[]>;
-  createCustomRequestType(requestType: any): Promise<any>;
-  updateCustomRequestType(id: number, requestType: any): Promise<any | undefined>;
-  deleteCustomRequestType(id: number): Promise<boolean>;
-  
-  // Enhanced Ticket operations with time tracking (Feature 2: Manual time tracking)
-  startTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
-  stopTicketTimeTracking(ticketId: number, userId: number): Promise<Ticket | undefined>;
+  getCategories(): Promise<any[]>;
+  getAllCategories(): Promise<any[]>;
+  createCategory(category: any): Promise<any>;
+  updateCategory(id: number, category: any): Promise<any | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
   
   // Ticket History operations (Feature 3: Ticket history and updates display)
   getTicketHistory(ticketId: number): Promise<any[]>;
@@ -426,8 +417,20 @@ export class DatabaseStorage implements IStorage {
       if (isNaN(numericId)) {
         return undefined;
       }
-      const [user] = await db.select().from(users).where(eq(users.id, numericId));
-      return user;
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        password: users.password,
+        accessLevel: users.accessLevel,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      }).from(users).where(eq(users.id, numericId));
+      return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user:', error);
       return undefined;
@@ -440,12 +443,16 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         username: users.username,
         email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
         password: users.password,
         accessLevel: users.accessLevel,
         role: users.role,
+        isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).where(eq(users.username, username));
+      
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
@@ -464,13 +471,16 @@ export class DatabaseStorage implements IStorage {
         ? await hash(userData.password, 10)  // Hash if plain text
         : await hash('defaultPassword123', 10);  // Default
 
-    // Rest of your code remains the same...
+    // Include firstName and lastName in the database insert
     const dbUserData = {
       username: userData.username,
       email: userData.email,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
       password: hashedPassword,
       accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
       role: userData.role || 'employee',
+      isActive: userData.isActive !== undefined ? userData.isActive : true,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -512,14 +522,12 @@ export class DatabaseStorage implements IStorage {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
+      firstName: dbUser.firstName || dbUser.first_name || null,
+      lastName: dbUser.lastName || dbUser.last_name || null,
       password: dbUser.password,
+      accessLevel: dbUser.accessLevel || dbUser.access_level,
       role: dbUser.role || this.accessLevelToRole(dbUser.accessLevel || dbUser.access_level),
-      firstName: null,
-      lastName: null,
-      profileImageUrl: null,
-      employeeId: null,
-      managerId: null,
-      isActive: true,
+      isActive: dbUser.isActive !== undefined ? dbUser.isActive : (dbUser.is_active !== undefined ? dbUser.is_active : true),
       createdAt: dbUser.createdAt || dbUser.created_at,
       updatedAt: dbUser.updatedAt || dbUser.updated_at
     };
@@ -555,9 +563,12 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         username: users.username,
         email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
         password: users.password,
         accessLevel: users.accessLevel,
         role: users.role,
+        isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).orderBy(users.username);
@@ -1102,7 +1113,32 @@ export class DatabaseStorage implements IStorage {
   // Ticket operations
   async getTicket(id: number): Promise<Ticket | undefined> {
     try {
-      const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+      const [ticket] = await db
+        .select({
+          id: tickets.id,
+          ticketId: tickets.ticketId,
+          submittedById: tickets.submittedById,
+          assignedToId: tickets.assignedToId,
+          relatedAssetId: tickets.relatedAssetId,
+          type: tickets.type,
+          categoryId: tickets.categoryId,
+          category: sql<string>`COALESCE(${categories.name}, 'General')`.as('category'),
+          priority: tickets.priority,
+          urgency: tickets.urgency,
+          impact: tickets.impact,
+          title: tickets.title,
+          description: tickets.description,
+          resolution: tickets.resolution,
+          status: tickets.status,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+          completionTime: tickets.completionTime,
+          timeSpent: tickets.timeSpent,
+          dueDate: tickets.dueDate,
+        })
+        .from(tickets)
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
+        .where(eq(tickets.id, id));
       return ticket;
     } catch (error) {
       console.error('Error fetching ticket:', error);
@@ -1122,89 +1158,59 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     try {
-      // Log the data being inserted to identify the problematic field
-      console.log('Creating ticket with data:', {
-        summary: ticket.summary?.length || 0,
-        description: ticket.description?.length || 0,
-        requestType: ticket.requestType?.length || 0,
-        category: ticket.category?.length || 0,
-        priority: ticket.priority,
-        urgency: ticket.urgency?.length || 0,
-        impact: ticket.impact?.length || 0,
-        status: ticket.status
-      });
-      
-      // Ensure field length limits are respected
+      // Auto-calculate priority based on urgency and impact
+      const urgency = ticket.urgency || 'Medium';
+      const impact = ticket.impact || 'Medium';
+      const calculatedPriority = calculatePriority(urgency, impact);
+
       const safeData = {
-        summary: (ticket.summary || 'Ticket').substring(0, 255),
-        description: ticket.description || '',
-        requestType: (ticket.requestType || 'Other').substring(0, 100),
-        category: (ticket.category || 'Incident').substring(0, 100),
-        priority: ticket.priority || 'Medium',
-        urgency: (ticket.urgency || 'Medium').substring(0, 20),
-        impact: (ticket.impact || 'Medium').substring(0, 20),
-        status: ticket.status || 'Open',
         submittedById: ticket.submittedById,
         assignedToId: ticket.assignedToId || null,
         relatedAssetId: ticket.relatedAssetId || null,
+        type: ticket.type || 'Incident',
+        category: ticket.category || 'General',
+        priority: calculatedPriority,
+        urgency: urgency,
+        impact: impact,
+        title: (ticket.title || 'New Ticket').substring(0, 255),
+        description: ticket.description || '',
         resolution: ticket.resolution || null,
-        resolutionNotes: ticket.resolutionNotes || null,
+        status: ticket.status || 'Open',
+        timeSpent: ticket.timeSpent || null,
         dueDate: ticket.dueDate || null,
         slaTarget: ticket.slaTarget || null,
-        escalationLevel: (ticket.escalationLevel || '0').toString().substring(0, 10),
-        tags: ticket.tags || null,
-        privateNotes: ticket.privateNotes || null,
-        timeSpent: ticket.timeSpent || 0,
-        isTimeTracking: ticket.isTimeTracking || false,
-        timeTrackingStartedAt: ticket.timeTrackingStartedAt || null
       };
-      
-      console.log('Safe data after truncation:', {
-        summary: safeData.summary.length,
-        requestType: safeData.requestType.length,
-        category: safeData.category.length,
-        urgency: safeData.urgency.length,
-        impact: safeData.impact.length,
-        escalationLevel: safeData.escalationLevel.length
-      });
-      
-      // Let database auto-generate ticket_id - don't include it in INSERT
+
+      // Let database auto-generate ticket_id using the sequence
       const result = await pool.query(`
         INSERT INTO tickets (
-          summary, description, request_type, category, priority,
-          urgency, impact, status, submitted_by_id, assigned_to_id, related_asset_id,
-          resolution, resolution_notes, due_date, sla_target, escalation_level,
-          tags, private_notes, time_spent, is_time_tracking, time_tracking_started_at,
+          submitted_by_id, assigned_to_id, related_asset_id,
+          type, category, priority, urgency, impact,
+          title, description, resolution, status,
+          time_spent, due_date, sla_target,
           created_at, updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-          $17, $18, $19, $20, $21, NOW(), NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+          NOW(), NOW()
         ) RETURNING *
       `, [
-        safeData.summary,
-        safeData.description,
-        safeData.requestType,
+        safeData.submittedById,
+        safeData.assignedToId,
+        safeData.relatedAssetId,
+        safeData.type,
         safeData.category,
         safeData.priority,
         safeData.urgency,
         safeData.impact,
-        safeData.status,
-        safeData.submittedById,
-        safeData.assignedToId,
-        safeData.relatedAssetId,
+        safeData.title,
+        safeData.description,
         safeData.resolution,
-        safeData.resolutionNotes,
-        safeData.dueDate,
-        safeData.slaTarget,
-        safeData.escalationLevel,
-        safeData.tags,
-        safeData.privateNotes,
+        safeData.status,
         safeData.timeSpent,
-        safeData.isTimeTracking,
-        safeData.timeTrackingStartedAt
+        safeData.dueDate,
+        safeData.slaTarget
       ]);
-      
-      console.log('Ticket created successfully:', result.rows[0]);
+
       return result.rows[0];
     } catch (error) {
       console.error('Error creating ticket:', error);
@@ -1228,10 +1234,36 @@ export class DatabaseStorage implements IStorage {
 
   async updateTicket(id: number, ticketData: Partial<InsertTicket>): Promise<Ticket | undefined> {
     try {
+      // If urgency or impact is being updated, recalculate priority
+      let updatedData = { ...ticketData };
+      
+      // Check if urgency or impact is being changed
+      if (ticketData.urgency || ticketData.impact) {
+        // Get current ticket to retrieve existing urgency/impact values
+        const currentTicket = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+        
+        if (currentTicket.length > 0) {
+          const current = currentTicket[0];
+          const newUrgency = (ticketData.urgency || current.urgency) as UrgencyLevel;
+          const newImpact = (ticketData.impact || current.impact) as ImpactLevel;
+          
+          // Recalculate priority
+          const calculatedPriority = calculatePriority(newUrgency, newImpact);
+          updatedData.priority = calculatedPriority;
+          
+          console.log('Priority recalculated for ticket update:', { 
+            ticketId: id, 
+            urgency: newUrgency, 
+            impact: newImpact, 
+            newPriority: calculatedPriority 
+          });
+        }
+      }
+      
       // Update only permitted fields
       const [updatedTicket] = await db
         .update(tickets)
-        .set({ ...ticketData, updatedAt: new Date() })
+        .set({ ...updatedData, updatedAt: new Date() })
         .where(eq(tickets.id, id))
         .returning();
       return updatedTicket;
@@ -1256,7 +1288,34 @@ async deleteTicket(id: number): Promise<boolean> {
 
   async getAllTickets(): Promise<Ticket[]> {
     try {
-      return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+      const result = await db
+        .select({
+          id: tickets.id,
+          ticketId: tickets.ticketId,
+          submittedById: tickets.submittedById,
+          assignedToId: tickets.assignedToId,
+          relatedAssetId: tickets.relatedAssetId,
+          type: tickets.type,
+          categoryId: tickets.categoryId,
+          category: sql<string>`COALESCE(${categories.name}, 'General')`.as('category'), // Category name for backward compatibility
+          priority: tickets.priority,
+          urgency: tickets.urgency,
+          impact: tickets.impact,
+          title: tickets.title,
+          description: tickets.description,
+          resolution: tickets.resolution,
+          status: tickets.status,
+          createdAt: tickets.createdAt,
+          updatedAt: tickets.updatedAt,
+          completionTime: tickets.completionTime,
+          timeSpent: tickets.timeSpent,
+          dueDate: tickets.dueDate,
+        })
+        .from(tickets)
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
+        .orderBy(desc(tickets.createdAt));
+      
+      return result;
     } catch (error) {
       console.error('Error fetching tickets:', error);
       return [];
@@ -1887,63 +1946,6 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // Service Providers
-  async getServiceProviders(): Promise<any[]> {
-    try {
-      const providers = await db.select().from(serviceProviders).orderBy(asc(serviceProviders.name));
-      return providers;
-    } catch (error) {
-      console.error('Error fetching service providers:', error);
-      return [];
-    }
-  }
-
-  async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
-    try {
-      const [newProvider] = await db.insert(serviceProviders)
-        .values({
-          name: data.name,
-          contactPerson: data.contactPerson || null,
-          phone: data.phone || null,
-          email: data.email || null
-        })
-        .returning();
-      return newProvider;
-    } catch (error) {
-      console.error('Error creating service provider:', error);
-      throw error;
-    }
-  }
-
-  async updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any | undefined> {
-    try {
-      const [updated] = await db.update(serviceProviders)
-        .set({
-          name: data.name,
-          contactPerson: data.contactPerson,
-          phone: data.phone,
-          email: data.email,
-          updatedAt: new Date()
-        })
-        .where(eq(serviceProviders.id, id))
-        .returning();
-      return updated;
-    } catch (error) {
-      console.error('Error updating service provider:', error);
-      return undefined;
-    }
-  }
-
-  async deleteServiceProvider(id: number): Promise<boolean> {
-    try {
-      const result = await db.delete(serviceProviders).where(eq(serviceProviders.id, id));
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
-      console.error('Error deleting service provider:', error);
-      return false;
-    }
-  }
-
   // Asset Transaction operations
   async createAssetTransaction(transaction: InsertAssetTransaction): Promise<AssetTransaction> {
     try {
@@ -2258,54 +2260,37 @@ async deleteTicket(id: number): Promise<boolean> {
     }
   }
 
-  // Custom request types operations
-  async getCustomRequestTypes(): Promise<CustomRequestType[]> {
+  // Categories operations
+  async getCategories(): Promise<Category[]> {
     try {
-      const result = await db.select().from(customRequestTypes).orderBy(customRequestTypes.name);
+      const result = await db.select().from(categories).orderBy(categories.name);
       return result;
     } catch (error) {
-      console.error('Error fetching custom request types:', error);
+      console.error('Error fetching categories:', error);
       return [];
     }
   }
 
-  async createCustomRequestType(data: InsertCustomRequestType): Promise<CustomRequestType> {
-    const [result] = await db.insert(customRequestTypes).values(data).returning();
+  async getAllCategories(): Promise<Category[]> {
+    return this.getCategories();
+  }
+
+  async createCategory(data: any): Promise<any> {
+    const [result] = await db.insert(categories).values(data).returning();
     return result;
   }
 
-  async updateCustomRequestType(id: number, data: Partial<InsertCustomRequestType>): Promise<CustomRequestType | null> {
-    const [result] = await db.update(customRequestTypes)
+  async updateCategory(id: number, data: any): Promise<any | null> {
+    const [result] = await db.update(categories)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(customRequestTypes.id, id))
+      .where(eq(categories.id, id))
       .returning();
     return result || null;
   }
 
-  async deleteCustomRequestType(id: number): Promise<boolean> {
-    const result = await db.delete(customRequestTypes).where(eq(customRequestTypes.id, id));
+  async deleteCategory(id: number): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id));
     return result.rowCount > 0;
-  }
-
-  // Initialize default request types in database
-  private async initializeDefaultRequestTypes(): Promise<void> {
-    const defaultRequestTypes = [
-      { name: 'Hardware', description: 'Hardware related requests and issues' },
-      { name: 'Software', description: 'Software installation and support requests' },
-      { name: 'Network', description: 'Network connectivity and infrastructure issues' },
-      { name: 'Access Control', description: 'User access and permission requests' },
-      { name: 'Security', description: 'Security incidents and compliance issues' }
-    ];
-
-    try {
-      for (const requestType of defaultRequestTypes) {
-        await db.insert(customRequestTypes)
-          .values(requestType)
-          .onConflictDoNothing();
-      }
-    } catch (error) {
-      console.error('Error initializing default request types:', error);
-    }
   }
 
   private async initializeDefaultAssetStatuses(): Promise<void> {
@@ -2436,10 +2421,11 @@ async deleteTicket(id: number): Promise<boolean> {
       ]);
 
       // Update ticket's last activity
-      await db
-        .update(tickets)
-        .set({ lastActivityAt: new Date(), updatedAt: new Date() })
-        .where(eq(tickets.id, commentData.ticketId));
+      await pool.query(`
+        UPDATE tickets 
+        SET updated_at = NOW() 
+        WHERE id = $1
+      `, [commentData.ticketId]);
 
       // Add to history
       await this.addTicketHistory({
@@ -2484,8 +2470,8 @@ async deleteTicket(id: number): Promise<boolean> {
       if (ticketData.assignedToId && ticketData.assignedToId !== currentTicket.assignedToId) {
         changes.push(`Assignment changed`);
       }
-      if (ticketData.requestType && ticketData.requestType !== currentTicket.requestType) {
-        changes.push(`Request type changed from "${currentTicket.requestType}" to "${ticketData.requestType}"`);
+      if (ticketData.categoryId && ticketData.categoryId !== currentTicket.categoryId) {
+        changes.push(`Category changed`);
       }
 
       // Prepare update data with proper field type handling
