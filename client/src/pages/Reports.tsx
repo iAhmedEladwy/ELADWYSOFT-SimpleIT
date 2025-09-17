@@ -499,109 +499,26 @@ export default function Reports() {
             <div className="flex items-center space-x-3 no-print">
               <Button
                 variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2"
-              >
-                <Filter className="h-4 w-4" />
-                <span>{translations.filters}</span>
-              </Button>
-              
-              <Button
-                variant="outline"
                 onClick={exportAllData}
                 className="flex items-center space-x-2"
               >
                 <Download className="h-4 w-4" />
                 <span>{translations.exportData}</span>
               </Button>
-
-              <Button
-                variant="outline"
-                onClick={cleanupPrintTitle}
-                className="flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-                title="Remove stuck print title"
-              >
-                <AlertCircle className="h-4 w-4" />
-                <span>Clean Title</span>
-              </Button>
             </div>
           </div>
 
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 no-print">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>{translations.dateFrom}</Label>
-                  <Calendar
-                    mode="picker"
-                    value={dateRange.from}
-                    onChange={(value) => setDateRange(prev => ({ ...prev, from: value || '' }))}
-                    placeholder={translations.dateFrom}
-                    className="w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{translations.dateTo}</Label>
-                  <Calendar
-                    mode="picker"
-                    value={dateRange.to}
-                    onChange={(value) => setDateRange(prev => ({ ...prev, to: value || '' }))}
-                    placeholder={translations.dateTo}
-                    className="w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{translations.chartType}</Label>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant={selectedChartType === 'pie' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedChartType('pie')}
-                      className="flex-1"
-                    >
-                      <PieChartIcon className="h-4 w-4 mr-1" />
-                      Pie
-                    </Button>
-                    <Button
-                      variant={selectedChartType === 'bar' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedChartType('bar')}
-                      className="flex-1"
-                    >
-                      <BarChart3 className="h-4 w-4 mr-1" />
-                      Bar
-                    </Button>
-                    <Button
-                      variant={selectedChartType === 'line' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedChartType('line')}
-                      className="flex-1"
-                    >
-                      <TrendingUp className="h-4 w-4 mr-1" />
-                      Line
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-4">
-                <Button variant="outline" onClick={resetFilters}>
-                  {translations.resetFilters}
-                </Button>
-                <Button onClick={applyFilters}>
-                  {translations.applyFilters}
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Filters Panel - Removed as filters functionality is not needed */}
         </div>
 
         {/* Summary Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <UITooltip>
             <TooltipTrigger asChild>
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
-                <div className="flex items-center justify-between">
+              <div className="backdrop-blur-lg bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-700/30 rounded-xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 cursor-help relative overflow-hidden group">
+                {/* Glass effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/80 to-purple-600/80 rounded-xl"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <p className="text-indigo-100 text-sm font-medium">{translations.totalEmployees}</p>
                     {employeeReportsLoading ? (
@@ -637,8 +554,10 @@ export default function Reports() {
 
           <UITooltip>
             <TooltipTrigger asChild>
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
-                <div className="flex items-center justify-between">
+              <div className="backdrop-blur-lg bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-700/30 rounded-xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 cursor-help relative overflow-hidden group">
+                {/* Glass effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/80 to-teal-600/80 rounded-xl"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <p className="text-emerald-100 text-sm font-medium">{translations.totalAssets}</p>
                     {assetReportsLoading ? (
@@ -673,8 +592,10 @@ export default function Reports() {
 
           <UITooltip>
             <TooltipTrigger asChild>
-              <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
-                <div className="flex items-center justify-between">
+              <div className="backdrop-blur-lg bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-700/30 rounded-xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 cursor-help relative overflow-hidden group">
+                {/* Glass effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/80 to-rose-600/80 rounded-xl"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <p className="text-pink-100 text-sm font-medium">{translations.totalTickets}</p>
                     {ticketReportsLoading ? (
@@ -709,8 +630,10 @@ export default function Reports() {
 
           <UITooltip>
             <TooltipTrigger asChild>
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-help">
-                <div className="flex items-center justify-between">
+              <div className="backdrop-blur-lg bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-700/30 rounded-xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 cursor-help relative overflow-hidden group">
+                {/* Glass effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/80 to-orange-600/80 rounded-xl"></div>
+                <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <p className="text-amber-100 text-sm font-medium">{translations.totalValue}</p>
                     {assetReportsLoading ? (
