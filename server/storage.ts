@@ -452,6 +452,7 @@ export class DatabaseStorage implements IStorage {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).where(eq(users.username, username));
+      
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
@@ -562,9 +563,12 @@ export class DatabaseStorage implements IStorage {
         id: users.id,
         username: users.username,
         email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
         password: users.password,
         accessLevel: users.accessLevel,
         role: users.role,
+        isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).orderBy(users.username);
