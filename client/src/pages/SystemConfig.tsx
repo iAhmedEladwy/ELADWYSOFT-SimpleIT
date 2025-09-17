@@ -3112,6 +3112,24 @@ const parseCSVLine = (line: string): string[] => {
                           {language === 'English' ? 'Must be unique and at least 3 characters' : 'يجب أن يكون فريداً وعلى الأقل 3 أحرف'}
                         </p>
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'First Name' : 'الاسم الأول'}</Label>
+                          <Input 
+                            value={newUserFirstName} 
+                            onChange={(e) => setNewUserFirstName(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter first name' : 'أدخل الاسم الأول'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{language === 'English' ? 'Last Name' : 'الاسم الأخير'}</Label>
+                          <Input 
+                            value={newUserLastName} 
+                            onChange={(e) => setNewUserLastName(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter last name' : 'أدخل الاسم الأخير'}
+                          />
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         <Label>{language === 'English' ? 'Email' : 'البريد الإلكتروني'}</Label>
                         <Input 
