@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/authContext';
 import { apiRequest } from '@/lib/queryClient';
 import UsersTable from '@/components/users/UsersTable';
 import UserForm from '@/components/users/UserForm';
+import ChangePasswordDialog from '@/components/users/ChangePasswordDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Shield, ChevronRight } from 'lucide-react';
@@ -26,6 +27,8 @@ export default function Users() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [openChangePasswordDialog, setOpenChangePasswordDialog] = useState(false);
+  const [userToChangePassword, setUserToChangePassword] = useState<any>(null);
   
   // Listen for the FAB add user event
   useEffect(() => {
@@ -72,6 +75,9 @@ export default function Users() {
     userAdded: language === 'English' ? 'User added successfully' : 'تمت إضافة المستخدم بنجاح',
     userUpdated: language === 'English' ? 'User updated successfully' : 'تم تحديث المستخدم بنجاح',
     userDeleted: language === 'English' ? 'User deleted successfully' : 'تم حذف المستخدم بنجاح',
+    userActivated: language === 'English' ? 'User activated successfully' : 'تم تفعيل المستخدم بنجاح',
+    userDeactivated: language === 'English' ? 'User deactivated successfully' : 'تم إلغاء تفعيل المستخدم بنجاح',
+    passwordChanged: language === 'English' ? 'Password changed successfully' : 'تم تغيير كلمة المرور بنجاح',
     error: language === 'English' ? 'An error occurred' : 'حدث خطأ',
   };
 
@@ -152,6 +158,49 @@ export default function Users() {
     },
   });
 
+  // Toggle user active status mutation
+  const toggleActiveUserMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
+      const res = await apiRequest(`/api/users/${id}`, 'PUT', { isActive });
+      return res;
+    },
+    onSuccess: (_, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: isActive ? translations.userActivated : translations.userDeactivated,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Change user password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ id, newPassword }: { id: number; newPassword: string }) => {
+      const res = await apiRequest(`/api/users/${id}/change-password`, 'PUT', { password: newPassword });
+      return res;
+    },
+    onSuccess: () => {
+      toast({
+        title: translations.passwordChanged,
+      });
+      setOpenChangePasswordDialog(false);
+      setUserToChangePassword(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -190,6 +239,19 @@ export default function Users() {
   const handleEditUser = (user: any) => {
     setEditingUser(user);
     setOpenDialog(true);
+  };
+
+  const handleToggleActive = (userId: number, isActive: boolean) => {
+    toggleActiveUserMutation.mutate({ id: userId, isActive });
+  };
+
+  const handleChangePassword = (user: any) => {
+    setUserToChangePassword(user);
+    setOpenChangePasswordDialog(true);
+  };
+
+  const handleChangePasswordSubmit = (userId: number, newPassword: string) => {
+    changePasswordMutation.mutate({ id: userId, newPassword });
   };
 
   const admins = users.filter((user: any) => user.role === 'admin');
@@ -319,6 +381,8 @@ export default function Users() {
               users={users} 
               onEdit={handleEditUser} 
               onDelete={handleDeleteUser} 
+              onToggleActive={handleToggleActive}
+              onChangePassword={handleChangePassword}
             />
           )}
         </TabsContent>
@@ -331,6 +395,8 @@ export default function Users() {
               users={admins} 
               onEdit={handleEditUser} 
               onDelete={handleDeleteUser} 
+              onToggleActive={handleToggleActive}
+              onChangePassword={handleChangePassword}
             />
           )}
         </TabsContent>
@@ -343,6 +409,8 @@ export default function Users() {
               users={managers} 
               onEdit={handleEditUser} 
               onDelete={handleDeleteUser} 
+              onToggleActive={handleToggleActive}
+              onChangePassword={handleChangePassword}
             />
           )}
         </TabsContent>
@@ -355,6 +423,8 @@ export default function Users() {
               users={agents} 
               onEdit={handleEditUser} 
               onDelete={handleDeleteUser} 
+              onToggleActive={handleToggleActive}
+              onChangePassword={handleChangePassword}
             />
           )}
         </TabsContent>
@@ -367,10 +437,21 @@ export default function Users() {
               users={employees} 
               onEdit={handleEditUser} 
               onDelete={handleDeleteUser} 
+              onToggleActive={handleToggleActive}
+              onChangePassword={handleChangePassword}
             />
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={openChangePasswordDialog}
+        onOpenChange={setOpenChangePasswordDialog}
+        user={userToChangePassword}
+        onSubmit={handleChangePasswordSubmit}
+        isSubmitting={changePasswordMutation.isPending}
+      />
     </div>
   );
 }

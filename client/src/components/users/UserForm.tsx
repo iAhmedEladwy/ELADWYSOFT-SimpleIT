@@ -32,6 +32,16 @@ const userFormSchema = z.object({
   role: z.string(),
 });
 
+// Define schema for new user (password required)
+const newUserFormSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Please enter a valid email'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.string(),
+});
+
 interface UserFormProps {
   onSubmit: (data: any) => void;
   initialData?: any;
@@ -69,7 +79,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof userFormSchema>>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(isEditMode ? userFormSchema : newUserFormSchema),
     defaultValues: {
       username: initialData?.username || '',
       firstName: initialData?.firstName || '',
@@ -82,8 +92,8 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
 
   // Handle form submission
   const handleSubmit = (values: z.infer<typeof userFormSchema>) => {
-    // If password is empty and this is an edit form, remove it from the submission
-    if (isEditMode && !values.password) {
+    // If in edit mode, always exclude password from submission
+    if (isEditMode) {
       const { password, ...dataWithoutPassword } = values;
       onSubmit(dataWithoutPassword);
     } else {
@@ -156,20 +166,21 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{isEditMode ? translations.newPassword : translations.password}</FormLabel>
-              <FormControl>
-                <Input {...field} type="password" />
-              </FormControl>
-              {isEditMode && <FormDescription>{translations.passwordDesc}</FormDescription>}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {!isEditMode && (
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{translations.password}</FormLabel>
+                <FormControl>
+                  <Input {...field} type="password" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
