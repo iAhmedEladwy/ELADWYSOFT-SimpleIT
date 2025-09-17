@@ -22,26 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Define schema for form validation
-const userFormSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
-  role: z.string(),
-});
-
-// Define schema for new user (password required)
-const newUserFormSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.string(),
-});
-
 interface UserFormProps {
   onSubmit: (data: any) => void;
   initialData?: any;
@@ -51,6 +31,33 @@ interface UserFormProps {
 export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFormProps) {
   const { language } = useLanguage();
   const isEditMode = !!initialData;
+
+  // Define schema that adapts based on edit mode
+  const getSchema = () => {
+    if (isEditMode) {
+      // For edit mode, password is optional and not validated
+      return z.object({
+        username: z.string().min(3, 'Username must be at least 3 characters'),
+        email: z.string().email('Please enter a valid email'),
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
+        password: z.string().optional(),
+        role: z.string(),
+      });
+    } else {
+      // For new user mode, password is required
+      return z.object({
+        username: z.string().min(3, 'Username must be at least 3 characters'),
+        email: z.string().email('Please enter a valid email'),
+        firstName: z.string().min(1, 'First name is required'),
+        lastName: z.string().min(1, 'Last name is required'),
+        password: z.string().min(6, 'Password must be at least 6 characters'),
+        role: z.string(),
+      });
+    }
+  };
+
+  const schema = getSchema();
 
   // Translations
   const translations = {
@@ -78,37 +85,41 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
   };
 
   // Initialize form with default values
-  const form = useForm<z.infer<typeof userFormSchema>>({
-    resolver: zodResolver(isEditMode ? userFormSchema : newUserFormSchema),
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues: {
       username: initialData?.username || '',
       firstName: initialData?.firstName || '',
       lastName: initialData?.lastName || '',
       email: initialData?.email || '',
-      password: '',
+      password: isEditMode ? undefined : '',
       role: initialData?.role || 'employee',
     },
   });
 
-  // Reset form when initialData changes
+  // Reset form when initialData or edit mode changes
   useEffect(() => {
     form.reset({
       username: initialData?.username || '',
       firstName: initialData?.firstName || '',
       lastName: initialData?.lastName || '',
       email: initialData?.email || '',
-      password: '',
+      password: isEditMode ? undefined : '',
       role: initialData?.role || 'employee',
     });
-  }, [initialData, form]);
+  }, [initialData, isEditMode, form]);
 
   // Handle form submission
-  const handleSubmit = (values: z.infer<typeof userFormSchema>) => {
-    // If in edit mode, always exclude password from submission
+  const handleSubmit = (values: z.infer<typeof schema>) => {
+    console.log('Form submitted with values:', values);
+    console.log('Is edit mode:', isEditMode);
+    
     if (isEditMode) {
+      // For edit mode, exclude password from submission
       const { password, ...dataWithoutPassword } = values;
       onSubmit(dataWithoutPassword);
     } else {
+      // For new user, password should be included and validated
       onSubmit(values);
     }
   };
@@ -222,7 +233,12 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting}
+          onClick={() => console.log('Save button clicked, isSubmitting:', isSubmitting)}
+        >
           {isSubmitting ? translations.submitting : isEditMode ? translations.save : translations.create}
         </Button>
       </form>
