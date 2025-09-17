@@ -18,16 +18,11 @@ export class MemoryStorage implements IStorage {
   private systemConfig: schema.SystemConfig | undefined;
   
   // Custom asset management data
-  private customAssetTypes: schema.CustomAssetType[] = [];
-  private customAssetBrands: schema.CustomAssetBrand[] = [];
-  private customAssetStatuses: schema.CustomAssetStatus[] = [];
-  private serviceProviders: schema.ServiceProvider[] = [];
+  private customAssetTypes: any[] = [];
+  private customAssetBrands: any[] = [];
+  private customAssetStatuses: any[] = [];
   private categories: schema.Category[] = [];
-  private ticketHistory: schema.TicketHistory[] = [];
-  private ticketCategories: schema.TicketCategory[] = [];
-  private ticketComments: schema.TicketComment[] = [];
-  private timeEntries: any[] = [];
-  private comments: schema.TicketComment[] = [];
+  private ticketComments: any[] = [];
   
   private idCounters = {
     users: 1,
@@ -44,12 +39,7 @@ export class MemoryStorage implements IStorage {
     customAssetTypes: 1,
     customAssetBrands: 1,
     customAssetStatuses: 1,
-    serviceProviders: 1,
     categories: 1,
-    ticketHistory: 1,
-    ticketCategories: 1,
-    timeEntries: 1,
-    comments: 1,
     ticketComments: 1
   };
 
@@ -92,7 +82,7 @@ export class MemoryStorage implements IStorage {
       departments: ["IT", "HR", "Finance", "Operations"],
       assetTypes: ["Hardware", "Software"],
       assetBrands: ["Dell", "HP", "Lenovo", "Apple"],
-      assetStatuses: ["Available", "In Use", "Under Maintenance", "Retired"],
+      assetStatuses: ["Available", "In Use", "Maintenance","Sold" ,"Retired"],
       emailHost: null,
       emailPort: null,
       emailUser: null,
@@ -102,10 +92,6 @@ export class MemoryStorage implements IStorage {
       updatedAt: new Date()
     };
   }
-
-  // Removed all sample data for clean production deployment
-
-  // Custom asset data removed for clean production deployment
 
   private initializeDefaultCategories() {
     // Check for existing categories to prevent duplicates
@@ -223,141 +209,6 @@ export class MemoryStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
-  }
-
-  private addSampleTickets() {
-    // Helper function to calculate priority based on urgency and impact (ITIL best practice)
-    const calculatePriority = (urgency: string, impact: string): string => {
-      const matrix = {
-        'Critical': { 'Critical': 'High', 'High': 'High', 'Medium': 'High', 'Low': 'Medium' },
-        'High': { 'Critical': 'High', 'High': 'High', 'Medium': 'Medium', 'Low': 'Medium' },
-        'Medium': { 'Critical': 'High', 'High': 'Medium', 'Medium': 'Medium', 'Low': 'Low' },
-        'Low': { 'Critical': 'Medium', 'High': 'Medium', 'Medium': 'Low', 'Low': 'Low' }
-      };
-      return matrix[urgency]?.[impact] || 'Medium';
-    };
-
-    // Add ITIL-compliant sample tickets
-    const sampleTickets = [
-      {
-        id: this.idCounters.tickets++,
-        ticketId: "TKT-0001",
-        summary: "Email server connectivity issues",
-        description: "Users are unable to access their email accounts through Outlook. Connection timeouts reported.",
-        category: "Incident",
-        requestType: "Network",
-        urgency: "High",
-        impact: "High",
-        priority: "High",
-        status: "Open",
-        submittedById: 1,
-        assignedToId: null,
-        relatedAssetId: null,
-        rootCause: "",
-        workaround: "Use webmail interface temporarily",
-        resolution: "",
-        resolutionNotes: "",
-        slaTarget: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
-        escalationLevel: 0,
-        isTimeTracking: false,
-        timeSpent: 0,
-        timeTrackingStartedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.tickets++,
-        ticketId: "TKT-0002",
-        summary: "New employee laptop setup request",
-        description: "New hire John Smith requires laptop configuration with standard software package and domain access.",
-        category: "Service Request",
-        requestType: "Hardware",
-        urgency: "Medium",
-        impact: "Low",
-        priority: "Low",
-        status: "In Progress",
-        submittedById: 1,
-        assignedToId: 1,
-        relatedAssetId: 1,
-        rootCause: "",
-        workaround: "",
-        resolution: "",
-        resolutionNotes: "",
-        slaTarget: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-        escalationLevel: 0,
-        isTimeTracking: true,
-        timeSpent: 45,
-        timeTrackingStartedAt: new Date(),
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        updatedAt: new Date()
-      },
-      {
-        id: this.idCounters.tickets++,
-        ticketId: "TKT-0003",
-        summary: "Recurring printer driver crashes",
-        description: "HP LaserJet printer driver crashes repeatedly on Windows 10 workstations causing print queue failures.",
-        category: "Problem",
-        requestType: "Software",
-        urgency: "Medium",
-        impact: "Medium",
-        priority: "Medium",
-        status: "Resolved",
-        submittedById: 1,
-        assignedToId: 1,
-        relatedAssetId: null,
-        rootCause: "Outdated printer driver incompatible with latest Windows updates",
-        workaround: "Restart print spooler service when crashes occur",
-        resolution: "Updated to latest printer driver version",
-        resolutionNotes: "Downloaded driver v3.2.1 from HP website and deployed via Group Policy. Tested on 5 workstations successfully.",
-        slaTarget: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        escalationLevel: 0,
-        isTimeTracking: false,
-        timeSpent: 120,
-        timeTrackingStartedAt: null,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-        updatedAt: new Date()
-      }
-    ];
-
-    // Calculate priority for each ticket and add to tickets array
-    sampleTickets.forEach(ticket => {
-      ticket.priority = calculatePriority(ticket.urgency, ticket.impact);
-      this.tickets.push(ticket);
-    });
-
-    // Add sample ticket history entries
-    this.ticketHistory.push(
-      {
-        id: this.idCounters.ticketHistory++,
-        ticketId: 1,
-        changedBy: 1,
-        changeType: "Status Change",
-        oldValue: "New",
-        newValue: "Open",
-        changeDescription: "Ticket opened and assigned to IT team",
-        createdAt: new Date()
-      },
-      {
-        id: this.idCounters.ticketHistory++,
-        ticketId: 2,
-        changedBy: 1,
-        changeType: "Assignment",
-        oldValue: "Unassigned",
-        newValue: "John Doe",
-        changeDescription: "Assigned to John Doe for laptop configuration",
-        createdAt: new Date()
-      },
-      {
-        id: this.idCounters.ticketHistory++,
-        ticketId: 3,
-        changedBy: 1,
-        changeType: "Resolution",
-        oldValue: "In Progress",
-        newValue: "Resolved",
-        changeDescription: "Driver issue resolved with latest update",
-        createdAt: new Date()
-      }
-    );
   }
 
   // Security Questions operations
@@ -971,15 +822,6 @@ export class MemoryStorage implements IStorage {
     for (const field of changes) {
       const oldValue = oldTicket[field as keyof schema.Ticket];
       const newValue = ticketData[field as keyof Partial<schema.InsertTicket>];
-      
-      await this.addTicketHistory({
-        ticketId: id,
-        changedBy: 1, // Default to admin user for now
-        changeType: 'field_update',
-        oldValue: oldValue?.toString() || '',
-        newValue: newValue?.toString() || '',
-        changeDescription: `Updated ${field} from "${oldValue}" to "${newValue}"`
-      });
     }
     
     return this.tickets[index];
@@ -1146,14 +988,7 @@ export class MemoryStorage implements IStorage {
     const deletedCount = initialCount - this.activityLogs.length;
     return { deletedCount };
   }
-
-  // Custom request types management - using enhanced implementations below
-
-
- // Custom Fields operations - only user-defined data from System Configuration
-
-
-
+  // Custom Asset Types, Brands, and Statuses operations
   async getCustomAssetTypes(): Promise<any[]> {
     return this.customAssetTypes;
   }
@@ -1223,30 +1058,6 @@ export class MemoryStorage implements IStorage {
     const index = this.customAssetStatuses.findIndex(s => s.id === id);
     if (index === -1) return false;
     this.customAssetStatuses.splice(index, 1);
-    return true;
-  }
-
-  async getServiceProviders(): Promise<any[]> {
-    return this.serviceProviders;
-  }
-
-  async createServiceProvider(data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any> {
-    const newProvider = { id: Date.now(), ...data };
-    this.serviceProviders.push(newProvider);
-    return newProvider;
-  }
-
-  async updateServiceProvider(id: number, data: { name: string; contactPerson?: string; phone?: string; email?: string }): Promise<any | undefined> {
-    const index = this.serviceProviders.findIndex(p => p.id === id);
-    if (index === -1) return undefined;
-    this.serviceProviders[index] = { ...this.serviceProviders[index], ...data };
-    return this.serviceProviders[index];
-  }
-
-  async deleteServiceProvider(id: number): Promise<boolean> {
-    const index = this.serviceProviders.findIndex(p => p.id === id);
-    if (index === -1) return false;
-    this.serviceProviders.splice(index, 1);
     return true;
   }
 
@@ -1326,75 +1137,6 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Enhanced Ticket operations with time tracking (Feature 2: Manual time tracking)
-  async startTicketTimeTracking(ticketId: number, userId: number): Promise<schema.Ticket | undefined> {
-    const ticket = this.tickets.find(t => t.id === ticketId);
-    if (!ticket) return undefined;
-    
-    ticket.isTimeTracking = true;
-    ticket.timeTrackingStartedAt = new Date().toISOString();
-    ticket.updatedAt = new Date();
-    
-    // Log activity
-    await this.logActivity({
-      action: "Started Time Tracking",
-      entityType: "Ticket",
-      entityId: ticketId,
-      userId,
-      details: { ticketId: ticket.ticketId, startTime: ticket.timeTrackingStartedAt }
-    });
-    
-    return ticket;
-  }
-
-  async stopTicketTimeTracking(ticketId: number, userId: number): Promise<schema.Ticket | undefined> {
-    const ticket = this.tickets.find(t => t.id === ticketId);
-    if (!ticket || !ticket.isTimeTracking) return undefined;
-    
-    const endTime = new Date();
-    const startTime = ticket.timeTrackingStartedAt ? new Date(ticket.timeTrackingStartedAt) : new Date();
-    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000 / 60); // minutes
-    
-    ticket.isTimeTracking = false;
-    ticket.timeTrackingStartedAt = null;
-    ticket.timeSpent = (ticket.timeSpent || 0) + duration;
-    ticket.updatedAt = new Date();
-    
-    // Log activity
-    await this.logActivity({
-      action: "Stopped Time Tracking",
-      entityType: "Ticket",
-      entityId: ticketId,
-      userId,
-      details: { 
-        ticketId: ticket.ticketId, 
-        endTime: endTime.toISOString(), 
-        duration: `${duration} minutes`,
-        totalTime: `${ticket.timeSpent} minutes`
-      }
-    });
-    
-    return ticket;
-  }
-
-  // Ticket History operations (Feature 3: Ticket history and updates display)
-  async getTicketHistory(ticketId: number): Promise<schema.TicketHistory[]> {
-    return this.ticketHistory
-      .filter(h => h.ticketId === ticketId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async createTicketHistory(history: schema.InsertTicketHistory): Promise<schema.TicketHistory> {
-    const newHistory: schema.TicketHistory = {
-      id: this.idCounters.ticketHistory++,
-      ...history,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.ticketHistory.push(newHistory);
-    return newHistory;
-  }
-
   // Enhanced Ticket Update with history tracking (Feature 5: Update ticket details)
   async updateTicketWithHistory(id: number, ticketData: Partial<schema.InsertTicket>, userId: number): Promise<schema.Ticket | undefined> {
     const ticket = this.tickets.find(t => t.id === id);
@@ -1428,39 +1170,17 @@ export class MemoryStorage implements IStorage {
     Object.assign(ticket, ticketData);
     ticket.updatedAt = new Date();
     
-    // Create history entry for each change
-    if (changes.length > 0) {
-      await this.createTicketHistory({
-        ticketId: ticket.id,
-        userId,
-        action: "Updated",
-        changes: changes.join("; "),
-        oldValues: JSON.stringify({
-          status: oldTicket.status,
-          priority: oldTicket.priority,
-          assignedToId: oldTicket.assignedToId,
-          categoryId: oldTicket.categoryId
-        }),
-        newValues: JSON.stringify({
-          status: ticket.status,
-          priority: ticket.priority,
-          assignedToId: ticket.assignedToId,
-          categoryId: ticket.categoryId
-        })
-      });
-      
-      // Log activity
-      await this.logActivity({
-        action: "Updated",
-        entityType: "Ticket",
-        entityId: id,
-        userId,
-        details: { 
-          ticketId: ticket.ticketId, 
-          changes: changes.join("; ")
-        }
-      });
-    }
+    // Log activity
+    await this.logActivity({
+      action: "Updated",
+      entityType: "Ticket",
+      entityId: id,
+      userId,
+      details: { 
+        ticketId: ticket.ticketId, 
+        changes: changes.join("; ")
+      }
+    });
     
     return ticket;
   }
@@ -1480,9 +1200,6 @@ export class MemoryStorage implements IStorage {
     // Remove ticket
     this.tickets.splice(ticketIndex, 1);
     
-    // Remove related history
-    this.ticketHistory = this.ticketHistory.filter(h => h.ticketId !== id);
-    
     // Log activity
     await this.logActivity({
       action: "Deleted",
@@ -1499,27 +1216,6 @@ export class MemoryStorage implements IStorage {
     return true;
   }
 
-  // Enhanced ticket creation with history
-  async createTicketWithHistory(ticket: schema.InsertTicket): Promise<schema.Ticket> {
-    const newTicket = await this.createTicket(ticket);
-    
-    // Create initial history entry
-    await this.createTicketHistory({
-      ticketId: newTicket.id,
-      userId: ticket.submittedById,
-      action: "Created",
-      changes: `Ticket created with status "${newTicket.status}" and priority "${newTicket.priority}"`,
-      oldValues: null,
-      newValues: JSON.stringify({
-        status: newTicket.status,
-        priority: newTicket.priority,
-        categoryId: newTicket.categoryId
-      })
-    });
-    
-    return newTicket;
-  }
-
   // Advanced ticket management operations
   async getEnhancedTickets(): Promise<any[]> {
     const tickets = [...this.tickets];
@@ -1527,7 +1223,6 @@ export class MemoryStorage implements IStorage {
       const submittedBy = await this.getEmployee(ticket.submittedById);
       const assignedTo = ticket.assignedToId ? await this.getUser(ticket.assignedToId) : undefined;
       const comments = this.ticketComments.filter(c => c.ticketId === ticket.id);
-      const history = this.ticketHistory.filter(h => h.ticketId === ticket.id);
       
       return {
         ...ticket,
@@ -1541,63 +1236,12 @@ export class MemoryStorage implements IStorage {
           lastName: assignedTo.lastName || ''
         } : undefined,
         comments,
-        history,
         attachments: [],
         tags: []
       };
     }));
     
     return enhanced;
-  }
-
-  async getTicketCategories(): Promise<any[]> {
-    // Initialize default categories if empty
-    if (this.ticketCategories.length === 0) {
-      this.ticketCategories = [
-        {
-          id: this.idCounters.ticketCategories++,
-          name: "Hardware Issues",
-          description: "Hardware-related problems and requests",
-          color: "#ef4444",
-          slaHours: 24,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: this.idCounters.ticketCategories++,
-          name: "Software Issues", 
-          description: "Software installation and troubleshooting",
-          color: "#3b82f6",
-          slaHours: 48,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: this.idCounters.ticketCategories++,
-          name: "Network Issues",
-          description: "Network connectivity and configuration",
-          color: "#f59e0b",
-          slaHours: 8,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-    }
-    return [...this.ticketCategories];
-  }
-
-  async createTicketCategory(categoryData: any): Promise<any> {
-    const category = {
-      id: this.idCounters.ticketCategories++,
-      ...categoryData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.ticketCategories.push(category);
-    return category;
   }
 
   async addTicketComment(commentData: any): Promise<any> {
@@ -1609,92 +1253,7 @@ export class MemoryStorage implements IStorage {
     };
     this.ticketComments.push(comment);
     
-    // Add to ticket history
-    await this.addTicketHistory({
-      ticketId: commentData.ticketId,
-      userId: commentData.userId,
-      action: "Comment Added",
-      fieldChanged: "comments",
-      newValue: commentData.content,
-      notes: commentData.isPrivate ? "Private comment" : "Public comment"
-    });
-    
     return comment;
   }
 
-  async addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any> {
-    const ticket = this.tickets.find(t => t.id === ticketId);
-    if (!ticket) throw new Error("Ticket not found");
-    
-    // Update ticket with time tracking
-    const currentActualHours = ticket.actualHours || 0;
-    ticket.actualHours = currentActualHours + hours;
-    ticket.updatedAt = new Date();
-    
-    // Add to history
-    await this.addTicketHistory({
-      ticketId,
-      userId,
-      action: "Time Entry Added",
-      fieldChanged: "actualHours",
-      oldValue: currentActualHours.toString(),
-      newValue: ticket.actualHours.toString(),
-      notes: `${hours} hours - ${description}`
-    });
-    
-    return { success: true, totalHours: ticket.actualHours };
-  }
-
-  async mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any> {
-    const primaryTicket = this.tickets.find(t => t.id === primaryTicketId);
-    if (!primaryTicket) throw new Error("Primary ticket not found");
-    
-    const secondaryTickets = this.tickets.filter(t => secondaryTicketIds.includes(t.id));
-    if (secondaryTickets.length !== secondaryTicketIds.length) {
-      throw new Error("Some secondary tickets not found");
-    }
-    
-    // Merge comments and history
-    secondaryTickets.forEach(ticket => {
-      // Update comments to point to primary ticket
-      this.ticketComments.forEach(comment => {
-        if (comment.ticketId === ticket.id) {
-          comment.ticketId = primaryTicketId;
-        }
-      });
-      
-      // Update history to point to primary ticket  
-      this.ticketHistory.forEach(history => {
-        if (history.ticketId === ticket.id) {
-          history.ticketId = primaryTicketId;
-        }
-      });
-      
-      // Remove merged ticket
-      const index = this.tickets.findIndex(t => t.id === ticket.id);
-      if (index > -1) this.tickets.splice(index, 1);
-    });
-    
-    // Add merge history
-    await this.addTicketHistory({
-      ticketId: primaryTicketId,
-      userId,
-      action: "Tickets Merged",
-      notes: `Merged tickets: ${secondaryTicketIds.join(', ')}`
-    });
-    
-    return { success: true, mergedTicketIds: secondaryTicketIds };
-  }
-
-  async addTicketHistory(historyData: any): Promise<any> {
-    const history = {
-      id: this.idCounters.ticketHistory++,
-      ...historyData,
-      createdAt: new Date()
-    };
-    this.ticketHistory.push(history);
-    return history;
-  }
-
-  // Duplicate comment and time entry methods removed - using implementations above
 }
