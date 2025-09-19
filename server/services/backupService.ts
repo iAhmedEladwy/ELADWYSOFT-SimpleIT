@@ -2,8 +2,8 @@ import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
-import { backupFiles, backupJobs, systemHealth, restoreHistory } from '../../shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { backupFiles, backupJobs, systemHealth, restoreHistory, assets, employees, tickets } from '../../shared/schema';
+import { eq, desc, sql } from 'drizzle-orm';
 
 export class BackupService {
   private backupDir = path.join(process.cwd(), 'backups');
@@ -145,15 +145,21 @@ export class BackupService {
   }
 
   async getBackupList() {
-    return await db.select({
-      id: backupFiles.id,
-      filename: backupFiles.filename,
-      fileSize: backupFiles.fileSize,
-      backupType: backupFiles.backupType,
-      status: backupFiles.status,
-      createdAt: backupFiles.createdAt,
-      metadata: backupFiles.metadata
-    }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
+    try {
+      return await db.select({
+        id: backupFiles.id,
+        filename: backupFiles.filename,
+        fileSize: backupFiles.fileSize,
+        backupType: backupFiles.backupType,
+        status: backupFiles.status,
+        createdAt: backupFiles.createdAt,
+        metadata: backupFiles.metadata
+      }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
+    } catch (error) {
+      console.error('Backup table might not exist:', error);
+      // Return empty array if table doesn't exist yet
+      return [];
+    }
   }
 
   async deleteBackup(backupId: number): Promise<{ success: boolean; error?: string }> {
@@ -243,10 +249,31 @@ export class BackupService {
 
       async getSystemOverview() {
       try {
-        // Get total counts
-        const totalAssets = await db.select({ count: sql<number>`count(*)` }).from(assets);
-        const totalEmployees = await db.select({ count: sql<number>`count(*)` }).from(employees);  
-        const totalTickets = await db.select({ count: sql<number>`count(*)` }).from(tickets);
+        // Get total counts - with fallback if tables don't exist
+        let totalAssets = 0;
+        let totalEmployees = 0;
+        let totalTickets = 0;
+
+        try {
+          const assetsResult = await db.select({ count: sql<number>`count(*)` }).from(assets);
+          totalAssets = assetsResult[0].count;
+        } catch (error) {
+          console.warn('Assets table not accessible:', error);
+        }
+
+        try {
+          const employeesResult = await db.select({ count: sql<number>`count(*)` }).from(employees);
+          totalEmployees = employeesResult[0].count;
+        } catch (error) {
+          console.warn('Employees table not accessible:', error);
+        }
+
+        try {
+          const ticketsResult = await db.select({ count: sql<number>`count(*)` }).from(tickets);
+          totalTickets = ticketsResult[0].count;
+        } catch (error) {
+          console.warn('Tickets table not accessible:', error);
+        }
 
         // Get database info
         const dbUrl = process.env.DATABASE_URL;
@@ -267,9 +294,9 @@ export class BackupService {
           .orderBy(desc(backupFiles.createdAt)).limit(1);
 
         return {
-          totalAssets: totalAssets[0].count,
-          totalEmployees: totalEmployees[0].count,
-          totalTickets: totalTickets[0].count,
+          totalAssets: totalAssets,
+          totalEmployees: totalEmployees,
+          totalTickets: totalTickets,
           activeConnections,
           databaseSize,
           uptime: '24h 30m', // You can implement actual uptime calculation
@@ -282,17 +309,22 @@ export class BackupService {
     }
 
   async getRestoreHistory() {
-    return await db.select({
-      id: restoreHistory.id,
-      status: restoreHistory.status,
-      startedAt: restoreHistory.startedAt,
-      completedAt: restoreHistory.completedAt,
-      errorMessage: restoreHistory.errorMessage,
-      recordsRestored: restoreHistory.recordsRestored,
-      filename: backupFiles.filename
-    })
-    .from(restoreHistory)
-    .leftJoin(backupFiles, eq(restoreHistory.backupFileId, backupFiles.id))
-    .orderBy(desc(restoreHistory.startedAt));
+    try {
+      return await db.select({
+        id: restoreHistory.id,
+        status: restoreHistory.status,
+        startedAt: restoreHistory.startedAt,
+        completedAt: restoreHistory.completedAt,
+        errorMessage: restoreHistory.errorMessage,
+        recordsRestored: restoreHistory.recordsRestored,
+        filename: backupFiles.filename
+      })
+      .from(restoreHistory)
+      .leftJoin(backupFiles, eq(restoreHistory.backupFileId, backupFiles.id))
+      .orderBy(desc(restoreHistory.startedAt));
+    } catch (error) {
+      console.error('Restore history table might not exist:', error);
+      return [];
+    }
   }
 }
