@@ -32,8 +32,8 @@ export class BackupService {
         throw new Error('DATABASE_URL not configured');
       }
 
-      // Create backup using pg_dump
-      const command = `pg_dump "${dbUrl}" --no-owner --no-privileges --clean --if-exists > "${filepath}"`;
+      // Create backup using pg_dump (excluding backup management tables to avoid circular references)
+      const command = `pg_dump "${dbUrl}" --no-owner --no-privileges --clean --if-exists --exclude-table=backup_files --exclude-table=backup_jobs --exclude-table=system_health --exclude-table=restore_history > "${filepath}"`;
       execSync(command, { stdio: 'pipe' });
 
       // Get file size
@@ -98,9 +98,28 @@ export class BackupService {
         throw new Error('DATABASE_URL not configured');
       }
 
+      // First, backup current backup management tables
+      console.log('Preserving backup management tables...');
+      const backupTablesFile = path.join(this.backupDir, `backup_tables_temp_${Date.now()}.sql`);
+      const backupTablesCommand = `pg_dump "${dbUrl}" --data-only --table=backup_files --table=backup_jobs --table=system_health --table=restore_history > "${backupTablesFile}"`;
+      execSync(backupTablesCommand, { stdio: 'pipe' });
+
       // Restore database - this will completely replace current data
+      console.log('Restoring database from backup...');
       const command = `psql "${dbUrl}" < "${backupFile.filepath}"`;
       execSync(command, { stdio: 'pipe' });
+
+      // Restore backup management tables to preserve history
+      console.log('Restoring backup management tables...');
+      const restoreBackupTablesCommand = `psql "${dbUrl}" < "${backupTablesFile}"`;
+      execSync(restoreBackupTablesCommand, { stdio: 'pipe' });
+
+      // Clean up temporary backup file
+      try {
+        await fs.unlink(backupTablesFile);
+      } catch (error) {
+        console.warn('Could not delete temporary backup file:', error);
+      }
 
       // Count restored records (approximate)
       const tablesQuery = `
@@ -111,7 +130,7 @@ export class BackupService {
       `;
       
       const countResult = execSync(`psql "${dbUrl}" -t -c "${tablesQuery}"`, { encoding: 'utf8' });
-      const tables = countResult.trim().split('\n').filter(line => line.trim()).length;
+      const tables = countResult.trim().split('\n').filter((line: string) => line.trim()).length;
 
       // Update restore history
       await db.update(restoreHistory)
@@ -145,25 +164,15 @@ export class BackupService {
   }
 
   async getBackupList() {
-    console.log('DEBUG: Starting getBackupList()');
-    try {
-      console.log('DEBUG: About to query backupFiles table');
-      const result = await db.select({
-        id: backupFiles.id,
-        filename: backupFiles.filename,
-        fileSize: backupFiles.fileSize,
-        backupType: backupFiles.backupType,
-        status: backupFiles.status,
-        createdAt: backupFiles.createdAt,
-        metadata: backupFiles.metadata
-      }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
-      
-      console.log('DEBUG: Query successful, result:', result);
-      return result;
-    } catch (error) {
-      console.error('DEBUG: Error in getBackupList():', error);
-      throw error;
-    }
+    return await db.select({
+      id: backupFiles.id,
+      filename: backupFiles.filename,
+      fileSize: backupFiles.fileSize,
+      backupType: backupFiles.backupType,
+      status: backupFiles.status,
+      createdAt: backupFiles.createdAt,
+      metadata: backupFiles.metadata
+    }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
   }
 
   async deleteBackup(backupId: number): Promise<{ success: boolean; error?: string }> {
@@ -197,6 +206,10 @@ export class BackupService {
         throw new Error('DATABASE_URL not configured');
       }
 
+      const healthMetrics = [];
+
+      // === DATABASE PERFORMANCE METRICS ===
+      
       // Get database size
       const dbSizeQuery = `
         SELECT pg_size_pretty(pg_database_size(current_database())) as size,
@@ -206,43 +219,238 @@ export class BackupService {
       const dbSize = dbSizeResult.trim().split('|')[0].trim();
       const dbSizeBytes = parseInt(dbSizeResult.trim().split('|')[1].trim());
 
-      // Get table count and record counts
-      const tableCountQuery = `
-        SELECT COUNT(*) as table_count FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-      `;
-      const tableCountResult = execSync(`psql "${dbUrl}" -t -c "${tableCountQuery}"`, { encoding: 'utf8' });
-      const tableCount = parseInt(tableCountResult.trim());
+      healthMetrics.push({
+        metricName: 'Database Size',
+        metricValue: dbSize,
+        metricType: 'database',
+        status: dbSizeBytes > 1000000000 ? 'warning' : 'healthy',
+        threshold: '1GB'
+      });
 
-      // Get connection count
+      // Cache hit ratio
+      const cacheHitQuery = `
+        SELECT round(
+          (sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read) + 1)) * 100, 2
+        ) as cache_hit_ratio
+        FROM pg_statio_user_tables
+      `;
+      const cacheHitResult = execSync(`psql "${dbUrl}" -t -c "${cacheHitQuery}"`, { encoding: 'utf8' });
+      const cacheHitRatio = parseFloat(cacheHitResult.trim()) || 0;
+
+      healthMetrics.push({
+        metricName: 'Cache Hit Ratio',
+        metricValue: `${cacheHitRatio}%`,
+        metricType: 'database',
+        status: cacheHitRatio < 80 ? 'warning' : cacheHitRatio < 90 ? 'warning' : 'healthy',
+        threshold: '90%'
+      });
+
+      // Active connections
       const connectionQuery = `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`;
       const connectionResult = execSync(`psql "${dbUrl}" -t -c "${connectionQuery}"`, { encoding: 'utf8' });
       const activeConnections = parseInt(connectionResult.trim());
 
-      // Record health metrics
-      await db.delete(systemHealth); // Clear old records
-      await db.insert(systemHealth).values([
-        {
-          metricName: 'Database Size',
-          metricValue: dbSize,
+      healthMetrics.push({
+        metricName: 'Active Connections',
+        metricValue: activeConnections.toString(),
+        metricType: 'database',
+        status: activeConnections > 50 ? 'warning' : 'healthy',
+        threshold: '50'
+      });
+
+      // Long running queries
+      const longQueriesQuery = `
+        SELECT count(*) 
+        FROM pg_stat_activity 
+        WHERE state = 'active' 
+        AND query_start < now() - interval '5 minutes'
+        AND query NOT LIKE '%pg_stat_activity%'
+      `;
+      const longQueriesResult = execSync(`psql "${dbUrl}" -t -c "${longQueriesQuery}"`, { encoding: 'utf8' });
+      const longQueries = parseInt(longQueriesResult.trim());
+
+      healthMetrics.push({
+        metricName: 'Long Running Queries',
+        metricValue: longQueries.toString(),
+        metricType: 'database',
+        status: longQueries > 0 ? 'warning' : 'healthy',
+        threshold: '0'
+      });
+
+      // === SYSTEM RESOURCE METRICS ===
+
+      // Memory usage (Node.js process)
+      const memUsage = process.memoryUsage();
+      const memUsedMB = Math.round(memUsage.rss / 1024 / 1024);
+      const memHeapMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+
+      healthMetrics.push({
+        metricName: 'Memory Usage (RSS)',
+        metricValue: `${memUsedMB} MB`,
+        metricType: 'memory',
+        status: memUsedMB > 512 ? 'warning' : 'healthy',
+        threshold: '512 MB'
+      });
+
+      healthMetrics.push({
+        metricName: 'Heap Memory',
+        metricValue: `${memHeapMB} MB`,
+        metricType: 'memory',
+        status: memHeapMB > 256 ? 'warning' : 'healthy',
+        threshold: '256 MB'
+      });
+
+      // Disk space (backup directory)
+      try {
+        const stats = await fs.stat(this.backupDir);
+        const backupDirExists = stats.isDirectory();
+        const backupFiles = await fs.readdir(this.backupDir);
+        const backupCount = backupFiles.filter((f: string) => f.endsWith('.sql')).length;
+
+        healthMetrics.push({
+          metricName: 'Backup Directory',
+          metricValue: backupDirExists ? `${backupCount} files` : 'Not found',
+          metricType: 'disk',
+          status: backupDirExists ? 'healthy' : 'critical',
+          threshold: 'Directory exists'
+        });
+      } catch (error) {
+        healthMetrics.push({
+          metricName: 'Backup Directory',
+          metricValue: 'Error accessing',
+          metricType: 'disk',
+          status: 'critical',
+          threshold: 'Directory exists'
+        });
+      }
+
+      // === APPLICATION-SPECIFIC METRICS ===
+
+      // Get application data counts
+      const totalAssetsResult = await db.select({ count: sql<number>`count(*)` }).from(assets);
+      const totalEmployeesResult = await db.select({ count: sql<number>`count(*)` }).from(employees);  
+      const totalTicketsResult = await db.select({ count: sql<number>`count(*)` }).from(tickets);
+
+      const totalAssets = totalAssetsResult[0].count;
+      const totalEmployees = totalEmployeesResult[0].count;
+      const totalTickets = totalTicketsResult[0].count;
+
+      healthMetrics.push({
+        metricName: 'Total Assets',
+        metricValue: totalAssets.toString(),
+        metricType: 'application',
+        status: 'healthy',
+        threshold: 'N/A'
+      });
+
+      healthMetrics.push({
+        metricName: 'Total Employees',
+        metricValue: totalEmployees.toString(),
+        metricType: 'application',
+        status: 'healthy',
+        threshold: 'N/A'
+      });
+
+      healthMetrics.push({
+        metricName: 'Total Tickets',
+        metricValue: totalTickets.toString(),
+        metricType: 'application',
+        status: 'healthy',
+        threshold: 'N/A'
+      });
+
+      // Recent ticket activity (last 24 hours)
+      const recentTicketsQuery = `
+        SELECT count(*) 
+        FROM tickets 
+        WHERE created_at > now() - interval '24 hours'
+      `;
+      const recentTicketsResult = execSync(`psql "${dbUrl}" -t -c "${recentTicketsQuery}"`, { encoding: 'utf8' });
+      const recentTickets = parseInt(recentTicketsResult.trim());
+
+      healthMetrics.push({
+        metricName: 'New Tickets (24h)',
+        metricValue: recentTickets.toString(),
+        metricType: 'application',
+        status: recentTickets > 50 ? 'warning' : 'healthy',
+        threshold: '50/day'
+      });
+
+      // === BACKUP & MAINTENANCE HEALTH ===
+
+      // Last backup status
+      const lastBackupResult = await db.select().from(backupFiles)
+        .orderBy(desc(backupFiles.createdAt)).limit(1);
+
+      if (lastBackupResult.length > 0) {
+        const lastBackup = lastBackupResult[0];
+        const hoursAgo = Math.floor((Date.now() - new Date(lastBackup.createdAt).getTime()) / (1000 * 60 * 60));
+        
+        healthMetrics.push({
+          metricName: 'Last Backup',
+          metricValue: `${hoursAgo} hours ago`,
           metricType: 'database',
-          status: dbSizeBytes > 1000000000 ? 'warning' : 'healthy', // 1GB threshold
-          threshold: '1GB'
-        },
-        {
-          metricName: 'Table Count',
-          metricValue: tableCount.toString(),
+          status: hoursAgo > 24 ? 'warning' : hoursAgo > 168 ? 'critical' : 'healthy',
+          threshold: '24 hours'
+        });
+
+        healthMetrics.push({
+          metricName: 'Backup Status',
+          metricValue: lastBackup.status,
           metricType: 'database',
-          status: 'healthy'
-        },
-        {
-          metricName: 'Active Connections',
-          metricValue: activeConnections.toString(),
+          status: lastBackup.status === 'completed' ? 'healthy' : 'warning',
+          threshold: 'completed'
+        });
+      } else {
+        healthMetrics.push({
+          metricName: 'Last Backup',
+          metricValue: 'No backups found',
           metricType: 'database',
-          status: activeConnections > 50 ? 'warning' : 'healthy',
-          threshold: '50'
-        }
-      ]);
+          status: 'critical',
+          threshold: '24 hours'
+        });
+      }
+
+      // === ACCESS PATTERN ANALYSIS ===
+
+      // Failed login attempts (last hour)
+      const failedLoginsQuery = `
+        SELECT count(*) 
+        FROM activity_log 
+        WHERE action = 'Login Failed' 
+        AND created_at > now() - interval '1 hour'
+      `;
+      const failedLoginsResult = execSync(`psql "${dbUrl}" -t -c "${failedLoginsQuery}"`, { encoding: 'utf8' });
+      const failedLogins = parseInt(failedLoginsResult.trim()) || 0;
+
+      healthMetrics.push({
+        metricName: 'Failed Logins (1h)',
+        metricValue: failedLogins.toString(),
+        metricType: 'security',
+        status: failedLogins > 10 ? 'critical' : failedLogins > 5 ? 'warning' : 'healthy',
+        threshold: '5/hour'
+      });
+
+      // Active user sessions (approximate)
+      const activeUsersQuery = `
+        SELECT count(DISTINCT user_id) 
+        FROM activity_log 
+        WHERE created_at > now() - interval '30 minutes'
+      `;
+      const activeUsersResult = execSync(`psql "${dbUrl}" -t -c "${activeUsersQuery}"`, { encoding: 'utf8' });
+      const activeUsers = parseInt(activeUsersResult.trim()) || 0;
+
+      healthMetrics.push({
+        metricName: 'Active Users (30m)',
+        metricValue: activeUsers.toString(),
+        metricType: 'security',
+        status: 'healthy',
+        threshold: 'N/A'
+      });
+
+      // Clear old records and insert new metrics
+      await db.delete(systemHealth);
+      await db.insert(systemHealth).values(healthMetrics);
 
       return await db.select().from(systemHealth).orderBy(desc(systemHealth.recordedAt));
     } catch (error) {
