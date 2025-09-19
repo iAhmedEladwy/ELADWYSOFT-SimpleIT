@@ -145,21 +145,15 @@ export class BackupService {
   }
 
   async getBackupList() {
-    try {
-      return await db.select({
-        id: backupFiles.id,
-        filename: backupFiles.filename,
-        fileSize: backupFiles.fileSize,
-        backupType: backupFiles.backupType,
-        status: backupFiles.status,
-        createdAt: backupFiles.createdAt,
-        metadata: backupFiles.metadata
-      }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
-    } catch (error) {
-      console.error('Backup table might not exist:', error);
-      // Return empty array if table doesn't exist yet
-      return [];
-    }
+    return await db.select({
+      id: backupFiles.id,
+      filename: backupFiles.filename,
+      fileSize: backupFiles.fileSize,
+      backupType: backupFiles.backupType,
+      status: backupFiles.status,
+      createdAt: backupFiles.createdAt,
+      metadata: backupFiles.metadata
+    }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
   }
 
   async deleteBackup(backupId: number): Promise<{ success: boolean; error?: string }> {
@@ -249,31 +243,14 @@ export class BackupService {
 
       async getSystemOverview() {
       try {
-        // Get total counts - with fallback if tables don't exist
-        let totalAssets = 0;
-        let totalEmployees = 0;
-        let totalTickets = 0;
+        // Get total counts
+        const totalAssetsResult = await db.select({ count: sql<number>`count(*)` }).from(assets);
+        const totalEmployeesResult = await db.select({ count: sql<number>`count(*)` }).from(employees);  
+        const totalTicketsResult = await db.select({ count: sql<number>`count(*)` }).from(tickets);
 
-        try {
-          const assetsResult = await db.select({ count: sql<number>`count(*)` }).from(assets);
-          totalAssets = assetsResult[0].count;
-        } catch (error) {
-          console.warn('Assets table not accessible:', error);
-        }
-
-        try {
-          const employeesResult = await db.select({ count: sql<number>`count(*)` }).from(employees);
-          totalEmployees = employeesResult[0].count;
-        } catch (error) {
-          console.warn('Employees table not accessible:', error);
-        }
-
-        try {
-          const ticketsResult = await db.select({ count: sql<number>`count(*)` }).from(tickets);
-          totalTickets = ticketsResult[0].count;
-        } catch (error) {
-          console.warn('Tickets table not accessible:', error);
-        }
+        const totalAssets = totalAssetsResult[0].count;
+        const totalEmployees = totalEmployeesResult[0].count;
+        const totalTickets = totalTicketsResult[0].count;
 
         // Get database info
         const dbUrl = process.env.DATABASE_URL;
@@ -309,22 +286,17 @@ export class BackupService {
     }
 
   async getRestoreHistory() {
-    try {
-      return await db.select({
-        id: restoreHistory.id,
-        status: restoreHistory.status,
-        startedAt: restoreHistory.startedAt,
-        completedAt: restoreHistory.completedAt,
-        errorMessage: restoreHistory.errorMessage,
-        recordsRestored: restoreHistory.recordsRestored,
-        filename: backupFiles.filename
-      })
-      .from(restoreHistory)
-      .leftJoin(backupFiles, eq(restoreHistory.backupFileId, backupFiles.id))
-      .orderBy(desc(restoreHistory.startedAt));
-    } catch (error) {
-      console.error('Restore history table might not exist:', error);
-      return [];
-    }
+    return await db.select({
+      id: restoreHistory.id,
+      status: restoreHistory.status,
+      startedAt: restoreHistory.startedAt,
+      completedAt: restoreHistory.completedAt,
+      errorMessage: restoreHistory.errorMessage,
+      recordsRestored: restoreHistory.recordsRestored,
+      filename: backupFiles.filename
+    })
+    .from(restoreHistory)
+    .leftJoin(backupFiles, eq(restoreHistory.backupFileId, backupFiles.id))
+    .orderBy(desc(restoreHistory.startedAt));
   }
 }
