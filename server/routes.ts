@@ -7331,7 +7331,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   // GET /api/admin/backups - Get list of backups
 app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
   try {
-    const backups = await backupService.getBackupList();
+    const backups = await backupService.getAllBackups();
     res.json(backups);
   } catch (error) {
     console.error('Failed to get backup list:', error);
@@ -7343,7 +7343,7 @@ app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) =
 app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const { description } = req.body;
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -7366,7 +7366,7 @@ app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) 
 app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const backupId = parseInt(req.params.backupId);
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id; 
     
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
