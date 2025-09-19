@@ -145,15 +145,25 @@ export class BackupService {
   }
 
   async getBackupList() {
-    return await db.select({
-      id: backupFiles.id,
-      filename: backupFiles.filename,
-      fileSize: backupFiles.fileSize,
-      backupType: backupFiles.backupType,
-      status: backupFiles.status,
-      createdAt: backupFiles.createdAt,
-      metadata: backupFiles.metadata
-    }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
+    console.log('DEBUG: Starting getBackupList()');
+    try {
+      console.log('DEBUG: About to query backupFiles table');
+      const result = await db.select({
+        id: backupFiles.id,
+        filename: backupFiles.filename,
+        fileSize: backupFiles.fileSize,
+        backupType: backupFiles.backupType,
+        status: backupFiles.status,
+        createdAt: backupFiles.createdAt,
+        metadata: backupFiles.metadata
+      }).from(backupFiles).orderBy(desc(backupFiles.createdAt));
+      
+      console.log('DEBUG: Query successful, result:', result);
+      return result;
+    } catch (error) {
+      console.error('DEBUG: Error in getBackupList():', error);
+      throw error;
+    }
   }
 
   async deleteBackup(backupId: number): Promise<{ success: boolean; error?: string }> {
