@@ -173,7 +173,7 @@ export default function SystemHealth() {
   const systemMetrics = healthMetrics.filter(m => m.metricType === 'system');
 
   return (
-    <RoleGuard requiredAccess={4} fallback={<div>Access denied</div>}>
+    <RoleGuard allowedRoles={['admin']} fallback={<div>Access denied</div>}>
       <Helmet>
         <title>{t.title} - SimpleIT</title>
       </Helmet>
