@@ -46,6 +46,8 @@ import { compare, hash } from "bcrypt";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
+import path from "path";
+import fs from "fs/promises";
 import { errorHandler, asyncHandler } from "./middleware/error-handler";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
@@ -230,6 +232,36 @@ const hasAccess = (minRoleLevel: number) => {
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Backup file upload configuration (saves to disk)
+const backupUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      // Create uploads directory if it doesn't exist
+      fs.mkdir(uploadsDir, { recursive: true }).then(() => {
+        cb(null, uploadsDir);
+      }).catch(cb);
+    },
+    filename: (req, file, cb) => {
+      // Generate unique filename with timestamp
+      const timestamp = Date.now();
+      const originalName = file.originalname;
+      const extension = path.extname(originalName);
+      const baseName = path.basename(originalName, extension);
+      cb(null, `${baseName}_${timestamp}${extension}`);
+    }
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for backup files
+  fileFilter: (req, file, cb) => {
+    // Accept only .sql files for backups
+    if (file.mimetype === 'application/sql' || file.originalname.endsWith('.sql')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .sql backup files are allowed'));
+    }
+  }
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -7411,6 +7443,86 @@ app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req,
   } catch (error) {
     console.error('Failed to delete backup:', error);
     res.status(500).json({ error: 'Failed to delete backup' });
+  }
+});
+
+// POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
+app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4), backupUpload.single('backup'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No backup file uploaded' });
+    }
+
+    const user = req.user as AuthUser;
+    const uploadedFilePath = req.file.path;
+
+    console.log(`Restore from uploaded file requested by user ${user.id}: ${req.file.originalname}`);
+
+    // Restore from the uploaded file
+    const result = await backupService.restoreFromFile(uploadedFilePath, user.id);
+
+    // Clean up uploaded file after processing
+    try {
+      await fs.unlink(uploadedFilePath);
+    } catch (error) {
+      console.warn('Could not delete uploaded file:', error);
+    }
+
+    if (result.success) {
+      res.json({ 
+        message: 'Database restored successfully from uploaded file',
+        recordsRestored: result.recordsRestored || 0
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to restore from uploaded file:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file?.path) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (cleanupError) {
+        console.warn('Could not delete uploaded file after error:', cleanupError);
+      }
+    }
+    
+    res.status(500).json({ error: 'Failed to restore from uploaded file' });
+  }
+});
+
+// GET /api/admin/backups/:id/download - Download backup file
+app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.id);
+    
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.downloadBackup(backupId);
+    
+    if (result.success && result.filepath && result.filename) {
+      // Set headers for file download
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Content-Type', 'application/sql');
+      
+      // Send file
+      res.download(result.filepath, result.filename, (err) => {
+        if (err) {
+          console.error('Download error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to download backup file' });
+          }
+        }
+      });
+    } else {
+      res.status(404).json({ error: result.error || 'Backup file not found' });
+    }
+  } catch (error) {
+    console.error('Failed to download backup:', error);
+    res.status(500).json({ error: 'Failed to download backup' });
   }
 });
 

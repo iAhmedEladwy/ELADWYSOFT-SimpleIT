@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
-import { Database, Download, Upload, Trash2, ArrowLeft, Clock } from 'lucide-react';
+import { Database, Download, Upload, Trash2, ArrowLeft, Clock, FileUp } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient'; 
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'wouter';
@@ -43,6 +43,9 @@ export default function BackupRestore() {
   const [activeTab, setActiveTab] = useState('backups');
   const [backupDescription, setBackupDescription] = useState('');
   const [isBackupDialogOpen, setIsBackupDialogOpen] = useState(false);
+  const [isRestoreFromFileDialogOpen, setIsRestoreFromFileDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Translations
   const t = {
@@ -73,6 +76,15 @@ export default function BackupRestore() {
     completedAt: language === 'English' ? 'Completed At' : 'اكتمل في',
     recordsRestored: language === 'English' ? 'Records Restored' : 'السجلات المستعادة',
     errorMessage: language === 'English' ? 'Error Message' : 'رسالة الخطأ',
+    backupDescription: language === 'English' ? 'Description' : 'الوصف',
+    downloadBackup: language === 'English' ? 'Download' : 'تحميل',
+    restoreFromFile: language === 'English' ? 'Restore from File' : 'استعادة من ملف',
+    uploadBackupFile: language === 'English' ? 'Upload Backup File' : 'رفع ملف النسخة الاحتياطية',
+    selectFile: language === 'English' ? 'Select .sql backup file' : 'اختر ملف النسخة الاحتياطية .sql',
+    restoreFromFileWarning: language === 'English'
+      ? 'This will restore data from the uploaded backup file. All current data will be replaced. This action cannot be undone.'
+      : 'سيؤدي هذا إلى استعادة البيانات من ملف النسخة الاحتياطية المرفوع. سيتم استبدال جميع البيانات الحالية. لا يمكن التراجع عن هذا الإجراء.',
+    uploading: language === 'English' ? 'Uploading...' : 'جاري الرفع...',
     noBackups: language === 'English' ? 'No backups found' : 'لم يتم العثور على نسخ احتياطية',
     noHistory: language === 'English' ? 'No restore history found' : 'لم يتم العثور على تاريخ استعادة',
     creating: language === 'English' ? 'Creating...' : 'جاري الإنشاء...',
@@ -147,6 +159,68 @@ export default function BackupRestore() {
         });
       }
     });
+
+    // Restore from file mutation
+    const restoreFromFileMutation = useMutation({
+      mutationFn: (file: File) => {
+        const formData = new FormData();
+        formData.append('backup', file);
+        return fetch('/api/admin/backups/restore-from-file', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        }).then(async res => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Failed to restore from file');
+          }
+          return res.json();
+        });
+      },
+      onSuccess: () => {
+        toast({ 
+          title: language === 'English' ? 'Data restored successfully from file' : 'تم استعادة البيانات بنجاح من الملف' 
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-restore-history'] });
+        setIsRestoreFromFileDialogOpen(false);
+        setSelectedFile(null);
+      },
+      onError: (error: any) => {
+        toast({ 
+          title: language === 'English' ? 'Failed to restore from file' : 'فشل في استعادة البيانات من الملف', 
+          description: error.message,
+          variant: 'destructive' 
+        });
+      }
+    });
+
+    // Download backup handler
+    const handleDownloadBackup = (backupId: number, filename: string) => {
+      const url = `/api/admin/backups/${backupId}/download`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // File selection handler
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        if (file.name.endsWith('.sql')) {
+          setSelectedFile(file);
+        } else {
+          toast({
+            title: language === 'English' ? 'Invalid file type' : 'نوع ملف غير صالح',
+            description: language === 'English' ? 'Please select a .sql backup file' : 'يرجى اختيار ملف نسخة احتياطية .sql',
+            variant: 'destructive'
+          });
+        }
+      }
+    };
 
   const formatFileSize = (bytes: number) => {
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -234,44 +308,116 @@ export default function BackupRestore() {
                   <Database className="h-5 w-5" />
                   {t.backupManagement}
                 </CardTitle>
-                <Dialog open={isBackupDialogOpen} onOpenChange={setIsBackupDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Download className="h-4 w-4 mr-2" />
-                      {t.createBackup}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{t.createBackup}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">{t.description}</label>
-                        <Textarea
-                          value={backupDescription}
-                          onChange={(e) => setBackupDescription(e.target.value)}
-                          placeholder={language === 'English' ? 'Enter backup description...' : 'أدخل وصف النسخة الاحتياطية...'}
-                          className="mt-1"
-                        />
+                <div className="flex items-center gap-2">
+                  <Dialog open={isBackupDialogOpen} onOpenChange={setIsBackupDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Download className="h-4 w-4 mr-2" />
+                        {t.createBackup}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{t.createBackup}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">{t.backupDescription}</label>
+                          <Textarea
+                            value={backupDescription}
+                            onChange={(e) => setBackupDescription(e.target.value)}
+                            placeholder={language === 'English' ? 'Enter backup description...' : 'أدخل وصف النسخة الاحتياطية...'}
+                            className="mt-1"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsBackupDialogOpen(false)}
-                      >
-                        {t.cancel}
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsBackupDialogOpen(false)}
+                        >
+                          {t.cancel}
+                        </Button>
+                        <Button
+                          onClick={() => createBackupMutation.mutate(backupDescription)}
+                          disabled={createBackupMutation.isPending}
+                        >
+                          {createBackupMutation.isPending ? t.creating : t.createBackup}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Dialog open={isRestoreFromFileDialogOpen} onOpenChange={setIsRestoreFromFileDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <FileUp className="h-4 w-4 mr-2" />
+                        {t.restoreFromFile}
                       </Button>
-                      <Button
-                        onClick={() => createBackupMutation.mutate(backupDescription)}
-                        disabled={createBackupMutation.isPending}
-                      >
-                        {createBackupMutation.isPending ? t.creating : t.createBackup}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{t.uploadBackupFile}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">{t.selectFile}</label>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".sql"
+                            onChange={handleFileSelect}
+                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                          />
+                          {selectedFile && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Selected: {selectedFile.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsRestoreFromFileDialogOpen(false);
+                            setSelectedFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                        >
+                          {t.cancel}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              disabled={!selectedFile || restoreFromFileMutation.isPending}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {restoreFromFileMutation.isPending ? t.uploading : t.restoreFromFile}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t.confirmRestore}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t.restoreFromFileWarning}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => selectedFile && restoreFromFileMutation.mutate(selectedFile)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {t.restoreFromFile}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </CardHeader>
               <CardContent>
                 {backupsLoading ? (
@@ -308,6 +454,13 @@ export default function BackupRestore() {
                             <TableCell>{formatDate(backup.createdAt)}</TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadBackup(backup.id, backup.filename)}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button variant="outline" size="sm">

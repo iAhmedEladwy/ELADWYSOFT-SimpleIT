@@ -214,6 +214,119 @@ export class BackupService {
     }
   }
 
+  async downloadBackup(backupId: number): Promise<{ success: boolean; filepath?: string; filename?: string; error?: string }> {
+    try {
+      // Get backup file info
+      const backup = await db.select().from(backupFiles).where(eq(backupFiles.id, backupId)).limit(1);
+      if (backup.length === 0) {
+        return { success: false, error: 'Backup not found' };
+      }
+
+      // Check if file exists on disk
+      try {
+        await fs.access(backup[0].filepath);
+        return { 
+          success: true, 
+          filepath: backup[0].filepath,
+          filename: backup[0].filename
+        };
+      } catch (error) {
+        return { success: false, error: 'Backup file not found on disk' };
+      }
+    } catch (error) {
+      console.error('Error accessing backup file:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred while accessing backup file'
+      };
+    }
+  }
+
+  async restoreFromFile(uploadedFilePath: string, restoredById: number): Promise<{ success: boolean; error?: string; recordsRestored?: number }> {
+    const startTime = Date.now();
+    
+    try {
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        return { success: false, error: 'DATABASE_URL not configured' };
+      }
+
+      // Check if uploaded file exists
+      try {
+        await fs.access(uploadedFilePath);
+      } catch (error) {
+        return { success: false, error: 'Uploaded file not found' };
+      }
+
+      // Create restore history entry
+      const restoreHistoryEntry = await db.insert(restoreHistory).values({
+        backupFileId: null, // Since this is from an uploaded file, not from our backup files table
+        status: 'in_progress',
+        restoredById: restoredById
+      }).returning();
+
+      try {
+        // First, backup current backup management tables
+        console.log('Preserving backup management tables...');
+        const backupTablesFile = path.join(this.backupDir, `backup_tables_temp_${Date.now()}.sql`);
+        const backupTablesCommand = `pg_dump "${dbUrl}" --data-only --table=backup_files --table=backup_jobs --table=system_health --table=restore_history > "${backupTablesFile}"`;
+        execSync(backupTablesCommand, { stdio: 'pipe' });
+
+        // Execute the restore using psql
+        console.log('Restoring database from uploaded file...');
+        const restoreCommand = `psql "${dbUrl}" < "${uploadedFilePath}"`;
+        execSync(restoreCommand, { 
+          encoding: 'utf8',
+          stdio: 'pipe'
+        });
+
+        // Restore backup management tables to preserve history
+        console.log('Restoring backup management tables...');
+        const restoreBackupTablesCommand = `psql "${dbUrl}" < "${backupTablesFile}"`;
+        execSync(restoreBackupTablesCommand, { stdio: 'pipe' });
+
+        // Clean up temporary backup file
+        try {
+          await fs.unlink(backupTablesFile);
+        } catch (error) {
+          console.warn('Could not delete temporary backup file:', error);
+        }
+
+        // Update restore history with success
+        await db.update(restoreHistory)
+          .set({ 
+            status: 'completed', 
+            completedAt: new Date(),
+            recordsRestored: 0 // We don't have an easy way to count from uploaded file
+          })
+          .where(eq(restoreHistory.id, restoreHistoryEntry[0].id));
+
+        console.log('Restore from uploaded file completed successfully');
+        return { success: true, recordsRestored: 0 };
+
+      } catch (error) {
+        // Update restore history with failure
+        await db.update(restoreHistory)
+          .set({ 
+            status: 'failed', 
+            completedAt: new Date(),
+            errorMessage: error instanceof Error ? error.message : 'Unknown error'
+          })
+          .where(eq(restoreHistory.id, restoreHistoryEntry[0].id));
+
+        console.error('Restore from uploaded file failed:', error);
+        throw error;
+      }
+
+    } catch (error) {
+      console.error('Error during restore from file:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred during restore'
+      };
+    }
+  }
+
   async getSystemHealth() {
     try {
       const dbUrl = process.env.DATABASE_URL;
