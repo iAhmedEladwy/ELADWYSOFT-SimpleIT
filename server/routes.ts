@@ -7331,7 +7331,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   // GET /api/admin/backups - Get list of backups
 app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
   try {
-    const backups = await backupService.getAllBackups();
+    const backups = await backupService.getBackupList();
     res.json(backups);
   } catch (error) {
     console.error('Failed to get backup list:', error);
