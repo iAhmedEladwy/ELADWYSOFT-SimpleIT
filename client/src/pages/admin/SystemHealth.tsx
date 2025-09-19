@@ -60,6 +60,7 @@ export default function SystemHealth() {
     systemOverview: language === 'English' ? 'System Overview' : 'نظرة عامة على النظام',
     databaseMetrics: language === 'English' ? 'Database Metrics' : 'مقاييس قاعدة البيانات',
     performanceMetrics: language === 'English' ? 'Performance Metrics' : 'مقاييس الأداء',
+    systemMetrics: language === 'English' ? 'System Metrics' : 'مقاييس النظام',
     refreshMetrics: language === 'English' ? 'Refresh Metrics' : 'تحديث المقاييس',
     lastUpdated: language === 'English' ? 'Last Updated' : 'آخر تحديث',
     healthy: language === 'English' ? 'Healthy' : 'سليم',
@@ -429,7 +430,7 @@ export default function SystemHealth() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MemoryStick className="h-5 w-5" />
-                  System Metrics
+                  {t.systemMetrics}
                 </CardTitle>
               </CardHeader>
               <CardContent>

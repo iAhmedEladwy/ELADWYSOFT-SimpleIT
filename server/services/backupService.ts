@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
-import { backupFiles, backupJobs, systemHealth, restoreHistory, assets, employees, tickets } from '../../shared/schema';
+import { backupFiles, backupJobs, systemHealth, restoreHistory, assets, employees, tickets, activityLog } from '../../shared/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
 export class BackupService {
@@ -180,22 +180,37 @@ export class BackupService {
       // Get backup file info
       const backup = await db.select().from(backupFiles).where(eq(backupFiles.id, backupId)).limit(1);
       if (backup.length === 0) {
-        throw new Error('Backup not found');
+        return { success: false, error: 'Backup not found' };
       }
+
+      // First, update any related restore history records to remove the foreign key reference
+      // This preserves the audit trail while allowing the backup file to be deleted
+      const restoreHistoryUpdated = await db.update(restoreHistory)
+        .set({ backupFileId: null })
+        .where(eq(restoreHistory.backupFileId, backupId));
+
+      console.log(`Updated ${restoreHistoryUpdated} restore history records for backup ${backupId}`);
 
       // Delete file from disk
       try {
         await fs.unlink(backup[0].filepath);
+        console.log(`Deleted backup file: ${backup[0].filepath}`);
       } catch (error) {
         console.warn('Could not delete backup file from disk:', error);
+        // Continue with database deletion even if file deletion fails
       }
 
       // Delete from database
       await db.delete(backupFiles).where(eq(backupFiles.id, backupId));
+      console.log(`Deleted backup record with ID: ${backupId}`);
 
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      console.error('Error deleting backup:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred while deleting backup'
+      };
     }
   }
 
@@ -287,7 +302,7 @@ export class BackupService {
       healthMetrics.push({
         metricName: 'Memory Usage (RSS)',
         metricValue: `${memUsedMB} MB`,
-        metricType: 'memory',
+        metricType: 'system',
         status: memUsedMB > 512 ? 'warning' : 'healthy',
         threshold: '512 MB'
       });
@@ -295,7 +310,7 @@ export class BackupService {
       healthMetrics.push({
         metricName: 'Heap Memory',
         metricValue: `${memHeapMB} MB`,
-        metricType: 'memory',
+        metricType: 'system',
         status: memHeapMB > 256 ? 'warning' : 'healthy',
         threshold: '256 MB'
       });
@@ -310,7 +325,7 @@ export class BackupService {
         healthMetrics.push({
           metricName: 'Backup Directory',
           metricValue: backupDirExists ? `${backupCount} files` : 'Not found',
-          metricType: 'disk',
+          metricType: 'system',
           status: backupDirExists ? 'healthy' : 'critical',
           threshold: 'Directory exists'
         });
@@ -318,7 +333,7 @@ export class BackupService {
         healthMetrics.push({
           metricName: 'Backup Directory',
           metricValue: 'Error accessing',
-          metricType: 'disk',
+          metricType: 'system',
           status: 'critical',
           threshold: 'Directory exists'
         });
@@ -338,7 +353,7 @@ export class BackupService {
       healthMetrics.push({
         metricName: 'Total Assets',
         metricValue: totalAssets.toString(),
-        metricType: 'application',
+        metricType: 'database',
         status: 'healthy',
         threshold: 'N/A'
       });
@@ -346,7 +361,7 @@ export class BackupService {
       healthMetrics.push({
         metricName: 'Total Employees',
         metricValue: totalEmployees.toString(),
-        metricType: 'application',
+        metricType: 'database',
         status: 'healthy',
         threshold: 'N/A'
       });
@@ -354,24 +369,30 @@ export class BackupService {
       healthMetrics.push({
         metricName: 'Total Tickets',
         metricValue: totalTickets.toString(),
-        metricType: 'application',
+        metricType: 'database',
         status: 'healthy',
         threshold: 'N/A'
       });
 
-      // Recent ticket activity (last 24 hours)
-      const recentTicketsQuery = `
-        SELECT count(*) 
-        FROM tickets 
-        WHERE created_at > now() - interval '24 hours'
-      `;
-      const recentTicketsResult = execSync(`psql "${dbUrl}" -t -c "${recentTicketsQuery}"`, { encoding: 'utf8' });
-      const recentTickets = parseInt(recentTicketsResult.trim());
+      // Recent ticket activity (last 24 hours) - with error handling
+      let recentTickets = 0;
+      try {
+        const recentTicketsQuery = `
+          SELECT count(*) 
+          FROM tickets 
+          WHERE created_at > now() - interval '24 hours'
+        `;
+        const recentTicketsResult = execSync(`psql "${dbUrl}" -t -c "${recentTicketsQuery}"`, { encoding: 'utf8' });
+        recentTickets = parseInt(recentTicketsResult.trim()) || 0;
+      } catch (error) {
+        console.warn('Failed to get recent tickets metrics:', error);
+        recentTickets = 0;
+      }
 
       healthMetrics.push({
         metricName: 'New Tickets (24h)',
         metricValue: recentTickets.toString(),
-        metricType: 'application',
+        metricType: 'performance',
         status: recentTickets > 50 ? 'warning' : 'healthy',
         threshold: '50/day'
       });
@@ -413,37 +434,49 @@ export class BackupService {
 
       // === ACCESS PATTERN ANALYSIS ===
 
-      // Failed login attempts (last hour)
-      const failedLoginsQuery = `
-        SELECT count(*) 
-        FROM activity_log 
-        WHERE action = 'Login Failed' 
-        AND created_at > now() - interval '1 hour'
-      `;
-      const failedLoginsResult = execSync(`psql "${dbUrl}" -t -c "${failedLoginsQuery}"`, { encoding: 'utf8' });
-      const failedLogins = parseInt(failedLoginsResult.trim()) || 0;
+      // Failed login attempts (last hour) - with error handling
+      let failedLogins = 0;
+      try {
+        const failedLoginsQuery = `
+          SELECT count(*) 
+          FROM activity_log 
+          WHERE action = 'Login Failed' 
+          AND created_at > now() - interval '1 hour'
+        `;
+        const failedLoginsResult = execSync(`psql "${dbUrl}" -t -c "${failedLoginsQuery}"`, { encoding: 'utf8' });
+        failedLogins = parseInt(failedLoginsResult.trim()) || 0;
+      } catch (error) {
+        console.warn('Failed to get failed login metrics:', error);
+        failedLogins = 0;
+      }
 
       healthMetrics.push({
         metricName: 'Failed Logins (1h)',
         metricValue: failedLogins.toString(),
-        metricType: 'security',
+        metricType: 'performance',
         status: failedLogins > 10 ? 'critical' : failedLogins > 5 ? 'warning' : 'healthy',
         threshold: '5/hour'
       });
 
-      // Active user sessions (approximate)
-      const activeUsersQuery = `
-        SELECT count(DISTINCT user_id) 
-        FROM activity_log 
-        WHERE created_at > now() - interval '30 minutes'
-      `;
-      const activeUsersResult = execSync(`psql "${dbUrl}" -t -c "${activeUsersQuery}"`, { encoding: 'utf8' });
-      const activeUsers = parseInt(activeUsersResult.trim()) || 0;
+      // Active user sessions (approximate) - with error handling
+      let activeUsers = 0;
+      try {
+        const activeUsersQuery = `
+          SELECT count(DISTINCT user_id) 
+          FROM activity_log 
+          WHERE created_at > now() - interval '30 minutes'
+        `;
+        const activeUsersResult = execSync(`psql "${dbUrl}" -t -c "${activeUsersQuery}"`, { encoding: 'utf8' });
+        activeUsers = parseInt(activeUsersResult.trim()) || 0;
+      } catch (error) {
+        console.warn('Failed to get active users metrics:', error);
+        activeUsers = 0;
+      }
 
       healthMetrics.push({
         metricName: 'Active Users (30m)',
         metricValue: activeUsers.toString(),
-        metricType: 'security',
+        metricType: 'performance',
         status: 'healthy',
         threshold: 'N/A'
       });
