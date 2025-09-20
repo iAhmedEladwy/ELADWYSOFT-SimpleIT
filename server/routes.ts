@@ -4734,30 +4734,25 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
         'BULK_CHECK_OUT',
         'BULK_CHECK_IN', 
         'Bulk Update',
-        'Bulk Delete',
-        'Bulk Maintenance Schedule'
+        'Bulk Delete', 
+        'Bulk Maintenance Schedule',
+        'Retire' // Individual retire actions can be bulk when called on multiple assets
       ];
 
-      // Build the action filter - either specific action or any bulk action
-      let actionFilter = action;
-      if (!action) {
-        // If no specific action, filter for any bulk operation
-        actionFilter = bulkActionPatterns.join('|');
-      }
-
-      // Get filtered activity logs
+      // Get activity logs - we'll filter for bulk operations after getting the data
       const result = await storage.getActivityLogs({
-        page,
-        limit: export_format ? 10000 : limit, // Get more records for export
+        page: 1, // Get all data first, then paginate manually
+        limit: export_format ? 10000 : 1000, // Get more records to filter from
         filter: search,
-        action: actionFilter,
+        ...(action && { action }), // Only filter by action if a specific one is requested
         startDate,
         endDate
       });
 
-      // Filter results to only include bulk operations if no specific action was requested
+      // Filter results to only include bulk operations
       let filteredData = result.data;
       if (!action) {
+        // If no specific action, filter for any bulk operation
         filteredData = result.data.filter(log => 
           bulkActionPatterns.some(pattern => 
             log.action && (log.action.includes(pattern) || log.action === pattern)
@@ -7147,7 +7142,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // Retire multiple assets
   app.post("/api/assets/retire", authenticateUser, hasAccess(3), async (req, res) => {
     try {
-      const { assetIds, reason, retirementDate } = req.body;
+      const { assetIds, reason, retirementDate, notes } = req.body;
       
       if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
         return res.status(400).json({ message: "Asset IDs are required" });
