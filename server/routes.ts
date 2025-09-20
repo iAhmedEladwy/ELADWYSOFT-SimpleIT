@@ -63,6 +63,21 @@ import { getValidationRules, getExportColumns } from "@shared/importExportRules"
 // Initialize backup service
 const backupService = new BackupService();
 
+// Helper function for short date formatting
+const formatShortDate = (dateValue: any): string => {
+  if (!dateValue) return '';
+  try {
+    const date = new Date(dateValue);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
 
 // Enhanced ID generation with system config support
 const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
@@ -6199,70 +6214,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       });
     } catch (error: unknown) {
       console.error("Error fetching audit logs:", error);
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // Helper function for short date formatting
-  const formatShortDate = (dateValue: any): string => {
-    if (!dateValue) return '';
-    try {
-      const date = new Date(dateValue);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-    } catch (error) {
-      return '';
-    }
-  };
-
-  // Enhanced employees export with all new schema fields
-  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const employees = await storage.getAllEmployees();
-      
-      // Create a map of employee IDs to names for manager lookup
-      const employeeMap = new Map<string, string>();
-      employees.forEach(emp => {
-        if (emp.empId) {
-          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
-        }
-      });
-      
-      const csvData = employees.map(emp => ({
-        'Employee ID': emp.empId,
-        'English Name': emp.englishName,
-        'Arabic Name': emp.arabicName || '',
-        'Department': emp.department || '',
-        'ID Number': emp.idNumber || '', // New field
-        'Title': emp.title || '', // New field
-        'Employment Type': emp.employmentType || '',
-        'Joining Date': formatShortDate(emp.joiningDate), // Fixed: Short date format
-        'Exit Date': formatShortDate(emp.exitDate), // Fixed: Short date format
-        'Status': emp.status,
-        'Personal Mobile': emp.personalMobile || '', // New field
-        'Work Mobile': emp.workMobile || '', // New field
-        'Personal Email': emp.personalEmail || '', // New field
-        'Corporate Email': emp.corporateEmail || '', // New field
-        'User ID': emp.userId || '', // New field
-        'Direct Manager ID': emp.directManager || '', // New field
-        'Direct Manager Name': emp.directManager ? (employeeMap.get(emp.directManager) || '') : '', // Fixed: Added manager name column
-        'Created Date': formatShortDate(emp.createdAt),
-        'Last Updated': formatShortDate(emp.updatedAt)
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
