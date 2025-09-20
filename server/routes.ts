@@ -78,6 +78,25 @@ const formatShortDate = (dateValue: any): string => {
   }
 };
 
+// Helper function for long date formatting with time
+const formatLongDate = (dateValue: any): string => {
+  if (!dateValue) return '';
+  try {
+    const date = new Date(dateValue);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
 
 // Enhanced ID generation with system config support
 const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
@@ -1104,8 +1123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'ID Number': emp.idNumber || '',
         'Direct Manager': emp.directManager || '',
         'Direct Manager Name': emp.directManager ? (employeeMap.get(emp.directManager) || '') : '', // Fixed: Added manager name
-        'Created At': formatShortDate(emp.createdAt), // Fixed: Short date format
-        'Updated At': formatShortDate(emp.updatedAt) // Fixed: Short date format
+        'Created At': formatLongDate(emp.createdAt), // Fixed: Long date format with time
+        'Updated At': formatLongDate(emp.updatedAt) // Fixed: Long date format with time
       }));
 
       res.setHeader('Content-Type', 'text/csv');
@@ -1464,8 +1483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Out of Box OS': asset.outOfBoxOs || '',
         'Assigned Employee ID': asset.assignedEmployeeId || '',
         'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '', // Fixed: Use assignedEmployeeId
-        'Created At': formatShortDate(asset.createdAt), // Fixed: Short date format
-        'Updated At': formatShortDate(asset.updatedAt) // Fixed: Short date format
+        'Created At': formatLongDate(asset.createdAt), // Fixed: Long date format with time
+        'Updated At': formatLongDate(asset.updatedAt) // Fixed: Long date format with time
       }));
       
       res.setHeader('Content-Type', 'text/csv');
