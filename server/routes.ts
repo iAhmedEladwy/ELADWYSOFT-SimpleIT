@@ -4666,17 +4666,27 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   // Export routes
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const data = await storage.getAllEmployees();
+      const employees = await storage.getAllEmployees();
       
-      const csvData = data.map(item => ({
+      // Create a map of employee IDs to names for manager lookup
+      const employeeMap = new Map<string, string>();
+      employees.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = employees.map(item => ({
         englishName: item.englishName || '',
         arabicName: item.arabicName || '',
         department: item.department || '',
         idNumber: item.idNumber || '',
         title: item.title || '',
         directManager: item.directManager || '',
+        directManagerName: item.directManager ? (employeeMap.get(item.directManager) || '') : '', // Added manager name
         employmentType: item.employmentType || '',
-        joiningDate: item.joiningDate || '',
+        joiningDate: formatShortDate(item.joiningDate), // Fixed: Short date format
+        exitDate: formatShortDate(item.exitDate), // Fixed: Short date format
         status: item.status || '',
         personalMobile: item.personalMobile || '',
         personalEmail: item.personalEmail || ''
@@ -4697,9 +4707,20 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 
   app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const data = await storage.getAllAssets();
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
       
-      const csvData = data.map(item => ({
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = assetsData.map(item => ({
         assetId: item.assetId || '',
         type: item.type || '',
         brand: item.brand || '',
@@ -4711,12 +4732,13 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
         ram: item.ram || '',
         storage: item.storage || '',
         status: item.status || '',
-        purchaseDate: item.purchaseDate || '',
+        purchaseDate: formatShortDate(item.purchaseDate), // Use short date format
         buyPrice: item.buyPrice || '',
-        warrantyExpiryDate: item.warrantyExpiryDate || '',
+        warrantyExpiryDate: formatShortDate(item.warrantyExpiryDate), // Use short date format
         lifeSpan: item.lifeSpan || '',
         outOfBoxOs: item.outOfBoxOs || '',
-        assignedEmployeeId: item.assignedEmployeeId || ''
+        assignedEmployeeId: item.assignedEmployeeId || '',
+        assignedEmployeeName: item.assignedEmployeeId ? (employeeMap.get(item.assignedEmployeeId) || '') : '' // Fixed: Added employee name
       }));
       
       const csv = [
@@ -6181,10 +6203,34 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
+  // Helper function for short date formatting
+  const formatShortDate = (dateValue: any): string => {
+    if (!dateValue) return '';
+    try {
+      const date = new Date(dateValue);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
+      return '';
+    }
+  };
+
   // Enhanced employees export with all new schema fields
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
+      
+      // Create a map of employee IDs to names for manager lookup
+      const employeeMap = new Map<string, string>();
+      employees.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
       const csvData = employees.map(emp => ({
         'Employee ID': emp.empId,
         'English Name': emp.englishName,
@@ -6193,8 +6239,8 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         'ID Number': emp.idNumber || '', // New field
         'Title': emp.title || '', // New field
         'Employment Type': emp.employmentType || '',
-        'Joining Date': emp.joiningDate ? new Date(emp.joiningDate).toISOString().split('T')[0] : '', // New field
-        'Exit Date': emp.exitDate ? new Date(emp.exitDate).toISOString().split('T')[0] : '', // New field
+        'Joining Date': formatShortDate(emp.joiningDate), // Fixed: Short date format
+        'Exit Date': formatShortDate(emp.exitDate), // Fixed: Short date format
         'Status': emp.status,
         'Personal Mobile': emp.personalMobile || '', // New field
         'Work Mobile': emp.workMobile || '', // New field
@@ -6202,8 +6248,9 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         'Corporate Email': emp.corporateEmail || '', // New field
         'User ID': emp.userId || '', // New field
         'Direct Manager ID': emp.directManager || '', // New field
-        'Created Date': emp.createdAt ? new Date(emp.createdAt).toISOString().split('T')[0] : '',
-        'Last Updated': emp.updatedAt ? new Date(emp.updatedAt).toISOString().split('T')[0] : ''
+        'Direct Manager Name': emp.directManager ? (employeeMap.get(emp.directManager) || '') : '', // Fixed: Added manager name column
+        'Created Date': formatShortDate(emp.createdAt),
+        'Last Updated': formatShortDate(emp.updatedAt)
       }));
       
       res.setHeader('Content-Type', 'text/csv');
@@ -6222,8 +6269,20 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 
   app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
-      const csvData = assets.map(asset => ({
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
+      
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = assetsData.map(asset => ({
         'Asset ID': asset.assetId,
         'Name': asset.modelName,
         'Type': asset.type,
@@ -6231,12 +6290,14 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         'Model': asset.model || '',
         'Serial Number': asset.serialNumber,
         'Status': asset.status,
-        'Purchase Date': asset.purchaseDate || '',
+        'Purchase Date': formatShortDate(asset.purchaseDate), // Use short date format
         'Purchase Price': asset.buyPrice || '',
-        'Warranty Expiry': asset.warrantyExpiryDate || '',
+        'Warranty Expiry': formatShortDate(asset.warrantyExpiryDate), // Use short date format
         'Location': asset.location || '',
         'Department': asset.department || '',
-        'Specifications': asset.specs || ''
+        'Specifications': asset.specs || '',
+        'Assigned Employee ID': asset.assignedEmployeeId || '',
+        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '' // Fixed: Added employee name
       }));
       
       res.setHeader('Content-Type', 'text/csv');
