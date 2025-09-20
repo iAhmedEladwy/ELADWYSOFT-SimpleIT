@@ -1,7 +1,3 @@
-// client/src/data/changelog-data.ts
-// This file contains all the changelog entries for the SimpleIT system
-// Developers can easily add new entries here without database access
-
 export interface ChangelogEntry {
   version: string;
   date: string;
@@ -20,16 +16,18 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
   version: "0.4.1",
   date: "2025-09-20",
-  title: "Schema Changes, Backup Enhancements & UI Fixes ⚠️ MIGRATION REQUIRED",
+  title: "Scheduled Backups, Bulk Operations History & System Enhancements ⚠️ MIGRATION REQUIRED",
   type: "minor",
   changes: {
     breaking: [
       "⚠️ DATABASE SCHEMA CHANGES - MIGRATION REQUIRED:",
       "   🔧 Added 'backup_filename' column to 'restore_history' table",
+      "   🔧 Added 'backup_jobs' table for scheduled backup functionality",
       "   📋 Run migration script: scripts/migrate-v0.4.1-backup-filename.sql",
       "   ⚡ SQL: ALTER TABLE restore_history ADD COLUMN backup_filename VARCHAR(255);",
-      "   🎯 Required for backup filename preservation functionality",
-      "   ⏰ Downtime: Minimal (simple column addition)",
+      "   ⚡ SQL: CREATE TABLE backup_jobs (id, name, schedule_type, schedule_value, is_enabled, created_at, last_run_at, next_run_at);",
+      "   🎯 Required for backup filename preservation and scheduled backup functionality",
+      "   ⏰ Downtime: Minimal (simple column and table additions)",
       "   💡 Migration is backward compatible - existing restore records will have NULL backup_filename"
     ],
     features: [
@@ -40,7 +38,26 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       "   ✅ Added filename field to preserve backup names even after file deletion",
       "   ✅ Improved audit trail for backup/restore operations with proper user accountability",
       "   ✅ Updated database schema with backupFilename column for restore_history table",
-      "   ✅ Created migration script (migrate-v0.4.1-backup-filename.sql) for existing installations"
+      "   ✅ Created migration script (migrate-v0.4.1-backup-filename.sql) for existing installations",
+      "⏰ Scheduled Backup System:",
+      "   ✅ Implemented comprehensive scheduled backup functionality",
+      "   ✅ Added ScheduledBackupsTab component with full CRUD interface",
+      "   ✅ Enhanced BackupRestore page with 3-tab layout (Manual, Scheduled, Restore History)",
+      "   ✅ Added backup job scheduling with flexible timing options (daily, weekly, monthly)",
+      "   ✅ Implemented backup job status management (enabled/disabled)",
+      "   ✅ Added manual execution of scheduled backup jobs",
+      "   ✅ Created backup job management API endpoints (/api/admin/backup-jobs)",
+      "   ✅ Updated database schema with backup_jobs table structure",
+      "   ✅ Integrated backup job creation into existing v0.4.1 migration",
+      "📊 Bulk Operations History:",
+      "   ✅ Implemented complete bulk operations history tracking system",
+      "   ✅ Added /api/bulk-action-history endpoint with comprehensive filtering",
+      "   ✅ Created bulk operations monitoring for all bulk actions (check-in/out, retire, update, delete)",
+      "   ✅ Added advanced filtering by action type, status, date range, and search",
+      "   ✅ Implemented pagination and CSV export functionality",
+      "   ✅ Enhanced existing BulkOperations.tsx frontend with backend integration",
+      "   ✅ Added success/partial/failed status detection and reporting",
+      "   ✅ Integrated with existing activity logging system"
     ],
     improvements: [
       "🔄 Backup & Restore Enhancements:",
@@ -67,7 +84,22 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       "   ✅ Better separation of concerns between SystemConfig and AdminConsole",
       "   ✅ Reduced component complexity by removing duplicate functionality",
       "   ✅ Improved maintainability by eliminating code duplication",
-      "   ✅ Enhanced user experience with dedicated user management section"
+      "   ✅ Enhanced user experience with dedicated user management section",
+      "🔧 Backup System Enhancements:",
+      "   ✅ Enhanced backupService.ts with new scheduled job management methods",
+      "   ✅ Added calculateNextRunTime functionality for backup scheduling",
+      "   ✅ Updated backup job schema with schedule_type and schedule_value fields",
+      "   ✅ Improved backup job status tracking and management",
+      "📈 Admin Console Integration:",
+      "   ✅ Seamlessly integrated scheduled backups into existing Admin Console workflow",
+      "   ✅ Enhanced backup management with consistent UI/UX patterns",
+      "   ✅ Added bulk operations monitoring to admin capabilities",
+      "   ✅ Improved admin oversight with comprehensive operation history",
+      "🎯 API Consistency:",
+      "   ✅ Standardized API endpoint patterns for admin functionality",
+      "   ✅ Enhanced error handling and response formatting",
+      "   ✅ Improved authentication and access control for admin endpoints",
+      "   ✅ Added proper TypeScript typing for new functionality"
     ],
     bugfixes: [
       "🔧 Dialog & UI Component Fixes:",
@@ -92,7 +124,22 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       "   ✅ Fixed file corruption issues during user management removal",
       "   ✅ Resolved duplicate export statements in SystemConfig component",
       "   ✅ Cleaned up orphaned JSX content and malformed component structure",
-      "   ✅ Corrected component imports and removed unused dependencies"
+      "   ✅ Corrected component imports and removed unused dependencies",
+      "🔧 Bulk Operations Fixes:",
+      "   ✅ Fixed 'notes is not defined' error in /api/assets/retire endpoint",
+      "   ✅ Added missing 'notes' parameter extraction in bulk retire operations",
+      "   ✅ Fixed bulk action history data filtering and display issues",
+      "   ✅ Resolved API endpoint pattern matching for bulk operation detection",
+      "   ✅ Fixed pagination logic for manually filtered bulk operation data",
+      "📊 Employee Page Refresh Fix:",
+      "   ✅ Fixed missing queryFn in useQuery hooks causing refresh button failures",
+      "   ✅ Added proper queryFn configuration for employee data fetching",
+      "   ✅ Resolved 'd.map is not a function' errors from API endpoint mismatches",
+      "🔄 API Endpoint Corrections:",
+      "   ✅ Fixed API route inconsistencies (/api/backup-jobs vs /api/admin/backup-jobs)",
+      "   ✅ Corrected endpoint paths to match frontend expectations",
+      "   ✅ Resolved backend-frontend API communication issues",
+      "   ✅ Enhanced error handling and response validation"
     ]
   }
 },
