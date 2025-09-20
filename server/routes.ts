@@ -1079,10 +1079,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employees = await storage.getAllEmployees();
       
       // Create a map of employee IDs to names for manager lookup
-      const employeeMap = new Map<string, string>();
+      const employeeMap = new Map<number, string>();
       employees.forEach(emp => {
-        if (emp.empId) {
-          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        if (emp.id) {
+          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
         }
       });
       
@@ -1436,10 +1436,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
       
       // Create a map of employee IDs to names for assignment lookup
-      const employeeMap = new Map<string, string>();
+      const employeeMap = new Map<number, string>();
       employeesData.forEach(emp => {
-        if (emp.empId) {
-          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        if (emp.id) {
+          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
         }
       });
       
@@ -1462,8 +1462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Warranty Expiry Date': formatShortDate(asset.warrantyExpiryDate), // Fixed: Short date format
         'Life Span': asset.lifeSpan || '',
         'Out of Box OS': asset.outOfBoxOs || '',
-        'Assigned To ID': asset.assignedToId || '',
-        'Assigned To': asset.assignedToId ? (employeeMap.get(asset.assignedToId) || '') : '', // Fixed: Added employee name
+        'Assigned Employee ID': asset.assignedEmployeeId || '',
+        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '', // Fixed: Use assignedEmployeeId
         'Created At': formatShortDate(asset.createdAt), // Fixed: Short date format
         'Updated At': formatShortDate(asset.updatedAt) // Fixed: Short date format
       }));
