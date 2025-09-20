@@ -74,13 +74,13 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
   // Fetch backup jobs
   const { data: backupJobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ['backup-jobs'],
-    queryFn: () => apiRequest('/api/backup-jobs', 'GET')
+    queryFn: () => apiRequest('/api/admin/backup-jobs', 'GET')
   });
 
   // Create backup job mutation
   const createJobMutation = useMutation({
     mutationFn: (data: BackupJobCreateRequest) => 
-      apiRequest('/api/backup-jobs', 'POST', data),
+      apiRequest('/api/admin/backup-jobs', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backup-jobs'] });
       setIsCreateDialogOpen(false);
@@ -102,7 +102,7 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
   // Update backup job mutation
   const updateJobMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<BackupJobCreateRequest> }) => 
-      apiRequest(`/api/backup-jobs/${id}`, 'PUT', data),
+      apiRequest(`/api/admin/backup-jobs/${id}`, 'PUT', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backup-jobs'] });
       setEditingJob(null);
@@ -124,7 +124,7 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
   // Delete backup job mutation
   const deleteJobMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/backup-jobs/${id}`, 'DELETE'),
+      apiRequest(`/api/admin/backup-jobs/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backup-jobs'] });
       toast({
@@ -144,7 +144,7 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
   // Execute backup job mutation
   const executeJobMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/backup-jobs/${id}/execute`, 'POST'),
+      apiRequest(`/api/admin/backup-jobs/${id}/run`, 'POST'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backup-jobs'] });
       toast({

@@ -422,16 +422,15 @@ export const usersRelations = relations(users, ({ many }) => ({
 // Backup Management Tables
 export const backupJobs = pgTable("backup_jobs", {
   id: serial("id").primaryKey(),
-  jobId: varchar("job_id", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
-  schedule: varchar("schedule", { length: 50 }).notNull(), // 'manual', 'daily', 'weekly'
-  isEnabled: boolean("is_enabled").default(true),
-  lastRunAt: timestamp("last_run_at"),
-  nextRunAt: timestamp("next_run_at"),
-  createdById: integer("created_by_id").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  schedule_type: varchar("schedule_type", { length: 20 }).notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
+  schedule_value: integer("schedule_value").notNull().default(1), // number of units
+  is_enabled: boolean("is_enabled").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  last_run_at: timestamp("last_run_at"),
+  next_run_at: timestamp("next_run_at"),
 });
 
 export const backupFiles = pgTable("backup_files", {

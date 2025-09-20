@@ -681,27 +681,23 @@ export class BackupService {
   async createBackupJob(params: {
     name: string;
     description?: string;
-    schedule: 'daily' | 'weekly' | 'monthly';
-    isEnabled?: boolean;
-    createdById: number;
+    schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    schedule_value?: number;
+    is_enabled?: boolean;
   }): Promise<{ success: boolean; jobId?: number; error?: string }> {
     try {
-      const { name, description, schedule, isEnabled = true, createdById } = params;
-      
-      // Generate unique job ID
-      const jobId = `backup_${schedule}_${Date.now()}`;
+      const { name, description, schedule_type, schedule_value = 1, is_enabled = true } = params;
       
       // Calculate next run time based on schedule
-      const nextRunAt = this.calculateNextRunTime(schedule);
+      const nextRunAt = this.calculateNextRunTime(schedule_type, schedule_value);
       
       const [job] = await db.insert(backupJobs).values({
-        jobId,
         name,
         description,
-        schedule,
-        isEnabled,
-        nextRunAt,
-        createdById
+        schedule_type,
+        schedule_value,
+        is_enabled,
+        next_run_at: nextRunAt,
       }).returning();
 
       return { success: true, jobId: job.id };
@@ -718,21 +714,18 @@ export class BackupService {
     try {
       return await db.select({
         id: backupJobs.id,
-        jobId: backupJobs.jobId,
         name: backupJobs.name,
         description: backupJobs.description,
-        schedule: backupJobs.schedule,
-        isEnabled: backupJobs.isEnabled,
-        lastRunAt: backupJobs.lastRunAt,
-        nextRunAt: backupJobs.nextRunAt,
-        createdAt: backupJobs.createdAt,
-        createdByUsername: users.username,
-        createdByFirstName: users.firstName,
-        createdByLastName: users.lastName
+        schedule_type: backupJobs.schedule_type,
+        schedule_value: backupJobs.schedule_value,
+        is_enabled: backupJobs.is_enabled,
+        created_at: backupJobs.created_at,
+        updated_at: backupJobs.updated_at,
+        last_run_at: backupJobs.last_run_at,
+        next_run_at: backupJobs.next_run_at,
       })
       .from(backupJobs)
-      .leftJoin(users, eq(backupJobs.createdById, users.id))
-      .orderBy(desc(backupJobs.createdAt));
+      .orderBy(desc(backupJobs.created_at));
     } catch (error) {
       console.error('Error fetching backup jobs:', error);
       throw error;
@@ -745,15 +738,22 @@ export class BackupService {
   async updateBackupJob(jobId: number, updates: {
     name?: string;
     description?: string;
-    schedule?: 'daily' | 'weekly' | 'monthly';
-    isEnabled?: boolean;
+    schedule_type?: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    schedule_value?: number;
+    is_enabled?: boolean;
   }): Promise<{ success: boolean; error?: string }> {
     try {
-      const updateData: any = { ...updates, updatedAt: new Date() };
+      const updateData: any = { ...updates, updated_at: new Date() };
       
       // If schedule is updated, recalculate next run time
-      if (updates.schedule) {
-        updateData.nextRunAt = this.calculateNextRunTime(updates.schedule);
+      if (updates.schedule_type !== undefined || updates.schedule_value !== undefined) {
+        // Get current job to get existing values
+        const [currentJob] = await db.select().from(backupJobs).where(eq(backupJobs.id, jobId));
+        if (currentJob) {
+          const scheduleType = updates.schedule_type || currentJob.schedule_type;
+          const scheduleValue = updates.schedule_value || currentJob.schedule_value;
+          updateData.next_run_at = this.calculateNextRunTime(scheduleType, scheduleValue);
+        }
       }
 
       await db.update(backupJobs)
@@ -788,7 +788,7 @@ export class BackupService {
       return await db.select()
         .from(backupJobs)
         .where(
-          sql`${backupJobs.isEnabled} = true AND ${backupJobs.nextRunAt} <= NOW()`
+          sql`${backupJobs.is_enabled} = true AND ${backupJobs.next_run_at} <= NOW()`
         );
     } catch (error) {
       console.error('Error fetching due jobs:', error);
@@ -808,16 +808,16 @@ export class BackupService {
       }
 
       // Create automatic backup
-      const result = await this.createAutomaticBackup(job.createdById, `Scheduled ${job.schedule} backup: ${job.name}`);
+      const result = await this.createAutomaticBackup(1, `Scheduled ${job.schedule_type} backup: ${job.name}`);
       
       if (result.success) {
         // Update job's last run and next run times
-        const nextRunAt = this.calculateNextRunTime(job.schedule);
+        const nextRunAt = this.calculateNextRunTime(job.schedule_type, job.schedule_value);
         await db.update(backupJobs)
           .set({
-            lastRunAt: new Date(),
-            nextRunAt,
-            updatedAt: new Date()
+            last_run_at: new Date(),
+            next_run_at: nextRunAt,
+            updated_at: new Date()
           })
           .where(eq(backupJobs.id, jobId));
 
@@ -875,22 +875,25 @@ export class BackupService {
   /**
    * Calculate next run time based on schedule
    */
-  private calculateNextRunTime(schedule: string): Date {
+  private calculateNextRunTime(scheduleType: string, scheduleValue: number): Date {
     const now = new Date();
     const nextRun = new Date(now);
 
-    switch (schedule) {
+    switch (scheduleType) {
+      case 'hourly':
+        nextRun.setHours(now.getHours() + scheduleValue);
+        break;
       case 'daily':
-        nextRun.setDate(now.getDate() + 1);
+        nextRun.setDate(now.getDate() + scheduleValue);
         nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
         break;
       case 'weekly':
-        nextRun.setDate(now.getDate() + 7);
+        nextRun.setDate(now.getDate() + (scheduleValue * 7));
         nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
         break;
       case 'monthly':
-        nextRun.setMonth(now.getMonth() + 1);
-        nextRun.setDate(1); // First day of next month
+        nextRun.setMonth(now.getMonth() + scheduleValue);
+        nextRun.setDate(1); // First day of target month
         nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
         break;
       default:

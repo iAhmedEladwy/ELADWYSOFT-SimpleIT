@@ -7627,23 +7627,22 @@ app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, re
 // POST /api/admin/backup-jobs - Create new backup job
 app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
   try {
-    const { name, description, schedule, isEnabled } = req.body;
-    const userId = (req as any).session.user.id;
+    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
 
-    if (!name || !schedule) {
-      return res.status(400).json({ error: 'Name and schedule are required' });
+    if (!name || !schedule_type) {
+      return res.status(400).json({ error: 'Name and schedule_type are required' });
     }
 
-    if (!['daily', 'weekly', 'monthly'].includes(schedule)) {
-      return res.status(400).json({ error: 'Schedule must be daily, weekly, or monthly' });
+    if (!['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
+      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
     }
 
     const result = await backupService.createBackupJob({
       name,
       description,
-      schedule,
-      isEnabled: isEnabled !== false, // Default to true
-      createdById: userId
+      schedule_type,
+      schedule_value: schedule_value || 1,
+      is_enabled: is_enabled !== false, // Default to true
     });
 
     if (result.success) {
@@ -7661,21 +7660,22 @@ app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, r
 app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
-    const { name, description, schedule, isEnabled } = req.body;
+    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
 
     if (isNaN(jobId)) {
       return res.status(400).json({ error: 'Invalid job ID' });
     }
 
-    if (schedule && !['daily', 'weekly', 'monthly'].includes(schedule)) {
-      return res.status(400).json({ error: 'Schedule must be daily, weekly, or monthly' });
+    if (schedule_type && !['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
+      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
     }
 
     const result = await backupService.updateBackupJob(jobId, {
       name,
       description,
-      schedule,
-      isEnabled
+      schedule_type,
+      schedule_value,
+      is_enabled
     });
 
     if (result.success) {
