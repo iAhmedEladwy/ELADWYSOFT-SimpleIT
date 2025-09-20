@@ -1078,6 +1078,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employees = await storage.getAllEmployees();
       
+      // Create a map of employee IDs to names for manager lookup
+      const employeeMap = new Map<string, string>();
+      employees.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
       // Map to CSV format with all fields
       const csvData = employees.map(emp => ({
         'Employee ID': emp.empId,
@@ -1087,16 +1095,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Position': emp.title,
         'Employment Type': emp.employmentType || 'Full-time',
         'Status': emp.status || (emp.isActive ? 'Active' : 'Inactive'),
-        'Joining Date': emp.joiningDate || '',
-        'Exit Date': emp.exitDate || '',
+        'Joining Date': formatShortDate(emp.joiningDate), // Fixed: Short date format
+        'Exit Date': formatShortDate(emp.exitDate), // Fixed: Short date format
         'Personal Email': emp.personal || '',
         'Corporate Email': emp.corporateEmail || '',
         'Personal Mobile': emp.personalMobile || '',
         'Work Mobile': emp.workMobile || '',
         'ID Number': emp.idNumber || '',
         'Direct Manager': emp.directManager || '',
-        'Created At': emp.createdAt,
-        'Updated At': emp.updatedAt
+        'Direct Manager Name': emp.directManager ? (employeeMap.get(emp.directManager) || '') : '', // Fixed: Added manager name
+        'Created At': formatShortDate(emp.createdAt), // Fixed: Short date format
+        'Updated At': formatShortDate(emp.updatedAt) // Fixed: Short date format
       }));
 
       res.setHeader('Content-Type', 'text/csv');
@@ -1421,10 +1430,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assets Export/Import
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
+      
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
       
       // Transform asset data for export with proper field mapping
-      const csvData = assets.map(asset => ({
+      const csvData = assetsData.map(asset => ({
         'ID': asset.id,
         'Asset ID': asset.assetId,
         'Type': asset.type,
@@ -1437,14 +1457,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'RAM': asset.ram || '',
         'Storage': asset.storage || '',
         'Status': asset.status,
-        'Purchase Date': asset.purchaseDate || '',
+        'Purchase Date': formatShortDate(asset.purchaseDate), // Fixed: Short date format
         'Buy Price': asset.buyPrice || '',
-        'Warranty Expiry Date': asset.warrantyExpiryDate || '',
+        'Warranty Expiry Date': formatShortDate(asset.warrantyExpiryDate), // Fixed: Short date format
         'Life Span': asset.lifeSpan || '',
         'Out of Box OS': asset.outOfBoxOs || '',
         'Assigned To ID': asset.assignedToId || '',
-        'Created At': asset.createdAt ? new Date(asset.createdAt).toISOString() : '',
-        'Updated At': asset.updatedAt ? new Date(asset.updatedAt).toISOString() : ''
+        'Assigned To': asset.assignedToId ? (employeeMap.get(asset.assignedToId) || '') : '', // Fixed: Added employee name
+        'Created At': formatShortDate(asset.createdAt), // Fixed: Short date format
+        'Updated At': formatShortDate(asset.updatedAt) // Fixed: Short date format
       }));
       
       res.setHeader('Content-Type', 'text/csv');
