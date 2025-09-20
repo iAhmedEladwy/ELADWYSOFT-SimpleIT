@@ -4706,6 +4706,87 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
   
+  // Email Configuration endpoints
+  app.get("/api/email-config", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { emailService } = await import('./services/emailService.js');
+      const config = await emailService.getCurrentConfiguration();
+      res.json(config || {});
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.put("/api/email-config", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { emailService } = await import('./services/emailService.js');
+      const emailConfig = req.body;
+      
+      // Validate required fields
+      if (!emailConfig.emailHost || !emailConfig.emailPort || !emailConfig.emailUser || !emailConfig.emailPassword) {
+        return res.status(400).json({ error: 'Missing required email configuration fields' });
+      }
+
+      await emailService.saveConfiguration(emailConfig);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Update",
+          entityType: "EmailConfig",
+          details: { host: emailConfig.emailHost, port: emailConfig.emailPort, fromAddress: emailConfig.emailFromAddress }
+        });
+      }
+      
+      res.json({ message: 'Email configuration saved successfully' });
+    } catch (error: unknown) {
+      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.post("/api/email-config/test", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { emailService } = await import('./services/emailService.js');
+      const { emailConfig, testEmail } = req.body;
+      
+      // Validate inputs
+      if (!emailConfig || !testEmail?.to) {
+        return res.status(400).json({ error: 'Email configuration and test email address are required' });
+      }
+
+      const result = await emailService.testConfiguration(emailConfig, testEmail);
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Test",
+          entityType: "EmailConfig",
+          details: { testEmail: testEmail.to, success: result.success }
+        });
+      }
+      
+      if (result.success) {
+        res.json({ message: 'Test email sent successfully', success: true });
+      } else {
+        res.status(400).json({ error: result.error, success: false });
+      }
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
+  app.get("/api/email-config/status", authenticateUser, hasAccess(3), async (req, res) => {
+    try {
+      const { emailService } = await import('./services/emailService.js');
+      const isConfigured = await emailService.isConfigured();
+      res.json({ configured: isConfigured });
+    } catch (error: unknown) {
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+  
   // Activity Log
   app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
     try {
