@@ -460,6 +460,7 @@ export const systemHealth = pgTable("system_health", {
 export const restoreHistory = pgTable("restore_history", {
   id: serial("id").primaryKey(),
   backupFileId: integer("backup_file_id").references(() => backupFiles.id),
+  backupFilename: varchar("backup_filename", { length: 255 }), // Store filename for display even if file is deleted
   status: varchar("status", { length: 50 }).notNull(), // 'in_progress', 'completed', 'failed'
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),

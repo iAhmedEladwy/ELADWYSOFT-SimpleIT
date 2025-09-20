@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/hooks/use-language';
 import {
@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,6 +103,8 @@ const getEntityBadgeColor = (entityType: string) => {
 
 export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
   const { language } = useLanguage();
+  const [selectedLogDetails, setSelectedLogDetails] = useState<any>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   const translations = {
     auditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
@@ -116,6 +126,11 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
     clickToViewDetails: language === 'English' ? 'Click to view details' : 'انقر لعرض التفاصيل',
     noDetailsAvailable: language === 'English' ? 'No details available' : 'لا توجد تفاصيل متاحة',
     unableToDisplayDetails: language === 'English' ? 'Unable to display details' : 'غير قادر على عرض التفاصيل'
+  };
+
+  const handleDetailsClick = (details: any) => {
+    setSelectedLogDetails(details);
+    setIsDetailsDialogOpen(true);
   };
 
   const copyToClipboard = (text: string) => {
@@ -212,7 +227,11 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
                 <TableCell>{log.entityId || '-'}</TableCell>
                 <TableCell className="max-w-md truncate font-mono text-xs">
                   {log.details ? (
-                    <div className="cursor-pointer group relative" title={translations.clickToViewDetails}>
+                    <div 
+                      className="cursor-pointer group relative" 
+                      title={translations.clickToViewDetails}
+                      onClick={() => handleDetailsClick(log.details)}
+                    >
                       <div className="truncate max-w-xs">
                         {typeof log.details === 'object' 
                           ? JSON.stringify(log.details).substring(0, 50) + '...' 
@@ -259,6 +278,23 @@ export default function AuditLogTable({ logs, isLoading }: AuditLogTableProps) {
           </TableBody>
         </Table>
       </CardContent>
+      
+      {/* Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{translations.details}</DialogTitle>
+            <DialogDescription>
+              {language === 'English' ? 'Detailed information about this audit log entry' : 'معلومات مفصلة حول هذا الإدخال في سجل التدقيق'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <pre className="whitespace-pre-wrap bg-gray-50 p-4 rounded-md text-sm font-mono max-h-96 overflow-y-auto">
+              {formatDetails(selectedLogDetails)}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

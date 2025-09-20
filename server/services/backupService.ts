@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
-import { backupFiles, backupJobs, systemHealth, restoreHistory, assets, employees, tickets, activityLog } from '../../shared/schema';
+import { backupFiles, backupJobs, systemHealth, restoreHistory, assets, employees, tickets, activityLog, users } from '../../shared/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
 export class BackupService {
@@ -73,6 +73,7 @@ export class BackupService {
       // Create restore history record
       const [restoreRecord] = await db.insert(restoreHistory).values({
         backupFileId: backupId,
+        backupFilename: backupFile.filename, // Store filename for display
         status: 'in_progress',
         restoredById: userId,
         startedAt: restoreStartTime
@@ -258,9 +259,13 @@ export class BackupService {
         return { success: false, error: 'Uploaded file not found' };
       }
 
+      // Extract filename from uploaded file path
+      const filename = path.basename(uploadedFilePath);
+
       // Create restore history entry
       const restoreHistoryEntry = await db.insert(restoreHistory).values({
         backupFileId: null, // Since this is from an uploaded file, not from our backup files table
+        backupFilename: filename, // Store the uploaded filename for display
         status: 'in_progress',
         restoredById: restoredById
       }).returning();
@@ -657,10 +662,14 @@ export class BackupService {
       completedAt: restoreHistory.completedAt,
       errorMessage: restoreHistory.errorMessage,
       recordsRestored: restoreHistory.recordsRestored,
-      filename: backupFiles.filename
+      filename: sql`COALESCE(${restoreHistory.backupFilename}, ${backupFiles.filename})`.as('filename'), // Use backupFilename first, fallback to backup file's filename
+      restoredByUsername: users.username,
+      restoredByFirstName: users.firstName,
+      restoredByLastName: users.lastName
     })
     .from(restoreHistory)
     .leftJoin(backupFiles, eq(restoreHistory.backupFileId, backupFiles.id))
+    .leftJoin(users, eq(restoreHistory.restoredById, users.id))
     .orderBy(desc(restoreHistory.startedAt));
   }
 }

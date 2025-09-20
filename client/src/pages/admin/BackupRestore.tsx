@@ -76,6 +76,7 @@ export default function BackupRestore() {
     completedAt: language === 'English' ? 'Completed At' : 'اكتمل في',
     recordsRestored: language === 'English' ? 'Records Restored' : 'السجلات المستعادة',
     errorMessage: language === 'English' ? 'Error Message' : 'رسالة الخطأ',
+    restoredBy: language === 'English' ? 'Restored By' : 'تم الاستعادة بواسطة',
     backupDescription: language === 'English' ? 'Description' : 'الوصف',
     downloadBackup: language === 'English' ? 'Download' : 'تحميل',
     restoreFromFile: language === 'English' ? 'Restore from File' : 'استعادة من ملف',
@@ -532,6 +533,7 @@ export default function BackupRestore() {
                         <TableRow>
                           <TableHead>{t.filename}</TableHead>
                           <TableHead>{t.status}</TableHead>
+                          <TableHead>{t.restoredBy}</TableHead>
                           <TableHead>{t.startedAt}</TableHead>
                           <TableHead>{t.completedAt}</TableHead>
                           <TableHead>{t.recordsRestored}</TableHead>
@@ -545,6 +547,20 @@ export default function BackupRestore() {
                               {item.filename || 'N/A'}
                             </TableCell>
                             <TableCell>{getStatusBadge(item.status)}</TableCell>
+                            <TableCell>
+                              {item.restoredByUsername ? (
+                                <div className="text-sm">
+                                  <div className="font-medium">{item.restoredByUsername}</div>
+                                  {(item.restoredByFirstName || item.restoredByLastName) && (
+                                    <div className="text-muted-foreground">
+                                      {[item.restoredByFirstName, item.restoredByLastName].filter(Boolean).join(' ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">System</span>
+                              )}
+                            </TableCell>
                             <TableCell>{formatDate(item.startedAt)}</TableCell>
                             <TableCell>
                               {item.completedAt ? formatDate(item.completedAt) : '-'}

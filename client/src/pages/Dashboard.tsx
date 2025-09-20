@@ -784,17 +784,15 @@ export default function Dashboard() {
       </Dialog>
 
       {/* Dialog for Open Ticket */}
-      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{translations.createNewTicket}</DialogTitle>
-          </DialogHeader>
-          <TicketForm 
-            onSubmit={handleTicketSubmit} 
-            onCancel={() => setShowTicketDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <TicketForm 
+        mode="create"
+        open={showTicketDialog}
+        onOpenChange={setShowTicketDialog}
+        onSuccess={(ticket) => {
+          handleTicketSubmit();
+          setShowTicketDialog(false);
+        }}
+      />
     </div>
   );
 }
