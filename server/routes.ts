@@ -4717,6 +4717,135 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
+  // Bulk Action History endpoint
+  app.get("/api/bulk-action-history", authenticateUser, hasAccess(2), async (req: any, res: any) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string || '';
+      const action = req.query.action as string || '';
+      const status = req.query.status as string || '';
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const export_format = req.query.export as string;
+
+      // Define bulk action patterns to filter for
+      const bulkActionPatterns = [
+        'BULK_CHECK_OUT',
+        'BULK_CHECK_IN', 
+        'Bulk Update',
+        'Bulk Delete',
+        'Bulk Maintenance Schedule'
+      ];
+
+      // Build the action filter - either specific action or any bulk action
+      let actionFilter = action;
+      if (!action) {
+        // If no specific action, filter for any bulk operation
+        actionFilter = bulkActionPatterns.join('|');
+      }
+
+      // Get filtered activity logs
+      const result = await storage.getActivityLogs({
+        page,
+        limit: export_format ? 10000 : limit, // Get more records for export
+        filter: search,
+        action: actionFilter,
+        startDate,
+        endDate
+      });
+
+      // Filter results to only include bulk operations if no specific action was requested
+      let filteredData = result.data;
+      if (!action) {
+        filteredData = result.data.filter(log => 
+          bulkActionPatterns.some(pattern => 
+            log.action && (log.action.includes(pattern) || log.action === pattern)
+          )
+        );
+      }
+
+      // Process the data to match frontend expectations
+      const processedData = filteredData.map(log => {
+        const details = log.details as any || {};
+        
+        // Determine status from details or action success
+        let operationStatus = 'Success';
+        if (details.failed && details.failed.length > 0) {
+          operationStatus = details.successful && details.successful.length > 0 ? 'Partial' : 'Failed';
+        }
+        if (status && operationStatus.toLowerCase() !== status.toLowerCase()) {
+          return null; // Filter out non-matching statuses
+        }
+
+        return {
+          id: log.id,
+          userId: log.userId || 0,
+          userName: details.userName || details.username || 'System',
+          action: log.action,
+          entityType: log.entityType,
+          entityId: log.entityId,
+          details: {
+            operation: log.action,
+            assetIds: details.assetIds || [],
+            succeeded: details.successful?.length || 0,
+            failed: details.failed?.length || 0,
+            errors: details.errors || [],
+            reason: details.reason,
+            notes: details.notes
+          },
+          timestamp: log.createdAt,
+          status: operationStatus
+        };
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+      // Handle CSV export
+      if (export_format === 'true' || export_format === 'csv') {
+        const csvData = processedData.map(item => ({
+          User: item.userName,
+          Action: item.action,
+          Entity: item.entityType,
+          'Entity ID': item.entityId,
+          'Items Processed': item.details.succeeded + item.details.failed,
+          'Success Count': item.details.succeeded,
+          'Fail Count': item.details.failed,
+          Status: item.status,
+          Timestamp: new Date(item.timestamp).toLocaleString()
+        }));
+
+        const csvFields = Object.keys(csvData[0] || {});
+        const csvContent = [
+          csvFields.join(','),
+          ...csvData.map(row => 
+            csvFields.map(field => `"${(row as any)[field] || ''}"`).join(',')
+          )
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="bulk-operations-history.csv"');
+        return res.send(csvContent);
+      }
+
+      // Return paginated response
+      const totalFiltered = processedData.length;
+      const paginatedData = processedData.slice((page - 1) * limit, page * limit);
+      
+      res.json({
+        data: paginatedData,
+        pagination: {
+          totalItems: totalFiltered,
+          totalPages: Math.ceil(totalFiltered / limit),
+          currentPage: page,
+          pageSize: limit
+        }
+      });
+
+    } catch (error: unknown) {
+      console.error('Error fetching bulk action history:', error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // New Unified Import/Export Routes
   // Export routes
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
