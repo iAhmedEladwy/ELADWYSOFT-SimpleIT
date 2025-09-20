@@ -59,7 +59,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       change: data?.changes.monthly,
-      onClick: () => window.location.href = '/employees',
+      onClick: () => window.location.href = '/employees?statusFilter=Active',
     },
     {
       label: translations.fullTime,
@@ -68,7 +68,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       // CHANGE THIS LINE:
-      onClick: () => window.location.href = '/employees?employmentTypeFilter=Full-time',
+      onClick: () => window.location.href = '/employees?statusFilter=Active&employmentTypeFilter=Full-time',
     },
     {
       label: translations.partTime,
@@ -77,7 +77,7 @@ export default function EmployeeMetrics({ data, isLoading }: EmployeeMetricsProp
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       // CHANGE THIS LINE:
-      onClick: () => window.location.href = '/employees?employmentTypeFilter=Part-time',
+      onClick: () => window.location.href = '/employees?statusFilter=Active&employmentTypeFilter=Part-time',
     },
     {
       label: translations.newThisMonth,
