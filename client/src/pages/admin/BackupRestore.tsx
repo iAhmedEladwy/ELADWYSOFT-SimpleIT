@@ -15,6 +15,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import ScheduledBackupsTab from '@/components/admin/ScheduledBackupsTab';
 
 interface BackupFile {
   id: number;
@@ -52,6 +53,7 @@ export default function BackupRestore() {
     title: language === 'English' ? 'Backup & Restore' : 'النسخ الاحتياطي والاستعادة',
     description: language === 'English' ? 'Manage database backups and restore operations' : 'إدارة النسخ الاحتياطية وعمليات الاستعادة',
     backupManagement: language === 'English' ? 'Backup Management' : 'إدارة النسخ الاحتياطية',
+    scheduledBackups: language === 'English' ? 'Scheduled Backups' : 'النسخ الاحتياطية المجدولة',
     restoreHistory: language === 'English' ? 'Restore History' : 'تاريخ الاستعادة',
     createBackup: language === 'English' ? 'Create Backup' : 'إنشاء نسخة احتياطية',
     restoreData: language === 'English' ? 'Restore Data' : 'استعادة البيانات',
@@ -290,10 +292,14 @@ export default function BackupRestore() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="backups" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               {t.backupManagement}
+            </TabsTrigger>
+            <TabsTrigger value="scheduled" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              {t.scheduledBackups}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -585,6 +591,11 @@ export default function BackupRestore() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Scheduled Backups Tab */}
+          <TabsContent value="scheduled">
+            <ScheduledBackupsTab />
           </TabsContent>
         </Tabs>
       </div>

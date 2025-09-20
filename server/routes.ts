@@ -7611,6 +7611,131 @@ app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req,
   }
 });
 
+// Backup Job Management Routes
+
+// GET /api/admin/backup-jobs - Get all backup jobs
+app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobs = await backupService.getBackupJobs();
+    res.json(jobs);
+  } catch (error) {
+    console.error('Failed to get backup jobs:', error);
+    res.status(500).json({ error: 'Failed to get backup jobs' });
+  }
+});
+
+// POST /api/admin/backup-jobs - Create new backup job
+app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const { name, description, schedule, isEnabled } = req.body;
+    const userId = (req as any).session.user.id;
+
+    if (!name || !schedule) {
+      return res.status(400).json({ error: 'Name and schedule are required' });
+    }
+
+    if (!['daily', 'weekly', 'monthly'].includes(schedule)) {
+      return res.status(400).json({ error: 'Schedule must be daily, weekly, or monthly' });
+    }
+
+    const result = await backupService.createBackupJob({
+      name,
+      description,
+      schedule,
+      isEnabled: isEnabled !== false, // Default to true
+      createdById: userId
+    });
+
+    if (result.success) {
+      res.json({ message: 'Backup job created successfully', jobId: result.jobId });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to create backup job:', error);
+    res.status(500).json({ error: 'Failed to create backup job' });
+  }
+});
+
+// PUT /api/admin/backup-jobs/:id - Update backup job
+app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    const { name, description, schedule, isEnabled } = req.body;
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    if (schedule && !['daily', 'weekly', 'monthly'].includes(schedule)) {
+      return res.status(400).json({ error: 'Schedule must be daily, weekly, or monthly' });
+    }
+
+    const result = await backupService.updateBackupJob(jobId, {
+      name,
+      description,
+      schedule,
+      isEnabled
+    });
+
+    if (result.success) {
+      res.json({ message: 'Backup job updated successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to update backup job:', error);
+    res.status(500).json({ error: 'Failed to update backup job' });
+  }
+});
+
+// DELETE /api/admin/backup-jobs/:id - Delete backup job
+app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    const result = await backupService.deleteBackupJob(jobId);
+
+    if (result.success) {
+      res.json({ message: 'Backup job deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to delete backup job:', error);
+    res.status(500).json({ error: 'Failed to delete backup job' });
+  }
+});
+
+// POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
+app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    const result = await backupService.executeScheduledJob(jobId);
+
+    if (result.success) {
+      res.json({ 
+        message: 'Backup job executed successfully', 
+        backupId: result.backupId 
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to execute backup job:', error);
+    res.status(500).json({ error: 'Failed to execute backup job' });
+  }
+});
+
   // Helper function to check admin access
   function requireAdmin(req: any, res: any, next: any) {
     if (!req.session.user || req.session.user.accessLevel !== 4) {

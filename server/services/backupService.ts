@@ -672,4 +672,233 @@ export class BackupService {
     .leftJoin(users, eq(restoreHistory.restoredById, users.id))
     .orderBy(desc(restoreHistory.startedAt));
   }
+
+  // Backup Job Management Methods
+
+  /**
+   * Create a new scheduled backup job
+   */
+  async createBackupJob(params: {
+    name: string;
+    description?: string;
+    schedule: 'daily' | 'weekly' | 'monthly';
+    isEnabled?: boolean;
+    createdById: number;
+  }): Promise<{ success: boolean; jobId?: number; error?: string }> {
+    try {
+      const { name, description, schedule, isEnabled = true, createdById } = params;
+      
+      // Generate unique job ID
+      const jobId = `backup_${schedule}_${Date.now()}`;
+      
+      // Calculate next run time based on schedule
+      const nextRunAt = this.calculateNextRunTime(schedule);
+      
+      const [job] = await db.insert(backupJobs).values({
+        jobId,
+        name,
+        description,
+        schedule,
+        isEnabled,
+        nextRunAt,
+        createdById
+      }).returning();
+
+      return { success: true, jobId: job.id };
+    } catch (error) {
+      console.error('Error creating backup job:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Get all backup jobs
+   */
+  async getBackupJobs() {
+    try {
+      return await db.select({
+        id: backupJobs.id,
+        jobId: backupJobs.jobId,
+        name: backupJobs.name,
+        description: backupJobs.description,
+        schedule: backupJobs.schedule,
+        isEnabled: backupJobs.isEnabled,
+        lastRunAt: backupJobs.lastRunAt,
+        nextRunAt: backupJobs.nextRunAt,
+        createdAt: backupJobs.createdAt,
+        createdByUsername: users.username,
+        createdByFirstName: users.firstName,
+        createdByLastName: users.lastName
+      })
+      .from(backupJobs)
+      .leftJoin(users, eq(backupJobs.createdById, users.id))
+      .orderBy(desc(backupJobs.createdAt));
+    } catch (error) {
+      console.error('Error fetching backup jobs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a backup job
+   */
+  async updateBackupJob(jobId: number, updates: {
+    name?: string;
+    description?: string;
+    schedule?: 'daily' | 'weekly' | 'monthly';
+    isEnabled?: boolean;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const updateData: any = { ...updates, updatedAt: new Date() };
+      
+      // If schedule is updated, recalculate next run time
+      if (updates.schedule) {
+        updateData.nextRunAt = this.calculateNextRunTime(updates.schedule);
+      }
+
+      await db.update(backupJobs)
+        .set(updateData)
+        .where(eq(backupJobs.id, jobId));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating backup job:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Delete a backup job
+   */
+  async deleteBackupJob(jobId: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      await db.delete(backupJobs).where(eq(backupJobs.id, jobId));
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting backup job:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Get backup jobs that are due to run
+   */
+  async getDueJobs() {
+    try {
+      return await db.select()
+        .from(backupJobs)
+        .where(
+          sql`${backupJobs.isEnabled} = true AND ${backupJobs.nextRunAt} <= NOW()`
+        );
+    } catch (error) {
+      console.error('Error fetching due jobs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Execute a scheduled backup job
+   */
+  async executeScheduledJob(jobId: number): Promise<{ success: boolean; error?: string; backupId?: number }> {
+    try {
+      // Get job details
+      const [job] = await db.select().from(backupJobs).where(eq(backupJobs.id, jobId));
+      if (!job) {
+        return { success: false, error: 'Job not found' };
+      }
+
+      // Create automatic backup
+      const result = await this.createAutomaticBackup(job.createdById, `Scheduled ${job.schedule} backup: ${job.name}`);
+      
+      if (result.success) {
+        // Update job's last run and next run times
+        const nextRunAt = this.calculateNextRunTime(job.schedule);
+        await db.update(backupJobs)
+          .set({
+            lastRunAt: new Date(),
+            nextRunAt,
+            updatedAt: new Date()
+          })
+          .where(eq(backupJobs.id, jobId));
+
+        return { success: true, backupId: result.backupId };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error executing scheduled job:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Create an automatic backup (similar to manual but marked as automatic)
+   */
+  private async createAutomaticBackup(userId: number, description?: string): Promise<{ success: boolean; backupId?: number; error?: string }> {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `simpleit_auto_backup_${timestamp}.sql`;
+      const filepath = path.join(this.backupDir, filename);
+
+      // Get database URL from environment
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        throw new Error('DATABASE_URL not configured');
+      }
+
+      // Create backup using pg_dump
+      const command = `pg_dump "${dbUrl}" --no-owner --no-privileges --clean --if-exists --exclude-table=backup_files --exclude-table=backup_jobs --exclude-table=system_health --exclude-table=restore_history > "${filepath}"`;
+      execSync(command, { stdio: 'pipe' });
+
+      // Get file size
+      const stats = await fs.stat(filepath);
+      const fileSize = stats.size;
+
+      // Save to database
+      const [backupRecord] = await db.insert(backupFiles).values({
+        filename,
+        filepath,
+        fileSize,
+        backupType: 'automatic',
+        status: 'completed',
+        createdById: userId,
+        description: description || 'Automatic scheduled backup'
+      }).returning();
+
+      return { success: true, backupId: backupRecord.id };
+    } catch (error) {
+      console.error('Error creating automatic backup:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Calculate next run time based on schedule
+   */
+  private calculateNextRunTime(schedule: string): Date {
+    const now = new Date();
+    const nextRun = new Date(now);
+
+    switch (schedule) {
+      case 'daily':
+        nextRun.setDate(now.getDate() + 1);
+        nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
+        break;
+      case 'weekly':
+        nextRun.setDate(now.getDate() + 7);
+        nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
+        break;
+      case 'monthly':
+        nextRun.setMonth(now.getMonth() + 1);
+        nextRun.setDate(1); // First day of next month
+        nextRun.setHours(2, 0, 0, 0); // Run at 2 AM
+        break;
+      default:
+        // Default to daily
+        nextRun.setDate(now.getDate() + 1);
+        nextRun.setHours(2, 0, 0, 0);
+    }
+
+    return nextRun;
+  }
 }
