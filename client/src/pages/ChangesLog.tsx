@@ -87,10 +87,7 @@ export default function UserChangelog() {
     }
   };
 
-  const filteredChangelog = CHANGELOG_DATA.filter(entry => {
-    if (filter === 'all') return true;
-    return entry.changes[filter as keyof typeof entry.changes]?.length > 0;
-  });
+  // No longer need filtering logic since we use TabsContent
 
   const isNewVersion = (version: string) => {
     if (!lastViewedVersion) return false;
@@ -137,162 +134,323 @@ export default function UserChangelog() {
                 {translations.security}
               </TabsTrigger>
             </TabsList>
+
+            {/* All Changes Tab Content */}
+            <TabsContent value="all" className="mt-6">
+              <div className="space-y-4">
+                {CHANGELOG_DATA.map((entry, index) => (
+                  <Card key={entry.version} className="overflow-hidden">
+                    <Collapsible
+                      open={expandedVersions.includes(entry.version)}
+                      onOpenChange={() => toggleVersion(entry.version)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <CardTitle className="text-xl">
+                                    {entry.title}
+                                  </CardTitle>
+                                  {index === 0 && (
+                                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                                      {translations.latest}
+                                    </Badge>
+                                  )}
+                                  {isNewVersion(entry.version) && (
+                                    <Badge variant="destructive">
+                                      {translations.new}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-sm">
+                                  <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
+                                    v{entry.version}
+                                  </Badge>
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(entry.date).toLocaleDateString()}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {translations[entry.type]}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              {expandedVersions.includes(entry.version) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent>
+                        <CardContent className="space-y-4 pt-0">
+                          <Separator />
+                          
+                          {/* Breaking Changes - Show prominently */}
+                          {entry.changes.breaking && entry.changes.breaking.length > 0 && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+                              <div className="flex items-center gap-2 text-red-800 font-semibold">
+                                <AlertTriangle className="h-4 w-4" />
+                                {translations.breaking}
+                              </div>
+                              <ul className="space-y-1 text-sm text-red-700">
+                                {entry.changes.breaking.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Features */}
+                          {entry.changes.features && entry.changes.features.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-blue-600 font-semibold">
+                                <Sparkles className="h-4 w-4" />
+                                {translations.features}
+                              </div>
+                              <ul className="space-y-1 text-sm ml-6">
+                                {entry.changes.features.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Improvements */}
+                          {entry.changes.improvements && entry.changes.improvements.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-green-600 font-semibold">
+                                <Zap className="h-4 w-4" />
+                                {translations.improvements}
+                              </div>
+                              <ul className="space-y-1 text-sm ml-6">
+                                {entry.changes.improvements.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Bug Fixes */}
+                          {entry.changes.bugfixes && entry.changes.bugfixes.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                                <Bug className="h-4 w-4" />
+                                {translations.bugfixes}
+                              </div>
+                              <ul className="space-y-1 text-sm ml-6">
+                                {entry.changes.bugfixes.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Security */}
+                          {entry.changes.security && entry.changes.security.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-purple-600 font-semibold">
+                                <Shield className="h-4 w-4" />
+                                {translations.security}
+                              </div>
+                              <ul className="space-y-1 text-sm ml-6">
+                                {entry.changes.security.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Features Tab Content */}
+            <TabsContent value="features" className="mt-6">
+              <div className="space-y-4">
+                {CHANGELOG_DATA.filter(entry => entry.changes.features && entry.changes.features.length > 0).map((entry, index) => (
+                  <Card key={entry.version} className="overflow-hidden">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-xl">
+                              {entry.title}
+                            </CardTitle>
+                            {index === 0 && (
+                              <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                                {translations.latest}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
+                              v{entry.version}
+                            </Badge>
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(entry.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {entry.changes.features && entry.changes.features.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-blue-600 font-semibold">
+                            <Sparkles className="h-4 w-4" />
+                            {translations.features}
+                          </div>
+                          <ul className="space-y-1 text-sm ml-6">
+                            {entry.changes.features.map((item, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-muted-foreground">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Bug Fixes Tab Content */}
+            <TabsContent value="bugfixes" className="mt-6">
+              <div className="space-y-4">
+                {CHANGELOG_DATA.filter(entry => entry.changes.bugfixes && entry.changes.bugfixes.length > 0).map((entry, index) => (
+                  <Card key={entry.version} className="overflow-hidden">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-xl">
+                              {entry.title}
+                            </CardTitle>
+                            {index === 0 && (
+                              <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                                {translations.latest}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
+                              v{entry.version}
+                            </Badge>
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(entry.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {entry.changes.bugfixes && entry.changes.bugfixes.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                            <Bug className="h-4 w-4" />
+                            {translations.bugfixes}
+                          </div>
+                          <ul className="space-y-1 text-sm ml-6">
+                            {entry.changes.bugfixes.map((item, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-muted-foreground">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Security Tab Content */}
+            <TabsContent value="security" className="mt-6">
+              <div className="space-y-4">
+                {CHANGELOG_DATA.filter(entry => entry.changes.security && entry.changes.security.length > 0).map((entry, index) => (
+                  <Card key={entry.version} className="overflow-hidden">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-xl">
+                              {entry.title}
+                            </CardTitle>
+                            {index === 0 && (
+                              <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                                {translations.latest}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
+                              v{entry.version}
+                            </Badge>
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(entry.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {entry.changes.security && entry.changes.security.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-purple-600 font-semibold">
+                            <Shield className="h-4 w-4" />
+                            {translations.security}
+                          </div>
+                          <ul className="space-y-1 text-sm ml-6">
+                            {entry.changes.security.map((item, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-muted-foreground">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Changelog Entries */}
-      <div className="space-y-4">
-        {filteredChangelog.map((entry, index) => (
-          <Card key={entry.version} className="overflow-hidden">
-            <Collapsible
-              open={expandedVersions.includes(entry.version)}
-              onOpenChange={() => toggleVersion(entry.version)}
-            >
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-xl">
-                            {entry.title}
-                          </CardTitle>
-                          {index === 0 && (
-                            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                              {translations.latest}
-                            </Badge>
-                          )}
-                          {isNewVersion(entry.version) && (
-                            <Badge variant="destructive">
-                              {translations.new}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <Badge variant="outline" className={getVersionBadgeColor(entry.type)}>
-                            v{entry.version}
-                          </Badge>
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(entry.date).toLocaleDateString()}
-                          </span>
-                          <Badge variant="secondary" className="text-xs">
-                            {translations[entry.type]}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      {expandedVersions.includes(entry.version) ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <CardContent className="space-y-4 pt-0">
-                  <Separator />
-                  
-                  {/* Breaking Changes - Show prominently */}
-                  {entry.changes.breaking && entry.changes.breaking.length > 0 && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-red-800 font-semibold">
-                        <AlertTriangle className="h-4 w-4" />
-                        {translations.breaking}
-                      </div>
-                      <ul className="space-y-1 text-sm text-red-700">
-                        {entry.changes.breaking.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Features */}
-                  {entry.changes.features && entry.changes.features.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-blue-600 font-semibold">
-                        <Sparkles className="h-4 w-4" />
-                        {translations.features}
-                      </div>
-                      <ul className="space-y-1 text-sm ml-6">
-                        {entry.changes.features.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-muted-foreground">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Improvements */}
-                  {entry.changes.improvements && entry.changes.improvements.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-green-600 font-semibold">
-                        <Zap className="h-4 w-4" />
-                        {translations.improvements}
-                      </div>
-                      <ul className="space-y-1 text-sm ml-6">
-                        {entry.changes.improvements.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-muted-foreground">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Bug Fixes */}
-                  {entry.changes.bugfixes && entry.changes.bugfixes.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-orange-600 font-semibold">
-                        <Bug className="h-4 w-4" />
-                        {translations.bugfixes}
-                      </div>
-                      <ul className="space-y-1 text-sm ml-6">
-                        {entry.changes.bugfixes.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-muted-foreground">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Security */}
-                  {entry.changes.security && entry.changes.security.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-purple-600 font-semibold">
-                        <Shield className="h-4 w-4" />
-                        {translations.security}
-                      </div>
-                      <ul className="space-y-1 text-sm ml-6">
-                        {entry.changes.security.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-muted-foreground">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }

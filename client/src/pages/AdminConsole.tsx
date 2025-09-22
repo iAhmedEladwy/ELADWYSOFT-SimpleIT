@@ -10,7 +10,8 @@ import {
   Wrench,
   ArrowLeft,
   Settings,
-  BarChart3
+  BarChart3,
+  Database
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { RoleGuard } from '@/components/auth/RoleGuard';
@@ -34,6 +35,8 @@ export default function AdminConsole() {
     systemSettingsDesc: language === 'English' ? 'Configure system parameters and preferences' : 'تكوين معاملات النظام والتفضيلات',
     reports: language === 'English' ? 'Reports' : 'التقارير',
     reportsDesc: language === 'English' ? 'Generate and view system reports' : 'إنشاء وعرض تقارير النظام',
+    backupRestore: language === 'English' ? 'Backup & Restore' : 'النسخ الاحتياطي والاستعادة',
+    backupRestoreDesc: language === 'English' ? 'Manage database backups and restore operations' : 'إدارة النسخ الاحتياطية وعمليات الاستعادة',
     backToDashboard: language === 'English' ? 'Back to Dashboard' : 'العودة للوحة التحكم',
     adminTools: language === 'English' ? 'Administrative Tools' : 'الأدوات الإدارية',
     monitoring: language === 'English' ? 'Monitoring & Logs' : 'المراقبة والسجلات',
@@ -79,6 +82,14 @@ export default function AdminConsole() {
       description: translations.reportsDesc,
       icon: BarChart3,
       href: '/admin-console/reports',
+      category: 'management'
+    },
+    {
+      id: 'backup-restore',
+      title: translations.backupRestore,
+      description: translations.backupRestoreDesc,
+      icon: Database,
+      href: '/admin-console/backup-restore',
       category: 'management'
     }
   ];

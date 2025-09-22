@@ -9,6 +9,8 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
+import { BackupService } from './services/backupService';
+
 
 // Authenticated user type (from auth middleware)
 interface AuthUser {
@@ -44,6 +46,8 @@ import { compare, hash } from "bcrypt";
 import ConnectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import MemoryStore from "memorystore";
+import path from "path";
+import fs from "fs/promises";
 import { errorHandler, asyncHandler } from "./middleware/error-handler";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
@@ -54,6 +58,45 @@ import { emailService } from "./emailService";
 import { calculatePriority, validatePriority, type UrgencyLevel, type ImpactLevel } from "@shared/priorityUtils";
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
+
+
+// Initialize backup service
+const backupService = new BackupService();
+
+// Helper function for short date formatting
+const formatShortDate = (dateValue: any): string => {
+  if (!dateValue) return '';
+  try {
+    const date = new Date(dateValue);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
+// Helper function for long date formatting with time
+const formatLongDate = (dateValue: any): string => {
+  if (!dateValue) return '';
+  try {
+    const date = new Date(dateValue);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
 
 // Enhanced ID generation with system config support
 const generateId = async (entityType: 'asset' | 'employee' | 'ticket', customNumber?: number) => {
@@ -223,6 +266,36 @@ const hasAccess = (minRoleLevel: number) => {
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Backup file upload configuration (saves to disk)
+const backupUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      // Create uploads directory if it doesn't exist
+      fs.mkdir(uploadsDir, { recursive: true }).then(() => {
+        cb(null, uploadsDir);
+      }).catch(cb);
+    },
+    filename: (req, file, cb) => {
+      // Generate unique filename with timestamp
+      const timestamp = Date.now();
+      const originalName = file.originalname;
+      const extension = path.extname(originalName);
+      const baseName = path.basename(originalName, extension);
+      cb(null, `${baseName}_${timestamp}${extension}`);
+    }
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for backup files
+  fileFilter: (req, file, cb) => {
+    // Accept only .sql files for backups
+    if (file.mimetype === 'application/sql' || file.originalname.endsWith('.sql')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .sql backup files are allowed'));
+    }
+  }
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1024,6 +1097,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employees = await storage.getAllEmployees();
       
+      // Create a map of employee IDs to names for manager lookup
+      const employeeMap = new Map<number, string>();
+      employees.forEach(emp => {
+        if (emp.id) {
+          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
       // Map to CSV format with all fields
       const csvData = employees.map(emp => ({
         'Employee ID': emp.empId,
@@ -1033,16 +1114,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Position': emp.title,
         'Employment Type': emp.employmentType || 'Full-time',
         'Status': emp.status || (emp.isActive ? 'Active' : 'Inactive'),
-        'Joining Date': emp.joiningDate || '',
-        'Exit Date': emp.exitDate || '',
+        'Joining Date': formatShortDate(emp.joiningDate), // Fixed: Short date format
+        'Exit Date': formatShortDate(emp.exitDate), // Fixed: Short date format
         'Personal Email': emp.personal || '',
         'Corporate Email': emp.corporateEmail || '',
         'Personal Mobile': emp.personalMobile || '',
         'Work Mobile': emp.workMobile || '',
         'ID Number': emp.idNumber || '',
         'Direct Manager': emp.directManager || '',
-        'Created At': emp.createdAt,
-        'Updated At': emp.updatedAt
+        'Direct Manager Name': emp.directManager ? (employeeMap.get(emp.directManager) || '') : '', // Fixed: Added manager name
+        'Created At': formatLongDate(emp.createdAt), // Fixed: Long date format with time
+        'Updated At': formatLongDate(emp.updatedAt) // Fixed: Long date format with time
       }));
 
       res.setHeader('Content-Type', 'text/csv');
@@ -1367,10 +1449,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assets Export/Import
   app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
+      
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<number, string>();
+      employeesData.forEach(emp => {
+        if (emp.id) {
+          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
+        }
+      });
       
       // Transform asset data for export with proper field mapping
-      const csvData = assets.map(asset => ({
+      const csvData = assetsData.map(asset => ({
         'ID': asset.id,
         'Asset ID': asset.assetId,
         'Type': asset.type,
@@ -1383,14 +1476,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'RAM': asset.ram || '',
         'Storage': asset.storage || '',
         'Status': asset.status,
-        'Purchase Date': asset.purchaseDate || '',
+        'Purchase Date': formatShortDate(asset.purchaseDate), // Fixed: Short date format
         'Buy Price': asset.buyPrice || '',
-        'Warranty Expiry Date': asset.warrantyExpiryDate || '',
+        'Warranty Expiry Date': formatShortDate(asset.warrantyExpiryDate), // Fixed: Short date format
         'Life Span': asset.lifeSpan || '',
         'Out of Box OS': asset.outOfBoxOs || '',
-        'Assigned To ID': asset.assignedToId || '',
-        'Created At': asset.createdAt ? new Date(asset.createdAt).toISOString() : '',
-        'Updated At': asset.updatedAt ? new Date(asset.updatedAt).toISOString() : ''
+        'Assigned Employee ID': asset.assignedEmployeeId || '',
+        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '', // Fixed: Use assignedEmployeeId
+        'Created At': formatLongDate(asset.createdAt), // Fixed: Long date format with time
+        'Updated At': formatLongDate(asset.updatedAt) // Fixed: Long date format with time
       }));
       
       res.setHeader('Content-Type', 'text/csv');
@@ -4623,21 +4717,155 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
+  // Bulk Action History endpoint
+  app.get("/api/bulk-action-history", authenticateUser, hasAccess(2), async (req: any, res: any) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string || '';
+      const action = req.query.action as string || '';
+      const status = req.query.status as string || '';
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const export_format = req.query.export as string;
+
+      // Define bulk action patterns to filter for
+      const bulkActionPatterns = [
+        'BULK_CHECK_OUT',
+        'BULK_CHECK_IN', 
+        'Bulk Update',
+        'Bulk Delete', 
+        'Bulk Maintenance Schedule',
+        'Retire' // Individual retire actions can be bulk when called on multiple assets
+      ];
+
+      // Get activity logs - we'll filter for bulk operations after getting the data
+      const result = await storage.getActivityLogs({
+        page: 1, // Get all data first, then paginate manually
+        limit: export_format ? 10000 : 1000, // Get more records to filter from
+        filter: search,
+        ...(action && { action }), // Only filter by action if a specific one is requested
+        startDate,
+        endDate
+      });
+
+      // Filter results to only include bulk operations
+      let filteredData = result.data;
+      if (!action) {
+        // If no specific action, filter for any bulk operation
+        filteredData = result.data.filter(log => 
+          bulkActionPatterns.some(pattern => 
+            log.action && (log.action.includes(pattern) || log.action === pattern)
+          )
+        );
+      }
+
+      // Process the data to match frontend expectations
+      const processedData = filteredData.map(log => {
+        const details = log.details as any || {};
+        
+        // Determine status from details or action success
+        let operationStatus = 'Success';
+        if (details.failed && details.failed.length > 0) {
+          operationStatus = details.successful && details.successful.length > 0 ? 'Partial' : 'Failed';
+        }
+        if (status && operationStatus.toLowerCase() !== status.toLowerCase()) {
+          return null; // Filter out non-matching statuses
+        }
+
+        return {
+          id: log.id,
+          userId: log.userId || 0,
+          userName: details.userName || details.username || 'System',
+          action: log.action,
+          entityType: log.entityType,
+          entityId: log.entityId,
+          details: {
+            operation: log.action,
+            assetIds: details.assetIds || [],
+            succeeded: details.successful?.length || 0,
+            failed: details.failed?.length || 0,
+            errors: details.errors || [],
+            reason: details.reason,
+            notes: details.notes
+          },
+          timestamp: log.createdAt,
+          status: operationStatus
+        };
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+      // Handle CSV export
+      if (export_format === 'true' || export_format === 'csv') {
+        const csvData = processedData.map(item => ({
+          User: item.userName,
+          Action: item.action,
+          Entity: item.entityType,
+          'Entity ID': item.entityId,
+          'Items Processed': item.details.succeeded + item.details.failed,
+          'Success Count': item.details.succeeded,
+          'Fail Count': item.details.failed,
+          Status: item.status,
+          Timestamp: new Date(item.timestamp).toLocaleString()
+        }));
+
+        const csvFields = Object.keys(csvData[0] || {});
+        const csvContent = [
+          csvFields.join(','),
+          ...csvData.map(row => 
+            csvFields.map(field => `"${(row as any)[field] || ''}"`).join(',')
+          )
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="bulk-operations-history.csv"');
+        return res.send(csvContent);
+      }
+
+      // Return paginated response
+      const totalFiltered = processedData.length;
+      const paginatedData = processedData.slice((page - 1) * limit, page * limit);
+      
+      res.json({
+        data: paginatedData,
+        pagination: {
+          totalItems: totalFiltered,
+          totalPages: Math.ceil(totalFiltered / limit),
+          currentPage: page,
+          pageSize: limit
+        }
+      });
+
+    } catch (error: unknown) {
+      console.error('Error fetching bulk action history:', error);
+      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
+    }
+  });
+
   // New Unified Import/Export Routes
   // Export routes
   app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const data = await storage.getAllEmployees();
+      const employees = await storage.getAllEmployees();
       
-      const csvData = data.map(item => ({
+      // Create a map of employee IDs to names for manager lookup
+      const employeeMap = new Map<string, string>();
+      employees.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = employees.map(item => ({
         englishName: item.englishName || '',
         arabicName: item.arabicName || '',
         department: item.department || '',
         idNumber: item.idNumber || '',
         title: item.title || '',
         directManager: item.directManager || '',
+        directManagerName: item.directManager ? (employeeMap.get(item.directManager) || '') : '', // Added manager name
         employmentType: item.employmentType || '',
-        joiningDate: item.joiningDate || '',
+        joiningDate: formatShortDate(item.joiningDate), // Fixed: Short date format
+        exitDate: formatShortDate(item.exitDate), // Fixed: Short date format
         status: item.status || '',
         personalMobile: item.personalMobile || '',
         personalEmail: item.personalEmail || ''
@@ -4658,9 +4886,20 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 
   app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const data = await storage.getAllAssets();
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
       
-      const csvData = data.map(item => ({
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = assetsData.map(item => ({
         assetId: item.assetId || '',
         type: item.type || '',
         brand: item.brand || '',
@@ -4672,12 +4911,13 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
         ram: item.ram || '',
         storage: item.storage || '',
         status: item.status || '',
-        purchaseDate: item.purchaseDate || '',
+        purchaseDate: formatShortDate(item.purchaseDate), // Use short date format
         buyPrice: item.buyPrice || '',
-        warrantyExpiryDate: item.warrantyExpiryDate || '',
+        warrantyExpiryDate: formatShortDate(item.warrantyExpiryDate), // Use short date format
         lifeSpan: item.lifeSpan || '',
         outOfBoxOs: item.outOfBoxOs || '',
-        assignedEmployeeId: item.assignedEmployeeId || ''
+        assignedEmployeeId: item.assignedEmployeeId || '',
+        assignedEmployeeName: item.assignedEmployeeId ? (employeeMap.get(item.assignedEmployeeId) || '') : '' // Fixed: Added employee name
       }));
       
       const csv = [
@@ -6142,49 +6382,22 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Enhanced employees export with all new schema fields
-  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
-    try {
-      const employees = await storage.getAllEmployees();
-      const csvData = employees.map(emp => ({
-        'Employee ID': emp.empId,
-        'English Name': emp.englishName,
-        'Arabic Name': emp.arabicName || '',
-        'Department': emp.department || '',
-        'ID Number': emp.idNumber || '', // New field
-        'Title': emp.title || '', // New field
-        'Employment Type': emp.employmentType || '',
-        'Joining Date': emp.joiningDate ? new Date(emp.joiningDate).toISOString().split('T')[0] : '', // New field
-        'Exit Date': emp.exitDate ? new Date(emp.exitDate).toISOString().split('T')[0] : '', // New field
-        'Status': emp.status,
-        'Personal Mobile': emp.personalMobile || '', // New field
-        'Work Mobile': emp.workMobile || '', // New field
-        'Personal Email': emp.personalEmail || '', // New field
-        'Corporate Email': emp.corporateEmail || '', // New field
-        'User ID': emp.userId || '', // New field
-        'Direct Manager ID': emp.directManager || '', // New field
-        'Created Date': emp.createdAt ? new Date(emp.createdAt).toISOString().split('T')[0] : '',
-        'Last Updated': emp.updatedAt ? new Date(emp.updatedAt).toISOString().split('T')[0] : ''
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${val || ''}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
   app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
-      const csvData = assets.map(asset => ({
+      const [assetsData, employeesData] = await Promise.all([
+        storage.getAllAssets(),
+        storage.getAllEmployees()
+      ]);
+      
+      // Create a map of employee IDs to names for assignment lookup
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(emp => {
+        if (emp.empId) {
+          employeeMap.set(emp.empId, emp.englishName || emp.arabicName || '');
+        }
+      });
+      
+      const csvData = assetsData.map(asset => ({
         'Asset ID': asset.assetId,
         'Name': asset.modelName,
         'Type': asset.type,
@@ -6192,12 +6405,14 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         'Model': asset.model || '',
         'Serial Number': asset.serialNumber,
         'Status': asset.status,
-        'Purchase Date': asset.purchaseDate || '',
+        'Purchase Date': formatShortDate(asset.purchaseDate), // Use short date format
         'Purchase Price': asset.buyPrice || '',
-        'Warranty Expiry': asset.warrantyExpiryDate || '',
+        'Warranty Expiry': formatShortDate(asset.warrantyExpiryDate), // Use short date format
         'Location': asset.location || '',
         'Department': asset.department || '',
-        'Specifications': asset.specs || ''
+        'Specifications': asset.specs || '',
+        'Assigned Employee ID': asset.assignedEmployeeId || '',
+        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '' // Fixed: Added employee name
       }));
       
       res.setHeader('Content-Type', 'text/csv');
@@ -6927,7 +7142,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // Retire multiple assets
   app.post("/api/assets/retire", authenticateUser, hasAccess(3), async (req, res) => {
     try {
-      const { assetIds, reason, retirementDate } = req.body;
+      const { assetIds, reason, retirementDate, notes } = req.body;
       
       if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
         return res.status(400).json({ message: "Asset IDs are required" });
@@ -7193,8 +7408,6 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-
-
   app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const { assetIds } = req.body;
@@ -7322,6 +7535,338 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
       });
     }
   });
+
+  // GET /api/admin/backups - Get list of backups
+app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const backups = await backupService.getBackupList();
+    res.json(backups);
+  } catch (error) {
+    console.error('Failed to get backup list:', error);
+    res.status(500).json({ error: 'Failed to get backup list' });
+  }
+});
+
+// POST /api/admin/backups - Create manual backup
+app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const { description } = req.body;
+    const userId = (req.user as any)?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const result = await backupService.createManualBackup(userId, description);
+    
+    if (result.success) {
+      res.json({ message: 'Backup created successfully', backupId: result.backupId });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to create backup:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
+// POST /api/admin/restore/:backupId - Restore from backup
+app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.backupId);
+    const userId = (req.user as any)?.id; 
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.restoreFromBackup(backupId, userId);
+    
+    if (result.success) {
+      res.json({ 
+        message: 'Database restored successfully', 
+        recordsRestored: result.recordsRestored 
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to restore backup:', error);
+    res.status(500).json({ error: 'Failed to restore backup' });
+  }
+});
+
+// DELETE /api/admin/backups/:id - Delete backup
+app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.id);
+    
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.deleteBackup(backupId);
+    
+    if (result.success) {
+      res.json({ message: 'Backup deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to delete backup:', error);
+    res.status(500).json({ error: 'Failed to delete backup' });
+  }
+});
+
+// POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
+app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4), backupUpload.single('backup'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No backup file uploaded' });
+    }
+
+    const user = req.user as AuthUser;
+    const uploadedFilePath = req.file.path;
+
+    console.log(`Restore from uploaded file requested by user ${user.id}: ${req.file.originalname}`);
+
+    // Restore from the uploaded file
+    const result = await backupService.restoreFromFile(uploadedFilePath, user.id);
+
+    // Clean up uploaded file after processing
+    try {
+      await fs.unlink(uploadedFilePath);
+    } catch (error) {
+      console.warn('Could not delete uploaded file:', error);
+    }
+
+    if (result.success) {
+      res.json({ 
+        message: 'Database restored successfully from uploaded file',
+        recordsRestored: result.recordsRestored || 0
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to restore from uploaded file:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file?.path) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (cleanupError) {
+        console.warn('Could not delete uploaded file after error:', cleanupError);
+      }
+    }
+    
+    res.status(500).json({ error: 'Failed to restore from uploaded file' });
+  }
+});
+
+// GET /api/admin/backups/:id/download - Download backup file
+app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.id);
+    
+    if (isNaN(backupId)) {
+      return res.status(400).json({ error: 'Invalid backup ID' });
+    }
+
+    const result = await backupService.downloadBackup(backupId);
+    
+    if (result.success && result.filepath && result.filename) {
+      // Set headers for file download
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Content-Type', 'application/sql');
+      
+      // Send file
+      res.download(result.filepath, result.filename, (err) => {
+        if (err) {
+          console.error('Download error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to download backup file' });
+          }
+        }
+      });
+    } else {
+      res.status(404).json({ error: result.error || 'Backup file not found' });
+    }
+  } catch (error) {
+    console.error('Failed to download backup:', error);
+    res.status(500).json({ error: 'Failed to download backup' });
+  }
+});
+
+// GET /api/admin/system-health - Get system health metrics
+app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const healthMetrics = await backupService.getSystemHealth();
+    res.json(healthMetrics);
+  } catch (error) {
+    console.error('Failed to get system health:', error);
+    res.status(500).json({ error: 'Failed to get system health' });
+  }
+});
+
+// GET /api/admin/system-overview - Get system overview statistics
+app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const systemOverview = await backupService.getSystemOverview();
+    res.json(systemOverview);
+  } catch (error) {
+    console.error('Failed to get system overview:', error);
+    res.status(500).json({ error: 'Failed to get system overview' });
+  }
+});
+
+// GET /api/admin/restore-history - Get restore history
+app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const history = await backupService.getRestoreHistory();
+    res.json(history);
+  } catch (error) {
+    console.error('Failed to get restore history:', error);
+    res.status(500).json({ error: 'Failed to get restore history' });
+  }
+});
+
+// Backup Job Management Routes
+
+// GET /api/admin/backup-jobs - Get all backup jobs
+app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobs = await backupService.getBackupJobs();
+    res.json(jobs);
+  } catch (error) {
+    console.error('Failed to get backup jobs:', error);
+    res.status(500).json({ error: 'Failed to get backup jobs' });
+  }
+});
+
+// POST /api/admin/backup-jobs - Create new backup job
+app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
+
+    if (!name || !schedule_type) {
+      return res.status(400).json({ error: 'Name and schedule_type are required' });
+    }
+
+    if (!['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
+      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
+    }
+
+    const result = await backupService.createBackupJob({
+      name,
+      description,
+      schedule_type,
+      schedule_value: schedule_value || 1,
+      is_enabled: is_enabled !== false, // Default to true
+    });
+
+    if (result.success) {
+      res.json({ message: 'Backup job created successfully', jobId: result.jobId });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to create backup job:', error);
+    res.status(500).json({ error: 'Failed to create backup job' });
+  }
+});
+
+// PUT /api/admin/backup-jobs/:id - Update backup job
+app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    if (schedule_type && !['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
+      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
+    }
+
+    const result = await backupService.updateBackupJob(jobId, {
+      name,
+      description,
+      schedule_type,
+      schedule_value,
+      is_enabled
+    });
+
+    if (result.success) {
+      res.json({ message: 'Backup job updated successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to update backup job:', error);
+    res.status(500).json({ error: 'Failed to update backup job' });
+  }
+});
+
+// DELETE /api/admin/backup-jobs/:id - Delete backup job
+app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    const result = await backupService.deleteBackupJob(jobId);
+
+    if (result.success) {
+      res.json({ message: 'Backup job deleted successfully' });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to delete backup job:', error);
+    res.status(500).json({ error: 'Failed to delete backup job' });
+  }
+});
+
+// POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
+app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    const result = await backupService.executeScheduledJob(jobId);
+
+    if (result.success) {
+      res.json({ 
+        message: 'Backup job executed successfully', 
+        backupId: result.backupId 
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to execute backup job:', error);
+    res.status(500).json({ error: 'Failed to execute backup job' });
+  }
+});
+
+  // Helper function to check admin access
+  function requireAdmin(req: any, res: any, next: any) {
+    if (!req.session.user || req.session.user.accessLevel !== 4) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  }
 
   const httpServer = createServer(app);
   return httpServer;

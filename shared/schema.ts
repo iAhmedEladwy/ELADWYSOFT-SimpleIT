@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, decimal, date, jsonb, index, pgEnum,pgSequence } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp,bigint, decimal, date, jsonb, index, pgEnum,pgSequence } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -418,6 +418,56 @@ export const usersRelations = relations(users, ({ many }) => ({
   securityQuestions: many(securityQuestions),
   passwordResetTokens: many(passwordResetTokens),
 }));
+
+// Backup Management Tables
+export const backupJobs = pgTable("backup_jobs", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  schedule_type: varchar("schedule_type", { length: 20 }).notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
+  schedule_value: integer("schedule_value").notNull().default(1), // number of units
+  is_enabled: boolean("is_enabled").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  last_run_at: timestamp("last_run_at"),
+  next_run_at: timestamp("next_run_at"),
+});
+
+export const backupFiles = pgTable("backup_files", {
+  id: serial("id").primaryKey(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  filepath: varchar("filepath", { length: 500 }).notNull(),
+  fileSize: bigint("file_size", { mode: 'number' }).notNull(),
+  backupType: varchar("backup_type", { length: 50 }).notNull(), // 'manual', 'scheduled'
+  status: varchar("status", { length: 50 }).default('completed'), // 'in_progress', 'completed', 'failed'
+  jobId: integer("job_id").references(() => backupJobs.id),
+  createdById: integer("created_by_id").references(() => users.id),
+  metadata: text("metadata"), // JSON string for additional info
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const systemHealth = pgTable("system_health", {
+  id: serial("id").primaryKey(),
+  metricName: varchar("metric_name", { length: 100 }).notNull(),
+  metricValue: varchar("metric_value", { length: 255 }).notNull(),
+  metricType: varchar("metric_type", { length: 50 }).notNull(), // 'disk', 'database', 'memory'
+  status: varchar("status", { length: 20 }).notNull(), // 'healthy', 'warning', 'critical'
+  threshold: varchar("threshold", { length: 100 }),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+});
+
+export const restoreHistory = pgTable("restore_history", {
+  id: serial("id").primaryKey(),
+  backupFileId: integer("backup_file_id").references(() => backupFiles.id),
+  backupFilename: varchar("backup_filename", { length: 255 }), // Store filename for display even if file is deleted
+  status: varchar("status", { length: 50 }).notNull(), // 'in_progress', 'completed', 'failed'
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  restoredById: integer("restored_by_id").references(() => users.id),
+  recordsRestored: integer("records_restored").default(0),
+  tablesRestored: varchar("tables_restored", { length: 500 }), // comma-separated table names
+});
 
 export const employeesRelations = relations(employees, ({ one, many }) => ({
   user: one(users, { fields: [employees.userId], references: [users.id] }),

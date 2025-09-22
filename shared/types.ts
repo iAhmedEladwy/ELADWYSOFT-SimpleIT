@@ -298,3 +298,27 @@ export interface FormField {
   options?: { value: string; label: string }[];
   validation?: ValidationRule;
 }
+
+// Backup-related types
+export interface BackupJobResponse {
+  id: number;
+  name: string;
+  description?: string;
+  schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  schedule_value: number;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  last_run_at?: string;
+  next_run_at: string;
+}
+
+export interface BackupJobCreateRequest {
+  name: string;
+  description?: string;
+  schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  schedule_value: number;
+  is_enabled?: boolean;
+}
+
+export interface BackupJobUpdateRequest extends Partial<BackupJobCreateRequest> {}

@@ -111,12 +111,14 @@ export default function Employees() {
     refetch 
   } = useQuery({
     queryKey: ['/api/employees'],
+    queryFn: () => apiRequest('/api/employees', 'GET'),
     staleTime: 0, // Always fetch fresh data
   });
 
   // Fetch assets data (needed for asset-related filters)
   const { data: assets = [] } = useQuery({
     queryKey: ['/api/assets'],
+    queryFn: () => apiRequest('/api/assets', 'GET'),
     staleTime: 5 * 60 * 1000,
   });
 
