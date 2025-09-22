@@ -14,6 +14,51 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.2",
+    date: "2025-09-21",
+    title: "System Configuration Enhancement & Email Service Integration",
+    type: "major",
+    changes: {
+      features: [
+        "🏢 Company Details Management - Complete company information system with name, address, phone, email, and website fields for organizational branding",
+        "📧 Email Service Integration - Full email configuration system with SMTP settings, authentication, secure connections, and testing capabilities",
+        "🐳 Docker Containerization - Complete Docker deployment support with multi-stage builds, PostgreSQL 16, and Nginx reverse proxy for production environments",
+        "🛠️ Docker Management Tools - PowerShell automation scripts for easy deployment, updates, monitoring, and maintenance operations",
+        "⚙️ Enhanced System Configuration - Expanded system settings with company details, email configuration, and improved organizational management",
+        "🔧 Email Configuration API - RESTful endpoints for email setup (/api/email-config) with configuration, testing, and status checking capabilities",
+        "📊 Email Service Management - Centralized email service with NodeMailer integration, configuration validation, and error handling"
+      ],
+      improvements: [
+        "🎯 System Configuration UI - Enhanced SystemConfig page with comprehensive company details form and bilingual support (English/Arabic)",
+        "🔐 Email Security - Secure email configuration storage with password encryption and TLS support for various email providers",
+        "� Production Deployment - Docker Compose orchestration with PostgreSQL database, Nginx proxy, health checks, and volume persistence",
+        "📦 Container Architecture - Multi-stage Docker builds with Node.js 22 LTS, optimized dependencies, and security best practices",
+        "�📱 Responsive Design - Improved system configuration interface with better mobile responsiveness and user experience",
+        "🌐 Translation System - Updated translation arrays for better language management and consistency across the platform",
+        "🔧 Configuration Management - Streamlined system settings with better organization and user-friendly interfaces"
+      ],
+      bugfixes: [
+        "📧 Email Service Initialization - Fixed email service startup and configuration loading from database",
+        "🔧 System Config Updates - Resolved system configuration saving and retrieval issues",
+        "🐳 Container Deployment - Fixed Docker networking, database connections, and service dependencies for reliable containerized deployment",
+        "🌐 Translation Array Migration - Fixed translation system to use arrays instead of objects for better performance",
+        "📝 Database Schema Updates - Improved system configuration schema for company and email settings",
+        "🔒 Configuration Security - Enhanced security for storing sensitive email configuration data"
+      ],
+      breaking: [
+        "⚠️ Translation System Change - Migrated from object-based to array-based translations (requires translation updates)",
+        "⚠️ System Configuration Schema - Updated system config database structure for company and email fields",
+        "⚠️ Docker Deployment - Application now supports containerized deployment (optional, existing installations continue to work)"
+      ],
+      security: [
+        "🔒 Email Credentials Security - Secure storage and handling of email authentication credentials",
+        "🛡️ Configuration Access Control - Restricted system configuration access to admin users only",
+        "� Container Security - Docker deployment with proper user permissions, secure networking, and isolated database environment",
+        "�🔐 Email Testing Security - Secure email testing functionality with proper validation and error handling"
+      ]
+    }
+  },
+  {
   version: "0.4.1",
   date: "2025-09-20",
   title: "Scheduled Backups, Bulk Operations History & System Enhancements ⚠️ MIGRATION REQUIRED",
