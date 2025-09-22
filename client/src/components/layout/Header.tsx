@@ -77,9 +77,14 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
   };
 
   // Fetch system configuration for company display settings
-  const { data: systemConfig } = useQuery({
+  const { data: systemConfig, error: systemConfigError, isLoading: systemConfigLoading } = useQuery({
     queryKey: ['system-config'],
-    queryFn: () => apiRequest<any>('/api/system-config')
+    queryFn: () => apiRequest('/api/system-config'),
+    retry: 1,
+    refetchOnWindowFocus: false,
+    onError: (error) => {
+      console.error('Failed to fetch system configuration:', error);
+    }
   });
   
   const handleLogout = async () => {
@@ -194,6 +199,11 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+
+          {/* Debug info - remove after testing */}
+          {systemConfigError && (
+            <span className="text-red-500 text-xs">Config Error</span>
           )}
 
           {/* Language Selector */}

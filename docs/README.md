@@ -71,7 +71,7 @@ The one-click deployment scripts handle everything automatically:
 2. Follow the [Deployment Guide](./SimpleIT_Deployment_Guide.md) to set up SimpleIT on your server
 3. After installation, log in with the default admin credentials (username: admin, password: admin123)
 4. Update your password immediately
-5. Configure system settings in the System Configuration section
+5. Configure system settings in the Settings section
 6. Begin adding employees and assets to the system
 
 ## Support

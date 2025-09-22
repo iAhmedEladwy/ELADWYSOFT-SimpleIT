@@ -191,7 +191,7 @@ POST /api/import/process       # Process uploaded CSV files
 GET  /api/import/schema/:type  # Get import field schema
 ```
 
-### System Configuration
+### Settings
 ```
 GET /api/system-config         # Get system settings
 PUT /api/system-config         # Update system settings
@@ -275,7 +275,7 @@ const text = language === 'English' ? 'Save' : 'حفظ';
 - **Validation:** Handle in both frontend and backend
 - **Internationalization:** Always provide English/Arabic text
 
-## 📊 System Configuration
+## 📊 Settings
 
 ### Configurable Settings
 - ID prefixes (AST-, EMP-, TKT-)

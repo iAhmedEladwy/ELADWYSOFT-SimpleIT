@@ -79,7 +79,7 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     save: language === 'English' ? 'Save Changes' : 'حفظ التغييرات',
     submitting: language === 'English' ? 'Submitting...' : 'جاري الإرسال...',
     general: language === 'English' ? 'General' : 'عام',
-    selectDepartments: language === 'English' ? 'Select from departments defined in System Configuration' : 'اختر من الأقسام المحددة في إعدادات النظام',
+    selectDepartments: language === 'English' ? 'Select from departments defined in Settings' : 'اختر من الأقسام المحددة في الإعدادات',
     // Validation messages
     nameMinLength: language === 'English' ? 'Name must be at least 2 characters' : 'يجب أن يكون الاسم على الأقل حرفين',
     departmentRequired: language === 'English' ? 'Department is required' : 'القسم مطلوب',

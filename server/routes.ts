@@ -4628,7 +4628,14 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
     try {
       const configData = req.body;
+      console.log('Received config data:', configData); // Debug log
+      
       const updatedConfig = await storage.updateSystemConfig(configData);
+      console.log('Updated config result:', updatedConfig); // Debug log
+      
+      if (!updatedConfig) {
+        return res.status(500).json({ error: 'Failed to update system configuration' });
+      }
       
       // Log activity
       if (req.user) {
@@ -4642,6 +4649,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
       
       res.json(updatedConfig);
     } catch (error: unknown) {
+      console.error('System config update error:', error); // Debug log
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });

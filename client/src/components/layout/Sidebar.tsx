@@ -58,7 +58,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     AssetHistory: language === 'English' ? 'Asset History' : 'سجل الأصول',
     Tickets: language === 'English' ? 'Tickets' : 'التذاكر',
     Reports: language === 'English' ? 'Reports' : 'التقارير',
-    SystemConfig: language === 'English' ? 'System Config' : 'إعدادات النظام',
+    SystemConfig: language === 'English' ? 'Settings' : 'الإعدادات',
     AdminConsole: language === 'English' ? 'Admin Console' : 'وحدة التحكم الإدارية',
     Maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
     UpgradeRequests: language === 'English' ? 'Upgrade Requests' : 'طلبات الترقية',

@@ -38,7 +38,7 @@ function SystemConfig() {
   // Translations
   const translations = {
     // Main navigation and titles
-    systemConfiguration: language === 'English' ? 'System Configuration' : 'تكوين النظام',
+    systemConfiguration: language === 'English' ? 'Settings' : 'الإعدادات',
     configureSystem: language === 'English' ? 'Configure system settings, manage user permissions, and customize organizational preferences' : 'تكوين إعدادات النظام وإدارة صلاحيات المستخدمين وتخصيص تفضيلات المؤسسة',
     
     // Tab labels
@@ -178,7 +178,7 @@ function SystemConfig() {
     
     // Additional missing translations
     accessDenied: language === 'English' ? 'Access Denied' : 'تم رفض الوصول',
-    noPermissionMessage: language === 'English' ? 'You do not have permission to access system configuration.' : 'ليس لديك إذن للوصول إلى إعدادات النظام.',
+    noPermissionMessage: language === 'English' ? 'You do not have permission to access settings.' : 'ليس لديك إذن للوصول إلى الإعدادات.',
     usedForAssetGeneration: language === 'English' ? 'Used for automatic asset ID generation' : 'يستخدم لتوليد معرفات الأصول تلقائياً',
     usedForEmployeeGeneration: language === 'English' ? 'Used for automatic employee ID generation' : 'يستخدم لتوليد معرفات الموظفين تلقائياً',
     usedForTicketGeneration: language === 'English' ? 'Used for automatic ticket ID generation' : 'يستخدم لتوليد معرفات التذاكر تلقائياً',

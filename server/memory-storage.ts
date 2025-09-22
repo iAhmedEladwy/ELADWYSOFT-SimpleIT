@@ -88,6 +88,13 @@ export class MemoryStorage implements IStorage {
       emailUser: null,
       emailPassword: null,
       emailSecure: null,
+      companyName: null,
+      companyAddress: null,
+      companyPhone: null,
+      companyEmail: null,
+      companyWebsite: null,
+      showCompanyInHeader: true,
+      companyDisplayLocation: 'badge',
       createdAt: new Date(),
       updatedAt: new Date()
     };
