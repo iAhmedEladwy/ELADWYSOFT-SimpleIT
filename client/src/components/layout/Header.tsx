@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +32,8 @@ import {
   Mail, 
   Hash,
   Bell,
-  UserCheck
+  UserCheck,
+  Building
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
@@ -48,22 +51,48 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const isMobile = useMobile();
+
+  // Translation object for Header component
+  const translations = {
+    loggedOutSuccessfully: language === 'English' ? "Logged out successfully" : "تم تسجيل الخروج بنجاح",
+    loggedOutDescription: language === 'English' 
+      ? "You have been logged out of your account."
+      : "لقد تم تسجيل خروجك من حسابك.",
+    logoutFailed: language === 'English' ? "Logout failed" : "فشل تسجيل الخروج",
+    logoutFailedDescription: language === 'English' 
+      ? "There was an error logging out. Please try again."
+      : "حدث خطأ في تسجيل الخروج. يرجى المحاولة مرة أخرى.",
+    toggleMenu: language === 'English' ? "Toggle menu" : "تبديل القائمة",
+    clickToPinHover: language === 'English' ? 'Click to pin/unpin • Hover to peek' : 'انقر للتثبيت • مرر للمعاينة',
+    systemTitle: language === 'English' ? 'IT Asset Management System' : 'نظام إدارة أصول تكنولوجيا المعلومات',
+    organization: language === 'English' ? 'Organization:' : 'المؤسسة:',
+    defaultOrganization: language === 'English' ? 'Organization' : 'المؤسسة',
+    employeeId: language === 'English' ? 'Employee ID:' : 'معرف الموظف:',
+    accountMenu: language === 'English' ? 'Account Menu' : 'قائمة الحساب',
+    profile: language === 'English' ? 'Profile' : 'الملف الشخصي',
+    changesLog: language === 'English' ? 'Changes Log' : 'سجل التغييرات',
+    notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
+    pendingApprovals: language === 'English' ? 'Pending Approvals' : 'الموافقات المعلقة',
+    logOut: language === 'English' ? 'Log out' : 'تسجيل الخروج'
+  };
+
+  // Fetch system configuration for company display settings
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config'],
+    queryFn: () => apiRequest<any>('/api/system-config')
+  });
   
   const handleLogout = async () => {
     try {
       await logout();
       toast({
-        title: language === 'English' ? "Logged out successfully" : "تم تسجيل الخروج بنجاح",
-        description: language === 'English' 
-          ? "You have been logged out of your account."
-          : "لقد تم تسجيل خروجك من حسابك.",
+        title: translations.loggedOutSuccessfully,
+        description: translations.loggedOutDescription,
       });
     } catch (error) {
       toast({
-        title: language === 'English' ? "Logout failed" : "فشل تسجيل الخروج",
-        description: language === 'English' 
-          ? "There was an error logging out. Please try again."
-          : "حدث خطأ في تسجيل الخروج. يرجى المحاولة مرة أخرى.",
+        title: translations.logoutFailed,
+        description: translations.logoutFailedDescription,
         variant: "destructive",
       });
     }
@@ -116,7 +145,7 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
                     onMouseEnter={!isMobile && onMenuHover ? () => onMenuHover(true) : undefined}
                     onMouseLeave={!isMobile && onMenuHover ? () => onMenuHover(false) : undefined}
                     className="p-2 rounded-md text-gray-600 hover:text-primary hover:bg-gray-100 transition-colors"
-                    aria-label={language === 'English' ? "Toggle menu" : "تبديل القائمة"}
+                    aria-label={translations.toggleMenu}
                   >
                     <Menu className="h-6 w-6" />
                   </button>
@@ -124,8 +153,8 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
                 <TooltipContent side={language === 'Arabic' ? 'left' : 'right'}>
                   <p>
                     {isMobile 
-                      ? (language === 'English' ? 'Toggle menu' : 'تبديل القائمة')
-                      : (language === 'English' ? 'Click to pin/unpin • Hover to peek' : 'انقر للتثبيت • مرر للمعاينة')
+                      ? translations.toggleMenu
+                      : translations.clickToPinHover
                     }
                   </p>
                 </TooltipContent>
@@ -137,12 +166,36 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
               <span className="text-blue-600 font-bold text-xl mr-1">SimpleIT</span>
             </div>
             <span className="text-gray-500 text-xs -mt-1">
-              {language === 'English' ? 'IT Asset Management System' : 'نظام إدارة أصول تكنولوجيا المعلومات'}
+              {translations.systemTitle}
             </span>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
+          {/* Company Badge - Configurable Display */}
+          {systemConfig?.showCompanyInHeader && systemConfig?.companyDisplayLocation === 'badge' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className="hidden md:flex items-center gap-1 bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 transition-colors"
+                  >
+                    <Building className="h-3 w-3" />
+                    <span className="max-w-32 truncate">
+                      {systemConfig?.companyName || translations.defaultOrganization}
+                    </span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side={language === 'Arabic' ? 'left' : 'right'}>
+                  <p>
+                    {`${translations.organization} ${systemConfig?.companyName || translations.defaultOrganization}`}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {/* Language Selector */}
           <Select value={language} onValueChange={toggleLanguage}>
             <SelectTrigger className="w-[140px] h-9">
@@ -200,7 +253,7 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
                     {user?.employeeId && (
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Hash className="h-3 w-3" />
-                        <span>{language === 'English' ? 'Employee ID:' : 'معرف الموظف:'} {user.employeeId}</span>
+                        <span>{translations.employeeId} {user.employeeId}</span>
                       </div>
                     )}
                   </div>
@@ -208,28 +261,28 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
               </div>
 
               <DropdownMenuLabel className="px-4 py-2 text-xs text-gray-500 font-medium">
-                {language === 'English' ? 'Account Menu' : 'قائمة الحساب'}
+                {translations.accountMenu}
               </DropdownMenuLabel>
               
               <DropdownMenuItem onClick={() => setLocation('/profile')} className="px-4 py-2 cursor-pointer">
                 <User className="mr-3 h-4 w-4" />
-                {language === 'English' ? 'Profile' : 'الملف الشخصي'}
+                {translations.profile}
               </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => setLocation('/changes-log')} className="px-4 py-2 cursor-pointer">
                 <FileText className="mr-3 h-4 w-4" />
-                {language === 'English' ? 'Changes Log' : 'سجل التغييرات'}
+                {translations.changesLog}
               </DropdownMenuItem>
 
               {/* Status Indicators Section */}
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="px-4 py-2 text-xs text-gray-500 font-medium">
-                {language === 'English' ? 'Notifications' : 'الإشعارات'}
+                {translations.notifications}
               </DropdownMenuLabel>
               
               <DropdownMenuItem className="px-4 py-2 cursor-pointer">
                 <Bell className="mr-3 h-4 w-4" />
-                <span className="flex-1">{language === 'English' ? 'Notifications' : 'الإشعارات'}</span>
+                <span className="flex-1">{translations.notifications}</span>
                 <Badge variant="secondary" className="ml-2 px-2 py-0.5 text-xs">
                   0
                 </Badge>
@@ -237,7 +290,7 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
 
               <DropdownMenuItem className="px-4 py-2 cursor-pointer">
                 <UserCheck className="mr-3 h-4 w-4" />
-                <span className="flex-1">{language === 'English' ? 'Pending Approvals' : 'الموافقات المعلقة'}</span>
+                <span className="flex-1">{translations.pendingApprovals}</span>
                 <Badge variant="secondary" className="ml-2 px-2 py-0.5 text-xs">
                   0
                 </Badge>
@@ -249,7 +302,7 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
                 className="px-4 py-2 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <LogOut className="mr-3 h-4 w-4" />
-                {language === 'English' ? 'Log out' : 'تسجيل الخروج'}
+                {translations.logOut}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

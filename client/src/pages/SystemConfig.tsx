@@ -26,6 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { FieldMappingInterface } from '@/components/import/FieldMappingInterface';
 
 function SystemConfig() {
@@ -70,6 +71,16 @@ function SystemConfig() {
     companyPhone: language === 'English' ? 'Company Phone' : 'هاتف الشركة',
     companyEmail: language === 'English' ? 'Company Email' : 'بريد الشركة الإلكتروني',
     companyWebsite: language === 'English' ? 'Company Website' : 'موقع الشركة الإلكتروني',
+    
+    // Company Display Configuration
+    companyDisplay: language === 'English' ? 'Company Display' : 'عرض الشركة',
+    companyDisplayDescription: language === 'English' ? 'Configure how company information appears in the application header' : 'تكوين كيفية ظهور معلومات الشركة في رأس التطبيق',
+    showCompanyInHeader: language === 'English' ? 'Show Company in Header' : 'إظهار الشركة في الرأس',
+    showCompanyDescription: language === 'English' ? 'Display company name in the application header' : 'عرض اسم الشركة في رأس التطبيق',
+    displayLocation: language === 'English' ? 'Display Location' : 'موقع العرض',
+    displayLocationDescription: language === 'English' ? 'Choose where to display the company name in the header' : 'اختر مكان عرض اسم الشركة في الرأس',
+    badgeNextToLanguage: language === 'English' ? 'Badge next to language selector' : 'شارة بجانب محدد اللغة',
+    underUsername: language === 'English' ? 'Under username dropdown' : 'تحت قائمة اسم المستخدم',
     
     // Email Configuration
     emailConfiguration: language === 'English' ? 'Email Configuration' : 'تكوين البريد الإلكتروني',
@@ -310,6 +321,10 @@ function SystemConfig() {
   const [companyEmail, setCompanyEmail] = useState('');
   const [companyWebsite, setCompanyWebsite] = useState('');
   
+  // Company display configuration states
+  const [showCompanyInHeader, setShowCompanyInHeader] = useState(true);
+  const [companyDisplayLocation, setCompanyDisplayLocation] = useState('badge');
+  
   // Import/Export states from current working version
   const [selectedDataType, setSelectedDataType] = useState<string>('employees');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -457,6 +472,10 @@ function SystemConfig() {
       setCompanyPhone(config.companyPhone || '');
       setCompanyEmail(config.companyEmail || '');
       setCompanyWebsite(config.companyWebsite || '');
+      
+      // Load company display configuration
+      setShowCompanyInHeader(config.showCompanyInHeader !== false);
+      setCompanyDisplayLocation(config.companyDisplayLocation || 'badge');
       
       setIsLoading(false);
     }
@@ -1099,6 +1118,8 @@ const parseCSVLine = (line: string): string[] => {
       companyPhone,
       companyEmail,
       companyWebsite,
+      showCompanyInHeader,
+      companyDisplayLocation,
     };
     updateConfigMutation.mutate(configData);
   };
@@ -1560,6 +1581,60 @@ const parseCSVLine = (line: string): string[] => {
                       placeholder={translations.enterCompanyAddress}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Company Display Configuration Section */}
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-medium mb-4">
+                  {translations.companyDisplay}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {translations.companyDisplayDescription}
+                </p>
+                
+                <div className="space-y-6">
+                  {/* Show Company in Header Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="show-company-header" className="text-sm font-medium">
+                        {translations.showCompanyInHeader}
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        {translations.showCompanyDescription}
+                      </p>
+                    </div>
+                    <Switch
+                      id="show-company-header"
+                      checked={showCompanyInHeader}
+                      onCheckedChange={setShowCompanyInHeader}
+                    />
+                  </div>
+
+                  {/* Display Location Selection - Only show when company display is enabled */}
+                  {showCompanyInHeader && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">
+                        {translations.displayLocation}
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        {translations.displayLocationDescription}
+                      </p>
+                      <Select value={companyDisplayLocation} onValueChange={setCompanyDisplayLocation}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="badge">
+                            {translations.badgeNextToLanguage}
+                          </SelectItem>
+                          <SelectItem value="dropdown">
+                            {translations.underUsername}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
 

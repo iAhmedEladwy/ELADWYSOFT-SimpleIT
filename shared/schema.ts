@@ -351,6 +351,8 @@ export const systemConfig = pgTable("system_config", {
   companyPhone: varchar("company_phone", { length: 50 }),
   companyEmail: varchar("company_email", { length: 100 }),
   companyWebsite: varchar("company_website", { length: 255 }),
+  showCompanyInHeader: boolean("show_company_in_header").default(true),
+  companyDisplayLocation: varchar("company_display_location", { length: 20 }).default('badge'),
   defaultCurrency: varchar("default_currency", { length: 10 }).default('USD'),
   enableAuditLogs: boolean("enable_audit_logs").default(true),
   auditLogRetentionDays: integer("audit_log_retention_days").default(365),
