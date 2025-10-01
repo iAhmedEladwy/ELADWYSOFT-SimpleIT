@@ -34,6 +34,105 @@ function SystemConfig() {
   const { hasAccess } = useAuth();
   const queryClient = useQueryClient();
   
+  // Translations
+  const translations = {
+    success: language === 'English' ? 'Success' : 'تم بنجاح',
+    error: language === 'English' ? 'Error' : 'خطأ',
+    settingsUpdated: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
+    categoryAdded: language === 'English' ? 'Category added successfully' : 'تمت إضافة الفئة بنجاح',
+    categoryAddFailed: language === 'English' ? 'Failed to add request type' : 'فشل إضافة نوع الطلب',
+    assetTypeAdded: language === 'English' ? 'Asset type added successfully' : 'تمت إضافة نوع الأصل بنجاح',
+    assetTypeAddFailed: language === 'English' ? 'Failed to add asset type' : 'فشل إضافة نوع الأصل',
+    assetBrandAdded: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل بنجاح',
+    assetBrandAddFailed: language === 'English' ? 'Failed to add asset brand' : 'فشل إضافة علامة الأصل',
+    assetStatusAdded: language === 'English' ? 'Asset status added successfully' : 'تمت إضافة حالة الأصل بنجاح',
+    assetStatusAddFailed: language === 'English' ? 'Failed to add asset status' : 'فشل إضافة حالة الأصل',
+    deleteSuccess: language === 'English' ? 'Deleted successfully' : 'تم الحذف بنجاح',
+    deleteFailed: language === 'English' ? 'Failed to delete' : 'فشل الحذف',
+    parseErrorTitle: language === 'English' ? 'Parse Error' : 'خطأ تحليل',
+    parseErrorMessage: language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV',
+    importComplete: language === 'English' ? 'Import Complete' : 'اكتمل الاستيراد',
+    importSummary: (imported: number, total: number) => (
+      language === 'English'
+        ? `Successfully imported ${imported} of ${total} records`
+        : `تم استيراد ${imported} من ${total} سجل بنجاح`
+    ),
+    accessDenied: language === 'English' ? 'Access Denied' : 'تم رفض الوصول',
+    pageTitle: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
+    tabGeneral: language === 'English' ? 'General' : 'عام',
+    tabEmployees: language === 'English' ? 'Employees' : 'الموظفون',
+    tabAssets: language === 'English' ? 'Assets' : 'الأصول',
+    tabTickets: language === 'English' ? 'Tickets' : 'التذاكر',
+    tabEmail: language === 'English' ? 'Email' : 'البريد',
+    tabImportExport: language === 'English' ? 'Import/Export' : 'استيراد/تصدير',
+    systemDefaults: language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية',
+    assetIdPrefixLabel: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل',
+    assetIdPrefixHint: language === 'English' ? 'Used for automatic asset ID generation' : 'يستخدم لتوليد معرفات الأصول تلقائياً',
+    empIdPrefixLabel: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
+    empIdPrefixHint: language === 'English' ? 'Used for automatic employee ID generation' : 'يستخدم لتوليد معرفات الموظفين تلقائياً',
+    ticketIdPrefixLabel: language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة',
+    ticketIdPrefixHint: language === 'English' ? 'Used for automatic ticket ID generation' : 'يستخدم لتوليد معرفات التذاكر تلقائياً',
+    defaultCurrencyLabel: language === 'English' ? 'Default Currency' : 'العملة الافتراضية',
+    systemLanguageLabel: language === 'English' ? 'System Language' : 'لغة النظام',
+    saving: language === 'English' ? 'Saving...' : 'جارٍ الحفظ...',
+    saveSettings: language === 'English' ? 'Save Settings' : 'حفظ الإعدادات',
+    importExportHeader: language === 'English' ? 'Import & Export Data' : 'استيراد وتصدير البيانات',
+    selectDataType: language === 'English' ? 'Select Data Type' : 'اختر نوع البيانات',
+    importData: language === 'English' ? 'Import Data' : 'استيراد البيانات',
+    orClickToBrowse: language === 'English' ? 'or click to browse' : 'أو انقر للتصفح',
+    chooseFile: language === 'English' ? 'Choose File' : 'اختيار ملف',
+    getTemplate: language === 'English' ? 'Get Template' : 'احصل على القالب',
+    exportData: language === 'English' ? 'Export Data' : 'تصدير البيانات',
+    importing: language === 'English' ? 'Importing...' : 'جاري الاستيراد...',
+    importFile: language === 'English' ? 'Import File' : 'استيراد الملف',
+    importResults: language === 'English' ? 'Import Results' : 'نتائج الاستيراد',
+    totalRecords: language === 'English' ? 'Total Records' : 'إجمالي السجلات',
+    successfullyImported: language === 'English' ? 'Successfully Imported' : 'تم الاستيراد بنجاح',
+    failed: language === 'English' ? 'Failed' : 'فشل',
+    errorsLabel: language === 'English' ? 'Errors:' : 'الأخطاء:',
+    importError: language === 'English' ? 'Import Error' : 'خطأ في الاستيراد',
+    employeeConfig: language === 'English' ? 'Employee Configuration' : 'تكوين الموظفين',
+    departmentManagement: language === 'English' ? 'Department Management' : 'إدارة الأقسام',
+    addDepartment: language === 'English' ? 'Add Department' : 'إضافة قسم',
+    addDepartmentTitle: language === 'English' ? 'Add Department' : 'إضافة قسم',
+    addDepartmentDesc: language === 'English' ? 'Create a new department to organize employees.' : 'إنشاء قسم جديد لتنظيم الموظفين.',
+    confirmDeleteAssetType: language === 'English' ? 'Are you sure you want to delete this asset type?' : 'هل أنت متأكد من حذف نوع الأصل هذا؟',
+    confirmDeleteAssetBrand: language === 'English' ? 'Are you sure you want to delete this asset brand?' : 'هل أنت متأكد من حذف علامة الأصل هذه؟',
+    confirmDeleteAssetStatus: language === 'English' ? 'Are you sure you want to delete this asset status?' : 'هل أنت متأكد من حذف حالة الأصل هذه؟',
+    confirmDeleteCategory: language === 'English' ? 'Are you sure you want to delete this category?' : 'هل أنت متأكد من حذف هذه الفئة؟',
+    templateDownloaded: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
+    templateDownloadedDesc: (type: string) => language === 'English' ? `${type} template downloaded successfully` : `تم تنزيل قالب ${type} بنجاح`,
+    exportSuccessful: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
+    exportSuccessfulDesc: (type: string) => language === 'English' ? `${type} data exported successfully` : `تم تصدير بيانات ${type} بنجاح`,
+    importFailed: language === 'English' ? 'Import Failed' : 'فشل الاستيراد',
+    // Email section
+    emailConfig: language === 'English' ? 'Email Configuration' : 'تكوين البريد الإلكتروني',
+    smtpServerSettings: language === 'English' ? 'SMTP Server Settings' : 'إعدادات خادم SMTP',
+    smtpHost: language === 'English' ? 'SMTP Host' : 'خادم SMTP',
+    smtpHostHelp: language === 'English' ? 'SMTP server hostname' : 'اسم خادم SMTP',
+    smtpPort: language === 'English' ? 'SMTP Port' : 'منفذ SMTP',
+    smtpPortHelp: language === 'English' 
+      ? 'Common ports: 587 (TLS), 465 (SSL), 25 (unsecured)'
+      : 'المنافذ الشائعة: 587 (TLS)، 465 (SSL)، 25 (غير آمن)',
+    username: language === 'English' ? 'Username' : 'اسم المستخدم',
+    usernameHelp: language === 'English' ? 'SMTP authentication username' : 'اسم مستخدم التحقق من SMTP',
+    password: language === 'English' ? 'Password' : 'كلمة المرور',
+    passwordHelp: language === 'English' ? 'SMTP authentication password or app password' : 'كلمة مرور SMTP أو كلمة مرور التطبيق',
+    emailSettings: language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني',
+    fromEmailAddress: language === 'English' ? 'From Email Address' : 'عنوان البريد المرسل',
+    fromEmailAddressHelp: language === 'English' ? 'Email address that appears as sender' : 'عنوان البريد الذي يظهر كمرسل',
+    fromName: language === 'English' ? 'From Name' : 'اسم المرسل',
+    fromNameHelp: language === 'English' ? 'Display name for sent emails' : 'الاسم المعروض للرسائل المرسلة',
+    useSecureConnection: language === 'English' ? 'Use Secure Connection (TLS/SSL)' : 'استخدام اتصال آمن (TLS/SSL)',
+    enableSecureConnection: language === 'English' ? 'Enable secure connection' : 'تفعيل الاتصال الآمن',
+    recommendedSmtp: language === 'English' ? 'Recommended for most SMTP providers' : 'موصى به لمعظم مقدمي خدمة SMTP',
+    commonSmtpConfigurations: language === 'English' ? 'Common SMTP Configurations:' : 'تكوينات SMTP الشائعة:',
+    saveEmailSettings: language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد',
+    emailConfigDesc: language === 'English'
+      ? 'Configure SMTP settings for email notifications and system communications.'
+      : 'تكوين إعدادات SMTP لإشعارات البريد الإلكتروني واتصالات النظام.',
+  };
+  
   // Tab state management with localStorage persistence
   const [activeTab, setActiveTab] = useState(() => {
     try {
@@ -249,8 +348,8 @@ function SystemConfig() {
       // Force refetch to ensure language changes are reflected immediately
       queryClient.refetchQueries({ queryKey: ['/api/system-config'] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Settings updated successfully' : 'تم تحديث الإعدادات بنجاح',
+        title: translations.success,
+        description: translations.settingsUpdated,
       });
       // Restore preserved tab after department operations
       if (preservedTab) {
@@ -259,9 +358,8 @@ function SystemConfig() {
       }
     },
     onError: (error) => {
-      console.error("Config update error:", error);
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
+        title: translations.error,
         description: language === 'English' 
           ? 'Failed to update settings. Please try again.' 
           : 'فشل تحديث الإعدادات. يرجى المحاولة مرة أخرى.',
@@ -277,8 +375,8 @@ function SystemConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Category added successfully' : 'تمت إضافة الفئة بنجاح',
+        title: translations.success,
+        description: translations.categoryAdded,
       });
       setNewCategoryName('');
       setNewCategoryDescription('');
@@ -286,11 +384,10 @@ function SystemConfig() {
     },
     onError: (error) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to add request type' : 'فشل إضافة نوع الطلب',
+        title: translations.error,
+        description: translations.categoryAddFailed,
         variant: 'destructive'
       });
-      console.error('Failed to create request type:', error);
     }
   });
 
@@ -301,8 +398,8 @@ function SystemConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-types'] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset type added successfully' : 'تمت إضافة نوع الأصل بنجاح',
+        title: translations.success,
+        description: translations.assetTypeAdded,
       });
       setNewTypeName('');
       setNewTypeDescription('');
@@ -310,11 +407,10 @@ function SystemConfig() {
     },
     onError: (error) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to add asset type' : 'فشل إضافة نوع الأصل',
+        title: translations.error,
+        description: translations.assetTypeAddFailed,
         variant: 'destructive'
       });
-      console.error('Failed to create asset type:', error);
     }
   });
 
@@ -325,8 +421,8 @@ function SystemConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-brands'] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset brand added successfully' : 'تمت إضافة علامة الأصل بنجاح',
+        title: translations.success,
+        description: translations.assetBrandAdded,
       });
       setNewBrandName('');
       setNewBrandDescription('');
@@ -334,11 +430,10 @@ function SystemConfig() {
     },
     onError: (error) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to add asset brand' : 'فشل إضافة علامة الأصل',
+        title: translations.error,
+        description: translations.assetBrandAddFailed,
         variant: 'destructive'
       });
-      console.error('Failed to create asset brand:', error);
     }
   });
 
@@ -349,8 +444,8 @@ function SystemConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/custom-asset-statuses'] });
       toast({
-        title: language === 'English' ? 'Success' : 'تم بنجاح',
-        description: language === 'English' ? 'Asset status added successfully' : 'تمت إضافة حالة الأصل بنجاح',
+        title: translations.success,
+        description: translations.assetStatusAdded,
       });
       setNewStatusName('');
       setNewStatusDescription('');
@@ -359,11 +454,10 @@ function SystemConfig() {
     },
     onError: (error) => {
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
-        description: language === 'English' ? 'Failed to add asset status' : 'فشل إضافة حالة الأصل',
+        title: translations.error,
+        description: translations.assetStatusAddFailed,
         variant: 'destructive'
       });
-      console.error('Failed to create asset status:', error);
     }
   });
 
@@ -600,13 +694,12 @@ function SystemConfig() {
       document.body.removeChild(a);
       
       toast({
-        title: language === 'English' ? 'Template Downloaded' : 'تم تنزيل القالب',
-        description: language === 'English' ? `${type} template downloaded successfully` : `تم تنزيل قالب ${type} بنجاح`,
+        title: translations.templateDownloaded,
+        description: translations.templateDownloadedDesc(type),
       });
     } catch (error) {
-      console.error('Download error:', error);
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
+        title: translations.error,
         description: language === 'English' ? 'Failed to download template' : 'فشل تحميل القالب',
         variant: 'destructive'
       });
@@ -646,13 +739,12 @@ function SystemConfig() {
       document.body.removeChild(a);
       
       toast({
-        title: language === 'English' ? 'Export Successful' : 'تم التصدير بنجاح',
-        description: language === 'English' ? `${type} data exported successfully` : `تم تصدير بيانات ${type} بنجاح`,
+        title: translations.exportSuccessful,
+        description: translations.exportSuccessfulDesc(type),
       });
     } catch (error) {
-      console.error('Export error:', error);
       toast({
-        title: language === 'English' ? 'Error' : 'خطأ',
+        title: translations.error,
         description: language === 'English' ? 'Failed to export data' : 'فشل تصدير البيانات',
         variant: 'destructive'
       });
@@ -713,36 +805,25 @@ const parseCSVLine = (line: string): string[] => {
 
   const handleFileImport = async () => {
     if (!selectedFile) {
-      console.log('No file selected for import');
       return;
     }
-
-    console.log('Starting file import for:', selectedFile.name, 'Selected data type:', selectedDataType);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const csvText = e.target?.result as string;
-        console.log('CSV text length:', csvText.length);
-        console.log('CSV preview:', csvText.substring(0, 200));
         
         const { headers, data } = parseCSV(csvText);
-        console.log('Parsed headers:', headers);
-        console.log('Parsed data rows:', data.length);
-        console.log('First data row:', data[0]);
         
         setParsedFileData(data);
         setFileColumns(headers);
         setShowFieldMapping(true);
         setImportError('');
-        
-        console.log('Field mapping dialog should now show');
       } catch (error) {
-        console.error('File parsing error:', error);
-        const errorMessage = language === 'English' ? 'Failed to parse CSV file' : 'فشل تحليل ملف CSV';
+        const errorMessage = translations.parseErrorMessage;
         setImportError(errorMessage);
         toast({
-          title: language === 'English' ? 'Parse Error' : 'خطأ تحليل',
+          title: translations.parseErrorTitle,
           description: errorMessage,
           variant: 'destructive',
         });
@@ -772,12 +853,6 @@ const parseCSVLine = (line: string): string[] => {
       throw new Error('No field mapping provided');
     }
     
-    console.log('Import validation:', { 
-      selectedDataType, 
-      mappedDataLength: mappedData.length, 
-      mappingKeys: Object.keys(mapping) 
-    });
-    
     setIsImporting(true);
     setImportProgress(0);
     setImportError('');
@@ -806,14 +881,11 @@ const parseCSVLine = (line: string): string[] => {
       setSelectedFile(null);
       
       toast({
-        title: language === 'English' ? 'Import Complete' : 'اكتمل الاستيراد',
-        description: language === 'English' 
-          ? `Successfully imported ${results.imported} of ${results.total} records` 
-          : `تم استيراد ${results.imported} من ${results.total} سجل بنجاح`,
+        title: translations.importComplete,
+        description: translations.importSummary(results.imported, results.total),
       });
 
     } catch (error: any) {
-      console.error('Import error:', error);
       const errorMessage = error?.message || error?.toString() || 'Unknown import error occurred';
       setImportError(errorMessage);
       toast({
@@ -855,25 +927,25 @@ const parseCSVLine = (line: string): string[] => {
 
   // Handler functions for delete operations
   const handleDeleteAssetType = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset type?' : 'هل أنت متأكد من حذف نوع الأصل هذا؟')) {
+    if (window.confirm(translations.confirmDeleteAssetType)) {
       deleteAssetTypeMutation.mutate(id);
     }
   };
 
   const handleDeleteAssetBrand = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset brand?' : 'هل أنت متأكد من حذف علامة الأصل هذه؟')) {
+    if (window.confirm(translations.confirmDeleteAssetBrand)) {
       deleteAssetBrandMutation.mutate(id);
     }
   };
 
   const handleDeleteAssetStatus = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this asset status?' : 'هل أنت متأكد من حذف حالة الأصل هذه؟')) {
+    if (window.confirm(translations.confirmDeleteAssetStatus)) {
       deleteAssetStatusMutation.mutate(id);
     }
   };
 
   const handleDeleteCategory = (id: number) => {
-    if (window.confirm(language === 'English' ? 'Are you sure you want to delete this category?' : 'هل أنت متأكد من حذف هذه الفئة؟')) {
+    if (window.confirm(translations.confirmDeleteCategory)) {
       deleteCategoryMutation.mutate(id);
     }
   };
@@ -1079,7 +1151,7 @@ const parseCSVLine = (line: string): string[] => {
         <div className="text-center">
           <Settings className="h-16 w-16 mx-auto text-gray-400 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {language === 'English' ? 'Access Denied' : 'تم رفض الوصول'}
+            {translations.accessDenied}
           </h2>
           <p className="text-gray-600">
             {language === 'English' 
@@ -1098,7 +1170,7 @@ const parseCSVLine = (line: string): string[] => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <Settings className="h-8 w-8 text-blue-600" />
-            {language === 'English' ? 'System Configuration' : 'إعدادات النظام'}
+            {translations.pageTitle}
           </h1>
           <p className="text-gray-600 mt-2">
             {language === 'English' 
@@ -1116,37 +1188,37 @@ const parseCSVLine = (line: string): string[] => {
           <TabsTrigger value="general" className="flex items-center gap-2 text-sm">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'General' : 'عام'}
+              {translations.tabGeneral}
             </span>
           </TabsTrigger>
           <TabsTrigger value="employees" className="flex items-center gap-2 text-sm">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'Employees' : 'الموظفون'}
+              {translations.tabEmployees}
             </span>
           </TabsTrigger>
           <TabsTrigger value="assets" className="flex items-center gap-2 text-sm">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'Assets' : 'الأصول'}
+              {translations.tabAssets}
             </span>
           </TabsTrigger>
           <TabsTrigger value="tickets" className="flex items-center gap-2 text-sm">
             <Ticket className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'Tickets' : 'التذاكر'}
+              {translations.tabTickets}
             </span>
           </TabsTrigger>
           <TabsTrigger value="email" className="flex items-center gap-2 text-sm">
             <Mail className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'Email' : 'البريد'}
+              {translations.tabEmail}
             </span>
           </TabsTrigger>
           <TabsTrigger value="import-export" className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {language === 'English' ? 'Import/Export' : 'استيراد/تصدير'}
+              {translations.tabImportExport}
             </span>
           </TabsTrigger>
         </TabsList>
@@ -1155,7 +1227,7 @@ const parseCSVLine = (line: string): string[] => {
         <TabsContent value="general" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية'}</CardTitle>
+              <CardTitle>{translations.systemDefaults}</CardTitle>
               <CardDescription>
                 {language === 'English' 
                   ? 'Configure basic system settings and ID prefixes.'
@@ -1165,45 +1237,39 @@ const parseCSVLine = (line: string): string[] => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label>{language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل'}</Label>
+                  <Label>{translations.assetIdPrefixLabel}</Label>
                   <Input
                     value={assetIdPrefix}
                     onChange={(e) => setAssetIdPrefix(e.target.value)}
                     placeholder="AST-"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'English' ? 'Used for automatic asset ID generation' : 'يستخدم لتوليد معرفات الأصول تلقائياً'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{translations.assetIdPrefixHint}</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>{language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف'}</Label>
+                  <Label>{translations.empIdPrefixLabel}</Label>
                   <Input
                     value={empIdPrefix}
                     onChange={(e) => setEmpIdPrefix(e.target.value)}
                     placeholder="EMP-"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'English' ? 'Used for automatic employee ID generation' : 'يستخدم لتوليد معرفات الموظفين تلقائياً'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{translations.empIdPrefixHint}</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>{language === 'English' ? 'Ticket ID Prefix' : 'بادئة معرف التذكرة'}</Label>
+                  <Label>{translations.ticketIdPrefixLabel}</Label>
                   <Input
                     value={ticketIdPrefix}
                     onChange={(e) => setTicketIdPrefix(e.target.value)}
                     placeholder="TKT-"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'English' ? 'Used for automatic ticket ID generation' : 'يستخدم لتوليد معرفات التذاكر تلقائياً'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{translations.ticketIdPrefixHint}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>{language === 'English' ? 'Default Currency' : 'العملة الافتراضية'}</Label>
+                  <Label>{translations.defaultCurrencyLabel}</Label>
                   <Select value={currency} onValueChange={setCurrency}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1219,7 +1285,7 @@ const parseCSVLine = (line: string): string[] => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>{language === 'English' ? 'System Language' : 'لغة النظام'}</Label>
+                  <Label>{translations.systemLanguageLabel}</Label>
                   <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1241,12 +1307,12 @@ const parseCSVLine = (line: string): string[] => {
                   {updateConfigMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      {translations.saving}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Save Settings' : 'حفظ الإعدادات'}
+                      {translations.saveSettings}
                     </>
                   )}
                 </Button>
@@ -1263,7 +1329,7 @@ const parseCSVLine = (line: string): string[] => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-blue-600" />
-                  {language === 'English' ? 'Import & Export Data' : 'استيراد وتصدير البيانات'}
+                  {translations.importExportHeader}
                 </CardTitle>
                 <CardDescription>
                   {language === 'English' 
@@ -1274,9 +1340,7 @@ const parseCSVLine = (line: string): string[] => {
               <CardContent className="space-y-6">
                 {/* Data Type Selection */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Select Data Type' : 'اختر نوع البيانات'}
-                  </h3>
+                  <h3 className="text-lg font-medium">{translations.selectDataType}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {DATA_TYPE_OPTIONS.map((option) => {
                       const Icon = option.icon;
@@ -1339,7 +1403,7 @@ const parseCSVLine = (line: string): string[] => {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Upload className="h-5 w-5 text-blue-600" />
-                          {language === 'English' ? 'Import Data' : 'استيراد البيانات'}
+                          {translations.importData}
                         </CardTitle>
                         <CardDescription>
                           {language === 'English' 
@@ -1367,7 +1431,7 @@ const parseCSVLine = (line: string): string[] => {
                                 : 'اسحب وأفلت ملف CSV هنا'}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {language === 'English' ? 'or click to browse' : 'أو انقر للتصفح'}
+                              {translations.orClickToBrowse}
                             </p>
                             <input
                               id="file-input"
@@ -1382,7 +1446,7 @@ const parseCSVLine = (line: string): string[] => {
                               onClick={() => document.getElementById('file-input')?.click()}
                               className="mt-2"
                             >
-                              {language === 'English' ? 'Choose File' : 'اختيار ملف'}
+                              {translations.chooseFile}
                             </Button>
                           </div>
                         </div>
@@ -1415,7 +1479,7 @@ const parseCSVLine = (line: string): string[] => {
                             className="w-full"
                           >
                             <Download className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Get Template' : 'احصل على القالب'}
+                            {translations.getTemplate}
                           </Button>
                           
                           <Button 
@@ -1424,7 +1488,7 @@ const parseCSVLine = (line: string): string[] => {
                             className="w-full"
                           >
                             <Download className="h-4 w-4 mr-2" />
-                            {language === 'English' ? 'Export Data' : 'تصدير البيانات'}
+                            {translations.exportData}
                           </Button>
 
                           <Button 
@@ -1439,12 +1503,12 @@ const parseCSVLine = (line: string): string[] => {
                             {isImporting ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                {language === 'English' ? 'Importing...' : 'جاري الاستيراد...'}
+                                {translations.importing}
                               </>
                             ) : (
                               <>
                                 <Upload className="h-4 w-4 mr-2" />
-                                {language === 'English' ? 'Import File' : 'استيراد الملف'}
+                                {translations.importFile}
                               </>
                             )}
                           </Button>
@@ -1459,27 +1523,27 @@ const parseCSVLine = (line: string): string[] => {
                           <div className="flex items-center gap-2 mb-4">
                             <Check className="h-5 w-5 text-green-600" />
                             <span className="font-medium text-lg">
-                              {language === 'English' ? 'Import Results' : 'نتائج الاستيراد'}
+                              {translations.importResults}
                             </span>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <p className="font-medium">{language === 'English' ? 'Total Records' : 'إجمالي السجلات'}</p>
+                              <p className="font-medium">{translations.totalRecords}</p>
                               <p className="text-2xl font-bold">{importResults.total || 0}</p>
                             </div>
                             <div className="text-center p-3 bg-green-50 rounded-lg">
-                              <p className="font-medium text-green-800">{language === 'English' ? 'Successfully Imported' : 'تم الاستيراد بنجاح'}</p>
+                              <p className="font-medium text-green-800">{translations.successfullyImported}</p>
                               <p className="text-2xl font-bold text-green-600">{importResults.imported || 0}</p>
                             </div>
                             <div className="text-center p-3 bg-red-50 rounded-lg">
-                              <p className="font-medium text-red-800">{language === 'English' ? 'Failed' : 'فشل'}</p>
+                              <p className="font-medium text-red-800">{translations.failed}</p>
                               <p className="text-2xl font-bold text-red-600">{importResults.failed || 0}</p>
                             </div>
                           </div>
                           {importResults.errors && importResults.errors.length > 0 && (
                             <div className="mt-4 p-4 bg-red-50 rounded-lg">
                               <p className="font-medium text-red-800 mb-2">
-                                {language === 'English' ? 'Errors:' : 'الأخطاء:'}
+                                {translations.errorsLabel}
                               </p>
                               <ul className="list-disc list-inside text-red-700 max-h-32 overflow-y-auto text-sm">
                                 {importResults.errors.slice(0, 10).map((error: string, index: number) => (
@@ -1505,9 +1569,7 @@ const parseCSVLine = (line: string): string[] => {
                         <CardContent className="pt-6">
                           <div className="flex items-center gap-2 mb-2">
                             <X className="h-5 w-5 text-red-600" />
-                            <span className="font-medium text-red-800 text-lg">
-                              {language === 'English' ? 'Import Error' : 'خطأ في الاستيراد'}
-                            </span>
+                            <span className="font-medium text-red-800 text-lg">{translations.importError}</span>
                           </div>
                           <p className="text-sm text-red-700 bg-red-50 p-3 rounded-lg">{importError}</p>
                         </CardContent>
@@ -1526,7 +1588,7 @@ const parseCSVLine = (line: string): string[] => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                {language === 'English' ? 'Employee Configuration' : 'تكوين الموظفين'}
+                {translations.employeeConfig}
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
@@ -1539,29 +1601,29 @@ const parseCSVLine = (line: string): string[] => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Department Management' : 'إدارة الأقسام'}
+                    {translations.departmentManagement}
                   </h3>
                   <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
-                        {language === 'English' ? 'Add Department' : 'إضافة قسم'}
+                        {translations.addDepartment}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>{language === 'English' ? 'Add Department' : 'إضافة قسم'}</DialogTitle>
+                        <DialogTitle>{translations.addDepartmentTitle}</DialogTitle>
                         <DialogDescription>
-                          {language === 'English' ? 'Create a new department to organize employees.' : 'إنشاء قسم جديد لتنظيم الموظفين.'}
+                          {translations.addDepartmentDesc}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Department Name' : 'اسم القسم'}</Label>
+                          <Label>{translations.departmentName}</Label>
                           <Input 
                             value={newDepartment} 
                             onChange={(e) => setNewDepartment(e.target.value)}
-                            placeholder={language === 'English' ? 'e.g., IT, HR, Finance' : 'مثال: تقنية المعلومات، الموارد البشرية، المالية'}
+                            placeholder={translations.departmentNamePlaceholder}
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
@@ -1569,7 +1631,7 @@ const parseCSVLine = (line: string): string[] => {
                             setIsDepartmentDialogOpen(false);
                             setNewDepartment('');
                           }}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            {translations.cancel}
                           </Button>
                           <Button 
                             onClick={() => {
@@ -1601,7 +1663,7 @@ const parseCSVLine = (line: string): string[] => {
                             }}
                             disabled={!newDepartment.trim() || departments.includes(newDepartment.trim())}
                           >
-                            {language === 'English' ? 'Add' : 'إضافة'}
+                            {translations.add}
                           </Button>
                         </div>
                       </div>
@@ -1613,19 +1675,17 @@ const parseCSVLine = (line: string): string[] => {
                   {!departments?.length ? (
                     <div className="p-8 text-center">
                       <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {language === 'English' ? 'No Departments' : 'لا توجد أقسام'}
-                      </h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">{translations.noDepartments}</h3>
                       <p className="text-gray-600">
-                        {language === 'English' ? 'Add departments to organize your employees.' : 'أضف أقساماً لتنظيم موظفيك.'}
+                        {translations.addDepartmentsHelp}
                       </p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Department Name' : 'اسم القسم'}</TableHead>
-                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                          <TableHead className="font-semibold">{translations.departmentName}</TableHead>
+                          <TableHead className="font-semibold w-32">{translations.actions}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1762,7 +1822,7 @@ const parseCSVLine = (line: string): string[] => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                {language === 'English' ? 'Asset Configuration' : 'تكوين الأصول'}
+                {translations.assetConfig}
               </CardTitle>
               <CardDescription>
                 {language === 'English' 
@@ -1773,15 +1833,9 @@ const parseCSVLine = (line: string): string[] => {
             <CardContent>
               <Tabs defaultValue="types" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="types" className="text-xs">
-                    {language === 'English' ? 'Types' : 'الأنواع'}
-                  </TabsTrigger>
-                  <TabsTrigger value="brands" className="text-xs">
-                    {language === 'English' ? 'Brands' : 'العلامات'}
-                  </TabsTrigger>
-                  <TabsTrigger value="statuses" className="text-xs">
-                    {language === 'English' ? 'Statuses' : 'الحالات'}
-                  </TabsTrigger>
+                  <TabsTrigger value="types" className="text-xs">{translations.types}</TabsTrigger>
+                  <TabsTrigger value="brands" className="text-xs">{translations.brands}</TabsTrigger>
+                  <TabsTrigger value="statuses" className="text-xs">{translations.statuses}</TabsTrigger>
                 </TabsList>
 
                 {/* Asset Types Tab */}
@@ -1790,7 +1844,7 @@ const parseCSVLine = (line: string): string[] => {
                     <div className="flex items-center gap-2">
                       <Search className="h-4 w-4 text-gray-400" />
                       <Input
-                        placeholder={language === 'English' ? 'Search types...' : 'البحث في الأنواع...'}
+                        placeholder={translations.searchTypesPlaceholder}
                         value={assetTypeSearch}
                         onChange={(e) => setAssetTypeSearch(e.target.value)}
                         className="w-48"
@@ -1800,36 +1854,36 @@ const parseCSVLine = (line: string): string[] => {
                       <DialogTrigger asChild>
                         <Button size="sm">
                           <Plus className="h-4 w-4 mr-2" />
-                          {language === 'English' ? 'Add Type' : 'إضافة نوع'}
+                          {translations.addType}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>{language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل'}</DialogTitle>
+                          <DialogTitle>{translations.addTypeTitle}</DialogTitle>
                           <DialogDescription>
-                            {language === 'English' ? 'Create a new asset type for classification.' : 'إنشاء نوع أصل جديد للتصنيف.'}
+                            {translations.addTypeDesc}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label>{language === 'English' ? 'Type Name' : 'اسم النوع'}</Label>
+                            <Label>{translations.typeName}</Label>
                             <Input 
                               value={newTypeName} 
                               onChange={(e) => setNewTypeName(e.target.value)}
-                              placeholder={language === 'English' ? 'e.g., Laptop, Desktop, Server' : 'مثال: لابتوب، سطح مكتب، خادم'}
+                              placeholder={translations.typeNamePlaceholder}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                            <Label>{translations.description}</Label>
                             <Input 
                               value={newTypeDescription} 
                               onChange={(e) => setNewTypeDescription(e.target.value)}
-                              placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                              placeholder={translations.descriptionPlaceholder}
                             />
                           </div>
                           <div className="flex justify-end space-x-2">
                             <Button variant="outline" onClick={() => setIsAssetTypeDialogOpen(false)}>
-                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                              {translations.cancel}
                             </Button>
                             <Button 
                               onClick={() => {
@@ -1845,10 +1899,10 @@ const parseCSVLine = (line: string): string[] => {
                               {createAssetTypeMutation.isPending ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                  {translations.adding}
                                 </>
                               ) : (
-                                language === 'English' ? 'Add' : 'إضافة'
+                                translations.add
                               )}
                             </Button>
                           </div>
@@ -1862,19 +1916,19 @@ const parseCSVLine = (line: string): string[] => {
                       <div className="p-8 text-center">
                         <Package className="h-12 w-12 mx-auto text-gray-300 mb-3" />
                         <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          {language === 'English' ? 'No Asset Types' : 'لا توجد أنواع أصول'}
+                          {translations.noAssetTypes}
                         </h3>
                         <p className="text-xs text-gray-500">
-                          {language === 'English' ? 'Add asset types to categorize equipment.' : 'أضف أنواع الأصول لتصنيف المعدات.'}
+                          {translations.addTypesHelp}
                         </p>
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{language === 'English' ? 'Type Name' : 'اسم النوع'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                            <TableHead>{translations.typeName}</TableHead>
+                            <TableHead>{translations.description}</TableHead>
+                            <TableHead className="w-20">{translations.tableActions}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1988,7 +2042,7 @@ const parseCSVLine = (line: string): string[] => {
                     <div className="flex items-center gap-2">
                       <Search className="h-4 w-4 text-gray-400" />
                       <Input
-                        placeholder={language === 'English' ? 'Search brands...' : 'البحث في العلامات...'}
+                        placeholder={translations.searchBrandsPlaceholder}
                         value={assetBrandSearch}
                         onChange={(e) => setAssetBrandSearch(e.target.value)}
                         className="w-48"
@@ -1998,16 +2052,16 @@ const parseCSVLine = (line: string): string[] => {
                       <DialogTrigger asChild>
                         <Button size="sm">
                           <Plus className="h-4 w-4 mr-2" />
-                        {language === 'English' ? 'Add Brand' : 'إضافة علامة'}
+                        {translations.addBrand}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>{language === 'English' ? 'Add Asset Brand' : 'إضافة علامة أصل'}</DialogTitle>
+                        <DialogHeader>
+                        <DialogTitle>{translations.addBrandTitle}</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</Label>
+                          <Label>{translations.brandName}</Label>
                           <Input 
                             value={newBrandName} 
                             onChange={(e) => setNewBrandName(e.target.value)}
@@ -2015,16 +2069,16 @@ const parseCSVLine = (line: string): string[] => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                          <Label>{translations.description}</Label>
                           <Input 
                             value={newBrandDescription} 
                             onChange={(e) => setNewBrandDescription(e.target.value)}
-                            placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                            placeholder={translations.descriptionPlaceholder}
                           />
                         </div>
                         <div className="flex justify-end space-x-2">
                           <Button variant="outline" onClick={() => setIsAssetBrandDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            {translations.cancel}
                           </Button>
                           <Button 
                             onClick={() => {
@@ -2040,10 +2094,10 @@ const parseCSVLine = (line: string): string[] => {
                             {createAssetBrandMutation.isPending ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                {translations.adding}
                               </>
                             ) : (
-                              language === 'English' ? 'Add' : 'إضافة'
+                              translations.add
                             )}
                           </Button>
                         </div>
@@ -2056,20 +2110,18 @@ const parseCSVLine = (line: string): string[] => {
                     {!filteredAssetBrands?.length ? (
                       <div className="p-8 text-center">
                         <Package className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          {language === 'English' ? 'No Asset Brands' : 'لا توجد علامات أصول'}
-                        </h3>
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">{translations.noAssetBrands}</h3>
                         <p className="text-xs text-gray-500">
-                          {language === 'English' ? 'Add brands to track manufacturers.' : 'أضف العلامات لتتبع المصنعين.'}
+                          {translations.addBrandsHelp}
                         </p>
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{language === 'English' ? 'Brand Name' : 'اسم العلامة'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                            <TableHead>{translations.brandName}</TableHead>
+                            <TableHead>{translations.description}</TableHead>
+                            <TableHead className="w-20">{translations.tableActions}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2182,7 +2234,7 @@ const parseCSVLine = (line: string): string[] => {
                     <div className="flex items-center gap-2">
                       <Search className="h-4 w-4 text-gray-400" />
                       <Input
-                        placeholder={language === 'English' ? 'Search statuses...' : 'البحث في الحالات...'}
+                        placeholder={translations.searchStatusesPlaceholder}
                         value={assetStatusSearch}
                         onChange={(e) => setAssetStatusSearch(e.target.value)}
                         className="w-48"
@@ -2192,32 +2244,32 @@ const parseCSVLine = (line: string): string[] => {
                     <DialogTrigger asChild>
                       <Button size="sm">
                         <Plus className="h-4 w-4 mr-2" />
-                        {language === 'English' ? 'Add Status' : 'إضافة حالة'}
+                        {translations.addStatus}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>{language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل'}</DialogTitle>
+                        <DialogTitle>{translations.addStatusTitle}</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Status Name' : 'اسم الحالة'}</Label>
+                          <Label>{translations.statusName}</Label>
                           <Input 
                             value={newStatusName} 
                             onChange={(e) => setNewStatusName(e.target.value)}
-                            placeholder={language === 'English' ? 'e.g., Active, Under Repair' : 'مثال: نشط، قيد الإصلاح'}
+                            placeholder={translations.statusNamePlaceholder}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                          <Label>{translations.description}</Label>
                           <Input 
                             value={newStatusDescription} 
                             onChange={(e) => setNewStatusDescription(e.target.value)}
-                            placeholder={language === 'English' ? 'Brief description...' : 'وصف مختصر...'}
+                            placeholder={translations.descriptionPlaceholder}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>{language === 'English' ? 'Color' : 'اللون'}</Label>
+                          <Label>{translations.color}</Label>
                           <Input 
                             type="color"
                             value={newStatusColor} 
@@ -2227,7 +2279,7 @@ const parseCSVLine = (line: string): string[] => {
                         </div>
                         <div className="flex justify-end space-x-2">
                           <Button variant="outline" onClick={() => setIsAssetStatusDialogOpen(false)}>
-                            {language === 'English' ? 'Cancel' : 'إلغاء'}
+                            {translations.cancel}
                           </Button>
                           <Button 
                             onClick={() => {
@@ -2244,10 +2296,10 @@ const parseCSVLine = (line: string): string[] => {
                             {createAssetStatusMutation.isPending ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                {translations.adding}
                               </>
                             ) : (
-                              language === 'English' ? 'Add' : 'إضافة'
+                              translations.add
                             )}
                           </Button>
                         </div>
@@ -2260,21 +2312,19 @@ const parseCSVLine = (line: string): string[] => {
                     {!filteredAssetStatuses?.length ? (
                       <div className="p-8 text-center">
                         <Settings className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">
-                          {language === 'English' ? 'No Asset Statuses' : 'لا توجد حالات أصول'}
-                        </h3>
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">{translations.noAssetStatuses}</h3>
                         <p className="text-xs text-gray-500">
-                          {language === 'English' ? 'Add statuses to track lifecycle.' : 'أضف الحالات لتتبع دورة الحياة.'}
+                          {translations.addStatusesHelp}
                         </p>
                       </div>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>{language === 'English' ? 'Status Name' : 'اسم الحالة'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                            <TableHead>{language === 'English' ? 'Color' : 'اللون'}</TableHead>
-                            <TableHead className="w-20">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                            <TableHead>{translations.statusName}</TableHead>
+                            <TableHead>{translations.description}</TableHead>
+                            <TableHead>{translations.color}</TableHead>
+                            <TableHead className="w-20">{translations.tableActions}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2414,26 +2464,20 @@ const parseCSVLine = (line: string): string[] => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
-                {language === 'English' ? 'Ticket Configuration' : 'تكوين التذاكر'}
+                {translations.ticketConfig}
               </CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Manage ticket categories, priorities, and workflow settings for efficient support operations.'
-                  : 'إدارة فئات التذاكر والأولويات وإعدادات سير العمل لعمليات دعم فعالة.'}
-              </CardDescription>
+              <CardDescription>{translations.ticketConfigDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Categories Management */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Categories' : 'الفئات'}
-                  </h3>
+                  <h3 className="text-lg font-medium">{translations.categories}</h3>
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input
-                        placeholder={language === 'English' ? 'Search categories...' : 'البحث في الفئات...'}
+                        placeholder={translations.searchCategoriesPlaceholder}
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
                         className="pl-10 w-48"
@@ -2443,31 +2487,31 @@ const parseCSVLine = (line: string): string[] => {
                       <DialogTrigger asChild>
                         <Button size="sm" className="flex items-center gap-2">
                           <Plus className="h-4 w-4" />
-                          {language === 'English' ? 'Add Category' : 'إضافة فئة'}
+                          {translations.addCategory}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>{language === 'English' ? 'Add Category' : 'إضافة فئة'}</DialogTitle>
+                          <DialogTitle>{translations.addCategoryTitle}</DialogTitle>
                           <DialogDescription>
-                            {language === 'English' ? 'Create a new category for ticket classification.' : 'إنشاء فئة جديدة لتصنيف التذاكر.'}
+                            {translations.addCategoryDesc}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label>{language === 'English' ? 'Category Name' : 'اسم الفئة'}</Label>
+                            <Label>{translations.categoryName}</Label>
                             <Input 
                               value={newCategoryName} 
                               onChange={(e) => setNewCategoryName(e.target.value)}
-                              placeholder={language === 'English' ? 'e.g., Hardware Issue, Software Support' : 'مثال: مشكلة أجهزة، دعم برمجيات'}
+                              placeholder={translations.categoryNamePlaceholder}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>{language === 'English' ? 'Description' : 'الوصف'}</Label>
+                            <Label>{translations.description}</Label>
                             <Input 
                               value={newCategoryDescription} 
                               onChange={(e) => setNewCategoryDescription(e.target.value)}
-                              placeholder={language === 'English' ? 'Brief description of this category...' : 'وصف مختصر لهذه الفئة...'}
+                              placeholder={translations.descriptionPlaceholder}
                             />
                           </div>
                           <div className="flex justify-end space-x-2">
@@ -2476,7 +2520,7 @@ const parseCSVLine = (line: string): string[] => {
                               setNewCategoryName('');
                               setNewCategoryDescription('');
                             }}>
-                              {language === 'English' ? 'Cancel' : 'إلغاء'}
+                              {translations.cancel}
                             </Button>
                             <Button 
                               onClick={() => {
@@ -2492,10 +2536,10 @@ const parseCSVLine = (line: string): string[] => {
                               {createCategoryMutation.isPending ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  {language === 'English' ? 'Adding...' : 'جارٍ الإضافة...'}
+                                  {translations.adding}
                                 </>
                               ) : (
-                                language === 'English' ? 'Add' : 'إضافة'
+                                translations.add
                               )}
                             </Button>
                           </div>
@@ -2510,19 +2554,19 @@ const parseCSVLine = (line: string): string[] => {
                     <div className="p-8 text-center">
                       <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {language === 'English' ? 'No Categories' : 'لا توجد فئات'}
+                        {translations.noCategories}
                       </h3>
                       <p className="text-gray-600">
-                        {language === 'English' ? 'Add categories to classify support tickets.' : 'أضف الفئات لتصنيف تذاكر الدعم.'}
+                        {translations.addCategoriesHelp}
                       </p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50">
-                          <TableHead className="font-semibold">{language === 'English' ? 'Category' : 'الفئة'}</TableHead>
-                          <TableHead className="font-semibold">{language === 'English' ? 'Description' : 'الوصف'}</TableHead>
-                          <TableHead className="font-semibold w-32">{language === 'English' ? 'Actions' : 'الإجراءات'}</TableHead>
+                          <TableHead className="font-semibold">{translations.categoryName}</TableHead>
+                          <TableHead className="font-semibold">{translations.description}</TableHead>
+                          <TableHead className="font-semibold w-32">{translations.actions}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2646,104 +2690,84 @@ const parseCSVLine = (line: string): string[] => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                {language === 'English' ? 'Email Configuration' : 'تكوين البريد الإلكتروني'}
+                {translations.emailConfig}
               </CardTitle>
-              <CardDescription>
-                {language === 'English' 
-                  ? 'Configure SMTP settings for email notifications and system communications.'
-                  : 'تكوين إعدادات SMTP لإشعارات البريد الإلكتروني واتصالات النظام.'}
-              </CardDescription>
+              <CardDescription>{translations.emailConfigDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'SMTP Server Settings' : 'إعدادات خادم SMTP'}
-                  </h3>
+                  <h3 className="text-lg font-medium">{translations.smtpServerSettings}</h3>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'SMTP Host' : 'خادم SMTP'}</Label>
+                    <Label>{translations.smtpHost}</Label>
                     <Input
                       value={emailHost}
                       onChange={(e) => setEmailHost(e.target.value)}
                       placeholder="smtp.gmail.com"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'SMTP server hostname' : 'اسم خادم SMTP'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.smtpHostHelp}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'SMTP Port' : 'منفذ SMTP'}</Label>
+                    <Label>{translations.smtpPort}</Label>
                     <Input
                       type="number"
                       value={emailPort}
                       onChange={(e) => setEmailPort(e.target.value)}
                       placeholder="587"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'Common ports: 587 (TLS), 465 (SSL), 25 (unsecured)' : 'المنافذ الشائعة: 587 (TLS)، 465 (SSL)، 25 (غير آمن)'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.smtpPortHelp}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Username' : 'اسم المستخدم'}</Label>
+                    <Label>{translations.username}</Label>
                     <Input
                       value={emailUser}
                       onChange={(e) => setEmailUser(e.target.value)}
                       placeholder="your-email@gmail.com"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'SMTP authentication username' : 'اسم مستخدم التحقق من SMTP'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.usernameHelp}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Password' : 'كلمة المرور'}</Label>
+                    <Label>{translations.password}</Label>
                     <Input
                       type="password"
                       value={emailPassword}
                       onChange={(e) => setEmailPassword(e.target.value)}
                       placeholder="your-app-password"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'SMTP authentication password or app password' : 'كلمة مرور SMTP أو كلمة مرور التطبيق'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.passwordHelp}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">
-                    {language === 'English' ? 'Email Settings' : 'إعدادات البريد الإلكتروني'}
-                  </h3>
+                  <h3 className="text-lg font-medium">{translations.emailSettings}</h3>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'From Email Address' : 'عنوان البريد المرسل'}</Label>
+                    <Label>{translations.fromEmailAddress}</Label>
                     <Input
                       type="email"
                       value={emailFromAddress}
                       onChange={(e) => setEmailFromAddress(e.target.value)}
                       placeholder="noreply@yourcompany.com"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'Email address that appears as sender' : 'عنوان البريد الذي يظهر كمرسل'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.fromEmailAddressHelp}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'From Name' : 'اسم المرسل'}</Label>
+                    <Label>{translations.fromName}</Label>
                     <Input
                       value={emailFromName}
                       onChange={(e) => setEmailFromName(e.target.value)}
                       placeholder="SimpleIT System"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'Display name for sent emails' : 'الاسم المعروض للرسائل المرسلة'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.fromNameHelp}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>{language === 'English' ? 'Use Secure Connection (TLS/SSL)' : 'استخدام اتصال آمن (TLS/SSL)'}</Label>
+                    <Label>{translations.useSecureConnection}</Label>
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -2752,21 +2776,15 @@ const parseCSVLine = (line: string): string[] => {
                         onChange={(e) => setEmailSecure(e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label htmlFor="email-secure" className="text-sm">
-                        {language === 'English' ? 'Enable secure connection' : 'تفعيل الاتصال الآمن'}
-                      </label>
+                      <label htmlFor="email-secure" className="text-sm">{translations.enableSecureConnection}</label>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'English' ? 'Recommended for most SMTP providers' : 'موصى به لمعظم مقدمي خدمة SMTP'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translations.recommendedSmtp}</p>
                   </div>
                 </div>
               </div>
               
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">
-                  {language === 'English' ? 'Common SMTP Configurations:' : 'تكوينات SMTP الشائعة:'}
-                </h4>
+                <h4 className="font-medium text-blue-900 mb-2">{translations.commonSmtpConfigurations}</h4>
                 <div className="text-sm text-blue-800 space-y-1">
                   <div><strong>Gmail:</strong> smtp.gmail.com:587 (TLS)</div>
                   <div><strong>Outlook:</strong> smtp-mail.outlook.com:587 (TLS)</div>
@@ -2784,12 +2802,12 @@ const parseCSVLine = (line: string): string[] => {
                   {updateConfigMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {language === 'English' ? 'Saving...' : 'جارٍ الحفظ...'}
+                      {translations.saving}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      {language === 'English' ? 'Save Email Settings' : 'حفظ إعدادات البريد'}
+                      {translations.saveEmailSettings}
                     </>
                   )}
                 </Button>

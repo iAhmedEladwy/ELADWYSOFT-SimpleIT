@@ -4522,7 +4522,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   app.get("/api/system-config", authenticateUser, async (req, res) => {
     try {
       const config = await storage.getSystemConfig();
-      res.json(config || { language: "English", assetIdPrefix: "BOLT-" });
+      res.json(config || { language: "English", assetIdPrefix: "AST-" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
