@@ -1,4 +1,10 @@
-# Login Console Errors - Fixed ✅
+# Login Console Errors - Fixed ✅ (Updated)
+
+## Update: Second Fix Applied
+
+The initial fix didn't fully work because `enabled: hasSession()` was evaluated once and cached. Applied improved fix using React state.
+
+---
 
 ## What Was Wrong
 
@@ -26,28 +32,48 @@ When opening the login screen, the browser console showed:
 
 ---
 
-### ✅ Fix 2: Conditional Query Execution
-**Files**: 
-- `client/src/lib/authContext.tsx`
-- `client/src/hooks/use-language.tsx`
-- `client/src/lib/currencyContext.tsx`
+### ✅ Fix 2: Conditional Query Execution (Updated Approach)
 
-Added session check before fetching:
+**Initial Attempt** (Commit 72aeb09):
 ```typescript
-// Helper to check if session exists
-const hasSession = () => {
-  return document.cookie.includes('connect.sid');
-};
-
-// Only fetch if session exists
-const { data: user } = useQuery({
-  queryKey: ['/api/me'],
-  enabled: hasSession(), // ⭐ Key change
-  // ...
-});
+const hasSession = () => document.cookie.includes('connect.sid');
+enabled: hasSession() // ❌ Evaluated once, not reactive
 ```
 
-**Result**: No unnecessary API calls on login screen, clean console
+**Problem**: Function was called once at mount and result cached by TanStack Query
+
+**Improved Fix** (Commit 957316d):
+```typescript
+const [shouldCheckAuth, setShouldCheckAuth] = useState(false);
+
+useEffect(() => {
+  const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+  const hasSessionCookie = document.cookie.includes('connect.sid');
+  
+  if (!isLoginPage || hasSessionCookie) {
+    setShouldCheckAuth(true);
+  } else {
+    setIsLoading(false);
+  }
+}, []);
+
+const { data: user } = useQuery({
+  enabled: shouldCheckAuth, // ✅ Reactive state
+  retry: false, // Don't retry 401s
+});
+
+// After login
+onSuccess: async () => {
+  setShouldCheckAuth(true); // ✅ Enable queries
+}
+```
+
+**Files Updated**:
+- `client/src/lib/authContext.tsx` - Added `shouldCheckAuth` state
+- `client/src/hooks/use-language.tsx` - Added `shouldFetchConfig` state  
+- `client/src/lib/currencyContext.tsx` - Added `shouldFetchConfig` state
+
+**Result**: No API calls on login screen, clean console
 
 ---
 
@@ -145,7 +171,10 @@ Full explanation: `docs/Login-Console-Errors-Explanation.md`
 
 ---
 
-## Commit Message
+## Commits
+
+- **72aeb09**: Initial fix with autocomplete + hasSession() check
+- **957316d**: Improved fix with React state flags (current)
 
 ```
 fix: eliminate console errors on login screen
