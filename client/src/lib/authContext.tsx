@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
-    placeholderData: (previousData) => previousData, // Keep previous user during refetch
+    placeholderData: (previousData: User | null | undefined) => previousData, // Keep previous user during refetch
   });
 
   // Login mutation
@@ -139,12 +139,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !user.role) return false;
     
     // Role hierarchy: admin=4, manager=3, agent=2, employee=1
-    const roleLevel = {
+    const roleLevels: Record<string, number> = {
       'admin': 4,
       'manager': 3,
       'agent': 2,
       'employee': 1
-    }[user.role] || 0;
+    };
+    
+    const roleLevel = roleLevels[user.role] || 0;
     
     return roleLevel >= minRoleLevel;
   };
