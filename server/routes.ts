@@ -231,28 +231,21 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Import RBAC functions
-import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission } from "./rbac";
+import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole } from "./rbac";
 
 // Check if user has appropriate role level
+// NOTE: This is being phased out in favor of RBAC requireRole() middleware
+// See docs/RBAC-Analysis-Report.md for migration plan
 const hasAccess = (minRoleLevel: number) => {
   return (req: Request, res: Response, next: Function) => {
-    // Check emergency session first
-    // const emergencyUser = (req as any).session?.user;
-    // if (emergencyUser && emergencyUser.role === 'admin') {
-    //   return next();
-    // }
-    
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
     const user = req.user as any;
     
-    // Admin users have full access - bypass all permission checks
-    if (user && (user.role === 'admin' || user.accessLevel === '4')) {
-      return next();
-    }
-    
+    // Use RBAC functions for consistent permission checking
+    // Removed hardcoded admin bypass to ensure proper audit trail
     const userLevel = getUserRoleLevel(user);
     if (!hasMinimumRoleLevel(user, minRoleLevel)) {
       return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
@@ -7861,8 +7854,14 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async
 });
 
   // Helper function to check admin access
+  // DEPRECATED: Use requireRole(ROLES.ADMIN) from rbac.ts instead
   function requireAdmin(req: any, res: any, next: any) {
-    if (!req.session.user || req.session.user.accessLevel !== 4) {
+    // Use RBAC getUserRoleLevel instead of deprecated accessLevel
+    const userLevel = getUserRoleLevel(req.session?.user || req.user);
+    if (!req.session?.user && !req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (userLevel < 4) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     next();
