@@ -29,7 +29,7 @@ import { format, differenceInDays, differenceInHours, differenceInMinutes, isAft
 
 export default function Notifications() {
   const { language } = useLanguage();
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [allRead, setAllRead] = useState(false);
@@ -37,44 +37,44 @@ export default function Notifications() {
   // Fetch real notification data - only when authenticated
   const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
   const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
     queryKey: ['/api/tickets'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ['/api/employees'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const { data: maintenance, isLoading: maintenanceLoading } = useQuery({
     queryKey: ['/api/asset-maintenance'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['/api/asset-transactions'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const { data: systemConfig, isLoading: configLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   // Fetch database notifications
   const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['/api/notifications'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   const isLoading = assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
