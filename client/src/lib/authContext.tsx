@@ -35,10 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check if we should attempt authentication on mount
   useEffect(() => {
-    // Only check auth if we're not on login page OR if there's a session cookie
-    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    // Only skip auth check if on login page AND no session cookie
+    const isLoginPage = window.location.pathname === '/login';
     const hasSessionCookie = document.cookie.includes('connect.sid');
     
+    // Check auth if: not on login page, or has session cookie
     if (!isLoginPage || hasSessionCookie) {
       setShouldCheckAuth(true);
     } else {
