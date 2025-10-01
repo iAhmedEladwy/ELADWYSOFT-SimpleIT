@@ -19,6 +19,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   isFetching: boolean;
+  hasCheckedAuth: boolean; // Flag to indicate if initial auth check is complete
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasAccess: (minRoleLevel: number) => boolean;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [shouldCheckAuth, setShouldCheckAuth] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   // Check if we should attempt authentication on mount
   useEffect(() => {
@@ -41,11 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShouldCheckAuth(true);
     } else {
       setIsLoading(false); // Not checking auth, so not loading
+      setHasCheckedAuth(true);
     }
   }, []);
 
   // Fetch current user - only when we should check auth
-  const { data: user, isLoading: isUserLoading, isFetching: isUserFetching } = useQuery<User | null>({
+  const { 
+    data: user, 
+    isLoading: isUserLoading, 
+    isFetching: isUserFetching,
+    status,
+    fetchStatus 
+  } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: shouldCheckAuth, // Only fetch when explicitly enabled
@@ -99,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isUserLoading) {
       setIsLoading(false);
+      setHasCheckedAuth(true); // Mark that we've completed initial auth check
     }
   }, [isUserLoading]);
 
@@ -142,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading, isFetching: isUserFetching, login, logout, hasAccess }}>
+    <AuthContext.Provider value={{ user: user || null, isLoading, isFetching: isUserFetching, hasCheckedAuth, login, logout, hasAccess }}>
       {children}
     </AuthContext.Provider>
   );

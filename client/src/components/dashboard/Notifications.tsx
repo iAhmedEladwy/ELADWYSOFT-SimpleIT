@@ -29,7 +29,7 @@ import { format, differenceInDays, differenceInHours, differenceInMinutes, isAft
 
 export default function Notifications() {
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [allRead, setAllRead] = useState(false);
@@ -38,40 +38,52 @@ export default function Notifications() {
   // Queries run unconditionally since we're already authenticated
   const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
+    enabled: !!user, // Only fetch when user is available
   });
   const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
     queryKey: ['/api/tickets'],
+    enabled: !!user,
   });
 
   const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ['/api/employees'],
+    enabled: !!user,
   });
 
   const { data: maintenance, isLoading: maintenanceLoading } = useQuery({
     queryKey: ['/api/asset-maintenance'],
+    enabled: !!user,
   });
 
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['/api/asset-transactions'],
+    enabled: !!user,
   });
 
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
+    enabled: !!user,
   });
 
   const { data: systemConfig, isLoading: configLoading } = useQuery({
     queryKey: ['/api/system-config'],
+    enabled: !!user,
   });
 
   // Fetch database notifications
   const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['/api/notifications'],
+    enabled: !!user,
   });
 
-  const isLoading = assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
+  const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
 
+  // Early return if still loading auth or no user
+  if (authLoading || !user) {
+    return null;
+  }
 
   // Translations
   const translations = {

@@ -33,19 +33,18 @@ import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
-  const { user, isLoading, isFetching } = useAuth();
+  const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
   
   // Debug logging
   console.log('[PrivateRoute]', { 
     user: user ? `${user.username} (${user.role})` : 'null', 
-    isLoading, 
-    isFetching,
+    isLoading,
     pathname: window.location.pathname
   });
   
-  // Show loading while checking authentication or refetching
-  if (isLoading || isFetching) {
+  // Only show loading on INITIAL load, not on refetches
+  if (isLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
@@ -57,9 +56,9 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     );
   }
 
-  // If not loading and no user, redirect to login
+  // If initial load complete and no user, redirect to login
   if (!user) {
-    console.log('[PrivateRoute] No user, redirecting to /login');
+    console.log('[PrivateRoute] No user after initial load, redirecting to /login');
     navigate("/login");
     return null;
   }
