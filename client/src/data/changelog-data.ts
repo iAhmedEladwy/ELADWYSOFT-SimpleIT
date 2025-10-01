@@ -14,6 +14,48 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.3",
+    date: "2025-10-01",
+    title: "Authentication Enhancements & Code Quality Improvements",
+    type: "patch",
+    changes: {
+      features: [
+        "🔐 Enhanced Login System:",
+        "   ✅ Added email login support - users can now login with either username or email",
+        "   ✅ Updated authentication strategy to support dual login methods",
+        "   ✅ Added getUserByEmail method to both DatabaseStorage and MemoryStorage",
+        "   ✅ Enhanced Passport.js LocalStrategy with fallback authentication logic",
+        "   ✅ Updated login form validation to accept username or email format",
+        "   ✅ Added bilingual support for login placeholder text (English/Arabic)"
+      ],
+      improvements: [
+        "🧹 Code Quality & Production Readiness:",
+        "   ✅ Wrapped development console logs in environment checks (import.meta.env.DEV)",
+        "   ✅ Removed debug console statements from AssetHistory page",
+        "   ✅ Implemented production-safe error logging throughout application",
+        "   ✅ Added comprehensive debugging logs to authentication flow",
+        "   ✅ Enhanced session management with explicit save before response",
+        "   ✅ Improved server port configuration with environment variable support",
+        "🔧 System Configuration:",
+        "   ✅ Made server port configurable via PORT environment variable (default: 5000)",
+        "   ✅ Enhanced session debugging with detailed logging in /api/me endpoint",
+        "   ✅ Added session ID and authentication state logging for troubleshooting"
+      ],
+      bugfixes: [
+        "🔧 Authentication & Session Fixes:",
+        "   ✅ Fixed infinite login loop caused by session timing issues",
+        "   ✅ Added req.session.save() callback to ensure session persistence before response",
+        "   ✅ Resolved 401 errors on /api/me and /api/system-config after successful login",
+        "   ✅ Fixed session cookie not being properly saved between requests",
+        "   ✅ Corrected authentication flow race condition in login endpoint",
+        "🧹 Development Environment Fixes:",
+        "   ✅ Removed production console logs that could leak sensitive information",
+        "   ✅ Fixed console.warn and console.error appearing in production builds",
+        "   ✅ Cleaned up debug logging from AssetHistory component"
+      ]
+    }
+  },
+  {
   version: "0.4.1",
   date: "2025-09-20",
   title: "Scheduled Backups, Bulk Operations History & System Enhancements ⚠️ MIGRATION REQUIRED",
