@@ -123,6 +123,12 @@ if (userLevel < 4) {
 - Proper role hierarchy enforcement
 - Zero remaining `hasAccess(4)` calls in codebase
 
+**Critical Fix Applied:**
+- ✅ Fixed case sensitivity issue in `requireRole()` middleware
+- Database stores roles as lowercase ('admin'), ROLES constants are capitalized ('Admin')
+- Modified `requireRole()` to use `getUserRoleLevel()` for case-insensitive comparison
+- All admin routes now work correctly after fix
+
 #### Batch 2: User Management Routes (10 routes) ⏳ PENDING
 **Risk**: 🟡 Medium - Critical but less frequent operations
 
