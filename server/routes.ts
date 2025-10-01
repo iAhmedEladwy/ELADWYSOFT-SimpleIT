@@ -573,28 +573,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: info?.message || 'Incorrect password' });
       }
       
-      // Log the user in to create session
-      req.logIn(user, (err) => {
-        if (err) {
-          console.error('Session creation error:', err);
-          return res.status(500).json({ message: 'Session creation failed' });
+      // Regenerate session to prevent fixation
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('Session regeneration error:', regenerateErr);
+          return res.status(500).json({ message: 'Session regeneration failed' });
         }
         
-        console.log('Login successful for user:', user.username);
-        console.log('Session ID:', req.sessionID);
-        console.log('Session data:', req.session);
-        
-        // Ensure session is saved before responding
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('Session save error:', saveErr);
-            return res.status(500).json({ message: 'Session save failed' });
+        // Log the user in to create session
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error('Session creation error:', err);
+            return res.status(500).json({ message: 'Session creation failed' });
           }
           
-          console.log('Session saved successfully');
-          res.json({ 
-            message: "Login successful", 
-            user: user
+          console.log('Login successful for user:', user.username);
+          console.log('Session ID:', req.sessionID);
+          console.log('Session data:', req.session);
+          
+          // Ensure session is saved before responding
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('Session save error:', saveErr);
+              return res.status(500).json({ message: 'Session save failed' });
+            }
+            
+            console.log('Session saved successfully');
+            res.json({ 
+              message: "Login successful", 
+              user: user
+            });
           });
         });
       });
@@ -606,7 +614,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ message: "Logout failed", error: err });
       }
-      res.json({ message: "Logout successful" });
+      
+      // Properly destroy the session
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error('Session destroy error:', destroyErr);
+        }
+        res.clearCookie('connect.sid'); // Clear the default session cookie
+        res.json({ message: "Logout successful" });
+      });
     });
   });
 
