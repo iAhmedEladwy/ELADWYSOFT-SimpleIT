@@ -33,23 +33,24 @@ import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isFetching } = useAuth();
   const [, navigate] = useLocation();
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
     // Only redirect if we're certain the user is not authenticated
-    if (!isLoading && !user && !isRedirecting) {
+    // AND we're not currently fetching/refetching data (prevents logout on double refresh)
+    if (!isLoading && !isFetching && !user && !isRedirecting) {
       setIsRedirecting(true);
       // Use navigate instead of window.location.href for better SPA behavior
       setTimeout(() => {
         navigate("/login");
       }, 100);
     }
-  }, [user, isLoading, navigate, isRedirecting]);
+  }, [user, isLoading, isFetching, navigate, isRedirecting]);
 
-  // Show enhanced loading state with better UX
-  if (isLoading || isRedirecting) {
+  // Show enhanced loading state with better UX (also show during refetch)
+  if (isLoading || isFetching || isRedirecting) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>

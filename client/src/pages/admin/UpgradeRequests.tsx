@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/lib/authContext';
 import {
   Table,
   TableBody,
