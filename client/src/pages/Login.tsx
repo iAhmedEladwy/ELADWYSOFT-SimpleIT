@@ -63,7 +63,7 @@ export default function Login() {
     try {
       setIsLoading(true);
       
-      // Attempt login
+      // Attempt login - this now waits for user data to be loaded
       await login(values.username, values.password);
       
       toast({
@@ -71,8 +71,8 @@ export default function Login() {
         description: translations.welcomeBack,
       });
       
-      // The useEffect will handle navigation once user is loaded
-      setIsLoading(false);
+      // User is now loaded, navigate to dashboard
+      navigate('/');
       
     } catch (error) {
       

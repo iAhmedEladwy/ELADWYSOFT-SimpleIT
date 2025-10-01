@@ -117,12 +117,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // Perform the login request
+      // Perform the login request and fetch user data
       await loginMutation.mutateAsync({ username, password });
       
-      // The loginMutation.onSuccess already handles fetching user data
-      // Just wait a moment for the state to update
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for the user query to complete and populate the user state
+      // The loginMutation.onSuccess already triggered the user fetch
+      // Now wait for it to complete by checking the query state
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max
+      
+      while (attempts < maxAttempts) {
+        const userData = queryClient.getQueryData(['/api/me']);
+        if (userData) {
+          // User data is now available
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
       
       setIsLoading(false);
     } catch (error) {
