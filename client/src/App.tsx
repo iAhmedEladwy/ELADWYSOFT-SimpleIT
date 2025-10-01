@@ -63,6 +63,7 @@ function Router() {
   const { language } = useLanguage();
   const dir = language === "Arabic" ? "rtl" : "ltr";
   const [, navigate] = useLocation();
+  const { isLoading: authLoading, hasCheckedAuth } = useAuth();
   
   // Check if system is initialized
   const { data: systemStatus, isLoading: checkingSystem } = useQuery({
@@ -80,12 +81,14 @@ function Router() {
     }
   }, [systemStatus, checkingSystem, navigate]);
   
-  // If checking system status, show loading
-  if (checkingSystem) {
+  // Show loading during initial auth check or system status check
+  if (checkingSystem || (authLoading && !hasCheckedAuth)) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p>Checking system status...</p>
+        <p className="text-gray-600">
+          {checkingSystem ? 'Checking system status...' : 'Initializing...'}
+        </p>
       </div>
     );
   }
