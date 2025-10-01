@@ -36,13 +36,6 @@ function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
   
-  // Debug logging
-  console.log('[PrivateRoute]', { 
-    user: user ? `${user.username} (${user.role})` : 'null', 
-    isLoading,
-    pathname: window.location.pathname
-  });
-  
   // Only show loading on INITIAL load, not on refetches
   if (isLoading) {
     return (
@@ -58,7 +51,6 @@ function PrivateRoute({ component: Component, ...rest }: any) {
 
   // If initial load complete and no user, redirect to login
   if (!user) {
-    console.log('[PrivateRoute] No user after initial load, redirecting to /login');
     navigate("/login");
     return null;
   }
