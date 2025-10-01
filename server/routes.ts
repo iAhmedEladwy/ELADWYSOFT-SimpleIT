@@ -1151,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Standardized CSV Template Generation (MUST BE BEFORE PARAMETERIZED ROUTES)
-  app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/:entity/template", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { entity } = req.params;
       const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
@@ -1251,7 +1251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Raw endpoint for employee creation, bypassing schema validation
-  app.post("/api/employees/create-raw", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/employees/create-raw", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       console.log("Creating new employee with data:", req.body);
       
@@ -1308,7 +1308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/employees/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/employees/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       console.log("Updating employee ID:", id, "with data:", req.body);
@@ -1389,7 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employees/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/employees/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -1800,7 +1800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tickets/export", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/tickets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const tickets = await storage.getAllTickets();
       
@@ -2041,7 +2041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/import', importSchemaRoutes.default);
   
   // Legacy schema endpoint (keeping for compatibility)
-  app.get("/api/import/schema/:entityType", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/import/schema/:entityType", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { entityType } = req.params;
       
@@ -3122,7 +3122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update maintenance record
-  app.put("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/maintenance/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const maintenanceId = parseInt(req.params.id);
       
@@ -3167,7 +3167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete maintenance record
-  app.delete("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.delete("/api/maintenance/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const maintenanceId = parseInt(req.params.id);
       
@@ -3414,7 +3414,7 @@ app.get('/api/upgrades/:id', authenticateUser, async (req, res) => {
 });
 
 // Update upgrade
-app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -3483,7 +3483,7 @@ app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) =>
 });
 
 // Delete upgrade (only drafts)
-app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+app.delete('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -3513,7 +3513,7 @@ app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res)
 });
 
 // Quick status update
-app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req, res) => {
+app.post('/api/upgrades/:id/status', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -4072,7 +4072,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
 
   // Asset Sales
-  app.post("/api/asset-sales", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/asset-sales", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { buyer, date, totalAmount, notes, assetIds } = req.body;
       
@@ -4135,7 +4135,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     }
   });
 
-  app.get("/api/asset-sales", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/asset-sales", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const sales = await storage.getAssetSales();
       res.json(sales);
@@ -4292,7 +4292,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       }
     });
 
-    app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    app.delete("/api/tickets/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
       if (isNaN(ticketId)) {
@@ -4382,7 +4382,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
 
   // Ticket Assignment
-  app.post("/api/tickets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/tickets/:id/assign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { userId } = req.body;
@@ -4522,7 +4522,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
 
   // Audit Logs
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -4570,7 +4570,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
   
   // Clear audit logs (admin only)
-  app.delete("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { olderThan, entityType, action } = req.body;
       
@@ -4678,7 +4678,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     }
   });
   
-  app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/system-config", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const configData = req.body;
       const updatedConfig = await storage.updateSystemConfig(configData);
@@ -4700,7 +4700,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
   
   // Activity Log
-  app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/activity-log", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const activities = await storage.getRecentActivity(limit);
@@ -4711,7 +4711,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
   });
 
   // Bulk Action History endpoint
-  app.get("/api/bulk-action-history", authenticateUser, hasAccess(2), async (req: any, res: any) => {
+  app.get("/api/bulk-action-history", authenticateUser, requireRole(ROLES.AGENT), async (req: any, res: any) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -4836,7 +4836,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
 
   // New Unified Import/Export Routes
   // Export routes
-  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
       
@@ -4877,7 +4877,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     }
   });
 
-  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -5661,7 +5661,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 });
 
   // Reports
-  app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
       
@@ -5706,7 +5706,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/reports/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
       
@@ -5781,7 +5781,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/reports/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const tickets = await storage.getAllTickets();
       
@@ -6021,7 +6021,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.post('/api/asset-statuses', authenticateUser, hasAccess(3), async (req, res) => {
+  app.post('/api/asset-statuses', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { name, color, description } = req.body;
       
@@ -6048,7 +6048,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.put('/api/asset-statuses/:id', authenticateUser, hasAccess(3), async (req, res) => {
+  app.put('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -6328,7 +6328,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
   });
 
   // Audit Logs API endpoint
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -6375,7 +6375,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -6422,7 +6422,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const data = await storage.getAllTickets();
     
@@ -6793,7 +6793,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Create ticket category
-  app.post("/api/tickets/categories", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/tickets/categories", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const categoryData = req.body;
       const category = await storage.createTicketCategory(categoryData);
@@ -6832,7 +6832,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
 
   // Categories CRUD routes  
-  app.get("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/categories", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       let categories = await storage.getCategories();
       
@@ -6859,7 +6859,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.post("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/categories", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { name, description } = req.body;
       if (!name || !name.trim()) {
@@ -6877,7 +6877,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.put("/api/categories/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/categories/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { name, description } = req.body;
@@ -6901,7 +6901,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.delete("/api/categories/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/categories/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCategory(id);
