@@ -107,6 +107,13 @@ function SystemConfig() {
     tabEmail: language === 'English' ? 'Email' : 'البريد',
     tabImportExport: language === 'English' ? 'Import/Export' : 'استيراد/تصدير',
     systemDefaults: language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية',
+    companyDetails: language === 'English' ? 'Company Details' : 'تفاصيل الشركة',
+    companyName: language === 'English' ? 'Company Name' : 'اسم الشركة',
+    companyAddress: language === 'English' ? 'Company Address' : 'عنوان الشركة',
+    companyPhone: language === 'English' ? 'Company Phone' : 'هاتف الشركة',
+    companyEmail: language === 'English' ? 'Company Email' : 'بريد الشركة الإلكتروني',
+    companyWebsite: language === 'English' ? 'Company Website' : 'موقع الشركة الإلكتروني',
+    saveGeneralSettings: language === 'English' ? 'Save General Settings' : 'حفظ الإعدادات العامة',
     assetIdPrefixLabel: language === 'English' ? 'Asset ID Prefix' : 'بادئة معرف الأصل',
     assetIdPrefixHint: language === 'English' ? 'Used for automatic asset ID generation' : 'يستخدم لتوليد معرفات الأصول تلقائياً',
     empIdPrefixLabel: language === 'English' ? 'Employee ID Prefix' : 'بادئة معرف الموظف',
@@ -236,6 +243,13 @@ function SystemConfig() {
   const [emailFromAddress, setEmailFromAddress] = useState('');
   const [emailFromName, setEmailFromName] = useState('');
   const [emailSecure, setEmailSecure] = useState(true);
+  
+  // Company details states
+  const [companyName, setCompanyName] = useState('ELADWYSOFT');
+  const [companyAddress, setCompanyAddress] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyWebsite, setCompanyWebsite] = useState('');
   
   // Import/Export states from current working version
   const [selectedDataType, setSelectedDataType] = useState<string>('employees');
@@ -377,6 +391,13 @@ function SystemConfig() {
       setEmailFromAddress(config.emailFromAddress || '');
       setEmailFromName(config.emailFromName || '');
       setEmailSecure(config.emailSecure !== false);
+      
+      // Load company details
+      setCompanyName(config.companyName || 'ELADWYSOFT');
+      setCompanyAddress(config.companyAddress || '');
+      setCompanyPhone(config.companyPhone || '');
+      setCompanyEmail(config.companyEmail || '');
+      setCompanyWebsite(config.companyWebsite || '');
       
       setIsLoading(false);
     }
@@ -949,6 +970,39 @@ const parseCSVLine = (line: string): string[] => {
   };
 
   // Handler functions for various operations
+  // Separate handler for General settings
+  const handleSaveGeneralConfig = () => {
+    const configData = {
+      assetIdPrefix,
+      empIdPrefix,
+      ticketIdPrefix,
+      currency,
+      language: selectedLanguage === 'English' ? 'en' : 'ar',
+      departments,
+      companyName,
+      companyAddress,
+      companyPhone,
+      companyEmail,
+      companyWebsite,
+    };
+    updateConfigMutation.mutate(configData);
+  };
+  
+  // Separate handler for Email settings
+  const handleSaveEmailConfig = () => {
+    const configData = {
+      emailHost,
+      emailPort: emailPort ? parseInt(emailPort) : 587,
+      emailUser,
+      emailPassword,
+      emailFromAddress,
+      emailFromName,
+      emailSecure,
+    };
+    updateConfigMutation.mutate(configData);
+  };
+
+  // Legacy handler for backward compatibility (can be removed if not used elsewhere)
   const handleSaveConfig = () => {
     const configData = {
       assetIdPrefix,
@@ -1329,9 +1383,61 @@ const parseCSVLine = (line: string): string[] => {
                 </div>
               </div>
 
+              {/* Company Details Section */}
+              <div className="pt-6 border-t">
+                <h3 className="text-lg font-medium mb-4">{translations.companyDetails}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>{translations.companyName}</Label>
+                    <Input
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="ELADWYSOFT"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{translations.companyPhone}</Label>
+                    <Input
+                      value={companyPhone}
+                      onChange={(e) => setCompanyPhone(e.target.value)}
+                      placeholder="+1 234 567 8900"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{translations.companyEmail}</Label>
+                    <Input
+                      type="email"
+                      value={companyEmail}
+                      onChange={(e) => setCompanyEmail(e.target.value)}
+                      placeholder="info@company.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>{translations.companyWebsite}</Label>
+                    <Input
+                      value={companyWebsite}
+                      onChange={(e) => setCompanyWebsite(e.target.value)}
+                      placeholder="https://www.company.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>{translations.companyAddress}</Label>
+                    <Input
+                      value={companyAddress}
+                      onChange={(e) => setCompanyAddress(e.target.value)}
+                      placeholder="123 Main Street, City, Country"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-end pt-6 border-t">
                 <Button 
-                  onClick={handleSaveConfig}
+                  onClick={handleSaveGeneralConfig}
                   disabled={updateConfigMutation.isPending}
                   className="min-w-32"
                 >
@@ -1343,7 +1449,7 @@ const parseCSVLine = (line: string): string[] => {
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      {translations.saveSettings}
+                      {translations.saveGeneralSettings}
                     </>
                   )}
                 </Button>
@@ -2868,7 +2974,7 @@ const parseCSVLine = (line: string): string[] => {
 
               <div className="flex justify-end pt-6 border-t">
                 <Button 
-                  onClick={handleSaveConfig}
+                  onClick={handleSaveEmailConfig}
                   disabled={updateConfigMutation.isPending}
                   className="min-w-32"
                 >
