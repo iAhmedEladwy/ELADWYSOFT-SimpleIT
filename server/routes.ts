@@ -577,9 +577,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log('Login successful for user:', user.username);
-        res.json({ 
-          message: "Login successful", 
-          user: user
+        console.log('Session ID:', req.sessionID);
+        console.log('Session data:', req.session);
+        
+        // Ensure session is saved before responding
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('Session save error:', saveErr);
+            return res.status(500).json({ message: 'Session save failed' });
+          }
+          
+          console.log('Session saved successfully');
+          res.json({ 
+            message: "Login successful", 
+            user: user
+          });
         });
       });
     })(req, res, next);
@@ -595,15 +607,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/me", (req, res) => {
-    // Check emergency session first
-    // if ((req as any).session?.user) {
-    //   const { password: _, ...userWithoutPassword } = (req as any).session.user;
-    //   return res.json(userWithoutPassword);
-    // }
+    console.log('[/api/me] Session ID:', req.sessionID);
+    console.log('[/api/me] Session:', req.session);
+    console.log('[/api/me] Is authenticated:', req.isAuthenticated());
+    console.log('[/api/me] User:', req.user);
     
     if (!req.isAuthenticated()) {
+      console.log('[/api/me] Authentication failed');
       return res.status(401).json({ message: "Not authenticated" });
     }
+    
+    console.log('[/api/me] Returning user data');
     res.json(req.user);
   });
   
