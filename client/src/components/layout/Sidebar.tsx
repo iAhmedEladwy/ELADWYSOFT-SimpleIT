@@ -63,7 +63,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     Maintenance: language === 'English' ? 'Maintenance' : 'الصيانة',
     UpgradeRequests: language === 'English' ? 'Upgrade Requests' : 'طلبات الترقية',
     AuditLogs: language === 'English' ? 'Audit Logs' : 'سجلات التدقيق',
-    Profile: language === 'English' ? 'My Profile' : 'الملف الشخصي',
     ManageYourIT: language === 'English' ? 'Manage Your IT' : 'إدارة تكنولوجيا المعلومات',
     PinSidebar: language === 'English' ? 'Pin Sidebar' : 'تثبيت الشريط الجانبي',
     UnpinSidebar: language === 'English' ? 'Unpin Sidebar' : 'إلغاء تثبيت الشريط الجانبي',
@@ -301,20 +300,13 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             )}
           </div>
         </RoleGuard>
-
-        <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-          <Link href="/profile" className={getLinkClass('/profile')} onClick={handleLinkClick}>
-            <User className="h-5 w-5" />
-            <span>{translations.Profile}</span>
-          </Link>
-        </div>
       </nav>
 
       <div className="mt-auto p-4">
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v0.4.1</span>
+            <span className="text-xs text-gray-500">SimpleIT v0.4.3</span>
           </div>
         </div>
       </div>
