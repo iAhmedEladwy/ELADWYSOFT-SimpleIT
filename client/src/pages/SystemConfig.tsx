@@ -60,9 +60,26 @@ function SystemConfig() {
     accessDenied: language === 'English' ? 'Access Denied' : 'تم رفض الوصول',
     pageTitle: language === 'English' ? 'System Configuration' : 'إعدادات النظام',
     tabGeneral: language === 'English' ? 'General' : 'عام',
+    tabCustomFields: language === 'English' ? 'Customizable Fields' : 'الحقول القابلة للتخصيص',
     tabEmployees: language === 'English' ? 'Employees' : 'الموظفون',
     tabAssets: language === 'English' ? 'Assets' : 'الأصول',
     tabTickets: language === 'English' ? 'Tickets' : 'التذاكر',
+    assetConfig: language === 'English' ? 'Asset Configuration' : 'تكوين الأصول',
+    ticketConfig: language === 'English' ? 'Ticket Configuration' : 'تكوين التذاكر',
+    ticketConfigDesc: language === 'English' ? 'Manage ticket categories, priorities, and statuses for efficient issue tracking.' : 'إدارة فئات التذاكر والأولويات والحالات لتتبع فعال للمشاكل.',
+    // Additional translations for asset management
+    types: language === 'English' ? 'Types' : 'الأنواع',
+    brands: language === 'English' ? 'Brands' : 'العلامات التجارية',
+    statuses: language === 'English' ? 'Statuses' : 'الحالات',
+    searchTypesPlaceholder: language === 'English' ? 'Search asset types...' : 'البحث في أنواع الأصول...',
+    addType: language === 'English' ? 'Add Type' : 'إضافة نوع',
+    addTypeTitle: language === 'English' ? 'Add Asset Type' : 'إضافة نوع أصل',
+    addTypeDesc: language === 'English' ? 'Create a new asset type for categorization.' : 'إنشاء نوع أصل جديد للتصنيف.',
+    typeName: language === 'English' ? 'Type Name' : 'اسم النوع',
+    typeNamePlaceholder: language === 'English' ? 'Enter type name' : 'أدخل اسم النوع',
+    description: language === 'English' ? 'Description' : 'الوصف',
+    descriptionPlaceholder: language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)',
+    cancel: language === 'English' ? 'Cancel' : 'إلغاء',
     tabEmail: language === 'English' ? 'Email' : 'البريد',
     tabImportExport: language === 'English' ? 'Import/Export' : 'استيراد/تصدير',
     systemDefaults: language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية',
@@ -96,6 +113,8 @@ function SystemConfig() {
     addDepartment: language === 'English' ? 'Add Department' : 'إضافة قسم',
     addDepartmentTitle: language === 'English' ? 'Add Department' : 'إضافة قسم',
     addDepartmentDesc: language === 'English' ? 'Create a new department to organize employees.' : 'إنشاء قسم جديد لتنظيم الموظفين.',
+    departmentName: language === 'English' ? 'Department Name' : 'اسم القسم',
+    departmentNamePlaceholder: language === 'English' ? 'Enter department name' : 'أدخل اسم القسم',
     confirmDeleteAssetType: language === 'English' ? 'Are you sure you want to delete this asset type?' : 'هل أنت متأكد من حذف نوع الأصل هذا؟',
     confirmDeleteAssetBrand: language === 'English' ? 'Are you sure you want to delete this asset brand?' : 'هل أنت متأكد من حذف علامة الأصل هذه؟',
     confirmDeleteAssetStatus: language === 'English' ? 'Are you sure you want to delete this asset status?' : 'هل أنت متأكد من حذف حالة الأصل هذه؟',
@@ -1184,29 +1203,17 @@ const parseCSVLine = (line: string): string[] => {
 
       {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2 text-sm">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">
               {translations.tabGeneral}
             </span>
           </TabsTrigger>
-          <TabsTrigger value="employees" className="flex items-center gap-2 text-sm">
-            <Users className="h-4 w-4" />
+          <TabsTrigger value="customizable-fields" className="flex items-center gap-2 text-sm">
+            <Database className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {translations.tabEmployees}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="assets" className="flex items-center gap-2 text-sm">
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {translations.tabAssets}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="tickets" className="flex items-center gap-2 text-sm">
-            <Ticket className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {translations.tabTickets}
+              {translations.tabCustomFields}
             </span>
           </TabsTrigger>
           <TabsTrigger value="email" className="flex items-center gap-2 text-sm">
@@ -1582,7 +1589,44 @@ const parseCSVLine = (line: string): string[] => {
           </div>
         </TabsContent>
 
-        {/* Employees Tab */}
+        {/* Customizable Fields Tab */}
+        <TabsContent value="customizable-fields" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                {translations.tabCustomFields}
+              </CardTitle>
+              <CardDescription>
+                {language === 'English' 
+                  ? 'Manage customizable fields and configurations for employees, assets, and tickets.'
+                  : 'إدارة الحقول القابلة للتخصيص والتكوينات للموظفين والأصول والتذاكر.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="employees" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="employees" className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {translations.tabEmployees}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="assets" className="flex items-center gap-2 text-sm">
+                    <Package className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {translations.tabAssets}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="tickets" className="flex items-center gap-2 text-sm">
+                    <Ticket className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {translations.tabTickets}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+
+        {/* Employees Tab - Moved from main level */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader>
@@ -1816,7 +1860,7 @@ const parseCSVLine = (line: string): string[] => {
           </Card>
         </TabsContent>
 
-        {/* Assets Tab */}
+        {/* Assets Tab - Moved from main level */}
         <TabsContent value="assets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -2458,7 +2502,7 @@ const parseCSVLine = (line: string): string[] => {
           </Card>
         </TabsContent>
 
-        {/* Tickets Tab */}
+        {/* Tickets Tab - Moved from main level */}
         <TabsContent value="tickets" className="space-y-4">
           <Card>
             <CardHeader>
@@ -2681,6 +2725,11 @@ const parseCSVLine = (line: string): string[] => {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
