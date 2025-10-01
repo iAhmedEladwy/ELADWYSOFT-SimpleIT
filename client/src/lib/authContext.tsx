@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
+    placeholderData: (previousData) => previousData, // Keep previous user during refetch
   });
 
   // Login mutation
