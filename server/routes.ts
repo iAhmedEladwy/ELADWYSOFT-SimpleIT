@@ -325,6 +325,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Debug middleware to track what's happening
+  app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`\n[${timestamp}] ${req.method} ${req.path}`);
+    console.log('Session ID:', req.sessionID);
+    console.log('Session exists:', !!req.session);
+    console.log('Session passport:', req.session?.passport);
+    console.log('Is authenticated:', req.isAuthenticated?.());
+    console.log('User:', req.user?.username || 'none');
+    next();
+  });
   
   // Audit logging middleware disabled for import/export operations as per user requirements
   // app.use(auditLogMiddleware);
