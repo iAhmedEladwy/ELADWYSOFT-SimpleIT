@@ -154,16 +154,18 @@ To verify the fix works:
 
 ## Next Steps (Optional Improvements)
 
-1. **Remove standalone hook**: Delete `client/src/hooks/useAuth.ts` since it's no longer used
+1. ✅ **DONE: Removed standalone hook** - Deleted `client/src/hooks/useAuth.ts` 
 2. **Add unit tests**: Test PrivateRoute behavior during loading/fetching/authenticated states
 3. **Type safety**: Add proper TypeScript types to PrivateRoute component
 4. **Consider React Router**: Replace Wouter with React Router for more robust routing features
 
 ## Related Files Changed
 
-- `client/src/lib/authContext.tsx` - Added `isFetching` to context
+- `client/src/lib/authContext.tsx` - Added `isFetching` to context (KEPT - Primary auth system)
 - `client/src/App.tsx` - Updated PrivateRoute to check `isFetching`
 - `client/src/pages/admin/UpgradeRequests.tsx` - Changed import to use context
+- `client/src/components/dashboard/Notifications.tsx` - Changed import to use context
+- `client/src/hooks/useAuth.ts` - DELETED (duplicate standalone hook removed)
 
 ## Diagnostic Tools Created
 
