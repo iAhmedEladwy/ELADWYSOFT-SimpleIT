@@ -978,7 +978,6 @@ const parseCSVLine = (line: string): string[] => {
       ticketIdPrefix,
       currency,
       language: selectedLanguage === 'English' ? 'en' : 'ar',
-      departments,
       companyName,
       companyAddress,
       companyPhone,
