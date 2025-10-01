@@ -2,7 +2,6 @@ import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/lib/authContext';
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { 
@@ -29,10 +28,15 @@ import { format, differenceInDays, differenceInHours, differenceInMinutes, isAft
 
 export default function Notifications() {
   const { language } = useLanguage();
-  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [allRead, setAllRead] = useState(false);
+
+  // Fetch current user independently - don't use useAuth to avoid refetch interference
+  const { data: user } = useQuery({
+    queryKey: ['/api/me'],
+    staleTime: Infinity, // Never refetch - user won't change during session
+  });
 
   // Fetch real notification data - component is already inside protected route
   // Queries run unconditionally since we're already authenticated
