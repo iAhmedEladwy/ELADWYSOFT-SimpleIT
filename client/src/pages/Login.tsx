@@ -33,7 +33,6 @@ export default function Login() {
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
-      console.log("User already authenticated, redirecting to dashboard");
       navigate('/');
     }
   }, [user, authLoading, navigate]);
@@ -63,31 +62,25 @@ export default function Login() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      console.log('Starting login process with username:', values.username);
       
       // Attempt login
       const result = await login(values.username, values.password);
-      console.log('Login API result:', result);
       
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      console.log('Login successful, redirecting to dashboard');
-      
       // Navigate to dashboard - the authContext handles the user data fetch
       navigate('/');
       
     } catch (error) {
-      console.error('Login error:', error);
       
       // Enhanced error handling with network detection
       let errorTitle = translations.loginFailed;
       let errorDescription = translations.invalidCredentials;
       
       if (error instanceof Error) {
-        console.error('Login error details:', error.message);
         if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
           errorDescription = language === 'English' 
             ? 'Network error. Please check your connection and try again.' 

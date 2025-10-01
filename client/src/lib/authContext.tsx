@@ -103,15 +103,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (username: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log('Attempting login with username:', username);
       
       // Perform the login request
       const result = await loginMutation.mutateAsync({ username, password });
-      console.log('Login API response:', result);
       
       // Force a refresh of the user data
       const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-      console.log('User data fetched after login:', userData);
       
       // Add a small delay to ensure state updates propagate
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -119,11 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return result;
     } catch (error) {
-      console.error("Login error:", error);
-      // Add more detailed error logging for debugging
-      if (error instanceof Error) {
-        console.error("Login error details:", error.message, error.stack);
-      }
       setIsLoading(false);
       throw error;
     }

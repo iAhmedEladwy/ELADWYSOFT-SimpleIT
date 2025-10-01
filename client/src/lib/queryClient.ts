@@ -32,7 +32,11 @@ export async function apiRequest(
     }
     return res;
   } catch (error) {
-    console.error(`API Request Error (${method} ${url}):`, error);
+    // Silently throw 401 errors (authentication failures are handled by UI)
+    // Log other errors for debugging
+    if (!(error instanceof Error && error.message.includes('401'))) {
+      console.error(`API Request Error (${method} ${url}):`, error);
+    }
     throw error;
   }
 }
