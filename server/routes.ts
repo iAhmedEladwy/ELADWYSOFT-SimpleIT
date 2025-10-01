@@ -1440,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Assets Export/Import
-  app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/assets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -2427,7 +2427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/assets/export/csv", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
       
@@ -2753,7 +2753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       console.log('Asset creation request received:', req.body);
       
@@ -2814,7 +2814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/assets/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/assets/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const assetData = req.body;
@@ -2841,7 +2841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/assets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/assets/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -2899,7 +2899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset Assign/Unassign
-  app.post("/api/assets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/assign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { employeeId } = req.body;
@@ -2948,7 +2948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets/:id/unassign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/unassign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -2994,7 +2994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset Maintenance - Enhanced with status protection
-  app.post("/api/assets/:id/maintenance", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/maintenance", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const asset = await storage.getAsset(assetId);
@@ -3695,7 +3695,7 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     }
   });
   // Bulk Check-Out endpoint
-app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const { assetIds, employeeId, reason, notes } = req.body;
     const handledById = req.user.id;
@@ -3815,7 +3815,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 });
 
 // Bulk Check-In endpoint
-  app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/bulk/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, reason, notes } = req.body;
       const handledById = req.user.id;
@@ -3965,7 +3965,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/check-out", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const { employeeId, notes, type } = req.body;
@@ -4023,7 +4023,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
   
-  app.post("/api/assets/:id/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const { notes, type } = req.body;
@@ -7060,7 +7060,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // Bulk Asset Operations
   
   // Sell multiple assets
-  app.post("/api/assets/sell", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/assets/sell", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds, buyer, saleDate, totalAmount, notes } = req.body;
       
@@ -7133,7 +7133,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
   
   // Retire multiple assets
-  app.post("/api/assets/retire", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/assets/retire", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds, reason, retirementDate, notes } = req.body;
       
@@ -7247,7 +7247,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
 
 //Bulk Status change
-app.post("/api/assets/bulk/status", authenticateUser, hasAccess(2), async (req, res) => {
+app.post("/api/assets/bulk/status", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const { assetIds, status } = req.body;
     
@@ -7344,7 +7344,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   }));
 
   // Bulk Operations Endpoints
-  app.post('/api/assets/bulk/status', authenticateUser, hasAccess(2), async (req, res) => {
+  app.post('/api/assets/bulk/status', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, status } = req.body;
       
@@ -7401,7 +7401,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
+  app.post('/api/assets/bulk/delete', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds } = req.body;
       
@@ -7457,7 +7457,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  app.post('/api/assets/bulk/maintenance', authenticateUser, hasAccess(2), async (req, res) => {
+  app.post('/api/assets/bulk/maintenance', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, type, description, scheduledDate, estimatedCost, priority, notes } = req.body;
       

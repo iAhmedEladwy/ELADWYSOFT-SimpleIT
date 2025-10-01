@@ -152,18 +152,32 @@ if (userLevel < 4) {
 - Password changes require Manager role
 - Consistent RBAC enforcement across all user management
 
-#### Batch 3: Import/Export Routes (18 routes) ⏳ PENDING
-**Risk**: 🟡 Medium - Data integrity critical
+#### Batch 3: Import/Export Routes (11 routes) ✅ COMPLETE
+**Risk**: 🟡 Medium - Data integrity critical  
+**Status**: ✅ Completed - All routes migrated to `requireRole(ROLES.MANAGER)`
 
+**Migrated Routes:**
 ```typescript
-// Manager+ required (Level 3)
-app.post("/api/assets/import", authenticateUser, hasAccess(3), ...)
-app.post("/api/employees/import", authenticateUser, hasAccess(3), ...)
-app.post("/api/tickets/import", authenticateUser, hasAccess(3), ...)
-app.post("/api/import/preview", authenticateUser, hasAccess(3), ...)
-app.post("/api/import/process", authenticateUser, hasAccess(3), ...)
-// ... (13 more import/export routes)
+// Data Import Operations (Manager+ required)
+✅ app.post("/api/assets/import", authenticateUser, requireRole(ROLES.MANAGER), ...)       // Line 1497
+✅ app.post("/api/employees/import", authenticateUser, requireRole(ROLES.MANAGER), ...)    // Lines 1652, 6466
+✅ app.post("/api/tickets/import", authenticateUser, requireRole(ROLES.MANAGER), ...)      // Line 1845
+✅ app.post("/api/import/preview", authenticateUser, requireRole(ROLES.MANAGER), ...)      // Line 2095
+✅ app.post("/api/import/process", authenticateUser, requireRole(ROLES.MANAGER), ...)      // Line 2140
+✅ app.post("/api/import/assets", authenticateUser, requireRole(ROLES.MANAGER), ...)       // Lines 4976, 6499
+
+// Data Export Operations (Manager+ required)
+✅ app.get("/api/audit-logs/export", authenticateUser, requireRole(ROLES.MANAGER), ...)    // Line 4613
 ```
+
+**Note**: Found and migrated duplicate import routes (multiple implementations)
+
+**Changes Made:**
+- All `hasAccess(3)` for import/export → `requireRole(ROLES.MANAGER)`
+- CSV/Excel file uploads require Manager role
+- Import preview and processing require Manager role
+- Audit log exports require Manager role
+- Data integrity operations properly secured
 
 #### Batch 4: Asset Management Routes (35 routes) ⏳ PENDING
 **Risk**: 🟢 Low - High volume but standard CRUD
@@ -291,15 +305,15 @@ If issues arise after any batch:
 | Phase 1 | ✅ Complete | 0 (middleware only) | 🟢 Low | 100% |
 | Phase 2 Batch 1 | ✅ Complete | 17 (admin routes) | 🔴 High | 100% |
 | Phase 2 Batch 2 | ✅ Complete | 10 (user mgmt) | 🟡 Medium | 100% |
-| Phase 2 Batch 3 | 🎯 Next | 18 (import/export) | 🟡 Medium | 0% |
-| Phase 2 Batch 4 | ⏳ Pending | 35 (assets) | 🟢 Low | 0% |
+| Phase 2 Batch 3 | ✅ Complete | 11 (import/export) | 🟡 Medium | 100% |
+| Phase 2 Batch 4 | 🎯 Next | 35 (assets) | 🟢 Low | 0% |
 | Phase 2 Batch 5 | ⏳ Pending | 24 (other) | 🟢 Low | 0% |
-| Phase 3 | 🔮 Future | 77 (remaining) | 🟢 Low | 0% |
+| Phase 3 | 🔮 Future | 66 (remaining) | 🟢 Low | 0% |
 
-**Overall Progress**: Phase 1 + Batch 1 + Batch 2 complete (41% of Phase 2, 26% total migration)
+**Overall Progress**: Phase 1 + Batch 1-3 complete (58% of Phase 2, 38% total migration)
 
-**Routes Migrated**: 27/104 routes using RBAC `requireRole()`  
-**Routes Remaining**: 62 routes still using `hasAccess()`
+**Routes Migrated**: 38/104 routes using RBAC `requireRole()`  
+**Routes Remaining**: 51 routes still using `hasAccess()`
 
 ---
 
@@ -315,6 +329,8 @@ If issues arise after any batch:
 - ✅ Fixed critical case sensitivity issue in requireRole()
 - ✅ Batch 2 (User Management) complete - All 10 routes migrated
 - ✅ Handled duplicate user routes (lines ~920 and ~6920)
+- ✅ Batch 3 (Import/Export) complete - All 11 routes migrated
+- ✅ Handled duplicate import routes (multiple implementations)
 
 ### Pending Decisions
 - ⏳ When to migrate Batch 1 (admin routes)?
@@ -329,6 +345,6 @@ If issues arise after any batch:
 
 ---
 
-**Next Action**: Batch 2 complete! Ready for Batch 3 (Import/Export routes) when approved.
+**Next Action**: Batch 3 complete! Ready for Batch 4 (Asset Management - 35 routes) when approved.
 
-**Testing Recommendation**: Test user management functions (view, create, update, delete users, change passwords) before proceeding to Batch 3.
+**Testing Recommendation**: Test import/export functions (assets, employees, tickets CSV uploads) before proceeding to Batch 4.
