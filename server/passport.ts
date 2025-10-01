@@ -11,32 +11,38 @@ passport.use(new LocalStrategy(
     usernameField: 'username',
     passwordField: 'password'
   },
-  async (username: string, password: string, done) => {
+  async (usernameOrEmail: string, password: string, done) => {
     try {
-      console.log(`[AUTH] Login attempt for username: ${username}`);
+      console.log(`[AUTH] Login attempt for username/email: ${usernameOrEmail}`);
       
-      // Get user from database
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        console.log(`[AUTH] User not found: ${username}`);
-        return done(null, false, { message: 'Incorrect username or password' });
+      // Try to get user by username first, then by email
+      let user = await storage.getUserByUsername(usernameOrEmail);
+      
+      // If not found by username, try email
+      if (!user && storage.getUserByEmail) {
+        user = await storage.getUserByEmail(usernameOrEmail);
       }
       
-      console.log(`[AUTH] User found: ${username} (ID: ${user.id})`);
+      if (!user) {
+        console.log(`[AUTH] User not found: ${usernameOrEmail}`);
+        return done(null, false, { message: 'Incorrect username/email or password' });
+      }
+      
+      console.log(`[AUTH] User found: ${user.username} (ID: ${user.id})`);
       
       // Check if user is active
       if (!user.isActive) {
-        console.log(`[AUTH] User is inactive: ${username}`);
+        console.log(`[AUTH] User is inactive: ${user.username}`);
         return done(null, false, { message: 'Account is disabled' });
       }
       
       // Verify password
       if (!password || !user.password) {
-        console.log(`[AUTH] Missing password data for user: ${username}`);
+        console.log(`[AUTH] Missing password data for user: ${user.username}`);
         return done(null, false, { message: 'Invalid credentials' });
       }
       
-      console.log(`[AUTH] Verifying password for user: ${username}`);
+      console.log(`[AUTH] Verifying password for user: ${user.username}`);
       console.log(`[AUTH] Password length: ${password.length}`);
       console.log(`[AUTH] Hash starts with: ${user.password.substring(0, 10)}...`);
       
@@ -44,11 +50,11 @@ passport.use(new LocalStrategy(
       console.log(`[AUTH] Password verification result: ${isPasswordValid}`);
       
       if (!isPasswordValid) {
-        console.log(`[AUTH] Authentication failed for user: ${username}`);
-        return done(null, false, { message: 'Incorrect username or password' });
+        console.log(`[AUTH] Authentication failed for user: ${user.username}`);
+        return done(null, false, { message: 'Incorrect username/email or password' });
       }
       
-      console.log(`[AUTH] Authentication successful for user: ${username}`);
+      console.log(`[AUTH] Authentication successful for user: ${user.username}`);
       
       // Remove password from user object before returning
       const { password: _, ...userWithoutPassword } = user;

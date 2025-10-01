@@ -19,7 +19,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { useLanguage } from '@/hooks/use-language';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
+  username: z.string().min(1, 'Username or Email is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -40,15 +40,15 @@ export default function Login() {
   // Get translations based on language
   const translations = {
     title: language === 'English' ? 'Login' : 'تسجيل الدخول',
-    username: language === 'English' ? 'Username' : 'اسم المستخدم',
+    username: language === 'English' ? 'Username or Email' : 'اسم المستخدم أو البريد الإلكتروني',
     password: language === 'English' ? 'Password' : 'كلمة المرور',
     loginButton: language === 'English' ? 'Login' : 'تسجيل الدخول',
-    usernameRequired: language === 'English' ? 'Username is required' : 'اسم المستخدم مطلوب',
+    usernameRequired: language === 'English' ? 'Username or Email is required' : 'اسم المستخدم أو البريد الإلكتروني مطلوب',
     passwordRequired: language === 'English' ? 'Password is required' : 'كلمة المرور مطلوبة',
     loginSuccess: language === 'English' ? 'Login successful' : 'تم تسجيل الدخول بنجاح',
     welcomeBack: language === 'English' ? 'Welcome back!' : 'مرحبا بعودتك!',
     loginFailed: language === 'English' ? 'Login failed' : 'فشل تسجيل الدخول',
-    invalidCredentials: language === 'English' ? 'Invalid username or password' : 'اسم المستخدم أو كلمة المرور غير صحيحة',
+    invalidCredentials: language === 'English' ? 'Invalid username/email or password' : 'اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة',
   };
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -87,8 +87,8 @@ export default function Login() {
             : 'خطأ في الشبكة. يرجى التحقق من الاتصال والمحاولة مرة أخرى.';
         } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           errorDescription = language === 'English' 
-            ? 'Invalid username or password. Please try again.' 
-            : 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
+            ? 'Invalid username/email or password. Please try again.' 
+            : 'اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
         }
       }
       
@@ -121,7 +121,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>{translations.username}</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin" autoComplete="username" {...field} />
+                      <Input placeholder="eladwy or eladwy.ahmed@example.com" autoComplete="username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

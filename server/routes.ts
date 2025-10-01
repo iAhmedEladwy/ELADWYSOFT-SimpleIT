@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/login", async (req, res, next) => {
-    console.log('Login attempt for username:', req.body.username);
+    console.log('Login attempt for username/email:', req.body.username);
        
     // Standard passport authentication
     passport.authenticate("local", (err: any, user: any, info: any) => {

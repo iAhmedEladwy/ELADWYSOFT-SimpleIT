@@ -317,6 +317,10 @@ export class MemoryStorage implements IStorage {
     return this.users.find(u => u.username === username);
   }
 
+  async getUserByEmail(email: string): Promise<schema.User | undefined> {
+    return this.users.find(u => u.email === email);
+  }
+
   async createUser(user: schema.InsertUser): Promise<schema.User> {
     const newUser: schema.User = {
       id: this.idCounters.users++,

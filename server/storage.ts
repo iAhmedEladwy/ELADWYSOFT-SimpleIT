@@ -60,6 +60,7 @@ export interface IStorage {
   // User operations
   getUser(id: string | number): Promise<User | undefined>;
   getUserByUsername?(username: string): Promise<User | undefined>;
+  getUserByEmail?(email: string): Promise<User | undefined>;
   createUser?(user: InsertUser): Promise<User>;
   updateUser?(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser?(id: number): Promise<boolean>;
@@ -456,6 +457,29 @@ export class DatabaseStorage implements IStorage {
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        password: users.password,
+        accessLevel: users.accessLevel,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      }).from(users).where(eq(users.email, email));
+      
+      return user ? this.mapUserFromDb(user) : undefined;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
       return undefined;
     }
   }
