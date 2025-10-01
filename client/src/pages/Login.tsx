@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
-import { queryClient } from '@/lib/queryClient';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -31,25 +30,13 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
   
-  // Always check authentication status on component mount and redirect if logged in
+  // Redirect to dashboard if already authenticated
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      try {
-        // Force a fresh fetch of user data
-        await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-        
-        // If we have a user and we're not loading, redirect to the dashboard
-        if (user && !authLoading) {
-          console.log("User authenticated, redirecting to homepage");
-          window.location.href = '/';
-        }
-      } catch (error) {
-        console.log("Not authenticated or error checking auth");
-      }
-    };
-    
-    checkAuthAndRedirect();
-  }, [user, authLoading]);
+    if (user && !authLoading) {
+      console.log("User already authenticated, redirecting to dashboard");
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   // Get translations based on language
   const translations = {
@@ -87,21 +74,10 @@ export default function Login() {
         description: translations.welcomeBack,
       });
       
-      // Force another fetch of user data to ensure we have the latest
-      try {
-        const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-        console.log('User data after login:', userData);
-      } catch (fetchError) {
-        console.error('Error fetching user data:', fetchError);
-      }
+      console.log('Login successful, redirecting to dashboard');
       
-      console.log('Login successful, preparing to redirect to dashboard');
-      
-      // Use direct navigation after a longer delay to ensure state is updated
-      setTimeout(() => {
-        console.log('Executing redirect to dashboard...');
-        window.location.href = '/';
-      }, 1000);
+      // Navigate to dashboard - the authContext handles the user data fetch
+      navigate('/');
       
     } catch (error) {
       console.error('Login error:', error);
