@@ -301,8 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
-      resave: true, 
-      saveUninitialized: true,
+      resave: false, // Prevent race conditions on simultaneous requests
+      saveUninitialized: false, // Don't create session until something stored
       cookie: { 
         httpOnly: true,
         secure: false, // Set to false for development
@@ -310,7 +310,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sameSite: 'lax'
       },
       store: new MemStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
+        checkPeriod: 86400000, // prune expired entries every 24h
+        ttl: 7 * 24 * 60 * 60 * 1000, // Match cookie maxAge - 7 days
+        stale: false // Don't return stale sessions
       })
     })
   );
