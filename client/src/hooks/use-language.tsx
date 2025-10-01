@@ -13,9 +13,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState<string>('English');
 
-  // Fetch current config
+  // Helper to check if session exists
+  const hasSession = () => {
+    return document.cookie.includes('connect.sid');
+  };
+
+  // Fetch current config - only if authenticated
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
+    enabled: hasSession(), // Only fetch if session exists
   });
 
   // Update language when config changes

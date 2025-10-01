@@ -39,9 +39,15 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currency, setCurrency] = useState<string>(defaultCurrency);
   const [symbol, setSymbol] = useState<string>(defaultSymbol);
   
-  // Fetch system configuration to get the currency
+  // Helper to check if session exists
+  const hasSession = () => {
+    return document.cookie.includes('connect.sid');
+  };
+  
+  // Fetch system configuration to get the currency - only if authenticated
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
+    enabled: hasSession(), // Only fetch if session exists
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60, // 1 minute
     retry: 2,

@@ -29,10 +29,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch current user
+  // Helper to check if session might exist
+  const hasSession = () => {
+    // Check for session cookie (basic check to avoid unnecessary API calls on login screen)
+    return document.cookie.includes('connect.sid');
+  };
+
+  // Fetch current user - only if session cookie exists
   const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
+    enabled: hasSession(), // Only fetch if session exists
     retry: 2,
     retryDelay: 1000,
     staleTime: 1000 * 60 * 5, // 5 minutes
