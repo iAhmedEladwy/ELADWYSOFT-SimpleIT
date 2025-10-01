@@ -38,6 +38,11 @@ function PrivateRoute({ component: Component, ...rest }: any) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
+    // Reset redirecting flag if user is present (successful auth)
+    if (user && isRedirecting) {
+      setIsRedirecting(false);
+    }
+    
     // Only redirect if we're certain the user is not authenticated
     // AND we're not currently fetching/refetching data (prevents logout on double refresh)
     if (!isLoading && !isFetching && !user && !isRedirecting) {
