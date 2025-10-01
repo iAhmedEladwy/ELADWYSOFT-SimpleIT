@@ -46,7 +46,7 @@ import TicketMetrics from '@/components/dashboard/TicketMetrics';
 import EnhancedDepartmentDistribution from '@/components/dashboard/EnhancedDepartmentDistribution';
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
-import Notifications from '@/components/dashboard/Notifications';
+// import Notifications from '@/components/dashboard/Notifications'; // Temporarily disabled
 import QuickActions from '@/components/dashboard/QuickActions';
 
 // Import legacy components for backward compatibility
@@ -343,7 +343,8 @@ export default function Dashboard() {
             <BarChart3 className="h-4 w-4" />
             {translations.insights}
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
+          {/* Temporarily disabled due to authentication issue */}
+          {/* <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
             {translations.notifications}
             {dashboardData?.notifications?.unread > 0 && (
@@ -351,7 +352,7 @@ export default function Dashboard() {
                 {dashboardData.notifications.unread}
               </Badge>
             )}
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         {/* New Overview Tab - Simple summary view WITH ICONS AND CUSTOM CALCULATIONS */}
@@ -751,10 +752,10 @@ export default function Dashboard() {
           </div>
         </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
+        {/* Notifications Tab - Temporarily disabled due to authentication issue */}
+        {/* <TabsContent value="notifications">
           <Notifications notifications={dashboardData?.notifications} isLoading={isLoading} />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       {/* Dialog for Add Employee */}
