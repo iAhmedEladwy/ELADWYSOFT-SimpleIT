@@ -652,6 +652,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('[/api/me] Returning user data');
     res.json(req.user);
   });
+
+  // Diagnostic endpoint to check session state
+  app.get("/api/debug/session", (req, res) => {
+    res.json({
+      sessionID: req.sessionID,
+      sessionExists: !!req.session,
+      sessionData: req.session,
+      isAuthenticated: req.isAuthenticated?.() || false,
+      user: req.user || null,
+      timestamp: new Date().toISOString()
+    });
+  });
   
   // Security Questions API endpoints - combined implementation
   
