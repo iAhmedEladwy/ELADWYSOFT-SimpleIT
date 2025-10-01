@@ -12,16 +12,24 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState<string>('English');
+  const [shouldFetchConfig, setShouldFetchConfig] = useState(false);
 
-  // Helper to check if session exists
-  const hasSession = () => {
-    return document.cookie.includes('connect.sid');
-  };
+  // Check if we should fetch config on mount
+  useEffect(() => {
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    const hasSessionCookie = document.cookie.includes('connect.sid');
+    
+    if (!isLoginPage || hasSessionCookie) {
+      setShouldFetchConfig(true);
+    }
+  }, []);
 
-  // Fetch current config - only if authenticated
+  // Fetch current config - only when enabled
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    enabled: hasSession(), // Only fetch if session exists
+    enabled: shouldFetchConfig,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Update language when config changes

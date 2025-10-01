@@ -28,20 +28,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
+  const [shouldCheckAuth, setShouldCheckAuth] = useState(false);
 
-  // Helper to check if session might exist
-  const hasSession = () => {
-    // Check for session cookie (basic check to avoid unnecessary API calls on login screen)
-    return document.cookie.includes('connect.sid');
-  };
+  // Check if we should attempt authentication on mount
+  useEffect(() => {
+    // Only check auth if we're not on login page OR if there's a session cookie
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    const hasSessionCookie = document.cookie.includes('connect.sid');
+    
+    if (!isLoginPage || hasSessionCookie) {
+      setShouldCheckAuth(true);
+    } else {
+      setIsLoading(false); // Not checking auth, so not loading
+    }
+  }, []);
 
-  // Fetch current user - only if session cookie exists
+  // Fetch current user - only when we should check auth
   const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
-    enabled: hasSession(), // Only fetch if session exists
-    retry: 2,
-    retryDelay: 1000,
+    enabled: shouldCheckAuth, // Only fetch when explicitly enabled
+    retry: false, // Don't retry on 401
+    refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
@@ -53,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     },
     onSuccess: async () => {
+      // Enable auth check after successful login
+      setShouldCheckAuth(true);
       // Force a refetch of the user data immediately instead of just invalidating
       await queryClient.fetchQuery({ queryKey: ['/api/me'] });
       setIsLoading(false);

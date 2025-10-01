@@ -38,19 +38,25 @@ export const useCurrency = () => useContext(CurrencyContext);
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currency, setCurrency] = useState<string>(defaultCurrency);
   const [symbol, setSymbol] = useState<string>(defaultSymbol);
+  const [shouldFetchConfig, setShouldFetchConfig] = useState(false);
   
-  // Helper to check if session exists
-  const hasSession = () => {
-    return document.cookie.includes('connect.sid');
-  };
+  // Check if we should fetch config on mount
+  React.useEffect(() => {
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    const hasSessionCookie = document.cookie.includes('connect.sid');
+    
+    if (!isLoginPage || hasSessionCookie) {
+      setShouldFetchConfig(true);
+    }
+  }, []);
   
-  // Fetch system configuration to get the currency - only if authenticated
+  // Fetch system configuration to get the currency - only when enabled
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
-    enabled: hasSession(), // Only fetch if session exists
+    enabled: shouldFetchConfig,
+    retry: false,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60, // 1 minute
-    retry: 2,
   });
   
   // Update currency state and symbol when configuration is loaded
