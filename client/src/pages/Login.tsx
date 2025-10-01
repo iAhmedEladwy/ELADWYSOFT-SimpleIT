@@ -64,15 +64,15 @@ export default function Login() {
       setIsLoading(true);
       
       // Attempt login
-      const result = await login(values.username, values.password);
+      await login(values.username, values.password);
       
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      // Navigate to dashboard - the authContext handles the user data fetch
-      navigate('/');
+      // The useEffect will handle navigation once user is loaded
+      setIsLoading(false);
       
     } catch (error) {
       

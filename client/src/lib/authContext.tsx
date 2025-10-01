@@ -118,16 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       // Perform the login request
-      const result = await loginMutation.mutateAsync({ username, password });
+      await loginMutation.mutateAsync({ username, password });
       
-      // Force a refresh of the user data
-      const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-      
-      // Add a small delay to ensure state updates propagate
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // The loginMutation.onSuccess already handles fetching user data
+      // Just wait a moment for the state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       setIsLoading(false);
-      return result;
     } catch (error) {
       setIsLoading(false);
       throw error;
