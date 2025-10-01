@@ -80,6 +80,30 @@ function SystemConfig() {
     description: language === 'English' ? 'Description' : 'الوصف',
     descriptionPlaceholder: language === 'English' ? 'Enter description (optional)' : 'أدخل الوصف (اختياري)',
     cancel: language === 'English' ? 'Cancel' : 'إلغاء',
+    add: language === 'English' ? 'Add' : 'إضافة',
+    adding: language === 'English' ? 'Adding...' : 'جارٍ الإضافة...',
+    // Help text translations
+    addDepartmentsHelp: language === 'English' ? 'Departments help organize employees and manage access.' : 'تساعد الأقسام في تنظيم الموظفين وإدارة الوصول.',
+    addTypesHelp: language === 'English' ? 'Asset types categorize different kinds of equipment and devices.' : 'أنواع الأصول تصنف أنواع مختلفة من المعدات والأجهزة.',
+    addBrandsHelp: language === 'English' ? 'Brands help track manufacturers and warranty information.' : 'العلامات التجارية تساعد في تتبع الشركات المصنعة ومعلومات الضمان.',
+    addStatusesHelp: language === 'English' ? 'Custom statuses provide flexibility in asset lifecycle management.' : 'الحالات المخصصة توفر مرونة في إدارة دورة حياة الأصول.',
+    // Asset brand translations
+    addBrand: language === 'English' ? 'Add Brand' : 'إضافة علامة تجارية',
+    addBrandTitle: language === 'English' ? 'Add Asset Brand' : 'إضافة علامة تجارية للأصول',
+    brandName: language === 'English' ? 'Brand Name' : 'اسم العلامة التجارية',
+    searchBrandsPlaceholder: language === 'English' ? 'Search asset brands...' : 'البحث في العلامات التجارية للأصول...',
+    // Asset status translations
+    addStatus: language === 'English' ? 'Add Status' : 'إضافة حالة',
+    addStatusTitle: language === 'English' ? 'Add Asset Status' : 'إضافة حالة أصل',
+    statusName: language === 'English' ? 'Status Name' : 'اسم الحالة',
+    statusNamePlaceholder: language === 'English' ? 'Enter status name' : 'أدخل اسم الحالة',
+    // Ticket category translations
+    addCategory: language === 'English' ? 'Add Category' : 'إضافة فئة',
+    addCategoryTitle: language === 'English' ? 'Add Ticket Category' : 'إضافة فئة تذكرة',
+    categoryName: language === 'English' ? 'Category Name' : 'اسم الفئة',
+    categoryNamePlaceholder: language === 'English' ? 'Enter category name' : 'أدخل اسم الفئة',
+    // Common table headers
+    actions: language === 'English' ? 'Actions' : 'الإجراءات',
     tabEmail: language === 'English' ? 'Email' : 'البريد',
     tabImportExport: language === 'English' ? 'Import/Export' : 'استيراد/تصدير',
     systemDefaults: language === 'English' ? 'System Defaults' : 'الإعدادات الافتراضية',
