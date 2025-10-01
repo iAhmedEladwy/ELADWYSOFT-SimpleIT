@@ -309,7 +309,9 @@ export default function AssetHistory() {
     const filteredTransactions = useMemo(() => {
       // Ensure transactions is an array before filtering
       if (!transactions || !Array.isArray(transactions)) {
-        console.warn('Transactions is not an array:', transactions);
+        if (import.meta.env.DEV) {
+          console.warn('Transactions is not an array:', transactions);
+        }
         return [];
       }
 
@@ -334,7 +336,9 @@ export default function AssetHistory() {
           return true;
         });
       } catch (error) {
-        console.error('Error filtering transactions:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error filtering transactions:', error);
+        }
         return [];
       }
     }, [transactions, filters.search]);
@@ -473,7 +477,9 @@ export default function AssetHistory() {
           description: `${language === 'English' ? 'Exported' : 'تم تصدير'} ${dataToExport.length} ${translations.exportedTransactions}`,
         });
       } catch (error) {
-        console.error('Export error:', error);
+        if (import.meta.env.DEV) {
+          console.error('Export error:', error);
+        }
         toast({
           title: translations.exportError,
           variant: 'destructive',
