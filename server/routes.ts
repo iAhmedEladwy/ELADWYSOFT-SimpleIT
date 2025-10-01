@@ -6083,7 +6083,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.delete('/api/asset-statuses/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  app.delete('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -7198,7 +7198,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
   
   // Delete multiple assets
-  app.delete("/api/assets/bulk-delete", authenticateUser, hasAccess(4), async (req, res) => {
+  app.delete("/api/assets/bulk-delete", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const { assetIds } = req.body;
       
@@ -7530,7 +7530,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   });
 
   // GET /api/admin/backups - Get list of backups
-app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backups = await backupService.getBackupList();
     res.json(backups);
@@ -7541,7 +7541,7 @@ app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) =
 });
 
 // POST /api/admin/backups - Create manual backup
-app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { description } = req.body;
     const userId = (req.user as any)?.id;
@@ -7564,7 +7564,7 @@ app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) 
 });
 
 // POST /api/admin/restore/:backupId - Restore from backup
-app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/restore/:backupId', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.backupId);
     const userId = (req.user as any)?.id; 
@@ -7594,7 +7594,7 @@ app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (
 });
 
 // DELETE /api/admin/backups/:id - Delete backup
-app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.delete('/api/admin/backups/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.id);
     
@@ -7616,7 +7616,7 @@ app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req,
 });
 
 // POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
-app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4), backupUpload.single('backup'), async (req, res) => {
+app.post('/api/admin/backups/restore-from-file', authenticateUser, requireRole(ROLES.ADMIN), backupUpload.single('backup'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No backup file uploaded' });
@@ -7662,7 +7662,7 @@ app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4),
 });
 
 // GET /api/admin/backups/:id/download - Download backup file
-app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backups/:id/download', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.id);
     
@@ -7696,7 +7696,7 @@ app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async
 });
 
 // GET /api/admin/system-health - Get system health metrics
-app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/system-health', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const healthMetrics = await backupService.getSystemHealth();
     res.json(healthMetrics);
@@ -7707,7 +7707,7 @@ app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, 
 });
 
 // GET /api/admin/system-overview - Get system overview statistics
-app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/system-overview', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const systemOverview = await backupService.getSystemOverview();
     res.json(systemOverview);
@@ -7718,7 +7718,7 @@ app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req
 });
 
 // GET /api/admin/restore-history - Get restore history
-app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/restore-history',authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const history = await backupService.getRestoreHistory();
     res.json(history);
@@ -7731,7 +7731,7 @@ app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req,
 // Backup Job Management Routes
 
 // GET /api/admin/backup-jobs - Get all backup jobs
-app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobs = await backupService.getBackupJobs();
     res.json(jobs);
@@ -7742,7 +7742,7 @@ app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, re
 });
 
 // POST /api/admin/backup-jobs - Create new backup job
-app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
 
@@ -7774,7 +7774,7 @@ app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, r
 });
 
 // PUT /api/admin/backup-jobs/:id - Update backup job
-app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.put('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
@@ -7807,7 +7807,7 @@ app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req
 });
 
 // DELETE /api/admin/backup-jobs/:id - Delete backup job
-app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.delete('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
 
@@ -7829,7 +7829,7 @@ app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (
 });
 
 // POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
-app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
 

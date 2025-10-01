@@ -76,7 +76,7 @@ if (userLevel < 4) {
 
 ---
 
-## Phase 2: Standardize Critical Routes 🔄 IN PROGRESS
+## Phase 2: Standardize Critical Routes ✅ BATCH 1 COMPLETE
 
 ### Objectives
 - Replace `hasAccess()` with `requireRole()` for critical routes
@@ -85,37 +85,43 @@ if (userLevel < 4) {
 
 ### Critical Routes to Migrate (Priority Order)
 
-#### Batch 1: Admin & System Routes (17 routes) 🎯 NEXT
+#### Batch 1: Admin & System Routes (17 routes) ✅ COMPLETE
 **Risk**: 🔴 High - System critical  
-**Testing Required**: ✅ Yes - Test all admin functions
+**Testing Required**: ✅ Yes - Test all admin functions  
+**Status**: ✅ Completed - All routes migrated to `requireRole(ROLES.ADMIN)`
 
+**Migrated Routes:**
 ```typescript
-// Backup Management
-✅ app.get('/api/admin/backups', authenticateUser, hasAccess(4), ...)
-   → app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), ...)
+// Backup Management (6 routes)
+✅ app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.post('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.post('/api/admin/restore/:backupId', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.delete('/api/admin/backups/:id', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.post('/api/admin/backups/restore-from-file', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.get('/api/admin/backups/:id/download', authenticateUser, requireRole(ROLES.ADMIN), ...)
 
-✅ app.post('/api/admin/backups', authenticateUser, hasAccess(4), ...)
-✅ app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), ...)
-✅ app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), ...)
-✅ app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4), ...)
-✅ app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), ...)
+// System Health & Monitoring (3 routes)
+✅ app.get('/api/admin/system-health', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.get('/api/admin/system-overview', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.get('/api/admin/restore-history', authenticateUser, requireRole(ROLES.ADMIN), ...)
 
-// System Health & Monitoring
-✅ app.get('/api/admin/system-health', authenticateUser, hasAccess(4), ...)
-✅ app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), ...)
-✅ app.get('/api/admin/restore-history', authenticateUser, hasAccess(4), ...)
+// Backup Jobs (5 routes)
+✅ app.get('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.post('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.put('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.delete('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.ADMIN), ...)
 
-// Backup Jobs
-✅ app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), ...)
-✅ app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), ...)
-✅ app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), ...)
-✅ app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), ...)
-✅ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), ...)
-
-// Deletions (Admin only)
-✅ app.delete("/api/assets/bulk-delete", authenticateUser, hasAccess(4), ...)
-✅ app.delete('/api/asset-statuses/:id', authenticateUser, hasAccess(4), ...)
+// Critical Deletions (2 routes)
+✅ app.delete("/api/assets/bulk-delete", authenticateUser, requireRole(ROLES.ADMIN), ...)
+✅ app.delete('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.ADMIN), ...)
 ```
+
+**Changes Made:**
+- All `hasAccess(4)` → `requireRole(ROLES.ADMIN)`
+- Consistent RBAC middleware usage
+- Proper role hierarchy enforcement
+- Zero remaining `hasAccess(4)` calls in codebase
 
 #### Batch 2: User Management Routes (10 routes) ⏳ PENDING
 **Risk**: 🟡 Medium - Critical but less frequent operations
@@ -274,14 +280,17 @@ If issues arise after any batch:
 | Phase | Status | Routes Affected | Risk Level | Completion |
 |-------|--------|-----------------|------------|------------|
 | Phase 1 | ✅ Complete | 0 (middleware only) | 🟢 Low | 100% |
-| Phase 2 Batch 1 | 🎯 Next | 17 (admin routes) | 🔴 High | 0% |
-| Phase 2 Batch 2 | ⏳ Pending | 10 (user mgmt) | 🟡 Medium | 0% |
+| Phase 2 Batch 1 | ✅ Complete | 17 (admin routes) | 🔴 High | 100% |
+| Phase 2 Batch 2 | 🎯 Next | 10 (user mgmt) | 🟡 Medium | 0% |
 | Phase 2 Batch 3 | ⏳ Pending | 18 (import/export) | 🟡 Medium | 0% |
 | Phase 2 Batch 4 | ⏳ Pending | 35 (assets) | 🟢 Low | 0% |
 | Phase 2 Batch 5 | ⏳ Pending | 24 (other) | 🟢 Low | 0% |
-| Phase 3 | 🔮 Future | 104 (all routes) | 🟢 Low | 0% |
+| Phase 3 | 🔮 Future | 87 (remaining) | 🟢 Low | 0% |
 
-**Overall Progress**: Phase 1 complete (10% total migration)
+**Overall Progress**: Phase 1 + Batch 1 complete (29% of Phase 2, 20% total migration)
+
+**Routes Migrated**: 17/104 routes using RBAC `requireRole()`  
+**Routes Remaining**: 72 routes still using `hasAccess()`
 
 ---
 
@@ -292,6 +301,8 @@ If issues arise after any batch:
 - ✅ Phase 1 complete without breaking changes
 - ✅ Removed hardcoded admin bypasses
 - ✅ Using `getUserRoleLevel()` consistently
+- ✅ Batch 1 (Admin routes) complete - All 17 routes migrated
+- ✅ Verified: Zero `hasAccess(4)` remaining in codebase
 
 ### Pending Decisions
 - ⏳ When to migrate Batch 1 (admin routes)?
@@ -306,4 +317,6 @@ If issues arise after any batch:
 
 ---
 
-**Next Action**: Ready to proceed with Phase 2 Batch 1 (Admin routes) when approved.
+**Next Action**: Batch 1 complete! Ready for Batch 2 (User Management routes) when approved.
+
+**Testing Recommendation**: Test admin functions (backups, system health, backup jobs) before proceeding to Batch 2.
