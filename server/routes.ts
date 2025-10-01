@@ -917,7 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User CRUD routes
-  app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getUser(id);
@@ -939,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const userData = validateBody<schema.InsertUser>(schema.insertUserSchema, req.body);
       
@@ -970,7 +970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User update route removed - duplicate of the one later in the file
 
-  app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -6917,7 +6917,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // User CRUD routes (admin only)
-  app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       console.log("GET /api/users - Raw users from storage:", JSON.stringify(users, null, 2));
@@ -6927,7 +6927,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const userData = req.body;
       
@@ -6944,7 +6944,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userData = req.body;
@@ -6986,7 +6986,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
@@ -7008,7 +7008,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Change user password endpoint
-  app.put("/api/users/:id/change-password", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/users/:id/change-password", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { password } = req.body;
