@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Lock, 
   AlertTriangle, 
@@ -16,19 +17,23 @@ import {
 
 export default function Notifications() {
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
 
-  // Fetch real notification data
+  // Fetch real notification data - only when authenticated
   const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
+    enabled: isAuthenticated,
   });
   const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
     queryKey: ['/api/tickets'],
+    enabled: isAuthenticated,
   });
 
   const { data: systemConfig, isLoading: configLoading } = useQuery({
     queryKey: ['/api/system-config'],
+    enabled: isAuthenticated,
   });
 
   const isLoading = assetsLoading || ticketsLoading || configLoading;
