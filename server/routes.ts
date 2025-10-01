@@ -6787,6 +6787,21 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         userId: req.user.id,
         details: { assignedToId: assignedUserId }
       });
+
+      // Create notification for the assigned user
+      try {
+        await db.insert(schema.notifications).values({
+          userId: assignedUserId,
+          title: `Ticket #${ticketId} Assigned to You`,
+          message: `You have been assigned ticket #${ticketId}: ${updatedTicket.title || 'Support Request'}`,
+          type: 'Ticket',
+          entityId: ticketId,
+          isRead: false,
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
       
       res.json(updatedTicket);
     } catch (error: unknown) {

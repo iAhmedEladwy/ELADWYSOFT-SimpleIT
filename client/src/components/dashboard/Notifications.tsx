@@ -71,7 +71,13 @@ export default function Notifications() {
     enabled: isAuthenticated,
   });
 
-  const isLoading = assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading;
+  // Fetch database notifications
+  const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
+    queryKey: ['/api/notifications'],
+    enabled: isAuthenticated,
+  });
+
+  const isLoading = assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
 
 
   // Translations
@@ -294,19 +300,99 @@ export default function Notifications() {
     );
   };
 
-  const allNotifications = generateNotifications();
+  // Convert database notifications to display format
+  const convertDbNotifications = () => {
+    if (!dbNotifications || dbNotifications.length === 0) return [];
+    
+    return dbNotifications.map((dbNotif: any) => {
+      // Map notification type to icon and color
+      let icon = <Bell className="h-5 w-5 text-white" />;
+      let iconColor = 'bg-blue-500';
+      let primaryAction = translations.viewDetails;
+      
+      switch (dbNotif.type) {
+        case 'Ticket':
+          icon = <Ticket className="h-5 w-5 text-white" />;
+          iconColor = 'bg-blue-500';
+          primaryAction = translations.viewTickets;
+          break;
+        case 'Asset':
+          icon = <Package className="h-5 w-5 text-white" />;
+          iconColor = 'bg-green-500';
+          primaryAction = translations.viewAssets;
+          break;
+        case 'Employee':
+          icon = <Users className="h-5 w-5 text-white" />;
+          iconColor = 'bg-purple-500';
+          primaryAction = translations.viewEmployees;
+          break;
+        case 'System':
+          icon = <CheckCircle className="h-5 w-5 text-white" />;
+          iconColor = 'bg-teal-500';
+          primaryAction = translations.viewChangelog;
+          break;
+      }
+
+      return {
+        id: `db-${dbNotif.id}`, // Prefix with 'db-' to distinguish from generated notifications
+        title: dbNotif.title,
+        message: dbNotif.message,
+        time: getTimeAgo(new Date(dbNotif.createdAt)),
+        icon,
+        iconColor,
+        unread: !dbNotif.isRead,
+        primaryAction,
+        priority: !dbNotif.isRead ? 'high' : 'low',
+        entityId: dbNotif.entityId,
+        dbId: dbNotif.id, // Keep original DB ID for deletion
+      };
+    });
+  };
+
+  // Merge generated and database notifications
+  const allNotifications = [...generateNotifications(), ...convertDbNotifications()];
   
   // Filter out dismissed notifications
   const notifications = allNotifications.filter(n => !dismissedNotifications.includes(n.id));
 
   // Handler for marking all as read
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = async () => {
     setAllRead(true);
+    
+    // Also mark database notifications as read
+    try {
+      const notificationIds = (dbNotifications || []).map((n: any) => n.id);
+      if (notificationIds.length > 0) {
+        await fetch('/api/notifications/mark-read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ notificationIds }),
+        });
+        refetchNotifications();
+      }
+    } catch (error) {
+      console.error('Failed to mark notifications as read:', error);
+    }
   };
 
   // Handler for dismissing a notification
-  const handleDismiss = (notificationId: string) => {
-    setDismissedNotifications(prev => [...prev, notificationId]);
+  const handleDismiss = async (notification: any) => {
+    // For database notifications (have dbId), delete from backend
+    if (notification.dbId) {
+      try {
+        await fetch(`/api/notifications/${notification.dbId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        refetchNotifications();
+      } catch (error) {
+        console.error('Failed to dismiss notification:', error);
+      }
+    } else {
+      // For generated notifications, just hide locally
+      setDismissedNotifications(prev => [...prev, notification.id]);
+    }
   };
 
   // Handler for primary action clicks
@@ -389,7 +475,7 @@ export default function Notifications() {
                       variant="outline" 
                       size="sm" 
                       className="border-gray-300 text-gray-600 hover:bg-gray-100"
-                      onClick={() => handleDismiss(notification.id)}
+                      onClick={() => handleDismiss(notification)}
                     >
                       {translations.dismiss}
                     </Button>
