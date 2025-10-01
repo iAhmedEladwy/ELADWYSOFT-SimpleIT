@@ -35,31 +35,13 @@ import SystemHealth from '@/pages/admin/SystemHealth';
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, isFetching } = useAuth();
   const [, navigate] = useLocation();
-  const [isRedirecting, setIsRedirecting] = useState(false);
   
-  useEffect(() => {
-    // Reset redirecting flag if user is present (successful auth)
-    if (user && isRedirecting) {
-      setIsRedirecting(false);
-    }
-    
-    // Only redirect if we're certain the user is not authenticated
-    // AND we're not currently fetching/refetching data (prevents logout on double refresh)
-    if (!isLoading && !isFetching && !user && !isRedirecting) {
-      setIsRedirecting(true);
-      // Use navigate instead of window.location.href for better SPA behavior
-      setTimeout(() => {
-        navigate("/login");
-      }, 100);
-    }
-  }, [user, isLoading, isFetching, navigate, isRedirecting]);
-
-  // Show enhanced loading state with better UX (also show during refetch)
-  if (isLoading || isFetching || isRedirecting) {
+  // Show loading while checking authentication or refetching
+  if (isLoading || isFetching) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-gray-600">{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
+        <p className="text-gray-600">Loading...</p>
         <div className="mt-4 w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
           <div className="h-full bg-primary rounded-full animate-pulse"></div>
         </div>
@@ -67,8 +49,9 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     );
   }
 
-  // If user is not authenticated and we haven't started redirecting yet
+  // If not loading and no user, redirect to login
   if (!user) {
+    navigate("/login");
     return null;
   }
 
