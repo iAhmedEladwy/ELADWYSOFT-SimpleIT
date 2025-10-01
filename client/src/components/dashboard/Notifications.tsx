@@ -34,47 +34,40 @@ export default function Notifications() {
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [allRead, setAllRead] = useState(false);
 
-  // Fetch real notification data - only when authenticated
+  // Fetch real notification data - component is already inside protected route
+  // Queries run unconditionally since we're already authenticated
   const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
-    enabled: !!user,
   });
   const assets = Array.isArray(assetsResponse) ? assetsResponse : (assetsResponse?.data || []);
 
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
     queryKey: ['/api/tickets'],
-    enabled: !!user,
   });
 
   const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ['/api/employees'],
-    enabled: !!user,
   });
 
   const { data: maintenance, isLoading: maintenanceLoading } = useQuery({
     queryKey: ['/api/asset-maintenance'],
-    enabled: !!user,
   });
 
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['/api/asset-transactions'],
-    enabled: !!user,
   });
 
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
-    enabled: !!user,
   });
 
   const { data: systemConfig, isLoading: configLoading } = useQuery({
     queryKey: ['/api/system-config'],
-    enabled: !!user,
   });
 
   // Fetch database notifications
   const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['/api/notifications'],
-    enabled: !!user,
   });
 
   const isLoading = assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
