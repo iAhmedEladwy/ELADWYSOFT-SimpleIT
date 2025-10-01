@@ -1320,6 +1320,7 @@ const parseCSVLine = (line: string): string[] => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveGeneralConfig(); }}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label>{translations.assetIdPrefixLabel}</Label>
@@ -1437,7 +1438,7 @@ const parseCSVLine = (line: string): string[] => {
 
               <div className="flex justify-end pt-6 border-t">
                 <Button 
-                  onClick={handleSaveGeneralConfig}
+                  type="submit"
                   disabled={updateConfigMutation.isPending}
                   className="min-w-32"
                 >
@@ -1454,6 +1455,7 @@ const parseCSVLine = (line: string): string[] => {
                   )}
                 </Button>
               </div>
+              </form>
             </CardContent>
           </Card>
 
@@ -2874,6 +2876,7 @@ const parseCSVLine = (line: string): string[] => {
               <CardDescription>{translations.emailConfigDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveEmailConfig(); }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">{translations.smtpServerSettings}</h3>
@@ -2974,7 +2977,7 @@ const parseCSVLine = (line: string): string[] => {
 
               <div className="flex justify-end pt-6 border-t">
                 <Button 
-                  onClick={handleSaveEmailConfig}
+                  type="submit"
                   disabled={updateConfigMutation.isPending}
                   className="min-w-32"
                 >
@@ -2991,6 +2994,7 @@ const parseCSVLine = (line: string): string[] => {
                   )}
                 </Button>
               </div>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
