@@ -1494,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/assets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1649,7 +1649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employees Export/Import  
-  app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/employees/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1842,7 +1842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tickets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/tickets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -2092,7 +2092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Preview uploaded file and analyze structure
-  app.post("/api/import/preview", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/import/preview", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -2137,7 +2137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Process import data with mapping
-  app.post("/api/import/process", authenticateUser, hasAccess(3), upload.none(), async (req, res) => {
+  app.post("/api/import/process", authenticateUser, requireRole(ROLES.MANAGER), upload.none(), async (req, res) => {
     try {
       console.log('Raw request body:', req.body);
       console.log('Request headers:', req.headers);
@@ -4610,7 +4610,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
   
   // Export audit logs to CSV
-  app.get("/api/audit-logs/export", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs/export", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       // Get all logs without pagination for export
       const filter = req.query.filter as string;
@@ -4928,7 +4928,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 
 
   // Import routes
-  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -4973,7 +4973,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/assets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -5017,7 +5017,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/import/tickets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/tickets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -6463,7 +6463,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
 });
 
   // Import API endpoints
-  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data, mapping } = req.body;
       const importedEmployees = [];
@@ -6496,7 +6496,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
     }
   });
 
-  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/assets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data, mapping } = req.body;
       const importedAssets = [];

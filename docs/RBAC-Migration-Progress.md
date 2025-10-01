@@ -129,25 +129,28 @@ if (userLevel < 4) {
 - Modified `requireRole()` to use `getUserRoleLevel()` for case-insensitive comparison
 - All admin routes now work correctly after fix
 
-#### Batch 2: User Management Routes (10 routes) ⏳ PENDING
-**Risk**: 🟡 Medium - Critical but less frequent operations
+#### Batch 2: User Management Routes (10 routes) ✅ COMPLETE
+**Risk**: 🟡 Medium - Critical but less frequent operations  
+**Status**: ✅ Completed - All routes migrated to `requireRole(ROLES.MANAGER)`
 
+**Migrated Routes:**
 ```typescript
-// User CRUD (Manager+)
-app.get("/api/users", authenticateUser, hasAccess(3), ...)
-   → app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), ...)
-
-app.get("/api/users/:id", authenticateUser, hasAccess(3), ...)
-app.post("/api/users", authenticateUser, hasAccess(3), ...)
-app.delete("/api/users/:id", authenticateUser, hasAccess(3), ...)
-app.put("/api/users/:id/change-password", authenticateUser, hasAccess(3), ...)
-
-// Duplicate routes (consolidate)
-app.get("/api/users", authenticateUser, hasAccess(3), ...) // Line 6927
-app.post("/api/users", authenticateUser, hasAccess(3), ...) // Line 6937
-app.put("/api/users/:id", authenticateUser, hasAccess(3), ...) // Line 6954
-app.delete("/api/users/:id", authenticateUser, hasAccess(3), ...) // Line 6996
+// User CRUD Operations (Manager+ required)
+✅ app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), ...)              // Lines 920, 6920
+✅ app.get("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), ...)          // Line 929
+✅ app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), ...)             // Lines 942, 6930
+✅ app.put("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), ...)          // Line 6947
+✅ app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), ...)       // Lines 973, 6989
+✅ app.put("/api/users/:id/change-password", authenticateUser, requireRole(ROLES.MANAGER), ...) // Line 7011
 ```
+
+**Note**: Found and migrated duplicate user routes (early and late in file)
+
+**Changes Made:**
+- All `hasAccess(3)` for user routes → `requireRole(ROLES.MANAGER)`
+- User viewing, creation, update, deletion now require Manager role
+- Password changes require Manager role
+- Consistent RBAC enforcement across all user management
 
 #### Batch 3: Import/Export Routes (18 routes) ⏳ PENDING
 **Risk**: 🟡 Medium - Data integrity critical
@@ -287,16 +290,16 @@ If issues arise after any batch:
 |-------|--------|-----------------|------------|------------|
 | Phase 1 | ✅ Complete | 0 (middleware only) | 🟢 Low | 100% |
 | Phase 2 Batch 1 | ✅ Complete | 17 (admin routes) | 🔴 High | 100% |
-| Phase 2 Batch 2 | 🎯 Next | 10 (user mgmt) | 🟡 Medium | 0% |
-| Phase 2 Batch 3 | ⏳ Pending | 18 (import/export) | 🟡 Medium | 0% |
+| Phase 2 Batch 2 | ✅ Complete | 10 (user mgmt) | 🟡 Medium | 100% |
+| Phase 2 Batch 3 | 🎯 Next | 18 (import/export) | 🟡 Medium | 0% |
 | Phase 2 Batch 4 | ⏳ Pending | 35 (assets) | 🟢 Low | 0% |
 | Phase 2 Batch 5 | ⏳ Pending | 24 (other) | 🟢 Low | 0% |
-| Phase 3 | 🔮 Future | 87 (remaining) | 🟢 Low | 0% |
+| Phase 3 | 🔮 Future | 77 (remaining) | 🟢 Low | 0% |
 
-**Overall Progress**: Phase 1 + Batch 1 complete (29% of Phase 2, 20% total migration)
+**Overall Progress**: Phase 1 + Batch 1 + Batch 2 complete (41% of Phase 2, 26% total migration)
 
-**Routes Migrated**: 17/104 routes using RBAC `requireRole()`  
-**Routes Remaining**: 72 routes still using `hasAccess()`
+**Routes Migrated**: 27/104 routes using RBAC `requireRole()`  
+**Routes Remaining**: 62 routes still using `hasAccess()`
 
 ---
 
@@ -309,6 +312,9 @@ If issues arise after any batch:
 - ✅ Using `getUserRoleLevel()` consistently
 - ✅ Batch 1 (Admin routes) complete - All 17 routes migrated
 - ✅ Verified: Zero `hasAccess(4)` remaining in codebase
+- ✅ Fixed critical case sensitivity issue in requireRole()
+- ✅ Batch 2 (User Management) complete - All 10 routes migrated
+- ✅ Handled duplicate user routes (lines ~920 and ~6920)
 
 ### Pending Decisions
 - ⏳ When to migrate Batch 1 (admin routes)?
@@ -323,6 +329,6 @@ If issues arise after any batch:
 
 ---
 
-**Next Action**: Batch 1 complete! Ready for Batch 2 (User Management routes) when approved.
+**Next Action**: Batch 2 complete! Ready for Batch 3 (Import/Export routes) when approved.
 
-**Testing Recommendation**: Test admin functions (backups, system health, backup jobs) before proceeding to Batch 2.
+**Testing Recommendation**: Test user management functions (view, create, update, delete users, change passwords) before proceeding to Batch 3.
