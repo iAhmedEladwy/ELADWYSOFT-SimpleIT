@@ -68,7 +68,12 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Fixed asset details dialog user experience issues",
         "   • Removed duplicate 'My Profile' button from sidebar",
         "   • Fixed form validation in password and input fields",
-        "   • Enhanced loading states with proper skeletons"
+        "   • Enhanced loading states with proper skeletons",
+        "🔧 Database Schema Fixes:",
+        "   • Fixed critical ticket creation error - 'column category does not exist'",
+        "   • Aligned server routes with database schema using categoryId instead of category",
+        "   • Enhanced ticket form validation to require category selection",
+        "   • Improved error handling for missing required ticket fields"
       ],
       security: [
         "🛡️ Enhanced RBAC with hierarchical permission system",
