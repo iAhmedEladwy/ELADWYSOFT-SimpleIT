@@ -32,9 +32,12 @@ export async function apiRequest(
     }
     return res;
   } catch (error) {
-    // Silently throw 401 errors (authentication failures are handled by UI)
-    // Log other errors for debugging
-    if (!(error instanceof Error && error.message.includes('401'))) {
+    // Silently handle expected authentication failures
+    // Only log unexpected errors for debugging
+    const isAuthError = error instanceof Error && error.message.includes('401');
+    const isAuthEndpoint = url.includes('/api/me') || url.includes('/api/login') || url.includes('/api/logout');
+    
+    if (!isAuthError || !isAuthEndpoint) {
       console.error(`API Request Error (${method} ${url}):`, error);
     }
     throw error;
@@ -66,11 +69,25 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes - improved from Infinity
-      retry: 2, // Enhanced retry logic
+      retry: (failureCount, error) => {
+        // Don't retry on auth errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        // Retry other errors up to 2 times
+        return failureCount < 2;
+      },
       retryDelay: 1000,
     },
     mutations: {
-      retry: 1, // Enhanced retry for mutations
+      retry: (failureCount, error) => {
+        // Don't retry on auth errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        // Retry other errors once
+        return failureCount < 1;
+      },
     },
   },
 });

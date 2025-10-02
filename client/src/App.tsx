@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -36,6 +36,13 @@ function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, hasCheckedAuth } = useAuth();
   const [, navigate] = useLocation();
   
+  // Use useEffect to handle navigation to avoid setState during render
+  React.useEffect(() => {
+    if (hasCheckedAuth && !isLoading && !user) {
+      navigate("/login");
+    }
+  }, [hasCheckedAuth, isLoading, user, navigate]);
+  
   // Show loading until we've checked auth at least once
   if (!hasCheckedAuth || isLoading) {
     return (
@@ -49,9 +56,8 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     );
   }
 
-  // Auth has been checked - if no user, redirect to login
+  // Auth has been checked - if no user, return null (navigation handled in useEffect)
   if (!user) {
-    navigate("/login");
     return null;
   }
 
