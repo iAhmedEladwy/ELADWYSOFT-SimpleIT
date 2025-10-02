@@ -1137,6 +1137,19 @@ export class DatabaseStorage implements IStorage {
   // Ticket operations
   async getTicket(id: number): Promise<Ticket | undefined> {
     try {
+      console.log(`[GET TICKET] Looking for ticket with ID: ${id} (type: ${typeof id})`);
+      
+      // First, let's try a simple query without joins to see if we can find the ticket
+      console.log(`[GET TICKET] Trying simple query first...`);
+      const simpleResult = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+      console.log(`[GET TICKET] Simple query result:`, simpleResult);
+      
+      if (simpleResult.length === 0) {
+        console.log(`[GET TICKET] No ticket found with ID ${id}`);
+        return undefined;
+      }
+      
+      // Now try the full query with joins
       const [ticket] = await db
         .select({
           id: tickets.id,
@@ -1162,7 +1175,9 @@ export class DatabaseStorage implements IStorage {
         })
         .from(tickets)
         .leftJoin(categories, eq(tickets.categoryId, categories.id))
-        .where(eq(tickets.id, id));
+        .where(eq(tickets.id, id))
+        .limit(1);
+      console.log(`[GET TICKET] Full query result:`, ticket);
       return ticket;
     } catch (error) {
       console.error('Error fetching ticket:', error);
@@ -1302,15 +1317,32 @@ export class DatabaseStorage implements IStorage {
 
 async deleteTicket(id: number, userId: number): Promise<boolean> {
   try {
+    console.log(`[DEBUG] Attempting to delete ticket with ID: ${id} (type: ${typeof id})`);
+    
+    // Let's first check what tickets exist in the database
+    console.log(`[DEBUG] Checking all tickets in database...`);
+    const allTickets = await db.select({ id: tickets.id, title: tickets.title }).from(tickets).limit(5);
+    console.log(`[DEBUG] Sample tickets:`, allTickets);
+    
     // First check if ticket exists
     const existingTicket = await this.getTicket(id);
+    console.log(`[DEBUG] Ticket exists check result:`, existingTicket ? 'Found' : 'Not found');
+    console.log(`[DEBUG] Full ticket data:`, existingTicket);
+    
     if (!existingTicket) {
+      console.log(`[DEBUG] Ticket with ID ${id} not found`);
       return false;
     }
 
     // Delete the ticket
+    console.log(`[DEBUG] Proceeding to delete ticket ID: ${id}`);
     const result = await db.delete(tickets).where(eq(tickets.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    console.log(`[DEBUG] Delete result:`, result);
+    
+    const success = result.rowCount ? result.rowCount > 0 : false;
+    console.log(`[DEBUG] Delete success: ${success}`);
+    
+    return success;
   } catch (error) {
     console.error('Error deleting ticket:', error);
     return false;

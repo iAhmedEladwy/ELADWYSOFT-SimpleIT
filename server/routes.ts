@@ -4394,14 +4394,18 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
 
     app.delete("/api/tickets/:id", authenticateUser, requirePermission(PERMISSIONS.TICKETS_DELETE), async (req, res) => {
     try {
+      console.log(`[DELETE TICKET ROUTE] Raw params.id: '${req.params.id}' (type: ${typeof req.params.id})`);
       const ticketId = parseInt(req.params.id);
+      console.log(`[DELETE TICKET ROUTE] Parsed ticketId: ${ticketId} (type: ${typeof ticketId})`);
       if (isNaN(ticketId)) {
         return res.status(400).json({ message: "Invalid ticket ID" });
       }
       
       const userId = req.user.id;
+      console.log(`[DELETE TICKET ROUTE] Attempting to delete ticket ${ticketId} by user ${userId}`);
       
       const success = await storage.deleteTicket(ticketId, userId);
+      console.log(`[DELETE TICKET ROUTE] Delete operation result: ${success}`);
       if (!success) {
         return res.status(404).json({ message: "Ticket not found" });
       }
