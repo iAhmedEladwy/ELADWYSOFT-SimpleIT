@@ -4280,10 +4280,16 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         console.log("Creating ticket:", req.body);
         
         // Validate required fields per schema
-        const { title, description, type, submittedById } = req.body;
+        const { title, description, type, submittedById, categoryId } = req.body;
         if (!title || !description || !type || !submittedById) {
           return res.status(400).json({ 
             message: "Missing required fields: title, description, type, and submittedById are required" 
+          });
+        }
+
+        if (!categoryId) {
+          return res.status(400).json({ 
+            message: "Category is required. Please select a category for the ticket." 
           });
         }
 
@@ -4293,7 +4299,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
           relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
           type: (req.body.type || 'Incident') as ValueOf<typeof ticketTypeEnum>,
-          category: req.body.category || 'General',
+          categoryId: parseInt(req.body.categoryId.toString()),
           title: req.body.title,                             // ✅ Fixed: using title
           description: req.body.description,
           urgency: (req.body.urgency || 'Medium') as ValueOf<typeof ticketUrgencyEnum>,

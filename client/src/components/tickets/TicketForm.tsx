@@ -152,7 +152,7 @@ export default function TicketForm({
       assignedToId: ticket?.assignedToId || undefined,
       relatedAssetId: ticket?.relatedAssetId || undefined,
       type: ticket?.type || 'Incident',
-      categoryId: ticket?.categoryId || undefined,
+      categoryId: ticket?.categoryId || 0, // 0 will trigger validation error if no category selected
       urgency: ticket?.urgency || 'Medium',
       impact: ticket?.impact || 'Medium',
       status: ticket?.status || 'Open',
