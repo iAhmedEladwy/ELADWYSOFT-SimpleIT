@@ -199,6 +199,25 @@ export default function Tickets() {
     setShowCreateForm(false);
   };
 
+  // Single ticket delete handler
+  const handleDeleteTicket = async (ticketId: number) => {
+    try {
+      await apiRequest(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: t.success,
+        description: t.ticketDeleted || 'Ticket deleted successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: t.error,
+        description: error.message || t.errorUpdating || 'Failed to delete ticket',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Bulk actions
   const handleBulkStatusChange = async (newStatus: string) => {
     if (selectedTickets.length === 0) {
@@ -459,6 +478,7 @@ export default function Tickets() {
           onStatusChange={handleStatusChange}
           onAssign={handleAssignTicket}
           onEdit={handleEditTicket} // This will trigger direct edit
+          onDelete={handleDeleteTicket}
           selectedTickets={selectedTickets}
           onSelectionChange={setSelectedTickets}
         />
