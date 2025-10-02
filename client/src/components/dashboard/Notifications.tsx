@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/authContext';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { 
   Lock, 
@@ -79,6 +79,19 @@ export default function Notifications() {
   });
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
+
+  // 🐛 DEBUG: Log what data we have
+  useEffect(() => {
+    console.log('📊 Notifications Data Status:', {
+      user: !!user,
+      assets: assets?.length || 0,
+      tickets: tickets?.length || 0,
+      employees: employees?.length || 0,
+      maintenance: maintenance?.length || 0,
+      dbNotifications: dbNotifications?.length || 0,
+      isLoading,
+    });
+  }, [user, assets, tickets, employees, maintenance, dbNotifications, isLoading]);
 
   // Show loading skeleton while checking auth or loading data
   if (authLoading || !user) {
@@ -364,8 +377,11 @@ export default function Notifications() {
     });
   };
 
-  // Merge generated and database notifications
-  const allNotifications = [...generateNotifications(), ...convertDbNotifications()];
+  // Merge generated and database notifications with useMemo for performance
+  const allNotifications = useMemo(() => {
+    console.log('🔄 Regenerating notifications...');
+    return [...generateNotifications(), ...convertDbNotifications()];
+  }, [user, assets, tickets, employees, maintenance, transactions, upgrades, dbNotifications, language]);
   
   // Filter out dismissed notifications
   const notifications = allNotifications.filter(n => !dismissedNotifications.includes(n.id));
