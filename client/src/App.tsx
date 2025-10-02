@@ -33,11 +33,11 @@ import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, hasCheckedAuth } = useAuth();
   const [, navigate] = useLocation();
   
-  // Only show loading on INITIAL load, not on refetches
-  if (isLoading) {
+  // Show loading until we've checked auth at least once
+  if (!hasCheckedAuth || isLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
@@ -49,7 +49,7 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     );
   }
 
-  // If initial load complete and no user, redirect to login
+  // Auth has been checked - if no user, redirect to login
   if (!user) {
     navigate("/login");
     return null;

@@ -24,7 +24,7 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
-  const { login, user, isLoading: authLoading } = useAuth();
+  const { login, user, isLoading: authLoading, hasCheckedAuth } = useAuth();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +36,15 @@ export default function Login() {
       navigate('/');
     }
   }, [user, authLoading, navigate]);
+  
+  // Show loading while checking auth to prevent flash
+  if (!hasCheckedAuth || (user && authLoading)) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Get translations based on language
   const translations = {
