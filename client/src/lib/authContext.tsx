@@ -30,35 +30,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldCheckAuth, setShouldCheckAuth] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
-  // Check if we should attempt authentication on mount
-  useEffect(() => {
-    // Only skip auth check if on login page AND no session cookie
-    const isLoginPage = window.location.pathname === '/login';
-    const hasSessionCookie = document.cookie.includes('connect.sid');
-    
-    // Check auth if: not on login page, or has session cookie
-    if (!isLoginPage || hasSessionCookie) {
-      setShouldCheckAuth(true);
-    } else {
-      setIsLoading(false); // Not checking auth, so not loading
-      setHasCheckedAuth(true);
-    }
-  }, []);
-
-  // Fetch current user - only when we should check auth
+  // Fetch current user immediately - placeholderData will prevent user from becoming undefined during refetches
   const { 
     data: user, 
     isLoading: isUserLoading, 
     isFetching: isUserFetching,
-    status,
-    fetchStatus 
   } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
-    enabled: shouldCheckAuth, // Only fetch when explicitly enabled
     retry: false, // Don't retry on 401
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -73,8 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     },
     onSuccess: async () => {
-      // Enable auth check after successful login
-      setShouldCheckAuth(true);
       // Invalidate to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['/api/me'] });
     },
