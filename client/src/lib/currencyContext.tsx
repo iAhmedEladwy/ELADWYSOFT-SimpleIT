@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency, getCurrencySymbol } from './currencyUtils';
+import { getQueryFn } from './queryClient';
 
 // Define a type for system config
 interface SystemConfig {
@@ -53,6 +54,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Fetch system configuration to get the currency - only when enabled
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: shouldFetchConfig,
     retry: false,
     refetchOnWindowFocus: false,

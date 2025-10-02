@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getQueryFn } from '@/lib/queryClient';
 
 type LanguageContextType = {
   language: string;
@@ -27,6 +27,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Fetch current config - only when enabled
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: shouldFetchConfig,
     retry: false,
     refetchOnWindowFocus: false,
