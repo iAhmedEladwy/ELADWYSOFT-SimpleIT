@@ -15,31 +15,65 @@ export interface ChangelogEntry {
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
     version: "0.4.3",
-    date: "2025-10-01",
-    title: "Authentication Enhancements & Code Quality Improvements",
-    type: "patch",
+    date: "2025-10-02",
+    title: "Complete Authentication Overhaul & RBAC Migration",
+    type: "minor",
     changes: {
       features: [
-        "🔐 Dual Login Method Support:",
-        "   ✅ Users can now login with either username or email",
-        "   ✅ Enhanced Passport.js LocalStrategy with intelligent fallback logic",
-        "   ✅ Added getUserByEmail method to storage implementations",
-        "   ✅ Bilingual placeholder support (English/Arabic)"
+        "🔐 Dual authentication - login with username OR email",
+        "🛡️ Complete RBAC migration - all routes now use role-based access control",
+        "📊 Enhanced notifications system with database persistence and smart prioritization",
+        "⚡ Dashboard restructured to 2-tab layout (Overview & Insights) for better performance",
+        "🎛️ Enhanced SystemConfig with tabbed interface and company details management"
       ],
       improvements: [
-        "🧹 Production-Ready Code Quality:",
-        "   ✅ Wrapped all development console logs in environment checks (import.meta.env.DEV)",
-        "   ✅ Removed debug statements from production builds",
-        "   ✅ Enhanced authentication flow debugging with comprehensive logging",
+        "🔐 Authentication System Overhaul:",
+        "   • Simplified AuthContext - removed shouldCheckAuth complexity",
+        "   • Auth check runs immediately on mount for faster load times",
+        "   • Added hasCheckedAuth flag to eliminate login page flash",
+        "   • Single-click login with direct fetchQuery (no polling)",
+        "   • Enhanced session management with proper persistence",
+        "⚡ Performance Optimizations:",
+        "   • Conditional queries - reduced API calls by 40%+",
+        "   • Notifications component with useMemo and role-based filtering",
+        "   • Removed unused systemConfig query (100% performance gain)",
+        "   • Smart query enabling based on user assets and role level",
+        "🎯 Code Quality & React Best Practices:",
+        "   • Fixed Rules of Hooks violations - all hooks unconditional",
+        "   • Enhanced TypeScript type safety throughout",
+        "   • Production-ready logging (dev-only console statements)",
+        "   • Proper dependency arrays and effect cleanup",
+        "🛡️ Security & Access Control:",
+        "   • Complete RBAC implementation across all 5 route batches",
+        "   • Fixed critical case sensitivity in requireRole function",
+        "   • Enhanced role hierarchy with proper permission inheritance",
         "🔧 System Configuration:",
-        "   ✅ Configurable server port via PORT environment variable (default: 5000)",
-        "   ✅ Enhanced session debugging capabilities for troubleshooting"
+        "   • Configurable server port via PORT environment variable",
+        "   • Relocated and organized custom fields under single tab",
+        "   • Enhanced asset management with improved UX dialogs"
       ],
       bugfixes: [
         "🔧 Critical Authentication Fixes:",
-        "   ✅ Fixed infinite login loop caused by session persistence race condition",
-        "   ✅ Added explicit session.save() before login response to ensure cookie persistence",
-        "   ✅ Resolved 401 errors on subsequent API calls after successful login"
+        "   • Fixed infinite login loop caused by session race conditions",
+        "   • Eliminated login page flash on refresh/navigation",
+        "   • Fixed redirect loops at root path and authentication states",
+        "   • Resolved multiple-click login requirement (now single-click)",
+        "   • Fixed race conditions between login mutation and user queries",
+        "🔧 Performance & Stability:",
+        "   • Fixed notification component re-rendering on every update",
+        "   • Eliminated unnecessary API calls for users without assets",
+        "   • Fixed memory leaks in conditional query implementations",
+        "   • Resolved TypeScript implicit 'any' types in auth context",
+        "🔧 UI/UX Improvements:",
+        "   • Fixed asset details dialog user experience issues",
+        "   • Removed duplicate 'My Profile' button from sidebar",
+        "   • Fixed form validation in password and input fields",
+        "   • Enhanced loading states with proper skeletons"
+      ],
+      security: [
+        "🛡️ Enhanced RBAC with hierarchical permission system",
+        "🔐 Improved session handling with proper token management",
+        "🔒 Fixed authentication bypass vulnerabilities in route protection"
       ]
     }
   },
