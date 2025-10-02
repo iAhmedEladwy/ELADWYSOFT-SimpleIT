@@ -73,6 +73,8 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Fixed critical ticket creation error - 'column category does not exist'",
         "   • Aligned server routes with database schema using categoryId instead of category",
         "   • Enhanced ticket form validation to require category selection",
+        "   • Fixed all ticket import functions to use correct schema (title vs summary, categoryId vs category)",
+        "   • Added automatic category name-to-ID mapping for bulk imports with fallback creation",
         "   • Improved error handling for missing required ticket fields"
       ],
       security: [
