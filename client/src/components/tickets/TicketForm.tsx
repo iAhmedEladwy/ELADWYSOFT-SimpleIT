@@ -225,9 +225,10 @@ export default function TicketForm({
     }
   }, [urgency, impact]);
 
-  // Reset form when ticket changes - RESTORED
+  // Reset form when ticket changes or mode changes - FIXED
   useEffect(() => {
-    if (ticket) {
+    if (ticket && mode === 'edit') {
+      // Edit mode: populate form with ticket data
       form.reset({
         submittedById: ticket.submittedById,
         assignedToId: ticket.assignedToId || undefined,
@@ -244,8 +245,52 @@ export default function TicketForm({
         dueDate: ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : '',
         slaTarget: ticket.slaTarget ? format(new Date(ticket.slaTarget), 'yyyy-MM-dd') : '',
       });
+    } else if (mode === 'create') {
+      // Create mode: reset form to default values
+      form.reset({
+        submittedById: user?.employeeId || 0,
+        assignedToId: undefined,
+        relatedAssetId: undefined,
+        type: 'Incident',
+        categoryId: 0,
+        urgency: 'Medium',
+        impact: 'Medium',
+        status: 'Open',
+        title: '',
+        description: '',
+        resolution: '',
+        timeSpent: undefined,
+        dueDate: '',
+        slaTarget: '',
+      });
     }
-  }, [ticket, form]);
+  }, [ticket, mode, form, user]);
+
+  // Reset form when dialog opens - ensures clean slate for create mode
+  useEffect(() => {
+    if (open && mode === 'create') {
+      // Force reset when create dialog opens
+      form.reset({
+        submittedById: user?.employeeId || 0,
+        assignedToId: undefined,
+        relatedAssetId: undefined,
+        type: 'Incident',
+        categoryId: 0,
+        urgency: 'Medium',
+        impact: 'Medium',
+        status: 'Open',
+        title: '',
+        description: '',
+        resolution: '',
+        timeSpent: undefined,
+        dueDate: '',
+        slaTarget: '',
+      });
+      // Reset state variables
+      setActiveTab('details');
+      setNewComment('');
+    }
+  }, [open, mode, form, user]);
 
   // Create/Update ticket mutations - FIXED: Remove duplicate date conversion
   const createTicketMutation = useMutation({
