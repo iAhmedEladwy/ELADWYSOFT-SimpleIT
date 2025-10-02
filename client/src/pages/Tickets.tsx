@@ -122,10 +122,7 @@ export default function Tickets() {
 
   // Mutations
   const createTicketMutation = useMutation({
-    mutationFn: (ticketData: TicketCreateRequest) => apiRequest('/api/tickets', {
-      method: 'POST',
-      body: JSON.stringify(ticketData),
-    }),
+    mutationFn: (ticketData: TicketCreateRequest) => apiRequest('/api/tickets', 'POST', ticketData),
     onSuccess: (newTicket) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({ title: t.success, description: t.ticketCreated });
@@ -202,7 +199,7 @@ export default function Tickets() {
   // Single ticket delete handler
   const handleDeleteTicket = async (ticketId: number) => {
     try {
-      await apiRequest(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+      await apiRequest(`/api/tickets/${ticketId}`, 'DELETE');
       
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
@@ -232,10 +229,7 @@ export default function Tickets() {
     try {
       await Promise.all(
         selectedTickets.map(id => 
-          apiRequest(`/api/tickets/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ status: newStatus }),
-          })
+          apiRequest(`/api/tickets/${id}`, 'PUT', { status: newStatus })
         )
       );
       
@@ -268,10 +262,7 @@ export default function Tickets() {
     try {
       await Promise.all(
         selectedTickets.map(id => 
-          apiRequest(`/api/tickets/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ assignedToId: userId }),
-          })
+          apiRequest(`/api/tickets/${id}`, 'PUT', { assignedToId: userId })
         )
       );
       
@@ -308,7 +299,7 @@ export default function Tickets() {
     try {
       await Promise.all(
         selectedTickets.map(id => 
-          apiRequest(`/api/tickets/${id}`, { method: 'DELETE' })
+          apiRequest(`/api/tickets/${id}`, 'DELETE')
         )
       );
       
