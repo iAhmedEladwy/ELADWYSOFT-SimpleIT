@@ -80,9 +80,19 @@ export default function Notifications() {
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || maintenanceLoading || transactionsLoading || upgradesLoading || configLoading || dbNotificationsLoading;
 
-  // Early return if still loading auth or no user
+  // Show loading skeleton while checking auth or loading data
   if (authLoading || !user) {
-    return null;
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" />
+        ))}
+      </div>
+    );
   }
 
   // Translations
