@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
-  Bell,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -46,7 +45,6 @@ import TicketMetrics from '@/components/dashboard/TicketMetrics';
 import EnhancedDepartmentDistribution from '@/components/dashboard/EnhancedDepartmentDistribution';
 import RecentAssets from '@/components/dashboard/RecentAssets';
 import RecentTickets from '@/components/dashboard/RecentTickets';
-import Notifications from '@/components/dashboard/Notifications';
 import QuickActions from '@/components/dashboard/QuickActions';
 
 // Import legacy components for backward compatibility
@@ -334,7 +332,7 @@ export default function Dashboard() {
 
       {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             {translations.overview}
@@ -342,15 +340,6 @@ export default function Dashboard() {
           <TabsTrigger value="insights" className="gap-2">
             <BarChart3 className="h-4 w-4" />
             {translations.insights}
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            {translations.notifications}
-            {dashboardData?.notifications?.unread > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
-                {dashboardData.notifications.unread}
-              </Badge>
-            )}
           </TabsTrigger>
         </TabsList>
 
@@ -749,11 +738,6 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <Notifications notifications={dashboardData?.notifications} isLoading={isLoading} />
         </TabsContent>
       </Tabs>
 
