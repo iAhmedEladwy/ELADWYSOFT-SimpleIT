@@ -133,7 +133,9 @@ export const ROLE_PERMISSIONS = {
  * Check if user has specific permission
  */
 export function hasPermission(userRole: string, permission: string): boolean {
-  const rolePermissions = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS];
+  // Normalize role to title case to match ROLE_PERMISSIONS keys
+  const normalizedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
+  const rolePermissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS];
   return rolePermissions?.includes(permission as any) || false;
 }
 
@@ -179,9 +181,7 @@ export function requirePermission(permission: string) {
 
     if (!hasPermission(req.user.role, permission)) {
       return res.status(403).json({ 
-        message: 'Insufficient permissions',
-        required: permission,
-        userRole: req.user.role 
+        message: 'You do not have permission to perform this action',
       });
     }
 
