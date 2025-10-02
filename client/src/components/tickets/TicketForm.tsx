@@ -410,6 +410,9 @@ export default function TicketForm({
               </Badge>
             )}
           </DialogTitle>
+          <DialogDescription>
+            {mode === 'create' ? t.createNewTicketDescription || 'Fill out the form below to create a new support ticket.' : t.editTicketDescription || 'Update the ticket information below.'}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

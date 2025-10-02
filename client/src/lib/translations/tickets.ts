@@ -8,6 +8,9 @@ export interface TicketTranslations {
   createTicket: string;
   editTicket: string;
   editTicketDescription: string;
+  createNewTicketDescription: string;
+  basicInformation: string;
+  assignmentInformation: string;
   ticketDetails: string;
   updateResolution: string;
   addResolutionDetails: string;
@@ -204,6 +207,9 @@ export const ticketTranslations = {
     createTicket: 'Create Ticket',
     editTicket: 'Edit Ticket',
     editTicketDescription: 'Edit ticket details, status, and assignment information',
+    createNewTicketDescription: 'Fill out the form below to create a new support ticket',
+    basicInformation: 'Basic Information',
+    assignmentInformation: 'Assignment & Classification',
     ticketDetails: 'Ticket Details',
     updateResolution: 'Update Resolution',
     addResolutionDetails: 'Add Resolution Details',
@@ -400,6 +406,9 @@ export const ticketTranslations = {
     createTicket: 'إنشاء تذكرة',
     editTicket: 'تعديل التذكرة',
     editTicketDescription: 'تعديل تفاصيل التذكرة والحالة والتعيين',
+    createNewTicketDescription: 'املأ النموذج أدناه لإنشاء تذكرة دعم جديدة',
+    basicInformation: 'المعلومات الأساسية',
+    assignmentInformation: 'التعيين والتصنيف',
     ticketDetails: 'تفاصيل التذكرة',
     updateResolution: 'تحديث الحل',
     addResolutionDetails: 'إضافة تفاصيل الحل',

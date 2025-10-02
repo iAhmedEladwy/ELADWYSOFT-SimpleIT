@@ -1319,25 +1319,44 @@ async deleteTicket(id: number, userId: number): Promise<boolean> {
   try {
     console.log(`[DEBUG] Attempting to delete ticket with ID: ${id} (type: ${typeof id})`);
     
-    // Let's first check what tickets exist in the database
-    console.log(`[DEBUG] Checking all tickets in database...`);
-    const allTickets = await db.select({ id: tickets.id, title: tickets.title }).from(tickets).limit(5);
-    console.log(`[DEBUG] Sample tickets:`, allTickets);
-    
     // First check if ticket exists
     const existingTicket = await this.getTicket(id);
     console.log(`[DEBUG] Ticket exists check result:`, existingTicket ? 'Found' : 'Not found');
-    console.log(`[DEBUG] Full ticket data:`, existingTicket);
     
     if (!existingTicket) {
       console.log(`[DEBUG] Ticket with ID ${id} not found`);
       return false;
     }
 
-    // Delete the ticket
-    console.log(`[DEBUG] Proceeding to delete ticket ID: ${id}`);
-    const result = await db.delete(tickets).where(eq(tickets.id, id));
-    console.log(`[DEBUG] Delete result:`, result);
+    console.log(`[DEBUG] Starting transaction to delete ticket and related data...`);
+    
+    // Use a transaction to ensure all deletions succeed or fail together
+    const result = await db.transaction(async (tx) => {
+      // Delete ticket comments first
+      console.log(`[DEBUG] Deleting ticket comments for ticket ${id}...`);
+      await tx.delete(ticketComments).where(eq(ticketComments.ticketId, id));
+      
+      // Delete ticket history
+      console.log(`[DEBUG] Deleting ticket history for ticket ${id}...`);
+      await tx.delete(ticketHistory).where(eq(ticketHistory.ticketId, id));
+      
+      // Now delete the ticket itself
+      console.log(`[DEBUG] Deleting ticket ${id}...`);
+      const ticketResult = await tx.delete(tickets).where(eq(tickets.id, id));
+      
+      return ticketResult;
+    });
+    
+    console.log(`[DEBUG] Transaction result:`, result);
+    
+    // Log the deletion activity
+    await this.logActivity({
+      action: "Deleted",
+      entityType: "Ticket",
+      entityId: id,
+      userId,
+      details: { ticketId: existingTicket.ticketId, title: existingTicket.title }
+    });
     
     const success = result.rowCount ? result.rowCount > 0 : false;
     console.log(`[DEBUG] Delete success: ${success}`);
