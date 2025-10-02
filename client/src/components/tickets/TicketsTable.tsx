@@ -6,6 +6,7 @@ import { useTicketTranslations } from '@/lib/translations/tickets';
 import { useAuth } from '@/lib/authContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { hasPermission } from '@/components/auth/RoleGuard';
 
 import {
   Table,
@@ -15,14 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import {
   Dialog,
   DialogContent,
@@ -43,7 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MoreHorizontal, Edit, UserX, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
+import { Trash2, CheckCircle, XCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { getPriorityColor } from '@/lib/utils/ticketUtils';
 
@@ -65,6 +59,7 @@ interface TicketsTableProps {
   onStatusChange: (id: number, status: string, resolutionNotes?: string) => void;
   onAssign: (id: number, userId: number) => void;
   onEdit?: (ticket: any) => void;
+  onDelete?: (id: number) => void;
   selectedTickets?: number[];
   onSelectionChange?: (selectedIds: number[]) => void;
 }
@@ -77,6 +72,7 @@ export default function TicketsTable({
   onStatusChange,
   onAssign,
   onEdit,
+  onDelete,
   selectedTickets = [],
   onSelectionChange,
 }: TicketsTableProps) {
@@ -339,6 +335,56 @@ export default function TicketsTable({
     }
   };
 
+  // Handle delete ticket
+  const handleDelete = (ticketId: number) => {
+    try {
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      // Check if user has permission to delete (manager+ level through RBAC)
+      if (!user || !hasPermission(user.role, ['admin', 'manager'])) {
+        toast({
+          title: t.error || 'Error',
+          description: 'You do not have permission to delete tickets',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (window.confirm(t.deleteTicketConfirm || 'Are you sure you want to delete this ticket? This action cannot be undone.')) {
+        if (onDelete) {
+          onDelete(ticketId);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling delete:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete ticket',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle resolve ticket (opens resolution dialog)
+  const handleResolve = (ticketId: number) => {
+    try {
+      if (!ticketId || ticketId <= 0) {
+        throw new Error('Invalid ticket ID');
+      }
+
+      setResolutionDialog({ open: true, ticketId, newStatus: 'Resolved' });
+    } catch (error) {
+      console.error('Error handling resolve:', error);
+      toast({
+        title: t.error || 'Error',
+        description: error instanceof Error ? error.message : 'Failed to open resolution dialog',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // FIXED: Enhanced resolution dialog submit with validation
   const handleResolutionSubmit = () => {
     try {
@@ -436,7 +482,7 @@ export default function TicketsTable({
               <TableHead>{t.status || 'Status'}</TableHead>
               <TableHead>{t.submittedBy || 'Submitted By'}</TableHead>
               <TableHead>{t.assignedTo || 'Assigned To'}</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[120px] text-center">{t.actions || 'Actions'}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -612,23 +658,35 @@ export default function TicketsTable({
                     </Select>
                   </TableCell>
                   
-                  {/* Actions Dropdown */}
-                  <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild data-dropdown-trigger>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">{t.openMenu || 'Open menu'}</span>
-                          <MoreHorizontal className="h-4 w-4" />
+                  {/* Action Buttons */}
+                  <TableCell className="w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-center gap-1">
+                      {/* Resolve Button - Only show if ticket is not already resolved/closed */}
+                      {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => handleResolve(ticket.id)}
+                          title={t.resolveTicket || 'Resolve Ticket'}
+                        >
+                          <CheckCircle className="h-3 w-3" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="relative z-50">
-                        <DropdownMenuLabel>{t.actions || 'Actions'}</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => onEdit && onEdit(ticket)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          {t.editTicket || 'Edit Ticket'}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      )}
+                      
+                      {/* Delete Button - Manager+ level through RBAC */}
+                      {user && hasPermission(user.role, ['admin', 'manager']) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleDelete(ticket.id)}
+                          title={t.deleteTicket || 'Delete Ticket'}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );

@@ -85,6 +85,12 @@ export interface TicketTranslations {
   assign: string;
   resolve: string;
   close: string;
+  deleteTicket: string;
+  resolveTicket: string;
+  deleteTicketConfirm: string;
+  addResolution: string;
+  resolutionNotes: string;
+  saveResolution: string;
   reopen: string;
   refresh: string;
   search: string;
@@ -275,6 +281,12 @@ export const ticketTranslations = {
     assign: 'Assign',
     resolve: 'Resolve',
     close: 'Close',
+    deleteTicket: 'Delete Ticket',
+    resolveTicket: 'Resolve Ticket',
+    deleteTicketConfirm: 'Are you sure you want to delete this ticket? This action cannot be undone.',
+    addResolution: 'Add Resolution',
+    resolutionNotes: 'Resolution Notes',
+    saveResolution: 'Save Resolution',
     reopen: 'Reopen',
     refresh: 'Refresh',
     search: 'Search',
@@ -465,6 +477,12 @@ export const ticketTranslations = {
     assign: 'تعيين',
     resolve: 'حل',
     close: 'إغلاق',
+    deleteTicket: 'حذف التذكرة',
+    resolveTicket: 'حل التذكرة',
+    deleteTicketConfirm: 'هل أنت متأكد من حذف هذه التذكرة؟ لا يمكن التراجع عن هذا الإجراء.',
+    addResolution: 'إضافة حل',
+    resolutionNotes: 'ملاحظات الحل',
+    saveResolution: 'حفظ الحل',
     reopen: 'إعادة فتح',
     refresh: 'تحديث',
     search: 'بحث',

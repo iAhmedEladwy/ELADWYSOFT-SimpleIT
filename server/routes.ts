@@ -231,7 +231,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Import RBAC functions
-import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole } from "./rbac";
+import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
 
 // Check if user has appropriate role level
 // NOTE: This is being phased out in favor of RBAC requireRole() middleware
@@ -4392,7 +4392,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       }
     });
 
-    app.delete("/api/tickets/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
+    app.delete("/api/tickets/:id", authenticateUser, requirePermission(PERMISSIONS.TICKETS_DELETE), async (req, res) => {
     try {
       const ticketId = parseInt(req.params.id);
       if (isNaN(ticketId)) {
