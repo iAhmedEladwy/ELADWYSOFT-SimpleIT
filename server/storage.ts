@@ -1192,7 +1192,7 @@ export class DatabaseStorage implements IStorage {
         assignedToId: ticket.assignedToId || null,
         relatedAssetId: ticket.relatedAssetId || null,
         type: ticket.type || 'Incident',
-        category: ticket.category || 'General',
+        categoryId: ticket.categoryId || null,
         priority: calculatedPriority,
         urgency: urgency,
         impact: impact,
@@ -1209,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
       const result = await pool.query(`
         INSERT INTO tickets (
           submitted_by_id, assigned_to_id, related_asset_id,
-          type, category, priority, urgency, impact,
+          type, category_id, priority, urgency, impact,
           title, description, resolution, status,
           time_spent, due_date, sla_target,
           created_at, updated_at
@@ -1222,7 +1222,7 @@ export class DatabaseStorage implements IStorage {
         safeData.assignedToId,
         safeData.relatedAssetId,
         safeData.type,
-        safeData.category,
+        safeData.categoryId,
         safeData.priority,
         safeData.urgency,
         safeData.impact,
