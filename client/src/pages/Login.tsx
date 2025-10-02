@@ -71,10 +71,12 @@ export default function Login() {
         description: translations.welcomeBack,
       });
       
+      // Login completed successfully, loading state handled by authContext
       // User is now loaded, navigate to dashboard
       navigate('/');
       
     } catch (error) {
+      console.error('Login error:', error);
       
       // Enhanced error handling with network detection
       let errorTitle = translations.loginFailed;
@@ -97,6 +99,9 @@ export default function Login() {
         description: errorDescription,
         variant: 'destructive',
       });
+      setIsLoading(false);
+    } finally {
+      // Ensure loading state is reset
       setIsLoading(false);
     }
   };

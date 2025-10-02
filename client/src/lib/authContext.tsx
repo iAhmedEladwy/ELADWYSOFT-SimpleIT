@@ -75,9 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onSuccess: async () => {
       // Enable auth check after successful login
       setShouldCheckAuth(true);
-      // Force a refetch of the user data immediately instead of just invalidating
-      await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-      setIsLoading(false);
+      // Invalidate to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
     },
   });
 
@@ -117,26 +116,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
-      // Perform the login request and fetch user data
+      // Perform the login request
       await loginMutation.mutateAsync({ username, password });
       
-      // Wait for the user query to complete and populate the user state
-      // The loginMutation.onSuccess already triggered the user fetch
-      // Now wait for it to complete by checking the query state
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max
-      
-      while (attempts < maxAttempts) {
-        const userData = queryClient.getQueryData(['/api/me']);
-        if (userData) {
-          // User data is now available
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
+      // After successful login, fetch user data and wait for it
+      const userData = await queryClient.fetchQuery({ 
+        queryKey: ['/api/me'],
+        retry: false 
+      });
       
       setIsLoading(false);
+      return userData;
     } catch (error) {
       setIsLoading(false);
       throw error;
