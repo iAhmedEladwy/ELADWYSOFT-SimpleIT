@@ -43,26 +43,25 @@ export default function Notifications() {
     enabled: !!user,
   });
 
+  // Only fetch maintenance if we might need it (user has assets)
   const { data: maintenance, isLoading: maintenanceLoading } = useQuery({
     queryKey: ['/api/asset-maintenance'],
-    enabled: !!user,
+    enabled: !!user && !!assets?.length,
   });
 
+  // Only fetch transactions if we might need it (user has assets)
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['/api/asset-transactions'],
-    enabled: !!user,
+    enabled: !!user && !!assets?.length,
   });
 
+  // Only fetch upgrades if user is Manager/Admin (they need to approve)
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
-    enabled: !!user,
+    enabled: !!user && (user.role === 'manager' || user.role === 'admin'),
   });
 
-  const { data: systemConfig, isLoading: configLoading } = useQuery({
-    queryKey: ['/api/system-config'],
-    enabled: !!user,
-  });
-
+  // Fetch database notifications
   const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
     queryKey: ['/api/notifications'],
     enabled: !!user,
@@ -70,7 +69,7 @@ export default function Notifications() {
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || 
                     maintenanceLoading || transactionsLoading || upgradesLoading || 
-                    configLoading || dbNotificationsLoading;
+                    dbNotificationsLoading;
 
   if (authLoading || !user) {
     return (
