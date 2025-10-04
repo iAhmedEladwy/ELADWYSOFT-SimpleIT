@@ -7021,6 +7021,16 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
+  // Add middleware to log DELETE requests to users endpoint
+  app.use("/api/users/:id", (req, res, next) => {
+    if (req.method === 'DELETE') {
+      console.log(`[MIDDLEWARE] Received DELETE request for /api/users/${req.params.id}`);
+      console.log(`[MIDDLEWARE] User authenticated:`, req.isAuthenticated ? req.isAuthenticated() : 'No auth method');
+      console.log(`[MIDDLEWARE] User object:`, req.user ? `ID: ${req.user.id}, Username: ${req.user.username}` : 'No user');
+    }
+    next();
+  });
+
   app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
