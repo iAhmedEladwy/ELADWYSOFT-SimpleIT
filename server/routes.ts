@@ -7021,23 +7021,10 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  // Add middleware to log DELETE requests to users endpoint
-  app.use("/api/users/:id", (req, res, next) => {
-    if (req.method === 'DELETE') {
-      console.log(`[MIDDLEWARE] Received DELETE request for /api/users/${req.params.id}`);
-      console.log(`[MIDDLEWARE] User authenticated:`, req.isAuthenticated ? req.isAuthenticated() : 'No auth method');
-      console.log(`[MIDDLEWARE] User object:`, req.user ? `ID: ${req.user.id}, Username: ${req.user.username}` : 'No user');
-    }
-    next();
-  });
-
   app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
-      
-      console.log(`[DELETE USER] Attempting to delete user with ID: ${userId}`);
-      console.log(`[DELETE USER] Current user ID: ${currentUserId}`);
       
       // Prevent self-deletion
       if (userId === currentUserId) {
@@ -7046,7 +7033,6 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       
       // Get user before deletion for activity log
       const user = await storage.getUser(userId);
-      console.log(`[DELETE USER] User lookup result:`, user ? `Found user: ${user.username}` : 'User not found');
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
