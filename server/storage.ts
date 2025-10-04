@@ -583,9 +583,16 @@ export class DatabaseStorage implements IStorage {
       console.log(`[DELETE USER] Delete result:`, result);
       console.log(`[DELETE USER] Row count:`, result.rowCount);
       return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      return false;
+      
+      // Check for foreign key constraint violation
+      if (error.code === '23503') {
+        console.log(`[DELETE USER] Foreign key constraint violation - user ${id} has associated records`);
+        throw new Error(`Cannot delete user - user has associated records that must be removed first`);
+      }
+      
+      throw error;
     }
   }
 

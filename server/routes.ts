@@ -7052,9 +7052,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       
-      const success = await storage.deleteUser(userId);
-      if (!success) {
-        return res.status(404).json({ message: "User not found" });
+      try {
+        const success = await storage.deleteUser(userId);
+        if (!success) {
+          return res.status(400).json({ 
+            message: "Cannot delete user. This user may have associated records (tickets, assets, etc.) that must be removed or reassigned first." 
+          });
+        }
+      } catch (error: any) {
+        if (error.message && error.message.includes('associated records')) {
+          return res.status(400).json({ 
+            message: "Cannot delete user. This user has associated records (tickets, assets, etc.) that must be removed or reassigned first."
+          });
+        }
+        throw error; // Re-throw other errors to be handled by outer catch
       }
       
       // Log activity
