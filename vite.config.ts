@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
-  // esbuild: {
-  //   drop: mode === 'production' ? ['console', 'debugger'] : [],
-  // },
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
 }));
