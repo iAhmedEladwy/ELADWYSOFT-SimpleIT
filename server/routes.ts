@@ -7021,7 +7021,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
+  app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
@@ -7031,10 +7031,28 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
       
-      const deleted = await storage.deleteUser(userId);
-      if (!deleted) {
+      // Get user before deletion for activity log
+      const user = await storage.getUser(userId);
+      if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      const success = await storage.deleteUser(userId);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Delete",
+          entityType: "User",
+          entityId: userId,
+          details: { username: user.username, email: user.email }
+        });
+      }
+      
       res.json({ message: "User deleted successfully" });
     } catch (error: unknown) {
       console.error("User deletion error:", error);
