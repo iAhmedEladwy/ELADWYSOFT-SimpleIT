@@ -415,7 +415,10 @@ export class DatabaseStorage implements IStorage {
     try {
       // Convert id to number since users.id is a serial (number)
       const numericId = typeof id === 'string' ? parseInt(id) : id;
+      console.log(`[GET USER] Looking for user with ID: ${id} (converted to: ${numericId})`);
+      
       if (isNaN(numericId)) {
+        console.log(`[GET USER] Invalid ID provided: ${id}`);
         return undefined;
       }
       const [user] = await db.select({
@@ -431,6 +434,8 @@ export class DatabaseStorage implements IStorage {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt
       }).from(users).where(eq(users.id, numericId));
+      
+      console.log(`[GET USER] Database query result for ID ${numericId}:`, user ? `Found user: ${user.username}` : 'No user found');
       return user ? this.mapUserFromDb(user) : undefined;
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -573,7 +578,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     try {
+      console.log(`[DELETE USER] Attempting to delete user with ID: ${id}`);
       const result = await db.delete(users).where(eq(users.id, id));
+      console.log(`[DELETE USER] Delete result:`, result);
+      console.log(`[DELETE USER] Row count:`, result.rowCount);
       return result.rowCount ? result.rowCount > 0 : false;
     } catch (error) {
       console.error('Error deleting user:', error);

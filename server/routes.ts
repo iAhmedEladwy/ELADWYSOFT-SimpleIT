@@ -7026,6 +7026,9 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
       
+      console.log(`[DELETE USER] Attempting to delete user with ID: ${userId}`);
+      console.log(`[DELETE USER] Current user ID: ${currentUserId}`);
+      
       // Prevent self-deletion
       if (userId === currentUserId) {
         return res.status(400).json({ message: "Cannot delete your own account" });
@@ -7033,6 +7036,8 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       
       // Get user before deletion for activity log
       const user = await storage.getUser(userId);
+      console.log(`[DELETE USER] User lookup result:`, user ? `Found user: ${user.username}` : 'User not found');
+      
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
