@@ -231,28 +231,21 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Import RBAC functions
-import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission } from "./rbac";
+import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
 
 // Check if user has appropriate role level
+// NOTE: This is being phased out in favor of RBAC requireRole() middleware
+// See docs/RBAC-Analysis-Report.md for migration plan
 const hasAccess = (minRoleLevel: number) => {
   return (req: Request, res: Response, next: Function) => {
-    // Check emergency session first
-    // const emergencyUser = (req as any).session?.user;
-    // if (emergencyUser && emergencyUser.role === 'admin') {
-    //   return next();
-    // }
-    
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
     const user = req.user as any;
     
-    // Admin users have full access - bypass all permission checks
-    if (user && (user.role === 'admin' || user.accessLevel === '4')) {
-      return next();
-    }
-    
+    // Use RBAC functions for consistent permission checking
+    // Removed hardcoded admin bypass to ensure proper audit trail
     const userLevel = getUserRoleLevel(user);
     if (!hasMinimumRoleLevel(user, minRoleLevel)) {
       return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
@@ -308,8 +301,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "SimpleIT-bolt-secret",
-      resave: true, 
-      saveUninitialized: true,
+      resave: true, // Save on every request to ensure persistence
+      saveUninitialized: false, // Don't create session until something stored
+      rolling: true, // Reset expiration on every request
       cookie: { 
         httpOnly: true,
         secure: false, // Set to false for development
@@ -317,7 +311,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sameSite: 'lax'
       },
       store: new MemStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
+        checkPeriod: 86400000, // prune expired entries every 24h
+        ttl: 7 * 24 * 60 * 60 * 1000, // Match cookie maxAge - 7 days
+        stale: false, // Don't return stale sessions
+        max: 1000 // Max sessions to store
       })
     })
   );
@@ -328,6 +325,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Debug middleware to track what's happening
+  app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`\n[${timestamp}] ${req.method} ${req.path}`);
+    console.log('Session ID:', req.sessionID);
+    console.log('Session exists:', !!req.session);
+    console.log('Session passport:', req.session?.passport);
+    console.log('Is authenticated:', req.isAuthenticated?.());
+    console.log('User:', req.user?.username || 'none');
+    next();
+  });
   
   // Audit logging middleware disabled for import/export operations as per user requirements
   // app.use(auditLogMiddleware);
@@ -562,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/login", async (req, res, next) => {
-    console.log('Login attempt for username:', req.body.username);
+    console.log('Login attempt for username/email:', req.body.username);
        
     // Standard passport authentication
     passport.authenticate("local", (err: any, user: any, info: any) => {
@@ -576,17 +585,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: info?.message || 'Incorrect password' });
       }
       
-      // Log the user in to create session
-      req.logIn(user, (err) => {
-        if (err) {
-          console.error('Session creation error:', err);
-          return res.status(500).json({ message: 'Session creation failed' });
+      // Regenerate session to prevent fixation
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('Session regeneration error:', regenerateErr);
+          return res.status(500).json({ message: 'Session regeneration failed' });
         }
         
-        console.log('Login successful for user:', user.username);
-        res.json({ 
-          message: "Login successful", 
-          user: user
+        // Log the user in to create session
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error('Session creation error:', err);
+            return res.status(500).json({ message: 'Session creation failed' });
+          }
+          
+          console.log('Login successful for user:', user.username);
+          console.log('Session ID:', req.sessionID);
+          console.log('Session data:', req.session);
+          
+          // Ensure session is saved before responding
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('Session save error:', saveErr);
+              return res.status(500).json({ message: 'Session save failed' });
+            }
+            
+            console.log('Session saved successfully');
+            res.json({ 
+              message: "Login successful", 
+              user: user
+            });
+          });
         });
       });
     })(req, res, next);
@@ -597,21 +626,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ message: "Logout failed", error: err });
       }
-      res.json({ message: "Logout successful" });
+      
+      // Properly destroy the session
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error('Session destroy error:', destroyErr);
+        }
+        res.clearCookie('connect.sid'); // Clear the default session cookie
+        res.json({ message: "Logout successful" });
+      });
     });
   });
 
   app.get("/api/me", (req, res) => {
-    // Check emergency session first
-    // if ((req as any).session?.user) {
-    //   const { password: _, ...userWithoutPassword } = (req as any).session.user;
-    //   return res.json(userWithoutPassword);
-    // }
+    console.log('[/api/me] Session ID:', req.sessionID);
+    console.log('[/api/me] Session:', req.session);
+    console.log('[/api/me] Is authenticated:', req.isAuthenticated());
+    console.log('[/api/me] User:', req.user);
     
     if (!req.isAuthenticated()) {
+      console.log('[/api/me] Authentication failed');
       return res.status(401).json({ message: "Not authenticated" });
     }
+    
+    console.log('[/api/me] Returning user data');
     res.json(req.user);
+  });
+
+  // Diagnostic endpoint to check session state
+  app.get("/api/debug/session", (req, res) => {
+    res.json({
+      sessionID: req.sessionID,
+      sessionExists: !!req.session,
+      sessionData: req.session,
+      isAuthenticated: req.isAuthenticated?.() || false,
+      user: req.user || null,
+      timestamp: new Date().toISOString()
+    });
   });
   
   // Security Questions API endpoints - combined implementation
@@ -923,91 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User CRUD routes
-  app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.get("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const userData = validateBody<schema.InsertUser>(schema.insertUserSchema, req.body);
-      
-      // Hash the password
-      const hashedPassword = await hash(userData.password, 10);
-      
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Create",
-          entityType: "User",
-          entityId: user.id,
-          details: { username: user.username }
-        });
-      }
-      
-      res.status(201).json(user);
-    } catch (error: unknown) {
-      res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
-  // User update route removed - duplicate of the one later in the file
-
-  app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      // Get user before deletion for activity log
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const success = await storage.deleteUser(id);
-      if (!success) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Log activity
-      if (req.user) {
-        await storage.logActivity({
-          userId: (req.user as schema.User).id,
-          action: "Delete",
-          entityType: "User",
-          entityId: id,
-          details: { username: user.username }
-        });
-      }
-      
-      res.json({ message: "User deleted successfully" });
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
+  // User CRUD routes moved to later in file to avoid duplicates
 
   // Employee CRUD routes
   app.get("/api/employees", authenticateUser, async (req, res) => {
@@ -1158,7 +1125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Standardized CSV Template Generation (MUST BE BEFORE PARAMETERIZED ROUTES)
-  app.get("/api/:entity/template", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/:entity/template", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { entity } = req.params;
       const validEntities = ['assets', 'employees', 'tickets', 'users', 'asset-maintenance', 'asset-transactions'];
@@ -1258,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Raw endpoint for employee creation, bypassing schema validation
-  app.post("/api/employees/create-raw", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/employees/create-raw", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       console.log("Creating new employee with data:", req.body);
       
@@ -1315,7 +1282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/employees/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/employees/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       console.log("Updating employee ID:", id, "with data:", req.body);
@@ -1396,7 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employees/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/employees/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -1447,7 +1414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Assets Export/Import
-  app.get("/api/assets/export", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/assets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -1501,7 +1468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/assets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1656,7 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Employees Export/Import  
-  app.post("/api/employees/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/employees/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1807,7 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tickets/export", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/tickets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const tickets = await storage.getAllTickets();
       
@@ -1849,7 +1816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tickets/import", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/tickets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -1890,9 +1857,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Don't pass ticketId - let the database auto-generate it
             const ticketData: any = {
               // ticketId is auto-generated by database, don't pass it
-              summary: (row._1 || 'Imported Ticket').substring(0, 255),        // Limit to 255 chars
+              title: (row._1 || 'Imported Ticket').substring(0, 255),        // ✅ Fixed: use title instead of summary
               description: row._2 || 'No description',     // Description is text field, no limit
-              category: (row._3 || 'Incident').substring(0, 100),              // Limit to 100 chars
+              // Category will be mapped to categoryId - need to find category by name or use default
+              categoryId: null, // Will be set after finding category by name
               type: (row._4 || 'Hardware').substring(0, 100),           // Limit to 100 chars
               urgency: (row._5 || 'Medium').substring(0, 20),                 // Limit to 20 chars 
               impact: (row._6 || 'Medium').substring(0, 20),                  // Limit to 20 chars
@@ -1911,6 +1879,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               resolutionNotes: null,
               privateNotes: null
             };
+            
+            // ✅ Map category name to categoryId
+            const categoryName = (row._3 || 'General').substring(0, 100);
+            const categories = await storage.getCategories();
+            const matchingCategory = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+            if (matchingCategory) {
+              ticketData.categoryId = matchingCategory.id;
+            } else {
+              // Create default category if it doesn't exist
+              try {
+                const defaultCategory = await storage.createCategory({ name: categoryName, description: `Auto-created from import: ${categoryName}` });
+                ticketData.categoryId = defaultCategory.id;
+              } catch {
+                // If creation fails, use first available category or null
+                ticketData.categoryId = categories.length > 0 ? categories[0].id : null;
+              }
+            }
             
             // Validate enum values before creating ticket
             const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
@@ -1933,9 +1918,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const ticketData: any = {
             // ticketId is auto-generated by database, don't pass it
-            summary: (row['Summary'] || row.summary || 'Imported Ticket').substring(0, 255),
+            title: (row['Summary'] || row.summary || 'Imported Ticket').substring(0, 255), // ✅ Fixed: use title instead of summary
             description: row['Description'] || row.description || 'No description provided',
-            category: (row['Category'] || row.category || 'Incident').substring(0, 100),
+            // Category will be mapped to categoryId - need to find category by name or use default
+            categoryId: null, // Will be set after finding category by name
             type: (row['Type'] || row.type || 'Hardware').substring(0, 100),
             urgency: (row['Urgency'] || row.urgency || 'Medium').substring(0, 20),
             impact: (row['Impact'] || row.impact || 'Medium').substring(0, 20),
@@ -1954,6 +1940,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             resolutionNotes: row['Resolution Notes'] || row.resolutionNotes || null,
             privateNotes: row['Private Notes'] || row.privateNotes || null
           };
+
+          // ✅ Map category name to categoryId
+          const categoryName = (row['Category'] || row.category || 'General').substring(0, 100);
+          const categories = await storage.getCategories();
+          const matchingCategory = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+          if (matchingCategory) {
+            ticketData.categoryId = matchingCategory.id;
+          } else {
+            // Create default category if it doesn't exist
+            try {
+              const defaultCategory = await storage.createCategory({ name: categoryName, description: `Auto-created from import: ${categoryName}` });
+              ticketData.categoryId = defaultCategory.id;
+            } catch {
+              // If creation fails, use first available category or null
+              ticketData.categoryId = categories.length > 0 ? categories[0].id : null;
+            }
+          }
 
           // Validate enum values to prevent database errors
           const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
@@ -2048,7 +2051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/import', importSchemaRoutes.default);
   
   // Legacy schema endpoint (keeping for compatibility)
-  app.get("/api/import/schema/:entityType", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/import/schema/:entityType", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { entityType } = req.params;
       
@@ -2099,7 +2102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Preview uploaded file and analyze structure
-  app.post("/api/import/preview", authenticateUser, hasAccess(3), upload.single('file'), async (req, res) => {
+  app.post("/api/import/preview", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -2144,7 +2147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Process import data with mapping
-  app.post("/api/import/process", authenticateUser, hasAccess(3), upload.none(), async (req, res) => {
+  app.post("/api/import/process", authenticateUser, requireRole(ROLES.MANAGER), upload.none(), async (req, res) => {
     try {
       console.log('Raw request body:', req.body);
       console.log('Request headers:', req.headers);
@@ -2434,7 +2437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/assets/export/csv", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/assets/export/csv", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
       
@@ -2760,7 +2763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       console.log('Asset creation request received:', req.body);
       
@@ -2821,7 +2824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/assets/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/assets/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const assetData = req.body;
@@ -2848,7 +2851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/assets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/assets/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -2906,7 +2909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset Assign/Unassign
-  app.post("/api/assets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/assign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { employeeId } = req.body;
@@ -2955,7 +2958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assets/:id/unassign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/unassign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -3001,7 +3004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asset Maintenance - Enhanced with status protection
-  app.post("/api/assets/:id/maintenance", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/maintenance", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const asset = await storage.getAsset(assetId);
@@ -3129,7 +3132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update maintenance record
-  app.put("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/maintenance/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const maintenanceId = parseInt(req.params.id);
       
@@ -3174,7 +3177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete maintenance record
-  app.delete("/api/maintenance/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.delete("/api/maintenance/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const maintenanceId = parseInt(req.params.id);
       
@@ -3421,7 +3424,7 @@ app.get('/api/upgrades/:id', authenticateUser, async (req, res) => {
 });
 
 // Update upgrade
-app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -3490,7 +3493,7 @@ app.put('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) =>
 });
 
 // Delete upgrade (only drafts)
-app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res) => {
+app.delete('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -3520,7 +3523,7 @@ app.delete('/api/upgrades/:id', authenticateUser, hasAccess(2), async (req, res)
 });
 
 // Quick status update
-app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req, res) => {
+app.post('/api/upgrades/:id/status', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const upgradeId = parseInt(req.params.id);
     const user = req.user as schema.User;
@@ -3702,7 +3705,7 @@ app.post('/api/upgrades/:id/status', authenticateUser, hasAccess(2), async (req,
     }
   });
   // Bulk Check-Out endpoint
-app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const { assetIds, employeeId, reason, notes } = req.body;
     const handledById = req.user.id;
@@ -3822,7 +3825,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 });
 
 // Bulk Check-In endpoint
-  app.post("/api/assets/bulk/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/bulk/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, reason, notes } = req.body;
       const handledById = req.user.id;
@@ -3972,7 +3975,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/assets/:id/check-out", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/check-out", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const { employeeId, notes, type } = req.body;
@@ -4030,7 +4033,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
   
-  app.post("/api/assets/:id/check-in", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/assets/:id/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assetId = parseInt(req.params.id);
       const { notes, type } = req.body;
@@ -4079,7 +4082,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
 
   // Asset Sales
-  app.post("/api/asset-sales", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/asset-sales", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { buyer, date, totalAmount, notes, assetIds } = req.body;
       
@@ -4142,7 +4145,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.get("/api/asset-sales", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/asset-sales", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const sales = await storage.getAssetSales();
       res.json(sales);
@@ -4229,10 +4232,16 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
         console.log("Creating ticket:", req.body);
         
         // Validate required fields per schema
-        const { title, description, type, submittedById } = req.body;
+        const { title, description, type, submittedById, categoryId } = req.body;
         if (!title || !description || !type || !submittedById) {
           return res.status(400).json({ 
             message: "Missing required fields: title, description, type, and submittedById are required" 
+          });
+        }
+
+        if (!categoryId) {
+          return res.status(400).json({ 
+            message: "Category is required. Please select a category for the ticket." 
           });
         }
 
@@ -4242,7 +4251,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
           assignedToId: req.body.assignedToId ? parseInt(req.body.assignedToId.toString()) : null,
           relatedAssetId: req.body.relatedAssetId ? parseInt(req.body.relatedAssetId.toString()) : null,
           type: (req.body.type || 'Incident') as ValueOf<typeof ticketTypeEnum>,
-          category: req.body.category || 'General',
+          categoryId: parseInt(req.body.categoryId.toString()),
           title: req.body.title,                             // ✅ Fixed: using title
           description: req.body.description,
           urgency: (req.body.urgency || 'Medium') as ValueOf<typeof ticketUrgencyEnum>,
@@ -4299,16 +4308,20 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
       }
     });
 
-    app.delete("/api/tickets/:id", authenticateUser, hasAccess(3), async (req, res) => {
+    app.delete("/api/tickets/:id", authenticateUser, requirePermission(PERMISSIONS.TICKETS_DELETE), async (req, res) => {
     try {
+      console.log(`[DELETE TICKET ROUTE] Raw params.id: '${req.params.id}' (type: ${typeof req.params.id})`);
       const ticketId = parseInt(req.params.id);
+      console.log(`[DELETE TICKET ROUTE] Parsed ticketId: ${ticketId} (type: ${typeof ticketId})`);
       if (isNaN(ticketId)) {
         return res.status(400).json({ message: "Invalid ticket ID" });
       }
       
       const userId = req.user.id;
+      console.log(`[DELETE TICKET ROUTE] Attempting to delete ticket ${ticketId} by user ${userId}`);
       
       const success = await storage.deleteTicket(ticketId, userId);
+      console.log(`[DELETE TICKET ROUTE] Delete operation result: ${success}`);
       if (!success) {
         return res.status(404).json({ message: "Ticket not found" });
       }
@@ -4389,7 +4402,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
 
   // Ticket Assignment
-  app.post("/api/tickets/:id/assign", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/tickets/:id/assign", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { userId } = req.body;
@@ -4522,14 +4535,14 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   app.get("/api/system-config", authenticateUser, async (req, res) => {
     try {
       const config = await storage.getSystemConfig();
-      res.json(config || { language: "English", assetIdPrefix: "BOLT-" });
+      res.json(config || { language: "English", assetIdPrefix: "AST-" });
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
   // Audit Logs
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -4577,7 +4590,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
   
   // Clear audit logs (admin only)
-  app.delete("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { olderThan, entityType, action } = req.body;
       
@@ -4617,7 +4630,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
   
   // Export audit logs to CSV
-  app.get("/api/audit-logs/export", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs/export", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       // Get all logs without pagination for export
       const filter = req.query.filter as string;
@@ -4685,7 +4698,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
   
-  app.put("/api/system-config", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/system-config", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const configData = req.body;
       const updatedConfig = await storage.updateSystemConfig(configData);
@@ -4707,7 +4720,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
   
   // Activity Log
-  app.get("/api/activity-log", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/activity-log", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const activities = await storage.getRecentActivity(limit);
@@ -4718,7 +4731,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
   });
 
   // Bulk Action History endpoint
-  app.get("/api/bulk-action-history", authenticateUser, hasAccess(2), async (req: any, res: any) => {
+  app.get("/api/bulk-action-history", authenticateUser, requireRole(ROLES.AGENT), async (req: any, res: any) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -4843,7 +4856,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 
   // New Unified Import/Export Routes
   // Export routes
-  app.get("/api/export/employees", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
       
@@ -4884,7 +4897,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -4935,7 +4948,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
 
 
   // Import routes
-  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -4980,7 +4993,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/assets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -5024,7 +5037,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, hasAccess(2), async (re
     }
   });
 
-  app.post("/api/import/tickets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/tickets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data } = req.body;
       if (!Array.isArray(data)) {
@@ -5668,7 +5681,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
 });
 
   // Reports
-  app.get("/api/reports/employees", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const employees = await storage.getAllEmployees();
       
@@ -5713,7 +5726,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/reports/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const assets = await storage.getAllAssets();
       
@@ -5788,7 +5801,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/reports/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/reports/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const tickets = await storage.getAllTickets();
       
@@ -6028,7 +6041,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.post('/api/asset-statuses', authenticateUser, hasAccess(3), async (req, res) => {
+  app.post('/api/asset-statuses', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { name, color, description } = req.body;
       
@@ -6055,7 +6068,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.put('/api/asset-statuses/:id', authenticateUser, hasAccess(3), async (req, res) => {
+  app.put('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -6090,7 +6103,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.delete('/api/asset-statuses/:id', authenticateUser, hasAccess(4), async (req, res) => {
+  app.delete('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -6335,7 +6348,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
   });
 
   // Audit Logs API endpoint
-  app.get("/api/audit-logs", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
@@ -6382,7 +6395,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  app.get("/api/export/assets", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/export/assets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const [assetsData, employeesData] = await Promise.all([
         storage.getAllAssets(),
@@ -6429,7 +6442,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) => {
+app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const data = await storage.getAllTickets();
     
@@ -6470,7 +6483,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
 });
 
   // Import API endpoints
-  app.post("/api/import/employees", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data, mapping } = req.body;
       const importedEmployees = [];
@@ -6503,7 +6516,7 @@ app.get("/api/export/tickets", authenticateUser, hasAccess(2), async (req, res) 
     }
   });
 
-  app.post("/api/import/assets", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/import/assets", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { data, mapping } = req.body;
       const importedAssets = [];
@@ -6780,6 +6793,21 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         userId: req.user.id,
         details: { assignedToId: assignedUserId }
       });
+
+      // Create notification for the assigned user
+      try {
+        await db.insert(schema.notifications).values({
+          userId: assignedUserId,
+          title: `Ticket #${ticketId} Assigned to You`,
+          message: `You have been assigned ticket #${ticketId}: ${updatedTicket.title || 'Support Request'}`,
+          type: 'Ticket',
+          entityId: ticketId,
+          isRead: false,
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
@@ -6800,7 +6828,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Create ticket category
-  app.post("/api/tickets/categories", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/tickets/categories", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const categoryData = req.body;
       const category = await storage.createTicketCategory(categoryData);
@@ -6839,7 +6867,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
 
   // Categories CRUD routes  
-  app.get("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
+  app.get("/api/categories", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       let categories = await storage.getCategories();
       
@@ -6866,7 +6894,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.post("/api/categories", authenticateUser, hasAccess(2), async (req, res) => {
+  app.post("/api/categories", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { name, description } = req.body;
       if (!name || !name.trim()) {
@@ -6884,7 +6912,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.put("/api/categories/:id", authenticateUser, hasAccess(2), async (req, res) => {
+  app.put("/api/categories/:id", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { name, description } = req.body;
@@ -6908,7 +6936,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.delete("/api/categories/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/categories/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCategory(id);
@@ -6924,7 +6952,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // User CRUD routes (admin only)
-  app.get("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       console.log("GET /api/users - Raw users from storage:", JSON.stringify(users, null, 2));
@@ -6934,7 +6962,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.post("/api/users", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const userData = req.body;
       
@@ -6951,7 +6979,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.put("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userData = req.body;
@@ -6993,7 +7021,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
     }
   });
 
-  app.delete("/api/users/:id", authenticateUser, hasAccess(3), async (req, res) => {
+  app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
@@ -7003,10 +7031,40 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
       
-      const deleted = await storage.deleteUser(userId);
-      if (!deleted) {
+      // Get user before deletion for activity log
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      try {
+        const success = await storage.deleteUser(userId);
+        if (!success) {
+          return res.status(400).json({ 
+            message: "Cannot delete user. This user may have associated records (tickets, assets, etc.) that must be removed or reassigned first." 
+          });
+        }
+      } catch (error: any) {
+        if (error.message && error.message.includes('associated records')) {
+          return res.status(400).json({ 
+            message: "Cannot delete user. This user has associated records (tickets, assets, etc.) that must be removed or reassigned first."
+          });
+        }
+        throw error; // Re-throw other errors to be handled by outer catch
+      }
+      
+      // Log activity
+      if (req.user) {
+        await storage.logActivity({
+          userId: (req.user as schema.User).id,
+          action: "Delete",
+          entityType: "User",
+          entityId: userId,
+          details: { username: user.username, email: user.email }
+        });
+      }
+      
       res.json({ message: "User deleted successfully" });
     } catch (error: unknown) {
       console.error("User deletion error:", error);
@@ -7015,7 +7073,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Change user password endpoint
-  app.put("/api/users/:id/change-password", authenticateUser, hasAccess(3), async (req, res) => {
+  app.put("/api/users/:id/change-password", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { password } = req.body;
@@ -7067,7 +7125,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // Bulk Asset Operations
   
   // Sell multiple assets
-  app.post("/api/assets/sell", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/assets/sell", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds, buyer, saleDate, totalAmount, notes } = req.body;
       
@@ -7140,7 +7198,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
   
   // Retire multiple assets
-  app.post("/api/assets/retire", authenticateUser, hasAccess(3), async (req, res) => {
+  app.post("/api/assets/retire", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds, reason, retirementDate, notes } = req.body;
       
@@ -7205,7 +7263,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
   
   // Delete multiple assets
-  app.delete("/api/assets/bulk-delete", authenticateUser, hasAccess(4), async (req, res) => {
+  app.delete("/api/assets/bulk-delete", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const { assetIds } = req.body;
       
@@ -7254,7 +7312,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
 
 //Bulk Status change
-app.post("/api/assets/bulk/status", authenticateUser, hasAccess(2), async (req, res) => {
+app.post("/api/assets/bulk/status", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const { assetIds, status } = req.body;
     
@@ -7351,7 +7409,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   }));
 
   // Bulk Operations Endpoints
-  app.post('/api/assets/bulk/status', authenticateUser, hasAccess(2), async (req, res) => {
+  app.post('/api/assets/bulk/status', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, status } = req.body;
       
@@ -7408,7 +7466,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  app.post('/api/assets/bulk/delete', authenticateUser, hasAccess(3), async (req, res) => {
+  app.post('/api/assets/bulk/delete', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const { assetIds } = req.body;
       
@@ -7464,7 +7522,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  app.post('/api/assets/bulk/maintenance', authenticateUser, hasAccess(2), async (req, res) => {
+  app.post('/api/assets/bulk/maintenance', authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
       const { assetIds, type, description, scheduledDate, estimatedCost, priority, notes } = req.body;
       
@@ -7537,7 +7595,7 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
   });
 
   // GET /api/admin/backups - Get list of backups
-app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backups = await backupService.getBackupList();
     res.json(backups);
@@ -7548,7 +7606,7 @@ app.get('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) =
 });
 
 // POST /api/admin/backups - Create manual backup
-app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { description } = req.body;
     const userId = (req.user as any)?.id;
@@ -7571,7 +7629,7 @@ app.post('/api/admin/backups', authenticateUser, hasAccess(4), async (req, res) 
 });
 
 // POST /api/admin/restore/:backupId - Restore from backup
-app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/restore/:backupId', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.backupId);
     const userId = (req.user as any)?.id; 
@@ -7601,7 +7659,7 @@ app.post('/api/admin/restore/:backupId', authenticateUser, hasAccess(4), async (
 });
 
 // DELETE /api/admin/backups/:id - Delete backup
-app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.delete('/api/admin/backups/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.id);
     
@@ -7623,7 +7681,7 @@ app.delete('/api/admin/backups/:id', authenticateUser, hasAccess(4), async (req,
 });
 
 // POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
-app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4), backupUpload.single('backup'), async (req, res) => {
+app.post('/api/admin/backups/restore-from-file', authenticateUser, requireRole(ROLES.ADMIN), backupUpload.single('backup'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No backup file uploaded' });
@@ -7669,7 +7727,7 @@ app.post('/api/admin/backups/restore-from-file', authenticateUser, hasAccess(4),
 });
 
 // GET /api/admin/backups/:id/download - Download backup file
-app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backups/:id/download', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const backupId = parseInt(req.params.id);
     
@@ -7703,7 +7761,7 @@ app.get('/api/admin/backups/:id/download', authenticateUser, hasAccess(4), async
 });
 
 // GET /api/admin/system-health - Get system health metrics
-app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/system-health', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const healthMetrics = await backupService.getSystemHealth();
     res.json(healthMetrics);
@@ -7714,7 +7772,7 @@ app.get('/api/admin/system-health', authenticateUser, hasAccess(4), async (req, 
 });
 
 // GET /api/admin/system-overview - Get system overview statistics
-app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/system-overview', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const systemOverview = await backupService.getSystemOverview();
     res.json(systemOverview);
@@ -7725,7 +7783,7 @@ app.get('/api/admin/system-overview', authenticateUser, hasAccess(4), async (req
 });
 
 // GET /api/admin/restore-history - Get restore history
-app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/restore-history',authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const history = await backupService.getRestoreHistory();
     res.json(history);
@@ -7738,7 +7796,7 @@ app.get('/api/admin/restore-history',authenticateUser, hasAccess(4), async (req,
 // Backup Job Management Routes
 
 // GET /api/admin/backup-jobs - Get all backup jobs
-app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+app.get('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobs = await backupService.getBackupJobs();
     res.json(jobs);
@@ -7749,7 +7807,7 @@ app.get('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, re
 });
 
 // POST /api/admin/backup-jobs - Create new backup job
-app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
 
@@ -7781,7 +7839,7 @@ app.post('/api/admin/backup-jobs', authenticateUser, hasAccess(4), async (req, r
 });
 
 // PUT /api/admin/backup-jobs/:id - Update backup job
-app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.put('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
@@ -7814,7 +7872,7 @@ app.put('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req
 });
 
 // DELETE /api/admin/backup-jobs/:id - Delete backup job
-app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (req, res) => {
+app.delete('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
 
@@ -7836,7 +7894,7 @@ app.delete('/api/admin/backup-jobs/:id', authenticateUser, hasAccess(4), async (
 });
 
 // POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
-app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async (req, res) => {
+app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
 
@@ -7860,9 +7918,106 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, hasAccess(4), async
   }
 });
 
+  // ==========================================
+  // NOTIFICATIONS ENDPOINTS
+  // ==========================================
+
+  // GET /api/notifications - Get all notifications for current user
+  app.get('/api/notifications', authenticateUser, async (req, res) => {
+    try {
+      const user = req.user as AuthUser;
+      
+      const userNotifications = await db.select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, user.id))
+        .orderBy(schema.notifications.createdAt);
+
+      res.json(userNotifications);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+  });
+
+  // POST /api/notifications/mark-read - Mark notification(s) as read
+  app.post('/api/notifications/mark-read', authenticateUser, async (req, res) => {
+    try {
+      const user = req.user as AuthUser;
+      const { notificationIds } = req.body;
+
+      if (!notificationIds || !Array.isArray(notificationIds)) {
+        return res.status(400).json({ error: 'notificationIds array is required' });
+      }
+
+      // Update notifications to mark as read
+      await db.update(schema.notifications)
+        .set({ isRead: true })
+        .where(eq(schema.notifications.userId, user.id));
+
+      res.json({ message: 'Notifications marked as read' });
+    } catch (error) {
+      console.error('Failed to mark notifications as read:', error);
+      res.status(500).json({ error: 'Failed to mark notifications as read' });
+    }
+  });
+
+  // DELETE /api/notifications/:id - Delete (dismiss) a notification
+  app.delete('/api/notifications/:id', authenticateUser, async (req, res) => {
+    try {
+      const user = req.user as AuthUser;
+      const notificationId = parseInt(req.params.id);
+
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ error: 'Invalid notification ID' });
+      }
+
+      // Delete notification (only if it belongs to the user)
+      await db.delete(schema.notifications)
+        .where(eq(schema.notifications.id, notificationId));
+
+      res.json({ message: 'Notification dismissed' });
+    } catch (error) {
+      console.error('Failed to dismiss notification:', error);
+      res.status(500).json({ error: 'Failed to dismiss notification' });
+    }
+  });
+
+  // POST /api/notifications - Create a new notification (for system use)
+  app.post('/api/notifications', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+    try {
+      const { userId, title, message, type, entityId } = req.body;
+
+      if (!userId || !title || !message || !type) {
+        return res.status(400).json({ error: 'userId, title, message, and type are required' });
+      }
+
+      const [notification] = await db.insert(schema.notifications)
+        .values({
+          userId,
+          title,
+          message,
+          type,
+          entityId,
+          isRead: false
+        })
+        .returning();
+
+      res.json(notification);
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+      res.status(500).json({ error: 'Failed to create notification' });
+    }
+  });
+
   // Helper function to check admin access
+  // DEPRECATED: Use requireRole(ROLES.ADMIN) from rbac.ts instead
   function requireAdmin(req: any, res: any, next: any) {
-    if (!req.session.user || req.session.user.accessLevel !== 4) {
+    // Use RBAC getUserRoleLevel instead of deprecated accessLevel
+    const userLevel = getUserRoleLevel(req.session?.user || req.user);
+    if (!req.session?.user && !req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (userLevel < 4) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     next();

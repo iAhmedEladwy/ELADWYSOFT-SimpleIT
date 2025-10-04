@@ -20,7 +20,9 @@ export function RoleGuard({ allowedRoles, children, fallback = null }: RoleGuard
 // Helper function to check if user has permission
 export function hasPermission(userRole: string | undefined, requiredRoles: string[]): boolean {
   if (!userRole) return false;
-  return requiredRoles.includes(userRole);
+  // Make case-insensitive comparison
+  const normalizedUserRole = userRole.toLowerCase();
+  return requiredRoles.some(role => role.toLowerCase() === normalizedUserRole);
 }
 
 // Helper function to check if user can access a resource based on hierarchy

@@ -18,6 +18,8 @@ type User = {
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  isFetching: boolean;
+  hasCheckedAuth: boolean; // Flag to indicate if initial auth check is complete
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasAccess: (minRoleLevel: number) => boolean;
@@ -28,15 +30,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
-  // Fetch current user
-  const { data: user, isLoading: isUserLoading } = useQuery<User | null>({
+  // Fetch current user immediately - placeholderData will prevent user from becoming undefined during refetches
+  const { 
+    data: user, 
+    isLoading: isUserLoading, 
+    isFetching: isUserFetching,
+  } = useQuery<User | null>({
     queryKey: ['/api/me'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
-    retry: 2,
-    retryDelay: 1000,
+    retry: false, // Don't retry on 401
+    refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
+    placeholderData: (previousData: User | null | undefined) => previousData, // Keep previous user during refetch
   });
 
   // Login mutation
@@ -46,9 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     },
     onSuccess: async () => {
-      // Force a refetch of the user data immediately instead of just invalidating
-      await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-      setIsLoading(false);
+      // Invalidate to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
     },
   });
 
@@ -80,33 +87,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isUserLoading) {
       setIsLoading(false);
+      setHasCheckedAuth(true); // Mark that we've completed initial auth check
     }
   }, [isUserLoading]);
 
   const login = async (username: string, password: string) => {
     try {
       setIsLoading(true);
-      console.log('Attempting login with username:', username);
       
       // Perform the login request
-      const result = await loginMutation.mutateAsync({ username, password });
-      console.log('Login API response:', result);
+      await loginMutation.mutateAsync({ username, password });
       
-      // Force a refresh of the user data
-      const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-      console.log('User data fetched after login:', userData);
-      
-      // Add a small delay to ensure state updates propagate
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // After successful login, fetch user data and wait for it
+      const userData = await queryClient.fetchQuery({ 
+        queryKey: ['/api/me'],
+        retry: false 
+      });
       
       setIsLoading(false);
-      return result;
+      return userData;
     } catch (error) {
-      console.error("Login error:", error);
-      // Add more detailed error logging for debugging
-      if (error instanceof Error) {
-        console.error("Login error details:", error.message, error.stack);
-      }
       setIsLoading(false);
       throw error;
     }
@@ -120,18 +120,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !user.role) return false;
     
     // Role hierarchy: admin=4, manager=3, agent=2, employee=1
-    const roleLevel = {
+    const roleLevels: Record<string, number> = {
       'admin': 4,
       'manager': 3,
       'agent': 2,
       'employee': 1
-    }[user.role] || 0;
+    };
+    
+    const roleLevel = roleLevels[user.role] || 0;
     
     return roleLevel >= minRoleLevel;
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading, login, logout, hasAccess }}>
+    <AuthContext.Provider value={{ user: user || null, isLoading, isFetching: isUserFetching, hasCheckedAuth, login, logout, hasAccess }}>
       {children}
     </AuthContext.Provider>
   );

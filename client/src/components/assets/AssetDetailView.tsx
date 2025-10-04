@@ -250,7 +250,10 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{translations.assetDetails}</DialogTitle>
+          <DialogTitle>
+            {translations.assetDetails}
+            {asset && ` - ${asset.assetId}`}
+          </DialogTitle>
           <DialogDescription>{translations.viewCompleteInfo}</DialogDescription>
         </DialogHeader>
         
@@ -268,22 +271,34 @@ const getWarrantyStatus = (warrantyDate: string | null) => {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 mb-4">
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <Laptop className="h-4 w-4" />
-                <span>{translations.general}</span>
+                <span className="hidden sm:inline">{translations.general}</span>
+                <span className="sm:hidden">
+                  <Laptop className="h-4 w-4" />
+                </span>
               </TabsTrigger>
               <TabsTrigger value="depreciation" className="flex items-center gap-2">
                 <Receipt className="h-4 w-4" />
-                <span>{translations.depreciation}</span>
+                <span className="hidden sm:inline">{translations.depreciation}</span>
+                <span className="sm:hidden">
+                  <Receipt className="h-4 w-4" />
+                </span>
               </TabsTrigger>
               <TabsTrigger value="maintenance" className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
-                <span>{translations.maintenance}</span>
+                <span className="hidden sm:inline">{translations.maintenance}</span>
+                <span className="sm:hidden">
+                  <Wrench className="h-4 w-4" />
+                </span>
               </TabsTrigger>
               <TabsTrigger value="transactions" className="flex items-center gap-2">
                 <History className="h-4 w-4" />
-                <span>{translations.transactions}</span>
+                <span className="hidden sm:inline">{translations.transactions}</span>
+                <span className="sm:hidden">
+                  <History className="h-4 w-4" />
+                </span>
               </TabsTrigger>
             </TabsList>
             

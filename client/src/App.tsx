@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -33,27 +33,22 @@ import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, hasCheckedAuth } = useAuth();
   const [, navigate] = useLocation();
-  const [isRedirecting, setIsRedirecting] = useState(false);
   
-  useEffect(() => {
-    // Only redirect if we're certain the user is not authenticated
-    if (!isLoading && !user && !isRedirecting) {
-      setIsRedirecting(true);
-      // Use navigate instead of window.location.href for better SPA behavior
-      setTimeout(() => {
-        navigate("/login");
-      }, 100);
+  // Use useEffect to handle navigation to avoid setState during render
+  React.useEffect(() => {
+    if (hasCheckedAuth && !isLoading && !user) {
+      navigate("/login");
     }
-  }, [user, isLoading, navigate, isRedirecting]);
-
-  // Show enhanced loading state with better UX
-  if (isLoading || isRedirecting) {
+  }, [hasCheckedAuth, isLoading, user, navigate]);
+  
+  // Show loading until we've checked auth at least once
+  if (!hasCheckedAuth || isLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-gray-600">{isRedirecting ? 'Redirecting to login...' : 'Loading...'}</p>
+        <p className="text-gray-600">Loading...</p>
         <div className="mt-4 w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
           <div className="h-full bg-primary rounded-full animate-pulse"></div>
         </div>
@@ -61,7 +56,7 @@ function PrivateRoute({ component: Component, ...rest }: any) {
     );
   }
 
-  // If user is not authenticated and we haven't started redirecting yet
+  // Auth has been checked - if no user, return null (navigation handled in useEffect)
   if (!user) {
     return null;
   }
@@ -74,6 +69,7 @@ function Router() {
   const { language } = useLanguage();
   const dir = language === "Arabic" ? "rtl" : "ltr";
   const [, navigate] = useLocation();
+  const { isLoading: authLoading, hasCheckedAuth } = useAuth();
   
   // Check if system is initialized
   const { data: systemStatus, isLoading: checkingSystem } = useQuery({
@@ -91,12 +87,15 @@ function Router() {
     }
   }, [systemStatus, checkingSystem, navigate]);
   
-  // If checking system status, show loading
-  if (checkingSystem) {
+  // Show loading during initial auth check or system status check
+  // IMPORTANT: Don't render any routes until auth has been checked at least once
+  if (checkingSystem || !hasCheckedAuth) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p>Checking system status...</p>
+        <p className="text-gray-600">
+          {checkingSystem ? 'Checking system status...' : 'Initializing...'}
+        </p>
       </div>
     );
   }

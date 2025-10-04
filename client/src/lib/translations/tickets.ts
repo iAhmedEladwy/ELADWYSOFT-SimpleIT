@@ -8,6 +8,9 @@ export interface TicketTranslations {
   createTicket: string;
   editTicket: string;
   editTicketDescription: string;
+  createNewTicketDescription: string;
+  basicInformation: string;
+  assignmentInformation: string;
   ticketDetails: string;
   updateResolution: string;
   addResolutionDetails: string;
@@ -85,6 +88,12 @@ export interface TicketTranslations {
   assign: string;
   resolve: string;
   close: string;
+  deleteTicket: string;
+  resolveTicket: string;
+  deleteTicketConfirm: string;
+  addResolution: string;
+  resolutionNotes: string;
+  saveResolution: string;
   reopen: string;
   refresh: string;
   search: string;
@@ -198,6 +207,9 @@ export const ticketTranslations = {
     createTicket: 'Create Ticket',
     editTicket: 'Edit Ticket',
     editTicketDescription: 'Edit ticket details, status, and assignment information',
+    createNewTicketDescription: 'Fill out the form below to create a new support ticket',
+    basicInformation: 'Basic Information',
+    assignmentInformation: 'Assignment & Classification',
     ticketDetails: 'Ticket Details',
     updateResolution: 'Update Resolution',
     addResolutionDetails: 'Add Resolution Details',
@@ -275,6 +287,12 @@ export const ticketTranslations = {
     assign: 'Assign',
     resolve: 'Resolve',
     close: 'Close',
+    deleteTicket: 'Delete Ticket',
+    resolveTicket: 'Resolve Ticket',
+    deleteTicketConfirm: 'Are you sure you want to delete this ticket? This action cannot be undone.',
+    addResolution: 'Add Resolution',
+    resolutionNotes: 'Resolution Notes',
+    saveResolution: 'Save Resolution',
     reopen: 'Reopen',
     refresh: 'Refresh',
     search: 'Search',
@@ -388,6 +406,9 @@ export const ticketTranslations = {
     createTicket: 'إنشاء تذكرة',
     editTicket: 'تعديل التذكرة',
     editTicketDescription: 'تعديل تفاصيل التذكرة والحالة والتعيين',
+    createNewTicketDescription: 'املأ النموذج أدناه لإنشاء تذكرة دعم جديدة',
+    basicInformation: 'المعلومات الأساسية',
+    assignmentInformation: 'التعيين والتصنيف',
     ticketDetails: 'تفاصيل التذكرة',
     updateResolution: 'تحديث الحل',
     addResolutionDetails: 'إضافة تفاصيل الحل',
@@ -465,6 +486,12 @@ export const ticketTranslations = {
     assign: 'تعيين',
     resolve: 'حل',
     close: 'إغلاق',
+    deleteTicket: 'حذف التذكرة',
+    resolveTicket: 'حل التذكرة',
+    deleteTicketConfirm: 'هل أنت متأكد من حذف هذه التذكرة؟ لا يمكن التراجع عن هذا الإجراء.',
+    addResolution: 'إضافة حل',
+    resolutionNotes: 'ملاحظات الحل',
+    saveResolution: 'حفظ الحل',
     reopen: 'إعادة فتح',
     refresh: 'تحديث',
     search: 'بحث',

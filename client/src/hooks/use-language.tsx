@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getQueryFn } from '@/lib/queryClient';
 
 type LanguageContextType = {
   language: string;
@@ -12,10 +12,25 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState<string>('English');
+  const [shouldFetchConfig, setShouldFetchConfig] = useState(false);
 
-  // Fetch current config
+  // Check if we should fetch config on mount
+  useEffect(() => {
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    const hasSessionCookie = document.cookie.includes('connect.sid');
+    
+    if (!isLoginPage || hasSessionCookie) {
+      setShouldFetchConfig(true);
+    }
+  }, []);
+
+  // Fetch current config - only when enabled
   const { data: config, isLoading } = useQuery({
     queryKey: ['/api/system-config'],
+    queryFn: getQueryFn({ on401: 'returnNull' }),
+    enabled: shouldFetchConfig,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Update language when config changes

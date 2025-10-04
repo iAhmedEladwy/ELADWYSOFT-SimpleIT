@@ -17,10 +17,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
-import { queryClient } from '@/lib/queryClient';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
+  username: z.string().min(1, 'Username or Email is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -31,38 +30,25 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
   
-  // Always check authentication status on component mount and redirect if logged in
+  // Redirect to dashboard if already authenticated
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      try {
-        // Force a fresh fetch of user data
-        await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-        
-        // If we have a user and we're not loading, redirect to the dashboard
-        if (user && !authLoading) {
-          console.log("User authenticated, redirecting to homepage");
-          window.location.href = '/';
-        }
-      } catch (error) {
-        console.log("Not authenticated or error checking auth");
-      }
-    };
-    
-    checkAuthAndRedirect();
-  }, [user, authLoading]);
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   // Get translations based on language
   const translations = {
     title: language === 'English' ? 'Login' : 'تسجيل الدخول',
-    username: language === 'English' ? 'Username' : 'اسم المستخدم',
+    username: language === 'English' ? 'Username or Email' : 'اسم المستخدم أو البريد الإلكتروني',
     password: language === 'English' ? 'Password' : 'كلمة المرور',
     loginButton: language === 'English' ? 'Login' : 'تسجيل الدخول',
-    usernameRequired: language === 'English' ? 'Username is required' : 'اسم المستخدم مطلوب',
+    usernameRequired: language === 'English' ? 'Username or Email is required' : 'اسم المستخدم أو البريد الإلكتروني مطلوب',
     passwordRequired: language === 'English' ? 'Password is required' : 'كلمة المرور مطلوبة',
     loginSuccess: language === 'English' ? 'Login successful' : 'تم تسجيل الدخول بنجاح',
     welcomeBack: language === 'English' ? 'Welcome back!' : 'مرحبا بعودتك!',
     loginFailed: language === 'English' ? 'Login failed' : 'فشل تسجيل الدخول',
-    invalidCredentials: language === 'English' ? 'Invalid username or password' : 'اسم المستخدم أو كلمة المرور غير صحيحة',
+    invalidCredentials: language === 'English' ? 'Invalid username/email or password' : 'اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة',
   };
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -76,32 +62,18 @@ export default function Login() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       setIsLoading(true);
-      console.log('Starting login process with username:', values.username);
       
-      // Attempt login
-      const result = await login(values.username, values.password);
-      console.log('Login API result:', result);
+      // Attempt login - this now waits for user data to be loaded
+      await login(values.username, values.password);
       
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      // Force another fetch of user data to ensure we have the latest
-      try {
-        const userData = await queryClient.fetchQuery({ queryKey: ['/api/me'] });
-        console.log('User data after login:', userData);
-      } catch (fetchError) {
-        console.error('Error fetching user data:', fetchError);
-      }
-      
-      console.log('Login successful, preparing to redirect to dashboard');
-      
-      // Use direct navigation after a longer delay to ensure state is updated
-      setTimeout(() => {
-        console.log('Executing redirect to dashboard...');
-        window.location.href = '/';
-      }, 1000);
+      // Login completed successfully, loading state handled by authContext
+      // User is now loaded, navigate to dashboard
+      navigate('/');
       
     } catch (error) {
       console.error('Login error:', error);
@@ -111,15 +83,14 @@ export default function Login() {
       let errorDescription = translations.invalidCredentials;
       
       if (error instanceof Error) {
-        console.error('Login error details:', error.message);
         if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
           errorDescription = language === 'English' 
             ? 'Network error. Please check your connection and try again.' 
             : 'خطأ في الشبكة. يرجى التحقق من الاتصال والمحاولة مرة أخرى.';
         } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           errorDescription = language === 'English' 
-            ? 'Invalid username or password. Please try again.' 
-            : 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
+            ? 'Invalid username/email or password. Please try again.' 
+            : 'اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.';
         }
       }
       
@@ -128,6 +99,9 @@ export default function Login() {
         description: errorDescription,
         variant: 'destructive',
       });
+      setIsLoading(false);
+    } finally {
+      // Ensure loading state is reset
       setIsLoading(false);
     }
   };
@@ -152,7 +126,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>{translations.username}</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin" {...field} />
+                      <Input placeholder="eladwy or eladwy.ahmed@example.com" autoComplete="username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -165,7 +139,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>{translations.password}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

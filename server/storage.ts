@@ -60,9 +60,10 @@ export interface IStorage {
   // User operations
   getUser(id: string | number): Promise<User | undefined>;
   getUserByUsername?(username: string): Promise<User | undefined>;
+  getUserByEmail?(email: string): Promise<User | undefined>;
   createUser?(user: InsertUser): Promise<User>;
   updateUser?(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
-  deleteUser?(id: number): Promise<boolean>;
+  deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>; // Add this for Replit Auth
   
@@ -460,6 +461,29 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        password: users.password,
+        accessLevel: users.accessLevel,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      }).from(users).where(eq(users.email, email));
+      
+      return user ? this.mapUserFromDb(user) : undefined;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
+      return undefined;
+    }
+  }
+
   async createUser(userData: any): Promise<User> {
   try {
     // Check if password is already hashed (starts with $2b$ or $2a$)
@@ -551,9 +575,15 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db.delete(users).where(eq(users.id, id));
       return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      return false;
+      
+      // Check for foreign key constraint violation
+      if (error.code === '23503') {
+        throw new Error(`Cannot delete user - user has associated records that must be removed first`);
+      }
+      
+      throw error;
     }
   }
 
@@ -1113,6 +1143,19 @@ export class DatabaseStorage implements IStorage {
   // Ticket operations
   async getTicket(id: number): Promise<Ticket | undefined> {
     try {
+      console.log(`[GET TICKET] Looking for ticket with ID: ${id} (type: ${typeof id})`);
+      
+      // First, let's try a simple query without joins to see if we can find the ticket
+      console.log(`[GET TICKET] Trying simple query first...`);
+      const simpleResult = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+      console.log(`[GET TICKET] Simple query result:`, simpleResult);
+      
+      if (simpleResult.length === 0) {
+        console.log(`[GET TICKET] No ticket found with ID ${id}`);
+        return undefined;
+      }
+      
+      // Now try the full query with joins
       const [ticket] = await db
         .select({
           id: tickets.id,
@@ -1138,7 +1181,9 @@ export class DatabaseStorage implements IStorage {
         })
         .from(tickets)
         .leftJoin(categories, eq(tickets.categoryId, categories.id))
-        .where(eq(tickets.id, id));
+        .where(eq(tickets.id, id))
+        .limit(1);
+      console.log(`[GET TICKET] Full query result:`, ticket);
       return ticket;
     } catch (error) {
       console.error('Error fetching ticket:', error);
@@ -1168,7 +1213,7 @@ export class DatabaseStorage implements IStorage {
         assignedToId: ticket.assignedToId || null,
         relatedAssetId: ticket.relatedAssetId || null,
         type: ticket.type || 'Incident',
-        category: ticket.category || 'General',
+        categoryId: ticket.categoryId || null,
         priority: calculatedPriority,
         urgency: urgency,
         impact: impact,
@@ -1185,7 +1230,7 @@ export class DatabaseStorage implements IStorage {
       const result = await pool.query(`
         INSERT INTO tickets (
           submitted_by_id, assigned_to_id, related_asset_id,
-          type, category, priority, urgency, impact,
+          type, category_id, priority, urgency, impact,
           title, description, resolution, status,
           time_spent, due_date, sla_target,
           created_at, updated_at
@@ -1198,7 +1243,7 @@ export class DatabaseStorage implements IStorage {
         safeData.assignedToId,
         safeData.relatedAssetId,
         safeData.type,
-        safeData.category,
+        safeData.categoryId,
         safeData.priority,
         safeData.urgency,
         safeData.impact,
@@ -1273,13 +1318,41 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Add this method to your DatabaseStorage class in storage.ts
-// Place it with the other ticket methods around line 1800+
-
-async deleteTicket(id: number): Promise<boolean> {
+async deleteTicket(id: number, userId: number): Promise<boolean> {
   try {
-    const result = await db.delete(tickets).where(eq(tickets.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    // First check if ticket exists
+    const existingTicket = await this.getTicket(id);
+    
+    if (!existingTicket) {
+      return false;
+    }
+
+    // Use a transaction to ensure all deletions succeed or fail together
+    const result = await db.transaction(async (tx) => {
+      // Delete ticket comments first
+      await tx.delete(ticketComments).where(eq(ticketComments.ticketId, id));
+      
+      // Delete ticket history
+      await tx.delete(ticketHistory).where(eq(ticketHistory.ticketId, id));
+      
+      // Now delete the ticket itself
+      const ticketResult = await tx.delete(tickets).where(eq(tickets.id, id));
+      
+      return ticketResult;
+    });
+    
+    // Log the deletion activity
+    await this.logActivity({
+      action: "Deleted",
+      entityType: "Ticket",
+      entityId: id,
+      userId,
+      details: { ticketId: existingTicket.ticketId, title: existingTicket.title }
+    });
+    
+    const success = result.rowCount ? result.rowCount > 0 : false;
+    
+    return success;
   } catch (error) {
     console.error('Error deleting ticket:', error);
     return false;

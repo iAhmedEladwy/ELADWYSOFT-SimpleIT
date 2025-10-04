@@ -107,6 +107,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.TICKETS_VIEW_ALL,
     PERMISSIONS.TICKETS_CREATE,
     PERMISSIONS.TICKETS_UPDATE,
+    PERMISSIONS.TICKETS_DELETE,
     PERMISSIONS.TICKETS_ASSIGN,
     PERMISSIONS.TICKETS_CLOSE,
     PERMISSIONS.REPORTS_VIEW
@@ -132,7 +133,9 @@ export const ROLE_PERMISSIONS = {
  * Check if user has specific permission
  */
 export function hasPermission(userRole: string, permission: string): boolean {
-  const rolePermissions = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS];
+  // Normalize role to title case to match ROLE_PERMISSIONS keys
+  const normalizedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
+  const rolePermissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS];
   return rolePermissions?.includes(permission as any) || false;
 }
 
@@ -178,9 +181,7 @@ export function requirePermission(permission: string) {
 
     if (!hasPermission(req.user.role, permission)) {
       return res.status(403).json({ 
-        message: 'Insufficient permissions',
-        required: permission,
-        userRole: req.user.role 
+        message: 'You do not have permission to perform this action',
       });
     }
 
@@ -190,28 +191,26 @@ export function requirePermission(permission: string) {
 
 /**
  * Middleware to check role level
+ * Handles both capitalized ('Admin') and lowercase ('admin') role strings from database
  */
 export function requireRole(minRole: string) {
-  const roleHierarchy = {
-    [ROLES.EMPLOYEE]: 1,
-    [ROLES.AGENT]: 2,
-    [ROLES.MANAGER]: 3,
-    [ROLES.ADMIN]: 4
-  };
+  // Use getUserRoleLevel which handles case-insensitive comparison
+  const minLevel = getUserRoleLevel({ role: minRole });
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const userLevel = roleHierarchy[req.user.role as keyof typeof roleHierarchy] || 0;
-    const requiredLevel = roleHierarchy[minRole as keyof typeof roleHierarchy] || 4;
+    const userLevel = getUserRoleLevel(req.user);
 
-    if (userLevel < requiredLevel) {
+    if (userLevel < minLevel) {
       return res.status(403).json({ 
         message: 'Insufficient role level',
         required: minRole,
-        userRole: req.user.role 
+        userRole: req.user.role,
+        userLevel,
+        requiredLevel: minLevel
       });
     }
 

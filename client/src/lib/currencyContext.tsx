@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency, getCurrencySymbol } from './currencyUtils';
+import { getQueryFn } from './queryClient';
 
 // Define a type for system config
 interface SystemConfig {
@@ -38,13 +39,26 @@ export const useCurrency = () => useContext(CurrencyContext);
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currency, setCurrency] = useState<string>(defaultCurrency);
   const [symbol, setSymbol] = useState<string>(defaultSymbol);
+  const [shouldFetchConfig, setShouldFetchConfig] = useState(false);
   
-  // Fetch system configuration to get the currency
+  // Check if we should fetch config on mount
+  React.useEffect(() => {
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/';
+    const hasSessionCookie = document.cookie.includes('connect.sid');
+    
+    if (!isLoginPage || hasSessionCookie) {
+      setShouldFetchConfig(true);
+    }
+  }, []);
+  
+  // Fetch system configuration to get the currency - only when enabled
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
+    queryFn: getQueryFn({ on401: 'returnNull' }),
+    enabled: shouldFetchConfig,
+    retry: false,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60, // 1 minute
-    retry: 2,
   });
   
   // Update currency state and symbol when configuration is loaded
