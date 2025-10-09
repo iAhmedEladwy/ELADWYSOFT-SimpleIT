@@ -32,6 +32,14 @@ import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 
+// Employee Portal imports
+import PortalDashboard from '@/pages/portal/PortalDashboard';
+import MyAssets from '@/pages/portal/MyAssets';
+import MyTickets from '@/pages/portal/MyTickets';
+import CreateTicket from '@/pages/portal/CreateTicket';
+import MyProfile from '@/pages/portal/MyProfile';
+import TicketDetail from '@/pages/portal/TicketDetail';
+
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, hasCheckedAuth } = useAuth();
   const [, navigate] = useLocation();
@@ -106,6 +114,15 @@ function Router() {
         <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
+        
+        {/* Employee Portal Routes */}
+        <Route path="/portal" component={PortalDashboard} />
+        <Route path="/portal/my-assets" component={MyAssets} />
+        <Route path="/portal/my-tickets" component={MyTickets} />
+        <Route path="/portal/my-tickets/:id" component={TicketDetail} />
+        <Route path="/portal/create-ticket" component={CreateTicket} />
+        <Route path="/portal/my-profile" component={MyProfile} />
+        
         <Route path="/">
           <Layout>
             <PrivateRoute component={Dashboard} />

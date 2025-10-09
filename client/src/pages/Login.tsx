@@ -64,16 +64,33 @@ export default function Login() {
       setIsLoading(true);
       
       // Attempt login - this now waits for user data to be loaded
-      await login(values.username, values.password);
+      const loggedInUser = await login(values.username, values.password);
+      
+      // Debug logging for role-based redirection
+      console.log('Login successful, user data:', loggedInUser);
+      console.log('User role:', loggedInUser?.role);
+      console.log('Role type:', typeof loggedInUser?.role);
+      console.log('Role toLowerCase():', loggedInUser?.role?.toLowerCase());
+      console.log('Is employee?', loggedInUser?.role?.toLowerCase() === 'employee');
       
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      // Login completed successfully, loading state handled by authContext
-      // User is now loaded, navigate to dashboard
-      navigate('/');
+      // Redirect based on user role
+      if (loggedInUser?.role?.toLowerCase() === 'employee') {
+        console.log('Redirecting employee to portal...');
+        navigate('/portal');
+      } else {
+        console.log('Redirecting non-employee to main system...');
+        // Agents, Managers, Admins go to main system
+        navigate('/');
+      }
+      
+      // TEMPORARY: Force redirect to portal for testing
+      // Uncomment the line below to test portal access regardless of role
+      // navigate('/portal');
       
     } catch (error) {
       console.error('Login error:', error);
