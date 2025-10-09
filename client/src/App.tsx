@@ -115,13 +115,13 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
         
-        {/* Employee Portal Routes */}
-        <Route path="/portal" component={PortalDashboard} />
+        {/* Employee Portal Routes - Must be before "/" route */}
         <Route path="/portal/my-assets" component={MyAssets} />
-        <Route path="/portal/my-tickets" component={MyTickets} />
         <Route path="/portal/my-tickets/:id" component={TicketDetail} />
+        <Route path="/portal/my-tickets" component={MyTickets} />
         <Route path="/portal/create-ticket" component={CreateTicket} />
         <Route path="/portal/my-profile" component={MyProfile} />
+        <Route path="/portal" component={PortalDashboard} />
         
         <Route path="/">
           <Layout>
