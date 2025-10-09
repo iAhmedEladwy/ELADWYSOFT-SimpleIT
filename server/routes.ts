@@ -669,6 +669,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint to check user role specifically for portal redirection
   app.get("/api/debug/user-role", (req, res) => {
+    console.log('[DEBUG] /api/debug/user-role - Session ID:', req.sessionID);
+    console.log('[DEBUG] /api/debug/user-role - Session:', req.session);
+    console.log('[DEBUG] /api/debug/user-role - Is authenticated:', req.isAuthenticated());
+    console.log('[DEBUG] /api/debug/user-role - User:', req.user);
+    
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -8043,15 +8048,24 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
+        const userId = req.user?.id;
         
-        if (!employeeId) {
+        if (!userId) {
           return res.status(400).json({ 
-            message: 'Employee ID not found for user' 
+            message: 'User ID not found' 
           });
         }
 
-        const myAssets = await storage.getAssetsForEmployee(employeeId);
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        if (!employee) {
+          return res.status(400).json({ 
+            message: 'Employee record not found for user' 
+          });
+        }
+
+        const myAssets = await storage.getAssetsForEmployee(employee.id);
         res.json(myAssets);
       } catch (error) {
         console.error('Error fetching employee assets:', error);
@@ -8071,17 +8085,26 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
+        const userId = req.user?.id;
         
-        if (!employeeId) {
+        if (!userId) {
           return res.status(400).json({ 
-            message: 'Employee ID not found for user' 
+            message: 'User ID not found' 
+          });
+        }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        if (!employee) {
+          return res.status(400).json({ 
+            message: 'Employee record not found for user' 
           });
         }
 
         const allTickets = await storage.getAllTickets();
         let myTickets = allTickets.filter(ticket => 
-          ticket.submittedById === employeeId
+          ticket.submittedById === employee.id
         );
 
         // Optional filter by status
@@ -8111,14 +8134,24 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
+        const userId = req.user?.id;
         const ticketId = parseInt(req.params.id);
 
-        if (!employeeId) {
+        if (!userId) {
           return res.status(400).json({ 
-            message: 'Employee ID not found for user' 
+            message: 'User ID not found' 
           });
         }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        if (!employee) {
+          return res.status(400).json({ 
+            message: 'Employee record not found for user' 
+          });
+        }
+        const employeeId = employee.id;
 
         const ticket = await storage.getTicket(ticketId);
 
@@ -8154,13 +8187,23 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
+        const userId = req.user?.id;
 
-        if (!employeeId) {
+        if (!userId) {
           return res.status(400).json({ 
-            message: 'Employee ID not found for user' 
+            message: 'User ID not found' 
           });
         }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        if (!employee) {
+          return res.status(400).json({ 
+            message: 'Employee record not found for user' 
+          });
+        }
+        const employeeId = employee.id;
 
         const { 
           title, 
@@ -8223,12 +8266,27 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
         const userId = req.user?.id;
         const ticketId = parseInt(req.params.id);
         const { content } = req.body;
 
-        if (!employeeId || !userId) {
+        if (!userId) {
+          return res.status(400).json({ 
+            message: 'User ID not found' 
+          });
+        }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        if (!employee) {
+          return res.status(400).json({ 
+            message: 'Employee record not found for user' 
+          });
+        }
+        const employeeId = employee.id;
+
+        if (!employeeId) {
           return res.status(400).json({ 
             message: 'User information not found' 
           });
@@ -8281,15 +8339,17 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        const employeeId = req.user?.employeeId;
+        const userId = req.user?.id;
 
-        if (!employeeId) {
+        if (!userId) {
           return res.status(400).json({ 
-            message: 'Employee ID not found for user' 
+            message: 'User ID not found' 
           });
         }
 
-        const employee = await storage.getEmployee(employeeId);
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
 
         if (!employee) {
           return res.status(404).json({ 
