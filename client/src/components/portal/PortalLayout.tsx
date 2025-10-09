@@ -14,8 +14,9 @@
  * - children: React.ReactNode - Page content to render
  */
 
+import React, { useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
-import { Navigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { useLanguage } from '@/hooks/use-language';
 import PortalHeader from './PortalHeader';
 
@@ -26,6 +27,16 @@ interface PortalLayoutProps {
 export default function PortalLayout({ children }: PortalLayoutProps) {
   const { user, isLoading } = useAuth();
   const { language } = useLanguage();
+  const [, navigate] = useLocation();
+
+  // Handle redirects with useEffect to avoid render issues
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/login');
+    } else if (!isLoading && user && user.role?.toLowerCase() !== 'employee') {
+      navigate('/');
+    }
+  }, [isLoading, user, navigate]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -38,14 +49,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     );
   }
 
-  // Redirect if not logged in
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
-  // Security: Redirect non-employees to main system
-  if (user.role?.toLowerCase() !== 'employee') {
-    return <Navigate to="/" />;
+  // Don't render anything while redirecting
+  if (!user || user.role?.toLowerCase() !== 'employee') {
+    return null;
   }
 
   return (
