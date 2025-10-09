@@ -25,11 +25,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { useEmployeeLink } from '@/hooks/use-employee-link';
+import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 
 export default function CreateTicket() {
   const { language } = useLanguage();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: isEmployeeLoading } = useEmployeeLink();
   
   // Get assetId from URL if provided
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +45,7 @@ export default function CreateTicket() {
     categoryId: '',
     urgency: 'Medium',
     impact: 'Medium',
-    relatedAssetId: preselectedAssetId || '',
+    relatedAssetId: preselectedAssetId || 'none',
   });
 
   const translations = {
@@ -72,6 +75,7 @@ export default function CreateTicket() {
       if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
     },
+    enabled: canAccessPortal && !isEmployeeLoading,
   });
 
   // Fetch employee's assets for selection
@@ -84,6 +88,7 @@ export default function CreateTicket() {
       if (!response.ok) throw new Error('Failed to fetch assets');
       return response.json();
     },
+    enabled: canAccessPortal && !isEmployeeLoading,
   });
 
   // Create ticket mutation
@@ -95,7 +100,7 @@ export default function CreateTicket() {
         credentials: 'include',
         body: JSON.stringify({
           ...data,
-          relatedAssetId: data.relatedAssetId ? parseInt(data.relatedAssetId) : null,
+          relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
         }),
       });
       if (!response.ok) throw new Error('Failed to create ticket');
@@ -139,6 +144,13 @@ export default function CreateTicket() {
           </Button>
         </div>
 
+        {/* Employee Link Check */}
+        {needsEmployeeLink && (
+          <EmployeeLinkRequired availableEmployees={availableEmployees} />
+        )}
+
+        {/* Create Ticket Form */}
+        {canAccessPortal && (
         <Card>
           <CardHeader>
             <CardTitle>{translations.createTicket}</CardTitle>
@@ -247,7 +259,7 @@ export default function CreateTicket() {
                     <SelectValue placeholder={translations.selectOption} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{translations.none}</SelectItem>
+                    <SelectItem value="none">{translations.none}</SelectItem>
                     {assets?.map((asset: any) => (
                       <SelectItem key={asset.id} value={asset.id.toString()}>
                         {asset.assetId} - {asset.type} ({asset.brand})
@@ -274,6 +286,7 @@ export default function CreateTicket() {
             </form>
           </CardContent>
         </Card>
+        )}
       </div>
     </PortalLayout>
   );

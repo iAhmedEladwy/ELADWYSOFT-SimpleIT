@@ -24,10 +24,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Package } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { useEmployeeLink } from '@/hooks/use-employee-link';
+import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 
 export default function MyAssets() {
   const { language } = useLanguage();
   const [, navigate] = useLocation();
+  const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: employeeLoading, refetch: refreshEmployeeStatus } = useEmployeeLink();
 
   const translations = {
     title: language === 'English' ? 'My Assigned Assets' : 'الأصول المخصصة لي',
@@ -45,7 +48,7 @@ export default function MyAssets() {
     reportIssue: language === 'English' ? 'Report Issue' : 'الإبلاغ عن مشكلة',
   };
 
-  // Fetch employee's assets
+  // Fetch employee's assets (only if user can access portal)
   const { data: assets, isLoading, error } = useQuery({
     queryKey: ['/api/portal/my-assets'],
     queryFn: async () => {
@@ -54,12 +57,26 @@ export default function MyAssets() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch assets');
+        const errorText = await response.text();
+        throw new Error(`${response.status}: ${errorText}`);
       }
       
       return response.json();
     },
+    enabled: canAccessPortal, // Only fetch if user has employee record
   });
+
+  // Show employee link required if user needs to be linked
+  if (needsEmployeeLink) {
+    return (
+      <PortalLayout>
+        <EmployeeLinkRequired 
+          availableEmployees={availableEmployees}
+          onRefresh={refreshEmployeeStatus}
+        />
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
@@ -75,7 +92,7 @@ export default function MyAssets() {
         </div>
 
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || employeeLoading) && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>

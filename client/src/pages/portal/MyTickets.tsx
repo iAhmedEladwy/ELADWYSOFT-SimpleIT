@@ -25,11 +25,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Ticket, AlertCircle } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { useEmployeeLink } from '@/hooks/use-employee-link';
+import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 
 export default function MyTickets() {
   const { language } = useLanguage();
   const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: isEmployeeLoading } = useEmployeeLink();
   const translations = {
     myTickets: language === 'English' ? 'My Tickets' : 'تذاكري',
     all: language === 'English' ? 'All' : 'الكل',
@@ -62,6 +65,7 @@ export default function MyTickets() {
       
       return response.json();
     },
+    enabled: canAccessPortal && !isEmployeeLoading,
   });
 
   const getPriorityColor = (priority: string) => {
@@ -107,8 +111,13 @@ export default function MyTickets() {
           </TabsList>
         </Tabs>
 
+        {/* Employee Link Check */}
+        {needsEmployeeLink && (
+          <EmployeeLinkRequired availableEmployees={availableEmployees} />
+        )}
+
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || isEmployeeLoading) && canAccessPortal && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -118,7 +127,7 @@ export default function MyTickets() {
         )}
 
         {/* Error State */}
-        {error && (
+        {error && canAccessPortal && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="flex items-center gap-3 py-4">
               <AlertCircle className="h-5 w-5 text-red-600" />
@@ -128,7 +137,7 @@ export default function MyTickets() {
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && tickets?.length === 0 && (
+        {!isLoading && !isEmployeeLoading && !error && tickets?.length === 0 && canAccessPortal && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Ticket className="h-16 w-16 text-gray-400 mb-4" />
@@ -141,7 +150,7 @@ export default function MyTickets() {
         )}
 
         {/* Tickets List */}
-        {!isLoading && !error && tickets?.length > 0 && (
+        {!isLoading && !isEmployeeLoading && !error && tickets?.length > 0 && canAccessPortal && (
           <div className="space-y-4">
             {tickets.map((ticket: any) => (
               <Card 

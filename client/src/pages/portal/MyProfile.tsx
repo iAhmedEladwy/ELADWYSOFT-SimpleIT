@@ -18,9 +18,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Phone, Building, Briefcase, Calendar } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { useEmployeeLink } from '@/hooks/use-employee-link';
+import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 
 export default function MyProfile() {
   const { language } = useLanguage();
+  const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: isEmployeeLoading } = useEmployeeLink();
 
   const translations = {
     myProfile: language === 'English' ? 'My Profile' : 'ملفي الشخصي',
@@ -56,6 +59,7 @@ export default function MyProfile() {
       
       return response.json();
     },
+    enabled: canAccessPortal && !isEmployeeLoading,
   });
 
   return (
@@ -71,8 +75,13 @@ export default function MyProfile() {
           </p>
         </div>
 
+        {/* Employee Link Check */}
+        {needsEmployeeLink && (
+          <EmployeeLinkRequired availableEmployees={availableEmployees} />
+        )}
+
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || isEmployeeLoading) && canAccessPortal && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -82,7 +91,7 @@ export default function MyProfile() {
         )}
 
         {/* Error State */}
-        {error && (
+        {error && canAccessPortal && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="flex items-center gap-3 py-4">
               <User className="h-5 w-5 text-red-600" />
@@ -92,7 +101,7 @@ export default function MyProfile() {
         )}
 
         {/* Profile Content */}
-        {!isLoading && !error && profile && (
+        {!isLoading && !isEmployeeLoading && !error && profile && canAccessPortal && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Personal Information */}
             <Card>

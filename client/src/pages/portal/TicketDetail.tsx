@@ -25,6 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Calendar, User, MessageSquare } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
+import { useEmployeeLink } from '@/hooks/use-employee-link';
+import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 
 interface TicketDetailProps {
   params: { id: string };
@@ -35,6 +37,7 @@ export default function TicketDetail({ params }: TicketDetailProps) {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
+  const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: isEmployeeLoading } = useEmployeeLink();
 
   const ticketId = params.id;
 
@@ -66,6 +69,7 @@ export default function TicketDetail({ params }: TicketDetailProps) {
       if (!response.ok) throw new Error('Failed to fetch ticket');
       return response.json();
     },
+    enabled: canAccessPortal && !isEmployeeLoading,
   });
 
   // Add comment mutation
@@ -114,8 +118,13 @@ export default function TicketDetail({ params }: TicketDetailProps) {
           </Button>
         </div>
 
+        {/* Employee Link Check */}
+        {needsEmployeeLink && (
+          <EmployeeLinkRequired availableEmployees={availableEmployees} />
+        )}
+
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || isEmployeeLoading) && canAccessPortal && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -125,7 +134,7 @@ export default function TicketDetail({ params }: TicketDetailProps) {
         )}
 
         {/* Error State */}
-        {error && (
+        {error && canAccessPortal && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="flex items-center gap-3 py-4">
               <p className="text-red-600">{translations.error}</p>
@@ -134,7 +143,7 @@ export default function TicketDetail({ params }: TicketDetailProps) {
         )}
 
         {/* Ticket Content */}
-        {!isLoading && !error && ticket && (
+        {!isLoading && !isEmployeeLoading && !error && ticket && canAccessPortal && (
           <div className="space-y-6">
             {/* Ticket Details */}
             <Card>
