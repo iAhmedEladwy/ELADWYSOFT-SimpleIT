@@ -39,6 +39,7 @@ import MyTickets from '@/pages/portal/MyTickets';
 import CreateTicket from '@/pages/portal/CreateTicket';
 import MyProfile from '@/pages/portal/MyProfile';
 import TicketDetail from '@/pages/portal/TicketDetail';
+import PortalDebug from '@/pages/portal/PortalDebug';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, hasCheckedAuth } = useAuth();
@@ -116,6 +117,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         
         {/* Employee Portal Routes - Must be before "/" route */}
+        <Route path="/portal/debug" component={PortalDebug} />
         <Route path="/portal/my-assets" component={MyAssets} />
         <Route path="/portal/my-tickets/:id" component={TicketDetail} />
         <Route path="/portal/my-tickets" component={MyTickets} />

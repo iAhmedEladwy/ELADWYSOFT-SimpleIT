@@ -36,7 +36,8 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         
         if (!userId) {
           return res.status(400).json({ 
-            message: 'User ID not found' 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
           });
         }
 
@@ -49,11 +50,18 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         const employee = employees.find(emp => emp.userId === userId);
         if (!employee) {
           console.log(`[DEBUG my-assets] No employee found for userId: ${userId}`);
-          return res.status(400).json({ 
-            message: 'Employee record not found for user',
+          return res.status(404).json({ 
+            message: 'Employee record not found. You may need to be set up as an employee first.',
+            help: 'Contact your administrator to link your user account to an employee record.',
             debug: {
               userId,
-              availableEmployees: employees.map(emp => ({ id: emp.id, userId: emp.userId, name: emp.englishName }))
+              userRole: req.user?.role,
+              availableEmployees: employees.map(emp => ({ 
+                id: emp.id, 
+                userId: emp.userId, 
+                name: emp.englishName,
+                hasUser: !!emp.userId
+              }))
             }
           });
         }
@@ -83,7 +91,8 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         
         if (!userId) {
           return res.status(400).json({ 
-            message: 'User ID not found' 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
           });
         }
 
@@ -91,8 +100,9 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         const employees = await storage.getAllEmployees();
         const employee = employees.find(emp => emp.userId === userId);
         if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
+          return res.status(404).json({ 
+            message: 'Employee record not found. You may need to be set up as an employee first.',
+            help: 'Contact your administrator to link your user account to an employee record.'
           });
         }
 
@@ -298,7 +308,8 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
 
         if (!userId) {
           return res.status(400).json({ 
-            message: 'User ID not found' 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
           });
         }
 
@@ -308,7 +319,8 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
 
         if (!employee) {
           return res.status(404).json({ 
-            message: 'Employee profile not found' 
+            message: 'Employee profile not found. You may need to be set up as an employee first.',
+            help: 'Contact your administrator to link your user account to an employee record.'
           });
         }
 
@@ -445,6 +457,41 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         });
       } catch (error) {
         res.status(500).json({ error: 'Failed to check employee status' });
+      }
+    }
+  );
+
+  // Helper endpoint to link current user to an employee record (for testing)
+  app.post('/api/portal/debug/link-employee',
+    authenticateUser,
+    async (req: any, res: any) => {
+      try {
+        const user = req.user as any;
+        if (!user) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const { employeeId } = req.body;
+        if (!employeeId) {
+          return res.status(400).json({ message: "Employee ID required" });
+        }
+
+        // Update the employee record to link to this user
+        const employee = await storage.getEmployee(employeeId);
+        if (!employee) {
+          return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Update employee with userId
+        await storage.updateEmployee(employeeId, { userId: user.id });
+        
+        res.json({ 
+          message: 'Employee linked successfully',
+          employee: { ...employee, userId: user.id }
+        });
+      } catch (error) {
+        console.error('Error linking employee:', error);
+        res.status(500).json({ error: 'Failed to link employee' });
       }
     }
   );
