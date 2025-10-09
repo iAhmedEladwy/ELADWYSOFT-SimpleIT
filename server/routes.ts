@@ -10,8 +10,7 @@ import {
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
 import { BackupService } from './services/backupService';
-// Uncomment when portal routes are ready
-// import portalRoutes from './portal/routes-simple';
+import { setupPortalRoutes } from './routes/portal';
 
 
 // Authenticated user type (from auth middleware)
@@ -690,10 +689,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       allUserData: user
     });
   });
-  
-  // Security Questions API endpoints - combined implementation
-  
-  // Get default security questions for selection
+
+  // Debug endpoint to check if current user has an employee record
+  app.get("/api/debug/employee-status", authenticateUser, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const employees = await storage.getAllEmployees();
+      const employee = employees.find(emp => emp.userId === user.id);
+      
+      res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role
+        },
+        hasEmployeeRecord: !!employee,
+        employee: employee || null,
+        allEmployees: employees.map(emp => ({ 
+          id: emp.id, 
+          userId: emp.userId, 
+          name: emp.englishName 
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to check employee status' });
+    }
+  });
+
+  // ==========================================
+  // EMPLOYEE PORTAL ROUTES
+  // ==========================================
+  setupPortalRoutes(app, authenticateUser, requireRole);
+
+  // Security Questions API endpoints - combined implementation  // Get default security questions for selection
   app.get("/api/security-questions", async (req, res) => {
     try {
       // Return a list of default security questions
@@ -8035,378 +8067,9 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     }
   });
 
-  // ==========================================
-  // EMPLOYEE PORTAL ROUTES
-  // ==========================================
-  
-  /**
-   * GET /api/portal/my-assets
-   * Get all assets assigned to the authenticated employee
-   */
-  app.get('/api/portal/my-assets', 
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-        
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
 
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-        if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
-          });
-        }
 
-        const myAssets = await storage.getAssetsForEmployee(employee.id);
-        res.json(myAssets);
-      } catch (error) {
-        console.error('Error fetching employee assets:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch assets' 
-        });
-      }
-    }
-  );
 
-  /**
-   * GET /api/portal/my-tickets
-   * Get all tickets submitted by the authenticated employee
-   */
-  app.get('/api/portal/my-tickets',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-        
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
-
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-        if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
-          });
-        }
-
-        const allTickets = await storage.getAllTickets();
-        let myTickets = allTickets.filter(ticket => 
-          ticket.submittedById === employee.id
-        );
-
-        // Optional filter by status
-        const statusFilter = req.query.status as string;
-        if (statusFilter) {
-          myTickets = myTickets.filter(ticket => 
-            ticket.status === statusFilter
-          );
-        }
-
-        res.json(myTickets);
-      } catch (error) {
-        console.error('Error fetching employee tickets:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch tickets' 
-        });
-      }
-    }
-  );
-
-  /**
-   * GET /api/portal/my-tickets/:id
-   * Get a specific ticket by ID (only if submitted by employee)
-   */
-  app.get('/api/portal/my-tickets/:id',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-        const ticketId = parseInt(req.params.id);
-
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
-
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-        if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
-          });
-        }
-        const employeeId = employee.id;
-
-        const ticket = await storage.getTicket(ticketId);
-
-        if (!ticket) {
-          return res.status(404).json({ 
-            message: 'Ticket not found' 
-          });
-        }
-
-        // Security: Verify ticket belongs to this employee
-        if (ticket.submittedById !== employeeId) {
-          return res.status(403).json({ 
-            message: 'You do not have permission to view this ticket' 
-          });
-        }
-
-        res.json(ticket);
-      } catch (error) {
-        console.error('Error fetching ticket:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch ticket' 
-        });
-      }
-    }
-  );
-
-  /**
-   * POST /api/portal/tickets
-   * Create a new ticket for the authenticated employee
-   */
-  app.post('/api/portal/tickets',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
-
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-        if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
-          });
-        }
-        const employeeId = employee.id;
-
-        const { 
-          title, 
-          description, 
-          type, 
-          categoryId,
-          urgency, 
-          impact,
-          relatedAssetId 
-        } = req.body;
-
-        // Validation
-        if (!title || !description || !type || !categoryId) {
-          return res.status(400).json({ 
-            message: 'Missing required fields: title, description, type, categoryId' 
-          });
-        }
-
-        // If relatedAssetId provided, verify it belongs to this employee
-        if (relatedAssetId) {
-          const asset = await storage.getAsset(relatedAssetId);
-          if (!asset || asset.assignedEmployeeId !== employeeId) {
-            return res.status(403).json({ 
-              message: 'Asset not assigned to you' 
-            });
-          }
-        }
-
-        // Create ticket
-        const ticketData = {
-          title,
-          description,
-          type,
-          categoryId,
-          urgency: urgency || 'Medium',
-          impact: impact || 'Medium',
-          submittedById: employeeId,
-          relatedAssetId: relatedAssetId || null,
-          status: 'Open',
-          assignedToId: null,
-        };
-
-        const newTicket = await storage.createTicket(ticketData);
-        res.status(201).json(newTicket);
-      } catch (error) {
-        console.error('Error creating ticket:', error);
-        res.status(500).json({ 
-          message: 'Failed to create ticket' 
-        });
-      }
-    }
-  );
-
-  /**
-   * POST /api/portal/my-tickets/:id/comments
-   * Add a comment to employee's own ticket
-   */
-  app.post('/api/portal/my-tickets/:id/comments',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-        const ticketId = parseInt(req.params.id);
-        const { content } = req.body;
-
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
-
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-        if (!employee) {
-          return res.status(400).json({ 
-            message: 'Employee record not found for user' 
-          });
-        }
-        const employeeId = employee.id;
-
-        if (!employeeId) {
-          return res.status(400).json({ 
-            message: 'User information not found' 
-          });
-        }
-
-        if (!content || content.trim() === '') {
-          return res.status(400).json({ 
-            message: 'Comment content is required' 
-          });
-        }
-
-        // Verify ticket belongs to this employee
-        const ticket = await storage.getTicket(ticketId);
-        if (!ticket) {
-          return res.status(404).json({ 
-            message: 'Ticket not found' 
-          });
-        }
-
-        if (ticket.submittedById !== employeeId) {
-          return res.status(403).json({ 
-            message: 'You do not have permission to comment on this ticket' 
-          });
-        }
-
-        // Create comment using storage method
-        const comment = await storage.addTicketComment({
-          ticketId,
-          userId,
-          content: content.trim(),
-          isPrivate: false
-        });
-
-        res.status(201).json(comment);
-      } catch (error) {
-        console.error('Error creating comment:', error);
-        res.status(500).json({ 
-          message: 'Failed to create comment' 
-        });
-      }
-    }
-  );
-
-  /**
-   * GET /api/portal/my-profile
-   * Get authenticated employee's profile information
-   */
-  app.get('/api/portal/my-profile',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const userId = req.user?.id;
-
-        if (!userId) {
-          return res.status(400).json({ 
-            message: 'User ID not found' 
-          });
-        }
-
-        // Find the employee record for this user
-        const employees = await storage.getAllEmployees();
-        const employee = employees.find(emp => emp.userId === userId);
-
-        if (!employee) {
-          return res.status(404).json({ 
-            message: 'Employee profile not found' 
-          });
-        }
-
-        res.json(employee);
-      } catch (error) {
-        console.error('Error fetching employee profile:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch profile' 
-        });
-      }
-    }
-  );
-
-  /**
-   * GET /api/portal/categories
-   * Get all active ticket categories for ticket creation
-   */
-  app.get('/api/portal/categories',
-    authenticateUser,
-    requireRole(ROLES.EMPLOYEE),
-    async (req: any, res: any) => {
-      try {
-        const categories = await storage.getCategories();
-        
-        // Only return active categories
-        const activeCategories = categories.filter((cat: any) => cat.isActive !== false);
-        
-        res.json(activeCategories);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch categories' 
-        });
-      }
-    }
-  );
-
-  // Helper function to check admin access
-  // DEPRECATED: Use requireRole(ROLES.ADMIN) from rbac.ts instead
-  function requireAdmin(req: any, res: any, next: any) {
-    // Use RBAC getUserRoleLevel instead of deprecated accessLevel
-    const userLevel = getUserRoleLevel(req.session?.user || req.user);
-    if (!req.session?.user && !req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    if (userLevel < 4) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-  }
-
-  // Mount employee portal routes (commented out until ready)
-  // app.use('/api/portal', authenticateUser, portalRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
