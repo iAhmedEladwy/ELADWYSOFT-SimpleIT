@@ -66,8 +66,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       <footer className="bg-white border-t mt-12 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-gray-600">
           {language === 'English' 
-            ? '© 2025 SimpleIT - Employee Portal' 
-            : '© 2025 SimpleIT - بوابة الموظفين'}
+            ? '© 2025 ELADWYSOFT SimpleIT - Employee Portal' 
+            : '© 2025 ELADWYSOFT SimpleIT - بوابة الموظفين'}
         </div>
       </footer>
     </div>
