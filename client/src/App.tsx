@@ -118,12 +118,18 @@ function Router() {
         
         {/* Employee Portal Routes - Must be before "/" route */}
         <Route path="/portal/debug" component={PortalDebug} />
+        <Route path="/portal/dashboard" component={PortalDashboard} />
         <Route path="/portal/my-assets" component={MyAssets} />
         <Route path="/portal/my-tickets/:id" component={TicketDetail} />
         <Route path="/portal/my-tickets" component={MyTickets} />
         <Route path="/portal/create-ticket" component={CreateTicket} />
         <Route path="/portal/my-profile" component={MyProfile} />
-        <Route path="/portal" component={PortalDashboard} />
+        <Route path="/portal">
+          {() => {
+            window.location.href = '/portal/dashboard';
+            return null;
+          }}
+        </Route>
         
         <Route path="/">
           <Layout>

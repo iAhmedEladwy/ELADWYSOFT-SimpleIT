@@ -153,152 +153,104 @@ export default function PortalDashboard() {
 
         {/* Dashboard Content */}
         {!statsLoading && !isEmployeeLoading && !statsError && dashboardStats && canAccessPortal && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Statistics */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Assets Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    {translations.myAssets}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {dashboardStats.assetsCount?.total || 0}
-                      </div>
-                      <p className="text-sm text-gray-600">{translations.totalAssets}</p>
+          <div className="space-y-6">
+            {/* Assets Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  {translations.myAssets}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {dashboardStats.assetsCount?.total || 0}
                     </div>
-                    {Object.entries(dashboardStats.assetsCount?.byType || {}).map(([type, count]) => (
-                      <div key={type} className="text-center">
-                        <div className="flex items-center justify-center mb-1">
-                          {getAssetIcon(type)}
+                    <p className="text-sm text-gray-600">{translations.totalAssets}</p>
+                  </div>
+                  {Object.entries(dashboardStats.assetsCount?.byType || {}).map(([type, count]) => (
+                    <div key={type} className="text-center">
+                      <div className="flex items-center justify-center mb-1">
+                        {getAssetIcon(type)}
+                      </div>
+                      <div className="text-lg font-semibold">{count as number}</div>
+                      <p className="text-xs text-gray-600">
+                        {translations[type.toLowerCase() as keyof typeof translations] || type}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tickets Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  {translations.myTickets}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {dashboardStats.ticketsCount?.total || 0}
+                    </div>
+                    <p className="text-sm text-gray-600">{translations.totalTickets}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-red-600">
+                      {dashboardStats.ticketsCount?.open || 0}
+                    </div>
+                    <p className="text-xs text-gray-600">{translations.openTickets}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-yellow-600">
+                      {dashboardStats.ticketsCount?.inProgress || 0}
+                    </div>
+                    <p className="text-xs text-gray-600">{translations.inProgressTickets}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-green-600">
+                      {dashboardStats.ticketsCount?.resolved || 0}
+                    </div>
+                    <p className="text-xs text-gray-600">{translations.resolvedTickets}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  {translations.recentActivity}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {dashboardStats.recentActivity?.length > 0 ? (
+                  <div className="space-y-3">
+                    {dashboardStats.recentActivity.slice(0, 5).map((activity: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm">{activity.description}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(activity.timestamp).toLocaleDateString()}
+                          </p>
                         </div>
-                        <div className="text-lg font-semibold">{count as number}</div>
-                        <p className="text-xs text-gray-600">
-                          {translations[type.toLowerCase() as keyof typeof translations] || type}
-                        </p>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Tickets Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Ticket className="h-5 w-5" />
-                    {translations.myTickets}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {dashboardStats.ticketsCount?.total || 0}
-                      </div>
-                      <p className="text-sm text-gray-600">{translations.totalTickets}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-red-600">
-                        {dashboardStats.ticketsCount?.open || 0}
-                      </div>
-                      <p className="text-xs text-gray-600">{translations.openTickets}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-yellow-600">
-                        {dashboardStats.ticketsCount?.inProgress || 0}
-                      </div>
-                      <p className="text-xs text-gray-600">{translations.inProgressTickets}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-green-600">
-                        {dashboardStats.ticketsCount?.resolved || 0}
-                      </div>
-                      <p className="text-xs text-gray-600">{translations.resolvedTickets}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    {translations.recentActivity}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dashboardStats.recentActivity?.length > 0 ? (
-                    <div className="space-y-3">
-                      {dashboardStats.recentActivity.slice(0, 5).map((activity: any, index: number) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <div className="flex-1">
-                            <p className="text-sm">{activity.description}</p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(activity.timestamp).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-4">{translations.noRecentActivity}</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Quick Actions */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    {translations.quickActions}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button 
-                    onClick={() => navigate('/portal/my-assets')}
-                    className="w-full justify-start"
-                    variant="outline"
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    {translations.myAssets}
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/portal/my-tickets')}
-                    className="w-full justify-start"
-                    variant="outline"
-                  >
-                    <Ticket className="h-4 w-4 mr-2" />
-                    {translations.myTickets}
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/portal/create-ticket')}
-                    className="w-full justify-start"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {translations.createTicket}
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/portal/my-profile')}
-                    className="w-full justify-start"
-                    variant="outline"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    {translations.viewProfile}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">{translations.noRecentActivity}</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

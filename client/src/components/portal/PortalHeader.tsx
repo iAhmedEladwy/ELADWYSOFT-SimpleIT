@@ -31,6 +31,7 @@ export default function PortalHeader() {
 
   const translations = {
     portalTitle: language === 'English' ? 'Employee Portal' : 'بوابة الموظفين',
+    dashboard: language === 'English' ? 'Dashboard' : 'لوحة التحكم',
     myAssets: language === 'English' ? 'My Assets' : 'أصولي',
     myTickets: language === 'English' ? 'My Tickets' : 'تذاكري',
     myProfile: language === 'English' ? 'My Profile' : 'ملفي الشخصي',
@@ -40,7 +41,8 @@ export default function PortalHeader() {
   };
 
   const navItems = [
-    { path: '/portal', label: translations.myAssets, icon: '📦' },
+    { path: '/portal/dashboard', label: translations.dashboard, icon: '📊' },
+    { path: '/portal/my-assets', label: translations.myAssets, icon: '📦' },
     { path: '/portal/my-tickets', label: translations.myTickets, icon: '🎫' },
     { path: '/portal/my-profile', label: translations.myProfile, icon: '👤' },
   ];
