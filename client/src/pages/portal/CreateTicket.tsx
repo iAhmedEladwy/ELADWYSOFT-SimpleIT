@@ -203,10 +203,10 @@ export default function CreateTicket() {
   };
 
   const typeOptions = [
-    { value: 'Hardware', label: language === 'English' ? 'Hardware Issue' : 'مشكلة أجهزة' },
-    { value: 'Software', label: language === 'English' ? 'Software Issue' : 'مشكلة برامج' },
-    { value: 'Access', label: language === 'English' ? 'Access Request' : 'طلب وصول' },
-    { value: 'Other', label: language === 'English' ? 'Other' : 'أخرى' },
+    { value: 'Incident', label: language === 'English' ? 'Incident' : 'حادثة' },
+    { value: 'Service Request', label: language === 'English' ? 'Service Request' : 'طلب خدمة' },
+    { value: 'Problem', label: language === 'English' ? 'Problem' : 'مشكلة' },
+    { value: 'Change', label: language === 'English' ? 'Change Request' : 'طلب تغيير' },
   ];
 
   const urgencyOptions = [
