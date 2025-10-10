@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/authContext';
 import { useLocation } from 'wouter';
 import { useLanguage } from '@/hooks/use-language';
 import PortalHeader from './PortalHeader';
+import { VERSION_INFO } from '@shared/version';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -55,19 +56,19 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={language === 'Arabic' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gray-50 flex flex-col" dir={language === 'Arabic' ? 'rtl' : 'ltr'}>
       <PortalHeader />
       
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
+      <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12 py-6">
+      {/* Footer - Always at bottom */}
+      <footer className="bg-white border-t py-6 mt-auto">
         <div className="container mx-auto px-4 text-center text-sm text-gray-600">
           {language === 'English' 
-            ? '© 2025 ELADWYSOFT SimpleIT - Employee Portal' 
-            : '© 2025 ELADWYSOFT SimpleIT - بوابة الموظفين'}
+            ? `${VERSION_INFO.copyright} ${VERSION_INFO.fullName} v${VERSION_INFO.version} - Employee Portal` 
+            : `${VERSION_INFO.copyright} ${VERSION_INFO.fullName} v${VERSION_INFO.version} - بوابة الموظفين`}
         </div>
       </footer>
     </div>

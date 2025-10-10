@@ -66,14 +66,20 @@ export default function CreateTicket() {
   };
 
   // Fetch categories
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['/api/portal/categories'],
     queryFn: async () => {
+      console.log('Fetching categories...');
       const response = await fetch('/api/portal/categories', {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      return response.json();
+      if (!response.ok) {
+        console.error('Categories fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch categories');
+      }
+      const data = await response.json();
+      console.log('Categories fetched:', data);
+      return data;
     },
     enabled: canAccessPortal && !isEmployeeLoading,
   });
@@ -142,9 +148,38 @@ export default function CreateTicket() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.title && formData.description && formData.type && formData.categoryId) {
-      createTicketMutation.mutate(formData);
+    
+    console.log('Form submitted with data:', formData);
+    console.log('Validation check:', {
+      hasTitle: !!formData.title,
+      hasDescription: !!formData.description,
+      hasType: !!formData.type,
+      hasCategoryId: !!formData.categoryId,
+      categoryIdValue: formData.categoryId
+    });
+    
+    if (!formData.title) {
+      alert(language === 'English' ? 'Please enter a title' : 'الرجاء إدخال العنوان');
+      return;
     }
+    
+    if (!formData.description) {
+      alert(language === 'English' ? 'Please enter a description' : 'الرجاء إدخال الوصف');
+      return;
+    }
+    
+    if (!formData.type) {
+      alert(language === 'English' ? 'Please select a type' : 'الرجاء اختيار النوع');
+      return;
+    }
+    
+    if (!formData.categoryId) {
+      alert(language === 'English' ? 'Please select a category' : 'الرجاء اختيار الفئة');
+      return;
+    }
+    
+    console.log('All validations passed, submitting...');
+    createTicketMutation.mutate(formData);
   };
 
   const typeOptions = [
@@ -230,16 +265,28 @@ export default function CreateTicket() {
               {/* Category */}
               <div className="space-y-2">
                 <Label>{translations.category} *</Label>
-                <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+                {categoriesLoading && <p className="text-sm text-gray-500">Loading categories...</p>}
+                {categoriesError && <p className="text-sm text-red-500">Error loading categories</p>}
+                {categories && <p className="text-xs text-gray-400">Found {categories.length} categories</p>}
+                <Select 
+                  value={formData.categoryId} 
+                  onValueChange={(value) => {
+                    console.log('Category selected:', value);
+                    setFormData({ ...formData, categoryId: value });
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder={translations.selectOption} />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories?.map((category: any) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {categories?.map((category: any) => {
+                      console.log('Rendering category:', category);
+                      return (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

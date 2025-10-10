@@ -569,24 +569,43 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        // Fetch active categories from database
-        const allCategories = await storage.getTicketCategories?.();
+        console.log('[DEBUG categories] Fetching categories from storage...');
+        // Fetch active categories from storage (getCategories already filters by isActive)
+        let categories = await storage.getCategories();
         
-        // Filter only active categories if the method returns all categories
-        const categories = allCategories ? allCategories.filter(cat => cat.isActive !== false) : [];
+        // If no categories exist, create default ones (same as main module)
+        if (categories.length === 0) {
+          console.log('[DEBUG categories] No categories found, creating defaults...');
+          const defaultCategories = [
+            { name: "Hardware", description: "Hardware-related issues and requests" },
+            { name: "Software", description: "Software installation and application support" },
+            { name: "Network", description: "Network connectivity and infrastructure issues" },
+            { name: "Access Control", description: "User access and permission requests" },
+            { name: "Security", description: "Security incidents and compliance issues" }
+          ];
+          
+          for (const category of defaultCategories) {
+            await storage.createCategory(category);
+          }
+          
+          categories = await storage.getCategories();
+          console.log('[DEBUG categories] Created default categories:', categories);
+        }
         
-        // Return categories in the expected format
+        console.log('[DEBUG categories] Returning categories:', categories);
         res.json(categories);
       } catch (error) {
         console.error('Error fetching ticket categories:', error);
         // Fallback to default categories if database query fails
-        res.json([
-          { id: 1, name: 'Hardware Issue', isActive: true },
-          { id: 2, name: 'Software Issue', isActive: true },
-          { id: 3, name: 'Network Issue', isActive: true },
-          { id: 4, name: 'Access Request', isActive: true },
-          { id: 5, name: 'Other', isActive: true }
-        ]);
+        const fallbackCategories = [
+          { id: 1, name: 'Hardware', isActive: true },
+          { id: 2, name: 'Software', isActive: true },
+          { id: 3, name: 'Network', isActive: true },
+          { id: 4, name: 'Access Control', isActive: true },
+          { id: 5, name: 'Security', isActive: true }
+        ];
+        console.log('[DEBUG categories] Using fallback categories');
+        res.json(fallbackCategories);
       }
     }
   );

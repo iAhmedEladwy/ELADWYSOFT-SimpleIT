@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
+import { VERSION_INFO, getVersionString } from '@shared/version';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username or Email is required'),
@@ -188,7 +189,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="text-sm text-center text-gray-500">
           <p className="w-full">
-            Copy right reserved ELADWYSOFT 2025
+            {VERSION_INFO.copyright} {VERSION_INFO.fullName} {getVersionString()}
           </p>
         </CardFooter>
       </Card>

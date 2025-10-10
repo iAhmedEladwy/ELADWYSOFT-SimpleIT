@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
+import { VERSION_INFO, getVersionString } from '@shared/version';
 
 const setupSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -175,7 +176,7 @@ export default function FirstTimeSetup() {
         </CardContent>
         <CardFooter className="text-sm text-center text-gray-500">
           <p className="w-full">
-            This setup will only run on first application start
+            {VERSION_INFO.copyright} {VERSION_INFO.fullName} {getVersionString()} - This setup will only run on first application start
           </p>
         </CardFooter>
       </Card>
