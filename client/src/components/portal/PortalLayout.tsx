@@ -67,8 +67,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       <footer className="bg-white border-t py-6 mt-auto">
         <div className="container mx-auto px-4 text-center text-sm text-gray-600">
           {language === 'English' 
-            ? `${VERSION_INFO.copyright} ${VERSION_INFO.fullName} v${VERSION_INFO.version} - Employee Portal` 
-            : `${VERSION_INFO.copyright} ${VERSION_INFO.fullName} v${VERSION_INFO.version} - بوابة الموظفين`}
+            ? `${VERSION_INFO.copyright} ${VERSION_INFO.name} v${VERSION_INFO.version} - Employee Portal` 
+            : `${VERSION_INFO.copyright} ${VERSION_INFO.name} v${VERSION_INFO.version} - بوابة الموظفين`}
         </div>
       </footer>
     </div>
