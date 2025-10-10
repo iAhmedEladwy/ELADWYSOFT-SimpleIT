@@ -56,9 +56,6 @@ export default function PortalHeader() {
           {/* Logo/Title */}
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                ELADWYSOFT
-              </div>
               <div className="text-xl font-bold text-primary -mt-1">
                 {translations.portalTitle}
               </div>
