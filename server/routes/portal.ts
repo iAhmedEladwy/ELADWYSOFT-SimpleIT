@@ -569,22 +569,24 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
-        // This assumes a getTicketCategories method exists
-        // If not, you may need to implement it or use a different approach
-        const categories = await storage.getTicketCategories?.() || [
-          { id: 1, name: 'Hardware Issue', nameAr: 'مشكلة في الأجهزة' },
-          { id: 2, name: 'Software Issue', nameAr: 'مشكلة في البرامج' },
-          { id: 3, name: 'Network Issue', nameAr: 'مشكلة في الشبكة' },
-          { id: 4, name: 'Access Request', nameAr: 'طلب وصول' },
-          { id: 5, name: 'Other', nameAr: 'أخرى' }
-        ];
-
+        // Fetch active categories from database
+        const allCategories = await storage.getTicketCategories?.();
+        
+        // Filter only active categories if the method returns all categories
+        const categories = allCategories ? allCategories.filter(cat => cat.isActive !== false) : [];
+        
+        // Return categories in the expected format
         res.json(categories);
       } catch (error) {
         console.error('Error fetching ticket categories:', error);
-        res.status(500).json({ 
-          message: 'Failed to fetch categories' 
-        });
+        // Fallback to default categories if database query fails
+        res.json([
+          { id: 1, name: 'Hardware Issue', isActive: true },
+          { id: 2, name: 'Software Issue', isActive: true },
+          { id: 3, name: 'Network Issue', isActive: true },
+          { id: 4, name: 'Access Request', isActive: true },
+          { id: 5, name: 'Other', isActive: true }
+        ]);
       }
     }
   );

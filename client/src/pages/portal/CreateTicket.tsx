@@ -94,21 +94,49 @@ export default function CreateTicket() {
   // Create ticket mutation
   const createTicketMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Calculate priority based on urgency and impact
+      const getPriority = (urgency: string, impact: string) => {
+        if (urgency === 'Critical' || impact === 'Critical') return 'Critical';
+        if (urgency === 'High' || impact === 'High') return 'High';
+        if (urgency === 'Low' && impact === 'Low') return 'Low';
+        return 'Medium';
+      };
+
+      const ticketPayload = {
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        categoryId: parseInt(data.categoryId),
+        urgency: data.urgency,
+        impact: data.impact,
+        priority: getPriority(data.urgency, data.impact),
+        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
+      };
+
       const response = await fetch('/api/portal/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          ...data,
-          relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
-        }),
+        body: JSON.stringify(ticketPayload),
       });
-      if (!response.ok) throw new Error('Failed to create ticket');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create ticket');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/portal/my-tickets'] });
       navigate('/portal/my-tickets');
+    },
+    onError: (error: Error) => {
+      console.error('Error creating ticket:', error);
+      alert(language === 'English' 
+        ? `Failed to create ticket: ${error.message}` 
+        : `فشل إنشاء التذكرة: ${error.message}`
+      );
     },
   });
 
@@ -209,7 +237,7 @@ export default function CreateTicket() {
                   <SelectContent>
                     {categories?.map((category: any) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
-                        {language === 'English' ? category.englishName : category.arabicName || category.englishName}
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
