@@ -137,8 +137,6 @@ export default function CreateTicket() {
         relatedAssetId,
       };
 
-      console.log('[DEBUG] Sending ticket payload:', ticketPayload);
-
       const response = await fetch('/api/portal/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

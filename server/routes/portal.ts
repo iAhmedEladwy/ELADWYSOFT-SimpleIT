@@ -172,7 +172,15 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
           });
         }
 
-        res.json(ticket);
+        // Fetch comments for this ticket
+        const comments = await storage.getTicketComments(ticketId);
+        
+        console.log('[DEBUG] Fetching ticket with comments - Ticket ID:', ticketId, 'Comments count:', comments?.length || 0);
+
+        res.json({
+          ...ticket,
+          comments: comments || []
+        });
       } catch (error) {
         console.error('Error fetching employee ticket:', error);
         res.status(500).json({ 
@@ -190,13 +198,10 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     authenticateUser,
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
-      console.log('=== PORTAL TICKET CREATION ENDPOINT HIT ===');
       try {
-        console.log('[DEBUG ticket creation] Request body:', req.body);
         const userId = req.user?.id;
 
         if (!userId) {
-          console.log('[DEBUG ticket creation] No user ID found');
           return res.status(400).json({ 
             message: 'User ID not found' 
           });
@@ -206,13 +211,11 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         const employees = await storage.getAllEmployees();
         const employee = employees.find(emp => emp.userId === userId);
         if (!employee) {
-          console.log('[DEBUG ticket creation] No employee found for userId:', userId);
           return res.status(400).json({ 
             message: 'Employee record not found for user' 
           });
         }
         const employeeId = employee.id;
-        console.log('[DEBUG ticket creation] Found employee:', employeeId);
 
         // Validate required fields
         if (!req.body.title) {
@@ -257,14 +260,10 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
           status: 'Open'
         };
 
-        console.log('[DEBUG ticket creation] Ticket data to create:', ticketData);
         const newTicket = await storage.createTicket(ticketData);
-        console.log('[DEBUG ticket creation] Ticket created successfully:', newTicket.id);
         res.status(201).json(newTicket);
       } catch (error: any) {
-        console.error('[ERROR] Error creating employee ticket:', error);
-        console.error('[ERROR] Error message:', error?.message);
-        console.error('[ERROR] Error stack:', error?.stack);
+        console.error('Error creating employee ticket:', error);
         res.status(500).json({ 
           message: 'Failed to create ticket',
           error: error?.message || String(error)

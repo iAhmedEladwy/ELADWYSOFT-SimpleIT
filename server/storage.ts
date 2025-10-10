@@ -205,6 +205,7 @@ export interface IStorage {
   getEnhancedTickets(): Promise<any[]>;
   getTicketCategories(): Promise<any[]>;
   createTicketCategory(categoryData: any): Promise<any>;
+  getTicketComments(ticketId: number): Promise<any[]>;
   addTicketComment(commentData: any): Promise<any>;
   addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any>;
   mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any>;

@@ -198,17 +198,13 @@ export function requireRole(minRole: string) {
   const minLevel = getUserRoleLevel({ role: minRole });
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    console.log('[RBAC] requireRole middleware - checking role:', minRole, 'for user:', req.user?.username, 'with role:', req.user?.role);
-    
     if (!req.user) {
-      console.log('[RBAC] No user found in request');
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const userLevel = getUserRoleLevel(req.user);
 
     if (userLevel < minLevel) {
-      console.log('[RBAC] Insufficient role level. User:', userLevel, 'Required:', minLevel);
       return res.status(403).json({ 
         message: 'Insufficient role level',
         required: minRole,
@@ -218,7 +214,6 @@ export function requireRole(minRole: string) {
       });
     }
 
-    console.log('[RBAC] Access granted');
     next();
   };
 }
