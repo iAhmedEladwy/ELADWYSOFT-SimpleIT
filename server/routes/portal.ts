@@ -281,26 +281,35 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     authenticateUser,
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
+      console.log('=== PORTAL ADD COMMENT ENDPOINT HIT ===');
       try {
+        console.log('[DEBUG add comment] Request params:', req.params);
+        console.log('[DEBUG add comment] Request body:', req.body);
+        
         const userId = req.user?.id;
         const ticketId = parseInt(req.params.id);
         const { content } = req.body;
 
         if (!userId) {
+          console.log('[DEBUG add comment] No user ID found');
           return res.status(400).json({ 
             message: 'User ID not found' 
           });
         }
 
+        console.log('[DEBUG add comment] User ID:', userId, 'Ticket ID:', ticketId);
+
         // Find the employee record for this user
         const employees = await storage.getAllEmployees();
         const employee = employees.find(emp => emp.userId === userId);
         if (!employee) {
+          console.log('[DEBUG add comment] No employee found for userId:', userId);
           return res.status(400).json({ 
             message: 'Employee record not found for user' 
           });
         }
         const employeeId = employee.id;
+        console.log('[DEBUG add comment] Found employee:', employeeId);
 
         if (!employeeId) {
           return res.status(400).json({ 
@@ -309,6 +318,7 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         }
 
         if (!content) {
+          console.log('[DEBUG add comment] No content provided');
           return res.status(400).json({ 
             message: 'Comment content is required' 
           });
@@ -316,7 +326,10 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
 
         // Verify ticket belongs to this employee
         const ticket = await storage.getTicket(ticketId);
+        console.log('[DEBUG add comment] Ticket found:', ticket ? ticket.id : 'none', 'Submitted by:', ticket?.submittedById);
+        
         if (!ticket || ticket.submittedById !== employeeId) {
+          console.log('[DEBUG add comment] Access denied - ticket does not belong to employee');
           return res.status(403).json({ 
             message: 'Access denied: Ticket does not belong to you' 
           });
@@ -329,13 +342,20 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
           createdAt: new Date()
         };
 
+        console.log('[DEBUG add comment] Comment data to create:', commentData);
+        
         // Note: Using addTicketComment method from storage layer
         const comment = await storage.addTicketComment(commentData);
+        console.log('[DEBUG add comment] Comment created successfully:', comment);
+        
         res.status(201).json(comment);
-      } catch (error) {
-        console.error('Error adding ticket comment:', error);
+      } catch (error: any) {
+        console.error('[ERROR] Error adding ticket comment:', error);
+        console.error('[ERROR] Error message:', error?.message);
+        console.error('[ERROR] Error stack:', error?.stack);
         res.status(500).json({ 
-          message: 'Failed to add comment' 
+          message: 'Failed to add comment',
+          error: error?.message || String(error)
         });
       }
     }

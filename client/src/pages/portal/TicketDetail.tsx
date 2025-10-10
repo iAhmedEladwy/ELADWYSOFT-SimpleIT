@@ -75,18 +75,35 @@ export default function TicketDetail({ params }: TicketDetailProps) {
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
+      console.log('[DEBUG] Adding comment to ticket:', ticketId, 'Content:', content);
+      
       const response = await fetch(`/api/portal/my-tickets/${ticketId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ content }),
       });
-      if (!response.ok) throw new Error('Failed to add comment');
+      
+      console.log('[DEBUG] Comment response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Failed to add comment');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
+      console.log('[DEBUG] Comment added successfully');
       setComment('');
       queryClient.invalidateQueries({ queryKey: [`/api/portal/my-tickets/${ticketId}`] });
+    },
+    onError: (error: Error) => {
+      console.error('[ERROR] Failed to add comment:', error);
+      alert(language === 'English' 
+        ? `Failed to add comment: ${error.message}` 
+        : `فشل إضافة التعليق: ${error.message}`
+      );
     },
   });
 
