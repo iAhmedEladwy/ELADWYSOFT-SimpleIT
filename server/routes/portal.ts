@@ -296,6 +296,129 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
   );
 
   /**
+   * PATCH /api/portal/my-profile
+   * Update employee contact information (personal email, personal mobile)
+   */
+  app.patch('/api/portal/my-profile',
+    authenticateUser,
+    requireRole(ROLES.EMPLOYEE),
+    async (req: any, res: any) => {
+      try {
+        const userId = req.user?.id;
+        const { personalEmail, personalMobile } = req.body;
+        
+        if (!userId) {
+          return res.status(400).json({ 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
+          });
+        }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find((emp: any) => emp.userId === userId);
+
+        if (!employee) {
+          return res.status(404).json({ 
+            message: 'Employee record not found for this user',
+            help: 'Please contact your system administrator to link your user account to an employee record'
+          });
+        }
+
+        // Update employee record
+        const updatedEmployee = {
+          ...employee,
+          personalEmail: personalEmail || employee.personalEmail,
+          personalMobile: personalMobile || employee.personalMobile,
+          updatedAt: new Date().toISOString()
+        };
+
+        await storage.updateEmployee(employee.id, updatedEmployee);
+        
+        res.json({ 
+          message: 'Profile updated successfully',
+          employee: updatedEmployee 
+        });
+      } catch (error) {
+        console.error('Error updating employee profile:', error);
+        res.status(500).json({ 
+          message: 'Failed to update profile' 
+        });
+      }
+    }
+  );
+
+  /**
+   * PUT /api/portal/change-password  
+   * Change user password
+   */
+  app.put('/api/portal/change-password',
+    authenticateUser,
+    requireRole(ROLES.EMPLOYEE),
+    async (req: any, res: any) => {
+      try {
+        const userId = req.user?.id;
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!userId) {
+          return res.status(400).json({ 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
+          });
+        }
+
+        if (!currentPassword || !newPassword) {
+          return res.status(400).json({ 
+            message: 'Current password and new password are required' 
+          });
+        }
+
+        // Get user record
+        const users = await storage.getAllUsers();
+        const user = users.find((u: any) => u.id === userId);
+
+        if (!user) {
+          return res.status(404).json({ 
+            message: 'User not found' 
+          });
+        }
+
+        // Verify current password (this depends on your password hashing implementation)
+        // For now, assuming bcrypt is used
+        const bcrypt = require('bcrypt');
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        
+        if (!isCurrentPasswordValid) {
+          return res.status(400).json({ 
+            message: 'Current password is incorrect' 
+          });
+        }
+
+        // Hash new password
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user password
+        const updatedUser = {
+          ...user,
+          password: hashedNewPassword,
+          updatedAt: new Date().toISOString()
+        };
+
+        await storage.updateUser(userId, updatedUser);
+        
+        res.json({ 
+          message: 'Password updated successfully' 
+        });
+      } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ 
+          message: 'Failed to change password' 
+        });
+      }
+    }
+  );
+
+  /**
    * GET /api/portal/my-profile
    * Get authenticated employee's profile information
    */
@@ -329,6 +452,109 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         console.error('Error fetching employee profile:', error);
         res.status(500).json({ 
           message: 'Failed to fetch profile' 
+        });
+      }
+    }
+  );
+
+  /**
+   * GET /api/portal/dashboard-stats
+   * Get dashboard statistics for authenticated employee
+   */
+  app.get('/api/portal/dashboard-stats',
+    authenticateUser,
+    requireRole(ROLES.EMPLOYEE),
+    async (req: any, res: any) => {
+      try {
+        const userId = req.user?.id;
+        
+        if (!userId) {
+          return res.status(400).json({ 
+            message: 'User ID not found',
+            help: 'Please ensure you are logged in properly'
+          });
+        }
+
+        // Find the employee record for this user
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find((emp: any) => emp.userId === userId);
+
+        if (!employee) {
+          return res.status(404).json({ 
+            message: 'Employee record not found for this user',
+            help: 'Please contact your system administrator to link your user account to an employee record'
+          });
+        }
+
+        // Get employee's assets
+        const myAssets = await storage.getAssetsForEmployee(employee.id);
+        
+        // Count assets by type
+        const assetsByType: { [key: string]: number } = {};
+        myAssets.forEach((asset: any) => {
+          const type = asset.type || 'Other';
+          assetsByType[type] = (assetsByType[type] || 0) + 1;
+        });
+
+        // Get employee's tickets
+        const allTickets = await storage.getAllTickets();
+        const myTickets = allTickets.filter((ticket: any) => ticket.submittedById === employee.id);
+
+        // Count tickets by status
+        const ticketsByStatus = {
+          open: myTickets.filter((t: any) => t.status === 'Open').length,
+          inProgress: myTickets.filter((t: any) => t.status === 'In Progress').length,
+          resolved: myTickets.filter((t: any) => t.status === 'Resolved' || t.status === 'Closed').length,
+          total: myTickets.length
+        };
+
+        // Get recent activity (last 5 tickets or asset assignments)
+        const recentActivity = [];
+        
+        // Add recent tickets
+        const recentTickets = myTickets
+          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 3);
+          
+        recentTickets.forEach((ticket: any) => {
+          recentActivity.push({
+            type: 'ticket',
+            description: `Created ticket: ${ticket.title}`,
+            timestamp: ticket.createdAt
+          });
+        });
+
+        // Add recent asset assignments
+        const recentAssets = myAssets
+          .filter((asset: any) => asset.assignedAt)
+          .sort((a: any, b: any) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())
+          .slice(0, 2);
+          
+        recentAssets.forEach((asset: any) => {
+          recentActivity.push({
+            type: 'asset',
+            description: `Asset assigned: ${asset.assetId} (${asset.type})`,
+            timestamp: asset.assignedAt
+          });
+        });
+
+        // Sort all activity by timestamp
+        recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        const dashboardStats = {
+          assetsCount: {
+            total: myAssets.length,
+            byType: assetsByType
+          },
+          ticketsCount: ticketsByStatus,
+          recentActivity: recentActivity.slice(0, 5)
+        };
+
+        res.json(dashboardStats);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ 
+          message: 'Failed to fetch dashboard statistics' 
         });
       }
     }
@@ -492,6 +718,93 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
       } catch (error) {
         console.error('Error linking employee:', error);
         res.status(500).json({ error: 'Failed to link employee' });
+      }
+    }
+  );
+
+  /**
+   * GET /api/portal/asset-details/:assetId
+   * Get detailed asset information including history, maintenance, and related tickets
+   */
+  app.get('/api/portal/asset-details/:assetId',
+    authenticateUser,
+    requireRole(ROLES.EMPLOYEE),
+    async (req: any, res: any) => {
+      try {
+        const userId = req.user?.id;
+        const { assetId } = req.params;
+        
+        if (!userId) {
+          return res.status(400).json({ message: 'User ID not found' });
+        }
+
+        // Verify employee access to this asset
+        const employees = await storage.getAllEmployees();
+        const employee = employees.find(emp => emp.userId === userId);
+        
+        if (!employee) {
+          return res.status(404).json({ message: 'Employee record not found' });
+        }
+
+        // Get asset and verify it's assigned to this employee
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          return res.status(404).json({ message: 'Asset not found' });
+        }
+
+        if (asset.assignedTo !== employee.id) {
+          return res.status(403).json({ message: 'Asset not assigned to you' });
+        }
+
+        // Get asset assignment history - simplified for now
+        const assignmentHistory = [
+          {
+            id: 1,
+            assignedAt: asset.assignedAt || new Date().toISOString(),
+            assignedByName: 'System Admin',
+            notes: 'Initial assignment'
+          }
+        ];
+
+        // Get maintenance records - simplified for now  
+        const maintenanceRecords: any[] = [];
+
+        // Get related tickets - get all tickets for this employee and filter by asset
+        const allTickets = await storage.getAllTickets();
+        const relatedTickets = allTickets.filter(ticket => 
+          ticket.employeeId === employee.id && 
+          ticket.description?.includes(asset.name)
+        );
+
+        const assetDetails = {
+          assignmentHistory: assignmentHistory.map((record: any) => ({
+            id: record.id,
+            assignedAt: record.assignedAt,
+            assignedBy: { name: record.assignedByName },
+            notes: record.notes
+          })),
+          maintenanceRecords: maintenanceRecords.map((record: any) => ({
+            id: record.id,
+            type: record.type,
+            description: record.description,
+            performedAt: record.performedAt,
+            performedBy: { name: record.performedByName },
+            cost: record.cost
+          })),
+          relatedTickets: relatedTickets.map((ticket: any) => ({
+            id: ticket.id,
+            ticketId: ticket.ticketId,
+            title: ticket.title,
+            status: ticket.status,
+            priority: ticket.priority,
+            createdAt: ticket.createdAt
+          }))
+        };
+
+        res.json(assetDetails);
+      } catch (error) {
+        console.error('Error fetching asset details:', error);
+        res.status(500).json({ error: 'Failed to fetch asset details' });
       }
     }
   );

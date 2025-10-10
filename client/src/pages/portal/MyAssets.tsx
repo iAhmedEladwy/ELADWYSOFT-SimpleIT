@@ -19,10 +19,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useLocation } from 'wouter';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Package } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AlertCircle, Package, Laptop, Monitor, Smartphone, HardDrive, History, Wrench, Ticket, Calendar, DollarSign } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { useEmployeeLink } from '@/hooks/use-employee-link';
 import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
@@ -30,6 +32,7 @@ import EmployeeLinkRequired from '@/components/portal/EmployeeLinkRequired';
 export default function MyAssets() {
   const { language } = useLanguage();
   const [, navigate] = useLocation();
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const { canAccessPortal, needsEmployeeLink, availableEmployees, isLoading: employeeLoading, refetch: refreshEmployeeStatus } = useEmployeeLink();
 
   const translations = {
@@ -46,6 +49,34 @@ export default function MyAssets() {
     serialNumber: language === 'English' ? 'Serial Number' : 'الرقم التسلسلي',
     status: language === 'English' ? 'Status' : 'الحالة',
     reportIssue: language === 'English' ? 'Report Issue' : 'الإبلاغ عن مشكلة',
+    
+    // Asset history translations
+    assetDetails: language === 'English' ? 'Asset Details' : 'تفاصيل الأصل',
+    assignmentHistory: language === 'English' ? 'Assignment History' : 'تاريخ التخصيص',
+    maintenanceRecords: language === 'English' ? 'Maintenance Records' : 'سجلات الصيانة',
+    relatedTickets: language === 'English' ? 'Related Tickets' : 'التذاكر المرتبطة',
+    manufacturer: language === 'English' ? 'Manufacturer' : 'الشركة المصنعة',
+    purchaseDate: language === 'English' ? 'Purchase Date' : 'تاريخ الشراء',
+    location: language === 'English' ? 'Location' : 'الموقع',
+    condition: language === 'English' ? 'Condition' : 'الحالة',
+    assignedOn: language === 'English' ? 'Assigned On' : 'تم التخصيص في',
+    assignedBy: language === 'English' ? 'Assigned By' : 'خصص بواسطة',
+    maintenanceType: language === 'English' ? 'Maintenance Type' : 'نوع الصيانة',
+    performedBy: language === 'English' ? 'Performed By' : 'نفذ بواسطة',
+    cost: language === 'English' ? 'Cost' : 'التكلفة',
+    notes: language === 'English' ? 'Notes' : 'ملاحظات',
+    
+    // Conditions
+    excellent: language === 'English' ? 'Excellent' : 'ممتاز',
+    good: language === 'English' ? 'Good' : 'جيد',
+    fair: language === 'English' ? 'Fair' : 'مقبول',
+    poor: language === 'English' ? 'Poor' : 'ضعيف',
+    
+    // Empty states
+    noHistory: language === 'English' ? 'No assignment history available' : 'لا يوجد تاريخ تخصيص متاح',
+    noMaintenance: language === 'English' ? 'No maintenance records found' : 'لا توجد سجلات صيانة',
+    noTickets: language === 'English' ? 'No related tickets found' : 'لا توجد تذاكر مرتبطة',
+    selectAsset: language === 'English' ? 'Select an asset to view details' : 'اختر أصل لعرض التفاصيل',
   };
 
   // Fetch employee's assets (only if user can access portal)
@@ -65,6 +96,62 @@ export default function MyAssets() {
     },
     enabled: canAccessPortal, // Only fetch if user has employee record
   });
+
+  // Fetch asset details when selected
+  const { data: assetDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['/api/portal/asset-details', selectedAsset?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/portal/asset-details/${selectedAsset.id}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch asset details');
+      }
+      
+      return response.json();
+    },
+    enabled: !!selectedAsset && canAccessPortal,
+  });
+
+  const getAssetIcon = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'laptop':
+      case 'computer':
+        return Laptop;
+      case 'monitor':
+      case 'display':
+        return Monitor;
+      case 'phone':
+      case 'mobile':
+        return Smartphone;
+      case 'storage':
+      case 'drive':
+        return HardDrive;
+      default:
+        return Laptop;
+    }
+  };
+
+  const getConditionColor = (condition: string) => {
+    switch (condition?.toLowerCase()) {
+      case 'excellent':
+        return 'bg-green-100 text-green-800';
+      case 'good':
+        return 'bg-blue-100 text-blue-800';
+      case 'fair':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'poor':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(language === 'English' ? 'en-US' : 'ar-SA');
+  };
 
   // Show employee link required if user needs to be linked
   if (needsEmployeeLink) {
