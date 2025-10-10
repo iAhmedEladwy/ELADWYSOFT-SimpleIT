@@ -190,6 +190,7 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     authenticateUser,
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
+      console.log('=== PORTAL TICKET CREATION ENDPOINT HIT ===');
       try {
         console.log('[DEBUG ticket creation] Request body:', req.body);
         const userId = req.user?.id;
