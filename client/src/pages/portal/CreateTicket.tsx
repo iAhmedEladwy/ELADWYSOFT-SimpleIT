@@ -108,16 +108,36 @@ export default function CreateTicket() {
         return 'Medium';
       };
 
+      // Parse categoryId - handle empty string
+      let categoryId = null;
+      if (data.categoryId && data.categoryId !== '') {
+        const parsed = parseInt(data.categoryId);
+        if (!isNaN(parsed)) {
+          categoryId = parsed;
+        }
+      }
+
+      // Parse relatedAssetId
+      let relatedAssetId = null;
+      if (data.relatedAssetId && data.relatedAssetId !== 'none' && data.relatedAssetId !== '') {
+        const parsed = parseInt(data.relatedAssetId);
+        if (!isNaN(parsed)) {
+          relatedAssetId = parsed;
+        }
+      }
+
       const ticketPayload = {
         title: data.title,
         description: data.description,
         type: data.type,
-        categoryId: parseInt(data.categoryId),
+        categoryId,
         urgency: data.urgency,
         impact: data.impact,
         priority: getPriority(data.urgency, data.impact),
-        relatedAssetId: data.relatedAssetId && data.relatedAssetId !== 'none' ? parseInt(data.relatedAssetId) : null,
+        relatedAssetId,
       };
+
+      console.log('[DEBUG] Sending ticket payload:', ticketPayload);
 
       const response = await fetch('/api/portal/tickets', {
         method: 'POST',
@@ -128,7 +148,7 @@ export default function CreateTicket() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to create ticket');
+        throw new Error(errorData.message || errorData.error || 'Failed to create ticket');
       }
       
       return response.json();

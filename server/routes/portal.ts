@@ -191,9 +191,11 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
     requireRole(ROLES.EMPLOYEE),
     async (req: any, res: any) => {
       try {
+        console.log('[DEBUG ticket creation] Request body:', req.body);
         const userId = req.user?.id;
 
         if (!userId) {
+          console.log('[DEBUG ticket creation] No user ID found');
           return res.status(400).json({ 
             message: 'User ID not found' 
           });
@@ -203,25 +205,68 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
         const employees = await storage.getAllEmployees();
         const employee = employees.find(emp => emp.userId === userId);
         if (!employee) {
+          console.log('[DEBUG ticket creation] No employee found for userId:', userId);
           return res.status(400).json({ 
             message: 'Employee record not found for user' 
           });
         }
         const employeeId = employee.id;
+        console.log('[DEBUG ticket creation] Found employee:', employeeId);
+
+        // Validate required fields
+        if (!req.body.title) {
+          return res.status(400).json({ message: 'Title is required' });
+        }
+        if (!req.body.description) {
+          return res.status(400).json({ message: 'Description is required' });
+        }
+        if (!req.body.type) {
+          return res.status(400).json({ message: 'Type is required' });
+        }
+
+        // Parse and validate categoryId
+        let categoryId = null;
+        if (req.body.categoryId) {
+          const parsedCategoryId = parseInt(req.body.categoryId);
+          if (isNaN(parsedCategoryId)) {
+            return res.status(400).json({ message: 'Invalid category ID' });
+          }
+          categoryId = parsedCategoryId;
+        }
+
+        // Parse and validate relatedAssetId
+        let relatedAssetId = null;
+        if (req.body.relatedAssetId && req.body.relatedAssetId !== 'none') {
+          const parsedAssetId = parseInt(req.body.relatedAssetId);
+          if (!isNaN(parsedAssetId)) {
+            relatedAssetId = parsedAssetId;
+          }
+        }
 
         const ticketData = {
-          ...req.body,
+          title: req.body.title,
+          description: req.body.description,
+          type: req.body.type,
+          categoryId,
+          urgency: req.body.urgency || 'Medium',
+          impact: req.body.impact || 'Medium',
+          priority: req.body.priority || 'Medium',
+          relatedAssetId,
           submittedById: employeeId,
-          status: 'Open',
-          priority: req.body.priority || 'Medium'
+          status: 'Open'
         };
 
+        console.log('[DEBUG ticket creation] Ticket data to create:', ticketData);
         const newTicket = await storage.createTicket(ticketData);
+        console.log('[DEBUG ticket creation] Ticket created successfully:', newTicket.id);
         res.status(201).json(newTicket);
-      } catch (error) {
-        console.error('Error creating employee ticket:', error);
+      } catch (error: any) {
+        console.error('[ERROR] Error creating employee ticket:', error);
+        console.error('[ERROR] Error message:', error?.message);
+        console.error('[ERROR] Error stack:', error?.stack);
         res.status(500).json({ 
-          message: 'Failed to create ticket' 
+          message: 'Failed to create ticket',
+          error: error?.message || String(error)
         });
       }
     }
