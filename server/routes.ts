@@ -6663,6 +6663,59 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
     }
   });
 
+  // Test email endpoint
+  app.post('/api/system/test-email', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { testEmail } = req.body;
+      
+      if (!testEmail) {
+        return res.status(400).json({ error: 'Test email address is required' });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(testEmail)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      // Send test email
+      const emailSent = await emailService.sendNotificationEmail({
+        to: testEmail,
+        subject: 'SimpleIT Email Configuration Test',
+        message: `
+          <p>This is a test email to verify your SimpleIT email configuration.</p>
+          <p><strong>Configuration Details:</strong></p>
+          <ul>
+            <li>SMTP Host: ${req.body.emailHost || 'Not configured'}</li>
+            <li>SMTP Port: ${req.body.emailPort || 'Not configured'}</li>
+            <li>From Address: ${req.body.emailFromAddress || 'Not configured'}</li>
+            <li>From Name: ${req.body.emailFromName || 'Not configured'}</li>
+            <li>Secure Connection: ${req.body.emailSecure ? 'Yes' : 'No'}</li>
+          </ul>
+          <p>If you received this email, your email configuration is working correctly!</p>
+          <p><em>This email was sent at ${new Date().toLocaleString()}.</em></p>
+        `,
+        title: 'Email Configuration Test'
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ 
+          error: 'Failed to send test email. Please check your email configuration settings.' 
+        });
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Test email sent successfully! Please check your inbox.' 
+      });
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({ 
+        error: 'Failed to send test email. Please check your email configuration and try again.' 
+      });
+    }
+  });
+
   app.post("/api/reset-password", async (req, res) => {
     try {
       const { token, newPassword } = req.body;
