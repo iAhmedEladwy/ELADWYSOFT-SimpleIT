@@ -571,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/login", async (req, res, next) => {
+  app.post("/api/login", (req, res, next) => {
     console.log('Login attempt for username/email:', req.body.username);
        
     // Standard passport authentication
@@ -583,6 +583,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log('Authentication failed:', info?.message || 'Invalid credentials');
+        
+        // Log failed login attempt to activity log
+        try {
+          storage.logActivity({
+            userId: null, // No user ID for failed attempts
+            action: 'Login Failed',
+            entityType: 'User',
+            entityId: null,
+            details: { 
+              username: req.body.username,
+              reason: info?.message || 'Invalid credentials',
+              ip: req.ip || req.connection.remoteAddress
+            }
+          }).catch((logError) => {
+            console.warn('Failed to log failed login attempt:', logError);
+          });
+        } catch (logError) {
+          console.warn('Failed to log failed login attempt:', logError);
+        }
+        
         return res.status(401).json({ message: info?.message || 'Incorrect password' });
       }
       
@@ -603,6 +623,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Login successful for user:', user.username);
           console.log('Session ID:', req.sessionID);
           console.log('Session data:', req.session);
+          
+          // Log successful login to activity log
+          try {
+            storage.logActivity({
+              userId: user.id,
+              action: 'Login Successful',
+              entityType: 'User',
+              entityId: user.id,
+              details: { 
+                username: user.username,
+                ip: req.ip || req.connection.remoteAddress
+              }
+            }).catch((logError) => {
+              console.warn('Failed to log successful login:', logError);
+            });
+          } catch (logError) {
+            console.warn('Failed to log successful login:', logError);
+          }
           
           // Ensure session is saved before responding
           req.session.save((saveErr) => {
