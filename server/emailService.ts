@@ -39,11 +39,14 @@ export class EmailService {
       // Create the transporter
       this.transporter = nodemailer.createTransport({
         host: this.config.emailHost,
-        port: this.config.emailPort || 587,
+        port: this.config.emailPort || 465,
         secure: this.config.emailSecure, // true for 465, false for other ports
         auth: {
           user: this.config.emailUser,
           pass: this.config.emailPassword
+        },
+        tls: {
+          rejectUnauthorized: false // Required for some Gmail configurations
         }
       });
 
