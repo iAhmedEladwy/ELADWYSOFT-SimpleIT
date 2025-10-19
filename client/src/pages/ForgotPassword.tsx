@@ -44,6 +44,8 @@ export default function ForgotPassword() {
     checkInbox: language === 'English' ? 'Please check your inbox and follow the instructions in the email.' : 'يرجى فحص صندوق الوارد الخاص بك واتباع التعليمات في البريد الإلكتروني.',
     tryAgain: language === 'English' ? 'Please try again' : 'يرجى المحاولة مرة أخرى',
     resetError: language === 'English' ? 'Failed to send reset email' : 'فشل في إرسال بريد إعادة التعيين',
+    networkError: language === 'English' ? 'Unable to connect to server. Please check your internet connection and try again.' : 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
+    serverError: language === 'English' ? 'Server error. Please try again later or contact support.' : 'خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً أو الاتصال بالدعم.',
   };
 
   // Form setup for email-based reset
@@ -59,13 +61,16 @@ export default function ForgotPassword() {
     try {
       setIsLoading(true);
       
-      const response = await apiRequest('POST', '/api/forgot-password', {
-        email: values.email
+      const response = await apiRequest('/api/forgot-password', 'POST', {
+        email: values.email,
+        language
       });
       
+      // Parse response even for non-ok status to get error message
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send reset email');
+        throw new Error(data.message || translations.resetError);
       }
       
       // Show success message regardless of whether email exists (security)
@@ -78,11 +83,21 @@ export default function ForgotPassword() {
       
     } catch (error: any) {
       console.error('Error sending reset email:', error);
-      toast({
-        title: translations.resetError,
-        description: error.message || translations.tryAgain,
-        variant: 'destructive',
-      });
+      
+      // Handle different types of errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        toast({
+          title: translations.resetError,
+          description: translations.networkError || 'Network error. Please check your connection.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: translations.resetError,
+          description: error.message || translations.tryAgain,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsLoading(false);
     }

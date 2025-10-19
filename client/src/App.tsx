@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import FirstTimeSetup from "@/pages/FirstTimeSetup";
 import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
@@ -115,6 +116,7 @@ function Router() {
         <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         
         {/* Employee Portal Routes - Must be before "/" route */}
         <Route path="/portal/debug" component={PortalDebug} />

@@ -98,6 +98,15 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   used: boolean("used").default(false),
 });
 
+// Password Reset Attempts table (for rate limiting)
+export const passwordResetAttempts = pgTable("password_reset_attempts", {
+  id: serial("id").primaryKey(),
+  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
+  attemptCount: integer("attempt_count").notNull().default(1),
+  lastAttempt: timestamp("last_attempt").notNull().defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Employees table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),

@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.5-1",
+    date: "2025-10-19",
+    title: "Password Reset Enhancement & Security Update",
+    type: "patch",
+    changes: {
+      improvements: [
+        "🔐 Enhanced password reset with bilingual support",
+        "🛡️ Added rate limiting and IP tracking for security",
+        "📧 Improved email templates with better localization",
+      ],
+      security: [
+        "🔒 Enhanced audit logging for password reset attempts",
+        "🚫 Added protection against brute force attacks",
+      ],
+      bugfixes: [
+        "🔧 Fixed password reset API endpoint method issue",
+      ]
+    }
+  },
+  {
     version: "0.4.5",
     date: "2025-10-10",
     title: "Employee Self-Service Portal & Enhanced User Experience",

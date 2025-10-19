@@ -114,42 +114,129 @@ export class EmailService {
   /**
    * Send a password reset email
    */
-  async sendPasswordResetEmail(email: string, resetToken: string, username: string): Promise<boolean> {
+  async sendPasswordResetEmail(email: string, resetToken: string, username: string, language: string = 'English'): Promise<boolean> {
     try {
       // Use the system configuration to determine the reset URL
       const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${resetToken}`;
       
+      const translations = {
+        subject: language === 'English' ? 'Password Reset Request - SimpleIT' : 'طلب إعادة تعيين كلمة المرور - SimpleIT',
+        heading: language === 'English' ? 'Password Reset Request' : 'طلب إعادة تعيين كلمة المرور',
+        greeting: language === 'English' ? `Hello ${username},` : `مرحباً ${username}،`,
+        message: language === 'English' 
+          ? 'You have requested to reset your password. Click the button below to reset your password:' 
+          : 'لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. انقر على الزر أدناه لإعادة تعيين كلمة المرور:',
+        button: language === 'English' ? 'Reset Password' : 'إعادة تعيين كلمة المرور',
+        expiry: language === 'English' 
+          ? 'This link will expire in 1 hour for security purposes.' 
+          : 'سينتهي صلاحية هذا الرابط خلال ساعة واحدة لأغراض أمنية.',
+        ignore: language === 'English'
+          ? 'If you did not request this password reset, please ignore this email or contact support if you have concerns.'
+          : 'إذا لم تطلب إعادة تعيين كلمة المرور هذه، يرجى تجاهل هذا البريد الإلكتروني أو الاتصال بالدعم إذا كان لديك مخاوف.',
+        signature: language === 'English' ? 'Thank you,<br>SimpleIT Team' : 'شكراً لك،<br>فريق SimpleIT'
+      };
+      
       const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3b82f6;">SimpleIT Password Reset</h2>
-          <p>Hello ${username},</p>
-          <p>You have requested to reset your password. Please use the button below to reset your password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+        <!DOCTYPE html>
+        <html dir="${language === 'English' ? 'ltr' : 'rtl'}" lang="${language === 'English' ? 'en' : 'ar'}">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              margin: 0;
+              padding: 20px;
+              background-color: #f4f4f4;
+              text-align: ${language === 'English' ? 'left' : 'right'};
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: white;
+              padding: 30px;
+              border-radius: 8px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .logo {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .heading {
+              color: #3b82f6;
+              margin: 0 0 20px;
+              text-align: center;
+            }
+            .button-container {
+              text-align: center;
+              margin: 30px 0;
+            }
+            .button {
+              display: inline-block;
+              padding: 12px 24px;
+              background-color: #3b82f6;
+              color: white !important;
+              text-decoration: none;
+              border-radius: 5px;
+              font-weight: bold;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #eee;
+              font-size: 0.9em;
+              color: #666;
+              text-align: center;
+            }
+            .warning {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #fff5f5;
+              border-radius: 5px;
+              color: #e53e3e;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="heading">${translations.heading}</h1>
+            <p>${translations.greeting}</p>
+            <p>${translations.message}</p>
+            <div class="button-container">
+              <a href="${resetUrl}" class="button">${translations.button}</a>
+            </div>
+            <p><strong>${translations.expiry}</strong></p>
+            <div class="warning">
+              ${translations.ignore}
+            </div>
+            <div class="footer">
+              <p>${translations.signature}</p>
+              <p>© ${new Date().getFullYear()} ELADWYSOFT SimpleIT</p>
+            </div>
           </div>
-          <p>If you did not request a password reset, please ignore this email or contact your administrator.</p>
-          <p>Thank you,<br>SimpleIT Team</p>
-        </div>
+        </body>
+        </html>
       `;
 
       const text = `
-        SimpleIT Password Reset
+        ${translations.heading}
         
-        Hello ${username},
+        ${translations.greeting}
         
-        You have requested to reset your password. Please visit the following link to reset your password:
+        ${translations.message}
         
         ${resetUrl}
         
-        If you did not request a password reset, please ignore this email or contact your administrator.
+        ${translations.expiry}
         
-        Thank you,
-        SimpleIT Team
+        ${translations.ignore}
+        
+        ${translations.signature.replace('<br>', '\n')}
       `;
 
       return await this.sendEmail({
         to: email,
-        subject: 'Password Reset Request',
+        subject: translations.subject,
         html,
         text
       });

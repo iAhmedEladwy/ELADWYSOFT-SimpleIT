@@ -6384,27 +6384,88 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
   // Step 5: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
     try {
-      const { token, newPassword } = req.body;
+      const { token, newPassword, language } = req.body;
       
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token and new password are required' });
+      // Enhanced validation
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'Invalid token format' });
       }
+
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+      }
+
+      // Rate limiting check (3 attempts per IP per hour)
+      const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+      const attempts = await storage.getPasswordResetAttempts(clientIp, 1); // 1 hour window
+      
+      if (attempts >= 3) {
+        await logActivity({
+          userId: 0, // System
+          action: AuditAction.SECURITY_ALERT,
+          entityType: EntityType.USER,
+          entityId: 0,
+          details: {
+            message: 'Too many password reset attempts',
+            ip: clientIp,
+            userAgent: req.headers['user-agent']
+          }
+        });
+        
+        return res.status(429).json({
+          success: false,
+          message: 'Too many attempts. Please try again later.'
+        });
+      }
+
+      // Increment attempt counter
+      await storage.incrementPasswordResetAttempts(clientIp);
       
       // Validate token and get the associated user
       const userId = await storage.validatePasswordResetToken(token);
       
       if (!userId) {
+        await logActivity({
+          userId: 0, // System
+          action: AuditAction.SECURITY_ALERT,
+          entityType: EntityType.USER,
+          entityId: 0,
+          details: {
+            message: 'Invalid password reset token attempt',
+            ip: clientIp,
+            userAgent: req.headers['user-agent'],
+            token // Log the invalid token for security analysis
+          }
+        });
+
         return res.status(404).json({ 
           success: false, 
           message: 'Invalid or expired token' 
         });
       }
+
+      // Get user details for notification
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
       
-      // Hash the new password
-      const hashedPassword = await hash(newPassword, 10);
+      // Enhanced password validation
+      if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/.test(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must contain at least one letter, one number, and be at least 8 characters long'
+        });
+      }
+      
+      // Hash the new password with enhanced cost factor
+      const hashedPassword = await hash(newPassword, 12); // Increased from 10 to 12
       
       // Update the user's password
-      const updated = await storage.updateUser(userId, { password: hashedPassword });
+      const updated = await storage.updateUser(userId, { 
+        password: hashedPassword,
+        passwordLastChanged: new Date()
+      });
       
       if (!updated) {
         return res.status(500).json({ 
@@ -6413,16 +6474,34 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         });
       }
       
+      // Delete all active sessions for this user (force re-login)
+      await storage.deleteAllUserSessions(userId);
+      
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
       
-      // Log the activity
+      // Log the activity with enhanced details
       await logActivity({
-        userId: userId,
+        userId,
         action: AuditAction.UPDATE,
         entityType: EntityType.USER,
         entityId: userId,
-        details: { message: 'Password was reset using forgot password flow' }
+        details: {
+          message: 'Password was reset using forgot password flow',
+          ip: clientIp,
+          userAgent: req.headers['user-agent'],
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      // Send confirmation email
+      await emailService.sendNotificationEmail({
+        to: user.email,
+        subject: language === 'Arabic' ? 'تم تغيير كلمة المرور بنجاح' : 'Password Changed Successfully',
+        title: language === 'Arabic' ? 'تأكيد تغيير كلمة المرور' : 'Password Change Confirmation',
+        message: language === 'Arabic' 
+          ? 'تم تغيير كلمة المرور الخاصة بك بنجاح. إذا لم تقم بهذا التغيير، يرجى الاتصال بالدعم على الفور.'
+          : 'Your password has been changed successfully. If you did not make this change, please contact support immediately.'
       });
       
       res.json({
@@ -6431,7 +6510,14 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
-      res.status(500).json({ message: error.message || 'Error resetting password' });
+      await logActivity({
+        userId: 0,
+        action: AuditAction.ERROR,
+        entityType: EntityType.SYSTEM,
+        entityId: 0,
+        details: { message: 'Password reset error', error: error instanceof Error ? error.message : 'Unknown error' }
+      });
+      res.status(500).json({ message: 'Error resetting password' });
     }
   });
 
@@ -6642,19 +6728,23 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
   // Password Reset API
   app.post("/api/forgot-password", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, language = 'English' } = req.body;
       
       if (!email) {
-        return res.status(400).json({ message: "Email is required" });
+        return res.status(400).json({ 
+          message: language === 'English' ? "Email is required" : "البريد الإلكتروني مطلوب" 
+        });
       }
       
       // Find user by email
-      const users = await storage.getAllUsers();
-      const user = users.find(u => u.email === email);
+      const user = await storage.getUserByEmail(email);
       
       if (!user) {
         // Don't reveal whether email exists for security
-        return res.json({ message: "If this email exists, a password reset link has been sent." });
+        const message = language === 'English'
+          ? "If this email exists, a password reset link has been sent."
+          : "إذا كان هذا البريد الإلكتروني موجود، فسيتم إرسال رابط إعادة تعيين كلمة المرور.";
+        return res.json({ message });
       }
       
       try {
@@ -6663,32 +6753,49 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
         
         // Send email with reset link
         const emailSent = await emailService.sendPasswordResetEmail(
-          user.email!,
+          user.email,
           resetToken.token,
-          user.username
+          user.username,
+          language
         );
         
         if (emailSent) {
           await storage.logActivity({
             userId: user.id,
-            action: "Password Reset Request",
-            entityType: "User",
+            action: AuditAction.PASSWORD_RESET,
+            entityType: EntityType.USER,
             entityId: user.id,
-            details: { email: user.email }
+            details: { 
+              email: user.email,
+              ipAddress: req.ip,
+              userAgent: req.headers['user-agent']
+            }
           });
           
-          res.json({ message: "Password reset email has been sent." });
+          const message = language === 'English'
+            ? "Password reset email has been sent."
+            : "تم إرسال بريد إعادة تعيين كلمة المرور.";
+          res.json({ message });
         } else {
-          res.status(500).json({ message: "Failed to send password reset email. Please contact administrator." });
+          const message = language === 'English'
+            ? "Failed to send password reset email. Please contact administrator."
+            : "فشل في إرسال بريد إعادة تعيين كلمة المرور. يرجى الاتصال بالمسؤول.";
+          res.status(500).json({ message });
         }
       } catch (tokenError) {
         console.error('Password reset token creation failed:', tokenError);
         // Still send success response for security (don't reveal system errors)
-        res.json({ message: "Password reset request received. Please contact administrator if you don't receive an email." });
+        const message = language === 'English'
+          ? "Password reset request received. Please contact administrator if you don't receive an email."
+          : "تم استلام طلب إعادة تعيين كلمة المرور. يرجى الاتصال بالمسؤول إذا لم تتلق بريداً إلكترونياً.";
+        res.json({ message });
       }
     } catch (error: unknown) {
       console.error('Forgot password error:', error);
-      res.status(500).json({ message: "Password reset temporarily unavailable. Please contact administrator." });
+      const message = language === 'English'
+        ? "Password reset temporarily unavailable. Please contact administrator."
+        : "إعادة تعيين كلمة المرور غير متاحة مؤقتاً. يرجى الاتصال بالمسؤول.";
+      res.status(500).json({ message });
     }
   });
 
