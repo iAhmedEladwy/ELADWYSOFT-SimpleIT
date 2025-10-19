@@ -541,7 +541,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Password reset failed" });
     }
   });
-
  // Production environment authentication status endpoint
   app.get("/api/auth/status", async (req, res) => {
     try {
@@ -1319,7 +1318,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   // Raw endpoint for employee creation, bypassing schema validation
   app.post("/api/employees/create-raw", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -1911,7 +1909,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   app.post("/api/tickets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -2602,7 +2599,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   // Asset CRUD routes with pagination
 
     app.get("/api/assets/paginated", authenticateUser, async (req, res) => {
@@ -3341,7 +3337,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
 // ============================================
 // SIMPLIFIED ASSET UPGRADE ROUTES
 // ============================================
@@ -3866,7 +3861,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         const transaction = await storage.checkOutAsset(
           assetId, 
           employeeId, 
-          conditionNotes,  // Using conditionNotes field for reason + notes
+          conditionNotes, 
           'Check-Out', 
           handledById, 
           deviceSpecs
@@ -3919,7 +3914,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     });
   }
 });
-
 // Bulk Check-In endpoint
   app.post("/api/assets/bulk/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -4684,7 +4678,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-  
   // Clear audit logs (admin only)
   app.delete("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
@@ -5775,7 +5768,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     });
   }
 });
-
   // Reports
   app.get("/api/reports/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -6537,7 +6529,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
 app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const data = await storage.getAllTickets();
@@ -6702,7 +6693,7 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
   });
 
   // Test email endpoint
-  app.post('/api/system/test-email', requireAuth, requireRole(['admin']), async (req, res) => {
+  app.post('/api/system/test-email', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
       const { testEmail } = req.body;
       
@@ -7272,7 +7263,6 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Bulk Asset Operations
-  
   // Sell multiple assets
   app.post("/api/assets/sell", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
@@ -8066,7 +8056,6 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     res.status(500).json({ error: 'Failed to execute backup job' });
   }
 });
-
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================
