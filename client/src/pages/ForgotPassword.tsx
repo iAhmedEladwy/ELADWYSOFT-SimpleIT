@@ -66,14 +66,7 @@ export default function ForgotPassword() {
         language
       });
       
-      // Parse response even for non-ok status to get error message
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || translations.resetError);
-      }
-      
-      // Show success message regardless of whether email exists (security)
+      // On success, show success message
       setEmailSent(true);
       
       toast({
@@ -84,20 +77,22 @@ export default function ForgotPassword() {
     } catch (error: any) {
       console.error('Error sending reset email:', error);
       
+      let errorMessage = translations.tryAgain;
+      
       // Handle different types of errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        toast({
-          title: translations.resetError,
-          description: translations.networkError || 'Network error. Please check your connection.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: translations.resetError,
-          description: error.message || translations.tryAgain,
-          variant: 'destructive',
-        });
+        errorMessage = translations.networkError;
+      } else if (error.message) {
+        // Extract message from error string if it's in format "Status: Message"
+        const match = error.message.match(/\d+:\s*(.*)/);
+        errorMessage = match ? match[1] : error.message;
       }
+      
+      toast({
+        title: translations.resetError,
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
