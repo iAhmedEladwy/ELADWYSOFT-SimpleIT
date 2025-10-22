@@ -14,6 +14,40 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.5",
+    date: "2025-10-10",
+    title: "Employee Self-Service Portal & Enhanced User Experience",
+    type: "minor",
+    changes: {
+      features: [
+        "🎯 Employee Portal - Complete self-service portal with dashboard, assets, tickets, and profile management",
+        "📦 Asset History Tracking - View assignment history, maintenance records, and related tickets",
+        "🎫 Enhanced Ticket Management - Advanced filtering, search, sorting, and category-based creation",
+        "👤 Profile Management - Edit contact information and change password",
+        "🔐 Enhanced password reset with bilingual support",
+        "🛡️ Added rate limiting and IP tracking for security",
+        "📧 Improved email templates with better localization",
+      ],
+      improvements: [
+        "🎨 UI/UX - Consistent footer positioning, responsive layout, bilingual support (EN/AR)",
+        "⚙️ Version Management - Centralized version system across the application",
+        "🔧 Portal Backend - Dedicated API routes with RBAC enforcement and optimized queries",
+        "🔐 Security - Employee-only access with session-based authentication",
+      ],
+       security: [
+        "🔒 Enhanced audit logging for password reset attempts",
+        "🚫 Added protection against brute force attacks",
+      ],
+      bugfixes: [
+        "🔧 Fixed category selection in ticket creation (corrected storage method)",
+        "🔧 Fixed ticket comments not appearing in portal (added getTicketComments to endpoint)",
+        "🔧 Fixed duplicate ELADWYSOFT branding in portal footer",
+        "🔧 Fixed footer positioning - now stays at bottom consistently",
+        "🔧 Fixed password reset API endpoint method issue",
+      ]
+    }
+  },
+  {
     version: "0.4.3",
     date: "2025-10-02",
     title: "Complete Authentication Overhaul & RBAC Migration",

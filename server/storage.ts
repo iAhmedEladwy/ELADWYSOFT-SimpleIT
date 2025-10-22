@@ -57,6 +57,10 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   validatePasswordResetToken(token: string): Promise<number | undefined>; // Returns userId if valid
   invalidatePasswordResetToken(token: string): Promise<boolean>;
+  // Rate limiting for password resets
+  getPasswordResetAttempts(ipAddress: string, hourWindow: number): Promise<number>;
+  incrementPasswordResetAttempts(ipAddress: string): Promise<void>;
+  clearPasswordResetAttempts(ipAddress: string): Promise<void>;
   // User operations
   getUser(id: string | number): Promise<User | undefined>;
   getUserByUsername?(username: string): Promise<User | undefined>;
@@ -205,6 +209,7 @@ export interface IStorage {
   getEnhancedTickets(): Promise<any[]>;
   getTicketCategories(): Promise<any[]>;
   createTicketCategory(categoryData: any): Promise<any>;
+  getTicketComments(ticketId: number): Promise<any[]>;
   addTicketComment(commentData: any): Promise<any>;
   addTimeEntry(ticketId: number, hours: number, description: string, userId: number): Promise<any>;
   mergeTickets(primaryTicketId: number, secondaryTicketIds: number[], userId: number): Promise<any>;
@@ -867,6 +872,65 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching employee by user ID:', error);
       return undefined;
+    }
+  }
+
+  // Password Reset Attempt tracking
+  async getPasswordResetAttempts(ipAddress: string, hourWindow: number): Promise<number> {
+    try {
+      const query = `
+        SELECT COUNT(*) as attempts
+        FROM password_reset_attempts
+        WHERE ip_address = $1
+        AND last_attempt >= NOW() - interval '${hourWindow} hour'
+      `;
+      
+      const result = await pool.query(query, [ipAddress]);
+      return parseInt(result.rows[0].attempts, 10);
+    } catch (error) {
+      console.error('Error getting password reset attempts:', error);
+      return 0;
+    }
+  }
+
+  async incrementPasswordResetAttempts(ipAddress: string): Promise<void> {
+    try {
+      const query = `
+        INSERT INTO password_reset_attempts (ip_address)
+        VALUES ($1)
+      `;
+      await pool.query(query, [ipAddress]);
+    } catch (error) {
+      console.error('Error incrementing password reset attempts:', error);
+    }
+  }
+
+  async clearPasswordResetAttempts(ipAddress: string): Promise<void> {
+    try {
+      await db.delete(passwordResetAttempts).where(eq(passwordResetAttempts.ipAddress, ipAddress));
+    } catch (error) {
+      console.error('Error clearing password reset attempts:', error);
+    }
+  }
+
+  // Delete expired password reset tokens and attempts periodically
+  async cleanupExpiredTokensAndAttempts(): Promise<void> {
+    try {
+      // Delete expired tokens
+      const tokenQuery = `
+        DELETE FROM password_reset_tokens 
+        WHERE expires_at < NOW() OR used = true
+      `;
+      await pool.query(tokenQuery);
+
+      // Delete old attempts (older than 24 hours)
+      const attemptsQuery = `
+        DELETE FROM password_reset_attempts
+        WHERE last_attempt < NOW() - interval '24 hours'
+      `;
+      await pool.query(attemptsQuery);
+    } catch (error) {
+      console.error('Error cleaning up expired tokens and attempts:', error);
     }
   }
 

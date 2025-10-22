@@ -51,6 +51,28 @@ export interface EmployeeResponse {
   isActive: boolean;
 }
 
+// Security-related types
+export interface SecurityQuestion {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export interface PasswordResetAttempt {
+  id: number;
+  ipAddress: string;
+  attemptCount: number;
+  lastAttempt: string;
+}
+
+export interface PasswordResetToken {
+  id: number;
+  userId: number;
+  token: string;
+  expiresAt: string;
+  used: boolean;
+}
+
 // Asset-related types
 export interface AssetResponse {
   id: number;

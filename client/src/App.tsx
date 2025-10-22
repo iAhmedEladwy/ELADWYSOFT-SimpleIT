@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import FirstTimeSetup from "@/pages/FirstTimeSetup";
 import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Employees from "@/pages/Employees";
 import Assets from "@/pages/Assets";
 import AssetHistory from "@/pages/AssetHistory";
@@ -31,6 +32,15 @@ import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
+
+// Employee Portal imports
+import PortalDashboard from '@/pages/portal/PortalDashboard';
+import MyAssets from '@/pages/portal/MyAssets';
+import MyTickets from '@/pages/portal/MyTickets';
+import CreateTicket from '@/pages/portal/CreateTicket';
+import MyProfile from '@/pages/portal/MyProfile';
+import TicketDetail from '@/pages/portal/TicketDetail';
+import PortalDebug from '@/pages/portal/PortalDebug';
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, hasCheckedAuth } = useAuth();
@@ -106,6 +116,23 @@ function Router() {
         <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
+        
+        {/* Employee Portal Routes - Must be before "/" route */}
+        <Route path="/portal/debug" component={PortalDebug} />
+        <Route path="/portal/dashboard" component={PortalDashboard} />
+        <Route path="/portal/my-assets" component={MyAssets} />
+        <Route path="/portal/my-tickets/:id" component={TicketDetail} />
+        <Route path="/portal/my-tickets" component={MyTickets} />
+        <Route path="/portal/create-ticket" component={CreateTicket} />
+        <Route path="/portal/my-profile" component={MyProfile} />
+        <Route path="/portal">
+          {() => {
+            window.location.href = '/portal/dashboard';
+            return null;
+          }}
+        </Route>
+        
         <Route path="/">
           <Layout>
             <PrivateRoute component={Dashboard} />

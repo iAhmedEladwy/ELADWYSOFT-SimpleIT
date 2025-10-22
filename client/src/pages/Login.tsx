@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
+import { VERSION_INFO, getVersionString } from '@shared/version';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username or Email is required'),
@@ -64,16 +65,33 @@ export default function Login() {
       setIsLoading(true);
       
       // Attempt login - this now waits for user data to be loaded
-      await login(values.username, values.password);
+      const loggedInUser = await login(values.username, values.password);
+      
+      // Debug logging for role-based redirection
+      console.log('Login successful, user data:', loggedInUser);
+      console.log('User role:', loggedInUser?.role);
+      console.log('Role type:', typeof loggedInUser?.role);
+      console.log('Role toLowerCase():', loggedInUser?.role?.toLowerCase());
+      console.log('Is employee?', loggedInUser?.role?.toLowerCase() === 'employee');
       
       toast({
         title: translations.loginSuccess,
         description: translations.welcomeBack,
       });
       
-      // Login completed successfully, loading state handled by authContext
-      // User is now loaded, navigate to dashboard
-      navigate('/');
+      // Redirect based on user role
+      if (loggedInUser?.role?.toLowerCase() === 'employee') {
+        console.log('Redirecting employee to portal...');
+        navigate('/portal');
+      } else {
+        console.log('Redirecting non-employee to main system...');
+        // Agents, Managers, Admins go to main system
+        navigate('/');
+      }
+      
+      // TEMPORARY: Force redirect to portal for testing
+      // Uncomment the line below to test portal access regardless of role
+      // navigate('/portal');
       
     } catch (error) {
       console.error('Login error:', error);
@@ -171,7 +189,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="text-sm text-center text-gray-500">
           <p className="w-full">
-            Copy right reserved ELADWYSOFT 2025
+            {VERSION_INFO.copyright} {VERSION_INFO.fullName} {getVersionString()}
           </p>
         </CardFooter>
       </Card>

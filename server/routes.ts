@@ -10,6 +10,7 @@ import {
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
 import { BackupService } from './services/backupService';
+import { setupPortalRoutes } from './routes/portal';
 
 
 // Authenticated user type (from auth middleware)
@@ -540,7 +541,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Password reset failed" });
     }
   });
-
  // Production environment authentication status endpoint
   app.get("/api/auth/status", async (req, res) => {
     try {
@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/login", async (req, res, next) => {
+  app.post("/api/login", (req, res, next) => {
     console.log('Login attempt for username/email:', req.body.username);
        
     // Standard passport authentication
@@ -582,6 +582,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log('Authentication failed:', info?.message || 'Invalid credentials');
+        
+        // Log failed login attempt to activity log
+        try {
+          storage.logActivity({
+            userId: null, // No user ID for failed attempts
+            action: 'Login Failed',
+            entityType: 'User',
+            entityId: null,
+            details: { 
+              username: req.body.username,
+              reason: info?.message || 'Invalid credentials',
+              ip: req.ip || req.connection.remoteAddress
+            }
+          }).catch((logError) => {
+            console.warn('Failed to log failed login attempt:', logError);
+          });
+        } catch (logError) {
+          console.warn('Failed to log failed login attempt:', logError);
+        }
+        
         return res.status(401).json({ message: info?.message || 'Incorrect password' });
       }
       
@@ -602,6 +622,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Login successful for user:', user.username);
           console.log('Session ID:', req.sessionID);
           console.log('Session data:', req.session);
+          
+          // Log successful login to activity log
+          try {
+            storage.logActivity({
+              userId: user.id,
+              action: 'Login Successful',
+              entityType: 'User',
+              entityId: user.id,
+              details: { 
+                username: user.username,
+                ip: req.ip || req.connection.remoteAddress
+              }
+            }).catch((logError) => {
+              console.warn('Failed to log successful login:', logError);
+            });
+          } catch (logError) {
+            console.warn('Failed to log successful login:', logError);
+          }
           
           // Ensure session is saved before responding
           req.session.save((saveErr) => {
@@ -664,10 +702,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString()
     });
   });
-  
-  // Security Questions API endpoints - combined implementation
-  
-  // Get default security questions for selection
+
+  // Debug endpoint to check user role specifically for portal redirection
+  app.get("/api/debug/user-role", (req, res) => {
+    console.log('[DEBUG] /api/debug/user-role - Session ID:', req.sessionID);
+    console.log('[DEBUG] /api/debug/user-role - Session:', req.session);
+    console.log('[DEBUG] /api/debug/user-role - Is authenticated:', req.isAuthenticated());
+    console.log('[DEBUG] /api/debug/user-role - User:', req.user);
+    
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    const user = req.user as any;
+    res.json({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      roleType: typeof user.role,
+      roleLowerCase: user.role?.toLowerCase?.(),
+      isEmployee: user.role?.toLowerCase?.() === 'employee',
+      shouldRedirectToPortal: user.role?.toLowerCase?.() === 'employee',
+      allUserData: user
+    });
+  });
+
+  // Debug endpoint to check if current user has an employee record
+  app.get("/api/debug/employee-status", authenticateUser, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const employees = await storage.getAllEmployees();
+      const employee = employees.find(emp => emp.userId === user.id);
+      
+      res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role
+        },
+        hasEmployeeRecord: !!employee,
+        employee: employee || null,
+        allEmployees: employees.map(emp => ({ 
+          id: emp.id, 
+          userId: emp.userId, 
+          name: emp.englishName 
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to check employee status' });
+    }
+  });
+
+  // ==========================================
+  // EMPLOYEE PORTAL ROUTES
+  // ==========================================
+  setupPortalRoutes(app, authenticateUser, requireRole);
+
+  // Security Questions API endpoints - combined implementation  // Get default security questions for selection
   app.get("/api/security-questions", async (req, res) => {
     try {
       // Return a list of default security questions
@@ -1223,7 +1318,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   // Raw endpoint for employee creation, bypassing schema validation
   app.post("/api/employees/create-raw", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -1815,7 +1909,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   app.post("/api/tickets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -2506,7 +2599,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
   // Asset CRUD routes with pagination
 
     app.get("/api/assets/paginated", authenticateUser, async (req, res) => {
@@ -3245,7 +3337,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
 // ============================================
 // SIMPLIFIED ASSET UPGRADE ROUTES
 // ============================================
@@ -3770,7 +3861,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         const transaction = await storage.checkOutAsset(
           assetId, 
           employeeId, 
-          conditionNotes,  // Using conditionNotes field for reason + notes
+          conditionNotes, 
           'Check-Out', 
           handledById, 
           deviceSpecs
@@ -3823,7 +3914,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     });
   }
 });
-
 // Bulk Check-In endpoint
   app.post("/api/assets/bulk/check-in", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -4588,7 +4678,6 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-  
   // Clear audit logs (admin only)
   app.delete("/api/audit-logs", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
@@ -5679,7 +5768,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     });
   }
 });
-
   // Reports
   app.get("/api/reports/employees", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
     try {
@@ -6296,27 +6384,88 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
   // Step 5: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
     try {
-      const { token, newPassword } = req.body;
+      const { token, newPassword, language } = req.body;
       
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token and new password are required' });
+      // Enhanced validation
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'Invalid token format' });
       }
+
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+      }
+
+      // Rate limiting check (3 attempts per IP per hour)
+      const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+      const attempts = await storage.getPasswordResetAttempts(clientIp, 1); // 1 hour window
+      
+      if (attempts >= 3) {
+        await logActivity({
+          userId: 0, // System
+          action: AuditAction.SECURITY_ALERT,
+          entityType: EntityType.USER,
+          entityId: 0,
+          details: {
+            message: 'Too many password reset attempts',
+            ip: clientIp,
+            userAgent: req.headers['user-agent']
+          }
+        });
+        
+        return res.status(429).json({
+          success: false,
+          message: 'Too many attempts. Please try again later.'
+        });
+      }
+
+      // Increment attempt counter
+      await storage.incrementPasswordResetAttempts(clientIp);
       
       // Validate token and get the associated user
       const userId = await storage.validatePasswordResetToken(token);
       
       if (!userId) {
+        await logActivity({
+          userId: 0, // System
+          action: AuditAction.SECURITY_ALERT,
+          entityType: EntityType.USER,
+          entityId: 0,
+          details: {
+            message: 'Invalid password reset token attempt',
+            ip: clientIp,
+            userAgent: req.headers['user-agent'],
+            token // Log the invalid token for security analysis
+          }
+        });
+
         return res.status(404).json({ 
           success: false, 
           message: 'Invalid or expired token' 
         });
       }
+
+      // Get user details for notification
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
       
-      // Hash the new password
-      const hashedPassword = await hash(newPassword, 10);
+      // Enhanced password validation
+      if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/.test(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must contain at least one letter, one number, and be at least 8 characters long'
+        });
+      }
+      
+      // Hash the new password with enhanced cost factor
+      const hashedPassword = await hash(newPassword, 12); // Increased from 10 to 12
       
       // Update the user's password
-      const updated = await storage.updateUser(userId, { password: hashedPassword });
+      const updated = await storage.updateUser(userId, { 
+        password: hashedPassword,
+        passwordLastChanged: new Date()
+      });
       
       if (!updated) {
         return res.status(500).json({ 
@@ -6325,16 +6474,34 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
         });
       }
       
+      // Delete all active sessions for this user (force re-login)
+      await storage.deleteAllUserSessions(userId);
+      
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
       
-      // Log the activity
+      // Log the activity with enhanced details
       await logActivity({
-        userId: userId,
+        userId,
         action: AuditAction.UPDATE,
         entityType: EntityType.USER,
         entityId: userId,
-        details: { message: 'Password was reset using forgot password flow' }
+        details: {
+          message: 'Password was reset using forgot password flow',
+          ip: clientIp,
+          userAgent: req.headers['user-agent'],
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      // Send confirmation email
+      await emailService.sendNotificationEmail({
+        to: user.email,
+        subject: language === 'Arabic' ? 'تم تغيير كلمة المرور بنجاح' : 'Password Changed Successfully',
+        title: language === 'Arabic' ? 'تأكيد تغيير كلمة المرور' : 'Password Change Confirmation',
+        message: language === 'Arabic' 
+          ? 'تم تغيير كلمة المرور الخاصة بك بنجاح. إذا لم تقم بهذا التغيير، يرجى الاتصال بالدعم على الفور.'
+          : 'Your password has been changed successfully. If you did not make this change, please contact support immediately.'
       });
       
       res.json({
@@ -6343,7 +6510,14 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
-      res.status(500).json({ message: error.message || 'Error resetting password' });
+      await logActivity({
+        userId: 0,
+        action: AuditAction.ERROR,
+        entityType: EntityType.SYSTEM,
+        entityId: 0,
+        details: { message: 'Password reset error', error: error instanceof Error ? error.message : 'Unknown error' }
+      });
+      res.status(500).json({ message: 'Error resetting password' });
     }
   });
 
@@ -6441,7 +6615,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-
 app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
   try {
     const data = await storage.getAllTickets();
@@ -6555,19 +6728,23 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
   // Password Reset API
   app.post("/api/forgot-password", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, language = 'English' } = req.body;
       
       if (!email) {
-        return res.status(400).json({ message: "Email is required" });
+        return res.status(400).json({ 
+          message: language === 'English' ? "Email is required" : "البريد الإلكتروني مطلوب" 
+        });
       }
       
       // Find user by email
-      const users = await storage.getAllUsers();
-      const user = users.find(u => u.email === email);
+      const user = await storage.getUserByEmail(email);
       
       if (!user) {
         // Don't reveal whether email exists for security
-        return res.json({ message: "If this email exists, a password reset link has been sent." });
+        const message = language === 'English'
+          ? "If this email exists, a password reset link has been sent."
+          : "إذا كان هذا البريد الإلكتروني موجود، فسيتم إرسال رابط إعادة تعيين كلمة المرور.";
+        return res.json({ message });
       }
       
       try {
@@ -6576,32 +6753,102 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
         
         // Send email with reset link
         const emailSent = await emailService.sendPasswordResetEmail(
-          user.email!,
+          user.email,
           resetToken.token,
-          user.username
+          user.username,
+          language
         );
         
         if (emailSent) {
           await storage.logActivity({
             userId: user.id,
-            action: "Password Reset Request",
-            entityType: "User",
+            action: AuditAction.PASSWORD_RESET,
+            entityType: EntityType.USER,
             entityId: user.id,
-            details: { email: user.email }
+            details: { 
+              email: user.email,
+              ipAddress: req.ip,
+              userAgent: req.headers['user-agent']
+            }
           });
           
-          res.json({ message: "Password reset email has been sent." });
+          const message = language === 'English'
+            ? "Password reset email has been sent."
+            : "تم إرسال بريد إعادة تعيين كلمة المرور.";
+          res.json({ message });
         } else {
-          res.status(500).json({ message: "Failed to send password reset email. Please contact administrator." });
+          const message = language === 'English'
+            ? "Failed to send password reset email. Please contact administrator."
+            : "فشل في إرسال بريد إعادة تعيين كلمة المرور. يرجى الاتصال بالمسؤول.";
+          res.status(500).json({ message });
         }
       } catch (tokenError) {
         console.error('Password reset token creation failed:', tokenError);
         // Still send success response for security (don't reveal system errors)
-        res.json({ message: "Password reset request received. Please contact administrator if you don't receive an email." });
+        const message = language === 'English'
+          ? "Password reset request received. Please contact administrator if you don't receive an email."
+          : "تم استلام طلب إعادة تعيين كلمة المرور. يرجى الاتصال بالمسؤول إذا لم تتلق بريداً إلكترونياً.";
+        res.json({ message });
       }
     } catch (error: unknown) {
       console.error('Forgot password error:', error);
-      res.status(500).json({ message: "Password reset temporarily unavailable. Please contact administrator." });
+      const message = language === 'English'
+        ? "Password reset temporarily unavailable. Please contact administrator."
+        : "إعادة تعيين كلمة المرور غير متاحة مؤقتاً. يرجى الاتصال بالمسؤول.";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Test email endpoint
+  app.post('/api/system/test-email', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+    try {
+      const { testEmail } = req.body;
+      
+      if (!testEmail) {
+        return res.status(400).json({ error: 'Test email address is required' });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(testEmail)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      // Send test email
+      const emailSent = await emailService.sendNotificationEmail({
+        to: testEmail,
+        subject: 'SimpleIT Email Configuration Test',
+        message: `
+          <p>This is a test email to verify your SimpleIT email configuration.</p>
+          <p><strong>Configuration Details:</strong></p>
+          <ul>
+            <li>SMTP Host: ${req.body.emailHost || 'Not configured'}</li>
+            <li>SMTP Port: ${req.body.emailPort || 'Not configured'}</li>
+            <li>From Address: ${req.body.emailFromAddress || 'Not configured'}</li>
+            <li>From Name: ${req.body.emailFromName || 'Not configured'}</li>
+            <li>Secure Connection: ${req.body.emailSecure ? 'Yes' : 'No'}</li>
+          </ul>
+          <p>If you received this email, your email configuration is working correctly!</p>
+          <p><em>This email was sent at ${new Date().toLocaleString()}.</em></p>
+        `,
+        title: 'Email Configuration Test'
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ 
+          error: 'Failed to send test email. Please check your email configuration settings.' 
+        });
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Test email sent successfully! Please check your inbox.' 
+      });
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({ 
+        error: 'Failed to send test email. Please check your email configuration and try again.' 
+      });
     }
   });
 
@@ -7123,7 +7370,6 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   });
 
   // Bulk Asset Operations
-  
   // Sell multiple assets
   app.post("/api/assets/sell", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
@@ -7917,7 +8163,6 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     res.status(500).json({ error: 'Failed to execute backup job' });
   }
 });
-
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================
@@ -8009,19 +8254,9 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     }
   });
 
-  // Helper function to check admin access
-  // DEPRECATED: Use requireRole(ROLES.ADMIN) from rbac.ts instead
-  function requireAdmin(req: any, res: any, next: any) {
-    // Use RBAC getUserRoleLevel instead of deprecated accessLevel
-    const userLevel = getUserRoleLevel(req.session?.user || req.user);
-    if (!req.session?.user && !req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    if (userLevel < 4) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-  }
+
+
+
 
   const httpServer = createServer(app);
   return httpServer;

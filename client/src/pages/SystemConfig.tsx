@@ -181,6 +181,13 @@ function SystemConfig() {
     emailConfigDesc: language === 'English'
       ? 'Configure SMTP settings for email notifications and system communications.'
       : 'تكوين إعدادات SMTP لإشعارات البريد الإلكتروني واتصالات النظام.',
+    testEmail: language === 'English' ? 'Test Email' : 'اختبار البريد الإلكتروني',
+    testEmailAddress: language === 'English' ? 'Test Email Address' : 'عنوان البريد للاختبار',
+    testEmailAddressHelp: language === 'English' ? 'Enter an email address to send a test email' : 'أدخل عنوان بريد إلكتروني لإرسال بريد اختبار',
+    sendTestEmail: language === 'English' ? 'Send Test Email' : 'إرسال بريد اختبار',
+    testEmailSuccess: language === 'English' ? 'Test email sent successfully!' : 'تم إرسال بريد الاختبار بنجاح!',
+    testEmailError: language === 'English' ? 'Failed to send test email' : 'فشل في إرسال بريد الاختبار',
+    testEmailSent: language === 'English' ? 'Test email sent! Please check your inbox.' : 'تم إرسال بريد الاختبار! يرجى التحقق من صندوق الوارد.',
   };
   
   // Tab state management with localStorage persistence
@@ -243,6 +250,11 @@ function SystemConfig() {
   const [emailFromAddress, setEmailFromAddress] = useState('');
   const [emailFromName, setEmailFromName] = useState('');
   const [emailSecure, setEmailSecure] = useState(true);
+  
+  // Test email states
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [isTestEmailLoading, setIsTestEmailLoading] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState<{success: boolean, message: string} | null>(null);
   
   // Company details states
   const [companyName, setCompanyName] = useState('ELADWYSOFT');
@@ -999,6 +1011,55 @@ const parseCSVLine = (line: string): string[] => {
       emailSecure,
     };
     updateConfigMutation.mutate(configData);
+  };
+
+  // Test email function
+  const handleTestEmail = async () => {
+    if (!testEmailAddress.trim()) {
+      setTestEmailResult({ success: false, message: 'Please enter a test email address' });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmailAddress)) {
+      setTestEmailResult({ success: false, message: 'Please enter a valid email address' });
+      return;
+    }
+
+    setIsTestEmailLoading(true);
+    setTestEmailResult(null);
+
+    try {
+      const response = await fetch('/api/system/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testEmail: testEmailAddress,
+          emailHost,
+          emailPort: emailPort ? parseInt(emailPort) : 587,
+          emailUser,
+          emailPassword,
+          emailFromAddress,
+          emailFromName,
+          emailSecure,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setTestEmailResult({ success: true, message: result.message });
+      } else {
+        setTestEmailResult({ success: false, message: result.error || 'Failed to send test email' });
+      }
+    } catch (error) {
+      setTestEmailResult({ success: false, message: 'Network error. Please check your connection and try again.' });
+    } finally {
+      setIsTestEmailLoading(false);
+    }
   };
 
   // Legacy handler for backward compatibility (can be removed if not used elsewhere)
@@ -2971,6 +3032,54 @@ const parseCSVLine = (line: string): string[] => {
                   <div><strong>Outlook:</strong> smtp-mail.outlook.com:587 (TLS)</div>
                   <div><strong>Yahoo:</strong> smtp.mail.yahoo.com:587 (TLS)</div>
                   <div><strong>SendGrid:</strong> smtp.sendgrid.net:587 (TLS)</div>
+                </div>
+              </div>
+
+              {/* Test Email Section */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-3">{translations.testEmail}</h4>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>{translations.testEmailAddress}</Label>
+                    <Input
+                      type="email"
+                      value={testEmailAddress}
+                      onChange={(e) => setTestEmailAddress(e.target.value)}
+                      placeholder="test@example.com"
+                      disabled={isTestEmailLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">{translations.testEmailAddressHelp}</p>
+                  </div>
+                  
+                  {testEmailResult && (
+                    <div className={`p-3 rounded-md text-sm ${
+                      testEmailResult.success 
+                        ? 'bg-green-50 text-green-800 border border-green-200' 
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                      {testEmailResult.message}
+                    </div>
+                  )}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestEmail}
+                    disabled={isTestEmailLoading || !testEmailAddress.trim()}
+                    className="w-full sm:w-auto"
+                  >
+                    {isTestEmailLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {translations.sending}
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        {translations.sendTestEmail}
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
 

@@ -7,6 +7,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 
 export class BackupService {
   private backupDir = path.join(process.cwd(), 'backups');
+  private startTime = Date.now(); // Track server start time for uptime calculation
   
   constructor() {
     this.ensureBackupDirectory();
@@ -492,28 +493,7 @@ export class BackupService {
         threshold: 'N/A'
       });
 
-      // Recent ticket activity (last 24 hours) - with error handling
-      let recentTickets = 0;
-      try {
-        const recentTicketsQuery = `
-          SELECT count(*) 
-          FROM tickets 
-          WHERE created_at > now() - interval '24 hours'
-        `;
-        const recentTicketsResult = execSync(`psql "${dbUrl}" -t -c "${recentTicketsQuery}"`, { encoding: 'utf8' });
-        recentTickets = parseInt(recentTicketsResult.trim()) || 0;
-      } catch (error) {
-        console.warn('Failed to get recent tickets metrics:', error);
-        recentTickets = 0;
-      }
-
-      healthMetrics.push({
-        metricName: 'New Tickets (24h)',
-        metricValue: recentTickets.toString(),
-        metricType: 'performance',
-        status: recentTickets > 50 ? 'warning' : 'healthy',
-        threshold: '50/day'
-      });
+      // Note: Removed "New Tickets (24h)" metric as requested
 
       // === BACKUP & MAINTENANCE HEALTH ===
 
@@ -552,17 +532,13 @@ export class BackupService {
 
       // === ACCESS PATTERN ANALYSIS ===
 
-      // Failed login attempts (last hour) - with error handling
+      // Failed login attempts (last hour) - Real tracking from activity log
       let failedLogins = 0;
       try {
-        const failedLoginsQuery = `
-          SELECT count(*) 
-          FROM activity_log 
-          WHERE action = 'Login Failed' 
-          AND created_at > now() - interval '1 hour'
-        `;
-        const failedLoginsResult = execSync(`psql "${dbUrl}" -t -c "${failedLoginsQuery}"`, { encoding: 'utf8' });
-        failedLogins = parseInt(failedLoginsResult.trim()) || 0;
+        const failedLoginsResult = await db.select({ count: sql<number>`count(*)` })
+          .from(activityLog)
+          .where(sql`action = 'Login Failed' AND created_at > now() - interval '1 hour'`);
+        failedLogins = failedLoginsResult[0]?.count || 0;
       } catch (error) {
         console.warn('Failed to get failed login metrics:', error);
         failedLogins = 0;
@@ -576,16 +552,13 @@ export class BackupService {
         threshold: '5/hour'
       });
 
-      // Active user sessions (approximate) - with error handling
+      // Active user sessions (last 30 minutes) - Real tracking from activity log
       let activeUsers = 0;
       try {
-        const activeUsersQuery = `
-          SELECT count(DISTINCT user_id) 
-          FROM activity_log 
-          WHERE created_at > now() - interval '30 minutes'
-        `;
-        const activeUsersResult = execSync(`psql "${dbUrl}" -t -c "${activeUsersQuery}"`, { encoding: 'utf8' });
-        activeUsers = parseInt(activeUsersResult.trim()) || 0;
+        const activeUsersResult = await db.select({ count: sql<number>`count(DISTINCT user_id)` })
+          .from(activityLog)
+          .where(sql`created_at > now() - interval '30 minutes'`);
+        activeUsers = activeUsersResult[0]?.count || 0;
       } catch (error) {
         console.warn('Failed to get active users metrics:', error);
         activeUsers = 0;
@@ -645,7 +618,7 @@ export class BackupService {
           totalTickets: totalTickets,
           activeConnections,
           databaseSize,
-          uptime: '24h 30m', // You can implement actual uptime calculation
+          uptime: this.formatUptime(),
           lastBackup: lastBackupResult[0]?.createdAt
         };
       } catch (error) {
@@ -903,5 +876,26 @@ export class BackupService {
     }
 
     return nextRun;
+  }
+
+  /**
+   * Format server uptime in a human-readable format
+   */
+  private formatUptime(): string {
+    const uptimeMs = Date.now() - this.startTime;
+    const seconds = Math.floor(uptimeMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
   }
 }

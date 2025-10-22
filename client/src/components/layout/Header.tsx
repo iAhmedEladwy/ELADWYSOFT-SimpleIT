@@ -35,6 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useMobile } from '@/hooks/use-mobile';
+import { getVersionString } from '@shared/version';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -133,8 +134,9 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
             </TooltipProvider>
           )}
           <div className="flex flex-col">
-            <div className="flex items-center">
-              <span className="text-blue-600 font-bold text-xl mr-1">SimpleIT</span>
+            <div className="flex items-center gap-1">
+              <span className="text-blue-600 font-bold text-xl">SimpleIT</span>
+              <span className="text-gray-400 text-xs font-medium">{getVersionString()}</span>
             </div>
             <span className="text-gray-500 text-xs -mt-1">
               {language === 'English' ? 'IT Asset Management System' : 'نظام إدارة أصول تكنولوجيا المعلومات'}
