@@ -17,7 +17,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     version: "0.4.5",
     date: "2025-10-10",
     title: "Employee Self-Service Portal & Enhanced User Experience",
-    type: "minor",
+    type: "major",
     changes: {
       features: [
         "🎯 Employee Portal - Complete self-service portal with dashboard, assets, tickets, and profile management",
@@ -51,7 +51,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     version: "0.4.3",
     date: "2025-10-02",
     title: "Complete Authentication Overhaul & RBAC Migration",
-    type: "minor",
+    type: "major",
     changes: {
       features: [
         "🔐 Dual authentication - login with username OR email",
@@ -122,7 +122,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
   version: "0.4.1",
   date: "2025-09-20",
   title: "Scheduled Backups & Bulk Operations ⚠️ MIGRATION REQUIRED",
-  type: "minor",
+  type: "major",
   changes: {
     breaking: [
       "⚠️ DATABASE SCHEMA CHANGES:",
