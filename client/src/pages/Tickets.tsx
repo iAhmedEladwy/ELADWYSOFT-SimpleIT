@@ -39,7 +39,17 @@ export default function Tickets() {
 
   // Data queries
   const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
-    queryKey: ['/api/tickets'],
+    queryKey: ['/api/tickets', filters.createdFrom, filters.createdTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.createdFrom) params.append('createdFrom', filters.createdFrom);
+      if (filters.createdTo) params.append('createdTo', filters.createdTo);
+      
+      const url = `/api/tickets${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch tickets');
+      return response.json();
+    },
     staleTime: 30000, // 30 seconds
   });
 

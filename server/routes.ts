@@ -4250,6 +4250,9 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const user = req.user as schema.User;
       const userRoleLevel = getUserRoleLevel(user);
       
+      // Get date filter parameters
+      const { createdFrom, createdTo } = req.query;
+      
       // If user has level 1 access (Employee), only show tickets they're assigned to
       // or ones they've submitted through an employee profile
       if (userRoleLevel === 1) { // Employee role
@@ -4257,7 +4260,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         // Get the employee record for this user if exists
         const userEmployee = await storage.getEmployeeByUserId(user.id);
         
-        const filteredTickets = allTickets.filter(ticket => {
+        let filteredTickets = allTickets.filter(ticket => {
           // Show tickets assigned to this user
           if (ticket.assignedToId === user.id) return true;
           
@@ -4268,10 +4271,45 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           return false;
         });
         
+        // Apply date filters
+        if (createdFrom || createdTo) {
+          filteredTickets = filteredTickets.filter(ticket => {
+            const ticketDate = new Date(ticket.createdAt);
+            
+            if (createdFrom && ticketDate < new Date(createdFrom as string)) {
+              return false;
+            }
+            
+            if (createdTo && ticketDate > new Date(createdTo as string)) {
+              return false;
+            }
+            
+            return true;
+          });
+        }
+        
         res.json(filteredTickets);
       } else {
         // Admin/Manager can see all tickets
-        const tickets = await storage.getAllTickets();
+        let tickets = await storage.getAllTickets();
+        
+        // Apply date filters
+        if (createdFrom || createdTo) {
+          tickets = tickets.filter(ticket => {
+            const ticketDate = new Date(ticket.createdAt);
+            
+            if (createdFrom && ticketDate < new Date(createdFrom as string)) {
+              return false;
+            }
+            
+            if (createdTo && ticketDate > new Date(createdTo as string)) {
+              return false;
+            }
+            
+            return true;
+          });
+        }
+        
         res.json(tickets);
       }
     } catch (error: unknown) {

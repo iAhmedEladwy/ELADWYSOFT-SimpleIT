@@ -301,6 +301,9 @@ export interface TicketFilters {
   category?: string;
   createdBy?: string;
   search?: string;
+  dateRange?: string; // Quick filter: 'today', 'yesterday', 'last7days', 'last30days', 'last90days', 'thisMonth', 'lastMonth', 'custom'
+  createdFrom?: string; // ISO date string for custom range start
+  createdTo?: string; // ISO date string for custom range end
 }
 
 // Form validation types
