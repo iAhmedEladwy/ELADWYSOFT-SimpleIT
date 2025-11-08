@@ -9,11 +9,13 @@ import { apiRequest } from '@/lib/queryClient';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import TicketFilters from '@/components/tickets/TicketFilters';
 import TicketForm from '@/components/tickets/TicketForm'; // Our new TicketForm
+import KanbanBoard from '@/components/tickets/KanbanBoard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { Plus, Users, Ticket, AlertCircle, Download } from 'lucide-react';
+import { Plus, Users, Ticket, AlertCircle, Download, LayoutGrid, List } from 'lucide-react';
 import type { TicketFilters as TicketFiltersType, TicketResponse, TicketCreateRequest } from '@shared/types';
 
 export default function Tickets() {
@@ -29,6 +31,7 @@ export default function Tickets() {
   const [filters, setFilters] = useState<TicketFiltersType>({
     status: ['Open', 'In Progress'] // Default to show open tickets
   });
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table'); // View toggle state
   
   // Form dialogs state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -440,6 +443,20 @@ export default function Tickets() {
             </div>
           )}
 
+          {/* View Mode Toggle */}
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'table' | 'kanban')}>
+            <TabsList>
+              <TabsTrigger value="table" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                {language === 'Arabic' ? 'جدول' : 'Table'}
+              </TabsTrigger>
+              <TabsTrigger value="kanban" className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                {language === 'Arabic' ? 'كانبان' : 'Kanban'}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           {/* Export Button */}
           <Button
             variant="outline"
@@ -529,21 +546,29 @@ export default function Tickets() {
         </CardContent>
       </Card>
 
-      {/* Main Tickets Table */}
-      <Card>
-        <TicketsTable 
+      {/* Conditional View: Table or Kanban */}
+      {viewMode === 'table' ? (
+        <Card>
+          <TicketsTable 
+            tickets={filteredTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            onStatusChange={handleStatusChange}
+            onAssign={handleAssignTicket}
+            onEdit={handleEditTicket}
+            onDelete={handleDeleteTicket}
+            selectedTickets={selectedTickets}
+            onSelectionChange={setSelectedTickets}
+          />
+        </Card>
+      ) : (
+        <KanbanBoard
           tickets={filteredTickets}
-          employees={employees}
-          assets={assets}
+          onTicketClick={handleEditTicket}
           users={users}
-          onStatusChange={handleStatusChange}
-          onAssign={handleAssignTicket}
-          onEdit={handleEditTicket} // This will trigger direct edit
-          onDelete={handleDeleteTicket}
-          selectedTickets={selectedTickets}
-          onSelectionChange={setSelectedTickets}
         />
-      </Card>
+      )}
 
       {/* Create Ticket Form */}
       <TicketForm
