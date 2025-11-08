@@ -253,11 +253,17 @@ export default function AssetFilters({
                       <div
                         key={type}
                         className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                        onClick={() => handleTypeToggle(type)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTypeToggle(type);
+                        }}
                       >
                         <Checkbox
                           checked={selectedTypes.includes(type)}
-                          onCheckedChange={() => handleTypeToggle(type)}
+                          onCheckedChange={(checked) => {
+                            handleTypeToggle(type);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <label className="flex-1 text-sm cursor-pointer">
                           {type}
@@ -311,11 +317,17 @@ export default function AssetFilters({
                       <div
                         key={brand}
                         className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                        onClick={() => handleBrandToggle(brand)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBrandToggle(brand);
+                        }}
                       >
                         <Checkbox
                           checked={selectedBrands.includes(brand)}
-                          onCheckedChange={() => handleBrandToggle(brand)}
+                          onCheckedChange={(checked) => {
+                            handleBrandToggle(brand);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <label className="flex-1 text-sm cursor-pointer">
                           {brand}
@@ -390,11 +402,17 @@ export default function AssetFilters({
                       <div
                         key={status}
                         className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                        onClick={() => handleStatusToggle(status)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusToggle(status);
+                        }}
                       >
                         <Checkbox
                           checked={selectedStatuses.includes(status)}
-                          onCheckedChange={() => handleStatusToggle(status)}
+                          onCheckedChange={(checked) => {
+                            handleStatusToggle(status);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <label className="flex-1 text-sm cursor-pointer">
                           {status}
