@@ -285,10 +285,10 @@ export interface EmployeeFilters {
 }
 
 export interface AssetFilters {
-  type?: string;
-  brand?: string;
+  type?: string | string[]; // Support multi-select
+  brand?: string | string[]; // Support multi-select
   model?: string;
-  status?: string;
+  status?: string | string[]; // Support multi-select
   assignedTo?: string;
   search?: string;
 }

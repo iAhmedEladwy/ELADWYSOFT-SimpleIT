@@ -259,12 +259,26 @@ export default function Assets() {
       limit: itemsPerPage.toString(),
     };
     
-    // Add filters to params
+    // Add filters to params - support multi-select arrays
     if (filters.search) params.search = filters.search;
-    if (filters.type) params.type = filters.type;
-    if (filters.brand) params.brand = filters.brand;
+    
+    // Type filter - support array
+    if (filters.type) {
+      params.type = Array.isArray(filters.type) ? filters.type.join(',') : filters.type;
+    }
+    
+    // Brand filter - support array
+    if (filters.brand) {
+      params.brand = Array.isArray(filters.brand) ? filters.brand.join(',') : filters.brand;
+    }
+    
     if (filters.model) params.model = filters.model;
-    if (filters.status) params.status = filters.status;
+    
+    // Status filter - support array
+    if (filters.status) {
+      params.status = Array.isArray(filters.status) ? filters.status.join(',') : filters.status;
+    }
+    
     if (filters.assignedTo) params.assignedTo = filters.assignedTo;
     if (filters.maintenanceDue) params.maintenanceDue = filters.maintenanceDue;
     
