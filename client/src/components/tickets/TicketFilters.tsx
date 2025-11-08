@@ -18,6 +18,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { X, Filter, Search, User, ChevronDown, Check } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import type { TicketFilters } from '@shared/types';
 
 interface TicketFiltersProps {
@@ -409,7 +410,7 @@ export default function TicketFilters({
         </div>
 
         {/* Date Range Filter */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t">
           <div className="space-y-1">
             <Label className="text-xs font-medium">{translations.dateRange}</Label>
             <Select value={filters.dateRange || 'all'} onValueChange={handleDateRangeChange}>
@@ -435,36 +436,36 @@ export default function TicketFilters({
             <>
               <div className="space-y-1">
                 <Label className="text-xs font-medium">{translations.from}</Label>
-                <Input
-                  type="date"
-                  className="h-8 text-sm"
-                  value={filters.createdFrom ? filters.createdFrom.split('T')[0] : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const date = new Date(e.target.value);
-                      date.setHours(0, 0, 0, 0);
-                      updateFilter('createdFrom', date.toISOString());
+                <Calendar
+                  mode="picker"
+                  value={filters.createdFrom ? new Date(filters.createdFrom) : undefined}
+                  onChange={(date: Date | undefined) => {
+                    if (date) {
+                      const newDate = new Date(date);
+                      newDate.setHours(0, 0, 0, 0);
+                      updateFilter('createdFrom', newDate.toISOString());
                     } else {
                       updateFilter('createdFrom', undefined);
                     }
                   }}
+                  placeholder={translations.from}
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-medium">{translations.to}</Label>
-                <Input
-                  type="date"
-                  className="h-8 text-sm"
-                  value={filters.createdTo ? filters.createdTo.split('T')[0] : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const date = new Date(e.target.value);
-                      date.setHours(23, 59, 59, 999);
-                      updateFilter('createdTo', date.toISOString());
+                <Calendar
+                  mode="picker"
+                  value={filters.createdTo ? new Date(filters.createdTo) : undefined}
+                  onChange={(date: Date | undefined) => {
+                    if (date) {
+                      const newDate = new Date(date);
+                      newDate.setHours(23, 59, 59, 999);
+                      updateFilter('createdTo', newDate.toISOString());
                     } else {
                       updateFilter('createdTo', undefined);
                     }
                   }}
+                  placeholder={translations.to}
                 />
               </div>
             </>
