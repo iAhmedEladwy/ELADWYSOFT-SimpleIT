@@ -8163,6 +8163,31 @@ app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.A
     res.status(500).json({ error: 'Failed to execute backup job' });
   }
 });
+
+// POST /api/admin/backup-jobs/:id/cleanup - Manually clean up old backups
+app.post('/api/admin/backup-jobs/:id/cleanup', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: 'Invalid job ID' });
+    }
+
+    const result = await backupService.cleanupOldBackups(jobId);
+
+    if (result.success) {
+      res.json({ 
+        message: `Cleanup completed. Deleted ${result.deletedCount} old backup(s)`, 
+        deletedCount: result.deletedCount 
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Failed to cleanup backups:', error);
+    res.status(500).json({ error: 'Failed to cleanup backups' });
+  }
+});
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================

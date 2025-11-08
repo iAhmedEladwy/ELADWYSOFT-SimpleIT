@@ -329,6 +329,9 @@ export interface BackupJobResponse {
   schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
   schedule_value: number;
   is_enabled: boolean;
+  retention_days?: number;
+  max_backups?: number;
+  min_backups?: number;
   created_at: string;
   updated_at: string;
   last_run_at?: string;
@@ -341,6 +344,9 @@ export interface BackupJobCreateRequest {
   schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
   schedule_value: number;
   is_enabled?: boolean;
+  retention_days?: number;
+  max_backups?: number;
+  min_backups?: number;
 }
 
 export interface BackupJobUpdateRequest extends Partial<BackupJobCreateRequest> {}

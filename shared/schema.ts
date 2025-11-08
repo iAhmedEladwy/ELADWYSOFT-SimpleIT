@@ -436,6 +436,9 @@ export const backupJobs = pgTable("backup_jobs", {
   schedule_type: varchar("schedule_type", { length: 20 }).notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
   schedule_value: integer("schedule_value").notNull().default(1), // number of units
   is_enabled: boolean("is_enabled").default(true),
+  retention_days: integer("retention_days").default(30), // Delete backups older than X days
+  max_backups: integer("max_backups").default(50), // Maximum number of backups to keep
+  min_backups: integer("min_backups").default(3), // Minimum backups to always keep (safety)
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   last_run_at: timestamp("last_run_at"),

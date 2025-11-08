@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
-import { Clock, Plus, Edit, Trash2, Play, Pause } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Play, Pause, Broom } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { BackupJobResponse, BackupJobCreateRequest } from '@shared/types';
 
@@ -30,7 +30,10 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
     description: '',
     schedule_type: 'daily',
     schedule_value: 1,
-    is_enabled: true
+    is_enabled: true,
+    retention_days: 30,
+    max_backups: 50,
+    min_backups: 3
   });
 
   const t = {
@@ -42,6 +45,13 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
     scheduleType: language === 'English' ? 'Schedule Type' : 'نوع الجدولة',
     scheduleValue: language === 'English' ? 'Every' : 'كل',
     enabled: language === 'English' ? 'Enabled' : 'مفعل',
+    retentionDays: language === 'English' ? 'Retention Days' : 'أيام الاحتفاظ',
+    maxBackups: language === 'English' ? 'Max Backups' : 'الحد الأقصى للنسخ',
+    minBackups: language === 'English' ? 'Min Backups' : 'الحد الأدنى للنسخ',
+    retentionPolicy: language === 'English' ? 'Retention Policy' : 'سياسة الاحتفاظ',
+    retentionDaysHelp: language === 'English' ? 'Delete backups older than this many days' : 'حذف النسخ الاحتياطية الأقدم من هذا العدد من الأيام',
+    maxBackupsHelp: language === 'English' ? 'Maximum number of backups to keep' : 'الحد الأقصى لعدد النسخ الاحتياطية للاحتفاظ بها',
+    minBackupsHelp: language === 'English' ? 'Minimum backups to always keep (safety)' : 'الحد الأدنى للنسخ الاحتياطية التي يجب الاحتفاظ بها دائمًا (للأمان)',
     lastRun: language === 'English' ? 'Last Run' : 'آخر تشغيل',
     nextRun: language === 'English' ? 'Next Run' : 'التشغيل التالي',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
@@ -58,6 +68,8 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
     delete: language === 'English' ? 'Delete' : 'حذف',
     edit: language === 'English' ? 'Edit' : 'تعديل',
     runNow: language === 'English' ? 'Run Now' : 'تشغيل الآن',
+    cleanup: language === 'English' ? 'Cleanup' : 'تنظيف',
+    cleanupOldBackups: language === 'English' ? 'Cleanup Old Backups' : 'تنظيف النسخ الاحتياطية القديمة',
     enable: language === 'English' ? 'Enable' : 'تفعيل',
     disable: language === 'English' ? 'Disable' : 'إلغاء التفعيل',
     noJobs: language === 'English' ? 'No scheduled backup jobs found' : 'لم يتم العثور على مهام نسخ احتياطي مجدولة',
@@ -161,13 +173,38 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
     }
   });
 
+  // Cleanup old backups mutation
+  const cleanupJobMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest(`/api/admin/backup-jobs/${id}/cleanup`, 'POST'),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['backup-jobs'] });
+      toast({
+        title: language === 'English' ? 'Success' : 'نجح',
+        description: data.message || (language === 'English' 
+          ? `Cleanup completed. Deleted ${data.deletedCount || 0} old backup(s)` 
+          : `اكتمل التنظيف. تم حذف ${data.deletedCount || 0} نسخة احتياطية قديمة`)
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'English' ? 'Error' : 'خطأ',
+        description: error.message || (language === 'English' ? 'Failed to cleanup old backups' : 'فشل في تنظيف النسخ الاحتياطية القديمة'),
+        variant: 'destructive'
+      });
+    }
+  });
+
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
       schedule_type: 'daily',
       schedule_value: 1,
-      is_enabled: true
+      is_enabled: true,
+      retention_days: 30,
+      max_backups: 50,
+      min_backups: 3
     });
   };
 
@@ -178,7 +215,10 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
       description: job.description || '',
       schedule_type: job.schedule_type,
       schedule_value: job.schedule_value,
-      is_enabled: job.is_enabled
+      is_enabled: job.is_enabled,
+      retention_days: job.retention_days || 30,
+      max_backups: job.max_backups || 50,
+      min_backups: job.min_backups || 3
     });
   };
 
@@ -292,6 +332,52 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
                 />
                 <Label htmlFor="is_enabled">{t.enabled}</Label>
               </div>
+              
+              {/* Retention Policy Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-semibold mb-3">{t.retentionPolicy}</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="retention_days" className="text-xs">
+                      {t.retentionDays}
+                    </Label>
+                    <Input
+                      id="retention_days"
+                      type="number"
+                      min="1"
+                      value={formData.retention_days || 30}
+                      onChange={(e) => setFormData({ ...formData, retention_days: parseInt(e.target.value) || 30 })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t.retentionDaysHelp}</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="max_backups" className="text-xs">
+                      {t.maxBackups}
+                    </Label>
+                    <Input
+                      id="max_backups"
+                      type="number"
+                      min="1"
+                      value={formData.max_backups || 50}
+                      onChange={(e) => setFormData({ ...formData, max_backups: parseInt(e.target.value) || 50 })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t.maxBackupsHelp}</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="min_backups" className="text-xs">
+                      {t.minBackups}
+                    </Label>
+                    <Input
+                      id="min_backups"
+                      type="number"
+                      min="1"
+                      value={formData.min_backups || 3}
+                      onChange={(e) => setFormData({ ...formData, min_backups: parseInt(e.target.value) || 3 })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t.minBackupsHelp}</p>
+                  </div>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -358,6 +444,7 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
                           size="sm"
                           onClick={() => handleEdit(job)}
                           disabled={updateJobMutation.isPending}
+                          title={t.edit}
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -366,14 +453,25 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
                           size="sm"
                           onClick={() => executeJobMutation.mutate(job.id)}
                           disabled={executeJobMutation.isPending}
+                          title={t.runNow}
                         >
                           <Play className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => cleanupJobMutation.mutate(job.id)}
+                          disabled={cleanupJobMutation.isPending}
+                          title={t.cleanupOldBackups}
+                        >
+                          <Broom className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => deleteJobMutation.mutate(job.id)}
                           disabled={deleteJobMutation.isPending}
+                          title={t.delete}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
