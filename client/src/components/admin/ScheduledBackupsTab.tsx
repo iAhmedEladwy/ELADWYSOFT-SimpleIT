@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
-import { Clock, Plus, Edit, Trash2, Play, Pause, Broom } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Play, Pause, Eraser } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { BackupJobResponse, BackupJobCreateRequest } from '@shared/types';
 
@@ -464,7 +464,7 @@ export default function ScheduledBackupsTab({}: ScheduledBackupsTabProps) {
                           disabled={cleanupJobMutation.isPending}
                           title={t.cleanupOldBackups}
                         >
-                          <Broom className="h-3 w-3" />
+                          <Eraser className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="outline"
