@@ -17,7 +17,7 @@
  * - PATCH: Bug fixes, minor improvements
  */
 
-export const APP_VERSION = '0.4.5';
+export const APP_VERSION = '0.4.6';
 export const APP_NAME = 'SimpleIT';
 export const APP_FULL_NAME = 'ELADWYSOFT SimpleIT';
 export const APP_DESCRIPTION = 'IT Asset Management System';

@@ -2,6 +2,7 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { RoleGuard, hasPermission } from '@/components/auth/RoleGuard';
+import { getVersionString, APP_FULL_NAME } from '@shared/version';
 import { useState, useEffect } from 'react';
 import {
   Home,
@@ -306,7 +307,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v0.4.6</span>
+            <span className="text-xs text-gray-500">SimpleIT {getVersionString()}</span>
           </div>
         </div>
       </div>
