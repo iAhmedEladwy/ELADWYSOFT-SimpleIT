@@ -402,47 +402,6 @@ export default function Tickets() {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Bulk Actions */}
-          {selectedTickets.length > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {selectedTickets.length} {t.selectedCount}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkActions(!showBulkActions)}
-              >
-                {t.bulkActions}
-              </Button>
-              {showBulkActions && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleBulkStatusChange('Resolved')}
-                  >
-                    {t.resolve}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm" 
-                    onClick={() => handleBulkStatusChange('Closed')}
-                  >
-                    {t.close}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                  >
-                    {t.delete}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* View Mode Toggle */}
           <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'table' | 'kanban')}>
             <TabsList>
@@ -545,6 +504,47 @@ export default function Tickets() {
           />
         </CardContent>
       </Card>
+
+      {/* Bulk Actions - Above Table */}
+      {selectedTickets.length > 0 && (
+        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            {selectedTickets.length} {t.selectedCount}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowBulkActions(!showBulkActions)}
+          >
+            {t.bulkActions}
+          </Button>
+          {showBulkActions && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={() => handleBulkStatusChange('Resolved')}
+              >
+                {t.resolve}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm" 
+                onClick={() => handleBulkStatusChange('Closed')}
+              >
+                {t.close}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                {t.delete}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Conditional View: Table or Kanban */}
       {viewMode === 'table' ? (
