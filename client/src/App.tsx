@@ -32,6 +32,8 @@ import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { PWAStatus } from '@/components/pwa/PWAStatus';
 
 // Employee Portal imports
 import PortalDashboard from '@/pages/portal/PortalDashboard';
@@ -112,6 +114,10 @@ function Router() {
 
   return (
     <div dir={dir} className="min-h-screen bg-gray-50">
+      {/* PWA Components - Available across entire app */}
+      <InstallPrompt />
+      <PWAStatus />
+      
       <Switch>
         <Route path="/setup" component={FirstTimeSetup} />
         <Route path="/login" component={Login} />
