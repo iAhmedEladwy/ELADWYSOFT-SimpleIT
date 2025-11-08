@@ -294,7 +294,7 @@ export interface AssetFilters {
 }
 
 export interface TicketFilters {
-  status?: string;
+  status?: string | string[]; // Support both single and multi-select
   priority?: string;
   type?: string;
   assignedTo?: string;

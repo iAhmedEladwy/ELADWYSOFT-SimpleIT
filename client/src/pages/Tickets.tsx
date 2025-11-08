@@ -26,7 +26,9 @@ export default function Tickets() {
   // Local state
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [filters, setFilters] = useState<TicketFiltersType>({});
+  const [filters, setFilters] = useState<TicketFiltersType>({
+    status: ['Open', 'In Progress'] // Default to show open tickets
+  });
   
   // Form dialogs state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -68,9 +70,17 @@ export default function Tickets() {
         if (!searchMatch) return false;
       }
 
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (ticket.status !== filters.status) return false;
+      // Status filter - support both single string and array
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          // Multi-select: check if ticket status is in the selected array
+          if (filters.status.length > 0 && !filters.status.includes(ticket.status)) {
+            return false;
+          }
+        } else if (filters.status !== 'all') {
+          // Single select (backward compatibility)
+          if (ticket.status !== filters.status) return false;
+        }
       }
 
       // Priority filter
