@@ -352,7 +352,10 @@ export default function Dashboard() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {/* Total Employees Card */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/employees?statusFilter=All`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -372,7 +375,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Pending Offboarding Card */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/employees?customFilter=pendingOffboarding`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -392,7 +398,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Offboarded with Assets Card - Using custom calculation from filters */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/employees?customFilter=offboardedWithAssets`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -412,7 +421,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Recently Added Employees Card - Using custom calculation */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/employees?customFilter=recentlyAdded`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -432,7 +444,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Assets in Use Card - Using status === "In Use" */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/assets?status=In Use`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -452,7 +467,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Available Laptops Card */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/assets?type=Laptop&status=Available`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -472,7 +490,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Open Tickets Card */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/tickets`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -492,7 +513,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Resolved This Month Card */}
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => window.location.href = `/tickets`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
