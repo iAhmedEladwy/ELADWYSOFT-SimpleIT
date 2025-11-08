@@ -16,25 +16,37 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
     version: "0.4.6",
     date: "2025-11-08",
-    title: "Advanced Filtering & Kanban Board Views",
+    title: "PWA Support & Advanced Filtering",
     type: "minor",
     changes: {
       features: [
+        "📱 Progressive Web App (PWA) - Install SimpleIT as a native-like app on mobile, tablet, and desktop",
+        "🔌 Offline Support - Beautiful offline fallback page with bilingual support (EN/AR)",
+        "💾 Smart Caching - Network-first for API calls, cache-first for static assets",
+        "📥 Install Prompt - Custom install banner with dismissal persistence",
+        "🌐 Online/Offline Indicator - Real-time network status in header",
         "📊 Kanban Board View - Visual workflow board for tickets with drag-and-drop status updates",
         "🎯 Multi-Select Filters - Type, Brand, and Status on Assets page",
         "🎯 Multi-Select Status Filter - Tickets page with default Open/In Progress view",
+        "📅 Date Filtering - Comprehensive date range filters for tickets (quick filters + custom range)",
         "🔄 View Toggle - Switch between Table and Kanban views for tickets",
         "📤 Export Button - Added CSV export to tickets page",
       ],
       improvements: [
         "🎨 Enhanced ticket filtering with checkbox-based multi-select popovers",
+        "📆 Compact date pickers using custom Calendar component",
         "⚡ Real-time ticket count badges in status filters",
         "🎯 Cascading filters for assets (Type → Brand → Model)",
         "💡 Visual feedback with selected item counts (e.g., '3 selected')",
         "🔧 Individual clear buttons for each filter group",
+        "📌 Centralized version management in shared/version.ts",
+        "🌍 PWA manifest with app metadata and bilingual support",
+        "⚙️ Service worker with automatic cache cleanup and update detection",
       ],
       bugfixes: [
         "🔧 Removed obsolete 'Pending' status from ticket filters",
+        "🔧 Fixed multi-select popovers closing after single selection",
+        "🔧 Fixed date filter field widths for better layout",
       ]
     }
   },
