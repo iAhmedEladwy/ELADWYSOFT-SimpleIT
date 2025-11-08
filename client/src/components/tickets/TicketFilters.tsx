@@ -410,8 +410,8 @@ export default function TicketFilters({
         </div>
 
         {/* Date Range Filter */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t">
-          <div className="space-y-1">
+        <div className="flex flex-wrap items-end gap-3 pt-3 border-t">
+          <div className="space-y-1 w-48">
             <Label className="text-xs font-medium">{translations.dateRange}</Label>
             <Select value={filters.dateRange || 'all'} onValueChange={handleDateRangeChange}>
               <SelectTrigger className="h-8 text-sm">
@@ -434,7 +434,7 @@ export default function TicketFilters({
           {/* Custom Date Range Inputs */}
           {filters.dateRange === 'custom' && (
             <>
-              <div className="space-y-1">
+              <div className="space-y-1 w-40">
                 <Label className="text-xs font-medium">{translations.from}</Label>
                 <Calendar
                   mode="picker"
@@ -451,7 +451,7 @@ export default function TicketFilters({
                   placeholder={translations.from}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 w-40">
                 <Label className="text-xs font-medium">{translations.to}</Label>
                 <Calendar
                   mode="picker"
