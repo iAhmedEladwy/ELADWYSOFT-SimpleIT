@@ -69,7 +69,7 @@ export default function TicketFilters({
   };
 
   // Filter options
-  const ticketStatuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
+  const ticketStatuses = ['Open', 'In Progress', 'Resolved', 'Closed'];
   const ticketPriorities = ['Low', 'Medium', 'High', 'Critical'];
   const ticketTypes = ['Incident', 'Service Request', 'Problem', 'Change']; // Static dropdown
 
