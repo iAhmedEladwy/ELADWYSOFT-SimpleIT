@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, Users, Ticket, AlertCircle } from 'lucide-react';
+import { Plus, Users, Ticket, AlertCircle, Download } from 'lucide-react';
 import type { TicketFilters as TicketFiltersType, TicketResponse, TicketCreateRequest } from '@shared/types';
 
 export default function Tickets() {
@@ -319,6 +319,56 @@ export default function Tickets() {
     }
   };
 
+  // Export tickets to CSV
+  const handleExportTickets = () => {
+    if (filteredTickets.length === 0) {
+      toast({
+        title: t.error,
+        description: language === 'Arabic' ? 'لا توجد تذاكر للتصدير' : 'No tickets to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const headers = ['Ticket ID', 'Title', 'Status', 'Priority', 'Type', 'Category', 'Assigned To', 'Submitted By', 'Created Date', 'Updated Date'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTickets.map((ticket: any) => {
+        const assignedUser = users?.find((u: any) => u.id === ticket.assignedToId);
+        const submittedUser = users?.find((u: any) => u.id === ticket.submittedById);
+        return [
+          ticket.ticketId || '',
+          ticket.title || '',
+          ticket.status || '',
+          ticket.priority || '',
+          ticket.type || '',
+          ticket.category || '',
+          assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : '',
+          submittedUser ? `${submittedUser.firstName} ${submittedUser.lastName}` : '',
+          ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '',
+          ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString() : ''
+        ].map(field => `"${field}"`).join(',');
+      })
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tickets-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: t.success,
+      description: language === 'Arabic' 
+        ? `تم تصدير ${filteredTickets.length} تذكرة بنجاح` 
+        : `Exported ${filteredTickets.length} tickets successfully`,
+    });
+  };
+
   if (ticketsLoading) {
     return (
       <div className="p-6">
@@ -379,6 +429,16 @@ export default function Tickets() {
               )}
             </div>
           )}
+
+          {/* Export Button */}
+          <Button
+            variant="outline"
+            onClick={handleExportTickets}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {language === 'Arabic' ? 'تصدير' : 'Export'}
+          </Button>
 
           {/* Create Ticket Button */}
           {hasAccess(2) && (
