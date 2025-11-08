@@ -45,6 +45,7 @@ export function InstallPrompt() {
     // Check if user has previously dismissed the prompt
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed === 'true') {
+      console.log('[PWA Install] Prompt was previously dismissed');
       return;
     }
 
@@ -54,11 +55,15 @@ export function InstallPrompt() {
     const isIOSStandalone = window.navigator.standalone === true;
     
     if (isStandalone || isIOSStandalone) {
+      console.log('[PWA Install] App is already installed');
       return; // Already installed
     }
 
+    console.log('[PWA Install] Waiting for beforeinstallprompt event...');
+
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('[PWA Install] beforeinstallprompt event fired!');
       // Prevent the default mini-infobar from appearing
       e.preventDefault();
       
