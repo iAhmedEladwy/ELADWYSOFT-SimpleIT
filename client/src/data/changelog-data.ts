@@ -14,6 +14,31 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.6",
+    date: "2025-11-08",
+    title: "Advanced Filtering & Kanban Board Views",
+    type: "minor",
+    changes: {
+      features: [
+        "📊 Kanban Board View - Visual workflow board for tickets with drag-and-drop status updates",
+        "🎯 Multi-Select Filters - Type, Brand, and Status on Assets page",
+        "🎯 Multi-Select Status Filter - Tickets page with default Open/In Progress view",
+        "🔄 View Toggle - Switch between Table and Kanban views for tickets",
+        "📤 Export Button - Added CSV export to tickets page",
+      ],
+      improvements: [
+        "🎨 Enhanced ticket filtering with checkbox-based multi-select popovers",
+        "⚡ Real-time ticket count badges in status filters",
+        "🎯 Cascading filters for assets (Type → Brand → Model)",
+        "💡 Visual feedback with selected item counts (e.g., '3 selected')",
+        "🔧 Individual clear buttons for each filter group",
+      ],
+      bugfixes: [
+        "🔧 Removed obsolete 'Pending' status from ticket filters",
+      ]
+    }
+  },
+  {
     version: "0.4.5",
     date: "2025-10-10",
     title: "Employee Self-Service Portal & Enhanced User Experience",
