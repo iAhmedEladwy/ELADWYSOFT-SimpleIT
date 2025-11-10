@@ -58,23 +58,16 @@ export function PWAStatus() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Online/Offline Status */}
-      <Badge
-        variant={isOnline ? 'default' : 'destructive'}
-        className="flex items-center gap-1.5 px-2 py-1"
-      >
-        {isOnline ? (
-          <>
-            <Wifi className="w-3 h-3" />
-            <span className="text-xs font-medium">{t.online}</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="w-3 h-3" />
-            <span className="text-xs font-medium">{t.offline}</span>
-          </>
-        )}
-      </Badge>
+      {/* Online/Offline Status - Only show when offline */}
+      {!isOnline && (
+        <Badge
+          variant="destructive"
+          className="flex items-center gap-1.5 px-2 py-1"
+        >
+          <WifiOff className="w-3 h-3" />
+          <span className="text-xs font-medium">{t.offline}</span>
+        </Badge>
+      )}
 
       {/* PWA Installation Status */}
       {isPWA && (
