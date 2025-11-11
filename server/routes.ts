@@ -10,9 +10,10 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
-import { BackupService } from './services/backupService';
 import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
+import backupRouter from './routes/backup';
+import systemHealthRouter from './routes/systemHealth';
 import * as notificationService from './services/notificationService';
 
 
@@ -63,9 +64,6 @@ import { calculatePriority, validatePriority, type UrgencyLevel, type ImpactLeve
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
-
-// Initialize backup service
-const backupService = new BackupService();
 
 // Helper function for short date formatting
 const formatShortDate = (dateValue: any): string => {
@@ -263,36 +261,6 @@ const hasAccess = (minRoleLevel: number) => {
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-// Backup file upload configuration (saves to disk)
-const backupUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadsDir = path.join(process.cwd(), 'uploads');
-      // Create uploads directory if it doesn't exist
-      fs.mkdir(uploadsDir, { recursive: true }).then(() => {
-        cb(null, uploadsDir);
-      }).catch(cb);
-    },
-    filename: (req, file, cb) => {
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      const originalName = file.originalname;
-      const extension = path.extname(originalName);
-      const baseName = path.basename(originalName, extension);
-      cb(null, `${baseName}_${timestamp}${extension}`);
-    }
-  }),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for backup files
-  fileFilter: (req, file, cb) => {
-    // Accept only .sql files for backups
-    if (file.mimetype === 'application/sql' || file.originalname.endsWith('.sql')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only .sql backup files are allowed'));
-    }
-  }
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -769,6 +737,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOTIFICATION ROUTES
   // ==========================================
   app.use('/api/notifications', notificationsRouter);
+
+  // ==========================================
+  // BACKUP, RESTORE & SYSTEM HEALTH ROUTES
+  // ==========================================
+  // Mount backup router at /api/admin - handles backups, restore, backup-jobs
+  app.use('/api/admin', authenticateUser, requireRole(ROLES.ADMIN), backupRouter);
+  // Mount system health router also at /api/admin (will merge routes)
+  app.use('/api/admin', authenticateUser, requireRole(ROLES.ADMIN), systemHealthRouter);
 
   // Security Questions API endpoints - combined implementation  // Get default security questions for selection
   app.get("/api/security-questions", async (req, res) => {
@@ -1374,6 +1350,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created employee with auto-generated ID:", employee);
       
+      // Notify admins about new employee onboarding if future start date
+      if (joiningDate) {
+        const startDate = new Date(joiningDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (startDate > today) {
+          // Future start date - notify admins to prepare onboarding
+          const dateStr = startDate.toLocaleDateString();
+          await notificationService.notifyByRole({
+            role: 'admin',
+            title: 'New Employee Onboarding',
+            message: `${englishName} joining ${department} on ${dateStr}. Please prepare onboarding checklist.`,
+            type: 'Employee',
+            entityId: employee.id,
+          });
+        }
+      }
+      
       // Skip audit logging for better performance and cleaner logs
       // Activity logging can be re-enabled if needed for compliance
       
@@ -1446,6 +1441,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedEmployee = await storage.updateEmployee(id, employeeData);
       if (!updatedEmployee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Notify admins about employee offboarding if status changed to Terminated/Inactive
+      if (existingEmployee.status !== status && 
+          (status === 'Terminated' || status === 'Inactive') && 
+          exitDate) {
+        const lastDay = new Date(exitDate);
+        const dateStr = lastDay.toLocaleDateString();
+        
+        await notificationService.notifyByRole({
+          role: 'admin',
+          title: 'Employee Offboarding',
+          message: `${englishName} leaving on ${dateStr}. Please prepare offboarding checklist and asset recovery.`,
+          type: 'Employee',
+          entityId: updatedEmployee.id,
+        });
       }
       
       // Log activity
@@ -8072,355 +8083,13 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  // GET /api/admin/backups - Get list of backups
-app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backups = await backupService.getBackupList();
-    res.json(backups);
-  } catch (error) {
-    console.error('Failed to get backup list:', error);
-    res.status(500).json({ error: 'Failed to get backup list' });
-  }
-});
-
-// POST /api/admin/backups - Create manual backup
-app.post('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const { description } = req.body;
-    const userId = (req.user as any)?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
-
-    const result = await backupService.createManualBackup(userId, description);
-    
-    if (result.success) {
-      res.json({ message: 'Backup created successfully', backupId: result.backupId });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to create backup:', error);
-    res.status(500).json({ error: 'Failed to create backup' });
-  }
-});
-
-// POST /api/admin/restore/:backupId - Restore from backup
-app.post('/api/admin/restore/:backupId', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.backupId);
-    const userId = (req.user as any)?.id; 
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
-
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.restoreFromBackup(backupId, userId);
-    
-    if (result.success) {
-      res.json({ 
-        message: 'Database restored successfully', 
-        recordsRestored: result.recordsRestored 
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to restore backup:', error);
-    res.status(500).json({ error: 'Failed to restore backup' });
-  }
-});
-
-// DELETE /api/admin/backups/:id - Delete backup
-app.delete('/api/admin/backups/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.id);
-    
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.deleteBackup(backupId);
-    
-    if (result.success) {
-      res.json({ message: 'Backup deleted successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to delete backup:', error);
-    res.status(500).json({ error: 'Failed to delete backup' });
-  }
-});
-
-// POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
-app.post('/api/admin/backups/restore-from-file', authenticateUser, requireRole(ROLES.ADMIN), backupUpload.single('backup'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No backup file uploaded' });
-    }
-
-    const user = req.user as AuthUser;
-    const uploadedFilePath = req.file.path;
-
-    console.log(`Restore from uploaded file requested by user ${user.id}: ${req.file.originalname}`);
-
-    // Restore from the uploaded file
-    const result = await backupService.restoreFromFile(uploadedFilePath, user.id);
-
-    // Clean up uploaded file after processing
-    try {
-      await fs.unlink(uploadedFilePath);
-    } catch (error) {
-      console.warn('Could not delete uploaded file:', error);
-    }
-
-    if (result.success) {
-      res.json({ 
-        message: 'Database restored successfully from uploaded file',
-        recordsRestored: result.recordsRestored || 0
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to restore from uploaded file:', error);
-    
-    // Clean up uploaded file on error
-    if (req.file?.path) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (cleanupError) {
-        console.warn('Could not delete uploaded file after error:', cleanupError);
-      }
-    }
-    
-    res.status(500).json({ error: 'Failed to restore from uploaded file' });
-  }
-});
-
-// GET /api/admin/backups/:id/download - Download backup file
-app.get('/api/admin/backups/:id/download', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.id);
-    
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.downloadBackup(backupId);
-    
-    if (result.success && result.filepath && result.filename) {
-      // Set headers for file download
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
-      res.setHeader('Content-Type', 'application/sql');
-      
-      // Send file
-      res.download(result.filepath, result.filename, (err) => {
-        if (err) {
-          console.error('Download error:', err);
-          if (!res.headersSent) {
-            res.status(500).json({ error: 'Failed to download backup file' });
-          }
-        }
-      });
-    } else {
-      res.status(404).json({ error: result.error || 'Backup file not found' });
-    }
-  } catch (error) {
-    console.error('Failed to download backup:', error);
-    res.status(500).json({ error: 'Failed to download backup' });
-  }
-});
-
-// GET /api/admin/system-health - Get system health metrics
-app.get('/api/admin/system-health', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const healthMetrics = await backupService.getSystemHealth();
-    res.json(healthMetrics);
-  } catch (error) {
-    console.error('Failed to get system health:', error);
-    res.status(500).json({ error: 'Failed to get system health' });
-  }
-});
-
-// GET /api/admin/system-overview - Get system overview statistics
-app.get('/api/admin/system-overview', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const systemOverview = await backupService.getSystemOverview();
-    res.json(systemOverview);
-  } catch (error) {
-    console.error('Failed to get system overview:', error);
-    res.status(500).json({ error: 'Failed to get system overview' });
-  }
-});
-
-// GET /api/admin/restore-history - Get restore history
-app.get('/api/admin/restore-history',authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const history = await backupService.getRestoreHistory();
-    res.json(history);
-  } catch (error) {
-    console.error('Failed to get restore history:', error);
-    res.status(500).json({ error: 'Failed to get restore history' });
-  }
-});
-
-// Backup Job Management Routes
-
-// GET /api/admin/backup-jobs - Get all backup jobs
-app.get('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobs = await backupService.getBackupJobs();
-    res.json(jobs);
-  } catch (error) {
-    console.error('Failed to get backup jobs:', error);
-    res.status(500).json({ error: 'Failed to get backup jobs' });
-  }
-});
-
-// POST /api/admin/backup-jobs - Create new backup job
-app.post('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
-
-    if (!name || !schedule_type) {
-      return res.status(400).json({ error: 'Name and schedule_type are required' });
-    }
-
-    if (!['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
-      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
-    }
-
-    const result = await backupService.createBackupJob({
-      name,
-      description,
-      schedule_type,
-      schedule_value: schedule_value || 1,
-      is_enabled: is_enabled !== false, // Default to true
-    });
-
-    if (result.success) {
-      res.json({ message: 'Backup job created successfully', jobId: result.jobId });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to create backup job:', error);
-    res.status(500).json({ error: 'Failed to create backup job' });
-  }
-});
-
-// PUT /api/admin/backup-jobs/:id - Update backup job
-app.put('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    if (schedule_type && !['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
-      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
-    }
-
-    const result = await backupService.updateBackupJob(jobId, {
-      name,
-      description,
-      schedule_type,
-      schedule_value,
-      is_enabled
-    });
-
-    if (result.success) {
-      res.json({ message: 'Backup job updated successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to update backup job:', error);
-    res.status(500).json({ error: 'Failed to update backup job' });
-  }
-});
-
-// DELETE /api/admin/backup-jobs/:id - Delete backup job
-app.delete('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    const result = await backupService.deleteBackupJob(jobId);
-
-    if (result.success) {
-      res.json({ message: 'Backup job deleted successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to delete backup job:', error);
-    res.status(500).json({ error: 'Failed to delete backup job' });
-  }
-});
-
-// POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
-app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    const result = await backupService.executeScheduledJob(jobId);
-
-    if (result.success) {
-      res.json({ 
-        message: 'Backup job executed successfully', 
-        backupId: result.backupId 
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to execute backup job:', error);
-    res.status(500).json({ error: 'Failed to execute backup job' });
-  }
-});
-
-// POST /api/admin/backup-jobs/:id/cleanup - Manually clean up old backups
-app.post('/api/admin/backup-jobs/:id/cleanup', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    const result = await backupService.cleanupOldBackups(jobId);
-
-    if (result.success) {
-      res.json({ 
-        message: `Cleanup completed. Deleted ${result.deletedCount} old backup(s)`, 
-        deletedCount: result.deletedCount 
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to cleanup backups:', error);
-    res.status(500).json({ error: 'Failed to cleanup backups' });
-  }
-});
-
+  // ==========================================
+  // BACKUP, RESTORE & SYSTEM HEALTH ENDPOINTS
+  // ==========================================
+  // All backup, restore, backup-jobs, and system health routes have been moved to:
+  // - server/routes/backup.ts (mounted at /api/admin)
+  // - server/routes/systemHealth.ts (mounted at /api/admin)
+  
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================

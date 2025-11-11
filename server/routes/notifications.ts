@@ -3,6 +3,7 @@ import { db } from '../db';
 import * as schema from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
 import { authenticateUser, requireRole } from '../rbac';
+import * as notificationService from '../services/notificationService';
 
 const router = Router();
 
@@ -160,5 +161,57 @@ export async function createNotification(params: {
     throw error;
   }
 }
+
+/**
+ * POST /api/notifications/broadcast
+ * System broadcast notification endpoint (Admin only)
+ * Send notifications to all users or specific role
+ */
+router.post('/broadcast', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const { title, message, targetRole, notificationType } = req.body;
+    
+    if (!title || !message) {
+      return res.status(400).json({ error: 'Title and message are required' });
+    }
+    
+    const type = (notificationType || 'System') as 'Asset' | 'Ticket' | 'System' | 'Employee';
+    
+    if (targetRole && targetRole !== 'all') {
+      // Notify specific role
+      await notificationService.notifyByRole({
+        role: targetRole,
+        title,
+        message,
+        type,
+      });
+      
+      res.json({ 
+        message: `Notification sent to all users with role: ${targetRole}`,
+        targetRole,
+        title
+      });
+    } else {
+      // Notify all users
+      const allUsers = await db.select().from(schema.users);
+      const userIds = allUsers.map((u: any) => u.id);
+      
+      await notificationService.notifySystem({
+        userIds,
+        title,
+        message,
+      });
+      
+      res.json({ 
+        message: `Notification sent to all ${userIds.length} users`,
+        userCount: userIds.length,
+        title
+      });
+    }
+  } catch (error) {
+    console.error('Failed to broadcast notification:', error);
+    res.status(500).json({ error: 'Failed to broadcast notification' });
+  }
+});
 
 export default router;
