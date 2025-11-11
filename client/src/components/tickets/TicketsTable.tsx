@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/authContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { hasPermission } from '@/components/auth/RoleGuard';
+import { ROLE_IDS, getRoleLevel, normalizeRoleId } from '@shared/roles.config';
 
 import {
   Table,
@@ -185,7 +186,7 @@ export default function TicketsTable({
       }
 
       // Full access for admins, managers, and agents
-      if (user && ['admin', 'manager', 'agent'].includes(user.role)) {
+      if (user && getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.AGENT)) {
         return ['Open', 'In Progress', 'Resolved', 'Closed'];
       }
       
@@ -343,7 +344,7 @@ export default function TicketsTable({
       }
 
       // Check if user has permission to delete (manager+ level through RBAC)
-      if (!user || !hasPermission(user.role, ['admin', 'manager'])) {
+      if (!user || getRoleLevel(user.role) < getRoleLevel(ROLE_IDS.MANAGER)) {
         toast({
           title: t.error || 'Error',
           description: 'You do not have permission to delete tickets',
@@ -648,7 +649,7 @@ export default function TicketsTable({
                         <SelectItem value="unassigned">{t.unassigned || 'Unassigned'}</SelectItem>
                         {/* Filter users who can be assigned tickets (agents, managers, admins) */}
                         {Array.isArray(users) && users
-                          .filter((u: any) => u && ['agent', 'manager', 'admin'].includes(u.role))
+                          .filter((u: any) => u && getRoleLevel(u.role) >= getRoleLevel(ROLE_IDS.AGENT))
                           .map((u: any) => (
                           <SelectItem key={u.id} value={u.id.toString()}>
                             {u.username || `User ${u.id}`}
@@ -675,7 +676,7 @@ export default function TicketsTable({
                       )}
                       
                       {/* Delete Button - Manager+ level through RBAC */}
-                      {user && hasPermission(user.role, ['admin', 'manager']) && (
+                      {user && getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.MANAGER) && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useTicketTranslations } from '@/lib/translations/tickets';
 import { calculatePriority, getPriorityBadgeVariant, getPriorityExplanation } from '@shared/priorityUtils';
+import { ROLE_IDS, getRoleLevel } from '@shared/roles.config';
 
 import type { TicketResponse, TicketCreateRequest, TicketUpdateRequest, UserResponse, AssetResponse, EmployeeResponse } from '@shared/types';
 import type { UrgencyLevel, ImpactLevel } from '@shared/priorityUtils';
@@ -439,7 +440,7 @@ export default function TicketForm({
   }, [employees]);
 
   const assignableUsers = useMemo(() => {
-    return users.filter((user: any) => ['agent', 'manager', 'admin'].includes(user.role));
+    return users.filter((user: any) => getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.AGENT));
   }, [users]);
 
   return (

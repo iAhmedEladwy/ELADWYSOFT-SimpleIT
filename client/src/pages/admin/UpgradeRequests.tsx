@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import { ROLE_IDS, getRoleLevel } from '@shared/roles.config';
 import {
   Table,
   TableBody,
@@ -475,7 +476,7 @@ export default function UpgradeRequests() {
                         {request.scheduledDate ? format(new Date(request.scheduledDate), 'MMM dd, yyyy') : '-'}
                       </TableCell>
                       <TableCell>
-                        {(user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'manager') && (
+                        {getRoleLevel(user?.role) >= getRoleLevel(ROLE_IDS.MANAGER) && (
                           <Button
                             size="sm"
                             variant="outline"

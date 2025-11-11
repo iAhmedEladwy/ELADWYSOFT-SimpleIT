@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/authContext';
+import { getRoleLevel, ROLE_IDS } from '@shared/roles.config';
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { 
@@ -71,7 +72,7 @@ export default function Notifications() {
   // Only fetch upgrades if user is Manager/Admin/Super Admin (they need to approve)
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
-    enabled: !!user && (user.role === 'manager' || user.role === 'admin' || user.role === 'super_admin'),
+    enabled: !!user && getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.MANAGER),
   });
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || 
@@ -222,7 +223,7 @@ export default function Notifications() {
     }
 
     // 3. Upgrade requests (Managers/Admins/Super Admins)
-    if ((user.role === 'Manager' || user.role === 'Admin' || user.role === 'super_admin') && upgrades && upgrades.length > 0) {
+    if (getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.MANAGER) && upgrades && upgrades.length > 0) {
       const pendingUpgrades = upgrades.filter((upgrade: any) => 
         upgrade.status === 'pending' || upgrade.status === 'Pending'
       );
@@ -298,7 +299,7 @@ export default function Notifications() {
     }
 
     // 6. Tickets you assigned (Managers/Agents/Admins/Super Admins)
-    if ((user.role === 'Manager' || user.role === 'Agent' || user.role === 'Admin' || user.role === 'super_admin') && tickets && tickets.length > 0) {
+    if (getRoleLevel(user.role) >= getRoleLevel(ROLE_IDS.AGENT) && tickets && tickets.length > 0) {
       const ticketsIAssigned = tickets.filter((ticket: any) => {
         if (!ticket.assignedToId || ticket.status === 'Closed') return false;
         const ticketDate = new Date(ticket.createdAt);

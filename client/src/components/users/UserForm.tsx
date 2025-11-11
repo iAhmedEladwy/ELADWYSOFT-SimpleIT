@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/authContext';
+import { ROLE_IDS, normalizeRoleId } from '@shared/roles.config';
 import {
   Form,
   FormControl,
@@ -33,7 +34,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
   const { language } = useLanguage();
   const { user } = useAuth();
   const isEditMode = !!initialData;
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = normalizeRoleId(user?.role) === ROLE_IDS.SUPER_ADMIN;
 
   // Define schema that adapts based on edit mode
   const getSchema = () => {
@@ -97,7 +98,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
       lastName: initialData?.lastName || '',
       email: initialData?.email || '',
       password: isEditMode ? undefined : '',
-      role: initialData?.role || 'employee',
+      role: initialData?.role || ROLE_IDS.EMPLOYEE,
     },
   });
 
@@ -109,7 +110,7 @@ export default function UserForm({ onSubmit, initialData, isSubmitting }: UserFo
       lastName: initialData?.lastName || '',
       email: initialData?.email || '',
       password: isEditMode ? undefined : '',
-      role: initialData?.role || 'employee',
+      role: initialData?.role || ROLE_IDS.EMPLOYEE,
     });
   }, [initialData, isEditMode, form]);
 
