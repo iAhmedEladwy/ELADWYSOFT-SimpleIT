@@ -236,6 +236,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 
 // Import RBAC functions from centralized configuration
 import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
+import { getRoleLevel, normalizeRoleId, ROLE_IDS } from "@shared/roles.config";
 
 // File upload storage configuration
 const upload = multer({ 
@@ -7469,9 +7470,27 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // User CRUD routes (admin only)
   app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentUserLevel = getRoleLevel(currentUser.role);
+      
       const users = await storage.getAllUsers();
-      console.log("GET /api/users - Raw users from storage:", JSON.stringify(users, null, 2));
-      res.json(users);
+      
+      // Filter users: only show users with lower role level than current user
+      // Super_admin sees everyone, Admin doesn't see super_admins, Manager doesn't see super_admins or admins
+      const filteredUsers = users.filter((user: any) => {
+        const userLevel = getRoleLevel(user.role);
+        return userLevel < currentUserLevel;
+      });
+      
+      console.log("GET /api/users - Filtered users based on role hierarchy:", {
+        currentUser: currentUser.username,
+        currentRole: currentUser.role,
+        currentLevel: currentUserLevel,
+        totalUsers: users.length,
+        filteredUsers: filteredUsers.length
+      });
+      
+      res.json(filteredUsers);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
@@ -7479,7 +7498,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentUserLevel = getRoleLevel(currentUser.role);
       const userData = req.body;
+      
+      // Prevent role escalation: cannot create users with equal or higher role level
+      if (userData.role) {
+        const targetRoleLevel = getRoleLevel(userData.role);
+        if (targetRoleLevel >= currentUserLevel) {
+          return res.status(403).json({ 
+            message: "Cannot create users with equal or higher role level than your own" 
+          });
+        }
+      }
       
       // Hash password if provided
       if (userData.password) {
@@ -7510,13 +7541,33 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.put("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const requestingUser = req.user as any;
+      const requestingUserLevel = getRoleLevel(requestingUser.role);
       const id = parseInt(req.params.id);
       const userData = req.body;
       
-      // Get current user data for activity logging
+      // Get current user data for validation and activity logging
       const currentUser = await storage.getUser(id);
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent modifying users with equal or higher role level
+      const currentUserRoleLevel = getRoleLevel(currentUser.role);
+      if (currentUserRoleLevel >= requestingUserLevel) {
+        return res.status(403).json({ 
+          message: "Cannot modify users with equal or higher role level than your own" 
+        });
+      }
+      
+      // If changing role, prevent role escalation
+      if (userData.role && userData.role !== currentUser.role) {
+        const targetRoleLevel = getRoleLevel(userData.role);
+        if (targetRoleLevel >= requestingUserLevel) {
+          return res.status(403).json({ 
+            message: "Cannot assign role equal or higher than your own role level" 
+          });
+        }
       }
       
       // Hash password if provided
@@ -7577,6 +7628,8 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
+      const requestingUser = req.user as any;
+      const requestingUserLevel = getRoleLevel(requestingUser.role);
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
       
@@ -7585,11 +7638,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
       
-      // Get user before deletion for activity log
+      // Get user before deletion for validation and activity log
       const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent deleting users with equal or higher role level
+      const targetUserRoleLevel = getRoleLevel(user.role);
+      if (targetUserRoleLevel >= requestingUserLevel) {
+        return res.status(403).json({ 
+          message: "Cannot delete users with equal or higher role level than your own" 
+        });
       }
       
       try {
