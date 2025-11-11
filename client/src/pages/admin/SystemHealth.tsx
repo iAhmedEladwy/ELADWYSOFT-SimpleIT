@@ -25,6 +25,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 
 interface SystemHealthMetric {
   id: number;
@@ -174,7 +175,7 @@ export default function SystemHealth() {
   const systemMetrics = healthMetrics.filter(m => m.metricType === 'system');
 
   return (
-    <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<div>Access denied</div>}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<div>Access denied</div>}>
       <Helmet>
         <title>{t.title} - SimpleIT</title>
       </Helmet>

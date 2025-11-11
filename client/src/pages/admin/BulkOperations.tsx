@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 import NotFound from '@/pages/not-found';
 
 interface BulkActionHistoryItem {
@@ -212,7 +213,7 @@ export default function BulkOperations() {
   };
 
   return (
-    <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
       <div className="container mx-auto py-6 space-y-6">
         <Helmet>
           <title>{translations.title}</title>

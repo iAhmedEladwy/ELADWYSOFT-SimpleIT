@@ -2,6 +2,7 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { RoleGuard, hasPermission } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 import { getVersionString, APP_FULL_NAME } from '@shared/version';
 import { useState, useEffect } from 'react';
 import {
@@ -174,7 +175,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/employees" className={getLinkClass('/employees')} onClick={handleLinkClick}>
               <UserPlus className="h-5 w-5" />
@@ -190,7 +191,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/asset-history" className={getLinkClass('/asset-history')} onClick={handleLinkClick}>
               <History className="h-5 w-5" />
@@ -206,7 +207,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/reports" className={getLinkClass('/reports')} onClick={handleLinkClick}>
               <BarChart2 className="h-5 w-5" />
@@ -215,7 +216,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </div>
         </RoleGuard>
         
-        <RoleGuard allowedRoles={['super_admin', 'admin']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
@@ -223,7 +224,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             </Link>
           </div>
         </RoleGuard>
-        <RoleGuard allowedRoles={['super_admin', 'admin']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]}>
           <div className="space-y-1">
             {/* Admin Console Parent Menu */}
             <div 
@@ -317,7 +318,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
         </RoleGuard>
 
         {/* Developer Tools - Super Admin Only */}
-        <RoleGuard allowedRoles={['super_admin']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]}>
           <div className="space-y-1">
             {/* Developer Tools Parent Menu */}
             <div 
