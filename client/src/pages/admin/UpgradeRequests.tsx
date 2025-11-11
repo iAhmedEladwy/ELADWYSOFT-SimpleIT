@@ -475,7 +475,7 @@ export default function UpgradeRequests() {
                         {request.scheduledDate ? format(new Date(request.scheduledDate), 'MMM dd, yyyy') : '-'}
                       </TableCell>
                       <TableCell>
-                        {(user?.role === 'admin' || user?.role === 'manager') && (
+                        {(user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'manager') && (
                           <Button
                             size="sm"
                             variant="outline"

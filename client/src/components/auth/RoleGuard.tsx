@@ -29,8 +29,8 @@ export function hasPermission(userRole: string | undefined, requiredRoles: strin
 export function canAccessResource(userRole: string | undefined, userEmployeeId: number | undefined, resourceOwnerId: number | undefined): boolean {
   if (!userRole) return false;
   
-  // Admin can access everything
-  if (userRole === 'admin') return true;
+  // Super Admin and Admin can access everything
+  if (userRole === 'super_admin' || userRole === 'admin') return true;
   
   // Manager can access their subordinates' resources
   if (userRole === 'manager') return true; // Manager access handled by backend filtering

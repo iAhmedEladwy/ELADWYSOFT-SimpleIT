@@ -68,10 +68,10 @@ export default function Notifications() {
     enabled: !!user && !!assets?.length,
   });
 
-  // Only fetch upgrades if user is Manager/Admin (they need to approve)
+  // Only fetch upgrades if user is Manager/Admin/Super Admin (they need to approve)
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
-    enabled: !!user && (user.role === 'manager' || user.role === 'admin'),
+    enabled: !!user && (user.role === 'manager' || user.role === 'admin' || user.role === 'super_admin'),
   });
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || 
@@ -221,8 +221,8 @@ export default function Notifications() {
       }
     }
 
-    // 3. Upgrade requests (Managers/Admins)
-    if ((user.role === 'Manager' || user.role === 'Admin') && upgrades && upgrades.length > 0) {
+    // 3. Upgrade requests (Managers/Admins/Super Admins)
+    if ((user.role === 'Manager' || user.role === 'Admin' || user.role === 'super_admin') && upgrades && upgrades.length > 0) {
       const pendingUpgrades = upgrades.filter((upgrade: any) => 
         upgrade.status === 'pending' || upgrade.status === 'Pending'
       );
@@ -297,8 +297,8 @@ export default function Notifications() {
       }
     }
 
-    // 6. Tickets you assigned (Managers/Agents)
-    if ((user.role === 'Manager' || user.role === 'Agent' || user.role === 'Admin') && tickets && tickets.length > 0) {
+    // 6. Tickets you assigned (Managers/Agents/Admins/Super Admins)
+    if ((user.role === 'Manager' || user.role === 'Agent' || user.role === 'Admin' || user.role === 'super_admin') && tickets && tickets.length > 0) {
       const ticketsIAssigned = tickets.filter((ticket: any) => {
         if (!ticket.assignedToId || ticket.status === 'Closed') return false;
         const ticketDate = new Date(ticket.createdAt);

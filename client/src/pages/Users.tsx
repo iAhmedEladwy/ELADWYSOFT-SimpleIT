@@ -254,7 +254,7 @@ export default function Users() {
     changePasswordMutation.mutate({ id: userId, newPassword });
   };
 
-  const admins = users.filter((user: any) => user.role === 'admin');
+  const admins = users.filter((user: any) => user.role === 'admin' || user.role === 'super_admin');
   const managers = users.filter((user: any) => user.role === 'manager');
   const agents = users.filter((user: any) => user.role === 'agent');
   const employees = users.filter((user: any) => user.role === 'employee');
