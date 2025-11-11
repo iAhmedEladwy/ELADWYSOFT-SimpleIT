@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
+import { useNotifications } from '@/hooks/use-notifications';
 
 export default function Notifications() {
   const { language } = useLanguage();
@@ -26,7 +27,19 @@ export default function Notifications() {
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [allRead, setAllRead] = useState(false);
 
-  // Fetch all data
+  // Use shared notification hook for DB notifications
+  const { 
+    notifications: dbNotifications, 
+    isLoading: dbNotificationsLoading, 
+    refetch: refetchNotifications,
+    markAllAsRead: hookMarkAllAsRead,
+    dismissNotification: hookDismissNotification
+  } = useNotifications({
+    limit: 100, // Dashboard shows more notifications than bell
+    refetchInterval: 30000 // Auto-refresh every 30 seconds
+  });
+
+  // Fetch all data for smart notifications
   const { data: assetsResponse, isLoading: assetsLoading } = useQuery({
     queryKey: ['/api/assets'],
     enabled: !!user,
@@ -59,12 +72,6 @@ export default function Notifications() {
   const { data: upgrades, isLoading: upgradesLoading } = useQuery({
     queryKey: ['/api/asset-upgrades'],
     enabled: !!user && (user.role === 'manager' || user.role === 'admin'),
-  });
-
-  // Fetch database notifications
-  const { data: dbNotifications, isLoading: dbNotificationsLoading, refetch: refetchNotifications } = useQuery({
-    queryKey: ['/api/notifications'],
-    enabled: !!user,
   });
 
   const isLoading = authLoading || assetsLoading || ticketsLoading || employeesLoading || 
@@ -384,34 +391,16 @@ export default function Notifications() {
 
   const handleMarkAllAsRead = async () => {
     setAllRead(true);
-    try {
-      const notificationIds = (dbNotifications || []).map((n: any) => n.id);
-      if (notificationIds.length > 0) {
-        await fetch('/api/notifications/mark-read', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ notificationIds }),
-        });
-        refetchNotifications();
-      }
-    } catch (error) {
-      console.error('Failed to mark notifications as read:', error);
-    }
+    // Use the hook's method for marking all as read
+    await hookMarkAllAsRead();
   };
 
   const handleDismiss = async (notification: any) => {
     if (notification.dbId) {
-      try {
-        await fetch(`/api/notifications/${notification.dbId}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        });
-        refetchNotifications();
-      } catch (error) {
-        console.error('Failed to dismiss notification:', error);
-      }
+      // Use the hook's method for dismissing DB notifications
+      await hookDismissNotification(notification.dbId);
     } else {
+      // For generated notifications, just hide them locally
       setDismissedNotifications(prev => [...prev, notification.id]);
     }
   };
