@@ -6,12 +6,154 @@ This document provides **mandatory coding standards** to maintain consistency ac
 ---
 
 ## 📋 Table of Contents
-1. [Authentication & Authorization Patterns](#authentication--authorization-patterns)
-2. [Translation Patterns](#translation-patterns)
-3. [API Patterns](#api-patterns)
-4. [Component Structure](#component-structure)
-5. [Database Patterns](#database-patterns)
-6. [Code Review Checklist](#code-review-checklist)
+1. [Route Modularization](#-route-modularization) ⚠️ **CRITICAL**
+2. [Authentication & Authorization Patterns](#authentication--authorization-patterns)
+3. [Translation Patterns](#translation-patterns)
+4. [API Patterns](#api-patterns)
+5. [Component Structure](#component-structure)
+6. [Database Patterns](#database-patterns)
+7. [Code Review Checklist](#code-review-checklist)
+
+---
+
+## 🚨 Route Modularization
+
+### ⚠️ CRITICAL: Do NOT Add Routes to `server/routes.ts`
+
+**The main `routes.ts` file is being phased out!** It has grown to 7,798 lines and is difficult to maintain.
+
+### ✅ CORRECT: Create Modular Route Files
+
+#### Step 1: Create Router Module
+
+```typescript
+// ✅ CORRECT: server/routes/myFeature.ts
+import { Router } from 'express';
+
+const router = Router();
+
+// All routes are relative to the mount point
+router.get('/', async (req, res) => {
+  // Handles GET /api/myfeature
+  const items = await db.query.myFeature.findMany();
+  res.json(items);
+});
+
+router.post('/', async (req, res) => {
+  // Handles POST /api/myfeature
+  const newItem = await db.insert(myFeature).values(req.body);
+  res.json(newItem);
+});
+
+router.get('/:id', async (req, res) => {
+  // Handles GET /api/myfeature/:id
+  const item = await db.query.myFeature.findFirst({
+    where: eq(myFeature.id, parseInt(req.params.id))
+  });
+  res.json(item);
+});
+
+export default router;
+```
+
+#### Step 2: Mount Router in `server/routes.ts`
+
+```typescript
+// Import at top of file
+import myFeatureRouter from './routes/myFeature';
+
+// Inside registerRoutes() function:
+app.use('/api/myfeature', authenticateUser, myFeatureRouter);
+//     └─ Mount point    └─ Auth required  └─ Your router
+```
+
+### ❌ INCORRECT: Adding to Main routes.ts
+
+```typescript
+// ❌ DON'T DO THIS - Don't add new routes here!
+app.get('/api/myfeature', authenticateUser, async (req, res) => {
+  // This makes routes.ts even bigger!
+});
+```
+
+### 📁 Existing Route Modules (Follow These Patterns)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `server/routes/notifications.ts` | 228 | Notification API endpoints |
+| `server/routes/backup.ts` | 368 | Backup/restore operations |
+| `server/routes/systemHealth.ts` | 32 | System monitoring |
+| `server/routes/portal.ts` | 809 | Employee self-service portal |
+
+### 🎯 Best Practices for Route Modules
+
+#### ✅ DO:
+- Keep routers focused on single domain (notifications, backups, etc.)
+- Apply authentication at mount level (`app.use('/api/feature', authenticateUser, router)`)
+- Use relative paths in router (`router.get('/')` not `router.get('/api/feature')`)
+- Extract business logic to services (`server/services/`)
+- Keep route handlers thin (< 30 lines)
+- Group related endpoints together
+
+#### ❌ DON'T:
+- Add `authenticateUser` inside route module (apply at mount)
+- Duplicate role/permission checks (define once at mount or in service)
+- Mix concerns (notifications + backups in same file)
+- Create routes with complex nested logic
+- Forget to export default router
+
+### 📝 Example: Notification Router Pattern
+
+```typescript
+// server/routes/notifications.ts
+import { Router } from 'express';
+import { requireRole, ROLES } from '../rbac';
+import * as notificationService from '../services/notificationService';
+
+const router = Router();
+
+// List notifications (all authenticated users)
+router.get('/', async (req, res) => {
+  const notifications = await notificationService.getUserNotifications(req.user!.id);
+  res.json(notifications);
+});
+
+// Mark as read (own notifications only)
+router.put('/:id/read', async (req, res) => {
+  await notificationService.markAsRead(parseInt(req.params.id), req.user!.id);
+  res.sendStatus(204);
+});
+
+// Send notification (agents and above)
+router.post('/', requireRole(ROLES.AGENT), async (req, res) => {
+  const notification = await notificationService.createNotification(req.body);
+  res.json(notification);
+});
+
+export default router;
+
+// Mounted in routes.ts:
+// app.use('/api/notifications', authenticateUser, notificationRouter);
+```
+
+### 🔧 Refactoring Existing Code
+
+When you see long route handlers in `routes.ts`:
+
+1. **Create new file**: `server/routes/featureName.ts`
+2. **Extract routes**: Copy related routes to new file
+3. **Convert to router**: Change `app.get` to `router.get`, remove `/api/feature` prefix
+4. **Extract logic**: Move complex logic to `server/services/featureService.ts`
+5. **Mount router**: Add `app.use('/api/feature', authenticateUser, featureRouter)` in routes.ts
+6. **Delete old code**: Remove from main routes.ts
+7. **Test thoroughly**: Verify all endpoints still work
+
+### 📊 Migration Progress
+
+- **Total routes in routes.ts**: ~180 endpoints (before refactoring)
+- **Extracted to modules**: 4 modules, 628 lines moved
+- **Remaining in routes.ts**: ~7,798 lines (down from 8,444)
+- **Target**: All routes in focused modules (< 300 lines each)
 
 ---
 
@@ -700,6 +842,15 @@ await db.transaction(async (tx) => {
 ## ✅ Code Review Checklist
 
 ### For All Pull Requests
+
+#### Route Organization ⚠️ **CRITICAL**
+- [ ] New routes created in `server/routes/` (not in main routes.ts)
+- [ ] Router exported as default export
+- [ ] Authentication applied at mount level
+- [ ] Relative paths used in router (no `/api/` prefix)
+- [ ] Business logic extracted to services
+- [ ] Route handler < 30 lines
+- [ ] Tested all endpoints
 
 #### Authorization
 - [ ] Uses `requireRole(ROLES.*)` on backend routes
