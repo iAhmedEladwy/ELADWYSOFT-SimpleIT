@@ -12,6 +12,7 @@ import { calculatePriority, validatePriority } from "../shared/priorityUtils";
 import { BackupService } from './services/backupService';
 import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
+import * as notificationService from './services/notificationService';
 
 
 // Authenticated user type (from auth middleware)
@@ -7085,15 +7086,30 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         details: { assignedToId: assignedUserId }
       });
 
-      // Create notification for the assigned user
+      // Create notification for the assigned user using notification service
       try {
-        await createNotification({
-          userId: assignedUserId,
-          title: `Ticket #${ticketId} Assigned to You`,
-          message: `You have been assigned ticket #${ticketId}: ${updatedTicket.title || 'Support Request'}`,
-          type: 'Ticket',
-          entityId: ticketId,
-        });
+        const assignedByUser = req.user as AuthUser;
+        
+        // Check if this is an urgent/critical ticket
+        const isUrgent = updatedTicket.priority === 'Critical' || updatedTicket.priority === 'urgent';
+        
+        if (isUrgent) {
+          // Use urgent notification template
+          await notificationService.notifyUrgentTicket({
+            ticketId,
+            assignedToUserId,
+            ticketTitle: updatedTicket.title || 'Support Request',
+            priority: updatedTicket.priority || 'High',
+          });
+        } else {
+          // Use standard assignment notification
+          await notificationService.notifyTicketAssignment({
+            ticketId,
+            assignedToUserId,
+            ticketTitle: updatedTicket.title || 'Support Request',
+            assignedByUsername: assignedByUser.username,
+          });
+        }
       } catch (notifError) {
         console.error('Failed to create notification:', notifError);
         // Don't fail the request if notification creation fails
