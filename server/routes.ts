@@ -234,30 +234,8 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// Import RBAC functions
+// Import RBAC functions from centralized configuration
 import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
-
-// Check if user has appropriate role level
-// NOTE: This is being phased out in favor of RBAC requireRole() middleware
-// See docs/RBAC-Analysis-Report.md for migration plan
-const hasAccess = (minRoleLevel: number) => {
-  return (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    const user = req.user as any;
-    
-    // Use RBAC functions for consistent permission checking
-    // Removed hardcoded admin bypass to ensure proper audit trail
-    const userLevel = getUserRoleLevel(user);
-    if (!hasMinimumRoleLevel(user, minRoleLevel)) {
-      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
-    }
-    
-    next();
-  };
-};
 
 // File upload storage configuration
 const upload = multer({ 
