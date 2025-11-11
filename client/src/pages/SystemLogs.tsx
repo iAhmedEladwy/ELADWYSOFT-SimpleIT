@@ -109,7 +109,7 @@ export default function SystemLogs() {
   };
 
   // Fetch logs
-  const { data: logs = [], isLoading, refetch } = useQuery<SystemLog[]>({
+  const { data: logsResponse, isLoading, refetch } = useQuery({
     queryKey: ['systemLogs', level, module, search, startDate, endDate, resolved, limit],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -127,13 +127,33 @@ export default function SystemLogs() {
     },
   });
 
+  const logs: SystemLog[] = logsResponse?.logs || [];
+
   // Fetch stats
   const { data: stats } = useQuery<LogStats>({
     queryKey: ['systemLogStats'],
     queryFn: async () => {
       const response = await fetch('/api/system-logs/stats');
       if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
+      const data = await response.json();
+      
+      // Transform array format to object format expected by frontend
+      const levelCounts: Record<string, number> = {};
+      data.levelStats?.forEach((stat: any) => {
+        levelCounts[stat.level] = Number(stat.count);
+      });
+      
+      const moduleCounts: Record<string, number> = {};
+      data.moduleStats?.forEach((stat: any) => {
+        moduleCounts[stat.module] = Number(stat.count);
+      });
+      
+      return {
+        levelCounts,
+        moduleCounts,
+        recentErrors: data.recentErrors || 0,
+        unresolvedCount: data.unresolvedErrors || 0,
+      };
     },
     refetchInterval: 30000, // Refresh every 30s
   });
