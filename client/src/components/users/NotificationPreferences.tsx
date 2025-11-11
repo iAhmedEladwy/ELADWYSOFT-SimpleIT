@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Bell } from 'lucide-react';
@@ -22,7 +21,7 @@ export function NotificationPreferences() {
   const { toast } = useToast();
   const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<keyof NotificationPreferencesData | null>(null);
   const [preferences, setPreferences] = useState<NotificationPreferencesData>({
     ticketAssignments: true,
     ticketStatusChanges: true,
@@ -66,16 +65,11 @@ export function NotificationPreferences() {
     employeeChangesDesc: language === 'English' 
       ? 'Changes to employee records (managers/admins only)' 
       : 'تغييرات في سجلات الموظفين (للمديرين/المسؤولين فقط)',
-    save: language === 'English' ? 'Save Preferences' : 'حفظ التفضيلات',
-    saving: language === 'English' ? 'Saving...' : 'جاري الحفظ...',
-    successTitle: language === 'English' ? 'Preferences Saved' : 'تم حفظ التفضيلات',
-    successMsg: language === 'English' 
-      ? 'Your notification preferences have been updated' 
-      : 'تم تحديث تفضيلات الإشعارات الخاصة بك',
+    saved: language === 'English' ? 'Saved' : 'تم الحفظ',
     errorTitle: language === 'English' ? 'Error' : 'خطأ',
     errorMsg: language === 'English' 
-      ? 'Failed to save preferences. Please try again.' 
-      : 'فشل حفظ التفضيلات. يرجى المحاولة مرة أخرى.',
+      ? 'Failed to save preference. Please try again.' 
+      : 'فشل حفظ التفضيل. يرجى المحاولة مرة أخرى.',
   };
 
   useEffect(() => {
@@ -97,33 +91,48 @@ export function NotificationPreferences() {
     }
   };
 
-  const handleToggle = (key: keyof NotificationPreferencesData) => {
+  const handleToggle = async (key: keyof NotificationPreferencesData) => {
+    const newValue = !preferences[key];
+    
+    // Optimistically update UI
     setPreferences(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: newValue
     }));
-  };
 
-  const handleSave = async () => {
     try {
-      setIsSaving(true);
+      setSavingKey(key);
+      
+      // Save to server with the new preferences
+      const updatedPreferences = {
+        ...preferences,
+        [key]: newValue
+      };
+      
       await apiRequest('/api/notifications/preferences', {
         method: 'PUT',
-        body: JSON.stringify(preferences),
+        body: JSON.stringify(updatedPreferences),
       });
 
+      // Show brief success feedback
       toast({
-        title: t.successTitle,
-        description: t.successMsg,
+        description: t.saved,
+        duration: 2000,
       });
     } catch (error) {
+      // Revert on error
+      setPreferences(prev => ({
+        ...prev,
+        [key]: !newValue
+      }));
+      
       toast({
         title: t.errorTitle,
         description: t.errorMsg,
         variant: 'destructive',
       });
     } finally {
-      setIsSaving(false);
+      setSavingKey(null);
     }
   };
 
@@ -177,26 +186,20 @@ export function NotificationPreferences() {
               </Label>
               <p className="text-sm text-muted-foreground mt-1">{description}</p>
             </div>
-            <Switch
-              id={key}
-              checked={preferences[key]}
-              onCheckedChange={() => handleToggle(key)}
-            />
+            <div className="flex items-center gap-2">
+              {savingKey === key && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+              <Switch
+                id={key}
+                checked={preferences[key]}
+                onCheckedChange={() => handleToggle(key)}
+                disabled={savingKey === key}
+              />
+            </div>
           </div>
         ))}
       </CardContent>
-      <CardFooter>
-        <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t.saving}
-            </>
-          ) : (
-            t.save
-          )}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
