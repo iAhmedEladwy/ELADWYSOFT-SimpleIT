@@ -109,10 +109,11 @@ export function NotificationPreferences() {
         [key]: newValue
       };
       
-      await apiRequest('/api/notifications/preferences', {
-        method: 'PUT',
-        body: JSON.stringify(updatedPreferences),
-      });
+      await apiRequest(
+        '/api/notifications/preferences',
+        'PUT',
+        updatedPreferences
+      );
 
       // Show brief success feedback
       toast({
