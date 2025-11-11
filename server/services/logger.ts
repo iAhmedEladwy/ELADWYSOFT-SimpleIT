@@ -154,7 +154,7 @@ class SystemLogger {
    */
   private async logToDatabase(entry: any) {
     try {
-      await db.insert(systemLogs).values({
+      const result = await db.insert(systemLogs).values({
         timestamp: entry.timestamp,
         level: entry.level,
         module: entry.module,
@@ -164,7 +164,27 @@ class SystemLogger {
         metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
         stackTrace: entry.stackTrace,
         resolved: false,
-      });
+      }).returning();
+
+      // Broadcast to WebSocket clients if available
+      if (result && result[0]) {
+        // Dynamically import to avoid circular dependency
+        import('./websocketService').then(({ websocketService }) => {
+          websocketService.broadcastLog({
+            id: result[0].id,
+            timestamp: result[0].timestamp.toISOString(),
+            level: result[0].level as any,
+            module: result[0].module,
+            message: result[0].message,
+            userId: result[0].userId,
+            requestId: result[0].requestId,
+            metadata: result[0].metadata ? JSON.parse(result[0].metadata) : null,
+            stackTrace: result[0].stackTrace,
+          });
+        }).catch(() => {
+          // WebSocket service not ready, ignore
+        });
+      }
     } catch (error) {
       // Don't throw - logging should never crash the app
       console.error('Failed to write to database log:', error);

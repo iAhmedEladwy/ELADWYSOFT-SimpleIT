@@ -1,9 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { BackupService } from "./services/backupService";
-import { BackupScheduler } from "./services/backupScheduler";
+import { BackupService } from './services/backupService';
+import { BackupScheduler } from './services/backupScheduler';
 import { logger } from "./services/logger";
+import { websocketService } from "./services/websocketService";
 
 const app = express();
 app.use(express.json());
@@ -82,6 +83,10 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize WebSocket service for real-time log streaming
+  websocketService.initialize(server);
+  console.log('WebSocket service initialized for real-time logs');
 
   // Initialize backup scheduler
   const backupService = new BackupService();

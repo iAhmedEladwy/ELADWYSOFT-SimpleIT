@@ -22,7 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
-import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug, ChevronRight, ArrowLeft, Eye } from "lucide-react";
+import { useLogStream } from "@/hooks/use-log-stream";
+import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug, ChevronRight, ArrowLeft, Eye, Wifi, WifiOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import LogDetailsDialog from "@/components/admin/LogDetailsDialog";
 
@@ -68,6 +69,27 @@ export default function SystemLogs() {
   // Details dialog state
   const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+
+  // WebSocket connection for real-time updates
+  const { isConnected: wsConnected } = useLogStream({
+    onNewLog: (newLog) => {
+      // Invalidate queries to refetch with new log
+      queryClient.invalidateQueries({ queryKey: ['systemLogs'] });
+      queryClient.invalidateQueries({ queryKey: ['systemLogStats'] });
+      
+      // Show toast for critical errors
+      if (newLog.level === 'CRITICAL') {
+        toast({
+          title: language === 'English' ? 'Critical Error Logged' : 'خطأ حرج مسجل',
+          description: newLog.message,
+          variant: 'destructive',
+        });
+      }
+    },
+    onStatsUpdate: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemLogStats'] });
+    },
+  });
 
   const translations = {
     developerTools: language === 'English' ? 'Developer Tools' : 'أدوات المطور',
@@ -260,7 +282,7 @@ export default function SystemLogs() {
         <span className="text-foreground font-medium">{translations.title}</span>
       </div>
 
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -270,6 +292,21 @@ export default function SystemLogs() {
           <p className="text-muted-foreground mt-1">{translations.subtitle}</p>
         </div>
         <div className="flex gap-2">
+          {/* WebSocket Connection Status */}
+          <Badge variant={wsConnected ? "secondary" : "outline"} className="flex items-center gap-1">
+            {wsConnected ? (
+              <>
+                <Wifi className="h-3 w-3" />
+                {language === 'English' ? 'Live' : 'مباشر'}
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3" />
+                {language === 'English' ? 'Offline' : 'غير متصل'}
+              </>
+            )}
+          </Badge>
+
           <Button
             variant="outline"
             size="sm"
