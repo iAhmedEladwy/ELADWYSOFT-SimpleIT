@@ -2914,6 +2914,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Asset created successfully:', asset);
       
+      // Log critical operation
+      if (req.user) {
+        logger.info('assets', `Asset created: ${asset.assetId}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetId: asset.id,
+            assetTag: asset.assetId,
+            type: asset.type,
+            brand: asset.brand,
+            model: asset.model,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       // Log activity
       if (req.user) {
         try {
@@ -2982,6 +2997,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.deleteAsset(id);
       if (!success) {
         return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      // Log critical operation
+      if (req.user) {
+        logger.warn('assets', `Asset deleted: ${asset.assetId}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetId: id,
+            assetTag: asset.assetId,
+            type: asset.type,
+            brand: asset.brand,
+            deletedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       // Log activity
@@ -5027,6 +5056,17 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     try {
       const configData = req.body;
       const updatedConfig = await storage.updateSystemConfig(configData);
+      
+      // Log critical operation
+      if (req.user) {
+        logger.warn('system', 'System configuration updated', {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            changes: configData,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
+      }
       
       // Log activity
       if (req.user) {
@@ -7469,6 +7509,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       }
       
       const newUser = await storage.createUser(userData);
+      
+      // Log critical operation
+      if (req.user) {
+        logger.info('users', `User created: ${newUser.username}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            newUserId: newUser.id,
+            username: newUser.username,
+            role: newUser.role,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       res.status(201).json(newUser);
     } catch (error: unknown) {
       console.error("User creation error:", error);
@@ -7497,6 +7551,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       
+      // Log critical operation - role changes
+      if (req.user && userData.role && userData.role !== currentUser.role) {
+        logger.warn('users', `User role changed: ${currentUser.username} (${currentUser.role} → ${userData.role})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            targetUserId: id,
+            targetUsername: currentUser.username,
+            oldRole: currentUser.role,
+            newRole: userData.role,
+            changedBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       // Log activity for status changes
       if (req.user && userData.isActive !== undefined && userData.isActive !== currentUser.isActive) {
         await storage.logActivity({
@@ -7507,6 +7575,17 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
           details: { 
             username: currentUser.username,
             statusChange: `${currentUser.isActive ? 'Active' : 'Inactive'} → ${userData.isActive ? 'Active' : 'Inactive'}`
+          }
+        });
+        
+        // Also log to system logs
+        logger.info('users', `User ${userData.isActive ? 'activated' : 'deactivated'}: ${currentUser.username}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            targetUserId: id,
+            targetUsername: currentUser.username,
+            statusChange: userData.isActive,
+            changedBy: (req.user as schema.User).username
           }
         });
       }
@@ -7540,6 +7619,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         if (!success) {
           return res.status(400).json({ 
             message: "Cannot delete user. This user may have associated records (tickets, assets, etc.) that must be removed or reassigned first." 
+          });
+        }
+        
+        // Log critical operation
+        if (req.user) {
+          logger.warn('users', `User deleted: ${user.username}`, {
+            userId: (req.user as schema.User).id,
+            metadata: {
+              deletedUserId: userId,
+              deletedUsername: user.username,
+              deletedRole: user.role,
+              deletedBy: (req.user as schema.User).username
+            }
           });
         }
       } catch (error: any) {
