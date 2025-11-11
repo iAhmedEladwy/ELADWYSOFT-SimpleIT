@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest, getQueryFn } from './queryClient';
+import { getRoleLevel, hasPermission as checkRolePermission, RoleId } from '@shared/roles.config';
 
 type User = {
   id: number;
@@ -23,6 +24,7 @@ type AuthContextType = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasAccess: (minRoleLevel: number) => boolean;
+  hasPermission: (permission: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,22 +121,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasAccess = (minRoleLevel: number) => {
     if (!user || !user.role) return false;
     
-    // Role hierarchy: super_admin=5, admin=4, manager=3, agent=2, employee=1
-    const roleLevels: Record<string, number> = {
-      'super_admin': 5,
-      'admin': 4,
-      'manager': 3,
-      'agent': 2,
-      'employee': 1
-    };
-    
-    const roleLevel = roleLevels[user.role] || 0;
+    // Use centralized getRoleLevel function
+    const roleLevel = getRoleLevel(user.role);
     
     return roleLevel >= minRoleLevel;
   };
 
+  const hasPermission = (permission: string) => {
+    if (!user || !user.role) return false;
+    
+    // Use centralized permission check
+    return checkRolePermission(user.role, permission);
+  };
+
   return (
-    <AuthContext.Provider value={{ user: user || null, isLoading, isFetching: isUserFetching, hasCheckedAuth, login, logout, hasAccess }}>
+    <AuthContext.Provider value={{ user: user || null, isLoading, isFetching: isUserFetching, hasCheckedAuth, login, logout, hasAccess, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );
