@@ -23,11 +23,12 @@ export interface Notification {
 export interface UseNotificationsOptions {
   enabled?: boolean;
   refetchInterval?: number | false;
+  limit?: number; // Limit number of notifications fetched (default: 50)
 }
 
 export function useNotifications(options: UseNotificationsOptions = {}) {
   const { user } = useAuth();
-  const { enabled = true, refetchInterval = 30000 } = options;
+  const { enabled = true, refetchInterval = 30000, limit = 50 } = options;
 
   // Fetch database notifications
   const {
@@ -36,7 +37,14 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     refetch,
     error
   } = useQuery({
-    queryKey: ['/api/notifications'],
+    queryKey: ['/api/notifications', { limit }],
+    queryFn: async () => {
+      const response = await fetch(`/api/notifications?limit=${limit}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return response.json();
+    },
     enabled: enabled && !!user,
     refetchInterval, // Auto-refresh every 30 seconds by default
     staleTime: 20000, // Consider data stale after 20 seconds
@@ -48,12 +56,11 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     return dbNotifications.filter((n: any) => !n.isRead).length;
   }, [dbNotifications]);
 
-  // Get recent notifications (last 5)
+  // Get recent notifications (last 5, already sorted by server in descending order)
   const recentNotifications = useMemo(() => {
     if (!Array.isArray(dbNotifications)) return [];
-    return dbNotifications
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
+    // Server returns sorted by createdAt DESC, so just take first 5
+    return dbNotifications.slice(0, 5);
   }, [dbNotifications]);
 
   // Mark notification as read

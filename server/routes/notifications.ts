@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import * as schema from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { authenticateUser, requireRole } from '../rbac';
 
 const router = Router();
@@ -26,15 +26,24 @@ const ROLES = {
 /**
  * GET /api/notifications
  * Get all notifications for the current user
+ * Query params:
+ *   - limit: number of notifications to return (default: 50, max: 100)
+ *   - offset: number of notifications to skip (default: 0)
  */
 router.get('/', authenticateUser, async (req, res) => {
   try {
     const user = req.user as AuthUser;
     
+    // Parse pagination params
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+    
     const userNotifications = await db.select()
       .from(schema.notifications)
       .where(eq(schema.notifications.userId, user.id))
-      .orderBy(schema.notifications.createdAt);
+      .orderBy(desc(schema.notifications.createdAt))
+      .limit(limit)
+      .offset(offset);
 
     res.json(userNotifications);
   } catch (error) {

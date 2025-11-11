@@ -25,7 +25,10 @@ export function NotificationBell() {
     isLoading, 
     markAllAsRead,
     markAsRead 
-  } = useNotifications();
+  } = useNotifications({ 
+    limit: 10, // Only fetch latest 10 for bell dropdown performance
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
 
   const translations = {
     notifications: language === 'English' ? 'Notifications' : 'الإشعارات',
