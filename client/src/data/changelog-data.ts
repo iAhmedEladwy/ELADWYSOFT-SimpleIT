@@ -38,6 +38,12 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • 👋 Employee Onboarding - Alerts admins when new employees start in the future",
         "   • 👋 Employee Offboarding - Reminds admins about asset recovery for terminated employees",
         "📡 Broadcast API - Admin endpoint for system-wide announcements with role targeting",
+        "⚙️ Notification Preferences - Complete user control over notification types:",
+        "   • Notification tab in User Profile page",
+        "   • 7 preference toggles (tickets, assets, maintenance, upgrades, system, employee)",
+        "   • Smart filtering - respects preferences before creating notifications",
+        "   • Auto-creates default preferences (all enabled) for new users",
+        "   • Bilingual preference labels and descriptions",
       ],
       improvements: [
         "⏰ Time Display - Human-readable timestamps (e.g., '5 minutes ago', '2 hours ago')",
