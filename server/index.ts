@@ -84,10 +84,6 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // Initialize WebSocket service for real-time log streaming
-  websocketService.initialize(server);
-  console.log('WebSocket service initialized for real-time logs');
-
   // Initialize backup scheduler
   const backupService = new BackupService();
   const backupScheduler = new BackupScheduler(backupService);
@@ -140,5 +136,9 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Initialize WebSocket service AFTER server starts listening
+    websocketService.initialize(server);
+    console.log('WebSocket service initialized for real-time logs at ws://localhost:' + port + '/ws/logs');
   });
 })();
