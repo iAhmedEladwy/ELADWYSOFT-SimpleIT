@@ -163,7 +163,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/employees" className={getLinkClass('/employees')} onClick={handleLinkClick}>
               <UserPlus className="h-5 w-5" />
@@ -179,7 +179,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/asset-history" className={getLinkClass('/asset-history')} onClick={handleLinkClick}>
               <History className="h-5 w-5" />
@@ -195,7 +195,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager']}>
+        <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/reports" className={getLinkClass('/reports')} onClick={handleLinkClick}>
               <BarChart2 className="h-5 w-5" />
@@ -204,7 +204,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </div>
         </RoleGuard>
         
-        <RoleGuard allowedRoles={['admin']}>
+        <RoleGuard allowedRoles={['super_admin', 'admin']}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
@@ -212,7 +212,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             </Link>
           </div>
         </RoleGuard>
-        <RoleGuard allowedRoles={['admin']}>
+        <RoleGuard allowedRoles={['super_admin', 'admin']}>
           <div className="space-y-1">
             {/* Admin Console Parent Menu */}
             <div 

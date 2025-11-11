@@ -148,7 +148,7 @@ function Router() {
         <Route path="/employees">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']} fallback={<NotFound />}>
                 <Employees />
               </RoleGuard>
             )} />
@@ -162,7 +162,7 @@ function Router() {
         <Route path="/asset-history">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']} fallback={<NotFound />}>
                 <AssetHistory />
               </RoleGuard>
             )} />
@@ -176,7 +176,7 @@ function Router() {
         <Route path="/reports">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']} fallback={<NotFound />}>
                 <Reports />
               </RoleGuard>
             )} />
@@ -185,7 +185,7 @@ function Router() {
         <Route path="/system-config">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <SystemConfig />
               </RoleGuard>
             )} />
@@ -194,7 +194,7 @@ function Router() {
         <Route path="/audit-logs">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']} fallback={<NotFound />}>
                 <AuditLogs />
               </RoleGuard>
             )} />
@@ -208,7 +208,7 @@ function Router() {
         <Route path="/maintenance">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager', 'agent']} fallback={<NotFound />}>
                 <Maintenance />
               </RoleGuard>
             )} />
@@ -224,7 +224,7 @@ function Router() {
         <Route path="/admin-console">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <AdminConsole />
               </RoleGuard>
             )} />
@@ -234,7 +234,7 @@ function Router() {
         <Route path="/admin-console/users">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <Users />
               </RoleGuard>
             )} />
@@ -245,7 +245,7 @@ function Router() {
         <Route path="/admin-console/backup-restore">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <BackupRestore />
               </RoleGuard>
             )} />
@@ -256,7 +256,7 @@ function Router() {
         <Route path="/admin-console/system-health">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <SystemHealth />
               </RoleGuard>
             )} />
@@ -298,7 +298,7 @@ function Router() {
         <Route path="/admin-console/audit-logs">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']} fallback={<NotFound />}>
                 <AuditLogs />
               </RoleGuard>
             )} />
@@ -308,7 +308,7 @@ function Router() {
         <Route path="/admin-console/bulk-operations">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
                 <BulkOperations />
               </RoleGuard>
             )} />
@@ -318,7 +318,7 @@ function Router() {
         <Route path="/admin-console/upgrade-requests">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={['super_admin', 'admin', 'manager']} fallback={<NotFound />}>
                 <UpgradeRequests />
               </RoleGuard>
             )} />
