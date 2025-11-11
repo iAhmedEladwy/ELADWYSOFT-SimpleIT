@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/lib/authContext';
 import { 
   Table, 
   TableBody, 
@@ -25,6 +26,7 @@ import {
   Key,
   UserX,
   UserCheck,
+  Code,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -49,7 +51,15 @@ interface UsersTableProps {
 
 export default function UsersTable({ users, onEdit, onDelete, onToggleActive, onChangePassword }: UsersTableProps) {
   const { language } = useLanguage();
+  const { user: currentUser } = useAuth();
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  
+  // Filter out super_admin users if current user is not super_admin
+  const filteredUsers = isSuperAdmin 
+    ? users 
+    : users.filter(u => u.role !== 'super_admin');
 
   // Translations
   const translations = {
@@ -59,6 +69,7 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
     role: language === 'English' ? 'Role' : 'الدور',
     status: language === 'English' ? 'Status' : 'الحالة',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
+    superAdmin: language === 'English' ? 'Super Admin' : 'مسؤول أعلى',
     admin: language === 'English' ? 'Admin' : 'مسؤول',
     manager: language === 'English' ? 'Manager' : 'مدير',
     agent: language === 'English' ? 'Agent' : 'وكيل',
@@ -98,6 +109,13 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
   // Get role badge and icon
   const getRoleBadge = (role: string) => {
     switch (role) {
+      case 'super_admin':
+        return (
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+            <Code className="h-3.5 w-3.5 mr-1" />
+            {translations.superAdmin}
+          </Badge>
+        );
       case 'admin':
         return (
           <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
@@ -152,8 +170,8 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length > 0 ? (
-            users.map((user) => (
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex flex-col">
