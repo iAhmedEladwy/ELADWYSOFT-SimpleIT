@@ -736,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==========================================
   // NOTIFICATION ROUTES
   // ==========================================
-  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/notifications', authenticateUser, notificationsRouter);
 
   // ==========================================
   // BACKUP, RESTORE & SYSTEM HEALTH ROUTES

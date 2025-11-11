@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import * as schema from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
-import { authenticateUser, requireRole } from '../rbac';
+import { requireRole, ROLES } from '../rbac';
 import * as notificationService from '../services/notificationService';
 
 const router = Router();
@@ -16,13 +16,6 @@ interface AuthUser {
   employeeId?: number;
 }
 
-// Role constants
-const ROLES = {
-  ADMIN: 4,
-  MANAGER: 3,
-  AGENT: 2,
-  EMPLOYEE: 1
-};
 
 /**
  * GET /api/notifications
@@ -31,7 +24,7 @@ const ROLES = {
  *   - limit: number of notifications to return (default: 50, max: 100)
  *   - offset: number of notifications to skip (default: 0)
  */
-router.get('/', authenticateUser, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const user = req.user as AuthUser;
     
@@ -57,7 +50,7 @@ router.get('/', authenticateUser, async (req, res) => {
  * POST /api/notifications/mark-read
  * Mark notification(s) as read
  */
-router.post('/mark-read', authenticateUser, async (req, res) => {
+router.post('/mark-read', async (req, res) => {
   try {
     const user = req.user as AuthUser;
     const { notificationIds } = req.body;
@@ -82,7 +75,7 @@ router.post('/mark-read', authenticateUser, async (req, res) => {
  * DELETE /api/notifications/:id
  * Delete (dismiss) a notification
  */
-router.delete('/:id', authenticateUser, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const user = req.user as AuthUser;
     const notificationId = parseInt(req.params.id);
@@ -106,7 +99,7 @@ router.delete('/:id', authenticateUser, async (req, res) => {
  * POST /api/notifications
  * Create a new notification (Admin only)
  */
-router.post('/', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+router.post('/', requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { userId, title, message, type, entityId } = req.body;
 
@@ -167,7 +160,7 @@ export async function createNotification(params: {
  * System broadcast notification endpoint (Admin only)
  * Send notifications to all users or specific role
  */
-router.post('/broadcast', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
+router.post('/broadcast', requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const { title, message, targetRole, notificationType } = req.body;
     
