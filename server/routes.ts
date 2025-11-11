@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
 import { db } from "./db";
+import * as schema from "../shared/schema";
 import { 
   users, employees, assets, tickets, assetUpgrades, assetTransactions,
   ticketUrgencyEnum, ticketImpactEnum, ticketTypeEnum, ticketPriorityEnum, ticketStatusEnum,
@@ -3434,6 +3435,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Notify managers about upgrade request
+      try {
+        // Get all managers to notify about the upgrade request
+        const managers = await db.select()
+          .from(schema.users)
+          .where(eq(schema.users.role, 'manager'));
+        
+        const requester = req.user as AuthUser;
+        const notificationPromises = managers.map(manager =>
+          notificationService.notifyUpgradeRequest({
+            upgradeId: upgrade.id,
+            managerId: manager.id,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            requestedBy: requester.username,
+            upgradeCost: upgrade.estimatedCost || undefined,
+          })
+        );
+        
+        await Promise.all(notificationPromises);
+      } catch (notifError) {
+        console.error('Failed to create upgrade request notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
+      
       res.json(upgrade);
     } catch (error: unknown) {
       console.error('Error creating upgrade request:', error);
@@ -4123,6 +4148,21 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         });
       }
       
+      // Notify employee about asset check-out
+      try {
+        if (employee.userId) {
+          await notificationService.notifyAssetTransaction({
+            assetId,
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            transactionType: 'Check-Out',
+          });
+        }
+      } catch (notifError) {
+        console.error('Failed to create check-out notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
+      
       res.status(201).json(transaction);
     } catch (error: unknown) {
       console.error("Error checking out asset:", error);
@@ -4169,6 +4209,24 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             notes: notes || "Asset checked in"
           }
         });
+      }
+      
+      // Notify employee about asset check-in (if it was previously assigned to someone)
+      try {
+        if (asset.assignedEmployeeId) {
+          const previousEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+          if (previousEmployee?.userId) {
+            await notificationService.notifyAssetTransaction({
+              assetId,
+              userId: previousEmployee.userId,
+              assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+              transactionType: 'Check-In',
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create check-in notification:', notifError);
+        // Don't fail the request if notification creation fails
       }
       
       res.status(201).json(transaction);
@@ -4485,14 +4543,14 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const id = parseInt(req.params.id);
       const ticketData = req.body;
       
+      // Get current ticket BEFORE update to compare status changes
+      const currentTicket = await storage.getTicket(id);
+      if (!currentTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
       // Validate priority calculation if urgency, impact, or priority is being updated
       if (ticketData.urgency || ticketData.impact || ticketData.priority) {
-        // Get current ticket to check existing values
-        const currentTicket = await storage.getTicket(id);
-        if (!currentTicket) {
-          return res.status(404).json({ message: "Ticket not found" });
-        }
-        
         const newUrgency = (ticketData.urgency || currentTicket.urgency) as UrgencyLevel;
         const newImpact = (ticketData.impact || currentTicket.impact) as ImpactLevel;
         const calculatedPriority = calculatePriority(newUrgency, newImpact);
@@ -4528,6 +4586,39 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             assignedToId: updatedTicket.assignedToId
           }
         });
+      }
+      
+      // Notify about status change
+      try {
+        if (ticketData.status && ticketData.status !== currentTicket.status) {
+          // Notify the person who submitted the ticket
+          if (currentTicket.submittedById) {
+            const submitter = await storage.getEmployee(currentTicket.submittedById);
+            if (submitter?.userId) {
+              await notificationService.notifyTicketStatusChange({
+                ticketId: id,
+                userId: submitter.userId,
+                oldStatus: currentTicket.status,
+                newStatus: updatedTicket.status,
+                ticketTitle: updatedTicket.title || 'Support Request',
+              });
+            }
+          }
+          
+          // Notify the assigned user if different from submitter
+          if (updatedTicket.assignedToId && updatedTicket.assignedToId !== currentTicket.submittedById) {
+            await notificationService.notifyTicketStatusChange({
+              ticketId: id,
+              userId: updatedTicket.assignedToId,
+              oldStatus: currentTicket.status,
+              newStatus: updatedTicket.status,
+              ticketTitle: updatedTicket.title || 'Support Request',
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create status change notification:', notifError);
+        // Don't fail the request if notification creation fails
       }
       
       res.json(updatedTicket);
