@@ -119,8 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasAccess = (minRoleLevel: number) => {
     if (!user || !user.role) return false;
     
-    // Role hierarchy: admin=4, manager=3, agent=2, employee=1
+    // Role hierarchy: super_admin=5, admin=4, manager=3, agent=2, employee=1
     const roleLevels: Record<string, number> = {
+      'super_admin': 5,
       'admin': 4,
       'manager': 3,
       'agent': 2,
