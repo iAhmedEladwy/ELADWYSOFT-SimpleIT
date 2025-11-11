@@ -265,7 +265,7 @@ export default function BackupRestore() {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<div>Access denied</div>}>
+    <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<div>Access denied</div>}>
       <Helmet>
         <title>{t.title} - SimpleIT</title>
       </Helmet>

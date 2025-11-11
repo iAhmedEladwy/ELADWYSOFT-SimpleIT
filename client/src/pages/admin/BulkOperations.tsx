@@ -215,7 +215,7 @@ export default function BulkOperations() {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+    <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
       <div className="container mx-auto py-6 space-y-6">
         <Helmet>
           <title>{translations.title}</title>
