@@ -284,7 +284,8 @@ export async function attachUserInfo(req: AuthenticatedRequest, res: Response, n
  * Filter data based on user permissions
  */
 export function filterByPermissions(data: any[], userRole: string, userId: number, field: string = 'id') {
-  if (userRole === ROLES.ADMIN) return data;
+  // Super Admin and Admin can see all data
+  if (userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMIN) return data;
   
   if (userRole === ROLES.EMPLOYEE) {
     return data.filter(item => item.submittedById === userId || item.assignedToId === userId || item[field] === userId);
@@ -318,6 +319,7 @@ export function getUserRoleLevel(user: any): number {
   // Check role first, then fall back to accessLevel
   if (user.role) {
     switch (user.role.toLowerCase()) {
+      case 'super_admin': return 5;
       case 'admin': return 4;
       case 'manager': return 3;
       case 'agent': return 2;
