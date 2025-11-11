@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
-import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug } from "lucide-react";
+import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug, ChevronRight, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 // Type definitions
@@ -65,8 +66,10 @@ export default function SystemLogs() {
 
   const t = {
     en: {
+      developerTools: "Developer Tools",
       title: "System Logs",
       subtitle: "Developer access to system events and errors",
+      backToDevTools: "Back to Developer Tools",
       filters: "Filters",
       level: "Level",
       all: "All",
@@ -106,8 +109,10 @@ export default function SystemLogs() {
       exportSuccess: "Logs exported to CSV",
     },
     ar: {
+      developerTools: "أدوات المطور",
       title: "سجلات النظام",
       subtitle: "وصول المطورين لأحداث وأخطاء النظام",
+      backToDevTools: "العودة إلى أدوات المطور",
       filters: "التصفية",
       level: "المستوى",
       all: "الكل",
@@ -267,6 +272,16 @@ export default function SystemLogs() {
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/developer-tools" className="hover:text-primary flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" />
+          {text.backToDevTools}
+        </Link>
+        <ChevronRight className="h-4 w-4" />
+        <span className="text-foreground font-medium">{text.title}</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

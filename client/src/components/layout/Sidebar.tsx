@@ -42,9 +42,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const { user } = useAuth();
   const { language } = useLanguage();
   const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState(false);
-  const [showSuperAdminMenu, setShowSuperAdminMenu] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-  const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
   // Auto-expand Admin Console if on any admin page
@@ -52,24 +49,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     setIsAdminConsoleOpen(true);
   }
   }, [location]);
-
-  // Triple-click detection for Super Admin menu (on version text)
-  const handleVersionClick = () => {
-    if (user?.role !== 'super_admin') return;
-    
-    setClickCount(prev => prev + 1);
-    
-    if (clickTimer) clearTimeout(clickTimer);
-    
-    const timer = setTimeout(() => {
-      if (clickCount + 1 >= 3) {
-        setShowSuperAdminMenu(prev => !prev);
-      }
-      setClickCount(0);
-    }, 500);
-    
-    setClickTimer(timer);
-  };
 
 
   // Link translations
@@ -93,6 +72,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     BackupRestore: language === 'English' ? 'Backup & Restore' : 'النسخ الاحتياطي والاستعادة',
     SystemHealth: language === 'English' ? 'System Health' : 'حالة النظام',
     SystemLogs: language === 'English' ? 'System Logs' : 'سجلات النظام',
+    DeveloperTools: language === 'English' ? 'Developer Tools' : 'أدوات المطور',
   };
 
   // Get class for sidebar item based on active path
@@ -290,21 +270,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                   <Activity className="h-4 w-4" />
                   <span>{translations.SystemHealth}</span>
                 </Link>
-
-                {/* System Logs - Super Admin Only (Hidden until triggered) */}
-                {user?.role === 'super_admin' && showSuperAdminMenu && (
-                  <Link 
-                    href="/admin-console/system-logs" 
-                    className={`${getLinkClass('/admin-console/system-logs')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''} border-l-2 border-yellow-500`}
-                    onClick={handleLinkClick}
-                  >
-                    <Terminal className="h-4 w-4 text-yellow-600" />
-                    <span className="flex items-center gap-2">
-                      {translations.SystemLogs}
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">DEV</span>
-                    </span>
-                  </Link>
-                )}
                 
                 {/* Audit Logs */}
                 <Link 
@@ -339,17 +304,30 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             )}
           </div>
         </RoleGuard>
+
+        {/* Developer Tools - Super Admin Only */}
+        <RoleGuard allowedRoles={['super_admin']}>
+          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
+            <Link 
+              href="/developer-tools" 
+              className={`${getLinkClass('/developer-tools')} border-l-2 border-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent`}
+              onClick={handleLinkClick}
+            >
+              <Wrench className="h-5 w-5 text-yellow-600" />
+              <span className="flex items-center gap-2">
+                {translations.DeveloperTools}
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium">DEV</span>
+              </span>
+            </Link>
+          </div>
+        </RoleGuard>
       </nav>
 
       <div className="mt-auto p-4">
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span 
-              className={`text-xs text-gray-500 ${user?.role === 'super_admin' ? 'cursor-pointer hover:text-yellow-600' : ''}`}
-              onClick={handleVersionClick}
-              title={user?.role === 'super_admin' ? 'Triple-click to reveal Super Admin menu' : ''}
-            >
+            <span className="text-xs text-gray-500">
               SimpleIT {getVersionString()}
             </span>
           </div>

@@ -33,6 +33,7 @@ import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 import SystemLogs from '@/pages/SystemLogs';
+import DeveloperTools from '@/pages/DeveloperTools';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 // Employee Portal imports
@@ -262,7 +263,28 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* NEW: System Logs Route (Super Admin Only) */}
+        {/* Developer Tools Routes (Super Admin Only) */}
+        <Route path="/developer-tools">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['super_admin']} fallback={<NotFound />}>
+                <DeveloperTools />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/developer-tools/system-logs">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['super_admin']} fallback={<NotFound />}>
+                <SystemLogs />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        {/* Legacy route - redirect to new location */}
         <Route path="/admin-console/system-logs">
           <Layout>
             <PrivateRoute component={() => (
