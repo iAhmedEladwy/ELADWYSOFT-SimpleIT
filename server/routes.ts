@@ -1336,6 +1336,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created employee with auto-generated ID:", employee);
       
+      // Log to system logs for audit trail
+      if (req.user) {
+        logger.info('employees', `Employee created: ${englishName} (${department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: employee.id,
+            empId: employee.empId,
+            name: englishName,
+            department,
+            title,
+            employmentType,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       // Notify admins about new employee onboarding if future start date
       if (joiningDate) {
         const startDate = new Date(joiningDate);
@@ -1454,6 +1470,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: updatedEmployee.id,
           details: { name: updatedEmployee.name || updatedEmployee.englishName, empId: updatedEmployee.employeeId }
         });
+        
+        // Log to system logs for audit trail
+        logger.info('employees', `Employee updated: ${englishName} (${department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: updatedEmployee.id,
+            empId: updatedEmployee.employeeId,
+            name: englishName,
+            department,
+            title,
+            statusChanged: existingEmployee.status !== status,
+            oldStatus: existingEmployee.status,
+            newStatus: status,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       res.json(updatedEmployee);
@@ -1485,6 +1517,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityType: "Employee",
           entityId: id,
           details: { name: employee.englishName, empId: employee.empId }
+        });
+        
+        // Log to system logs for audit trail
+        logger.warn('employees', `Employee deleted: ${employee.englishName} (${employee.department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: id,
+            empId: employee.empId,
+            name: employee.englishName,
+            department: employee.department,
+            title: employee.title,
+            deletedBy: (req.user as schema.User).username
+          }
         });
       }
       
@@ -2954,6 +2999,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityType: "Asset",
           entityId: updatedAsset.id,
           details: { assetId: updatedAsset.assetId, type: updatedAsset.type }
+        });
+        
+        // Log to system logs for audit trail
+        logger.info('assets', `Asset updated: ${updatedAsset.assetId} (${updatedAsset.type})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetDatabaseId: updatedAsset.id,
+            assetId: updatedAsset.assetId,
+            type: updatedAsset.type,
+            brand: assetData.brand,
+            model: assetData.model,
+            status: assetData.status,
+            updatedBy: (req.user as schema.User).username
+          }
         });
       }
       
@@ -4601,6 +4660,23 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           }
         });
         
+        // Log to system logs for audit trail
+        logger.info('tickets', `Ticket created: ${newTicket.ticketId} - ${newTicket.title}`, {
+          userId: req.user?.id || employeeId,
+          metadata: {
+            ticketDatabaseId: newTicket.id,
+            ticketId: newTicket.ticketId,
+            title: newTicket.title,
+            type: newTicket.type,
+            priority: newTicket.priority,
+            urgency: newTicket.urgency,
+            impact: newTicket.impact,
+            submittedById: newTicket.submittedById,
+            assignedToId: newTicket.assignedToId,
+            createdBy: req.user?.username || 'System'
+          }
+        });
+        
         console.log("Ticket created successfully:", newTicket);
         res.status(201).json(newTicket);
       } catch (error: unknown) {
@@ -4621,6 +4697,9 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const userId = req.user.id;
       console.log(`[DELETE TICKET ROUTE] Attempting to delete ticket ${ticketId} by user ${userId}`);
       
+      // Get ticket before deletion for logging
+      const ticket = await storage.getTicket(ticketId);
+      
       const success = await storage.deleteTicket(ticketId, userId);
       console.log(`[DELETE TICKET ROUTE] Delete operation result: ${success}`);
       if (!success) {
@@ -4635,6 +4714,22 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         userId,
         details: { ticketId }
       });
+      
+      // Log to system logs for audit trail
+      if (ticket) {
+        logger.warn('tickets', `Ticket deleted: ${ticket.ticketId} - ${ticket.title}`, {
+          userId,
+          metadata: {
+            ticketDatabaseId: ticketId,
+            ticketId: ticket.ticketId,
+            title: ticket.title,
+            type: ticket.type,
+            status: ticket.status,
+            priority: ticket.priority,
+            deletedBy: req.user.username
+          }
+        });
+      }
       
       res.json({ success: true, message: "Ticket deleted successfully" });
     } catch (error: unknown) {
@@ -4692,6 +4787,23 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             ticketId: updatedTicket.ticketId, 
             status: updatedTicket.status,
             assignedToId: updatedTicket.assignedToId
+          }
+        });
+        
+        // Log to system logs for audit trail
+        const statusChanged = ticketData.status && ticketData.status !== currentTicket.status;
+        logger.info('tickets', `Ticket updated: ${updatedTicket.ticketId} - ${updatedTicket.title}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            ticketDatabaseId: updatedTicket.id,
+            ticketId: updatedTicket.ticketId,
+            title: updatedTicket.title,
+            statusChanged,
+            oldStatus: currentTicket.status,
+            newStatus: updatedTicket.status,
+            priority: updatedTicket.priority,
+            assignedToId: updatedTicket.assignedToId,
+            updatedBy: (req.user as schema.User).username
           }
         });
       }
