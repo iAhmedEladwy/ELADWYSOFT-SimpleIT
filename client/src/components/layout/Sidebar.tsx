@@ -25,6 +25,8 @@ import {
   Database,
   Activity,
   Terminal,
+  Zap,
+  FileCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -42,11 +44,16 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const { user } = useAuth();
   const { language } = useLanguage();
   const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState(false);
+  const [isDeveloperToolsOpen, setIsDeveloperToolsOpen] = useState(false);
 
   useEffect(() => {
   // Auto-expand Admin Console if on any admin page
   if (location.startsWith('/admin-console')) {
     setIsAdminConsoleOpen(true);
+  }
+  // Auto-expand Developer Tools if on any developer tools page
+  if (location.startsWith('/developer-tools')) {
+    setIsDeveloperToolsOpen(true);
   }
   }, [location]);
 
@@ -97,6 +104,10 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const toggleAdminConsole = () => {
   setIsAdminConsoleOpen(!isAdminConsoleOpen);
 };
+
+  const toggleDeveloperTools = () => {
+    setIsDeveloperToolsOpen(!isDeveloperToolsOpen);
+  };
 
   // If sidebar is hidden, don't render anything
   if (!isSidebarOpen) {
@@ -307,18 +318,98 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
 
         {/* Developer Tools - Super Admin Only */}
         <RoleGuard allowedRoles={['super_admin']}>
-          <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
-            <Link 
-              href="/developer-tools" 
-              className={`${getLinkClass('/developer-tools')} border-l-2 border-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent`}
-              onClick={handleLinkClick}
+          <div className="space-y-1">
+            {/* Developer Tools Parent Menu */}
+            <div 
+              className={`${getLinkClass('/developer-tools')} cursor-pointer justify-between border-l-2 border-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent`}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleDeveloperTools();
+              }}
             >
-              <Wrench className="h-5 w-5 text-yellow-600" />
-              <span className="flex items-center gap-2">
-                {translations.DeveloperTools}
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium">DEV</span>
-              </span>
-            </Link>
+              <div className="flex items-center gap-3">
+                <Wrench className="h-5 w-5 text-yellow-600" />
+                <span className="flex items-center gap-2">
+                  {translations.DeveloperTools}
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium">DEV</span>
+                </span>
+              </div>
+              {isDeveloperToolsOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </div>
+            
+            {/* Developer Tools Submenu Items */}
+            {isDeveloperToolsOpen && (
+              <div className={`ml-6 space-y-1 border-l-2 border-yellow-200 dark:border-yellow-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
+                {/* System Logs */}
+                <Link 
+                  href="/developer-tools/system-logs" 
+                  className={`${getLinkClass('/developer-tools/system-logs')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Terminal className="h-4 w-4" />
+                  <span>{translations.SystemLogs}</span>
+                </Link>
+                
+                {/* Database Console - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Database className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Database Console' : 'وحدة تحكم قاعدة البيانات'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* API Tester - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Zap className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'API Tester' : 'مختبر API'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* Performance Monitor - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Activity className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Performance Monitor' : 'مراقب الأداء'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* Cache Manager - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <FileCode className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Cache Manager' : 'مدير ذاكرة التخزين المؤقت'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* Config Editor - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Settings className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Config Editor' : 'محرر التكوين'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </RoleGuard>
       </nav>

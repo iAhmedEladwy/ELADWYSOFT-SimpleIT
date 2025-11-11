@@ -21,7 +21,6 @@ import UserProfile from "@/pages/UserProfile";
 import Users from "@/pages/Users";
 import Maintenance from "@/pages/Maintenance";
 import ChangesLog from "@/pages/ChangesLog";
-import AdminConsole from "@/pages/AdminConsole";
 import BulkOperations from "@/pages/admin/BulkOperations";
 import UpgradeRequests from "@/pages/admin/UpgradeRequests";
 import Layout from "@/components/layout/Layout";
@@ -33,7 +32,6 @@ import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
 import SystemLogs from '@/pages/SystemLogs';
-import DeveloperTools from '@/pages/DeveloperTools';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 // Employee Portal imports
@@ -220,14 +218,14 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Admin Console Routes */}
+        {/* Admin Console Routes - Redirect root to users page */}
         <Route path="/admin-console">
           <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['super_admin', 'admin']} fallback={<NotFound />}>
-                <AdminConsole />
-              </RoleGuard>
-            )} />
+            <PrivateRoute component={() => {
+              // Redirect to first sub-page
+              window.location.href = '/admin-console/users';
+              return null;
+            }} />
           </Layout>
         </Route>
 
@@ -263,14 +261,14 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Developer Tools Routes (Super Admin Only) */}
+        {/* Developer Tools Routes - Redirect root to system-logs */}
         <Route path="/developer-tools">
           <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['super_admin']} fallback={<NotFound />}>
-                <DeveloperTools />
-              </RoleGuard>
-            )} />
+            <PrivateRoute component={() => {
+              // Redirect to first sub-page
+              window.location.href = '/developer-tools/system-logs';
+              return null;
+            }} />
           </Layout>
         </Route>
 
