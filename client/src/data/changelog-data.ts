@@ -14,6 +14,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.7",
+    date: "2025-11-11",
+    title: "Global In-App Notifications System",
+    type: "minor",
+    changes: {
+      features: [
+        "🔔 Global Notification Bell - Always-accessible notification icon in header with unread count badge",
+        "📬 Notification Dropdown - Quick preview of last 5 notifications without leaving current page",
+        "🔄 Auto-Refresh - Notifications automatically update every 30 seconds",
+        "📱 Smart Routing - Click notification to navigate to relevant page (Assets, Tickets, Employees)",
+        "✅ Mark as Read - Individual and bulk mark-as-read functionality",
+        "🗑️ Dismiss Notifications - Remove notifications directly from dropdown",
+        "🎯 Notification Tab - Dedicated notifications tab added to Dashboard",
+        "🌐 Bilingual Support - Full English/Arabic translation for all notification UI",
+      ],
+      improvements: [
+        "⏰ Time Display - Human-readable timestamps (e.g., '5 minutes ago', '2 hours ago')",
+        "🎨 Visual Indicators - Color-coded icons for different notification types (Asset, Ticket, Employee, System)",
+        "🔵 Unread Badges - Blue dot indicator for unread notifications",
+        "📊 Smart Badge - Shows '9+' when unread count exceeds 9",
+        "🔗 URL-Based Navigation - Support for ?tab=notifications in Dashboard URL",
+        "🎯 Shared Notification Hook - Reusable useNotifications() hook for consistent behavior",
+        "📦 Notification Types - Support for Asset, Ticket, Employee, and System notifications",
+      ],
+    }
+  },
+  {
     version: "0.4.6",
     date: "2025-11-08",
     title: "PWA Support & Advanced Filtering",

@@ -35,7 +35,8 @@ import {
   Package,
   Laptop,
   AlertCircle,
-  CalendarCheck
+  CalendarCheck,
+  Bell
 } from 'lucide-react';
 
 // Import dashboard components
@@ -50,12 +51,18 @@ import QuickActions from '@/components/dashboard/QuickActions';
 // Import legacy components for backward compatibility
 import StatsCard from '@/components/dashboard/StatsCard';
 import AssetsByType from '@/components/dashboard/AssetsByType';
+import Notifications from '@/components/dashboard/Notifications';
 
 export default function Dashboard() {
   const { language } = useLanguage();
   const { formatCurrency } = useCurrency();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Get tab from URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') || 'overview';
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
@@ -332,7 +339,7 @@ export default function Dashboard() {
 
       {/* Main Dashboard Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             {translations.overview}
@@ -340,6 +347,10 @@ export default function Dashboard() {
           <TabsTrigger value="insights" className="gap-2">
             <BarChart3 className="h-4 w-4" />
             {translations.insights}
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Bell className="h-4 w-4" />
+            {translations.notifications}
           </TabsTrigger>
         </TabsList>
 
@@ -762,6 +773,11 @@ export default function Dashboard() {
               />
             </div>
           </div>
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="space-y-6">
+          <Notifications />
         </TabsContent>
       </Tabs>
 
