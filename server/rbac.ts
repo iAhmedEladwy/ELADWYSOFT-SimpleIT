@@ -13,6 +13,7 @@ export interface AuthenticatedRequest extends Request {
 
 // Role hierarchy and permissions
 export const ROLES = {
+  SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Admin',
   MANAGER: 'Manager', 
   AGENT: 'Agent',
@@ -21,6 +22,7 @@ export const ROLES = {
 
 // Role hierarchy levels (higher number = higher privilege) 
 export const ROLE_HIERARCHY = {
+  'super_admin': 5,
   'admin': 4,
   'manager': 3, 
   'agent': 2,
@@ -64,14 +66,41 @@ export const PERMISSIONS = {
 
   // System permissions
   SYSTEM_CONFIG: 'system:config',
+  SYSTEM_LOGS: 'system:logs', // Super Admin only
   REPORTS_VIEW: 'reports:view',
   AUDIT_LOGS: 'audit:logs'
 } as const;
 
 // Role-based permission mapping
 export const ROLE_PERMISSIONS = {
+  [ROLES.SUPER_ADMIN]: [
+    // Super Admin has ALL permissions including system logs
+    PERMISSIONS.SYSTEM_LOGS,
+    PERMISSIONS.SYSTEM_CONFIG,
+    PERMISSIONS.ASSETS_VIEW_ALL,
+    PERMISSIONS.ASSETS_CREATE,
+    PERMISSIONS.ASSETS_UPDATE,
+    PERMISSIONS.ASSETS_DELETE,
+    PERMISSIONS.ASSETS_ASSIGN,
+    PERMISSIONS.USERS_VIEW_ALL,
+    PERMISSIONS.USERS_CREATE,
+    PERMISSIONS.USERS_UPDATE,
+    PERMISSIONS.USERS_DELETE,
+    PERMISSIONS.EMPLOYEES_VIEW_ALL,
+    PERMISSIONS.EMPLOYEES_CREATE,
+    PERMISSIONS.EMPLOYEES_UPDATE,
+    PERMISSIONS.EMPLOYEES_DELETE,
+    PERMISSIONS.TICKETS_VIEW_ALL,
+    PERMISSIONS.TICKETS_CREATE,
+    PERMISSIONS.TICKETS_UPDATE,
+    PERMISSIONS.TICKETS_DELETE,
+    PERMISSIONS.TICKETS_ASSIGN,
+    PERMISSIONS.TICKETS_CLOSE,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.AUDIT_LOGS,
+  ],
   [ROLES.ADMIN]: [
-    // Full access to everything
+    // Full access to everything EXCEPT system logs
     PERMISSIONS.ASSETS_VIEW_ALL,
     PERMISSIONS.ASSETS_CREATE,
     PERMISSIONS.ASSETS_UPDATE,

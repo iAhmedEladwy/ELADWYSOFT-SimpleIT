@@ -14,7 +14,9 @@ import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
 import backupRouter from './routes/backup';
 import systemHealthRouter from './routes/systemHealth';
+import systemLogsRouter from './routes/systemLogs';
 import * as notificationService from './services/notificationService';
+import { logger } from './services/logger';
 
 
 // Authenticated user type (from auth middleware)
@@ -737,6 +739,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOTIFICATION ROUTES
   // ==========================================
   app.use('/api/notifications', authenticateUser, notificationsRouter);
+
+  // ==========================================
+  // SYSTEM LOGS ROUTES (Super Admin only)
+  // ==========================================
+  app.use('/api/system-logs', authenticateUser, systemLogsRouter);
 
   // ==========================================
   // BACKUP, RESTORE & SYSTEM HEALTH ROUTES

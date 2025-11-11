@@ -4,8 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums matching the current database
-export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
-export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
+export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4', '5']);
+export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin', 'super_admin']);
+export const logLevelEnum = pgEnum('log_level', ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const pricingModeEnum = pgEnum('pricing_mode', ['total', 'individual']);
@@ -430,6 +431,20 @@ export const notificationPreferences = pgTable("notification_preferences", {
   employeeChanges: boolean("employee_changes").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// System Logs table - For debugging and system monitoring (Super Admin only)
+export const systemLogs = pgTable("system_logs", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  level: logLevelEnum("level").notNull(),
+  module: varchar("module", { length: 100 }).notNull(), // e.g., 'auth', 'assets', 'notifications'
+  message: text("message").notNull(),
+  userId: integer("user_id").references(() => users.id), // User who triggered the log (if applicable)
+  requestId: varchar("request_id", { length: 50 }), // For tracing requests across logs
+  metadata: jsonb("metadata"), // Additional context (request body, query params, etc.)
+  stackTrace: text("stack_trace"), // Full stack trace for errors
+  resolved: boolean("resolved").notNull().default(false), // Mark bugs as fixed
 });
 
 // Relations

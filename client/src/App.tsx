@@ -32,6 +32,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import BackupRestore from '@/pages/admin/BackupRestore';
 import SystemHealth from '@/pages/admin/SystemHealth';
+import SystemLogs from '@/pages/SystemLogs';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 // Employee Portal imports
@@ -256,6 +257,17 @@ function Router() {
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
                 <SystemHealth />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        {/* NEW: System Logs Route (Super Admin Only) */}
+        <Route path="/admin-console/system-logs">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={['super_admin']} fallback={<NotFound />}>
+                <SystemLogs />
               </RoleGuard>
             )} />
           </Layout>
