@@ -3194,6 +3194,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Notify employee about maintenance
+      try {
+        if (asset.assignedEmployeeId) {
+          const assignedEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+          if (assignedEmployee?.userId) {
+            if (requestData.status === 'Scheduled' || requestData.status === 'In Progress') {
+              // Notify about scheduled maintenance
+              await notificationService.notifyMaintenanceScheduled({
+                assetId,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+                maintenanceDate: new Date(requestData.date),
+                maintenanceType: requestData.type || 'Maintenance',
+              });
+            } else if (requestData.status === 'Completed') {
+              // Notify about completed maintenance
+              await notificationService.notifyMaintenanceCompleted({
+                assetId,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+                maintenanceType: requestData.type || 'Maintenance',
+              });
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create maintenance notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
+      
       res.status(201).json(maintenance);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -3268,6 +3298,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updatedBy: (req.user as schema.User).username
           }
         });
+      }
+      
+      // Notify employee about maintenance status change
+      try {
+        // Check if status changed to Completed
+        if (maintenanceData.status === 'Completed' && existingMaintenance.status !== 'Completed') {
+          const asset = await storage.getAsset(existingMaintenance.assetId);
+          if (asset?.assignedEmployeeId) {
+            const assignedEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+            if (assignedEmployee?.userId) {
+              await notificationService.notifyMaintenanceCompleted({
+                assetId: asset.id,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${asset.id}`,
+                maintenanceType: updatedMaintenance.type || 'Maintenance',
+              });
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create maintenance completion notification:', notifError);
+        // Don't fail the request if notification creation fails
       }
       
       res.json(updatedMaintenance);
@@ -3607,8 +3659,38 @@ app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (
     `;
     
     const result = await storage.pool.query(updateQuery, values);
+    const updatedUpgrade = result.rows[0];
+    
+    // Notify about upgrade approval/rejection
+    try {
+      const statusChanged = req.body.status && req.body.status !== existing.status;
+      const isApprovalDecision = statusChanged && (req.body.status === 'Approved' || req.body.status === 'Rejected');
+      
+      if (isApprovalDecision) {
+        // Get the asset to find its name
+        const asset = await storage.getAsset(existing.asset_id);
         
-    res.json(result.rows[0]);
+        // Get the original requester (created_by_id)
+        const requesterUser = await storage.getUser(existing.created_by_id);
+        
+        if (requesterUser && asset) {
+          const approver = req.user as schema.User;
+          
+          await notificationService.notifyUpgradeDecision({
+            upgradeId,
+            requesterId: requesterUser.id,
+            assetName: asset.name || asset.assetId || `Asset #${asset.id}`,
+            approved: req.body.status === 'Approved',
+            approvedBy: approver.username,
+          });
+        }
+      }
+    } catch (notifError) {
+      console.error('Failed to create upgrade decision notification:', notifError);
+      // Don't fail the request if notification creation fails
+    }
+        
+    res.json(updatedUpgrade);
   } catch (error: unknown) {
     console.error('Error updating upgrade:', error);
     res.status(500).json({ message: 'Error updating upgrade' });
