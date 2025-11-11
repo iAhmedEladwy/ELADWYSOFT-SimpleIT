@@ -270,7 +270,7 @@ export default function Notifications() {
       }
 
       // 5. Maintenance on your assets
-      if (maintenance && maintenance.length > 0) {
+      if (maintenance && Array.isArray(maintenance) && maintenance.length > 0 && Array.isArray(assets)) {
         const myAssets = assets.filter((asset: any) => asset.assignedEmployeeId === userEmployee.id);
         const myAssetIds = myAssets.map((a: any) => a.id);
         const myAssetMaintenance = maintenance.filter((m: any) => 
@@ -387,7 +387,9 @@ export default function Notifications() {
     language,
   ]);
 
-  const visibleNotifications = notifications.filter(n => !dismissedNotifications.includes(n.id));
+  const visibleNotifications = Array.isArray(notifications) 
+    ? notifications.filter(n => !dismissedNotifications.includes(n.id))
+    : [];
 
   const handleMarkAllAsRead = async () => {
     setAllRead(true);
