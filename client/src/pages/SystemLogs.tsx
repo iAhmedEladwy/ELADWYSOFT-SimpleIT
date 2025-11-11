@@ -64,96 +64,49 @@ export default function SystemLogs() {
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const t = {
-    en: {
-      developerTools: "Developer Tools",
-      title: "System Logs",
-      subtitle: "Developer access to system events and errors",
-      backToDevTools: "Back to Developer Tools",
-      filters: "Filters",
-      level: "Level",
-      all: "All",
-      module: "Module",
-      search: "Search message...",
-      startDate: "Start Date",
-      endDate: "End Date",
-      status: "Status",
-      resolved: "Resolved",
-      unresolved: "Unresolved",
-      limit: "Limit",
-      refresh: "Refresh",
-      autoRefresh: "Auto-refresh (30s)",
-      export: "Export CSV",
-      cleanup: "Cleanup Old Logs",
-      stats: "Statistics",
-      totalLogs: "Total Logs",
-      recentErrors: "Errors (24h)",
-      unresolvedIssues: "Unresolved Issues",
-      topModules: "Top Modules",
-      timestamp: "Timestamp",
-      message: "Message",
-      user: "User",
-      requestId: "Request ID",
-      actions: "Actions",
-      markResolved: "Mark Resolved",
-      viewDetails: "View Details",
-      noLogs: "No logs found",
-      debug: "Debug",
-      info: "Info",
-      warn: "Warning",
-      error: "Error",
-      critical: "Critical",
-      resolveSuccess: "Log marked as resolved",
-      cleanupConfirm: "Delete logs older than 90 days?",
-      cleanupSuccess: "Old logs cleaned up successfully",
-      exportSuccess: "Logs exported to CSV",
-    },
-    ar: {
-      developerTools: "أدوات المطور",
-      title: "سجلات النظام",
-      subtitle: "وصول المطورين لأحداث وأخطاء النظام",
-      backToDevTools: "العودة إلى أدوات المطور",
-      filters: "التصفية",
-      level: "المستوى",
-      all: "الكل",
-      module: "الوحدة",
-      search: "البحث في الرسالة...",
-      startDate: "تاريخ البدء",
-      endDate: "تاريخ النهاية",
-      status: "الحالة",
-      resolved: "تم الحل",
-      unresolved: "لم يُحل",
-      limit: "الحد",
-      refresh: "تحديث",
-      autoRefresh: "تحديث تلقائي (30 ثانية)",
-      export: "تصدير CSV",
-      cleanup: "تنظيف السجلات القديمة",
-      stats: "الإحصائيات",
-      totalLogs: "إجمالي السجلات",
-      recentErrors: "الأخطاء (24 ساعة)",
-      unresolvedIssues: "المشاكل غير المحلولة",
-      topModules: "أكثر الوحدات",
-      timestamp: "الوقت",
-      message: "الرسالة",
-      user: "المستخدم",
-      requestId: "معرف الطلب",
-      actions: "الإجراءات",
-      markResolved: "تحديد كمُحل",
-      viewDetails: "عرض التفاصيل",
-      noLogs: "لا توجد سجلات",
-      debug: "تصحيح",
-      info: "معلومات",
-      warn: "تحذير",
-      error: "خطأ",
-      critical: "حرج",
-      resolveSuccess: "تم تحديد السجل كمُحل",
-      cleanupConfirm: "حذف السجلات الأقدم من 90 يوماً؟",
-      cleanupSuccess: "تم تنظيف السجلات القديمة بنجاح",
-      exportSuccess: "تم تصدير السجلات إلى CSV",
-    },
+  const translations = {
+    developerTools: language === 'English' ? 'Developer Tools' : 'أدوات المطور',
+    title: language === 'English' ? 'System Logs' : 'سجلات النظام',
+    subtitle: language === 'English' ? 'Developer access to system events and errors' : 'وصول المطورين لأحداث وأخطاء النظام',
+    backToDevTools: language === 'English' ? 'Back to Developer Tools' : 'العودة إلى أدوات المطور',
+    filters: language === 'English' ? 'Filters' : 'التصفية',
+    level: language === 'English' ? 'Level' : 'المستوى',
+    all: language === 'English' ? 'All' : 'الكل',
+    module: language === 'English' ? 'Module' : 'الوحدة',
+    search: language === 'English' ? 'Search message...' : 'البحث في الرسالة...',
+    startDate: language === 'English' ? 'Start Date' : 'تاريخ البدء',
+    endDate: language === 'English' ? 'End Date' : 'تاريخ النهاية',
+    status: language === 'English' ? 'Status' : 'الحالة',
+    resolved: language === 'English' ? 'Resolved' : 'تم الحل',
+    unresolved: language === 'English' ? 'Unresolved' : 'لم يُحل',
+    limit: language === 'English' ? 'Limit' : 'الحد',
+    refresh: language === 'English' ? 'Refresh' : 'تحديث',
+    autoRefresh: language === 'English' ? 'Auto-refresh (30s)' : 'تحديث تلقائي (30 ثانية)',
+    export: language === 'English' ? 'Export CSV' : 'تصدير CSV',
+    cleanup: language === 'English' ? 'Cleanup Old Logs' : 'تنظيف السجلات القديمة',
+    stats: language === 'English' ? 'Statistics' : 'الإحصائيات',
+    totalLogs: language === 'English' ? 'Total Logs' : 'إجمالي السجلات',
+    recentErrors: language === 'English' ? 'Errors (24h)' : 'الأخطاء (24 ساعة)',
+    unresolvedIssues: language === 'English' ? 'Unresolved Issues' : 'المشاكل غير المحلولة',
+    topModules: language === 'English' ? 'Top Modules' : 'أكثر الوحدات',
+    timestamp: language === 'English' ? 'Timestamp' : 'الوقت',
+    message: language === 'English' ? 'Message' : 'الرسالة',
+    user: language === 'English' ? 'User' : 'المستخدم',
+    requestId: language === 'English' ? 'Request ID' : 'معرف الطلب',
+    actions: language === 'English' ? 'Actions' : 'الإجراءات',
+    markResolved: language === 'English' ? 'Mark Resolved' : 'تحديد كمُحل',
+    viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
+    noLogs: language === 'English' ? 'No logs found' : 'لا توجد سجلات',
+    debug: language === 'English' ? 'Debug' : 'تصحيح',
+    info: language === 'English' ? 'Info' : 'معلومات',
+    warn: language === 'English' ? 'Warning' : 'تحذير',
+    error: language === 'English' ? 'Error' : 'خطأ',
+    critical: language === 'English' ? 'Critical' : 'حرج',
+    resolveSuccess: language === 'English' ? 'Log marked as resolved' : 'تم تحديد السجل كمُحل',
+    cleanupConfirm: language === 'English' ? 'Delete logs older than 90 days?' : 'حذف السجلات الأقدم من 90 يوماً؟',
+    cleanupSuccess: language === 'English' ? 'Old logs cleaned up successfully' : 'تم تنظيف السجلات القديمة بنجاح',
+    exportSuccess: language === 'English' ? 'Logs exported to CSV' : 'تم تصدير السجلات إلى CSV',
   };
-
-  const text = language === 'English' ? t.en : t.ar;
 
   // Fetch logs
   const { data: logs = [], isLoading, refetch } = useQuery<SystemLog[]>({
@@ -195,7 +148,7 @@ export default function SystemLogs() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: text.resolveSuccess });
+      toast({ title: translations.resolveSuccess });
       queryClient.invalidateQueries({ queryKey: ['systemLogs'] });
       queryClient.invalidateQueries({ queryKey: ['systemLogStats'] });
     },
@@ -211,7 +164,7 @@ export default function SystemLogs() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: text.cleanupSuccess });
+      toast({ title: translations.cleanupSuccess });
       queryClient.invalidateQueries({ queryKey: ['systemLogs'] });
       queryClient.invalidateQueries({ queryKey: ['systemLogStats'] });
     },
@@ -245,7 +198,7 @@ export default function SystemLogs() {
     a.href = url;
     a.download = `system-logs-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    toast({ title: text.exportSuccess });
+    toast({ title: translations.exportSuccess });
   };
 
   const getLevelIcon = (level: string) => {
@@ -276,10 +229,10 @@ export default function SystemLogs() {
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/developer-tools" className="hover:text-primary flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />
-          {text.backToDevTools}
+          {translations.backToDevTools}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{text.title}</span>
+        <span className="text-foreground font-medium">{translations.title}</span>
       </div>
 
       {/* Header */}
@@ -287,9 +240,9 @@ export default function SystemLogs() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Terminal className="h-8 w-8" />
-            {text.title}
+            {translations.title}
           </h1>
-          <p className="text-muted-foreground mt-1">{text.subtitle}</p>
+          <p className="text-muted-foreground mt-1">{translations.subtitle}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -299,7 +252,7 @@ export default function SystemLogs() {
             disabled={isLoading}
           >
             <RefreshCw className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} ${isLoading ? 'animate-spin' : ''}`} />
-            {text.refresh}
+            {translations.refresh}
           </Button>
           <Button
             variant="outline"
@@ -307,19 +260,19 @@ export default function SystemLogs() {
             onClick={handleExport}
           >
             <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {text.export}
+            {translations.export}
           </Button>
           <Button
             variant="destructive"
             size="sm"
             onClick={() => {
-              if (confirm(text.cleanupConfirm)) {
+              if (confirm(translations.cleanupConfirm)) {
                 cleanupMutation.mutate();
               }
             }}
           >
             <Trash2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {text.cleanup}
+            {translations.cleanup}
           </Button>
         </div>
       </div>
@@ -329,7 +282,7 @@ export default function SystemLogs() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{text.totalLogs}</CardTitle>
+              <CardTitle className="text-sm font-medium">{translations.totalLogs}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -339,7 +292,7 @@ export default function SystemLogs() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{text.recentErrors}</CardTitle>
+              <CardTitle className="text-sm font-medium">{translations.recentErrors}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">{stats.recentErrors}</div>
@@ -347,7 +300,7 @@ export default function SystemLogs() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{text.unresolvedIssues}</CardTitle>
+              <CardTitle className="text-sm font-medium">{translations.unresolvedIssues}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">{stats.unresolvedCount}</div>
@@ -355,7 +308,7 @@ export default function SystemLogs() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{text.topModules}</CardTitle>
+              <CardTitle className="text-sm font-medium">{translations.topModules}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-sm space-y-1">
@@ -377,64 +330,64 @@ export default function SystemLogs() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>{text.filters}</CardTitle>
+          <CardTitle>{translations.filters}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Select value={level} onValueChange={setLevel}>
               <SelectTrigger>
-                <SelectValue placeholder={text.level} />
+                <SelectValue placeholder={translations.level} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{text.all}</SelectItem>
-                <SelectItem value="DEBUG">{text.debug}</SelectItem>
-                <SelectItem value="INFO">{text.info}</SelectItem>
-                <SelectItem value="WARN">{text.warn}</SelectItem>
-                <SelectItem value="ERROR">{text.error}</SelectItem>
-                <SelectItem value="CRITICAL">{text.critical}</SelectItem>
+                <SelectItem value="all">{translations.all}</SelectItem>
+                <SelectItem value="DEBUG">{translations.debug}</SelectItem>
+                <SelectItem value="INFO">{translations.info}</SelectItem>
+                <SelectItem value="WARN">{translations.warn}</SelectItem>
+                <SelectItem value="ERROR">{translations.error}</SelectItem>
+                <SelectItem value="CRITICAL">{translations.critical}</SelectItem>
               </SelectContent>
             </Select>
 
             <Input
-              placeholder={text.module}
+              placeholder={translations.module}
               value={module}
               onChange={(e) => setModule(e.target.value)}
             />
 
             <Input
-              placeholder={text.search}
+              placeholder={translations.search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
             <Select value={resolved} onValueChange={setResolved}>
               <SelectTrigger>
-                <SelectValue placeholder={text.status} />
+                <SelectValue placeholder={translations.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{text.all}</SelectItem>
-                <SelectItem value="true">{text.resolved}</SelectItem>
-                <SelectItem value="false">{text.unresolved}</SelectItem>
+                <SelectItem value="all">{translations.all}</SelectItem>
+                <SelectItem value="true">{translations.resolved}</SelectItem>
+                <SelectItem value="false">{translations.unresolved}</SelectItem>
               </SelectContent>
             </Select>
 
             <Input
               type="date"
-              placeholder={text.startDate}
+              placeholder={translations.startDate}
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
 
             <Input
               type="date"
-              placeholder={text.endDate}
+              placeholder={translations.endDate}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
 
             <Select value={limit.toString()} onValueChange={(val) => setLimit(Number(val))}>
               <SelectTrigger>
-                <SelectValue placeholder={text.limit} />
+                <SelectValue placeholder={translations.limit} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="50">50</SelectItem>
@@ -454,7 +407,7 @@ export default function SystemLogs() {
                 className="rounded"
               />
               <label htmlFor="autoRefresh" className="text-sm cursor-pointer">
-                {text.autoRefresh}
+                {translations.autoRefresh}
               </label>
             </div>
           </div>
@@ -467,13 +420,13 @@ export default function SystemLogs() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{text.timestamp}</TableHead>
-                <TableHead>{text.level}</TableHead>
-                <TableHead>{text.module}</TableHead>
-                <TableHead>{text.message}</TableHead>
-                <TableHead>{text.user}</TableHead>
-                <TableHead>{text.requestId}</TableHead>
-                <TableHead className="text-right">{text.actions}</TableHead>
+                <TableHead>{translations.timestamp}</TableHead>
+                <TableHead>{translations.level}</TableHead>
+                <TableHead>{translations.module}</TableHead>
+                <TableHead>{translations.message}</TableHead>
+                <TableHead>{translations.user}</TableHead>
+                <TableHead>{translations.requestId}</TableHead>
+                <TableHead className="text-right">{translations.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -486,7 +439,7 @@ export default function SystemLogs() {
               ) : logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {text.noLogs}
+                    {translations.noLogs}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -514,13 +467,13 @@ export default function SystemLogs() {
                           disabled={resolveMutation.isPending}
                         >
                           <CheckCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                          {text.markResolved}
+                          {translations.markResolved}
                         </Button>
                       )}
                       {log.resolved && (
                         <Badge variant="secondary">
                           <CheckCircle className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                          {text.resolved}
+                          {translations.resolved}
                         </Badge>
                       )}
                     </TableCell>
