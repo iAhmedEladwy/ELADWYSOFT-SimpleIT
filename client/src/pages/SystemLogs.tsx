@@ -22,8 +22,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
-import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug, ChevronRight, ArrowLeft } from "lucide-react";
+import { Terminal, RefreshCw, CheckCircle, Trash2, Download, AlertCircle, Info, AlertTriangle, Bug, ChevronRight, ArrowLeft, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import LogDetailsDialog from "@/components/admin/LogDetailsDialog";
 
 // Type definitions
 interface SystemLog {
@@ -63,6 +64,10 @@ export default function SystemLogs() {
 
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(true);
+
+  // Details dialog state
+  const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   const translations = {
     developerTools: language === 'English' ? 'Developer Tools' : 'أدوات المطور',
@@ -479,23 +484,36 @@ export default function SystemLogs() {
                     <TableCell className="text-sm">{log.userId || '-'}</TableCell>
                     <TableCell className="font-mono text-xs">{log.requestId || '-'}</TableCell>
                     <TableCell className="text-right">
-                      {!log.resolved && (
+                      <div className="flex items-center justify-end gap-2">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => resolveMutation.mutate(log.id)}
-                          disabled={resolveMutation.isPending}
+                          onClick={() => {
+                            setSelectedLog(log);
+                            setDetailsDialogOpen(true);
+                          }}
                         >
-                          <CheckCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                          {translations.markResolved}
+                          <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                          {translations.viewDetails}
                         </Button>
-                      )}
-                      {log.resolved && (
-                        <Badge variant="secondary">
-                          <CheckCircle className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                          {translations.resolved}
-                        </Badge>
-                      )}
+                        {!log.resolved && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => resolveMutation.mutate(log.id)}
+                            disabled={resolveMutation.isPending}
+                          >
+                            <CheckCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                            {translations.markResolved}
+                          </Button>
+                        )}
+                        {log.resolved && (
+                          <Badge variant="secondary">
+                            <CheckCircle className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                            {translations.resolved}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -504,6 +522,13 @@ export default function SystemLogs() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Log Details Dialog */}
+      <LogDetailsDialog
+        log={selectedLog}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
     </div>
   );
 }
