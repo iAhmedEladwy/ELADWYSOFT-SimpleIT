@@ -73,6 +73,24 @@ SELECT enumlabel FROM pg_enum WHERE enumtypid = (
 
 ## 👤 Creating Super Admin User
 
+### ⚡ Quick Start (Automatic - Recommended)
+The migration script **automatically creates** a Super Admin user:
+
+```bash
+# Run the migration script - it creates user "dev" automatically
+psql -U your_user -d simpleit -f scripts/migrate-system-logs.sql
+```
+
+**Default Credentials:**
+- **Username**: `dev`
+- **Password**: `SuperDev@2025!`
+- **⚠️ IMPORTANT**: Change this password immediately after first login!
+
+The script will:
+- ✅ Create user "dev" if it doesn't exist
+- ✅ Promote existing "dev" user to Super Admin if found
+- ✅ Display credentials after completion
+
 ### Option 1: Promote Existing Admin User (SQL)
 ```sql
 -- Replace user_id with your admin user ID (e.g., 1)
@@ -81,13 +99,20 @@ SET role = 'super_admin', access_level = '5'
 WHERE id = 1;
 ```
 
-### Option 2: Create New Super Admin User (SQL)
+### Option 2: Create Custom Super Admin User (SQL)
+First, generate a password hash:
+```bash
+# Generate bcrypt hash for your password
+node scripts/generate-password-hash.js "YourStrongPassword123!"
+```
+
+Then insert the user:
 ```sql
 INSERT INTO users (username, full_name, email, password_hash, role, access_level, is_active)
 VALUES (
-  'superadmin',
-  'Super Administrator',
-  'dev@example.com',
+  'your_username',
+  'Your Full Name',
+  'you@example.com',
   '$2a$10$...',  -- Use bcrypt hash of your password
   'super_admin',
   '5',

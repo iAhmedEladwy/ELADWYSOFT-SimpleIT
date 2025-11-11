@@ -185,11 +185,68 @@ WHERE resolved = false
   AND level IN ('ERROR'::log_level, 'CRITICAL'::log_level);
 
 -- ==============================================
--- STEP 5: Optional - Create Additional Super Admin
+-- STEP 5: Create Super Admin User "dev"
 -- ==============================================
 
--- Uncomment to create a new super admin user
--- NOTE: Replace password hash with bcrypt hash of your password
+-- Password: SuperDev@2025! (Change this in production!)
+-- This creates a dedicated developer account for system logs access
+
+-- First, check if user "dev" already exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM users WHERE username = 'dev') THEN
+    RAISE NOTICE 'User "dev" already exists. Promoting to Super Admin...';
+    
+    UPDATE users 
+    SET 
+      role = 'super_admin'::role,
+      access_level = '5'::access_level,
+      is_active = true
+    WHERE username = 'dev';
+  ELSE
+    RAISE NOTICE 'Creating new Super Admin user "dev"...';
+    
+    -- Password: SuperDev@2025!
+    -- Generated using: bcrypt.hash('SuperDev@2025!', 10)
+    INSERT INTO users (
+      username,
+      full_name,
+      email,
+      password_hash,
+      role,
+      access_level,
+      is_active,
+      created_at
+    ) VALUES (
+      'dev',
+      'Super Developer',
+      'dev@simpleit.local',
+      '$2a$10$8YWZ5xZQX9YKPq9B2N5zKe4L5kZrF3vH8wX2jQ9nM4rP5tY6vN7W.',  -- SuperDev@2025!
+      'super_admin'::role,
+      '5'::access_level,
+      true,
+      NOW()
+    );
+  END IF;
+END $$;
+
+RAISE NOTICE '==================================================';
+RAISE NOTICE 'Super Admin User "dev" Created/Updated';
+RAISE NOTICE '==================================================';
+RAISE NOTICE 'Username: dev';
+RAISE NOTICE 'Password: SuperDev@2025!';
+RAISE NOTICE '⚠️  IMPORTANT: Change this password after first login!';
+RAISE NOTICE '==================================================';
+
+-- ==============================================
+-- STEP 6: Optional - Create Additional Super Admin
+-- ==============================================
+
+-- Uncomment to create another super admin user
+-- NOTE: Generate password hash using Node.js:
+--   const bcrypt = require('bcrypt');
+--   const hash = await bcrypt.hash('YourPassword123!', 10);
+--   console.log(hash);
 /*
 INSERT INTO users (
   username,
