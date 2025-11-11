@@ -153,7 +153,7 @@ export default function SystemLogs() {
     },
   };
 
-  const text = t[language];
+  const text = language === 'English' ? t.en : t.ar;
 
   // Fetch logs
   const { data: logs = [], isLoading, refetch } = useQuery<SystemLog[]>({
