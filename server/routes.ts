@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
 import { BackupService } from './services/backupService';
 import { setupPortalRoutes } from './routes/portal';
+import notificationsRouter, { createNotification } from './routes/notifications';
 
 
 // Authenticated user type (from auth middleware)
@@ -761,6 +762,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // EMPLOYEE PORTAL ROUTES
   // ==========================================
   setupPortalRoutes(app, authenticateUser, requireRole);
+
+  // ==========================================
+  // NOTIFICATION ROUTES
+  // ==========================================
+  app.use('/api/notifications', notificationsRouter);
 
   // Security Questions API endpoints - combined implementation  // Get default security questions for selection
   app.get("/api/security-questions", async (req, res) => {
@@ -7081,13 +7087,12 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
       // Create notification for the assigned user
       try {
-        await db.insert(schema.notifications).values({
+        await createNotification({
           userId: assignedUserId,
           title: `Ticket #${ticketId} Assigned to You`,
           message: `You have been assigned ticket #${ticketId}: ${updatedTicket.title || 'Support Request'}`,
           type: 'Ticket',
           entityId: ticketId,
-          isRead: false,
         });
       } catch (notifError) {
         console.error('Failed to create notification:', notifError);
@@ -8226,100 +8231,12 @@ app.post('/api/admin/backup-jobs/:id/cleanup', authenticateUser, requireRole(ROL
     res.status(500).json({ error: 'Failed to cleanup backups' });
   }
 });
+
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================
-
-  // GET /api/notifications - Get all notifications for current user
-  app.get('/api/notifications', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      
-      const userNotifications = await db.select()
-        .from(schema.notifications)
-        .where(eq(schema.notifications.userId, user.id))
-        .orderBy(schema.notifications.createdAt);
-
-      res.json(userNotifications);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      res.status(500).json({ error: 'Failed to fetch notifications' });
-    }
-  });
-
-  // POST /api/notifications/mark-read - Mark notification(s) as read
-  app.post('/api/notifications/mark-read', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      const { notificationIds } = req.body;
-
-      if (!notificationIds || !Array.isArray(notificationIds)) {
-        return res.status(400).json({ error: 'notificationIds array is required' });
-      }
-
-      // Update notifications to mark as read
-      await db.update(schema.notifications)
-        .set({ isRead: true })
-        .where(eq(schema.notifications.userId, user.id));
-
-      res.json({ message: 'Notifications marked as read' });
-    } catch (error) {
-      console.error('Failed to mark notifications as read:', error);
-      res.status(500).json({ error: 'Failed to mark notifications as read' });
-    }
-  });
-
-  // DELETE /api/notifications/:id - Delete (dismiss) a notification
-  app.delete('/api/notifications/:id', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      const notificationId = parseInt(req.params.id);
-
-      if (isNaN(notificationId)) {
-        return res.status(400).json({ error: 'Invalid notification ID' });
-      }
-
-      // Delete notification (only if it belongs to the user)
-      await db.delete(schema.notifications)
-        .where(eq(schema.notifications.id, notificationId));
-
-      res.json({ message: 'Notification dismissed' });
-    } catch (error) {
-      console.error('Failed to dismiss notification:', error);
-      res.status(500).json({ error: 'Failed to dismiss notification' });
-    }
-  });
-
-  // POST /api/notifications - Create a new notification (for system use)
-  app.post('/api/notifications', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-    try {
-      const { userId, title, message, type, entityId } = req.body;
-
-      if (!userId || !title || !message || !type) {
-        return res.status(400).json({ error: 'userId, title, message, and type are required' });
-      }
-
-      const [notification] = await db.insert(schema.notifications)
-        .values({
-          userId,
-          title,
-          message,
-          type,
-          entityId,
-          isRead: false
-        })
-        .returning();
-
-      res.json(notification);
-    } catch (error) {
-      console.error('Failed to create notification:', error);
-      res.status(500).json({ error: 'Failed to create notification' });
-    }
-  });
-
-
-
-
+  // Notification routes have been moved to server/routes/notifications.ts
+  // and are mounted at /api/notifications
 
   const httpServer = createServer(app);
   return httpServer;
