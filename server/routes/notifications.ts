@@ -4,8 +4,12 @@ import * as schema from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireRole, ROLES } from '../rbac';
 import * as notificationService from '../services/notificationService';
+import notificationPreferencesRouter from './notificationPreferences';
 
 const router = Router();
+
+// Mount preferences subrouter
+router.use('/', notificationPreferencesRouter);
 
 // Define AuthUser type
 interface AuthUser {
@@ -137,6 +141,41 @@ export async function createNotification(params: {
   entityId?: number;
 }) {
   try {
+    // Check user's notification preferences
+    const prefs = await db.query.notificationPreferences.findFirst({
+      where: eq(schema.notificationPreferences.userId, params.userId)
+    });
+
+    // Determine if this notification type is enabled
+    let isEnabled = true; // Default to enabled if no preferences set
+    
+    if (prefs) {
+      // Map notification type to preference field
+      const message = params.message.toLowerCase();
+      const title = params.title.toLowerCase();
+      
+      if (params.type === 'Ticket' && (message.includes('assigned') || title.includes('assigned'))) {
+        isEnabled = prefs.ticketAssignments;
+      } else if (params.type === 'Ticket' && (message.includes('status') || title.includes('status'))) {
+        isEnabled = prefs.ticketStatusChanges;
+      } else if (params.type === 'Asset' && (message.includes('assigned') || message.includes('checked') || title.includes('assigned'))) {
+        isEnabled = prefs.assetAssignments;
+      } else if (params.type === 'Asset' && (message.includes('maintenance') || title.includes('maintenance'))) {
+        isEnabled = prefs.maintenanceAlerts;
+      } else if (message.includes('upgrade') || title.includes('upgrade')) {
+        isEnabled = prefs.upgradeRequests;
+      } else if (params.type === 'System') {
+        isEnabled = prefs.systemAnnouncements;
+      } else if (params.type === 'Employee') {
+        isEnabled = prefs.employeeChanges;
+      }
+    }
+
+    // Only create notification if user has it enabled
+    if (!isEnabled) {
+      return null; // User has disabled this notification type
+    }
+
     const [notification] = await db.insert(schema.notifications)
       .values({
         userId: params.userId,

@@ -417,6 +417,21 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Notification Preferences table
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  ticketAssignments: boolean("ticket_assignments").notNull().default(true),
+  ticketStatusChanges: boolean("ticket_status_changes").notNull().default(true),
+  assetAssignments: boolean("asset_assignments").notNull().default(true),
+  maintenanceAlerts: boolean("maintenance_alerts").notNull().default(true),
+  upgradeRequests: boolean("upgrade_requests").notNull().default(true),
+  systemAnnouncements: boolean("system_announcements").notNull().default(true),
+  employeeChanges: boolean("employee_changes").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   employees: many(employees),
@@ -426,6 +441,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   notifications: many(notifications),
   securityQuestions: many(securityQuestions),
   passwordResetTokens: many(passwordResetTokens),
+  notificationPreferences: many(notificationPreferences),
 }));
 
 // Backup Management Tables

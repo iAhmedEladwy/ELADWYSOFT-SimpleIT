@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { SecurityQuestionsSettings } from '@/components/users/SecurityQuestionsSettings';
+import { NotificationPreferences } from '@/components/users/NotificationPreferences';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Loader2, Key, User as UserIcon, Save } from 'lucide-react';
+import { Loader2, Key, User as UserIcon, Save, Bell } from 'lucide-react';
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -28,6 +29,8 @@ export default function UserProfile() {
       : 'إدارة إعدادات حسابك وتفضيلات الأمان',
     passwordTab: language === 'English' ? 'Change Password' : 'تغيير كلمة المرور',
     securityQuestionsTab: language === 'English' ? 'Security Questions' : 'أسئلة الأمان',
+    notificationsTab: language === 'English' ? 'Notifications' : 'الإشعارات',
+    profileTab: language === 'English' ? 'Profile' : 'الملف الشخصي',
     currentPassword: language === 'English' ? 'Current Password' : 'كلمة المرور الحالية',
     newPassword: language === 'English' ? 'New Password' : 'كلمة المرور الجديدة',
     confirmPassword: language === 'English' ? 'Confirm Password' : 'تأكيد كلمة المرور',
@@ -51,7 +54,6 @@ export default function UserProfile() {
     firstName: language === 'English' ? 'First Name' : 'الاسم الأول',
     lastName: language === 'English' ? 'Last Name' : 'الاسم الأخير',
     email: language === 'English' ? 'Email' : 'البريد الإلكتروني',
-    profileTab: language === 'English' ? 'Profile' : 'الملف الشخصي'
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -133,7 +135,7 @@ export default function UserProfile() {
       </div>
       
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full md:w-auto grid-cols-3">
+        <TabsList className="grid w-full md:w-auto grid-cols-4">
           <TabsTrigger value="profile">
             <UserIcon className="h-4 w-4 mr-2" />
             {translations.profileTab}
@@ -145,6 +147,10 @@ export default function UserProfile() {
           <TabsTrigger value="security-questions">
             <Key className="h-4 w-4 mr-2" />
             {translations.securityQuestionsTab}
+          </TabsTrigger>
+          <TabsTrigger value="notifications">
+            <Bell className="h-4 w-4 mr-2" />
+            {translations.notificationsTab}
           </TabsTrigger>
         </TabsList>
         
@@ -256,6 +262,10 @@ export default function UserProfile() {
         
         <TabsContent value="security-questions" className="mt-6">
           <SecurityQuestionsSettings />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-6">
+          <NotificationPreferences />
         </TabsContent>
       </Tabs>
     </div>
