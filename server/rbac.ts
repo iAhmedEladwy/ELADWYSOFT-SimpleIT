@@ -162,8 +162,12 @@ export const ROLE_PERMISSIONS = {
  * Check if user has specific permission
  */
 export function hasPermission(userRole: string, permission: string): boolean {
-  // Normalize role to title case to match ROLE_PERMISSIONS keys
-  const normalizedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
+  // Normalize role to match ROLE_PERMISSIONS keys
+  // Handle both 'admin' (from DB) and 'Admin' (from ROLES constant)
+  const normalizedRole = userRole.split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
   const rolePermissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS];
   return rolePermissions?.includes(permission as any) || false;
 }
@@ -177,14 +181,19 @@ export function canAccessResource(
   resourceOwnerId?: number,
   resourceManagerId?: number
 ): boolean {
-  // Admin can access everything
-  if (userRole === ROLES.ADMIN) return true;
+  // Normalize role for comparison
+  const normalizedRole = userRole.split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  // Super Admin and Admin can access everything
+  if (normalizedRole === ROLES.SUPER_ADMIN || normalizedRole === ROLES.ADMIN) return true;
   
   // Owner can access their own resources
   if (resourceOwnerId === userId) return true;
   
   // Manager can access subordinates' resources
-  if (userRole === ROLES.MANAGER && resourceManagerId === userId) return true;
+  if (normalizedRole === ROLES.MANAGER && resourceManagerId === userId) return true;
   
   return false;
 }
