@@ -25,12 +25,6 @@ export function NotificationBell() {
     isLoading, 
     markAllAsRead,
     markAsRead 
-  const { 
-    recentNotifications, 
-    unreadCount, 
-    isLoading, 
-    markAllAsRead,
-    markAsRead 
   } = useNotifications({ 
     limit: 10, // Only fetch latest 10 for bell dropdown performance
     refetchInterval: 30000, // Refresh every 30 seconds
