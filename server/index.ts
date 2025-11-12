@@ -5,10 +5,14 @@ import { BackupService } from './services/backupService';
 import { BackupScheduler } from './services/backupScheduler';
 import { logger } from "./services/logger";
 import { websocketService } from "./services/websocketService";
+import { performanceMiddleware } from './routes/performanceMonitor';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply performance monitoring middleware globally (before other middleware)
+app.use(performanceMiddleware);
 
 // Request logging and monitoring middleware
 app.use((req, res, next) => {

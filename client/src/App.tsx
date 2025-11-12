@@ -36,6 +36,7 @@ const UpgradeRequests = lazy(() => import("@/pages/admin/UpgradeRequests"));
 const BackupRestore = lazy(() => import('@/pages/admin/BackupRestore'));
 const SystemHealth = lazy(() => import('@/pages/admin/SystemHealth'));
 const SystemLogs = lazy(() => import('@/pages/SystemLogs'));
+const PerformanceMonitor = lazy(() => import('@/pages/PerformanceMonitor'));
 
 // Employee Portal lazy-loaded pages
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
@@ -290,6 +291,16 @@ function Router() {
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
                 <BackupRestore />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/developer-tools/performance-monitor">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
+                <PerformanceMonitor />
               </RoleGuard>
             )} />
           </Layout>

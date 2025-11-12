@@ -15,6 +15,7 @@ import notificationsRouter, { createNotification } from './routes/notifications'
 import backupRouter from './routes/backup';
 import systemHealthRouter from './routes/systemHealth';
 import systemLogsRouter from './routes/systemLogs';
+import performanceMonitorRouter from './routes/performanceMonitor';
 import * as notificationService from './services/notificationService';
 import { logger } from './services/logger';
 
@@ -723,6 +724,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SYSTEM LOGS ROUTES (Super Admin only)
   // ==========================================
   app.use('/api/system-logs', authenticateUser, systemLogsRouter);
+
+  // ==========================================
+  // DEVELOPER TOOLS ROUTES (Super Admin only)
+  // ==========================================
+  app.use('/api/developer-tools', authenticateUser, performanceMonitorRouter);
 
   // ==========================================
   // BACKUP, RESTORE & SYSTEM HEALTH ROUTES

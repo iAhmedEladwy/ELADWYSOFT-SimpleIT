@@ -355,33 +355,21 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                   <span>{translations.BackupRestore}</span>
                 </Link>
                 
-                {/* Database Console - Coming Soon */}
-                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
-                  <Database className="h-4 w-4" />
-                  <span className="flex items-center gap-2">
-                    {language === 'English' ? 'Database Console' : 'وحدة تحكم قاعدة البيانات'}
-                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
-                      {language === 'English' ? 'Soon' : 'قريباً'}
-                    </span>
-                  </span>
-                </div>
+                {/* Performance Monitor */}
+                <Link 
+                  href="/developer-tools/performance-monitor" 
+                  className={`${getLinkClass('/developer-tools/performance-monitor')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{language === 'English' ? 'Performance Monitor' : 'مراقب الأداء'}</span>
+                </Link>
                 
                 {/* API Tester - Coming Soon */}
                 <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
                   <Zap className="h-4 w-4" />
                   <span className="flex items-center gap-2">
                     {language === 'English' ? 'API Tester' : 'مختبر API'}
-                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
-                      {language === 'English' ? 'Soon' : 'قريباً'}
-                    </span>
-                  </span>
-                </div>
-                
-                {/* Performance Monitor - Coming Soon */}
-                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
-                  <Activity className="h-4 w-4" />
-                  <span className="flex items-center gap-2">
-                    {language === 'English' ? 'Performance Monitor' : 'مراقب الأداء'}
                     <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
                       {language === 'English' ? 'Soon' : 'قريباً'}
                     </span>

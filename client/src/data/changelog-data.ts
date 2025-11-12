@@ -14,6 +14,47 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "0.4.8",
+    date: "2025-11-12",
+    title: "Performance Monitor & Developer Tools Reorganization",
+    type: "minor",
+    changes: {
+      features: [
+        "📊 Performance Monitor - Real-time application performance analysis and bottleneck detection:",
+        "   • Live API endpoint metrics (response times, request counts, error rates)",
+        "   • Percentile calculations (P50/P95/P99) for detailed latency analysis",
+        "   • Performance trend charts with configurable time ranges (1h/6h/24h/7d)",
+        "   • System metrics dashboard (CPU, Memory, Active Connections, Cache Hit Ratio)",
+        "   • Slow query detection and ranking by execution time",
+        "   • Hot path identification (most-used API routes)",
+        "   • Color-coded performance indicators (green/yellow/red thresholds)",
+        "   • Auto-refresh every 30 seconds with manual refresh option",
+        "   • In-memory circular buffer tracking last 1000 requests",
+        "   • Bilingual support (English/Arabic) for all UI elements",
+        "🔧 Performance Middleware - Global request tracking for all API endpoints:",
+        "   • Automatic timing measurement for every HTTP request",
+        "   • Response time tracking with millisecond precision",
+        "   • Status code logging for error rate calculations",
+        "   • Non-blocking background performance data collection",
+      ],
+      improvements: [
+        "🏗️ Developer Tools Reorganization - Moved infrastructure tools from Admin Console:",
+        "   • Backup & Restore → Developer Tools (Super Admin only)",
+        "   • System Health → Developer Tools (Super Admin only)",
+        "   • Clear separation: Admin Console (user management) vs Developer Tools (technical debugging)",
+        "   • Legacy route redirects for backward compatibility",
+        "🔐 Enhanced Access Control - Developer Tools now require Super Admin (level 5) instead of Admin (level 4)",
+        "🗑️ Database Console Removed - Eliminated risky direct SQL access in favor of safer Performance Monitor",
+        "📱 Navigation Improvements - Auto-expanding Developer Tools submenu when viewing any tool",
+        "🎨 Visual Distinction - Developer Tools menu highlighted with yellow border for technical emphasis",
+      ],
+      security: [
+        "🛡️ Restricted Developer Tools - Super Admin exclusive access to all developer features",
+        "🔒 Performance Data Privacy - Only tracks aggregated metrics, no sensitive data logged",
+      ],
+    }
+  },
+  {
     version: "0.4.7",
     date: "2025-11-11",
     title: "Complete In-App Notification System & System Logging",
