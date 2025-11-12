@@ -392,12 +392,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the password
       const hashedPassword = await hash(password, 10);
       
-      // Create the admin user
+      // Create the super admin user (first user gets highest privileges)
       const adminUser = await storage.createUser({
         username,
         password: hashedPassword,
         email: email || null,
-        role: "admin", // Admin role
+        role: "super_admin", // First user gets super_admin role
       });
       
       // Get/create system config with defaults if it doesn't exist
@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: AuditAction.CREATE,
         entityType: EntityType.USER,
         entityId: adminUser.id,
-        details: { message: "Initial system setup completed" }
+        details: { message: "Initial system setup completed - Super Admin created" }
       });
       
       res.status(201).json({ 
