@@ -36,8 +36,11 @@
     
     <!-- Service Worker Registration -->
     <script>
-      // Register service worker for PWA functionality
-      if ('serviceWorker' in navigator) {
+      // ONLY register service worker in production (not during development)
+      // Development mode: Service worker disabled to prevent caching issues
+      const isProduction = window.location.protocol === 'https:' || window.location.hostname === 'production-domain.com';
+      
+      if ('serviceWorker' in navigator && isProduction) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
             .register('/sw.js')
@@ -54,11 +57,8 @@
                     // New service worker is ready, notify user
                     console.log('[PWA] New version available! Refresh to update.');
                     
-                    // Optionally auto-update after a delay
-                    // setTimeout(() => {
-                    //   newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    //   window.location.reload();
-                    // }, 5000);
+                    // Auto-update: Skip waiting and reload
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
                   }
                 });
               });
@@ -78,7 +78,17 @@
           }
         });
       } else {
-        console.warn('[PWA] Service Workers are not supported in this browser');
+        console.log('[PWA] Service Worker disabled in development mode');
+        
+        // Unregister any existing service workers in development
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => {
+              registration.unregister();
+              console.log('[PWA] Unregistered service worker:', registration.scope);
+            });
+          });
+        }
       }
       
       // Handle online/offline events

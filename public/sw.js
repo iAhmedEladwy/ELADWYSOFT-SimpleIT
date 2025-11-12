@@ -1,14 +1,15 @@
 /**
  * SimpleIT Service Worker
- * Version: 1.0.0
+ * Version: 1.1.0
  * 
  * Implements basic caching strategies:
  * - Network-first for API calls (always fetch fresh data)
+ * - Network-first for Vite hashed assets (avoid stale cache)
  * - Cache-first for static assets (performance)
  * - Offline fallback page for failed requests
  */
 
-const CACHE_NAME = 'simpleit-v1';
+const CACHE_NAME = 'simpleit-v1.1';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install
@@ -86,7 +87,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 2: Cache-first for static assets
+  // Strategy 2: Network-first for Vite hashed assets (index-*.js, index-*.css)
+  // These files have content hashes, so always fetch new versions
+  if (url.pathname.includes('/assets/') && (url.pathname.includes('-') || url.pathname.match(/\.[a-zA-Z0-9]{8,}\.(js|css)$/))) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // Strategy 3: Cache-first for other static assets
   // Serve from cache if available, fallback to network
   event.respondWith(cacheFirst(request));
 });
