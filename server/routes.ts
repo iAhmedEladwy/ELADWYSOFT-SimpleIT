@@ -7563,6 +7563,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
                 oldStatus,
                 newStatus,
                 ticketTitle: updatedTicket.title || 'Support Ticket',
+                entityId: updatedTicket.id,
               });
               console.log(`[Notification] PATCH: Status change notification sent to submitter`);
             }
@@ -7576,6 +7577,7 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
               oldStatus,
               newStatus,
               ticketTitle: updatedTicket.title || 'Support Ticket',
+              entityId: updatedTicket.id,
             });
             console.log(`[Notification] PATCH: Status change notification sent to assignee`);
           }

@@ -46,20 +46,21 @@ export async function notifyTicketAssignment(params: {
  * Create a notification for ticket status change
  */
 export async function notifyTicketStatusChange(params: {
-  ticketId: number;
+  ticketId: string | number;  // Accept ticket ID string (TKT-000008) or database ID
   userId: number;
   oldStatus: string;
   newStatus: string;
   ticketTitle: string;
+  entityId?: number;  // Optional: database ID for linking
 }) {
-  const { ticketId, userId, oldStatus, newStatus, ticketTitle } = params;
+  const { ticketId, userId, oldStatus, newStatus, ticketTitle, entityId } = params;
 
   return createNotification({
     userId,
-    title: `Ticket #${ticketId} Status Updated`,
+    title: `Ticket ${ticketId} Status Updated`,
     message: `Ticket "${ticketTitle}" status changed from ${oldStatus} to ${newStatus}`,
     type: 'Ticket',
-    entityId: ticketId,
+    entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
   });
 }
 
