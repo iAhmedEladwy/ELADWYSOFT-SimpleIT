@@ -109,6 +109,32 @@ export async function notifyAssetAssignment(params: {
 }
 
 /**
+ * Create a notification for asset unassignment
+ */
+export async function notifyAssetUnassignment(params: {
+  assetId: number;
+  userId: number;
+  assetName: string;
+  assetTag?: string;
+  unassignedBy?: string;
+}) {
+  const { assetId, userId, assetName, assetTag, unassignedBy } = params;
+
+  const displayName = assetTag ? `${assetName} (${assetTag})` : assetName;
+  const message = unassignedBy
+    ? `Asset "${displayName}" has been unassigned by ${unassignedBy}`
+    : `Asset "${displayName}" has been unassigned`;
+
+  return createNotification({
+    userId,
+    title: 'Asset Unassigned',
+    message,
+    type: 'Asset',
+    entityId: assetId,
+  });
+}
+
+/**
  * Create a notification for asset return/checkout
  */
 export async function notifyAssetTransaction(params: {

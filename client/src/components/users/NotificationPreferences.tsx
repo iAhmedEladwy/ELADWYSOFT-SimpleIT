@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Bell } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import NotificationSettings from '@/components/notifications/NotificationSettings';
 
 interface NotificationPreferencesData {
   ticketAssignments: boolean;
@@ -170,37 +171,43 @@ export function NotificationPreferences() {
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
-          {t.title}
-        </CardTitle>
-        <CardDescription>{t.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {preferenceItems.map(({ key, label, description }) => (
-          <div key={key} className="flex items-center justify-between space-x-2 py-3 border-b last:border-0">
-            <div className="flex-1">
-              <Label htmlFor={key} className="text-sm font-medium cursor-pointer">
-                {label}
-              </Label>
-              <p className="text-sm text-muted-foreground mt-1">{description}</p>
+    <div className="space-y-6">
+      {/* Sound and Polling Settings */}
+      <NotificationSettings />
+      
+      {/* Notification Type Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            {t.title}
+          </CardTitle>
+          <CardDescription>{t.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {preferenceItems.map(({ key, label, description }) => (
+            <div key={key} className="flex items-center justify-between space-x-2 py-3 border-b last:border-0">
+              <div className="flex-1">
+                <Label htmlFor={key} className="text-sm font-medium cursor-pointer">
+                  {label}
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {savingKey === key && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                <Switch
+                  id={key}
+                  checked={preferences[key]}
+                  onCheckedChange={() => handleToggle(key)}
+                  disabled={savingKey === key}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {savingKey === key && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-              <Switch
-                id={key}
-                checked={preferences[key]}
-                onCheckedChange={() => handleToggle(key)}
-                disabled={savingKey === key}
-              />
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

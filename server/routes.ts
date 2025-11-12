@@ -3214,7 +3214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Asset is not assigned to any employee" });
       }
       
-      // Get employee details for activity log
+      // Get employee details for activity log and notification
       const employee = await storage.getEmployee(asset.assignedEmployeeId);
       
       // Update asset
@@ -3237,6 +3237,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             employeeId: employee.empId
           }
         });
+
+        // Notify employee that asset was unassigned
+        if (employee.userId) {
+          await notificationService.notifyAssetUnassignment({
+            assetId: id,
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${id}`,
+            assetTag: asset.assetId,
+            unassignedBy: (req.user as schema.User).username,
+          });
+        }
       }
       
       res.json(updatedAsset);
@@ -4968,6 +4979,21 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
               oldStatus: currentTicket.status,
               newStatus: updatedTicket.status,
               ticketTitle: updatedTicket.title || 'Support Request',
+            });
+          }
+        }
+
+        // Notify if priority became urgent (Critical, High, or Urgent) when it wasn't before
+        if (ticketData.priority && updatedTicket.priority) {
+          const wasUrgent = currentTicket.priority === 'Critical' || currentTicket.priority === 'High' || currentTicket.priority === 'Urgent';
+          const isNowUrgent = updatedTicket.priority === 'Critical' || updatedTicket.priority === 'High' || updatedTicket.priority === 'Urgent';
+          
+          if (!wasUrgent && isNowUrgent && updatedAssignedToId) {
+            await notificationService.notifyUrgentTicket({
+              ticketId: id,
+              assignedToUserId: updatedAssignedToId,
+              ticketTitle: updatedTicket.title || 'Support Request',
+              priority: updatedTicket.priority,
             });
           }
         }
