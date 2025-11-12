@@ -4869,8 +4869,32 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             });
           }
         }
+        
+        // Notify about assignment change (when assignedToId changes from null or different value)
+        if (ticketData.assignedToId !== undefined && ticketData.assignedToId !== currentTicket.assignedToId) {
+          if (ticketData.assignedToId) {
+            const priority = updatedTicket.priority || 'Medium';
+            const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+            
+            if (isUrgent) {
+              await notificationService.notifyUrgentTicket({
+                ticketId: id,
+                assignedToUserId: ticketData.assignedToId,
+                ticketTitle: updatedTicket.title || 'Support Request',
+                priority,
+              });
+            } else {
+              await notificationService.notifyTicketAssignment({
+                ticketId: id,
+                assignedToUserId: ticketData.assignedToId,
+                ticketTitle: updatedTicket.title || 'Support Request',
+                assignedByUsername: (req.user as schema.User)?.username,
+              });
+            }
+          }
+        }
       } catch (notifError) {
-        console.error('Failed to create status change notification:', notifError);
+        console.error('Failed to create notification:', notifError);
         // Don't fail the request if notification creation fails
       }
       
