@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import * as schema from '@shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import { requireRole, ROLES } from '../rbac';
 import * as notificationService from '../services/notificationService';
 import notificationPreferencesRouter from './notificationPreferences';
@@ -63,10 +63,15 @@ router.post('/mark-read', async (req, res) => {
       return res.status(400).json({ error: 'notificationIds array is required' });
     }
 
-    // Update notifications to mark as read
+    // Update only the specified notifications
     await db.update(schema.notifications)
       .set({ isRead: true })
-      .where(eq(schema.notifications.userId, user.id));
+      .where(
+        and(
+          eq(schema.notifications.userId, user.id),
+          inArray(schema.notifications.id, notificationIds)
+        )
+      );
 
     res.json({ message: 'Notifications marked as read' });
   } catch (error) {

@@ -4683,6 +4683,33 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           }
         });
         
+        // Notify assigned user if ticket is assigned during creation
+        if (newTicket.assignedToId) {
+          try {
+            const priority = newTicket.priority || 'Medium';
+            const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+            
+            if (isUrgent) {
+              await notificationService.notifyUrgentTicket({
+                ticketId: newTicket.id,
+                assignedToUserId: newTicket.assignedToId,
+                ticketTitle: newTicket.title,
+                priority,
+              });
+            } else {
+              await notificationService.notifyTicketAssignment({
+                ticketId: newTicket.id,
+                assignedToUserId: newTicket.assignedToId,
+                ticketTitle: newTicket.title,
+                assignedByUsername: req.user?.username,
+              });
+            }
+          } catch (notifError) {
+            console.error('Failed to create ticket assignment notification:', notifError);
+            // Don't fail the request if notification fails
+          }
+        }
+        
         console.log("Ticket created successfully:", newTicket);
         res.status(201).json(newTicket);
       } catch (error: unknown) {
@@ -4895,6 +4922,31 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             newStatus: updatedTicket?.status
           }
         });
+      }
+      
+      // Notify assigned user
+      try {
+        const priority = ticket.priority || 'Medium';
+        const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+        
+        if (isUrgent) {
+          await notificationService.notifyUrgentTicket({
+            ticketId: id,
+            assignedToUserId: parseInt(userId),
+            ticketTitle: ticket.title,
+            priority,
+          });
+        } else {
+          await notificationService.notifyTicketAssignment({
+            ticketId: id,
+            assignedToUserId: parseInt(userId),
+            ticketTitle: ticket.title,
+            assignedByUsername: (req.user as schema.User)?.username,
+          });
+        }
+      } catch (notifError) {
+        console.error('Failed to create ticket assignment notification:', notifError);
+        // Don't fail the request if notification fails
       }
       
       res.json(updatedTicket);
