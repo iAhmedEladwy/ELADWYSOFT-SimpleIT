@@ -302,14 +302,14 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           <div className="space-y-1">
             {/* System Manager Parent Menu */}
             <div 
-              className={`${getLinkClass('/developer-tools')} cursor-pointer justify-between border-l-2 border-blue-500 bg-gradient-to-r from-blue-50 to-transparent`}
+              className={`${getLinkClass('/developer-tools')} cursor-pointer justify-between border-l-2 border-purple-500 bg-gradient-to-r from-purple-50 to-transparent`}
               onClick={(e) => {
                 e.preventDefault();
                 toggleSystemManager();
               }}
             >
               <div className="flex items-center gap-3">
-                <Wrench className="h-5 w-5 text-blue-600" />
+                <Wrench className="h-5 w-5 text-purple-600" />
                 <span className="flex items-center gap-2">
                   {translations.SystemManager}
                 </span>
@@ -323,7 +323,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             
             {/* System Manager Submenu Items */}
             {isSystemManagerOpen && (
-              <div className={`ml-6 space-y-1 border-l-2 border-blue-200 dark:border-blue-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
+              <div className={`ml-6 space-y-1 border-l-2 border-purple-200 dark:border-purple-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
                 {/* System Logs */}
                 <Link 
                   href="/developer-tools/system-logs" 

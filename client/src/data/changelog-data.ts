@@ -48,7 +48,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "🔐 Enhanced Access Control - System Manager tools require Super Admin (level 5) instead of Admin (level 4)",
         "🗑️ Database Console Removed - Eliminated risky direct SQL access in favor of safer Performance Monitor",
         "📱 Navigation Improvements - Auto-expanding System Manager submenu when viewing any tool",
-        "🎨 Visual Distinction - System Manager menu highlighted with blue border",
+        "🎨 Visual Distinction - System Manager menu highlighted with purple border for technical emphasis",
       ],
       security: [
         "🛡️ Restricted Developer Tools - Super Admin exclusive access to all developer features",
