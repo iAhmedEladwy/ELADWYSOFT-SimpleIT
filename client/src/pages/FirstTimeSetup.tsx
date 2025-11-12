@@ -58,7 +58,7 @@ export default function FirstTimeSetup() {
       
       toast({
         title: 'Setup complete',
-        description: 'Your admin account has been created. You can now log in.',
+        description: 'Your Super Admin account has been created. You can now log in.',
       });
       
       // Invalidate queries to ensure fresh data
@@ -92,7 +92,7 @@ export default function FirstTimeSetup() {
         </CardHeader>
         <CardContent>
           <div className="mb-4 text-center text-sm text-gray-600">
-            Create your administrator account to get started with SimpleIT Asset Management System
+            Create your Super Administrator account to get started with SimpleIT Asset Management System
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
