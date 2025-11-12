@@ -467,7 +467,11 @@ export default function AssetFilters({
             )}
             {filters.type && (
               <Badge variant="outline" className="gap-1">
-                {translations.type}: {filters.type}
+                {translations.type}: {Array.isArray(filters.type) 
+                  ? filters.type.length === 1 
+                    ? filters.type[0] 
+                    : `${filters.type.length} selected`
+                  : filters.type}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('type', undefined)}
@@ -476,7 +480,11 @@ export default function AssetFilters({
             )}
             {filters.brand && (
               <Badge variant="outline" className="gap-1">
-                {translations.brand}: {filters.brand}
+                {translations.brand}: {Array.isArray(filters.brand)
+                  ? filters.brand.length === 1
+                    ? filters.brand[0]
+                    : `${filters.brand.length} selected`
+                  : filters.brand}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('brand', undefined)}
@@ -494,7 +502,11 @@ export default function AssetFilters({
             )}
             {filters.status && (
               <Badge variant="outline" className="gap-1">
-                {translations.status}: {filters.status}
+                {translations.status}: {Array.isArray(filters.status)
+                  ? filters.status.length === 1
+                    ? filters.status[0]
+                    : `${filters.status.length} selected`
+                  : filters.status}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('status', undefined)}
