@@ -254,28 +254,6 @@ function Router() {
           </Layout>
         </Route>
 
-                {/* NEW: Backup & Restore Route */}
-        <Route path="/admin-console/backup-restore">
-          <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
-                <BackupRestore />
-              </RoleGuard>
-            )} />
-          </Layout>
-        </Route>
-
-        {/* NEW: System Health Route */}
-        <Route path="/admin-console/system-health">
-          <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
-                <SystemHealth />
-              </RoleGuard>
-            )} />
-          </Layout>
-        </Route>
-
         {/* Developer Tools Routes - Redirect root to system-logs */}
         <Route path="/developer-tools">
           <Layout>
@@ -297,14 +275,51 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Legacy route - redirect to new location */}
-        <Route path="/admin-console/system-logs">
+        <Route path="/developer-tools/system-health">
           <Layout>
             <PrivateRoute component={() => (
               <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
-                <SystemLogs />
+                <SystemHealth />
               </RoleGuard>
             )} />
+          </Layout>
+        </Route>
+
+        <Route path="/developer-tools/backup-restore">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
+                <BackupRestore />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        {/* Legacy routes - redirect to new Developer Tools locations */}
+        <Route path="/admin-console/backup-restore">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/backup-restore';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/system-health">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/system-health';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/system-logs">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/system-logs';
+              return null;
+            }} />
           </Layout>
         </Route>
 

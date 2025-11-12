@@ -263,26 +263,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                   <span>{translations.Users}</span>
                 </Link>
                 
-                {/* Backup & Restore - NEW */}
-                <Link 
-                  href="/admin-console/backup-restore" 
-                  className={`${getLinkClass('/admin-console/backup-restore')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                  onClick={handleLinkClick}
-                >
-                  <Database className="h-4 w-4" />
-                  <span>{translations.BackupRestore}</span>
-                </Link>
-                
-                {/* System Health - NEW */}
-                <Link 
-                  href="/admin-console/system-health" 
-                  className={`${getLinkClass('/admin-console/system-health')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                  onClick={handleLinkClick}
-                >
-                  <Activity className="h-4 w-4" />
-                  <span>{translations.SystemHealth}</span>
-                </Link>
-                
                 {/* Audit Logs */}
                 <Link 
                   href="/admin-console/audit-logs" 
@@ -353,6 +333,26 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                 >
                   <Terminal className="h-4 w-4" />
                   <span>{translations.SystemLogs}</span>
+                </Link>
+                
+                {/* System Health */}
+                <Link 
+                  href="/developer-tools/system-health" 
+                  className={`${getLinkClass('/developer-tools/system-health')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{translations.SystemHealth}</span>
+                </Link>
+                
+                {/* Backup & Restore */}
+                <Link 
+                  href="/developer-tools/backup-restore" 
+                  className={`${getLinkClass('/developer-tools/backup-restore')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Database className="h-4 w-4" />
+                  <span>{translations.BackupRestore}</span>
                 </Link>
                 
                 {/* Database Console - Coming Soon */}
