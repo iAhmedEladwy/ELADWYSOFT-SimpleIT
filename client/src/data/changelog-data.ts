@@ -14,10 +14,10 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
-    version: "0.4.7",
+    version: "1.0.0",
     date: "2025-11-12",
-    title: "In-App Notifications & Performance Monitor",
-    type: "minor",
+    title: "🎉 Stable Release - Production-Ready Asset Management",
+    type: "major",
     changes: {
       features: [
         "🔔 In-App Notification System - Real-time notifications for all major events",
@@ -35,15 +35,29 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Employee onboarding/offboarding reminders",
         "   • System announcements from admins",
         "⚙️ Notification Preferences - Control which notifications you receive in User Profile",
-        "📡 Broadcast Announcements - Admins can send system-wide messages to specific roles",
+        "� Performance Monitor - Real-time system performance analysis",
+        "�📡 Broadcast Announcements - Admins can send system-wide messages to specific roles",
+        "📱 Progressive Web App (PWA) - Install SimpleIT as native app on any device",
+        "� Complete Ticket Management - Kanban board, filters, assignments, categories",
+        "📦 Full Asset Lifecycle - Tracking, history, depreciation, maintenance",
+        "👥 Employee Portal - Self-service dashboard for employees",
+        "🔐 Comprehensive RBAC - 4-tier role hierarchy with granular permissions",
+        "🌍 Bilingual Support - Complete English/Arabic localization",
+        "💾 System Management - Backups, logs, performance monitoring, system health",
       ],
       improvements: [
-        "🎨 Better visual indicators for notification types",
-        "⏰ Human-readable timestamps (e.g., '5 minutes ago')",
-        "📱 Full bilingual support (English/Arabic) for all notification features",
+        "🎨 Polished UI/UX with modern design system",
+        "⚡ Optimized performance and caching",
+        "📱 Mobile-responsive across all pages",
+        "🔒 Enhanced security with latest dependency updates",
+        "📊 Advanced filtering and search capabilities",
+        "📈 Comprehensive reporting and analytics",
+        "⏰ Human-readable timestamps throughout",
       ],
       security: [
-        "🔐 Updated dependencies to fix security vulnerabilities",
+        "🔐 Updated all dependencies to fix security vulnerabilities",
+        "🔒 Enhanced access control for system management tools",
+        "🛡️ Rate limiting and session security",
       ],
     }
   },
