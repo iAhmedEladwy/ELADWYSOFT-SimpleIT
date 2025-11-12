@@ -21,23 +21,24 @@ export interface NotificationTemplate {
  * Create a notification for ticket assignment
  */
 export async function notifyTicketAssignment(params: {
-  ticketId: number;
+  ticketId: string | number;  // Accept ticket ID string (TKT-000008) or database ID
   assignedToUserId: number;
   ticketTitle: string;
   assignedByUsername?: string;
+  entityId?: number;  // Optional: database ID for linking
 }) {
-  const { ticketId, assignedToUserId, ticketTitle, assignedByUsername } = params;
+  const { ticketId, assignedToUserId, ticketTitle, assignedByUsername, entityId } = params;
   
   const message = assignedByUsername 
-    ? `${assignedByUsername} assigned you ticket #${ticketId}: ${ticketTitle}`
-    : `You have been assigned ticket #${ticketId}: ${ticketTitle}`;
+    ? `${assignedByUsername} assigned you ticket ${ticketId}: ${ticketTitle}`
+    : `You have been assigned ticket ${ticketId}: ${ticketTitle}`;
 
   return createNotification({
     userId: assignedToUserId,
-    title: `Ticket #${ticketId} Assigned to You`,
+    title: `Ticket ${ticketId} Assigned to You`,
     message,
     type: 'Ticket',
-    entityId: ticketId,
+    entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
   });
 }
 
@@ -66,19 +67,20 @@ export async function notifyTicketStatusChange(params: {
  * Create a notification for urgent ticket assignment
  */
 export async function notifyUrgentTicket(params: {
-  ticketId: number;
+  ticketId: string | number;  // Accept ticket ID string (TKT-000008) or database ID
   assignedToUserId: number;
   ticketTitle: string;
   priority: string;
+  entityId?: number;  // Optional: database ID for linking
 }) {
-  const { ticketId, assignedToUserId, ticketTitle, priority } = params;
+  const { ticketId, assignedToUserId, ticketTitle, priority, entityId } = params;
 
   return createNotification({
     userId: assignedToUserId,
-    title: `🚨 Urgent: Ticket #${ticketId} Assigned`,
+    title: `🚨 Urgent: Ticket ${ticketId} Assigned`,
     message: `HIGH PRIORITY (${priority}): ${ticketTitle} - Please address immediately`,
     type: 'Ticket',
-    entityId: ticketId,
+    entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
   });
 }
 

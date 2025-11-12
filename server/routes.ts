@@ -4718,27 +4718,30 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         // Notify assigned user if ticket is assigned during creation
         // Handle both camelCase (assignedToId) and snake_case (assigned_to_id) from database
         const assignedUserId = (newTicket as any).assignedToId || (newTicket as any).assigned_to_id;
+        const ticketIdString = (newTicket as any).ticketId || (newTicket as any).ticket_id || `#${newTicket.id}`;
         
         if (assignedUserId) {
           try {
             const priority = newTicket.priority || 'Medium';
             const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
             
-            console.log(`[Notification] Creating notification for ticket ${newTicket.id} assigned to user ${assignedUserId}`);
+            console.log(`[Notification] Creating notification for ticket ${ticketIdString} assigned to user ${assignedUserId}`);
             
             if (isUrgent) {
               await notificationService.notifyUrgentTicket({
-                ticketId: newTicket.id,
+                ticketId: ticketIdString,
                 assignedToUserId: assignedUserId,
                 ticketTitle: newTicket.title,
                 priority,
+                entityId: newTicket.id,  // Pass database ID for linking
               });
             } else {
               await notificationService.notifyTicketAssignment({
-                ticketId: newTicket.id,
+                ticketId: ticketIdString,
                 assignedToUserId: assignedUserId,
                 ticketTitle: newTicket.title,
                 assignedByUsername: req.user?.username,
+                entityId: newTicket.id,  // Pass database ID for linking
               });
             }
             console.log(`[Notification] Successfully created notification for user ${assignedUserId}`);
