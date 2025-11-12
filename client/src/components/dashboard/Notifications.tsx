@@ -27,7 +27,9 @@ export default function Notifications() {
     dismissNotification
   } = useNotifications({
     limit: 100, // Dashboard shows more notifications than bell
-    refetchInterval: 30000 // Auto-refresh every 30 seconds
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    pollingStrategy: 'adaptive', // 30s when focused, 60s when not focused
+    enableSound: true // Enable sound notifications
   });
 
   const isLoading = authLoading || dbNotificationsLoading;
