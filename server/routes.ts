@@ -3089,6 +3089,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset or Employee not found" });
       }
       
+      // NOTIFICATION: Notify employee about quick asset assignment
+      try {
+        const asset = await storage.getAsset(assetId);
+        const employee = await storage.getEmployee(parseInt(employeeId));
+        
+        if (employee?.userId && asset) {
+          console.log(`[Notification] Creating quick assignment notification for user ${employee.userId}`);
+          await notificationService.notifyAssetAssignment({
+            assetId,
+            employeeId: parseInt(employeeId),
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            assetTag: asset.assetId,
+          });
+          console.log(`[Notification] Quick assignment notification created successfully`);
+        }
+      } catch (notifError) {
+        console.error('[Notification] Failed to create quick assignment notification:', notifError);
+        logger.error('assets', 'Failed to create quick assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
+      
       res.json({ 
         message: "Asset assigned successfully", 
         asset: updatedAsset 
@@ -3141,6 +3167,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             employeeId: employee.empId
           }
         });
+      }
+      
+      // NOTIFICATION: Notify employee about asset assignment
+      try {
+        if (employee.userId) {
+          console.log(`[Notification] Creating asset assignment notification for user ${employee.userId}`);
+          await notificationService.notifyAssetAssignment({
+            assetId: id,
+            employeeId: parseInt(employeeId),
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${id}`,
+            assetTag: asset.assetId,
+          });
+          console.log(`[Notification] Asset assignment notification created successfully`);
+        } else {
+          console.warn(`[Notification] Employee ${employeeId} has no userId - cannot send notification`);
+        }
+      } catch (notifError) {
+        console.error('[Notification] Failed to create asset assignment notification:', notifError);
+        logger.error('assets', 'Failed to create assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId: id, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
       }
       
       res.json(updatedAsset);
