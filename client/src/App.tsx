@@ -255,7 +255,7 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Developer Tools Routes - Redirect root to system-logs */}
+        {/* System Manager Routes - Redirect root to system-logs */}
         <Route path="/developer-tools">
           <Layout>
             <PrivateRoute component={() => {
@@ -306,7 +306,7 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Legacy routes - redirect to new Developer Tools locations */}
+        {/* Legacy routes - redirect to new System Manager locations */}
         <Route path="/admin-console/backup-restore">
           <Layout>
             <PrivateRoute component={() => {

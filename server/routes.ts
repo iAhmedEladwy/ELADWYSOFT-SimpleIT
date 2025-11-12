@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/system-logs', authenticateUser, systemLogsRouter);
 
   // ==========================================
-  // DEVELOPER TOOLS ROUTES (Super Admin only)
+  // SYSTEM MANAGER ROUTES (Super Admin only)
   // ==========================================
   app.use('/api/developer-tools', authenticateUser, performanceMonitorRouter);
 

@@ -16,7 +16,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
     version: "0.4.8",
     date: "2025-11-12",
-    title: "Performance Monitor & Developer Tools Reorganization",
+    title: "Performance Monitor & System Manager",
     type: "minor",
     changes: {
       features: [
@@ -38,15 +38,17 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Non-blocking background performance data collection",
       ],
       improvements: [
-        "🏗️ Developer Tools Reorganization - Moved infrastructure tools from Admin Console:",
-        "   • Backup & Restore → Developer Tools (Super Admin only)",
-        "   • System Health → Developer Tools (Super Admin only)",
-        "   • Clear separation: Admin Console (user management) vs Developer Tools (technical debugging)",
+        "🏗️ System Manager - Renamed from 'Developer Tools' for better clarity:",
+        "   • Backup & Restore → System Manager (Super Admin only)",
+        "   • System Health → System Manager (Super Admin only)",
+        "   • Performance Monitor → System Manager (Super Admin only)",
+        "   • System Logs → System Manager (Super Admin only)",
+        "   • Clear separation: Admin Console (user management) vs System Manager (infrastructure)",
         "   • Legacy route redirects for backward compatibility",
-        "🔐 Enhanced Access Control - Developer Tools now require Super Admin (level 5) instead of Admin (level 4)",
+        "🔐 Enhanced Access Control - System Manager tools require Super Admin (level 5) instead of Admin (level 4)",
         "🗑️ Database Console Removed - Eliminated risky direct SQL access in favor of safer Performance Monitor",
-        "📱 Navigation Improvements - Auto-expanding Developer Tools submenu when viewing any tool",
-        "🎨 Visual Distinction - Developer Tools menu highlighted with yellow border for technical emphasis",
+        "📱 Navigation Improvements - Auto-expanding System Manager submenu when viewing any tool",
+        "🎨 Visual Distinction - System Manager menu highlighted with blue border",
       ],
       security: [
         "🛡️ Restricted Developer Tools - Super Admin exclusive access to all developer features",
