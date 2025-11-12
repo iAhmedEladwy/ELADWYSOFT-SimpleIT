@@ -3292,6 +3292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (assignedEmployee?.userId) {
             if (requestData.status === 'Scheduled' || requestData.status === 'In Progress') {
               // Notify about scheduled maintenance
+              console.log(`[Notification] Creating maintenance scheduled notification for user ${assignedEmployee.userId}`);
               await notificationService.notifyMaintenanceScheduled({
                 assetId,
                 userId: assignedEmployee.userId,
@@ -3301,6 +3302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             } else if (requestData.status === 'Completed') {
               // Notify about completed maintenance
+              console.log(`[Notification] Creating maintenance completed notification for user ${assignedEmployee.userId}`);
               await notificationService.notifyMaintenanceCompleted({
                 assetId,
                 userId: assignedEmployee.userId,
@@ -3312,6 +3314,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (notifError) {
         console.error('Failed to create maintenance notification:', notifError);
+        logger.error('maintenance', 'Failed to create maintenance notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, maintenanceId: maintenance.id },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
         // Don't fail the request if notification creation fails
       }
       
@@ -3758,14 +3765,20 @@ app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (
       const isApprovalDecision = statusChanged && (req.body.status === 'Approved' || req.body.status === 'Rejected');
       
       if (isApprovalDecision) {
+        // Handle snake_case from raw SQL query
+        const assetId = existing.asset_id;
+        const createdById = existing.created_by_id;
+        
         // Get the asset to find its name
-        const asset = await storage.getAsset(existing.asset_id);
+        const asset = await storage.getAsset(assetId);
         
         // Get the original requester (created_by_id)
-        const requesterUser = await storage.getUser(existing.created_by_id);
+        const requesterUser = await storage.getUser(createdById);
         
         if (requesterUser && asset) {
           const approver = req.user as schema.User;
+          
+          console.log(`[Notification] Creating upgrade decision notification for user ${requesterUser.id}`);
           
           await notificationService.notifyUpgradeDecision({
             upgradeId,
@@ -3774,10 +3787,17 @@ app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (
             approved: req.body.status === 'Approved',
             approvedBy: approver.username,
           });
+          
+          console.log(`[Notification] Successfully created upgrade decision notification`);
         }
       }
     } catch (notifError) {
       console.error('Failed to create upgrade decision notification:', notifError);
+      logger.error('upgrades', 'Failed to create upgrade decision notification', {
+        userId: (req.user as schema.User)?.id,
+        metadata: { upgradeId },
+        error: notifError instanceof Error ? notifError : new Error(String(notifError))
+      });
       // Don't fail the request if notification creation fails
     }
         
@@ -4324,6 +4344,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       // Notify employee about asset check-out
       try {
         if (employee.userId) {
+          console.log(`[Notification] Creating asset check-out notification for user ${employee.userId}`);
           await notificationService.notifyAssetTransaction({
             assetId,
             userId: employee.userId,
@@ -4333,6 +4354,11 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         }
       } catch (notifError) {
         console.error('Failed to create check-out notification:', notifError);
+        logger.error('assets', 'Failed to create check-out notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
         // Don't fail the request if notification creation fails
       }
       
@@ -4389,6 +4415,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         if (asset.assignedEmployeeId) {
           const previousEmployee = await storage.getEmployee(asset.assignedEmployeeId);
           if (previousEmployee?.userId) {
+            console.log(`[Notification] Creating asset check-in notification for user ${previousEmployee.userId}`);
             await notificationService.notifyAssetTransaction({
               assetId,
               userId: previousEmployee.userId,
@@ -4399,6 +4426,11 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         }
       } catch (notifError) {
         console.error('Failed to create check-in notification:', notifError);
+        logger.error('assets', 'Failed to create check-in notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
         // Don't fail the request if notification creation fails
       }
       
