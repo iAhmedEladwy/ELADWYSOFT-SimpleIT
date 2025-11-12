@@ -7492,6 +7492,12 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Get old ticket BEFORE update for comparison
+      const oldTicket = await storage.getTicket(ticketId);
+      if (!oldTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
       // Use updateTicketWithHistory to ensure proper tracking
       const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
       if (!updatedTicket) {
@@ -7506,6 +7512,83 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         userId,
         details: updateData
       });
+
+      // NOTIFICATION LOGIC - Handle assignment changes and status changes
+      try {
+        const ticketIdString = (updatedTicket as any).ticketId || (updatedTicket as any).ticket_id || `#${updatedTicket.id}`;
+        const oldAssignedId = (oldTicket as any).assignedToId || (oldTicket as any).assigned_to_id;
+        const newAssignedId = (updatedTicket as any).assignedToId || (updatedTicket as any).assigned_to_id;
+        const oldStatus = oldTicket.status;
+        const newStatus = updatedTicket.status;
+
+        // ASSIGNMENT CHANGED
+        if (newAssignedId && newAssignedId !== oldAssignedId) {
+          const priority = updatedTicket.priority || 'Medium';
+          const isUrgent = ['Critical', 'High', 'Urgent'].includes(priority);
+
+          console.log(`[Notification] PATCH: Creating notification for ticket ${ticketIdString} assignment change to user ${newAssignedId}`);
+
+          if (isUrgent) {
+            await notificationService.notifyUrgentTicket({
+              ticketId: ticketIdString,
+              assignedToUserId: newAssignedId,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+              priority,
+              entityId: updatedTicket.id,
+            });
+          } else {
+            await notificationService.notifyTicketAssignment({
+              ticketId: ticketIdString,
+              assignedToUserId: newAssignedId,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+              assignedByUsername: (req.user as schema.User)?.username,
+              entityId: updatedTicket.id,
+            });
+          }
+
+          console.log(`[Notification] PATCH: Successfully created assignment notification for user ${newAssignedId}`);
+        }
+
+        // STATUS CHANGED
+        if (oldStatus && newStatus !== oldStatus) {
+          const submittedById = (updatedTicket as any).submittedById || (updatedTicket as any).submitted_by_id;
+          
+          // Notify submitter
+          if (submittedById) {
+            const employee = await storage.getEmployee(submittedById);
+            if (employee?.userId) {
+              await notificationService.notifyTicketStatusChange({
+                ticketId: ticketIdString,
+                userId: employee.userId,
+                oldStatus,
+                newStatus,
+                ticketTitle: updatedTicket.title || 'Support Ticket',
+              });
+              console.log(`[Notification] PATCH: Status change notification sent to submitter`);
+            }
+          }
+
+          // Notify assigned user if different from submitter
+          if (newAssignedId && newAssignedId !== submittedById) {
+            await notificationService.notifyTicketStatusChange({
+              ticketId: ticketIdString,
+              userId: newAssignedId,
+              oldStatus,
+              newStatus,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+            });
+            console.log(`[Notification] PATCH: Status change notification sent to assignee`);
+          }
+        }
+      } catch (notifError) {
+        console.error('[Notification] PATCH: Failed to create notification:', notifError);
+        logger.error('tickets', 'Failed to create notification in PATCH endpoint', {
+          userId,
+          metadata: { ticketId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
