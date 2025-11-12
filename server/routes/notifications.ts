@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
 import * as schema from '@shared/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { requireRole, ROLES } from '../rbac';
 import * as notificationService from '../services/notificationService';
 import notificationPreferencesRouter from './notificationPreferences';
@@ -28,6 +28,8 @@ interface AuthUser {
  * Query params:
  *   - limit: number of notifications to return (default: 50, max: 100)
  *   - offset: number of notifications to skip (default: 0)
+ *   - since: timestamp to get notifications created after (ISO string)
+ *   - unreadOnly: return only unread notifications (boolean)
  */
 router.get('/', async (req, res) => {
   try {
@@ -36,10 +38,27 @@ router.get('/', async (req, res) => {
     // Parse pagination params
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = parseInt(req.query.offset as string) || 0;
+    const since = req.query.since as string;
+    const unreadOnly = req.query.unreadOnly === 'true';
+    
+    // Build where conditions
+    let whereConditions: any[] = [eq(schema.notifications.userId, user.id)];
+    
+    // Add timestamp filter if provided
+    if (since) {
+      whereConditions.push(
+        sql`${schema.notifications.createdAt} > ${since}`
+      );
+    }
+    
+    // Add unread filter if requested
+    if (unreadOnly) {
+      whereConditions.push(eq(schema.notifications.isRead, false));
+    }
     
     const userNotifications = await db.select()
       .from(schema.notifications)
-      .where(eq(schema.notifications.userId, user.id))
+      .where(and(...whereConditions))
       .orderBy(desc(schema.notifications.createdAt))
       .limit(limit)
       .offset(offset);
