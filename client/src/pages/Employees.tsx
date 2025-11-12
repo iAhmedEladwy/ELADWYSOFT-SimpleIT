@@ -35,7 +35,7 @@ export default function Employees() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All'); // Default to Active employees
+  const [statusFilter, setStatusFilter] = useState('Active'); // Default to Active employees
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);

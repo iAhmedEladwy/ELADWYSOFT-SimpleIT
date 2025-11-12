@@ -20,14 +20,13 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Clock,
-  ArrowLeft
+  Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 import NotFound from '@/pages/not-found';
-import { Link } from 'wouter';
 
 interface BulkActionHistoryItem {
   id: number;
@@ -62,7 +61,6 @@ export default function BulkOperations() {
   const translations = {
     title: language === 'English' ? 'Bulk Operations' : 'العمليات المجمعة',
     description: language === 'English' ? 'View and monitor all bulk operations performed in the system' : 'عرض ومراقبة جميع العمليات المجمعة المنفذة في النظام',
-    backToAdmin: language === 'English' ? 'Back to Admin Console' : 'العودة لوحدة التحكم الإدارية',
     search: language === 'English' ? 'Search operations...' : 'البحث في العمليات...',
     filterByAction: language === 'English' ? 'Filter by Action' : 'تصفية حسب الإجراء',
     filterByStatus: language === 'English' ? 'Filter by Status' : 'تصفية حسب الحالة',
@@ -215,7 +213,7 @@ export default function BulkOperations() {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
       <div className="container mx-auto py-6 space-y-6">
         <Helmet>
           <title>{translations.title}</title>
@@ -224,17 +222,9 @@ export default function BulkOperations() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/admin-console">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>{translations.backToAdmin}</span>
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{translations.title}</h1>
-              <p className="text-muted-foreground">{translations.description}</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{translations.title}</h1>
+            <p className="text-muted-foreground">{translations.description}</p>
           </div>
           <div className="flex items-center space-x-2">
             <Button onClick={handleExport} variant="outline" size="sm">

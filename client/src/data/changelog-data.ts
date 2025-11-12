@@ -14,10 +14,95 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "1.0.0",
+    date: "2025-11-12",
+    title: "🎉 Stable Release - Production-Ready Asset Management",
+    type: "major",
+    changes: {
+      features: [
+        "🔔 In-App Notification System - Real-time notifications for all major events",
+        "   • Notification bell in header with unread count badge",
+        "   • Quick dropdown preview of recent notifications",
+        "   • Dedicated notifications tab in Dashboard with full history",
+        "   • Auto-refresh every 30 seconds",
+        "   • Smart routing - click notification to go to related item",
+        "   • Mark as read and dismiss actions",
+        "🎯 Notification Triggers - Automatic notifications for:",
+        "   • Ticket assignments and status changes",
+        "   • Asset check-out and check-in",
+        "   • Maintenance schedules and completions",
+        "   • Upgrade request decisions",
+        "   • Employee onboarding/offboarding reminders",
+        "   • System announcements from admins",
+        "⚙️ Notification Preferences - Control which notifications you receive in User Profile",
+        "� Performance Monitor - Real-time system performance analysis",
+        "�📡 Broadcast Announcements - Admins can send system-wide messages to specific roles",
+        "📱 Progressive Web App (PWA) - Install SimpleIT as native app on any device",
+        "� Complete Ticket Management - Kanban board, filters, assignments, categories",
+        "📦 Full Asset Lifecycle - Tracking, history, depreciation, maintenance",
+        "👥 Employee Portal - Self-service dashboard for employees",
+        "🔐 Comprehensive RBAC - 4-tier role hierarchy with granular permissions",
+        "🌍 Bilingual Support - Complete English/Arabic localization",
+        "💾 System Management - Backups, logs, performance monitoring, system health",
+      ],
+      improvements: [
+        "🎨 Polished UI/UX with modern design system",
+        "⚡ Optimized performance and caching",
+        "📱 Mobile-responsive across all pages",
+        "🔒 Enhanced security with latest dependency updates",
+        "📊 Advanced filtering and search capabilities",
+        "📈 Comprehensive reporting and analytics",
+        "⏰ Human-readable timestamps throughout",
+      ],
+      security: [
+        "🔐 Updated all dependencies to fix security vulnerabilities",
+        "🔒 Enhanced access control for system management tools",
+        "🛡️ Rate limiting and session security",
+      ],
+    }
+  },
+  {
+    version: "0.4.6",
+    date: "2025-11-08",
+    title: "PWA Support & Advanced Filtering",
+    type: "minor",
+    changes: {
+      features: [
+        "📱 Progressive Web App (PWA) - Install SimpleIT as a native-like app on mobile, tablet, and desktop",
+        "🔌 Offline Support - Beautiful offline fallback page with bilingual support (EN/AR)",
+        "💾 Smart Caching - Network-first for API calls, cache-first for static assets",
+        "📥 Install Prompt - Custom install banner with dismissal persistence",
+        "🌐 Online/Offline Indicator - Real-time network status in header",
+        "📊 Kanban Board View - Visual workflow board for tickets with drag-and-drop status updates",
+        "🎯 Multi-Select Filters - Type, Brand, and Status on Assets page",
+        "🎯 Multi-Select Status Filter - Tickets page with default Open/In Progress view",
+        "📅 Date Filtering - Comprehensive date range filters for tickets (quick filters + custom range)",
+        "🔄 View Toggle - Switch between Table and Kanban views for tickets",
+        "📤 Export Button - Added CSV export to tickets page",
+      ],
+      improvements: [
+        "🎨 Enhanced ticket filtering with checkbox-based multi-select popovers",
+        "📆 Compact date pickers using custom Calendar component",
+        "⚡ Real-time ticket count badges in status filters",
+        "🎯 Cascading filters for assets (Type → Brand → Model)",
+        "💡 Visual feedback with selected item counts (e.g., '3 selected')",
+        "🔧 Individual clear buttons for each filter group",
+        "📌 Centralized version management in shared/version.ts",
+        "🌍 PWA manifest with app metadata and bilingual support",
+        "⚙️ Service worker with automatic cache cleanup and update detection",
+      ],
+      bugfixes: [
+        "🔧 Removed obsolete 'Pending' status from ticket filters",
+        "🔧 Fixed multi-select popovers closing after single selection",
+        "🔧 Fixed date filter field widths for better layout",
+      ]
+    }
+  },
+  {
     version: "0.4.5",
     date: "2025-10-10",
     title: "Employee Self-Service Portal & Enhanced User Experience",
-    type: "minor",
+    type: "major",
     changes: {
       features: [
         "🎯 Employee Portal - Complete self-service portal with dashboard, assets, tickets, and profile management",
@@ -51,7 +136,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
     version: "0.4.3",
     date: "2025-10-02",
     title: "Complete Authentication Overhaul & RBAC Migration",
-    type: "minor",
+    type: "major",
     changes: {
       features: [
         "🔐 Dual authentication - login with username OR email",
@@ -122,7 +207,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
   version: "0.4.1",
   date: "2025-09-20",
   title: "Scheduled Backups & Bulk Operations ⚠️ MIGRATION REQUIRED",
-  type: "minor",
+  type: "major",
   changes: {
     breaking: [
       "⚠️ DATABASE SCHEMA CHANGES:",

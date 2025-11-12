@@ -7,7 +7,6 @@ import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/hooks/use-language';
 import { 
   Activity, 
-  ArrowLeft, 
   Database, 
   Users, 
   Server, 
@@ -23,8 +22,8 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient'; 
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 
 interface SystemHealthMetric {
   id: number;
@@ -56,7 +55,6 @@ export default function SystemHealth() {
   const t = {
     title: language === 'English' ? 'System Health' : 'حالة النظام',
     description: language === 'English' ? 'Monitor system performance and health metrics' : 'مراقبة أداء النظام ومقاييس الحالة',
-    backToAdminConsole: language === 'English' ? 'Back to Admin Console' : 'العودة لوحدة التحكم',
     systemOverview: language === 'English' ? 'System Overview' : 'نظرة عامة على النظام',
     databaseMetrics: language === 'English' ? 'Database Metrics' : 'مقاييس قاعدة البيانات',
     performanceMetrics: language === 'English' ? 'Performance Metrics' : 'مقاييس الأداء',
@@ -174,7 +172,7 @@ export default function SystemHealth() {
   const systemMetrics = healthMetrics.filter(m => m.metricType === 'system');
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<div>Access denied</div>}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<div>Access denied</div>}>
       <Helmet>
         <title>{t.title} - SimpleIT</title>
       </Helmet>
@@ -201,12 +199,6 @@ export default function SystemHealth() {
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               <span>{refreshing ? t.refreshing : t.refreshMetrics}</span>
             </Button>
-            <Link href="/admin-console">
-              <Button variant="outline" className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>{t.backToAdminConsole}</span>
-              </Button>
-            </Link>
           </div>
         </div>
 

@@ -1189,10 +1189,10 @@ export class MemoryStorage implements IStorage {
     return ticket;
   }
 
-  // Delete Ticket with admin permission (Feature 4: Delete ticket function - admin only)
+  // Delete Ticket with admin permission (Feature 4: Delete ticket function - admin/super_admin only)
   async deleteTicket(id: number, userId: number): Promise<boolean> {
     const user = await this.getUser(userId);
-    if (!user || user.role !== 'admin') { // Only admin can delete
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) { // Only admin/super_admin can delete
       throw new Error("Unauthorized: Only administrators can delete tickets");
     }
     

@@ -2,6 +2,8 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/hooks/use-language';
 import { RoleGuard, hasPermission } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
+import { getVersionString, APP_FULL_NAME } from '@shared/version';
 import { useState, useEffect } from 'react';
 import {
   Home,
@@ -23,6 +25,9 @@ import {
   ArrowUpCircle,
   Database,
   Activity,
+  Terminal,
+  Zap,
+  FileCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,11 +45,16 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const { user } = useAuth();
   const { language } = useLanguage();
   const [isAdminConsoleOpen, setIsAdminConsoleOpen] = useState(false);
+  const [isSystemManagerOpen, setIsSystemManagerOpen] = useState(false);
 
   useEffect(() => {
   // Auto-expand Admin Console if on any admin page
   if (location.startsWith('/admin-console')) {
     setIsAdminConsoleOpen(true);
+  }
+  // Auto-expand System Manager if on any developer tools page
+  if (location.startsWith('/developer-tools')) {
+    setIsSystemManagerOpen(true);
   }
   }, [location]);
 
@@ -69,6 +79,8 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
     BulkOperations: language === 'English' ? 'Bulk Operations History' : 'سجل العمليات المجمعة',
     BackupRestore: language === 'English' ? 'Backup & Restore' : 'النسخ الاحتياطي والاستعادة',
     SystemHealth: language === 'English' ? 'System Health' : 'حالة النظام',
+    SystemLogs: language === 'English' ? 'System Logs' : 'سجلات النظام',
+    SystemManager: language === 'English' ? 'System Manager' : 'مدير النظام',
   };
 
   // Get class for sidebar item based on active path
@@ -93,6 +105,10 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
   const toggleAdminConsole = () => {
   setIsAdminConsoleOpen(!isAdminConsoleOpen);
 };
+
+  const toggleSystemManager = () => {
+    setIsSystemManagerOpen(!isSystemManagerOpen);
+  };
 
   // If sidebar is hidden, don't render anything
   if (!isSidebarOpen) {
@@ -159,7 +175,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/employees" className={getLinkClass('/employees')} onClick={handleLinkClick}>
               <UserPlus className="h-5 w-5" />
@@ -175,7 +191,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager', 'agent']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/asset-history" className={getLinkClass('/asset-history')} onClick={handleLinkClick}>
               <History className="h-5 w-5" />
@@ -191,7 +207,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </Link>
         </div>
         
-        <RoleGuard allowedRoles={['admin', 'manager']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/reports" className={getLinkClass('/reports')} onClick={handleLinkClick}>
               <BarChart2 className="h-5 w-5" />
@@ -200,7 +216,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
           </div>
         </RoleGuard>
         
-        <RoleGuard allowedRoles={['admin']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]}>
           <div className={`transform transition-transform duration-200 ${language === 'English' ? 'hover:translate-x-1' : 'hover:-translate-x-1'}`}>
             <Link href="/system-config" className={getLinkClass('/system-config')} onClick={handleLinkClick}>
               <Settings className="h-5 w-5" />
@@ -208,7 +224,7 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             </Link>
           </div>
         </RoleGuard>
-        <RoleGuard allowedRoles={['admin']}>
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]}>
           <div className="space-y-1">
             {/* Admin Console Parent Menu */}
             <div 
@@ -247,26 +263,6 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
                   <span>{translations.Users}</span>
                 </Link>
                 
-                {/* Backup & Restore - NEW */}
-                <Link 
-                  href="/admin-console/backup-restore" 
-                  className={`${getLinkClass('/admin-console/backup-restore')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                  onClick={handleLinkClick}
-                >
-                  <Database className="h-4 w-4" />
-                  <span>{translations.BackupRestore}</span>
-                </Link>
-                
-                {/* System Health - NEW */}
-                <Link 
-                  href="/admin-console/system-health" 
-                  className={`${getLinkClass('/admin-console/system-health')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
-                  onClick={handleLinkClick}
-                >
-                  <Activity className="h-4 w-4" />
-                  <span>{translations.SystemHealth}</span>
-                </Link>
-                
                 {/* Audit Logs */}
                 <Link 
                   href="/admin-console/audit-logs" 
@@ -300,13 +296,119 @@ export default function Sidebar({ isSidebarOpen, onHover, onPageSelect, isPinned
             )}
           </div>
         </RoleGuard>
+
+        {/* System Manager - Super Admin Only */}
+        <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]}>
+          <div className="space-y-1">
+            {/* System Manager Parent Menu */}
+            <div 
+              className={`${getLinkClass('/developer-tools')} cursor-pointer justify-between border-l-2 border-purple-500 bg-gradient-to-r from-purple-50 to-transparent`}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleSystemManager();
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Wrench className="h-5 w-5 text-purple-600" />
+                <span className="flex items-center gap-2">
+                  {translations.SystemManager}
+                </span>
+              </div>
+              {isSystemManagerOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </div>
+            
+            {/* System Manager Submenu Items */}
+            {isSystemManagerOpen && (
+              <div className={`ml-6 space-y-1 border-l-2 border-purple-200 dark:border-purple-700 ${language === 'Arabic' ? 'mr-6 ml-0 border-r-2 border-l-0' : ''}`}>
+                {/* System Logs */}
+                <Link 
+                  href="/developer-tools/system-logs" 
+                  className={`${getLinkClass('/developer-tools/system-logs')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Terminal className="h-4 w-4" />
+                  <span>{translations.SystemLogs}</span>
+                </Link>
+                
+                {/* System Health */}
+                <Link 
+                  href="/developer-tools/system-health" 
+                  className={`${getLinkClass('/developer-tools/system-health')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{translations.SystemHealth}</span>
+                </Link>
+                
+                {/* Backup & Restore */}
+                <Link 
+                  href="/developer-tools/backup-restore" 
+                  className={`${getLinkClass('/developer-tools/backup-restore')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Database className="h-4 w-4" />
+                  <span>{translations.BackupRestore}</span>
+                </Link>
+                
+                {/* Performance Monitor */}
+                <Link 
+                  href="/developer-tools/performance-monitor" 
+                  className={`${getLinkClass('/developer-tools/performance-monitor')} pl-4 ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  <Activity className="h-4 w-4" />
+                  <span>{language === 'English' ? 'Performance Monitor' : 'مراقب الأداء'}</span>
+                </Link>
+                
+                {/* API Tester - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Zap className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'API Tester' : 'مختبر API'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* Cache Manager - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <FileCode className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Cache Manager' : 'مدير ذاكرة التخزين المؤقت'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+                
+                {/* Config Editor - Coming Soon */}
+                <div className={`${getLinkClass('')} pl-4 opacity-50 cursor-not-allowed ${language === 'Arabic' ? 'pr-4 pl-0' : ''}`}>
+                  <Settings className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    {language === 'English' ? 'Config Editor' : 'محرر التكوين'}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1 py-0.5 rounded">
+                      {language === 'English' ? 'Soon' : 'قريباً'}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </RoleGuard>
       </nav>
 
       <div className="mt-auto p-4">
         <div className="flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col items-center text-center">
             <span className="text-primary font-bold text-lg">ELADWYSOFT</span>
-            <span className="text-xs text-gray-500">SimpleIT v0.4.5</span>
+            <span className="text-xs text-gray-500">
+              SimpleIT {getVersionString()}
+            </span>
           </div>
         </div>
       </div>

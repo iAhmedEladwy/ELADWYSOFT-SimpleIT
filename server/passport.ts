@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { compare } from 'bcrypt';
 import { getStorage } from './storage-factory';
+import { logger } from './services/logger';
 
 const storage = getStorage();
 
@@ -25,6 +26,9 @@ passport.use(new LocalStrategy(
       
       if (!user) {
         console.log(`[AUTH] User not found: ${usernameOrEmail}`);
+        logger.warn('auth', `Failed login attempt - user not found: ${usernameOrEmail}`, {
+          metadata: { username: usernameOrEmail, reason: 'user_not_found' }
+        });
         return done(null, false, { message: 'Incorrect username/email or password' });
       }
       
@@ -33,12 +37,20 @@ passport.use(new LocalStrategy(
       // Check if user is active
       if (!user.isActive) {
         console.log(`[AUTH] User is inactive: ${user.username}`);
+        logger.warn('auth', `Login attempt for inactive account: ${user.username}`, {
+          userId: user.id,
+          metadata: { username: user.username, reason: 'account_disabled' }
+        });
         return done(null, false, { message: 'Account is disabled' });
       }
       
       // Verify password
       if (!password || !user.password) {
         console.log(`[AUTH] Missing password data for user: ${user.username}`);
+        logger.error('auth', `Missing password data for user: ${user.username}`, {
+          userId: user.id,
+          metadata: { username: user.username }
+        });
         return done(null, false, { message: 'Invalid credentials' });
       }
       
@@ -51,10 +63,18 @@ passport.use(new LocalStrategy(
       
       if (!isPasswordValid) {
         console.log(`[AUTH] Authentication failed for user: ${user.username}`);
+        logger.warn('auth', `Failed login attempt - invalid password: ${user.username}`, {
+          userId: user.id,
+          metadata: { username: user.username, reason: 'invalid_password' }
+        });
         return done(null, false, { message: 'Incorrect username/email or password' });
       }
       
       console.log(`[AUTH] Authentication successful for user: ${user.username}`);
+      logger.info('auth', `Successful login: ${user.username}`, {
+        userId: user.id,
+        metadata: { username: user.username, role: user.role }
+      });
       
       // Remove password from user object before returning
       const { password: _, ...userWithoutPassword } = user;
@@ -62,6 +82,10 @@ passport.use(new LocalStrategy(
       
     } catch (error) {
       console.error('[AUTH] Authentication error:', error);
+      logger.error('auth', `Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        metadata: { username: usernameOrEmail },
+        error: error instanceof Error ? error : new Error(String(error))
+      });
       return done(error);
     }
   }

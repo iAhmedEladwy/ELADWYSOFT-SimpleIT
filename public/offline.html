@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleIT - Offline</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 48px 32px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #3B82F6;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .company {
+      font-size: 14px;
+      color: #6B7280;
+      margin-bottom: 32px;
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: #FEE2E2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #111827;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 16px;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      background: #3B82F6;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn:hover {
+      background: #2563EB;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .lang-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .lang-toggle:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* RTL Support for Arabic */
+    [dir="rtl"] {
+      direction: rtl;
+    }
+
+    [dir="rtl"] .lang-toggle {
+      left: 20px;
+      right: auto;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="lang-toggle" onclick="toggleLanguage()">عربي</button>
+
+  <div class="container">
+    <!-- English Content -->
+    <div id="content-en">
+      <div class="logo">SimpleIT</div>
+      <div class="company">ELADWYSOFT</div>
+      <div class="icon">📡</div>
+      <h1>You're Offline</h1>
+      <p>Please check your internet connection and try again. SimpleIT requires an active connection to access your asset management data.</p>
+      <button class="btn" onclick="retryConnection()">Retry Connection</button>
+    </div>
+
+    <!-- Arabic Content -->
+    <div id="content-ar" class="hidden" dir="rtl">
+      <div class="logo">SimpleIT</div>
+      <div class="company">ELADWYSOFT</div>
+      <div class="icon">📡</div>
+      <h1>أنت غير متصل</h1>
+      <p>يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى. يتطلب SimpleIT اتصالاً نشطًا للوصول إلى بيانات إدارة الأصول الخاصة بك.</p>
+      <button class="btn" onclick="retryConnection()">إعادة المحاولة</button>
+    </div>
+  </div>
+
+  <script>
+    // Language toggle functionality
+    let currentLang = localStorage.getItem('offline-lang') || 'en';
+    
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      localStorage.setItem('offline-lang', currentLang);
+      updateContent();
+    }
+
+    function updateContent() {
+      const enContent = document.getElementById('content-en');
+      const arContent = document.getElementById('content-ar');
+      const toggleBtn = document.querySelector('.lang-toggle');
+
+      if (currentLang === 'ar') {
+        enContent.classList.add('hidden');
+        arContent.classList.remove('hidden');
+        toggleBtn.textContent = 'English';
+        document.body.setAttribute('dir', 'rtl');
+      } else {
+        enContent.classList.remove('hidden');
+        arContent.classList.add('hidden');
+        toggleBtn.textContent = 'عربي';
+        document.body.removeAttribute('dir');
+      }
+    }
+
+    // Retry connection
+    function retryConnection() {
+      window.location.reload();
+    }
+
+    // Initialize with saved language preference
+    updateContent();
+
+    // Check connection status periodically
+    window.addEventListener('online', () => {
+      // Automatically reload when connection is restored
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    });
+  </script>
+</body>
+</html>

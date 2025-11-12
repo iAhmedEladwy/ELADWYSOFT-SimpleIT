@@ -4,8 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums matching the current database
-export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4']);
-export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin']);
+export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4', '5']);
+export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin', 'super_admin']);
+export const logLevelEnum = pgEnum('log_level', ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
 export const employeeStatusEnum = pgEnum('employee_status', ['Active', 'Resigned', 'Terminated', 'On Leave']);
 export const pricingModeEnum = pgEnum('pricing_mode', ['total', 'individual']);
@@ -417,6 +418,35 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Notification Preferences table
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  ticketAssignments: boolean("ticket_assignments").notNull().default(true),
+  ticketStatusChanges: boolean("ticket_status_changes").notNull().default(true),
+  assetAssignments: boolean("asset_assignments").notNull().default(true),
+  maintenanceAlerts: boolean("maintenance_alerts").notNull().default(true),
+  upgradeRequests: boolean("upgrade_requests").notNull().default(true),
+  systemAnnouncements: boolean("system_announcements").notNull().default(true),
+  employeeChanges: boolean("employee_changes").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// System Logs table - For debugging and system monitoring (Super Admin only)
+export const systemLogs = pgTable("system_logs", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  level: logLevelEnum("level").notNull(),
+  module: varchar("module", { length: 100 }).notNull(), // e.g., 'auth', 'assets', 'notifications'
+  message: text("message").notNull(),
+  userId: integer("user_id").references(() => users.id), // User who triggered the log (if applicable)
+  requestId: varchar("request_id", { length: 50 }), // For tracing requests across logs
+  metadata: jsonb("metadata"), // Additional context (request body, query params, etc.)
+  stackTrace: text("stack_trace"), // Full stack trace for errors
+  resolved: boolean("resolved").notNull().default(false), // Mark bugs as fixed
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   employees: many(employees),
@@ -426,6 +456,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   notifications: many(notifications),
   securityQuestions: many(securityQuestions),
   passwordResetTokens: many(passwordResetTokens),
+  notificationPreferences: many(notificationPreferences),
 }));
 
 // Backup Management Tables
@@ -436,6 +467,9 @@ export const backupJobs = pgTable("backup_jobs", {
   schedule_type: varchar("schedule_type", { length: 20 }).notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
   schedule_value: integer("schedule_value").notNull().default(1), // number of units
   is_enabled: boolean("is_enabled").default(true),
+  retention_days: integer("retention_days").default(30), // Delete backups older than X days
+  max_backups: integer("max_backups").default(50), // Maximum number of backups to keep
+  min_backups: integer("min_backups").default(3), // Minimum backups to always keep (safety)
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
   last_run_at: timestamp("last_run_at"),

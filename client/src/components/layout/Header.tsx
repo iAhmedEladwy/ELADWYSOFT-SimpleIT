@@ -36,6 +36,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useMobile } from '@/hooks/use-mobile';
 import { getVersionString } from '@shared/version';
+import { PWAStatus } from '@/components/pwa/PWAStatus';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -156,6 +158,12 @@ export default function Header({ toggleSidebar, hideSidebar = false, onMenuHover
               <SelectItem value="Arabic">العربية</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* PWA Status Indicator */}
+          <PWAStatus />
+
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* User Menu */}
           <DropdownMenu>

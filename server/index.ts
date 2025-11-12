@@ -1,17 +1,28 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { BackupService } from "./services/backupService";
-import { BackupScheduler } from "./services/backupScheduler";
+import { BackupService } from './services/backupService';
+import { BackupScheduler } from './services/backupScheduler';
+import { logger } from "./services/logger";
+import { websocketService } from "./services/websocketService";
+import { performanceMiddleware } from './routes/performanceMonitor';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Apply performance monitoring middleware globally (before other middleware)
+app.use(performanceMiddleware);
+
+// Request logging and monitoring middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  // Generate unique request ID for tracing
+  const requestId = logger.generateRequestId();
+  (req as any).requestId = requestId;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -32,6 +43,42 @@ app.use((req, res, next) => {
       }
 
       log(logLine);
+
+      // System logging for API requests
+      const user = (req as any).user;
+      const userId = user?.id;
+
+      // Log all API requests with context
+      if (res.statusCode >= 400) {
+        // Log errors and warnings
+        const level = res.statusCode >= 500 ? 'error' : 'warn';
+        logger[level]('http', `${req.method} ${path} - ${res.statusCode}`, {
+          userId,
+          requestId,
+          metadata: {
+            method: req.method,
+            path,
+            statusCode: res.statusCode,
+            duration,
+            query: req.query,
+            ip: req.ip,
+          },
+        });
+      } else if (duration > 2000) {
+        // Log slow requests (>2s)
+        logger.warn('performance', `Slow request: ${req.method} ${path} took ${duration}ms`, {
+          userId,
+          requestId,
+          metadata: { method: req.method, path, duration },
+        });
+      } else {
+        // Log normal requests at debug level
+        logger.debug('http', `${req.method} ${path} - ${res.statusCode}`, {
+          userId,
+          requestId,
+          metadata: { method: req.method, path, statusCode: res.statusCode, duration },
+        });
+      }
     }
   });
 
@@ -49,9 +96,27 @@ app.use((req, res, next) => {
   backupScheduler.start();
   console.log('Backup scheduler started');
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handler with logging
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    const requestId = (req as any).requestId;
+    const user = (req as any).user;
+
+    // Log all errors to system logs
+    logger.error('app', `${req.method} ${req.path} - ${status}: ${message}`, {
+      userId: user?.id,
+      requestId,
+      metadata: {
+        method: req.method,
+        path: req.path,
+        statusCode: status,
+        query: req.query,
+        body: req.body,
+        ip: req.ip,
+      },
+      error: err,
+    });
 
     res.status(status).json({ message });
     throw err;
@@ -75,5 +140,9 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // WebSocket disabled - System Logs now uses polling for auto-refresh
+    // websocketService.initialize(server);
+    // console.log('WebSocket service initialized for real-time logs at ws://localhost:' + port + '/ws/logs');
   });
 })();

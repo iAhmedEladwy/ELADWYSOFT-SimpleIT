@@ -784,6 +784,9 @@ export class BackupService {
       const result = await this.createAutomaticBackup(1, `Scheduled ${job.schedule_type} backup: ${job.name}`);
       
       if (result.success) {
+        // Clean up old backups based on retention policy
+        await this.cleanupOldBackups(jobId);
+
         // Update job's last run and next run times
         const nextRunAt = this.calculateNextRunTime(job.schedule_type, job.schedule_value);
         await db.update(backupJobs)
@@ -842,6 +845,81 @@ export class BackupService {
     } catch (error) {
       console.error('Error creating automatic backup:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Clean up old backups based on retention policy
+   * Implements combined time-based and count-based retention
+   */
+  async cleanupOldBackups(jobId: number): Promise<{ success: boolean; deletedCount: number; error?: string }> {
+    try {
+      // Get job configuration
+      const [job] = await db.select().from(backupJobs).where(eq(backupJobs.id, jobId));
+      if (!job) {
+        return { success: false, deletedCount: 0, error: 'Job not found' };
+      }
+
+      const retentionDays = job.retention_days || 30;
+      const maxBackups = job.max_backups || 50;
+      const minBackups = job.min_backups || 3;
+
+      // Get all backups for this job
+      const allBackups = await db.select()
+        .from(backupFiles)
+        .where(eq(backupFiles.jobId, jobId))
+        .orderBy(desc(backupFiles.createdAt));
+
+      if (allBackups.length <= minBackups) {
+        console.log(`Skipping cleanup: only ${allBackups.length} backups (minimum: ${minBackups})`);
+        return { success: true, deletedCount: 0 };
+      }
+
+      const backupsToDelete: typeof allBackups = [];
+
+      // Calculate cutoff date for time-based retention
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+      // Identify backups to delete
+      for (let i = 0; i < allBackups.length; i++) {
+        const backup = allBackups[i];
+        const backupDate = new Date(backup.createdAt!);
+        
+        // Keep if within retention period and under max count (considering min backups)
+        const isWithinRetentionPeriod = backupDate >= cutoffDate;
+        const isWithinMaxCount = i < maxBackups;
+        const wouldViolateMinBackups = (allBackups.length - backupsToDelete.length) <= minBackups;
+
+        // Delete if: (too old OR beyond max count) AND won't violate min backups
+        if ((!isWithinRetentionPeriod || !isWithinMaxCount) && !wouldViolateMinBackups) {
+          backupsToDelete.push(backup);
+        }
+      }
+
+      // Delete identified backups
+      let deletedCount = 0;
+      for (const backup of backupsToDelete) {
+        try {
+          // Delete file from disk
+          await fs.unlink(backup.filepath);
+          
+          // Delete from database
+          await db.delete(backupFiles).where(eq(backupFiles.id, backup.id));
+          
+          deletedCount++;
+          console.log(`Deleted old backup: ${backup.filename}`);
+        } catch (error) {
+          console.error(`Failed to delete backup ${backup.filename}:`, error);
+          // Continue with other deletions even if one fails
+        }
+      }
+
+      console.log(`Cleanup complete: deleted ${deletedCount} old backup(s) for job ${job.name}`);
+      return { success: true, deletedCount };
+    } catch (error) {
+      console.error('Error during backup cleanup:', error);
+      return { success: false, deletedCount: 0, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 

@@ -285,22 +285,25 @@ export interface EmployeeFilters {
 }
 
 export interface AssetFilters {
-  type?: string;
-  brand?: string;
+  type?: string | string[]; // Support multi-select
+  brand?: string | string[]; // Support multi-select
   model?: string;
-  status?: string;
+  status?: string | string[]; // Support multi-select
   assignedTo?: string;
   search?: string;
 }
 
 export interface TicketFilters {
-  status?: string;
+  status?: string | string[]; // Support both single and multi-select
   priority?: string;
   type?: string;
   assignedTo?: string;
   category?: string;
   createdBy?: string;
   search?: string;
+  dateRange?: string; // Quick filter: 'today', 'yesterday', 'last7days', 'last30days', 'last90days', 'thisMonth', 'lastMonth', 'custom'
+  createdFrom?: string; // ISO date string for custom range start
+  createdTo?: string; // ISO date string for custom range end
 }
 
 // Form validation types
@@ -329,6 +332,9 @@ export interface BackupJobResponse {
   schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
   schedule_value: number;
   is_enabled: boolean;
+  retention_days?: number;
+  max_backups?: number;
+  min_backups?: number;
   created_at: string;
   updated_at: string;
   last_run_at?: string;
@@ -341,6 +347,9 @@ export interface BackupJobCreateRequest {
   schedule_type: 'hourly' | 'daily' | 'weekly' | 'monthly';
   schedule_value: number;
   is_enabled?: boolean;
+  retention_days?: number;
+  max_backups?: number;
+  min_backups?: number;
 }
 
 export interface BackupJobUpdateRequest extends Partial<BackupJobCreateRequest> {}

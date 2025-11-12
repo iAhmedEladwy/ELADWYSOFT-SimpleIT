@@ -1,5 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
+import {
+  ROLE_IDS,
+  getRoleLevel,
+  hasPermission as checkRolePermission,
+  normalizeRoleId,
+  isValidRoleId,
+  PERMISSIONS as SHARED_PERMISSIONS,
+} from '@shared/roles.config';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -11,23 +19,16 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-// Role hierarchy and permissions
+// Re-export for backward compatibility
 export const ROLES = {
-  ADMIN: 'Admin',
-  MANAGER: 'Manager', 
-  AGENT: 'Agent',
-  EMPLOYEE: 'Employee'
+  SUPER_ADMIN: ROLE_IDS.SUPER_ADMIN,
+  ADMIN: ROLE_IDS.ADMIN,
+  MANAGER: ROLE_IDS.MANAGER,
+  AGENT: ROLE_IDS.AGENT,
+  EMPLOYEE: ROLE_IDS.EMPLOYEE,
 } as const;
 
-// Role hierarchy levels (higher number = higher privilege) 
-export const ROLE_HIERARCHY = {
-  'admin': 4,
-  'manager': 3, 
-  'agent': 2,
-  'employee': 1
-} as const;
-
-// Permission definitions
+// Legacy permission definitions (keeping for backward compatibility during migration)
 export const PERMISSIONS = {
   // Asset permissions
   ASSETS_VIEW_ALL: 'assets:view:all',
@@ -62,16 +63,53 @@ export const PERMISSIONS = {
   TICKETS_ASSIGN: 'tickets:assign',
   TICKETS_CLOSE: 'tickets:close',
 
-  // System permissions
-  SYSTEM_CONFIG: 'system:config',
+  // System permissions (now using shared config)
+  SYSTEM_CONFIG: SHARED_PERMISSIONS.SYSTEM_CONFIG,
+  SYSTEM_LOGS: SHARED_PERMISSIONS.SYSTEM_LOGS,
+  SYSTEM_HEALTH: SHARED_PERMISSIONS.SYSTEM_HEALTH,
+  SYSTEM_BACKUP: SHARED_PERMISSIONS.SYSTEM_BACKUP,
   REPORTS_VIEW: 'reports:view',
-  AUDIT_LOGS: 'audit:logs'
+  AUDIT_LOGS: 'audit:logs',
+  
+  // Additional shared permissions
+  MANAGE_USERS: SHARED_PERMISSIONS.MANAGE_USERS,
+  VIEW_USERS: SHARED_PERMISSIONS.VIEW_USERS,
+  MANAGE_ASSETS: SHARED_PERMISSIONS.MANAGE_ASSETS,
+  VIEW_ASSETS: SHARED_PERMISSIONS.VIEW_ASSETS,
 } as const;
 
-// Role-based permission mapping
+// Legacy role-based permission mapping (keeping structure but using centralized config where possible)
 export const ROLE_PERMISSIONS = {
+  [ROLES.SUPER_ADMIN]: [
+    // Super Admin has ALL permissions including system logs
+    PERMISSIONS.SYSTEM_LOGS,
+    PERMISSIONS.SYSTEM_HEALTH,
+    PERMISSIONS.SYSTEM_BACKUP,
+    PERMISSIONS.SYSTEM_CONFIG,
+    PERMISSIONS.ASSETS_VIEW_ALL,
+    PERMISSIONS.ASSETS_CREATE,
+    PERMISSIONS.ASSETS_UPDATE,
+    PERMISSIONS.ASSETS_DELETE,
+    PERMISSIONS.ASSETS_ASSIGN,
+    PERMISSIONS.USERS_VIEW_ALL,
+    PERMISSIONS.USERS_CREATE,
+    PERMISSIONS.USERS_UPDATE,
+    PERMISSIONS.USERS_DELETE,
+    PERMISSIONS.EMPLOYEES_VIEW_ALL,
+    PERMISSIONS.EMPLOYEES_CREATE,
+    PERMISSIONS.EMPLOYEES_UPDATE,
+    PERMISSIONS.EMPLOYEES_DELETE,
+    PERMISSIONS.TICKETS_VIEW_ALL,
+    PERMISSIONS.TICKETS_CREATE,
+    PERMISSIONS.TICKETS_UPDATE,
+    PERMISSIONS.TICKETS_DELETE,
+    PERMISSIONS.TICKETS_ASSIGN,
+    PERMISSIONS.TICKETS_CLOSE,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.AUDIT_LOGS,
+  ],
   [ROLES.ADMIN]: [
-    // Full access to everything
+    // Full access to everything EXCEPT system logs
     PERMISSIONS.ASSETS_VIEW_ALL,
     PERMISSIONS.ASSETS_CREATE,
     PERMISSIONS.ASSETS_UPDATE,
@@ -133,10 +171,9 @@ export const ROLE_PERMISSIONS = {
  * Check if user has specific permission
  */
 export function hasPermission(userRole: string, permission: string): boolean {
-  // Normalize role to title case to match ROLE_PERMISSIONS keys
-  const normalizedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
-  const rolePermissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS];
-  return rolePermissions?.includes(permission as any) || false;
+  // Use centralized role permission check with normalized role
+  const normalized = normalizeRoleId(userRole);
+  return checkRolePermission(normalized, permission);
 }
 
 /**
@@ -148,14 +185,17 @@ export function canAccessResource(
   resourceOwnerId?: number,
   resourceManagerId?: number
 ): boolean {
-  // Admin can access everything
-  if (userRole === ROLES.ADMIN) return true;
+  // Normalize and check role level
+  const normalizedRole = normalizeRoleId(userRole);
+  
+  // Super Admin and Admin can access everything
+  if (normalizedRole === ROLES.SUPER_ADMIN || normalizedRole === ROLES.ADMIN) return true;
   
   // Owner can access their own resources
   if (resourceOwnerId === userId) return true;
   
   // Manager can access subordinates' resources
-  if (userRole === ROLES.MANAGER && resourceManagerId === userId) return true;
+  if (normalizedRole === ROLES.MANAGER && resourceManagerId === userId) return true;
   
   return false;
 }
@@ -246,9 +286,13 @@ export async function attachUserInfo(req: AuthenticatedRequest, res: Response, n
  * Filter data based on user permissions
  */
 export function filterByPermissions(data: any[], userRole: string, userId: number, field: string = 'id') {
-  if (userRole === ROLES.ADMIN) return data;
+  // Normalize role and check level
+  const normalizedRole = normalizeRoleId(userRole);
   
-  if (userRole === ROLES.EMPLOYEE) {
+  // Super Admin and Admin can see all data
+  if (normalizedRole === ROLES.SUPER_ADMIN || normalizedRole === ROLES.ADMIN) return data;
+  
+  if (normalizedRole === ROLES.EMPLOYEE) {
     return data.filter(item => item.submittedById === userId || item.assignedToId === userId || item[field] === userId);
   }
   
@@ -273,19 +317,14 @@ export async function getSubordinateIds(managerId: number): Promise<number[]> {
 
 /**
  * Get user's role level for hierarchical checks
+ * Now uses centralized role configuration
  */
 export function getUserRoleLevel(user: any): number {
   if (!user) return 0;
   
-  // Check role first, then fall back to accessLevel
+  // Use centralized getRoleLevel function
   if (user.role) {
-    switch (user.role.toLowerCase()) {
-      case 'admin': return 4;
-      case 'manager': return 3;
-      case 'agent': return 2;
-      case 'employee': return 1;
-      default: return 0;
-    }
+    return getRoleLevel(user.role);
   }
   
   // Fall back to accessLevel if role is not available

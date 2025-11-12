@@ -9,11 +9,13 @@ import { apiRequest } from '@/lib/queryClient';
 import TicketsTable from '@/components/tickets/TicketsTable';
 import TicketFilters from '@/components/tickets/TicketFilters';
 import TicketForm from '@/components/tickets/TicketForm'; // Our new TicketForm
+import KanbanBoard from '@/components/tickets/KanbanBoard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { Plus, Users, Ticket, AlertCircle } from 'lucide-react';
+import { Plus, Users, Ticket, AlertCircle, Download, LayoutGrid, List } from 'lucide-react';
 import type { TicketFilters as TicketFiltersType, TicketResponse, TicketCreateRequest } from '@shared/types';
 
 export default function Tickets() {
@@ -26,7 +28,10 @@ export default function Tickets() {
   // Local state
   const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [filters, setFilters] = useState<TicketFiltersType>({});
+  const [filters, setFilters] = useState<TicketFiltersType>({
+    status: ['Open', 'In Progress'] // Default to show open tickets
+  });
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table'); // View toggle state
   
   // Form dialogs state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -34,7 +39,17 @@ export default function Tickets() {
 
   // Data queries
   const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
-    queryKey: ['/api/tickets'],
+    queryKey: ['/api/tickets', filters.createdFrom, filters.createdTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.createdFrom) params.append('createdFrom', filters.createdFrom);
+      if (filters.createdTo) params.append('createdTo', filters.createdTo);
+      
+      const url = `/api/tickets${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch tickets');
+      return response.json();
+    },
     staleTime: 30000, // 30 seconds
   });
 
@@ -68,9 +83,17 @@ export default function Tickets() {
         if (!searchMatch) return false;
       }
 
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (ticket.status !== filters.status) return false;
+      // Status filter - support both single string and array
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          // Multi-select: check if ticket status is in the selected array
+          if (filters.status.length > 0 && !filters.status.includes(ticket.status)) {
+            return false;
+          }
+        } else if (filters.status !== 'all') {
+          // Single select (backward compatibility)
+          if (ticket.status !== filters.status) return false;
+        }
       }
 
       // Priority filter
@@ -319,6 +342,56 @@ export default function Tickets() {
     }
   };
 
+  // Export tickets to CSV
+  const handleExportTickets = () => {
+    if (filteredTickets.length === 0) {
+      toast({
+        title: t.error,
+        description: language === 'Arabic' ? 'لا توجد تذاكر للتصدير' : 'No tickets to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const headers = ['Ticket ID', 'Title', 'Status', 'Priority', 'Type', 'Category', 'Assigned To', 'Submitted By', 'Created Date', 'Updated Date'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTickets.map((ticket: any) => {
+        const assignedUser = users?.find((u: any) => u.id === ticket.assignedToId);
+        const submittedUser = users?.find((u: any) => u.id === ticket.submittedById);
+        return [
+          ticket.ticketId || '',
+          ticket.title || '',
+          ticket.status || '',
+          ticket.priority || '',
+          ticket.type || '',
+          ticket.category || '',
+          assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : '',
+          submittedUser ? `${submittedUser.firstName} ${submittedUser.lastName}` : '',
+          ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '',
+          ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleDateString() : ''
+        ].map(field => `"${field}"`).join(',');
+      })
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tickets-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast({
+      title: t.success,
+      description: language === 'Arabic' 
+        ? `تم تصدير ${filteredTickets.length} تذكرة بنجاح` 
+        : `Exported ${filteredTickets.length} tickets successfully`,
+    });
+  };
+
   if (ticketsLoading) {
     return (
       <div className="p-6">
@@ -339,46 +412,29 @@ export default function Tickets() {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Bulk Actions */}
-          {selectedTickets.length > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {selectedTickets.length} {t.selectedCount}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkActions(!showBulkActions)}
-              >
-                {t.bulkActions}
-              </Button>
-              {showBulkActions && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleBulkStatusChange('Resolved')}
-                  >
-                    {t.resolve}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm" 
-                    onClick={() => handleBulkStatusChange('Closed')}
-                  >
-                    {t.close}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                  >
-                    {t.delete}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+          {/* View Mode Toggle */}
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'table' | 'kanban')}>
+            <TabsList>
+              <TabsTrigger value="table" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                {language === 'Arabic' ? 'جدول' : 'Table'}
+              </TabsTrigger>
+              <TabsTrigger value="kanban" className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                {language === 'Arabic' ? 'كانبان' : 'Kanban'}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Export Button */}
+          <Button
+            variant="outline"
+            onClick={handleExportTickets}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {language === 'Arabic' ? 'تصدير' : 'Export'}
+          </Button>
 
           {/* Create Ticket Button */}
           {hasAccess(2) && (
@@ -459,21 +515,70 @@ export default function Tickets() {
         </CardContent>
       </Card>
 
-      {/* Main Tickets Table */}
-      <Card>
-        <TicketsTable 
+      {/* Bulk Actions - Above Table */}
+      {selectedTickets.length > 0 && (
+        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            {selectedTickets.length} {t.selectedCount}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowBulkActions(!showBulkActions)}
+          >
+            {t.bulkActions}
+          </Button>
+          {showBulkActions && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={() => handleBulkStatusChange('Resolved')}
+              >
+                {t.resolve}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm" 
+                onClick={() => handleBulkStatusChange('Closed')}
+              >
+                {t.close}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                {t.delete}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Conditional View: Table or Kanban */}
+      {viewMode === 'table' ? (
+        <Card>
+          <TicketsTable 
+            tickets={filteredTickets}
+            employees={employees}
+            assets={assets}
+            users={users}
+            onStatusChange={handleStatusChange}
+            onAssign={handleAssignTicket}
+            onEdit={handleEditTicket}
+            onDelete={handleDeleteTicket}
+            selectedTickets={selectedTickets}
+            onSelectionChange={setSelectedTickets}
+          />
+        </Card>
+      ) : (
+        <KanbanBoard
           tickets={filteredTickets}
-          employees={employees}
-          assets={assets}
+          onTicketClick={handleEditTicket}
           users={users}
-          onStatusChange={handleStatusChange}
-          onAssign={handleAssignTicket}
-          onEdit={handleEditTicket} // This will trigger direct edit
-          onDelete={handleDeleteTicket}
-          selectedTickets={selectedTickets}
-          onSelectionChange={setSelectedTickets}
         />
-      </Card>
+      )}
 
       {/* Create Ticket Form */}
       <TicketForm

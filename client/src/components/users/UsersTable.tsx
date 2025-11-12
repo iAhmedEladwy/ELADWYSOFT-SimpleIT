@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/lib/authContext';
+import { ROLE_IDS, normalizeRoleId, getRoleDisplayName } from '@shared/roles.config';
 import { 
   Table, 
   TableBody, 
@@ -25,6 +27,7 @@ import {
   Key,
   UserX,
   UserCheck,
+  Code,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -49,7 +52,15 @@ interface UsersTableProps {
 
 export default function UsersTable({ users, onEdit, onDelete, onToggleActive, onChangePassword }: UsersTableProps) {
   const { language } = useLanguage();
+  const { user: currentUser } = useAuth();
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  
+  const isSuperAdmin = normalizeRoleId(currentUser?.role) === ROLE_IDS.SUPER_ADMIN;
+  
+  // Filter out super_admin users if current user is not super_admin
+  const filteredUsers = isSuperAdmin 
+    ? users 
+    : users.filter(u => normalizeRoleId(u.role) !== ROLE_IDS.SUPER_ADMIN);
 
   // Translations
   const translations = {
@@ -59,10 +70,11 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
     role: language === 'English' ? 'Role' : 'الدور',
     status: language === 'English' ? 'Status' : 'الحالة',
     actions: language === 'English' ? 'Actions' : 'الإجراءات',
-    admin: language === 'English' ? 'Admin' : 'مسؤول',
-    manager: language === 'English' ? 'Manager' : 'مدير',
-    agent: language === 'English' ? 'Agent' : 'وكيل',
-    employee: language === 'English' ? 'Employee' : 'موظف',
+    superAdmin: getRoleDisplayName(ROLE_IDS.SUPER_ADMIN, language === 'English' ? 'en' : 'ar'),
+    admin: getRoleDisplayName(ROLE_IDS.ADMIN, language === 'English' ? 'en' : 'ar'),
+    manager: getRoleDisplayName(ROLE_IDS.MANAGER, language === 'English' ? 'en' : 'ar'),
+    agent: getRoleDisplayName(ROLE_IDS.AGENT, language === 'English' ? 'en' : 'ar'),
+    employee: getRoleDisplayName(ROLE_IDS.EMPLOYEE, language === 'English' ? 'en' : 'ar'),
     active: language === 'English' ? 'Active' : 'نشط',
     inactive: language === 'English' ? 'Inactive' : 'غير نشط',
     edit: language === 'English' ? 'Edit' : 'تعديل',
@@ -97,29 +109,37 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
 
   // Get role badge and icon
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'admin':
+    const normalized = normalizeRoleId(role);
+    switch (normalized) {
+      case ROLE_IDS.SUPER_ADMIN:
+        return (
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+            <Code className="h-3.5 w-3.5 mr-1" />
+            {translations.superAdmin}
+          </Badge>
+        );
+      case ROLE_IDS.ADMIN:
         return (
           <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
             <ShieldAlert className="h-3.5 w-3.5 mr-1" />
             {translations.admin}
           </Badge>
         );
-      case 'manager':
+      case ROLE_IDS.MANAGER:
         return (
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
             <ShieldCheck className="h-3.5 w-3.5 mr-1" />
             {translations.manager}
           </Badge>
         );
-      case 'agent':
+      case ROLE_IDS.AGENT:
         return (
           <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
             <Shield className="h-3.5 w-3.5 mr-1" />
-            {language === 'English' ? 'Agent' : 'وكيل'}
+            {translations.agent}
           </Badge>
         );
-      case 'employee':
+      case ROLE_IDS.EMPLOYEE:
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             <Shield className="h-3.5 w-3.5 mr-1" />
@@ -152,8 +172,8 @@ export default function UsersTable({ users, onEdit, onDelete, onToggleActive, on
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length > 0 ? (
-            users.map((user) => (
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex flex-col">

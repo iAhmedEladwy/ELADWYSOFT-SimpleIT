@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/hooks/use-language';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,9 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, Search, Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { X, Filter, Search, Download, ChevronDown } from 'lucide-react';
 import type { AssetFilters } from '@shared/types';
 
 interface AssetFiltersProps {
@@ -83,7 +85,10 @@ export default function AssetFilters({
 
   // Filter brands based on selected type
   const filteredBrands = filters.type 
-    ? [...new Set(assets?.filter((a: any) => a.type === filters.type).map((a: any) => a.brand).filter(Boolean))]
+    ? [...new Set(assets?.filter((a: any) => {
+        const selectedTypes = Array.isArray(filters.type) ? filters.type : [filters.type];
+        return selectedTypes.includes(a.type);
+      }).map((a: any) => a.brand).filter(Boolean))]
     : assetBrands;
   
   // Filter models based on selected type and brand
@@ -91,22 +96,74 @@ export default function AssetFilters({
     let filteredAssets = assets || [];
     
     if (filters.type) {
-      filteredAssets = filteredAssets.filter((a: any) => a.type === filters.type);
+      const selectedTypes = Array.isArray(filters.type) ? filters.type : [filters.type];
+      filteredAssets = filteredAssets.filter((a: any) => selectedTypes.includes(a.type));
     }
     
     if (filters.brand) {
-      filteredAssets = filteredAssets.filter((a: any) => a.brand === filters.brand);
+      const selectedBrands = Array.isArray(filters.brand) ? filters.brand : [filters.brand];
+      filteredAssets = filteredAssets.filter((a: any) => selectedBrands.includes(a.brand));
     }
     
     return [...new Set(filteredAssets.map((a: any) => a.modelName).filter(Boolean))];
   })();
+
+  // Multi-select handlers
+  const handleTypeToggle = (type: string) => {
+    const currentTypes = Array.isArray(filters.type) ? filters.type : [];
+    
+    if (currentTypes.includes(type)) {
+      const newTypes = currentTypes.filter(t => t !== type);
+      updateFilter('type', newTypes.length > 0 ? newTypes : undefined);
+    } else {
+      updateFilter('type', [...currentTypes, type]);
+    }
+  };
+
+  const handleBrandToggle = (brand: string) => {
+    const currentBrands = Array.isArray(filters.brand) ? filters.brand : [];
+    
+    if (currentBrands.includes(brand)) {
+      const newBrands = currentBrands.filter(b => b !== brand);
+      updateFilter('brand', newBrands.length > 0 ? newBrands : undefined);
+    } else {
+      updateFilter('brand', [...currentBrands, brand]);
+    }
+  };
+
+  const handleStatusToggle = (status: string) => {
+    const currentStatuses = Array.isArray(filters.status) ? filters.status : [];
+    
+    if (currentStatuses.includes(status)) {
+      const newStatuses = currentStatuses.filter(s => s !== status);
+      updateFilter('status', newStatuses.length > 0 ? newStatuses : undefined);
+    } else {
+      updateFilter('status', [...currentStatuses, status]);
+    }
+  };
+
+  // Get selected items as arrays
+  const selectedTypes = useMemo(() => {
+    if (!filters.type) return [];
+    return Array.isArray(filters.type) ? filters.type : [filters.type];
+  }, [filters.type]);
+
+  const selectedBrands = useMemo(() => {
+    if (!filters.brand) return [];
+    return Array.isArray(filters.brand) ? filters.brand : [filters.brand];
+  }, [filters.brand]);
+
+  const selectedStatuses = useMemo(() => {
+    if (!filters.status) return [];
+    return Array.isArray(filters.status) ? filters.status : [filters.status];
+  }, [filters.status]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onFiltersChange({ ...filters, search: searchInput });
   };
 
-  const updateFilter = (key: keyof AssetFilters, value: string | undefined) => {
+  const updateFilter = (key: keyof AssetFilters, value: string | string[] | undefined) => {
     onFiltersChange({ ...filters, [key]: value || undefined });
   };
 
@@ -155,46 +212,132 @@ export default function AssetFilters({
 
         {/* Filter Grid - Updated layout for 5 columns */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
-          {/* Type Filter */}
+          {/* Type Filter - Multi-Select */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               {translations.type}
             </label>
-            <Select
-              value={filters.type || 'all'}
-              onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allTypes} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allTypes}</SelectItem>
-                {assetTypes.map((type: string) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-sm font-normal"
+                >
+                  <span className="truncate">
+                    {selectedTypes.length === 0
+                      ? translations.allTypes
+                      : selectedTypes.length === 1
+                      ? selectedTypes[0]
+                      : `${selectedTypes.length} selected`}
+                  </span>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="start">
+                <div className="p-2">
+                  <div className="flex items-center justify-between mb-2 px-2">
+                    <span className="text-sm font-medium">Select Type</span>
+                    {selectedTypes.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => updateFilter('type', undefined)}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {assetTypes.map((type: string) => (
+                      <div
+                        key={type}
+                        className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTypeToggle(type);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedTypes.includes(type)}
+                          onCheckedChange={(checked) => {
+                            handleTypeToggle(type);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label className="flex-1 text-sm cursor-pointer">
+                          {type}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Brand Filter */}
+          {/* Brand Filter - Multi-Select */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               {translations.brand}
             </label>
-            <Select
-              value={filters.brand || 'all'}
-              onValueChange={(value) => updateFilter('brand', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allBrands} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allBrands}</SelectItem>
-                {filteredBrands.map((brand: string) => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-sm font-normal"
+                >
+                  <span className="truncate">
+                    {selectedBrands.length === 0
+                      ? translations.allBrands
+                      : selectedBrands.length === 1
+                      ? selectedBrands[0]
+                      : `${selectedBrands.length} selected`}
+                  </span>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="start">
+                <div className="p-2">
+                  <div className="flex items-center justify-between mb-2 px-2">
+                    <span className="text-sm font-medium">Select Brand</span>
+                    {selectedBrands.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => updateFilter('brand', undefined)}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {filteredBrands.map((brand: string) => (
+                      <div
+                        key={brand}
+                        className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBrandToggle(brand);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedBrands.includes(brand)}
+                          onCheckedChange={(checked) => {
+                            handleBrandToggle(brand);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label className="flex-1 text-sm cursor-pointer">
+                          {brand}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Model Filter */}
@@ -218,25 +361,68 @@ export default function AssetFilters({
             </Select>
           </div>
 
-          {/* Status Filter */}
+          {/* Status Filter - Multi-Select */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               {translations.status}
             </label>
-            <Select
-              value={filters.status || 'all'}
-              onValueChange={(value) => updateFilter('status', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allStatuses} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allStatuses}</SelectItem>
-                {assetStatuses.map((status: string) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-sm font-normal"
+                >
+                  <span className="truncate">
+                    {selectedStatuses.length === 0
+                      ? translations.allStatuses
+                      : selectedStatuses.length === 1
+                      ? selectedStatuses[0]
+                      : `${selectedStatuses.length} selected`}
+                  </span>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="start">
+                <div className="p-2">
+                  <div className="flex items-center justify-between mb-2 px-2">
+                    <span className="text-sm font-medium">Select Status</span>
+                    {selectedStatuses.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => updateFilter('status', undefined)}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {assetStatuses.map((status: string) => (
+                      <div
+                        key={status}
+                        className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusToggle(status);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedStatuses.includes(status)}
+                          onCheckedChange={(checked) => {
+                            handleStatusToggle(status);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <label className="flex-1 text-sm cursor-pointer">
+                          {status}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Assigned To Filter */}
@@ -281,7 +467,11 @@ export default function AssetFilters({
             )}
             {filters.type && (
               <Badge variant="outline" className="gap-1">
-                {translations.type}: {filters.type}
+                {translations.type}: {Array.isArray(filters.type) 
+                  ? filters.type.length === 1 
+                    ? filters.type[0] 
+                    : `${filters.type.length} selected`
+                  : filters.type}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('type', undefined)}
@@ -290,7 +480,11 @@ export default function AssetFilters({
             )}
             {filters.brand && (
               <Badge variant="outline" className="gap-1">
-                {translations.brand}: {filters.brand}
+                {translations.brand}: {Array.isArray(filters.brand)
+                  ? filters.brand.length === 1
+                    ? filters.brand[0]
+                    : `${filters.brand.length} selected`
+                  : filters.brand}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('brand', undefined)}
@@ -308,7 +502,11 @@ export default function AssetFilters({
             )}
             {filters.status && (
               <Badge variant="outline" className="gap-1">
-                {translations.status}: {filters.status}
+                {translations.status}: {Array.isArray(filters.status)
+                  ? filters.status.length === 1
+                    ? filters.status[0]
+                    : `${filters.status.length} selected`
+                  : filters.status}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('status', undefined)}

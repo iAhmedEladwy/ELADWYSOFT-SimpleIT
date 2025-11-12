@@ -45,17 +45,20 @@ npm run db:push      # Push schema changes to database (use instead of migration
 
 ### Adding New Features
 1. **Define schema** in `shared/schema.ts` and types in `shared/types.ts`
-2. **Add API routes** in `server/routes.ts` with proper RBAC middleware
-3. **Create React components** with `useUrlFilters` for list views
-4. **Add translations** for both English and Arabic in component translation objects
-5. **Test with different role levels** - features must respect the 4-tier role hierarchy
+2. **Create route module** in `server/routes/` (NOT in main routes.ts) - see route modularization pattern
+3. **Mount router** in `server/routes.ts` with proper RBAC middleware
+4. **Create React components** with `useUrlFilters` for list views
+5. **Add translations** for both English and Arabic in component translation objects
+6. **Test with different role levels** - features must respect the 4-tier role hierarchy
 
 ## Project-Specific Conventions
 
 ### File Organization
-- **Route handlers**: All in single `server/routes.ts` file (7800+ lines) - add new endpoints here
+- **Route modules**: Create focused routers in `server/routes/` (notifications, backup, systemHealth patterns)
+- **⚠️ DO NOT** add routes to main `server/routes.ts` - it's being refactored into modules
 - **Component imports**: Use `@/` for client paths, `@shared/` for shared modules
 - **Asset management**: Upload handling via `storage-factory.ts` with configurable backends
+- **Services**: Extract business logic to `server/services/` (notificationService, backupService patterns)
 
 ### Code Patterns
 - **Error handling**: Use `@shared/errors` classes with standard HTTP status codes
@@ -80,4 +83,4 @@ npm run db:push      # Push schema changes to database (use instead of migration
 - **Environment configs**: `.env` variables for database, storage, and external services
 - **Static assets**: Served via Express static middleware in production
 
-When working on this codebase, prioritize understanding the shared schema relationships and role-based access patterns before implementing new features. The monolithic route file and comprehensive RBAC system are central to how the application functions.
+When working on this codebase, prioritize understanding the shared schema relationships and role-based access patterns before implementing new features. **Always create new routes in focused modules** (`server/routes/`) rather than adding to the main routes.ts file. See `DEVELOPMENT-GUIDELINES.md` for comprehensive coding standards including route modularization, translation patterns, and component structure.

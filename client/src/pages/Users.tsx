@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
+import { ROLE_IDS, normalizeRoleId } from '@shared/roles.config';
 
 export default function Users() {
   const { hasAccess } = useAuth();
@@ -254,10 +255,13 @@ export default function Users() {
     changePasswordMutation.mutate({ id: userId, newPassword });
   };
 
-  const admins = users.filter((user: any) => user.role === 'admin');
-  const managers = users.filter((user: any) => user.role === 'manager');
-  const agents = users.filter((user: any) => user.role === 'agent');
-  const employees = users.filter((user: any) => user.role === 'employee');
+  const admins = users.filter((user: any) => {
+    const normalized = normalizeRoleId(user.role);
+    return normalized === ROLE_IDS.ADMIN || normalized === ROLE_IDS.SUPER_ADMIN;
+  });
+  const managers = users.filter((user: any) => normalizeRoleId(user.role) === ROLE_IDS.MANAGER);
+  const agents = users.filter((user: any) => normalizeRoleId(user.role) === ROLE_IDS.AGENT);
+  const employees = users.filter((user: any) => normalizeRoleId(user.role) === ROLE_IDS.EMPLOYEE);
 
   return (
     <div className="p-6">

@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { getStorage } from "./storage-factory";
 import { db } from "./db";
+import * as schema from "../shared/schema";
 import { 
   users, employees, assets, tickets, assetUpgrades, assetTransactions,
   ticketUrgencyEnum, ticketImpactEnum, ticketTypeEnum, ticketPriorityEnum, ticketStatusEnum,
@@ -9,8 +10,14 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
-import { BackupService } from './services/backupService';
 import { setupPortalRoutes } from './routes/portal';
+import notificationsRouter, { createNotification } from './routes/notifications';
+import backupRouter from './routes/backup';
+import systemHealthRouter from './routes/systemHealth';
+import systemLogsRouter from './routes/systemLogs';
+import performanceMonitorRouter from './routes/performanceMonitor';
+import * as notificationService from './services/notificationService';
+import { logger } from './services/logger';
 
 
 // Authenticated user type (from auth middleware)
@@ -60,9 +67,6 @@ import { calculatePriority, validatePriority, type UrgencyLevel, type ImpactLeve
 import { exportToCSV, importFromCSV, parseCSV, parseDate, cleanEmploymentType } from "@shared/csvUtils";
 import { getValidationRules, getExportColumns } from "@shared/importExportRules";
 
-
-// Initialize backup service
-const backupService = new BackupService();
 
 // Helper function for short date formatting
 const formatShortDate = (dateValue: any): string => {
@@ -231,65 +235,14 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// Import RBAC functions
+// Import RBAC functions from centralized configuration
 import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
-
-// Check if user has appropriate role level
-// NOTE: This is being phased out in favor of RBAC requireRole() middleware
-// See docs/RBAC-Analysis-Report.md for migration plan
-const hasAccess = (minRoleLevel: number) => {
-  return (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    const user = req.user as any;
-    
-    // Use RBAC functions for consistent permission checking
-    // Removed hardcoded admin bypass to ensure proper audit trail
-    const userLevel = getUserRoleLevel(user);
-    if (!hasMinimumRoleLevel(user, minRoleLevel)) {
-      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
-    }
-    
-    next();
-  };
-};
+import { getRoleLevel, normalizeRoleId, ROLE_IDS, ROLE_LEVELS } from "@shared/roles.config";
 
 // File upload storage configuration
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-// Backup file upload configuration (saves to disk)
-const backupUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadsDir = path.join(process.cwd(), 'uploads');
-      // Create uploads directory if it doesn't exist
-      fs.mkdir(uploadsDir, { recursive: true }).then(() => {
-        cb(null, uploadsDir);
-      }).catch(cb);
-    },
-    filename: (req, file, cb) => {
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      const originalName = file.originalname;
-      const extension = path.extname(originalName);
-      const baseName = path.basename(originalName, extension);
-      cb(null, `${baseName}_${timestamp}${extension}`);
-    }
-  }),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for backup files
-  fileFilter: (req, file, cb) => {
-    // Accept only .sql files for backups
-    if (file.mimetype === 'application/sql' || file.originalname.endsWith('.sql')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only .sql backup files are allowed'));
-    }
-  }
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -761,6 +714,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // EMPLOYEE PORTAL ROUTES
   // ==========================================
   setupPortalRoutes(app, authenticateUser, requireRole);
+
+  // ==========================================
+  // NOTIFICATION ROUTES
+  // ==========================================
+  app.use('/api/notifications', authenticateUser, notificationsRouter);
+
+  // ==========================================
+  // SYSTEM LOGS ROUTES (Super Admin only)
+  // ==========================================
+  app.use('/api/system-logs', authenticateUser, systemLogsRouter);
+
+  // ==========================================
+  // SYSTEM MANAGER ROUTES (Super Admin only)
+  // ==========================================
+  app.use('/api/developer-tools', authenticateUser, performanceMonitorRouter);
+
+  // ==========================================
+  // BACKUP, RESTORE & SYSTEM HEALTH ROUTES
+  // ==========================================
+  // Mount backup router at /api/admin - handles backups, restore, backup-jobs
+  app.use('/api/admin', authenticateUser, requireRole(ROLES.ADMIN), backupRouter);
+  // Mount system health router also at /api/admin (will merge routes)
+  app.use('/api/admin', authenticateUser, requireRole(ROLES.ADMIN), systemHealthRouter);
 
   // Security Questions API endpoints - combined implementation  // Get default security questions for selection
   app.get("/api/security-questions", async (req, res) => {
@@ -1366,6 +1342,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created employee with auto-generated ID:", employee);
       
+      // Log to system logs for audit trail
+      if (req.user) {
+        logger.info('employees', `Employee created: ${englishName} (${department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: employee.id,
+            empId: employee.empId,
+            name: englishName,
+            department,
+            title,
+            employmentType,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
+      // Notify admins about new employee onboarding if future start date
+      if (joiningDate) {
+        const startDate = new Date(joiningDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (startDate > today) {
+          // Future start date - notify admins to prepare onboarding
+          const dateStr = startDate.toLocaleDateString();
+          await notificationService.notifyByRole({
+            role: 'admin',
+            title: 'New Employee Onboarding',
+            message: `${englishName} joining ${department} on ${dateStr}. Please prepare onboarding checklist.`,
+            type: 'Employee',
+            entityId: employee.id,
+          });
+        }
+      }
+      
       // Skip audit logging for better performance and cleaner logs
       // Activity logging can be re-enabled if needed for compliance
       
@@ -1440,6 +1451,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
       
+      // Notify admins about employee offboarding if status changed to Terminated/Inactive
+      if (existingEmployee.status !== status && 
+          (status === 'Terminated' || status === 'Inactive') && 
+          exitDate) {
+        const lastDay = new Date(exitDate);
+        const dateStr = lastDay.toLocaleDateString();
+        
+        await notificationService.notifyByRole({
+          role: 'admin',
+          title: 'Employee Offboarding',
+          message: `${englishName} leaving on ${dateStr}. Please prepare offboarding checklist and asset recovery.`,
+          type: 'Employee',
+          entityId: updatedEmployee.id,
+        });
+      }
+      
       // Log activity
       if (req.user) {
         await storage.logActivity({
@@ -1448,6 +1475,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityType: "Employee",
           entityId: updatedEmployee.id,
           details: { name: updatedEmployee.name || updatedEmployee.englishName, empId: updatedEmployee.employeeId }
+        });
+        
+        // Log to system logs for audit trail
+        logger.info('employees', `Employee updated: ${englishName} (${department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: updatedEmployee.id,
+            empId: updatedEmployee.employeeId,
+            name: englishName,
+            department,
+            title,
+            statusChanged: existingEmployee.status !== status,
+            oldStatus: existingEmployee.status,
+            newStatus: status,
+            updatedBy: (req.user as schema.User).username
+          }
         });
       }
       
@@ -1480,6 +1523,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityType: "Employee",
           entityId: id,
           details: { name: employee.englishName, empId: employee.empId }
+        });
+        
+        // Log to system logs for audit trail
+        logger.warn('employees', `Employee deleted: ${employee.englishName} (${employee.department})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            employeeId: id,
+            empId: employee.empId,
+            name: employee.englishName,
+            department: employee.department,
+            title: employee.title,
+            deletedBy: (req.user as schema.User).username
+          }
         });
       }
       
@@ -2888,6 +2944,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Asset created successfully:', asset);
       
+      // Log critical operation
+      if (req.user) {
+        logger.info('assets', `Asset created: ${asset.assetId}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetId: asset.id,
+            assetTag: asset.assetId,
+            type: asset.type,
+            brand: asset.brand,
+            model: asset.model,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       // Log activity
       if (req.user) {
         try {
@@ -2935,6 +3006,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: updatedAsset.id,
           details: { assetId: updatedAsset.assetId, type: updatedAsset.type }
         });
+        
+        // Log to system logs for audit trail
+        logger.info('assets', `Asset updated: ${updatedAsset.assetId} (${updatedAsset.type})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetDatabaseId: updatedAsset.id,
+            assetId: updatedAsset.assetId,
+            type: updatedAsset.type,
+            brand: assetData.brand,
+            model: assetData.model,
+            status: assetData.status,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       res.json(updatedAsset);
@@ -2956,6 +3041,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.deleteAsset(id);
       if (!success) {
         return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      // Log critical operation
+      if (req.user) {
+        logger.warn('assets', `Asset deleted: ${asset.assetId}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            assetId: id,
+            assetTag: asset.assetId,
+            type: asset.type,
+            brand: asset.brand,
+            deletedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       // Log activity
@@ -2988,6 +3087,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedAsset) {
         return res.status(404).json({ message: "Asset or Employee not found" });
+      }
+      
+      // NOTIFICATION: Notify employee about quick asset assignment
+      try {
+        const asset = await storage.getAsset(assetId);
+        const employee = await storage.getEmployee(parseInt(employeeId));
+        
+        if (employee?.userId && asset) {
+          console.log(`[Notification] Creating quick assignment notification for user ${employee.userId}`);
+          await notificationService.notifyAssetAssignment({
+            assetId,
+            employeeId: parseInt(employeeId),
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            assetTag: asset.assetId,
+          });
+          console.log(`[Notification] Quick assignment notification created successfully`);
+        }
+      } catch (notifError) {
+        console.error('[Notification] Failed to create quick assignment notification:', notifError);
+        logger.error('assets', 'Failed to create quick assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
       }
       
       res.json({ 
@@ -3044,6 +3169,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // NOTIFICATION: Notify employee about asset assignment
+      try {
+        if (employee.userId) {
+          console.log(`[Notification] Creating asset assignment notification for user ${employee.userId}`);
+          await notificationService.notifyAssetAssignment({
+            assetId: id,
+            employeeId: parseInt(employeeId),
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${id}`,
+            assetTag: asset.assetId,
+          });
+          console.log(`[Notification] Asset assignment notification created successfully`);
+        } else {
+          console.warn(`[Notification] Employee ${employeeId} has no userId - cannot send notification`);
+        }
+      } catch (notifError) {
+        console.error('[Notification] Failed to create asset assignment notification:', notifError);
+        logger.error('assets', 'Failed to create assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId: id, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
+      
       res.json(updatedAsset);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -3064,7 +3214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Asset is not assigned to any employee" });
       }
       
-      // Get employee details for activity log
+      // Get employee details for activity log and notification
       const employee = await storage.getEmployee(asset.assignedEmployeeId);
       
       // Update asset
@@ -3087,6 +3237,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             employeeId: employee.empId
           }
         });
+
+        // Notify employee that asset was unassigned
+        if (employee.userId) {
+          await notificationService.notifyAssetUnassignment({
+            assetId: id,
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${id}`,
+            assetTag: asset.assetId,
+            unassignedBy: (req.user as schema.User).username,
+          });
+        }
       }
       
       res.json(updatedAsset);
@@ -3186,6 +3347,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Notify employee about maintenance
+      try {
+        if (asset.assignedEmployeeId) {
+          const assignedEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+          if (assignedEmployee?.userId) {
+            if (requestData.status === 'Scheduled' || requestData.status === 'In Progress') {
+              // Notify about scheduled maintenance
+              console.log(`[Notification] Creating maintenance scheduled notification for user ${assignedEmployee.userId}`);
+              await notificationService.notifyMaintenanceScheduled({
+                assetId,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+                maintenanceDate: new Date(requestData.date),
+                maintenanceType: requestData.type || 'Maintenance',
+              });
+            } else if (requestData.status === 'Completed') {
+              // Notify about completed maintenance
+              console.log(`[Notification] Creating maintenance completed notification for user ${assignedEmployee.userId}`);
+              await notificationService.notifyMaintenanceCompleted({
+                assetId,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+                maintenanceType: requestData.type || 'Maintenance',
+              });
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create maintenance notification:', notifError);
+        logger.error('maintenance', 'Failed to create maintenance notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, maintenanceId: maintenance.id },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
+      
       res.status(201).json(maintenance);
     } catch (error: unknown) {
       res.status(400).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
@@ -3260,6 +3458,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updatedBy: (req.user as schema.User).username
           }
         });
+      }
+      
+      // Notify employee about maintenance status change
+      try {
+        // Check if status changed to Completed
+        if (maintenanceData.status === 'Completed' && existingMaintenance.status !== 'Completed') {
+          const asset = await storage.getAsset(existingMaintenance.assetId);
+          if (asset?.assignedEmployeeId) {
+            const assignedEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+            if (assignedEmployee?.userId) {
+              await notificationService.notifyMaintenanceCompleted({
+                assetId: asset.id,
+                userId: assignedEmployee.userId,
+                assetName: asset.name || asset.assetId || `Asset #${asset.id}`,
+                maintenanceType: updatedMaintenance.type || 'Maintenance',
+              });
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create maintenance completion notification:', notifError);
+        // Don't fail the request if notification creation fails
       }
       
       res.json(updatedMaintenance);
@@ -3427,6 +3647,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Notify managers about upgrade request
+      try {
+        // Get all managers to notify about the upgrade request
+        const managers = await db.select()
+          .from(schema.users)
+          .where(eq(schema.users.role, 'manager'));
+        
+        const requester = req.user as AuthUser;
+        const notificationPromises = managers.map(manager =>
+          notificationService.notifyUpgradeRequest({
+            upgradeId: upgrade.id,
+            managerId: manager.id,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            requestedBy: requester.username,
+            upgradeCost: upgrade.estimatedCost || undefined,
+          })
+        );
+        
+        await Promise.all(notificationPromises);
+      } catch (notifError) {
+        console.error('Failed to create upgrade request notification:', notifError);
+        // Don't fail the request if notification creation fails
+      }
+      
       res.json(upgrade);
     } catch (error: unknown) {
       console.error('Error creating upgrade request:', error);
@@ -3575,8 +3819,51 @@ app.put('/api/upgrades/:id', authenticateUser, requireRole(ROLES.AGENT), async (
     `;
     
     const result = await storage.pool.query(updateQuery, values);
+    const updatedUpgrade = result.rows[0];
+    
+    // Notify about upgrade approval/rejection
+    try {
+      const statusChanged = req.body.status && req.body.status !== existing.status;
+      const isApprovalDecision = statusChanged && (req.body.status === 'Approved' || req.body.status === 'Rejected');
+      
+      if (isApprovalDecision) {
+        // Handle snake_case from raw SQL query
+        const assetId = existing.asset_id;
+        const createdById = existing.created_by_id;
         
-    res.json(result.rows[0]);
+        // Get the asset to find its name
+        const asset = await storage.getAsset(assetId);
+        
+        // Get the original requester (created_by_id)
+        const requesterUser = await storage.getUser(createdById);
+        
+        if (requesterUser && asset) {
+          const approver = req.user as schema.User;
+          
+          console.log(`[Notification] Creating upgrade decision notification for user ${requesterUser.id}`);
+          
+          await notificationService.notifyUpgradeDecision({
+            upgradeId,
+            requesterId: requesterUser.id,
+            assetName: asset.name || asset.assetId || `Asset #${asset.id}`,
+            approved: req.body.status === 'Approved',
+            approvedBy: approver.username,
+          });
+          
+          console.log(`[Notification] Successfully created upgrade decision notification`);
+        }
+      }
+    } catch (notifError) {
+      console.error('Failed to create upgrade decision notification:', notifError);
+      logger.error('upgrades', 'Failed to create upgrade decision notification', {
+        userId: (req.user as schema.User)?.id,
+        metadata: { upgradeId },
+        error: notifError instanceof Error ? notifError : new Error(String(notifError))
+      });
+      // Don't fail the request if notification creation fails
+    }
+        
+    res.json(updatedUpgrade);
   } catch (error: unknown) {
     console.error('Error updating upgrade:', error);
     res.status(500).json({ message: 'Error updating upgrade' });
@@ -4116,6 +4403,27 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         });
       }
       
+      // Notify employee about asset check-out
+      try {
+        if (employee.userId) {
+          console.log(`[Notification] Creating asset check-out notification for user ${employee.userId}`);
+          await notificationService.notifyAssetTransaction({
+            assetId,
+            userId: employee.userId,
+            assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+            transactionType: 'Check-Out',
+          });
+        }
+      } catch (notifError) {
+        console.error('Failed to create check-out notification:', notifError);
+        logger.error('assets', 'Failed to create check-out notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId, employeeId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
+      
       res.status(201).json(transaction);
     } catch (error: unknown) {
       console.error("Error checking out asset:", error);
@@ -4162,6 +4470,30 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             notes: notes || "Asset checked in"
           }
         });
+      }
+      
+      // Notify employee about asset check-in (if it was previously assigned to someone)
+      try {
+        if (asset.assignedEmployeeId) {
+          const previousEmployee = await storage.getEmployee(asset.assignedEmployeeId);
+          if (previousEmployee?.userId) {
+            console.log(`[Notification] Creating asset check-in notification for user ${previousEmployee.userId}`);
+            await notificationService.notifyAssetTransaction({
+              assetId,
+              userId: previousEmployee.userId,
+              assetName: asset.name || asset.assetId || `Asset #${assetId}`,
+              transactionType: 'Check-In',
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create check-in notification:', notifError);
+        logger.error('assets', 'Failed to create check-in notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { assetId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
       }
       
       res.status(201).json(transaction);
@@ -4250,6 +4582,9 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const user = req.user as schema.User;
       const userRoleLevel = getUserRoleLevel(user);
       
+      // Get date filter parameters
+      const { createdFrom, createdTo } = req.query;
+      
       // If user has level 1 access (Employee), only show tickets they're assigned to
       // or ones they've submitted through an employee profile
       if (userRoleLevel === 1) { // Employee role
@@ -4257,7 +4592,7 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         // Get the employee record for this user if exists
         const userEmployee = await storage.getEmployeeByUserId(user.id);
         
-        const filteredTickets = allTickets.filter(ticket => {
+        let filteredTickets = allTickets.filter(ticket => {
           // Show tickets assigned to this user
           if (ticket.assignedToId === user.id) return true;
           
@@ -4268,10 +4603,45 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           return false;
         });
         
+        // Apply date filters
+        if (createdFrom || createdTo) {
+          filteredTickets = filteredTickets.filter(ticket => {
+            const ticketDate = new Date(ticket.createdAt);
+            
+            if (createdFrom && ticketDate < new Date(createdFrom as string)) {
+              return false;
+            }
+            
+            if (createdTo && ticketDate > new Date(createdTo as string)) {
+              return false;
+            }
+            
+            return true;
+          });
+        }
+        
         res.json(filteredTickets);
       } else {
         // Admin/Manager can see all tickets
-        const tickets = await storage.getAllTickets();
+        let tickets = await storage.getAllTickets();
+        
+        // Apply date filters
+        if (createdFrom || createdTo) {
+          tickets = tickets.filter(ticket => {
+            const ticketDate = new Date(ticket.createdAt);
+            
+            if (createdFrom && ticketDate < new Date(createdFrom as string)) {
+              return false;
+            }
+            
+            if (createdTo && ticketDate > new Date(createdTo as string)) {
+              return false;
+            }
+            
+            return true;
+          });
+        }
+        
         res.json(tickets);
       }
     } catch (error: unknown) {
@@ -4390,6 +4760,64 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           }
         });
         
+        // Log to system logs for audit trail
+        logger.info('tickets', `Ticket created: ${newTicket.ticketId} - ${newTicket.title}`, {
+          userId: req.user?.id || employeeId,
+          metadata: {
+            ticketDatabaseId: newTicket.id,
+            ticketId: newTicket.ticketId,
+            title: newTicket.title,
+            type: newTicket.type,
+            priority: newTicket.priority,
+            urgency: newTicket.urgency,
+            impact: newTicket.impact,
+            submittedById: newTicket.submittedById,
+            assignedToId: newTicket.assignedToId,
+            createdBy: req.user?.username || 'System'
+          }
+        });
+        
+        // Notify assigned user if ticket is assigned during creation
+        // Handle both camelCase (assignedToId) and snake_case (assigned_to_id) from database
+        const assignedUserId = (newTicket as any).assignedToId || (newTicket as any).assigned_to_id;
+        const ticketIdString = (newTicket as any).ticketId || (newTicket as any).ticket_id || `#${newTicket.id}`;
+        
+        if (assignedUserId) {
+          try {
+            const priority = newTicket.priority || 'Medium';
+            const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+            
+            console.log(`[Notification] Creating notification for ticket ${ticketIdString} assigned to user ${assignedUserId}`);
+            
+            if (isUrgent) {
+              await notificationService.notifyUrgentTicket({
+                ticketId: ticketIdString,
+                assignedToUserId: assignedUserId,
+                ticketTitle: newTicket.title,
+                priority,
+                entityId: newTicket.id,  // Pass database ID for linking
+              });
+            } else {
+              await notificationService.notifyTicketAssignment({
+                ticketId: ticketIdString,
+                assignedToUserId: assignedUserId,
+                ticketTitle: newTicket.title,
+                assignedByUsername: req.user?.username,
+                entityId: newTicket.id,  // Pass database ID for linking
+              });
+            }
+            console.log(`[Notification] Successfully created notification for user ${assignedUserId}`);
+          } catch (notifError) {
+            console.error('Failed to create ticket assignment notification:', notifError);
+            logger.error('tickets', 'Failed to create ticket assignment notification', {
+              userId: req.user?.id,
+              metadata: { ticketId: newTicket.id, assignedUserId },
+              error: notifError instanceof Error ? notifError : new Error(String(notifError))
+            });
+            // Don't fail the request if notification fails
+          }
+        }
+        
         console.log("Ticket created successfully:", newTicket);
         res.status(201).json(newTicket);
       } catch (error: unknown) {
@@ -4410,6 +4838,9 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const userId = req.user.id;
       console.log(`[DELETE TICKET ROUTE] Attempting to delete ticket ${ticketId} by user ${userId}`);
       
+      // Get ticket before deletion for logging
+      const ticket = await storage.getTicket(ticketId);
+      
       const success = await storage.deleteTicket(ticketId, userId);
       console.log(`[DELETE TICKET ROUTE] Delete operation result: ${success}`);
       if (!success) {
@@ -4424,6 +4855,22 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         userId,
         details: { ticketId }
       });
+      
+      // Log to system logs for audit trail
+      if (ticket) {
+        logger.warn('tickets', `Ticket deleted: ${ticket.ticketId} - ${ticket.title}`, {
+          userId,
+          metadata: {
+            ticketDatabaseId: ticketId,
+            ticketId: ticket.ticketId,
+            title: ticket.title,
+            type: ticket.type,
+            status: ticket.status,
+            priority: ticket.priority,
+            deletedBy: req.user.username
+          }
+        });
+      }
       
       res.json({ success: true, message: "Ticket deleted successfully" });
     } catch (error: unknown) {
@@ -4440,14 +4887,14 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       const id = parseInt(req.params.id);
       const ticketData = req.body;
       
+      // Get current ticket BEFORE update to compare status changes
+      const currentTicket = await storage.getTicket(id);
+      if (!currentTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
       // Validate priority calculation if urgency, impact, or priority is being updated
       if (ticketData.urgency || ticketData.impact || ticketData.priority) {
-        // Get current ticket to check existing values
-        const currentTicket = await storage.getTicket(id);
-        if (!currentTicket) {
-          return res.status(404).json({ message: "Ticket not found" });
-        }
-        
         const newUrgency = (ticketData.urgency || currentTicket.urgency) as UrgencyLevel;
         const newImpact = (ticketData.impact || currentTicket.impact) as ImpactLevel;
         const calculatedPriority = calculatePriority(newUrgency, newImpact);
@@ -4483,6 +4930,108 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             assignedToId: updatedTicket.assignedToId
           }
         });
+        
+        // Log to system logs for audit trail
+        const statusChanged = ticketData.status && ticketData.status !== currentTicket.status;
+        logger.info('tickets', `Ticket updated: ${updatedTicket.ticketId} - ${updatedTicket.title}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            ticketDatabaseId: updatedTicket.id,
+            ticketId: updatedTicket.ticketId,
+            title: updatedTicket.title,
+            statusChanged,
+            oldStatus: currentTicket.status,
+            newStatus: updatedTicket.status,
+            priority: updatedTicket.priority,
+            assignedToId: updatedTicket.assignedToId,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
+      // Notify about status change
+      try {
+        // Handle both camelCase and snake_case from database
+        const currentAssignedToId = (currentTicket as any).assignedToId || (currentTicket as any).assigned_to_id;
+        const updatedAssignedToId = (updatedTicket as any).assignedToId || (updatedTicket as any).assigned_to_id;
+        const currentSubmittedById = (currentTicket as any).submittedById || (currentTicket as any).submitted_by_id;
+        
+        if (ticketData.status && ticketData.status !== currentTicket.status) {
+          // Notify the person who submitted the ticket
+          if (currentSubmittedById) {
+            const submitter = await storage.getEmployee(currentSubmittedById);
+            if (submitter?.userId) {
+              await notificationService.notifyTicketStatusChange({
+                ticketId: id,
+                userId: submitter.userId,
+                oldStatus: currentTicket.status,
+                newStatus: updatedTicket.status,
+                ticketTitle: updatedTicket.title || 'Support Request',
+              });
+            }
+          }
+          
+          // Notify the assigned user if different from submitter
+          if (updatedAssignedToId && updatedAssignedToId !== currentSubmittedById) {
+            await notificationService.notifyTicketStatusChange({
+              ticketId: id,
+              userId: updatedAssignedToId,
+              oldStatus: currentTicket.status,
+              newStatus: updatedTicket.status,
+              ticketTitle: updatedTicket.title || 'Support Request',
+            });
+          }
+        }
+
+        // Notify if priority became urgent (Critical, High, or Urgent) when it wasn't before
+        if (ticketData.priority && updatedTicket.priority) {
+          const wasUrgent = currentTicket.priority === 'Critical' || currentTicket.priority === 'High' || currentTicket.priority === 'Urgent';
+          const isNowUrgent = updatedTicket.priority === 'Critical' || updatedTicket.priority === 'High' || updatedTicket.priority === 'Urgent';
+          
+          if (!wasUrgent && isNowUrgent && updatedAssignedToId) {
+            await notificationService.notifyUrgentTicket({
+              ticketId: id,
+              assignedToUserId: updatedAssignedToId,
+              ticketTitle: updatedTicket.title || 'Support Request',
+              priority: updatedTicket.priority,
+            });
+          }
+        }
+        
+        // Notify about assignment change (when assignedToId changes from null or different value)
+        if (ticketData.assignedToId !== undefined && ticketData.assignedToId !== currentAssignedToId) {
+          if (ticketData.assignedToId) {
+            const priority = updatedTicket.priority || 'Medium';
+            const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+            
+            console.log(`[Notification] Creating notification for ticket ${id} assignment change to user ${ticketData.assignedToId}`);
+            
+            if (isUrgent) {
+              await notificationService.notifyUrgentTicket({
+                ticketId: id,
+                assignedToUserId: ticketData.assignedToId,
+                ticketTitle: updatedTicket.title || 'Support Request',
+                priority,
+              });
+            } else {
+              await notificationService.notifyTicketAssignment({
+                ticketId: id,
+                assignedToUserId: ticketData.assignedToId,
+                ticketTitle: updatedTicket.title || 'Support Request',
+                assignedByUsername: (req.user as schema.User)?.username,
+              });
+            }
+            console.log(`[Notification] Successfully created assignment notification for user ${ticketData.assignedToId}`);
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+        logger.error('tickets', 'Failed to create notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { ticketId: id },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
       }
       
       res.json(updatedTicket);
@@ -4533,6 +5082,39 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             newStatus: updatedTicket?.status
           }
         });
+      }
+      
+      // Notify assigned user
+      try {
+        const priority = ticket.priority || 'Medium';
+        const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+        
+        console.log(`[Notification] Creating notification for ticket ${id} assignment to user ${userId}`);
+        
+        if (isUrgent) {
+          await notificationService.notifyUrgentTicket({
+            ticketId: id,
+            assignedToUserId: parseInt(userId),
+            ticketTitle: ticket.title,
+            priority,
+          });
+        } else {
+          await notificationService.notifyTicketAssignment({
+            ticketId: id,
+            assignedToUserId: parseInt(userId),
+            ticketTitle: ticket.title,
+            assignedByUsername: (req.user as schema.User)?.username,
+          });
+        }
+        console.log(`[Notification] Successfully created assignment notification for user ${userId}`);
+      } catch (notifError) {
+        console.error('Failed to create ticket assignment notification:', notifError);
+        logger.error('tickets', 'Failed to create ticket assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { ticketId: id, assignedUserId: userId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification fails
       }
       
       res.json(updatedTicket);
@@ -4791,6 +5373,17 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
     try {
       const configData = req.body;
       const updatedConfig = await storage.updateSystemConfig(configData);
+      
+      // Log critical operation
+      if (req.user) {
+        logger.warn('system', 'System configuration updated', {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            changes: configData,
+            updatedBy: (req.user as schema.User).username
+          }
+        });
+      }
       
       // Log activity
       if (req.user) {
@@ -6976,6 +7569,12 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Get old ticket BEFORE update for comparison
+      const oldTicket = await storage.getTicket(ticketId);
+      if (!oldTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
       // Use updateTicketWithHistory to ensure proper tracking
       const updatedTicket = await storage.updateTicketWithHistory(ticketId, updateData, userId);
       if (!updatedTicket) {
@@ -6990,6 +7589,85 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         userId,
         details: updateData
       });
+
+      // NOTIFICATION LOGIC - Handle assignment changes and status changes
+      try {
+        const ticketIdString = (updatedTicket as any).ticketId || (updatedTicket as any).ticket_id || `#${updatedTicket.id}`;
+        const oldAssignedId = (oldTicket as any).assignedToId || (oldTicket as any).assigned_to_id;
+        const newAssignedId = (updatedTicket as any).assignedToId || (updatedTicket as any).assigned_to_id;
+        const oldStatus = oldTicket.status;
+        const newStatus = updatedTicket.status;
+
+        // ASSIGNMENT CHANGED
+        if (newAssignedId && newAssignedId !== oldAssignedId) {
+          const priority = updatedTicket.priority || 'Medium';
+          const isUrgent = ['Critical', 'High', 'Urgent'].includes(priority);
+
+          console.log(`[Notification] PATCH: Creating notification for ticket ${ticketIdString} assignment change to user ${newAssignedId}`);
+
+          if (isUrgent) {
+            await notificationService.notifyUrgentTicket({
+              ticketId: ticketIdString,
+              assignedToUserId: newAssignedId,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+              priority,
+              entityId: updatedTicket.id,
+            });
+          } else {
+            await notificationService.notifyTicketAssignment({
+              ticketId: ticketIdString,
+              assignedToUserId: newAssignedId,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+              assignedByUsername: (req.user as schema.User)?.username,
+              entityId: updatedTicket.id,
+            });
+          }
+
+          console.log(`[Notification] PATCH: Successfully created assignment notification for user ${newAssignedId}`);
+        }
+
+        // STATUS CHANGED
+        if (oldStatus && newStatus !== oldStatus) {
+          const submittedById = (updatedTicket as any).submittedById || (updatedTicket as any).submitted_by_id;
+          
+          // Notify submitter
+          if (submittedById) {
+            const employee = await storage.getEmployee(submittedById);
+            if (employee?.userId) {
+              await notificationService.notifyTicketStatusChange({
+                ticketId: ticketIdString,
+                userId: employee.userId,
+                oldStatus,
+                newStatus,
+                ticketTitle: updatedTicket.title || 'Support Ticket',
+                entityId: updatedTicket.id,
+              });
+              console.log(`[Notification] PATCH: Status change notification sent to submitter`);
+            }
+          }
+
+          // Notify assigned user if different from submitter
+          if (newAssignedId && newAssignedId !== submittedById) {
+            await notificationService.notifyTicketStatusChange({
+              ticketId: ticketIdString,
+              userId: newAssignedId,
+              oldStatus,
+              newStatus,
+              ticketTitle: updatedTicket.title || 'Support Ticket',
+              entityId: updatedTicket.id,
+            });
+            console.log(`[Notification] PATCH: Status change notification sent to assignee`);
+          }
+        }
+      } catch (notifError) {
+        console.error('[Notification] PATCH: Failed to create notification:', notifError);
+        logger.error('tickets', 'Failed to create notification in PATCH endpoint', {
+          userId,
+          metadata: { ticketId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
+        // Don't fail the request if notification creation fails
+      }
       
       res.json(updatedTicket);
     } catch (error: unknown) {
@@ -7041,16 +7719,30 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         details: { assignedToId: assignedUserId }
       });
 
-      // Create notification for the assigned user
+      // Create notification for the assigned user using notification service
       try {
-        await db.insert(schema.notifications).values({
-          userId: assignedUserId,
-          title: `Ticket #${ticketId} Assigned to You`,
-          message: `You have been assigned ticket #${ticketId}: ${updatedTicket.title || 'Support Request'}`,
-          type: 'Ticket',
-          entityId: ticketId,
-          isRead: false,
-        });
+        const assignedByUser = req.user as AuthUser;
+        
+        // Check if this is an urgent/critical ticket
+        const isUrgent = updatedTicket.priority === 'Critical' || updatedTicket.priority === 'urgent';
+        
+        if (isUrgent) {
+          // Use urgent notification template
+          await notificationService.notifyUrgentTicket({
+            ticketId,
+            assignedToUserId,
+            ticketTitle: updatedTicket.title || 'Support Request',
+            priority: updatedTicket.priority || 'High',
+          });
+        } else {
+          // Use standard assignment notification
+          await notificationService.notifyTicketAssignment({
+            ticketId,
+            assignedToUserId,
+            ticketTitle: updatedTicket.title || 'Support Request',
+            assignedByUsername: assignedByUser.username,
+          });
+        }
       } catch (notifError) {
         console.error('Failed to create notification:', notifError);
         // Don't fail the request if notification creation fails
@@ -7201,9 +7893,37 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
   // User CRUD routes (admin only)
   app.get("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentUserLevel = getRoleLevel(currentUser.role);
+      
       const users = await storage.getAllUsers();
-      console.log("GET /api/users - Raw users from storage:", JSON.stringify(users, null, 2));
-      res.json(users);
+      
+      // Filter users based on role hierarchy:
+      // - SUPER_ADMIN (level 5): sees everyone including other super_admins
+      // - ADMIN (level 4): sees admin, manager, agent, employee (same level and below)
+      // - MANAGER (level 3): sees manager, agent, employee
+      // - AGENT (level 2): sees agent, employee
+      const filteredUsers = users.filter((user: any) => {
+        const userLevel = getRoleLevel(user.role);
+        
+        // Super admins see everyone
+        if (currentUserLevel === ROLE_LEVELS[ROLE_IDS.SUPER_ADMIN]) {
+          return true;
+        }
+        
+        // Other roles see users at their level or below (but not above)
+        return userLevel <= currentUserLevel;
+      });
+      
+      console.log("GET /api/users - Filtered users based on role hierarchy:", {
+        currentUser: currentUser.username,
+        currentRole: currentUser.role,
+        currentLevel: currentUserLevel,
+        totalUsers: users.length,
+        filteredUsers: filteredUsers.length
+      });
+      
+      res.json(filteredUsers);
     } catch (error: unknown) {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
@@ -7211,7 +7931,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.post("/api/users", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentUserLevel = getRoleLevel(currentUser.role);
       const userData = req.body;
+      
+      // Prevent role escalation: cannot create users with equal or higher role level
+      if (userData.role) {
+        const targetRoleLevel = getRoleLevel(userData.role);
+        if (targetRoleLevel >= currentUserLevel) {
+          return res.status(403).json({ 
+            message: "Cannot create users with equal or higher role level than your own" 
+          });
+        }
+      }
       
       // Hash password if provided
       if (userData.password) {
@@ -7219,6 +7951,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       }
       
       const newUser = await storage.createUser(userData);
+      
+      // Log critical operation
+      if (req.user) {
+        logger.info('users', `User created: ${newUser.username}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            newUserId: newUser.id,
+            username: newUser.username,
+            role: newUser.role,
+            createdBy: (req.user as schema.User).username
+          }
+        });
+      }
+      
       res.status(201).json(newUser);
     } catch (error: unknown) {
       console.error("User creation error:", error);
@@ -7228,13 +7974,33 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.put("/api/users/:id", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
+      const requestingUser = req.user as any;
+      const requestingUserLevel = getRoleLevel(requestingUser.role);
       const id = parseInt(req.params.id);
       const userData = req.body;
       
-      // Get current user data for activity logging
+      // Get current user data for validation and activity logging
       const currentUser = await storage.getUser(id);
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent modifying users with equal or higher role level
+      const currentUserRoleLevel = getRoleLevel(currentUser.role);
+      if (currentUserRoleLevel >= requestingUserLevel) {
+        return res.status(403).json({ 
+          message: "Cannot modify users with equal or higher role level than your own" 
+        });
+      }
+      
+      // If changing role, prevent role escalation
+      if (userData.role && userData.role !== currentUser.role) {
+        const targetRoleLevel = getRoleLevel(userData.role);
+        if (targetRoleLevel >= requestingUserLevel) {
+          return res.status(403).json({ 
+            message: "Cannot assign role equal or higher than your own role level" 
+          });
+        }
       }
       
       // Hash password if provided
@@ -7245,6 +8011,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       const updatedUser = await storage.updateUser(id, userData);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log critical operation - role changes
+      if (req.user && userData.role && userData.role !== currentUser.role) {
+        logger.warn('users', `User role changed: ${currentUser.username} (${currentUser.role} → ${userData.role})`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            targetUserId: id,
+            targetUsername: currentUser.username,
+            oldRole: currentUser.role,
+            newRole: userData.role,
+            changedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       // Log activity for status changes
@@ -7259,6 +8039,17 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
             statusChange: `${currentUser.isActive ? 'Active' : 'Inactive'} → ${userData.isActive ? 'Active' : 'Inactive'}`
           }
         });
+        
+        // Also log to system logs
+        logger.info('users', `User ${userData.isActive ? 'activated' : 'deactivated'}: ${currentUser.username}`, {
+          userId: (req.user as schema.User).id,
+          metadata: {
+            targetUserId: id,
+            targetUsername: currentUser.username,
+            statusChange: userData.isActive,
+            changedBy: (req.user as schema.User).username
+          }
+        });
       }
       
       res.json(updatedUser);
@@ -7270,6 +8061,8 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
 
   app.delete("/api/users/:id", authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
     try {
+      const requestingUser = req.user as any;
+      const requestingUserLevel = getRoleLevel(requestingUser.role);
       const userId = parseInt(req.params.id);
       const currentUserId = req.user?.id;
       
@@ -7278,11 +8071,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
       
-      // Get user before deletion for activity log
+      // Get user before deletion for validation and activity log
       const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent deleting users with equal or higher role level
+      const targetUserRoleLevel = getRoleLevel(user.role);
+      if (targetUserRoleLevel >= requestingUserLevel) {
+        return res.status(403).json({ 
+          message: "Cannot delete users with equal or higher role level than your own" 
+        });
       }
       
       try {
@@ -7290,6 +8091,19 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         if (!success) {
           return res.status(400).json({ 
             message: "Cannot delete user. This user may have associated records (tickets, assets, etc.) that must be removed or reassigned first." 
+          });
+        }
+        
+        // Log critical operation
+        if (req.user) {
+          logger.warn('users', `User deleted: ${user.username}`, {
+            userId: (req.user as schema.User).id,
+            metadata: {
+              deletedUserId: userId,
+              deletedUsername: user.username,
+              deletedRole: user.role,
+              deletedBy: (req.user as schema.User).username
+            }
           });
         }
       } catch (error: any) {
@@ -7840,423 +8654,18 @@ app.get("/api/assets/transaction-reasons", authenticateUser, async (req, res) =>
     }
   });
 
-  // GET /api/admin/backups - Get list of backups
-app.get('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backups = await backupService.getBackupList();
-    res.json(backups);
-  } catch (error) {
-    console.error('Failed to get backup list:', error);
-    res.status(500).json({ error: 'Failed to get backup list' });
-  }
-});
-
-// POST /api/admin/backups - Create manual backup
-app.post('/api/admin/backups', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const { description } = req.body;
-    const userId = (req.user as any)?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
-
-    const result = await backupService.createManualBackup(userId, description);
-    
-    if (result.success) {
-      res.json({ message: 'Backup created successfully', backupId: result.backupId });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to create backup:', error);
-    res.status(500).json({ error: 'Failed to create backup' });
-  }
-});
-
-// POST /api/admin/restore/:backupId - Restore from backup
-app.post('/api/admin/restore/:backupId', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.backupId);
-    const userId = (req.user as any)?.id; 
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
-
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.restoreFromBackup(backupId, userId);
-    
-    if (result.success) {
-      res.json({ 
-        message: 'Database restored successfully', 
-        recordsRestored: result.recordsRestored 
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to restore backup:', error);
-    res.status(500).json({ error: 'Failed to restore backup' });
-  }
-});
-
-// DELETE /api/admin/backups/:id - Delete backup
-app.delete('/api/admin/backups/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.id);
-    
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.deleteBackup(backupId);
-    
-    if (result.success) {
-      res.json({ message: 'Backup deleted successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to delete backup:', error);
-    res.status(500).json({ error: 'Failed to delete backup' });
-  }
-});
-
-// POST /api/admin/backups/restore-from-file - Restore from uploaded backup file
-app.post('/api/admin/backups/restore-from-file', authenticateUser, requireRole(ROLES.ADMIN), backupUpload.single('backup'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No backup file uploaded' });
-    }
-
-    const user = req.user as AuthUser;
-    const uploadedFilePath = req.file.path;
-
-    console.log(`Restore from uploaded file requested by user ${user.id}: ${req.file.originalname}`);
-
-    // Restore from the uploaded file
-    const result = await backupService.restoreFromFile(uploadedFilePath, user.id);
-
-    // Clean up uploaded file after processing
-    try {
-      await fs.unlink(uploadedFilePath);
-    } catch (error) {
-      console.warn('Could not delete uploaded file:', error);
-    }
-
-    if (result.success) {
-      res.json({ 
-        message: 'Database restored successfully from uploaded file',
-        recordsRestored: result.recordsRestored || 0
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to restore from uploaded file:', error);
-    
-    // Clean up uploaded file on error
-    if (req.file?.path) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (cleanupError) {
-        console.warn('Could not delete uploaded file after error:', cleanupError);
-      }
-    }
-    
-    res.status(500).json({ error: 'Failed to restore from uploaded file' });
-  }
-});
-
-// GET /api/admin/backups/:id/download - Download backup file
-app.get('/api/admin/backups/:id/download', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const backupId = parseInt(req.params.id);
-    
-    if (isNaN(backupId)) {
-      return res.status(400).json({ error: 'Invalid backup ID' });
-    }
-
-    const result = await backupService.downloadBackup(backupId);
-    
-    if (result.success && result.filepath && result.filename) {
-      // Set headers for file download
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
-      res.setHeader('Content-Type', 'application/sql');
-      
-      // Send file
-      res.download(result.filepath, result.filename, (err) => {
-        if (err) {
-          console.error('Download error:', err);
-          if (!res.headersSent) {
-            res.status(500).json({ error: 'Failed to download backup file' });
-          }
-        }
-      });
-    } else {
-      res.status(404).json({ error: result.error || 'Backup file not found' });
-    }
-  } catch (error) {
-    console.error('Failed to download backup:', error);
-    res.status(500).json({ error: 'Failed to download backup' });
-  }
-});
-
-// GET /api/admin/system-health - Get system health metrics
-app.get('/api/admin/system-health', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const healthMetrics = await backupService.getSystemHealth();
-    res.json(healthMetrics);
-  } catch (error) {
-    console.error('Failed to get system health:', error);
-    res.status(500).json({ error: 'Failed to get system health' });
-  }
-});
-
-// GET /api/admin/system-overview - Get system overview statistics
-app.get('/api/admin/system-overview', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const systemOverview = await backupService.getSystemOverview();
-    res.json(systemOverview);
-  } catch (error) {
-    console.error('Failed to get system overview:', error);
-    res.status(500).json({ error: 'Failed to get system overview' });
-  }
-});
-
-// GET /api/admin/restore-history - Get restore history
-app.get('/api/admin/restore-history',authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const history = await backupService.getRestoreHistory();
-    res.json(history);
-  } catch (error) {
-    console.error('Failed to get restore history:', error);
-    res.status(500).json({ error: 'Failed to get restore history' });
-  }
-});
-
-// Backup Job Management Routes
-
-// GET /api/admin/backup-jobs - Get all backup jobs
-app.get('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobs = await backupService.getBackupJobs();
-    res.json(jobs);
-  } catch (error) {
-    console.error('Failed to get backup jobs:', error);
-    res.status(500).json({ error: 'Failed to get backup jobs' });
-  }
-});
-
-// POST /api/admin/backup-jobs - Create new backup job
-app.post('/api/admin/backup-jobs', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
-
-    if (!name || !schedule_type) {
-      return res.status(400).json({ error: 'Name and schedule_type are required' });
-    }
-
-    if (!['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
-      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
-    }
-
-    const result = await backupService.createBackupJob({
-      name,
-      description,
-      schedule_type,
-      schedule_value: schedule_value || 1,
-      is_enabled: is_enabled !== false, // Default to true
-    });
-
-    if (result.success) {
-      res.json({ message: 'Backup job created successfully', jobId: result.jobId });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to create backup job:', error);
-    res.status(500).json({ error: 'Failed to create backup job' });
-  }
-});
-
-// PUT /api/admin/backup-jobs/:id - Update backup job
-app.put('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-    const { name, description, schedule_type, schedule_value, is_enabled } = req.body;
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    if (schedule_type && !['hourly', 'daily', 'weekly', 'monthly'].includes(schedule_type)) {
-      return res.status(400).json({ error: 'Schedule type must be hourly, daily, weekly, or monthly' });
-    }
-
-    const result = await backupService.updateBackupJob(jobId, {
-      name,
-      description,
-      schedule_type,
-      schedule_value,
-      is_enabled
-    });
-
-    if (result.success) {
-      res.json({ message: 'Backup job updated successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to update backup job:', error);
-    res.status(500).json({ error: 'Failed to update backup job' });
-  }
-});
-
-// DELETE /api/admin/backup-jobs/:id - Delete backup job
-app.delete('/api/admin/backup-jobs/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    const result = await backupService.deleteBackupJob(jobId);
-
-    if (result.success) {
-      res.json({ message: 'Backup job deleted successfully' });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to delete backup job:', error);
-    res.status(500).json({ error: 'Failed to delete backup job' });
-  }
-});
-
-// POST /api/admin/backup-jobs/:id/run - Manually execute a backup job
-app.post('/api/admin/backup-jobs/:id/run', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-  try {
-    const jobId = parseInt(req.params.id);
-
-    if (isNaN(jobId)) {
-      return res.status(400).json({ error: 'Invalid job ID' });
-    }
-
-    const result = await backupService.executeScheduledJob(jobId);
-
-    if (result.success) {
-      res.json({ 
-        message: 'Backup job executed successfully', 
-        backupId: result.backupId 
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Failed to execute backup job:', error);
-    res.status(500).json({ error: 'Failed to execute backup job' });
-  }
-});
+  // ==========================================
+  // BACKUP, RESTORE & SYSTEM HEALTH ENDPOINTS
+  // ==========================================
+  // All backup, restore, backup-jobs, and system health routes have been moved to:
+  // - server/routes/backup.ts (mounted at /api/admin)
+  // - server/routes/systemHealth.ts (mounted at /api/admin)
+  
   // ==========================================
   // NOTIFICATIONS ENDPOINTS
   // ==========================================
-
-  // GET /api/notifications - Get all notifications for current user
-  app.get('/api/notifications', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      
-      const userNotifications = await db.select()
-        .from(schema.notifications)
-        .where(eq(schema.notifications.userId, user.id))
-        .orderBy(schema.notifications.createdAt);
-
-      res.json(userNotifications);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      res.status(500).json({ error: 'Failed to fetch notifications' });
-    }
-  });
-
-  // POST /api/notifications/mark-read - Mark notification(s) as read
-  app.post('/api/notifications/mark-read', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      const { notificationIds } = req.body;
-
-      if (!notificationIds || !Array.isArray(notificationIds)) {
-        return res.status(400).json({ error: 'notificationIds array is required' });
-      }
-
-      // Update notifications to mark as read
-      await db.update(schema.notifications)
-        .set({ isRead: true })
-        .where(eq(schema.notifications.userId, user.id));
-
-      res.json({ message: 'Notifications marked as read' });
-    } catch (error) {
-      console.error('Failed to mark notifications as read:', error);
-      res.status(500).json({ error: 'Failed to mark notifications as read' });
-    }
-  });
-
-  // DELETE /api/notifications/:id - Delete (dismiss) a notification
-  app.delete('/api/notifications/:id', authenticateUser, async (req, res) => {
-    try {
-      const user = req.user as AuthUser;
-      const notificationId = parseInt(req.params.id);
-
-      if (isNaN(notificationId)) {
-        return res.status(400).json({ error: 'Invalid notification ID' });
-      }
-
-      // Delete notification (only if it belongs to the user)
-      await db.delete(schema.notifications)
-        .where(eq(schema.notifications.id, notificationId));
-
-      res.json({ message: 'Notification dismissed' });
-    } catch (error) {
-      console.error('Failed to dismiss notification:', error);
-      res.status(500).json({ error: 'Failed to dismiss notification' });
-    }
-  });
-
-  // POST /api/notifications - Create a new notification (for system use)
-  app.post('/api/notifications', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-    try {
-      const { userId, title, message, type, entityId } = req.body;
-
-      if (!userId || !title || !message || !type) {
-        return res.status(400).json({ error: 'userId, title, message, and type are required' });
-      }
-
-      const [notification] = await db.insert(schema.notifications)
-        .values({
-          userId,
-          title,
-          message,
-          type,
-          entityId,
-          isRead: false
-        })
-        .returning();
-
-      res.json(notification);
-    } catch (error) {
-      console.error('Failed to create notification:', error);
-      res.status(500).json({ error: 'Failed to create notification' });
-    }
-  });
-
-
-
-
+  // Notification routes have been moved to server/routes/notifications.ts
+  // and are mounted at /api/notifications
 
   const httpServer = createServer(app);
   return httpServer;

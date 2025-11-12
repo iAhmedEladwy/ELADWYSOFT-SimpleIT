@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 import NotFound from '@/pages/not-found';
 import { Link } from 'wouter';
 
@@ -100,7 +101,7 @@ export default function AdminConsole() {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
       <div className="container mx-auto py-6 space-y-6">
         <Helmet>
           <title>{translations.title}</title>

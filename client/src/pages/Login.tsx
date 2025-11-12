@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ROLE_IDS, normalizeRoleId } from '@shared/roles.config';
 import {
   Form,
   FormControl,
@@ -72,7 +73,7 @@ export default function Login() {
       console.log('User role:', loggedInUser?.role);
       console.log('Role type:', typeof loggedInUser?.role);
       console.log('Role toLowerCase():', loggedInUser?.role?.toLowerCase());
-      console.log('Is employee?', loggedInUser?.role?.toLowerCase() === 'employee');
+      console.log('Is employee?', normalizeRoleId(loggedInUser?.role) === ROLE_IDS.EMPLOYEE);
       
       toast({
         title: translations.loginSuccess,
@@ -80,7 +81,7 @@ export default function Login() {
       });
       
       // Redirect based on user role
-      if (loggedInUser?.role?.toLowerCase() === 'employee') {
+      if (normalizeRoleId(loggedInUser?.role) === ROLE_IDS.EMPLOYEE) {
         console.log('Redirecting employee to portal...');
         navigate('/portal');
       } else {

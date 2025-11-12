@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
-import { Database, Download, Upload, Trash2, ArrowLeft, Clock, FileUp } from 'lucide-react';
+import { Database, Download, Upload, Trash2, Clock, FileUp } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient'; 
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'wouter';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { ROLE_IDS } from '@shared/roles.config';
 import ScheduledBackupsTab from '@/components/admin/ScheduledBackupsTab';
 
 interface BackupFile {
@@ -67,7 +67,6 @@ export default function BackupRestore() {
     restoreWarning: language === 'English' 
       ? 'This will completely replace all current data with the backup data. This action cannot be undone.' 
       : 'سيؤدي هذا إلى استبدال جميع البيانات الحالية ببيانات النسخة الاحتياطية. لا يمكن التراجع عن هذا الإجراء.',
-    backToAdminConsole: language === 'English' ? 'Back to Admin Console' : 'العودة لوحدة التحكم',
     manual: language === 'English' ? 'Manual' : 'يدوي',
     scheduled: language === 'English' ? 'Scheduled' : 'مجدول',
     completed: language === 'English' ? 'Completed' : 'مكتمل',
@@ -265,7 +264,7 @@ export default function BackupRestore() {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin']} fallback={<div>Access denied</div>}>
+    <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<div>Access denied</div>}>
       <Helmet>
         <title>{t.title} - SimpleIT</title>
       </Helmet>
@@ -282,12 +281,6 @@ export default function BackupRestore() {
               <p className="text-muted-foreground">{t.description}</p>
             </div>
           </div>
-          <Link href="/admin-console">
-            <Button variant="outline" className="flex items-center space-x-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>{t.backToAdminConsole}</span>
-            </Button>
-          </Link>
         </div>
 
         {/* Tabs */}

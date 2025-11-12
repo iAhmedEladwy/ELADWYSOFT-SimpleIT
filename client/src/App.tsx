@@ -1,46 +1,62 @@
 import { Switch, Route, useLocation } from "wouter";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import FirstTimeSetup from "@/pages/FirstTimeSetup";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
-import Employees from "@/pages/Employees";
-import Assets from "@/pages/Assets";
-import AssetHistory from "@/pages/AssetHistory";
-import Tickets from "@/pages/Tickets";
-import Reports from "@/pages/Reports";
-import SystemConfig from "@/pages/SystemConfig";
-import AuditLogs from "@/pages/AuditLogs";
-import UserProfile from "@/pages/UserProfile";
-import Users from "@/pages/Users";
-import Maintenance from "@/pages/Maintenance";
-import ChangesLog from "@/pages/ChangesLog";
-import AdminConsole from "@/pages/AdminConsole";
-import BulkOperations from "@/pages/admin/BulkOperations";
-import UpgradeRequests from "@/pages/admin/UpgradeRequests";
 import Layout from "@/components/layout/Layout";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import { useLanguage, LanguageProvider } from "@/hooks/use-language";
 import { HelmetProvider } from "react-helmet-async";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import BackupRestore from '@/pages/admin/BackupRestore';
-import SystemHealth from '@/pages/admin/SystemHealth';
+import { ROLE_IDS } from "@shared/roles.config";
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
-// Employee Portal imports
-import PortalDashboard from '@/pages/portal/PortalDashboard';
-import MyAssets from '@/pages/portal/MyAssets';
-import MyTickets from '@/pages/portal/MyTickets';
-import CreateTicket from '@/pages/portal/CreateTicket';
-import MyProfile from '@/pages/portal/MyProfile';
-import TicketDetail from '@/pages/portal/TicketDetail';
-import PortalDebug from '@/pages/portal/PortalDebug';
+// Lazy-loaded pages for better performance
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Employees = lazy(() => import("@/pages/Employees"));
+const Assets = lazy(() => import("@/pages/Assets"));
+const AssetHistory = lazy(() => import("@/pages/AssetHistory"));
+const Tickets = lazy(() => import("@/pages/Tickets"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const SystemConfig = lazy(() => import("@/pages/SystemConfig"));
+const AuditLogs = lazy(() => import("@/pages/AuditLogs"));
+const UserProfile = lazy(() => import("@/pages/UserProfile"));
+const Users = lazy(() => import("@/pages/Users"));
+const Maintenance = lazy(() => import("@/pages/Maintenance"));
+const ChangesLog = lazy(() => import("@/pages/ChangesLog"));
+const BulkOperations = lazy(() => import("@/pages/admin/BulkOperations"));
+const UpgradeRequests = lazy(() => import("@/pages/admin/UpgradeRequests"));
+const BackupRestore = lazy(() => import('@/pages/admin/BackupRestore'));
+const SystemHealth = lazy(() => import('@/pages/admin/SystemHealth'));
+const SystemLogs = lazy(() => import('@/pages/SystemLogs'));
+const PerformanceMonitor = lazy(() => import('@/pages/PerformanceMonitor'));
+
+// Employee Portal lazy-loaded pages
+const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
+const MyAssets = lazy(() => import('@/pages/portal/MyAssets'));
+const MyTickets = lazy(() => import('@/pages/portal/MyTickets'));
+const CreateTicket = lazy(() => import('@/pages/portal/CreateTicket'));
+const MyProfile = lazy(() => import('@/pages/portal/MyProfile'));
+const TicketDetail = lazy(() => import('@/pages/portal/TicketDetail'));
+const PortalDebug = lazy(() => import('@/pages/portal/PortalDebug'));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 animate-fade-in">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+    <p className="text-gray-600">Loading page...</p>
+    <div className="mt-4 w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-full bg-primary rounded-full animate-pulse"></div>
+    </div>
+  </div>
+);
 
 function PrivateRoute({ component: Component, ...rest }: any) {
   const { user, isLoading, hasCheckedAuth } = useAuth();
@@ -112,37 +128,41 @@ function Router() {
 
   return (
     <div dir={dir} className="min-h-screen bg-gray-50">
-      <Switch>
-        <Route path="/setup" component={FirstTimeSetup} />
-        <Route path="/login" component={Login} />
-        <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/reset-password" component={ResetPassword} />
-        
-        {/* Employee Portal Routes - Must be before "/" route */}
-        <Route path="/portal/debug" component={PortalDebug} />
-        <Route path="/portal/dashboard" component={PortalDashboard} />
-        <Route path="/portal/my-assets" component={MyAssets} />
-        <Route path="/portal/my-tickets/:id" component={TicketDetail} />
-        <Route path="/portal/my-tickets" component={MyTickets} />
-        <Route path="/portal/create-ticket" component={CreateTicket} />
-        <Route path="/portal/my-profile" component={MyProfile} />
-        <Route path="/portal">
-          {() => {
-            window.location.href = '/portal/dashboard';
-            return null;
-          }}
-        </Route>
-        
-        <Route path="/">
-          <Layout>
-            <PrivateRoute component={Dashboard} />
-          </Layout>
-        </Route>
+      {/* PWA Install Prompt - Available across entire app */}
+      <InstallPrompt />
+      
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/setup" component={FirstTimeSetup} />
+          <Route path="/login" component={Login} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
+          
+          {/* Employee Portal Routes - Must be before "/" route */}
+          <Route path="/portal/debug" component={PortalDebug} />
+          <Route path="/portal/dashboard" component={PortalDashboard} />
+          <Route path="/portal/my-assets" component={MyAssets} />
+          <Route path="/portal/my-tickets/:id" component={TicketDetail} />
+          <Route path="/portal/my-tickets" component={MyTickets} />
+          <Route path="/portal/create-ticket" component={CreateTicket} />
+          <Route path="/portal/my-profile" component={MyProfile} />
+          <Route path="/portal">
+            {() => {
+              window.location.href = '/portal/dashboard';
+              return null;
+            }}
+          </Route>
+          
+          <Route path="/">
+            <Layout>
+              <PrivateRoute component={Dashboard} />
+            </Layout>
+          </Route>
 
         <Route path="/employees">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]} fallback={<NotFound />}>
                 <Employees />
               </RoleGuard>
             )} />
@@ -156,7 +176,7 @@ function Router() {
         <Route path="/asset-history">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]} fallback={<NotFound />}>
                 <AssetHistory />
               </RoleGuard>
             )} />
@@ -170,7 +190,7 @@ function Router() {
         <Route path="/reports">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]} fallback={<NotFound />}>
                 <Reports />
               </RoleGuard>
             )} />
@@ -179,7 +199,7 @@ function Router() {
         <Route path="/system-config">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
                 <SystemConfig />
               </RoleGuard>
             )} />
@@ -188,7 +208,7 @@ function Router() {
         <Route path="/audit-logs">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]} fallback={<NotFound />}>
                 <AuditLogs />
               </RoleGuard>
             )} />
@@ -202,7 +222,7 @@ function Router() {
         <Route path="/maintenance">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager', 'agent']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER, ROLE_IDS.AGENT]} fallback={<NotFound />}>
                 <Maintenance />
               </RoleGuard>
             )} />
@@ -214,53 +234,110 @@ function Router() {
           </Layout>
         </Route>
 
-        {/* Admin Console Routes */}
+        {/* Admin Console Routes - Redirect root to users page */}
         <Route path="/admin-console">
           <Layout>
-            <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
-                <AdminConsole />
-              </RoleGuard>
-            )} />
+            <PrivateRoute component={() => {
+              // Redirect to first sub-page
+              window.location.href = '/admin-console/users';
+              return null;
+            }} />
           </Layout>
         </Route>
 
         <Route path="/admin-console/users">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
                 <Users />
               </RoleGuard>
             )} />
           </Layout>
         </Route>
 
-                {/* NEW: Backup & Restore Route */}
-        <Route path="/admin-console/backup-restore">
+        {/* System Manager Routes - Redirect root to system-logs */}
+        <Route path="/developer-tools">
+          <Layout>
+            <PrivateRoute component={() => {
+              // Redirect to first sub-page
+              window.location.href = '/developer-tools/system-logs';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
+        <Route path="/developer-tools/system-logs">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
-                <BackupRestore />
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
+                <SystemLogs />
               </RoleGuard>
             )} />
           </Layout>
         </Route>
 
-        {/* NEW: System Health Route */}
-        <Route path="/admin-console/system-health">
+        <Route path="/developer-tools/system-health">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
                 <SystemHealth />
               </RoleGuard>
             )} />
           </Layout>
         </Route>
 
+        <Route path="/developer-tools/backup-restore">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
+                <BackupRestore />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        <Route path="/developer-tools/performance-monitor">
+          <Layout>
+            <PrivateRoute component={() => (
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN]} fallback={<NotFound />}>
+                <PerformanceMonitor />
+              </RoleGuard>
+            )} />
+          </Layout>
+        </Route>
+
+        {/* Legacy routes - redirect to new System Manager locations */}
+        <Route path="/admin-console/backup-restore">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/backup-restore';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/system-health">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/system-health';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
+        <Route path="/admin-console/system-logs">
+          <Layout>
+            <PrivateRoute component={() => {
+              window.location.href = '/developer-tools/system-logs';
+              return null;
+            }} />
+          </Layout>
+        </Route>
+
         <Route path="/admin-console/audit-logs">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]} fallback={<NotFound />}>
                 <AuditLogs />
               </RoleGuard>
             )} />
@@ -270,7 +347,7 @@ function Router() {
         <Route path="/admin-console/bulk-operations">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN]} fallback={<NotFound />}>
                 <BulkOperations />
               </RoleGuard>
             )} />
@@ -280,14 +357,15 @@ function Router() {
         <Route path="/admin-console/upgrade-requests">
           <Layout>
             <PrivateRoute component={() => (
-              <RoleGuard allowedRoles={['admin', 'manager']} fallback={<NotFound />}>
+              <RoleGuard allowedRoles={[ROLE_IDS.SUPER_ADMIN, ROLE_IDS.ADMIN, ROLE_IDS.MANAGER]} fallback={<NotFound />}>
                 <UpgradeRequests />
               </RoleGuard>
             )} />
           </Layout>
         </Route>
         <Route component={NotFound} />
-      </Switch>
+        </Switch>
+      </Suspense>
     </div>
   );
 }
