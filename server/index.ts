@@ -137,8 +137,8 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Initialize WebSocket service AFTER server starts listening
-    websocketService.initialize(server);
-    console.log('WebSocket service initialized for real-time logs at ws://localhost:' + port + '/ws/logs');
+    // WebSocket disabled - System Logs now uses polling for auto-refresh
+    // websocketService.initialize(server);
+    // console.log('WebSocket service initialized for real-time logs at ws://localhost:' + port + '/ws/logs');
   });
 })();
