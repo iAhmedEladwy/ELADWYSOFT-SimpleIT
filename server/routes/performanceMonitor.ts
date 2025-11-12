@@ -80,7 +80,7 @@ function filterByTimeRange(logs: PerformanceEntry[], range: string): Performance
 }
 
 // GET /api/developer-tools/performance - Get performance metrics
-router.get('/performance', requireRole([ROLE_IDS.SUPER_ADMIN]), async (req, res) => {
+router.get('/performance', requireRole(ROLE_IDS.SUPER_ADMIN), async (req, res) => {
   try {
     const range = (req.query.range as string) || '1h';
     const filteredLogs = filterByTimeRange(performanceLog, range);
@@ -179,7 +179,7 @@ router.get('/performance', requireRole([ROLE_IDS.SUPER_ADMIN]), async (req, res)
 });
 
 // GET /api/developer-tools/performance/endpoints - Get detailed endpoint metrics
-router.get('/performance/endpoints', requireRole([ROLE_IDS.SUPER_ADMIN]), async (req, res) => {
+router.get('/performance/endpoints', requireRole(ROLE_IDS.SUPER_ADMIN), async (req, res) => {
   try {
     const range = (req.query.range as string) || '1h';
     const filteredLogs = filterByTimeRange(performanceLog, range);
@@ -233,7 +233,7 @@ router.get('/performance/endpoints', requireRole([ROLE_IDS.SUPER_ADMIN]), async 
 });
 
 // GET /api/developer-tools/performance/reset - Reset performance logs (for testing)
-router.post('/performance/reset', requireRole([ROLE_IDS.SUPER_ADMIN]), async (req, res) => {
+router.post('/performance/reset', requireRole(ROLE_IDS.SUPER_ADMIN), async (req, res) => {
   try {
     performanceLog.length = 0; // Clear the array
     res.json({ 
