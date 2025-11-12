@@ -940,102 +940,21 @@ export default function Assets() {
           </div>
         </div>
 
-        {/* Filter & Search Card - keeping all original filters */}
+        {/* Filter & Search - Using AssetFilters Component with Multi-Select */}
+        <div className="mb-6">
+          <AssetFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            totalCount={pagination.totalCount}
+            filteredCount={pagination.totalCount}
+            onExport={handleExportFilteredAssets}
+          />
+        </div>
+
+        {/* Additional Filters */}
         <Card className="mb-6">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <CardTitle className="text-lg">{translations.filterSearchAssets}</CardTitle>
-                {Object.values(filters).filter(Boolean).length > 0 && (
-                  <Badge variant="secondary">{Object.values(filters).filter(Boolean).length}</Badge>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {pagination.totalCount} {translations.totalAssets}
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            {/* Search */}
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setFilters({ ...filters, search: searchInput });
-            }} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={translations.searchPlaceholder}
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Button type="submit" variant="outline">
-                {translations.search}
-              </Button>
-            </form>
-
-            {/* Filter Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
-             
-             {/* Type Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">{translations.type}</label>
-              <Select
-                value={filters.type || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={translations.allTypes} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{translations.allTypes}</SelectItem>
-                  {customAssetTypes.map((type: any) => (
-                    <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">{translations.status}</label>
-              <Select
-                value={filters.status || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={translations.allStatuses} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{translations.allStatuses}</SelectItem>
-                  {assetStatuses.map((status: string) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Brand Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">{translations.brand}</label>
-              <Select
-                value={filters.brand || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, brand: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={translations.allBrands} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{translations.allBrands}</SelectItem>
-                  {customAssetBrands.map((brand: any) => (
-                    <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               {/* Assignment Filter with Combobox */}
               <div>
                 <label className="text-sm font-medium mb-2 block">{translations.assignment}</label>
