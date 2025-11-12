@@ -5,6 +5,7 @@ import { eq, desc, and, inArray } from 'drizzle-orm';
 import { requireRole, ROLES } from '../rbac';
 import * as notificationService from '../services/notificationService';
 import notificationPreferencesRouter from './notificationPreferences';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -178,6 +179,16 @@ export async function createNotification(params: {
 
     // Only create notification if user has it enabled
     if (!isEnabled) {
+      // Log skipped notification for debugging
+      logger.debug('notifications', `Notification skipped: User ${params.userId} disabled ${params.type}`, {
+        userId: params.userId,
+        metadata: { 
+          type: params.type, 
+          title: params.title,
+          message: params.message,
+          reason: 'User preference disabled'
+        }
+      });
       return null; // User has disabled this notification type
     }
 
@@ -192,9 +203,29 @@ export async function createNotification(params: {
       })
       .returning();
     
+    // Log successful notification creation
+    logger.info('notifications', `Notification created: ${params.title}`, {
+      userId: params.userId,
+      metadata: { 
+        notificationId: notification.id,
+        type: params.type,
+        entityId: params.entityId,
+        title: params.title
+      }
+    });
+    
     return notification;
   } catch (error) {
-    console.error('Failed to create notification:', error);
+    // Log error to system logs (not just console)
+    logger.error('notifications', `Failed to create notification: ${params.title}`, {
+      userId: params.userId,
+      metadata: { 
+        type: params.type, 
+        title: params.title,
+        message: params.message 
+      },
+      error: error instanceof Error ? error : new Error(String(error))
+    });
     throw error;
   }
 }

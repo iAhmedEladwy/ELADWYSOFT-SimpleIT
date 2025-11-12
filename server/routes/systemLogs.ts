@@ -3,6 +3,7 @@ import { db } from '../db';
 import { systemLogs } from '@shared/schema';
 import { desc, and, eq, gte, lte, like, or, sql } from 'drizzle-orm';
 import { requirePermission, PERMISSIONS } from '../rbac';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -202,6 +203,60 @@ router.delete('/cleanup', requirePermission(PERMISSIONS.SYSTEM_LOGS), async (req
   } catch (error) {
     console.error('Error cleaning up logs:', error);
     res.status(500).json({ error: 'Failed to cleanup logs' });
+  }
+});
+
+/**
+ * POST /api/system-logs/client-error
+ * Report client-side errors to server logs
+ * Body: { message, stack, level, metadata }
+ * Used to capture Service Worker errors, React errors, etc.
+ */
+router.post('/client-error', async (req, res) => {
+  try {
+    const { message, stack, level = 'error', metadata = {} } = req.body;
+    const user = req.user as AuthUser | undefined;
+
+    // Validate level
+    const validLevels = ['debug', 'info', 'warn', 'error', 'critical'];
+    const logLevel = validLevels.includes(level) ? level : 'error';
+
+    // Log client error to system logs
+    const errorObj = stack ? { name: 'ClientError', message, stack } as Error : undefined;
+    
+    if (logLevel === 'debug') {
+      logger.debug('client', message || 'Client-side debug', {
+        userId: user?.id,
+        metadata: { ...metadata, userAgent: req.headers['user-agent'], referer: req.headers.referer, ip: req.ip }
+      });
+    } else if (logLevel === 'info') {
+      logger.info('client', message || 'Client-side info', {
+        userId: user?.id,
+        metadata: { ...metadata, userAgent: req.headers['user-agent'], referer: req.headers.referer, ip: req.ip }
+      });
+    } else if (logLevel === 'warn') {
+      logger.warn('client', message || 'Client-side warning', {
+        userId: user?.id,
+        metadata: { ...metadata, userAgent: req.headers['user-agent'], referer: req.headers.referer, ip: req.ip }
+      });
+    } else if (logLevel === 'critical') {
+      logger.critical('client', message || 'Client-side critical error', {
+        userId: user?.id,
+        metadata: { ...metadata, userAgent: req.headers['user-agent'], referer: req.headers.referer, ip: req.ip },
+        error: errorObj
+      });
+    } else {
+      logger.error('client', message || 'Client-side error', {
+        userId: user?.id,
+        metadata: { ...metadata, userAgent: req.headers['user-agent'], referer: req.headers.referer, ip: req.ip },
+        error: errorObj
+      });
+    }
+
+    res.json({ success: true, logged: true });
+  } catch (error) {
+    console.error('Error logging client error:', error);
+    res.status(500).json({ error: 'Failed to log client error' });
   }
 });
 
