@@ -4715,9 +4715,17 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           }
         });
         
+        // DEBUG: Log the entire ticket object to see its structure
+        console.log('[DEBUG] New ticket object:', JSON.stringify(newTicket, null, 2));
+        console.log('[DEBUG] Ticket keys:', Object.keys(newTicket));
+        
         // Notify assigned user if ticket is assigned during creation
         // Handle both camelCase (assignedToId) and snake_case (assigned_to_id) from database
         const assignedUserId = (newTicket as any).assignedToId || (newTicket as any).assigned_to_id;
+        
+        console.log(`[DEBUG] assignedToId (camelCase): ${(newTicket as any).assignedToId}`);
+        console.log(`[DEBUG] assigned_to_id (snake_case): ${(newTicket as any).assigned_to_id}`);
+        console.log(`[DEBUG] Final assignedUserId: ${assignedUserId}`);
         
         if (assignedUserId) {
           try {
