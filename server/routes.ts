@@ -236,7 +236,7 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
 
 // Import RBAC functions from centralized configuration
 import { hasMinimumRoleLevel, getUserRoleLevel, hasPermission, ROLES, requireRole, requirePermission, PERMISSIONS } from "./rbac";
-import { getRoleLevel, normalizeRoleId, ROLE_IDS } from "@shared/roles.config";
+import { getRoleLevel, normalizeRoleId, ROLE_IDS, ROLE_LEVELS } from "@shared/roles.config";
 
 // File upload storage configuration
 const upload = multer({ 
@@ -7587,11 +7587,21 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       
       const users = await storage.getAllUsers();
       
-      // Filter users: only show users with lower role level than current user
-      // Super_admin sees everyone, Admin doesn't see super_admins, Manager doesn't see super_admins or admins
+      // Filter users based on role hierarchy:
+      // - SUPER_ADMIN (level 5): sees everyone including other super_admins
+      // - ADMIN (level 4): sees admin, manager, agent, employee (same level and below)
+      // - MANAGER (level 3): sees manager, agent, employee
+      // - AGENT (level 2): sees agent, employee
       const filteredUsers = users.filter((user: any) => {
         const userLevel = getRoleLevel(user.role);
-        return userLevel < currentUserLevel;
+        
+        // Super admins see everyone
+        if (currentUserLevel === ROLE_LEVELS[ROLE_IDS.SUPER_ADMIN]) {
+          return true;
+        }
+        
+        // Other roles see users at their level or below (but not above)
+        return userLevel <= currentUserLevel;
       });
       
       console.log("GET /api/users - Filtered users based on role hierarchy:", {
