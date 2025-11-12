@@ -46,6 +46,7 @@ export default function Notifications() {
   const t = {
     allNotifications: language === 'English' ? 'All Notifications' : 'جميع الإشعارات',
     markAllAsRead: language === 'English' ? 'Mark All as Read' : 'تحديد الكل كمقروء',
+    clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
     viewDetails: language === 'English' ? 'View Details' : 'عرض التفاصيل',
     dismiss: language === 'English' ? 'Dismiss' : 'تجاهل',
     viewAssets: language === 'English' ? 'View Assets' : 'عرض الأصول',
@@ -125,16 +126,38 @@ export default function Notifications() {
     await markAllAsRead();
   };
 
+  const handleClearAll = async () => {
+    try {
+      await fetch('/api/notifications/clear-all', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      // The hook will automatically refetch
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="font-semibold text-lg text-gray-900">{t.allNotifications}</h3>
-        <button 
-          onClick={handleMarkAllAsRead}
-          className="text-primary text-sm hover:underline focus:outline-none"
-        >
-          {t.markAllAsRead}
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleMarkAllAsRead}
+            className="text-primary text-sm hover:underline focus:outline-none"
+            disabled={!notifications.length}
+          >
+            {t.markAllAsRead}
+          </button>
+          <button 
+            onClick={handleClearAll}
+            className="text-red-600 text-sm hover:underline focus:outline-none"
+            disabled={!notifications.length}
+          >
+            {t.clearAll}
+          </button>
+        </div>
       </div>
       <div className="divide-y divide-gray-200">
         {isLoading ? (

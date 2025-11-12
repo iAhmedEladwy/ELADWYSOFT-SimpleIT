@@ -82,6 +82,25 @@ router.post('/mark-read', async (req, res) => {
 });
 
 /**
+ * DELETE /api/notifications/clear-all
+ * Clear (delete) all notifications for the current user
+ */
+router.delete('/clear-all', async (req, res) => {
+  try {
+    const user = req.user as AuthUser;
+
+    // Delete all notifications for the current user
+    const result = await db.delete(schema.notifications)
+      .where(eq(schema.notifications.userId, user.id));
+
+    res.json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Failed to clear all notifications:', error);
+    res.status(500).json({ error: 'Failed to clear all notifications' });
+  }
+});
+
+/**
  * DELETE /api/notifications/:id
  * Delete (dismiss) a notification
  */
@@ -96,7 +115,12 @@ router.delete('/:id', async (req, res) => {
 
     // Delete notification (only if it belongs to the user)
     await db.delete(schema.notifications)
-      .where(eq(schema.notifications.id, notificationId));
+      .where(
+        and(
+          eq(schema.notifications.id, notificationId),
+          eq(schema.notifications.userId, user.id)
+        )
+      );
 
     res.json({ message: 'Notification dismissed' });
   } catch (error) {
