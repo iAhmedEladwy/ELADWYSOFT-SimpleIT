@@ -35,7 +35,7 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Employee onboarding/offboarding reminders",
         "   • System announcements from admins",
         "⚙️ Notification Preferences - Control which notifications you receive in User Profile",
-        "📊 Performance Monitor - Real-time system performance analysis (Super Admin):",
+        "📊 Performance Monitor - Real-time system performance analysis:",
         "   • API endpoint response times and error rates",
         "   • Performance trends with configurable time ranges",
         "   • System metrics (CPU, Memory, Connections)",
@@ -45,14 +45,14 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
       improvements: [
         "🔧 System Manager - Renamed from Developer Tools for clarity",
         "   • Backup & Restore, System Health, Performance Monitor, System Logs",
-        "   • Now requires Super Admin access (more secure)",
+        "   • Enhanced security with admin-level access control",
         "🎨 Better visual indicators for notification types",
         "⏰ Human-readable timestamps (e.g., '5 minutes ago')",
         "📱 Full bilingual support (English/Arabic) for all notification features",
       ],
       security: [
-        "� Enhanced access control - System Manager tools require Super Admin only",
-        "� Updated dependencies to fix security vulnerabilities",
+        "🔒 Enhanced access control for System Manager tools",
+        "🔐 Updated dependencies to fix security vulnerabilities",
       ],
     }
   },
