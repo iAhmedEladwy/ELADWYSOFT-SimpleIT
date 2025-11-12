@@ -4684,30 +4684,43 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         });
         
         // Notify assigned user if ticket is assigned during creation
-        if (newTicket.assignedToId) {
+        // Handle both camelCase (assignedToId) and snake_case (assigned_to_id) from database
+        const assignedUserId = (newTicket as any).assignedToId || (newTicket as any).assigned_to_id;
+        
+        if (assignedUserId) {
           try {
             const priority = newTicket.priority || 'Medium';
             const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
             
+            console.log(`[Notification] Creating notification for ticket ${newTicket.id} assigned to user ${assignedUserId}`);
+            
             if (isUrgent) {
               await notificationService.notifyUrgentTicket({
                 ticketId: newTicket.id,
-                assignedToUserId: newTicket.assignedToId,
+                assignedToUserId: assignedUserId,
                 ticketTitle: newTicket.title,
                 priority,
               });
             } else {
               await notificationService.notifyTicketAssignment({
                 ticketId: newTicket.id,
-                assignedToUserId: newTicket.assignedToId,
+                assignedToUserId: assignedUserId,
                 ticketTitle: newTicket.title,
                 assignedByUsername: req.user?.username,
               });
             }
+            console.log(`[Notification] Successfully created notification for user ${assignedUserId}`);
           } catch (notifError) {
             console.error('Failed to create ticket assignment notification:', notifError);
+            logger.error('tickets', 'Failed to create ticket assignment notification', {
+              userId: req.user?.id,
+              metadata: { ticketId: newTicket.id, assignedUserId },
+              error: notifError instanceof Error ? notifError : new Error(String(notifError))
+            });
             // Don't fail the request if notification fails
           }
+        } else {
+          console.log(`[Notification] Ticket ${newTicket.id} created without assignment, skipping notification`);
         }
         
         console.log("Ticket created successfully:", newTicket);
@@ -4843,10 +4856,15 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
       
       // Notify about status change
       try {
+        // Handle both camelCase and snake_case from database
+        const currentAssignedToId = (currentTicket as any).assignedToId || (currentTicket as any).assigned_to_id;
+        const updatedAssignedToId = (updatedTicket as any).assignedToId || (updatedTicket as any).assigned_to_id;
+        const currentSubmittedById = (currentTicket as any).submittedById || (currentTicket as any).submitted_by_id;
+        
         if (ticketData.status && ticketData.status !== currentTicket.status) {
           // Notify the person who submitted the ticket
-          if (currentTicket.submittedById) {
-            const submitter = await storage.getEmployee(currentTicket.submittedById);
+          if (currentSubmittedById) {
+            const submitter = await storage.getEmployee(currentSubmittedById);
             if (submitter?.userId) {
               await notificationService.notifyTicketStatusChange({
                 ticketId: id,
@@ -4859,10 +4877,10 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
           }
           
           // Notify the assigned user if different from submitter
-          if (updatedTicket.assignedToId && updatedTicket.assignedToId !== currentTicket.submittedById) {
+          if (updatedAssignedToId && updatedAssignedToId !== currentSubmittedById) {
             await notificationService.notifyTicketStatusChange({
               ticketId: id,
-              userId: updatedTicket.assignedToId,
+              userId: updatedAssignedToId,
               oldStatus: currentTicket.status,
               newStatus: updatedTicket.status,
               ticketTitle: updatedTicket.title || 'Support Request',
@@ -4871,10 +4889,12 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         }
         
         // Notify about assignment change (when assignedToId changes from null or different value)
-        if (ticketData.assignedToId !== undefined && ticketData.assignedToId !== currentTicket.assignedToId) {
+        if (ticketData.assignedToId !== undefined && ticketData.assignedToId !== currentAssignedToId) {
           if (ticketData.assignedToId) {
             const priority = updatedTicket.priority || 'Medium';
             const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
+            
+            console.log(`[Notification] Creating notification for ticket ${id} assignment change to user ${ticketData.assignedToId}`);
             
             if (isUrgent) {
               await notificationService.notifyUrgentTicket({
@@ -4891,10 +4911,16 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
                 assignedByUsername: (req.user as schema.User)?.username,
               });
             }
+            console.log(`[Notification] Successfully created assignment notification for user ${ticketData.assignedToId}`);
           }
         }
       } catch (notifError) {
         console.error('Failed to create notification:', notifError);
+        logger.error('tickets', 'Failed to create notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { ticketId: id },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
         // Don't fail the request if notification creation fails
       }
       
@@ -4953,6 +4979,8 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
         const priority = ticket.priority || 'Medium';
         const isUrgent = priority === 'Critical' || priority === 'High' || priority === 'Urgent';
         
+        console.log(`[Notification] Creating notification for ticket ${id} assignment to user ${userId}`);
+        
         if (isUrgent) {
           await notificationService.notifyUrgentTicket({
             ticketId: id,
@@ -4968,8 +4996,14 @@ app.post("/api/assets/bulk/check-out", authenticateUser, requireRole(ROLES.AGENT
             assignedByUsername: (req.user as schema.User)?.username,
           });
         }
+        console.log(`[Notification] Successfully created assignment notification for user ${userId}`);
       } catch (notifError) {
         console.error('Failed to create ticket assignment notification:', notifError);
+        logger.error('tickets', 'Failed to create ticket assignment notification', {
+          userId: (req.user as schema.User)?.id,
+          metadata: { ticketId: id, assignedUserId: userId },
+          error: notifError instanceof Error ? notifError : new Error(String(notifError))
+        });
         // Don't fail the request if notification fails
       }
       
