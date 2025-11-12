@@ -85,15 +85,6 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • Smart filtering - respects preferences before creating notifications",
         "   • Auto-creates default preferences (all enabled) for new users",
         "   • Bilingual preference labels and descriptions",
-        "🔐 Super Admin Role - New access level 5 above regular admin for developer tools",
-        "📝 System Logs - Comprehensive logging infrastructure for debugging and monitoring:",
-        "   • Hybrid logging: Console (dev) + File (daily rotation) + Database (errors only)",
-        "   • 5 log levels: DEBUG, INFO, WARN, ERROR, CRITICAL",
-        "   • Advanced filters: level, module, search, date range, status",
-        "   • Statistics dashboard: total logs, 24h errors, unresolved issues, top modules",
-        "   • Mark as resolved, export CSV, cleanup old logs",
-        "   • Hidden access via triple-click version text (Super Admin only)",
-        "🔧 Logger Service - Centralized logging with helpers for HTTP requests and errors",
       ],
       improvements: [
         "⏰ Time Display - Human-readable timestamps (e.g., '5 minutes ago', '2 hours ago')",
@@ -113,10 +104,6 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "⚡ Performance - Server-side pagination, smart caching, background processing",
         "🛡️ Error Handling - Non-blocking notifications with proper error logging",
         "📁 Daily Log Files - Automatic rotation in logs/ directory for historical tracking",
-      ],
-      security: [
-        "🔒 Super Admin Protection - Hidden menu, exclusive permissions, role guard on all endpoints",
-        "🛡️ System Logs Access - Only super_admin role can view/manage system logs",
       ],
     }
   },
