@@ -12,6 +12,7 @@
 
 import { getStorage } from '../storage-factory';
 import { ROLES } from '../rbac';
+import { autoLinkEmployeeToUser } from '../services/employeeLinkService';
 
 const storage = getStorage();
 
@@ -40,6 +41,10 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
             help: 'Please ensure you are logged in properly'
           });
         }
+
+        // Attempt auto-linking if not already linked
+        console.log(`[DEBUG my-assets] Checking employee link for userId: ${userId}`);
+        await autoLinkEmployeeToUser(req.user);
 
         // Find the employee record for this user
         console.log(`[DEBUG my-assets] Looking for employee with userId: ${userId}`);
@@ -95,6 +100,9 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
             help: 'Please ensure you are logged in properly'
           });
         }
+
+        // Attempt auto-linking if not already linked
+        await autoLinkEmployeeToUser(req.user);
 
         // Find the employee record for this user
         const employees = await storage.getAllEmployees();
@@ -206,6 +214,9 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
             message: 'User ID not found' 
           });
         }
+
+        // Attempt auto-linking if not already linked
+        await autoLinkEmployeeToUser(req.user);
 
         // Find the employee record for this user
         const employees = await storage.getAllEmployees();
@@ -501,6 +512,9 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
           });
         }
 
+        // Attempt auto-linking if not already linked
+        await autoLinkEmployeeToUser(req.user);
+
         // Find the employee record for this user
         const employees = await storage.getAllEmployees();
         const employee = employees.find(emp => emp.userId === userId);
@@ -539,6 +553,9 @@ export function setupPortalRoutes(app: any, authenticateUser: any, requireRole: 
             help: 'Please ensure you are logged in properly'
           });
         }
+
+        // Attempt auto-linking if not already linked
+        await autoLinkEmployeeToUser(req.user);
 
         // Find the employee record for this user
         const employees = await storage.getAllEmployees();

@@ -123,8 +123,8 @@ export const employees = pgTable("employees", {
   personalMobile: varchar("personal_mobile", { length: 20 }),
   workMobile: varchar("work_mobile", { length: 20 }),
   personalEmail: varchar("personal_email", { length: 100 }),
-  corporateEmail: varchar("corporate_email", { length: 100 }),
-  userId: integer("user_id").references(() => users.id),
+  corporateEmail: varchar("corporate_email", { length: 100 }).unique(),
+  userId: integer("user_id").unique().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });

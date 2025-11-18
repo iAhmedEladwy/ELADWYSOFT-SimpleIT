@@ -72,6 +72,7 @@ export interface IStorage {
   
   // Employee operations
   getEmployee(id: number): Promise<Employee | undefined>;
+  getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: number): Promise<boolean>;
@@ -636,6 +637,21 @@ export class DatabaseStorage implements IStorage {
       return employee;
     } catch (error) {
       console.error('Error fetching employee:', error);
+      return undefined;
+    }
+  }
+
+  async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
+    try {
+      const [employee] = await db.select().from(employees).where(
+        or(
+          eq(employees.corporateEmail, email),
+          eq(employees.personalEmail, email)
+        )
+      );
+      return employee;
+    } catch (error) {
+      console.error('Error fetching employee by email:', error);
       return undefined;
     }
   }

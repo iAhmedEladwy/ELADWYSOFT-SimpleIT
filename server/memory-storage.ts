@@ -406,6 +406,12 @@ export class MemoryStorage implements IStorage {
     return this.employees.find(e => e.id === id);
   }
 
+  async getEmployeeByEmail(email: string): Promise<schema.Employee | undefined> {
+    return this.employees.find(e => 
+      e.corporateEmail === email || e.personalEmail === email
+    );
+  }
+
   async createEmployee(employee: any): Promise<schema.Employee> {
     // Check for duplicate employee IDs or emails
     const duplicateEmployeeId = this.employees.find(e => e.employeeId === employee.employeeId);
