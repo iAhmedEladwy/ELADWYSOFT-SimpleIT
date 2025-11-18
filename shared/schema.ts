@@ -4,7 +4,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums matching the current database
-export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4', '5']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin', 'super_admin']);
 export const logLevelEnum = pgEnum('log_level', ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
@@ -72,7 +71,6 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 100 }).notNull().unique(),
   firstName: varchar("first_name", { length: 50 }),
   lastName: varchar("last_name", { length: 50 }),
-  accessLevel: accessLevelEnum("access_level").notNull().default('1'),
   role: roleEnum("role").notNull().default('employee'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

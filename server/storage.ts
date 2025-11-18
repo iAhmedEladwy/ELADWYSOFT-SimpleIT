@@ -29,7 +29,6 @@ export interface UpsertUser {
   firstName?: string | null;
   lastName?: string | null;
   profileImageUrl?: string | null;
-  accessLevel?: string;
 }
 
 // Import proper types
@@ -507,7 +506,6 @@ export class DatabaseStorage implements IStorage {
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       password: hashedPassword,
-      accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
       role: userData.role || 'employee',
       isActive: userData.isActive !== undefined ? userData.isActive : true,
       createdAt: new Date(),
@@ -525,27 +523,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-  private roleToAccessLevel(role: string): string {
-    switch(role) {
-      case 'admin': return '4';
-      case 'manager': return '3';
-      case 'agent': return '2';
-      case 'employee': return '1';
-      default: return '1';
-    }
-  }
-
-  private accessLevelToRole(accessLevel: string | number): string {
-    const level = typeof accessLevel === 'string' ? accessLevel : accessLevel.toString();
-    switch(level) {
-      case '4': return 'admin';
-      case '3': return 'manager';
-      case '2': return 'agent';
-      case '1': return 'employee';
-      default: return 'employee';
-    }
-  }
-
   private mapUserFromDb(dbUser: any): User {
     return {
       id: dbUser.id,
@@ -554,8 +531,7 @@ export class DatabaseStorage implements IStorage {
       firstName: dbUser.firstName || dbUser.first_name || null,
       lastName: dbUser.lastName || dbUser.last_name || null,
       password: dbUser.password,
-      accessLevel: dbUser.accessLevel || dbUser.access_level,
-      role: dbUser.role || this.accessLevelToRole(dbUser.accessLevel || dbUser.access_level),
+      role: dbUser.role,
       isActive: dbUser.isActive !== undefined ? dbUser.isActive : (dbUser.is_active !== undefined ? dbUser.is_active : true),
       createdAt: dbUser.createdAt || dbUser.created_at,
       updatedAt: dbUser.updatedAt || dbUser.updated_at
