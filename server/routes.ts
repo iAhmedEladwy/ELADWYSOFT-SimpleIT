@@ -7935,12 +7935,12 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       const currentUserLevel = getRoleLevel(currentUser.role);
       const userData = req.body;
       
-      // Prevent role escalation: cannot create users with equal or higher role level
+      // Prevent role escalation: cannot create users with higher role level
       if (userData.role) {
         const targetRoleLevel = getRoleLevel(userData.role);
-        if (targetRoleLevel >= currentUserLevel) {
+        if (targetRoleLevel > currentUserLevel) {
           return res.status(403).json({ 
-            message: "Cannot create users with equal or higher role level than your own" 
+            message: "Cannot create users with higher role level than your own" 
           });
         }
       }
@@ -7985,20 +7985,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Prevent modifying users with equal or higher role level
+      // Prevent modifying users with higher role level
       const currentUserRoleLevel = getRoleLevel(currentUser.role);
-      if (currentUserRoleLevel >= requestingUserLevel) {
+      if (currentUserRoleLevel > requestingUserLevel) {
         return res.status(403).json({ 
-          message: "Cannot modify users with equal or higher role level than your own" 
+          message: "Cannot modify users with higher role level than your own" 
         });
       }
       
       // If changing role, prevent role escalation
       if (userData.role && userData.role !== currentUser.role) {
         const targetRoleLevel = getRoleLevel(userData.role);
-        if (targetRoleLevel >= requestingUserLevel) {
+        if (targetRoleLevel > requestingUserLevel) {
           return res.status(403).json({ 
-            message: "Cannot assign role equal or higher than your own role level" 
+            message: "Cannot assign role higher than your own role level" 
           });
         }
       }
