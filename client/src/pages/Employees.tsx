@@ -35,7 +35,9 @@ export default function Employees() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Active'); // Default to Active employees
+  // Initialize statusFilter: 'All' if custom filter in URL, otherwise 'Active'
+  const params = new URLSearchParams(window.location.search);
+  const [statusFilter, setStatusFilter] = useState(params.get('customFilter') && !params.get('statusFilter') ? 'All' : 'Active');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -134,6 +136,10 @@ export default function Employees() {
     const customFilterParam = params.get('customFilter');
       if (customFilterParam) {
         setCustomFilter(customFilterParam as CustomFilterType);
+        // If custom filter is set and no explicit status filter, use 'All' to avoid conflicts
+        if (!statusParam) {
+          setStatusFilter('All');
+        }
       }
 
     // Update state based on URL params

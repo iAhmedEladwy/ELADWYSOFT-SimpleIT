@@ -14,6 +14,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "1.0.1",
+    date: "2025-11-19",
+    title: "Employee Auto-Linking & Filter Fixes",
+    type: "patch",
+    changes: {
+      features: [
+        "✉️ Employee Self-Registration - Email verification system for employees to create accounts",
+        "🔗 Auto-Linking - Automatic user-employee linking via corporate/personal email matching",
+      ],
+      improvements: [
+        "🎯 Multi-Select Asset Filters - Fixed backend logic to support multiple selections",
+        "📜 Scrollable Filter Dropdowns - Added max height with scroll for long lists",
+      ],
+      bugfixes: [
+        "🔧 Fixed RBAC role hierarchy to allow same-level assignments",
+        "🔧 Fixed pending offboarding filter showing no results due to status conflict",
+      ]
+    }
+  },
+  {
     version: "1.0.0",
     date: "2025-11-12",
     title: "🎉 Stable Release - Production-Ready Asset Management",

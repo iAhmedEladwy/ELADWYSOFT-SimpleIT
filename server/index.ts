@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { BackupService } from './services/backupService';
 import { BackupScheduler } from './services/backupScheduler';
+import { startNotificationCleanupScheduler } from './services/notificationCleanupScheduler';
 import { logger } from "./services/logger";
 import { websocketService } from "./services/websocketService";
 import { performanceMiddleware } from './routes/performanceMonitor';
@@ -95,6 +96,10 @@ app.use((req, res, next) => {
   // Start the backup scheduler
   backupScheduler.start();
   console.log('Backup scheduler started');
+
+  // Start notification cleanup scheduler
+  startNotificationCleanupScheduler();
+  console.log('Notification cleanup scheduler started');
 
   // Global error handler with logging
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

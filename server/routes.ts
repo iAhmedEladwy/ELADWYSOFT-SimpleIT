@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
 import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
+import notificationTemplatesRouter from './routes/notificationTemplates';
 import backupRouter from './routes/backup';
 import systemHealthRouter from './routes/systemHealth';
 import systemLogsRouter from './routes/systemLogs';
@@ -849,6 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOTIFICATION ROUTES
   // ==========================================
   app.use('/api/notifications', authenticateUser, notificationsRouter);
+  app.use('/api/notification-templates', authenticateUser, notificationTemplatesRouter);
 
   // ==========================================
   // SYSTEM LOGS ROUTES (Super Admin only)
@@ -977,12 +979,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // The following routes are used by the forgot password flow (no authentication required)
+  // ============================================================
+  // Password Reset Rate Limiting Helper
+  // ============================================================
+  async function checkPasswordResetRateLimit(ipAddress: string, email?: string): Promise<{ allowed: boolean; message?: string; blockedUntil?: Date }> {
+    try {
+      const now = new Date();
+      
+      // Check for existing attempt record
+      const attempts = await db.select()
+        .from(schema.passwordResetAttempts)
+        .where(eq(schema.passwordResetAttempts.ipAddress, ipAddress));
+      
+      const attempt = attempts[0];
+
+      // Check if currently blocked
+      if (attempt && attempt.blockedUntil && attempt.blockedUntil > now) {
+        const minutesLeft = Math.ceil((attempt.blockedUntil.getTime() - now.getTime()) / 60000);
+        return {
+          allowed: false,
+          message: `Too many password reset attempts. Please try again in ${minutesLeft} minute(s).`,
+          blockedUntil: attempt.blockedUntil
+        };
+      }
+
+      // If last attempt was more than 1 hour ago, reset counter
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      if (attempt && attempt.lastAttempt < oneHourAgo) {
+        await db.delete(schema.passwordResetAttempts)
+          .where(eq(schema.passwordResetAttempts.id, attempt.id));
+        return { allowed: true };
+      }
+
+      if (!attempt) {
+        // First attempt - create record
+        await db.insert(schema.passwordResetAttempts).values({
+          ipAddress,
+          email: email || null,
+          attemptCount: 1,
+          lastAttempt: now,
+        });
+        return { allowed: true };
+      }
+
+      // Increment attempt count
+      const newCount = attempt.attemptCount + 1;
+      const maxAttempts = 5;
+      
+      if (newCount > maxAttempts) {
+        // Block for 30 minutes
+        const blockedUntil = new Date(now.getTime() + 30 * 60 * 1000);
+        await db.update(schema.passwordResetAttempts)
+          .set({ 
+            attemptCount: newCount,
+            lastAttempt: now,
+            blockedUntil 
+          })
+          .where(eq(schema.passwordResetAttempts.id, attempt.id));
+        
+        return {
+          allowed: false,
+          message: `Too many password reset attempts. Account temporarily blocked for 30 minutes.`,
+          blockedUntil
+        };
+      }
+
+      // Update attempt count
+      await db.update(schema.passwordResetAttempts)
+        .set({ 
+          attemptCount: newCount,
+          lastAttempt: now 
+        })
+        .where(eq(schema.passwordResetAttempts.id, attempt.id));
+
+      return { allowed: true };
+    } catch (error) {
+      console.error('Rate limit check failed:', error);
+      return { allowed: true }; // Fail open to avoid blocking legitimate users
+    }
+  }
+  
+  // ============================================================
+  // Password Reset Endpoints (with Rate Limiting)
+  // ============================================================
   
   app.post("/api/forgot-password/find-user", async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { username } = req.body;
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress, username);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { username } = req.body;
-      
       if (!username) {
         return res.status(400).json({ message: "Username is required" });
       }
@@ -1036,9 +1127,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Step 3: Verify security question answers
   app.post('/api/forgot-password/verify-answers', async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { userId, answers } = req.body;
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { userId, answers } = req.body;
-      
       if (!userId || !answers || !Array.isArray(answers)) {
         return res.status(400).json({ message: 'User ID and answers are required' });
       }
@@ -1068,9 +1166,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Step 4: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { token, newPassword } = req.body;
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { token, newPassword } = req.body;
-      
       if (!token || !newPassword) {
         return res.status(400).json({ message: 'Token and new password are required' });
       }

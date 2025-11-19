@@ -39,6 +39,8 @@ export async function notifyTicketAssignment(params: {
     message,
     type: 'Ticket',
     entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
+    priority: 'medium',
+    category: 'assignments',
   });
 }
 
@@ -61,6 +63,8 @@ export async function notifyTicketStatusChange(params: {
     message: `Ticket "${ticketTitle}" status changed from ${oldStatus} to ${newStatus}`,
     type: 'Ticket',
     entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
+    priority: 'low',
+    category: 'status_changes',
   });
 }
 
@@ -82,6 +86,8 @@ export async function notifyUrgentTicket(params: {
     message: `HIGH PRIORITY (${priority}): ${ticketTitle} - Please address immediately`,
     type: 'Ticket',
     entityId: entityId || (typeof ticketId === 'number' ? ticketId : undefined),
+    priority: 'high',
+    category: 'assignments',
   });
 }
 
@@ -105,6 +111,8 @@ export async function notifyAssetAssignment(params: {
     message: `Asset "${displayName}" has been assigned to you`,
     type: 'Asset',
     entityId: assetId,
+    priority: 'medium',
+    category: 'assignments',
   });
 }
 
@@ -131,6 +139,8 @@ export async function notifyAssetUnassignment(params: {
     message,
     type: 'Asset',
     entityId: assetId,
+    priority: 'low',
+    category: 'assignments',
   });
 }
 
@@ -153,6 +163,8 @@ export async function notifyAssetTransaction(params: {
     message: `Asset "${assetName}" has been ${action}`,
     type: 'Asset',
     entityId: assetId,
+    priority: 'low',
+    category: 'status_changes',
   });
 }
 
@@ -176,6 +188,8 @@ export async function notifyMaintenanceScheduled(params: {
     message: `${maintenanceType} maintenance scheduled for "${assetName}" on ${dateStr}`,
     type: 'Asset',
     entityId: assetId,
+    priority: 'medium',
+    category: 'maintenance',
   });
 }
 
@@ -196,6 +210,8 @@ export async function notifyMaintenanceCompleted(params: {
     message: `${maintenanceType} maintenance completed for your asset "${assetName}"`,
     type: 'Asset',
     entityId: assetId,
+    priority: 'low',
+    category: 'maintenance',
   });
 }
 
@@ -219,6 +235,8 @@ export async function notifyUpgradeRequest(params: {
     message: `${requestedBy} requested an upgrade for "${assetName}"${costStr}`,
     type: 'Asset',
     entityId: upgradeId,
+    priority: 'medium',
+    category: 'approvals',
   });
 }
 
@@ -243,6 +261,8 @@ export async function notifyUpgradeDecision(params: {
     message: `Your upgrade request for "${assetName}" was ${decision} by ${approvedBy}`,
     type: 'Asset',
     entityId: upgradeId,
+    priority: approved ? 'high' : 'medium',
+    category: 'approvals',
   });
 }
 
@@ -266,6 +286,8 @@ export async function notifyEmployeeOnboarding(params: {
     message: `${employeeName} joining ${department} on ${dateStr}. Please prepare onboarding checklist.`,
     type: 'Employee',
     entityId: employeeId,
+    priority: 'medium',
+    category: 'reminders',
   });
 }
 
@@ -288,6 +310,8 @@ export async function notifyEmployeeOffboarding(params: {
     message: `${employeeName} leaving on ${dateStr}. Please initiate asset recovery and offboarding process.`,
     type: 'Employee',
     entityId: employeeId,
+    priority: 'high',
+    category: 'reminders',
   });
 }
 
@@ -307,6 +331,8 @@ export async function notifySystem(params: {
       title,
       message,
       type: 'System',
+      priority: 'info',
+      category: 'announcements',
     })
   );
 
@@ -337,6 +363,8 @@ export async function notifyByRole(params: {
       message,
       type,
       entityId,
+      priority: type === 'System' ? 'info' : 'medium',
+      category: type === 'System' ? 'announcements' : 'alerts',
     })
   );
 
