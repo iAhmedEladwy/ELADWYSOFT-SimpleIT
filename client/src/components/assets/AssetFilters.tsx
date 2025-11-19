@@ -234,7 +234,7 @@ export default function AssetFilters({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="start">
-                <div className="p-2">
+                <div className="p-2 max-h-80 overflow-y-auto">
                   <div className="flex items-center justify-between mb-2 px-2">
                     <span className="text-sm font-medium">Select Type</span>
                     {selectedTypes.length > 0 && (
@@ -298,7 +298,7 @@ export default function AssetFilters({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="start">
-                <div className="p-2">
+                <div className="p-2 max-h-80 overflow-y-auto">
                   <div className="flex items-center justify-between mb-2 px-2">
                     <span className="text-sm font-medium">Select Brand</span>
                     {selectedBrands.length > 0 && (
@@ -383,7 +383,7 @@ export default function AssetFilters({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="start">
-                <div className="p-2">
+                <div className="p-2 max-h-80 overflow-y-auto">
                   <div className="flex items-center justify-between mb-2 px-2">
                     <span className="text-sm font-medium">Select Status</span>
                     {selectedStatuses.length > 0 && (

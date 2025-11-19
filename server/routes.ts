@@ -2827,15 +2827,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
         }
         
-        // Apply other filters
+        // Apply other filters - support multi-select (comma-separated)
         if (filters.type) {
-          filteredAssets = filteredAssets.filter(asset => asset.type === filters.type);
+          const types = filters.type.split(',').map(t => t.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            types.includes(asset.type)
+          );
         }
         if (filters.status) {
-          filteredAssets = filteredAssets.filter(asset => asset.status === filters.status);
+          const statuses = filters.status.split(',').map(s => s.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            statuses.includes(asset.status)
+          );
         }
         if (filters.brand) {
-          filteredAssets = filteredAssets.filter(asset => asset.brand === filters.brand);
+          const brands = filters.brand.split(',').map(b => b.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            brands.includes(asset.brand)
+          );
         }
         if (filters.model) {
           filteredAssets = filteredAssets.filter(asset => asset.modelName === filters.model);
