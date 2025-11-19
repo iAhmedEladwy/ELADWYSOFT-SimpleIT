@@ -430,7 +430,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -452,7 +451,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -475,7 +473,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -604,7 +601,6 @@ export class DatabaseStorage implements IStorage {
           .update(users)
           .set({
             email: userData.email || undefined,
-            accessLevel: (userData.accessLevel as "1" | "2" | "3") || existingUser.accessLevel,
             updatedAt: new Date()
           })
           .where(eq(users.id, parseInt(userData.id)))
@@ -618,7 +614,7 @@ export class DatabaseStorage implements IStorage {
             username: userData.id, // Use the ID as username for simplicity
             email: userData.email || '',
             password: '', // Not used with Replit Auth
-            accessLevel: (userData.accessLevel as "1" | "2" | "3") || '1', // Default to regular user
+            role: 'employee', // Default to employee role
           }])
           .returning();
         return newUser;
