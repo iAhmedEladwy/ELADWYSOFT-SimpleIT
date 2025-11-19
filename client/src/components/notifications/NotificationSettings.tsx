@@ -45,8 +45,8 @@ export default function NotificationSettings() {
       : 'يتم تحديث الإشعارات تلقائيًا دون الحاجة إلى تحديث الصفحة',
     dndTitle: language === 'English' ? 'Do Not Disturb' : 'عدم الإزعاج',
     dndDescription: language === 'English'
-      ? 'Silence notifications during specific hours'
-      : 'كتم الإشعارات خلال ساعات محددة',
+      ? 'Silence notifications during specific hours every day (e.g., 10 PM - 7 AM)'
+      : 'كتم الإشعارات خلال ساعات محددة يوميًا (مثال: 10 مساءً - 7 صباحًا)',
     startTime: language === 'English' ? 'Start Time' : 'وقت البدء',
     endTime: language === 'English' ? 'End Time' : 'وقت الانتهاء',
     save: language === 'English' ? 'Save' : 'حفظ',
@@ -202,37 +202,45 @@ export default function NotificationSettings() {
           </div>
 
           {dndEnabled && (
-            <div className="grid grid-cols-2 gap-4 mt-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
-              <div>
-                <Label htmlFor="dnd-start" className="text-sm flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {t.startTime}
-                </Label>
-                <Input
-                  id="dnd-start"
-                  type="time"
-                  value={dndStartTime}
-                  onChange={(e) => setDndStartTime(e.target.value)}
-                  onBlur={handleTimeChange}
-                  disabled={loading || saving}
-                  className="mt-1"
-                />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4 mt-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
+                <div>
+                  <Label htmlFor="dnd-start" className="text-sm flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {t.startTime}
+                  </Label>
+                  <Input
+                    id="dnd-start"
+                    type="time"
+                    value={dndStartTime}
+                    onChange={(e) => setDndStartTime(e.target.value)}
+                    onBlur={handleTimeChange}
+                    disabled={loading || saving}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dnd-end" className="text-sm flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {t.endTime}
+                  </Label>
+                  <Input
+                    id="dnd-end"
+                    type="time"
+                    value={dndEndTime}
+                    onChange={(e) => setDndEndTime(e.target.value)}
+                    onBlur={handleTimeChange}
+                    disabled={loading || saving}
+                    className="mt-1"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="dnd-end" className="text-sm flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {t.endTime}
-                </Label>
-                <Input
-                  id="dnd-end"
-                  type="time"
-                  value={dndEndTime}
-                  onChange={(e) => setDndEndTime(e.target.value)}
-                  onBlur={handleTimeChange}
-                  disabled={loading || saving}
-                  className="mt-1"
-                />
-              </div>
+              <p className="text-xs text-muted-foreground px-4">
+                {language === 'English' 
+                  ? '💡 These quiet hours repeat daily. Notifications will be silenced during this time window every day.'
+                  : '💡 تتكرر هذه الساعات الهادئة يوميًا. سيتم كتم الإشعارات خلال هذه الفترة الزمنية كل يوم.'
+                }
+              </p>
             </div>
           )}
         </div>
