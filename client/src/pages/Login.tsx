@@ -175,7 +175,7 @@ export default function Login() {
                 )}
               </Button>
               
-              <div className="text-center">
+              <div className="flex flex-col gap-2">
                 <Button 
                   variant="link" 
                   className="text-sm text-primary" 
@@ -184,6 +184,20 @@ export default function Login() {
                 >
                   {language === 'English' ? 'Forgot Password?' : 'نسيت كلمة المرور؟'}
                 </Button>
+                
+                <div className="text-center border-t pt-3">
+                  <p className="text-sm text-gray-600 mb-2">
+                    {language === 'English' ? 'Don\'t have an account?' : 'ليس لديك حساب؟'}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => navigate('/register')}
+                    type="button"
+                  >
+                    {language === 'English' ? 'Register as Employee' : 'التسجيل كموظف'}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>

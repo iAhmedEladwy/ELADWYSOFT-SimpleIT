@@ -629,6 +629,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // ==========================================
+  // EMPLOYEE SELF-REGISTRATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * POST /api/auth/register
+   * Initiate employee self-registration - verifies employee exists and sends verification email
+   */
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !email.trim()) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Email address is required' 
+        });
+      }
+
+      const { initiateRegistration } = await import('./services/registrationService');
+      const result = await initiateRegistration({ email });
+
+      if (result.success) {
+        return res.json(result);
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('Registration initiation error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Registration failed. Please try again later.' 
+      });
+    }
+  });
+
+  /**
+   * GET /api/auth/validate-token/:token
+   * Validate a registration token without using it
+   */
+  app.get("/api/auth/validate-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({ 
+          valid: false,
+          message: 'Token is required' 
+        });
+      }
+
+      const { validateToken } = await import('./services/registrationService');
+      const result = await validateToken(token);
+
+      return res.json(result);
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return res.status(500).json({ 
+        valid: false,
+        message: 'Failed to validate token' 
+      });
+    }
+  });
+
+  /**
+   * POST /api/auth/verify-email
+   * Complete registration by verifying token and creating user account
+   */
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token, username, password, firstName, lastName } = req.body;
+
+      // Validation
+      if (!token || !username || !password || !firstName || !lastName) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'All fields are required' 
+        });
+      }
+
+      if (username.length < 3) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Username must be at least 3 characters long' 
+        });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Password must be at least 8 characters long' 
+        });
+      }
+
+      const { completeRegistration } = await import('./services/registrationService');
+      const result = await completeRegistration({
+        token,
+        username,
+        password,
+        firstName,
+        lastName
+      });
+
+      if (result.success) {
+        // Log successful registration
+        logger.info('registration', `Employee self-registration completed: ${username}`, {
+          metadata: { 
+            username,
+            employeeName: result.employeeName
+          }
+        });
+
+        return res.json(result);
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('Registration completion error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to create account. Please try again later.' 
+      });
+    }
+  });
+
+  // ==========================================
+  // USER MANAGEMENT ENDPOINTS
+  // ==========================================
+
+
   app.get("/api/me", (req, res) => {
     console.log('[/api/me] Session ID:', req.sessionID);
     console.log('[/api/me] Session:', req.session);

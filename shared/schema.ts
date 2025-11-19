@@ -106,6 +106,17 @@ export const passwordResetAttempts = pgTable("password_reset_attempts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Registration Tokens table (for email verification during self-registration)
+export const registrationTokens = pgTable("registration_tokens", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 100 }).notNull(),
+  token: text("token").notNull().unique(),
+  employeeId: integer("employee_id").references(() => employees.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  used: boolean("used").default(false),
+});
+
 // Employees table
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
@@ -603,6 +614,8 @@ export type SecurityQuestion = typeof securityQuestions.$inferSelect;
 export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type RegistrationToken = typeof registrationTokens.$inferSelect;
+export type InsertRegistrationToken = typeof registrationTokens.$inferInsert;
 
 // Asset Status types
 export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({
