@@ -7750,8 +7750,11 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
       });
       console.log("Admin user created");
     }
-  } catch (error) {
-    console.error("Error creating admin user:", error);
+  } catch (error: any) {
+    // Ignore duplicate key errors (admin already exists)
+    if (error?.code !== '23505') {
+      console.error("Error creating admin user:", error);
+    }
   }
 
 
