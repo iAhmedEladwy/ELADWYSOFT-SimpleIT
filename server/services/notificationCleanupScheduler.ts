@@ -1,9 +1,9 @@
 /**
  * Notification Cleanup Scheduler
  * Automatically removes old read notifications based on retention policy
+ * Uses native Node.js setInterval instead of node-cron
  */
 
-import cron from 'node-cron';
 import { db } from '../db';
 import { notifications } from '@shared/schema';
 import { and, eq, sql, lt } from 'drizzle-orm';
@@ -17,9 +17,11 @@ const CLEANUP_CONFIG = {
   // How many days to retain read notifications (default: 30)
   retentionDays: parseInt(process.env.NOTIFICATION_RETENTION_DAYS || '30'),
   
-  // Cron schedule: Run daily at 2:00 AM
-  // Format: second minute hour day month weekday
-  schedule: '0 2 * * *',
+  // Run daily cleanup at 2:00 AM (check every hour)
+  dailyCleanupInterval: 60 * 60 * 1000, // 1 hour in milliseconds
+  
+  // Run snooze processing every 5 minutes
+  snoozeProcessingInterval: 5 * 60 * 1000, // 5 minutes in milliseconds
   
   // Whether cleanup is enabled (can be disabled via env var)
   enabled: process.env.NOTIFICATION_CLEANUP_ENABLED !== 'false',
@@ -145,22 +147,37 @@ export function startNotificationCleanupScheduler() {
   logger.info('notifications', 'Starting notification cleanup scheduler', {
     userId: 0,
     metadata: {
-      schedule: CLEANUP_CONFIG.schedule,
+      dailyCleanupInterval: `${CLEANUP_CONFIG.dailyCleanupInterval / 1000 / 60} minutes`,
+      snoozeProcessingInterval: `${CLEANUP_CONFIG.snoozeProcessingInterval / 1000 / 60} minutes`,
       retentionDays: CLEANUP_CONFIG.retentionDays,
     }
   });
 
-  // Schedule daily cleanup at 2:00 AM
-  const cleanupTask = cron.schedule(CLEANUP_CONFIG.schedule, async () => {
-    try {
-      await cleanupOldNotifications();
-    } catch (error) {
-      console.error('Scheduled notification cleanup failed:', error);
+  // Helper to check if it's 2:00 AM (cleanup time)
+  const isCleanupTime = () => {
+    const now = new Date();
+    return now.getHours() === 2 && now.getMinutes() < 60;
+  };
+
+  let lastCleanupDate: string | null = null;
+
+  // Schedule daily cleanup check (runs every hour, executes at 2 AM)
+  const cleanupTask = setInterval(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Only run at 2 AM and once per day
+    if (isCleanupTime() && lastCleanupDate !== today) {
+      try {
+        await cleanupOldNotifications();
+        lastCleanupDate = today;
+      } catch (error) {
+        console.error('Scheduled notification cleanup failed:', error);
+      }
     }
-  });
+  }, CLEANUP_CONFIG.dailyCleanupInterval);
 
   // Schedule snooze processing and batching every 5 minutes
-  const snoozeTask = cron.schedule('*/5 * * * *', async () => {
+  const snoozeTask = setInterval(async () => {
     logger.debug('notifications', 'Running snoozed notifications processing and batching', {
       userId: 0,
       metadata: { time: new Date().toISOString() }
@@ -186,13 +203,13 @@ export function startNotificationCleanupScheduler() {
         error: error instanceof Error ? error : new Error(String(error))
       });
     }
-  });
+  }, CLEANUP_CONFIG.snoozeProcessingInterval);
 
   logger.info('notifications', 'Notification cleanup scheduler started successfully', {
     userId: 0,
     metadata: {
-      dailyCleanup: CLEANUP_CONFIG.schedule,
-      snoozeProcessing: '*/5 * * * *'
+      dailyCleanupCheck: 'Every hour (executes at 2 AM)',
+      snoozeProcessing: 'Every 5 minutes'
     }
   });
 
