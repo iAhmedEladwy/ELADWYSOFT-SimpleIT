@@ -6,7 +6,7 @@
 import { db } from '../db';
 import { notifications } from '@shared/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 export interface BatchCriteria {
   userId: number;
@@ -201,7 +201,7 @@ export async function batchNotificationsForUser(
     for (const [key, notifGroup] of batches.entries()) {
       // Only batch if we have 2+ similar notifications
       if (notifGroup.length >= 2) {
-        const batchId = uuidv4();
+        const batchId = randomUUID();
         
         // Update notifications with batch ID
         const notifIds = notifGroup.map(n => n.id);
