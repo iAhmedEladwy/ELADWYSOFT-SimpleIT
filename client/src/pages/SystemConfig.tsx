@@ -388,15 +388,12 @@ function SystemConfig() {
   // Update local state when config data is loaded
   useEffect(() => {
     if (config) {
-      console.log('SystemConfig loaded:', config);
-      console.log('Departments from config:', config.departments);
       setAssetIdPrefix(config.assetIdPrefix || 'AST-');
       setEmpIdPrefix(config.empIdPrefix || 'EMP-');
       setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
       setCurrency(config.currency || 'USD');
       setSelectedLanguage(config.language === 'en' ? 'English' : 'Arabic');
       setDepartments(config.departments || []);
-      console.log('Departments state set to:', config.departments || []);
       
       // Load email configuration
       setEmailHost(config.emailHost || '');
@@ -422,14 +419,20 @@ function SystemConfig() {
   const updateConfigMutation = useMutation({
     mutationFn: (data: any) => 
       apiRequest('/api/system-config', 'PUT', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
-      // Force refetch to ensure language changes are reflected immediately
-      queryClient.refetchQueries({ queryKey: ['/api/system-config'] });
+    onSuccess: async (data) => {
+      // Update local state immediately to prevent UI flash
+      if (data && data.departments) {
+        setDepartments(data.departments);
+      }
+      
+      // Invalidate and refetch in the background
+      await queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
+      
       toast({
         title: translations.success,
         description: translations.settingsUpdated,
       });
+      
       // Restore preserved tab after department operations
       if (preservedTab) {
         setActiveTab(preservedTab);
