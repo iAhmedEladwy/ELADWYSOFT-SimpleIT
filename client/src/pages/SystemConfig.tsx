@@ -388,12 +388,15 @@ function SystemConfig() {
   // Update local state when config data is loaded
   useEffect(() => {
     if (config) {
+      console.log('SystemConfig loaded:', config);
+      console.log('Departments from config:', config.departments);
       setAssetIdPrefix(config.assetIdPrefix || 'AST-');
       setEmpIdPrefix(config.empIdPrefix || 'EMP-');
       setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
       setCurrency(config.currency || 'USD');
       setSelectedLanguage(config.language === 'en' ? 'English' : 'Arabic');
       setDepartments(config.departments || []);
+      console.log('Departments state set to:', config.departments || []);
       
       // Load email configuration
       setEmailHost(config.emailHost || '');
