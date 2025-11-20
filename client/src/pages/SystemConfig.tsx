@@ -422,7 +422,33 @@ function SystemConfig() {
   const updateConfigMutation = useMutation({
     mutationFn: (data: any) => 
       apiRequest('/api/system-config', 'PUT', data),
-    onSuccess: async (data) => {
+    onSuccess: async (responseData) => {
+      // Update local state immediately with response data to prevent white screen
+      if (responseData) {
+        // Update all fields from the response
+        if (responseData.assetIdPrefix !== undefined) setAssetIdPrefix(responseData.assetIdPrefix);
+        if (responseData.empIdPrefix !== undefined) setEmpIdPrefix(responseData.empIdPrefix);
+        if (responseData.ticketIdPrefix !== undefined) setTicketIdPrefix(responseData.ticketIdPrefix);
+        if (responseData.currency !== undefined) setCurrency(responseData.currency);
+        if (responseData.language !== undefined) setSelectedLanguage(responseData.language === 'en' ? 'English' : 'Arabic');
+        
+        // Email configuration
+        if (responseData.emailHost !== undefined) setEmailHost(responseData.emailHost || '');
+        if (responseData.emailPort !== undefined) setEmailPort(responseData.emailPort?.toString() || '');
+        if (responseData.emailUser !== undefined) setEmailUser(responseData.emailUser || '');
+        if (responseData.emailPassword !== undefined) setEmailPassword(responseData.emailPassword || '');
+        if (responseData.emailFromAddress !== undefined) setEmailFromAddress(responseData.emailFromAddress || '');
+        if (responseData.emailFromName !== undefined) setEmailFromName(responseData.emailFromName || '');
+        if (responseData.emailSecure !== undefined) setEmailSecure(responseData.emailSecure !== false);
+        
+        // Company details
+        if (responseData.companyName !== undefined) setCompanyName(responseData.companyName || 'ELADWYSOFT');
+        if (responseData.companyAddress !== undefined) setCompanyAddress(responseData.companyAddress || '');
+        if (responseData.companyPhone !== undefined) setCompanyPhone(responseData.companyPhone || '');
+        if (responseData.companyEmail !== undefined) setCompanyEmail(responseData.companyEmail || '');
+        if (responseData.companyWebsite !== undefined) setCompanyWebsite(responseData.companyWebsite || '');
+      }
+      
       // Invalidate and refetch in the background
       await queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       
