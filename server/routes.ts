@@ -1150,14 +1150,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
     const { token, newPassword } = req.body;
 
+    console.log('[Password Reset] Received reset request:', {
+      tokenPrefix: token ? token.substring(0, 10) + '...' : 'none',
+      hasPassword: !!newPassword,
+      ipAddress
+    });
+
     // Check rate limit
     const rateLimit = await checkPasswordResetRateLimit(ipAddress);
     if (!rateLimit.allowed) {
+      console.log('[Password Reset] Rate limit exceeded:', ipAddress);
       return res.status(429).json({ message: rateLimit.message });
     }
 
     try {
       if (!token || !newPassword) {
+        console.log('[Password Reset] Missing required fields');
         return res.status(400).json({ message: 'Token and new password are required' });
       }
       
@@ -1165,11 +1173,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = await storage.validatePasswordResetToken(token);
       
       if (!userId) {
+        console.log('[Password Reset] Token validation failed for token:', token.substring(0, 10) + '...');
         return res.status(404).json({ 
           success: false, 
           message: 'Invalid or expired token' 
         });
       }
+      
+      console.log('[Password Reset] Token valid for user:', userId);
       
       // Hash the new password
       const hashedPassword = await hash(newPassword, 10);
@@ -1178,11 +1189,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await storage.updateUser(userId, { password: hashedPassword });
       
       if (!updated) {
+        console.log('[Password Reset] Failed to update user password');
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to update password' 
         });
       }
+      
+      console.log('[Password Reset] Password updated successfully');
       
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
@@ -1195,6 +1209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: userId,
         details: { message: 'Password was reset using forgot password flow' }
       });
+      
+      console.log('[Password Reset] Reset complete for user:', userId);
       
       res.json({
         success: true,
