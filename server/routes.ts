@@ -10,6 +10,7 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
+import './passport'; // Initialize passport strategies with email support
 import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
 import notificationTemplatesRouter from './routes/notificationTemplates';
@@ -310,26 +311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "Who is your favorite actor/actress?"
   ];
 
-  // Configure passport
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: "Incorrect username" });
-        }
-
-        const validPassword = await compare(password, user.password);
-        if (!validPassword) {
-          return done(null, false, { message: "Incorrect password" });
-        }
-
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    })
-  );
+  // Passport configuration is now in server/passport.ts
+  // No need to configure strategy here - it's already configured with email support
 
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
