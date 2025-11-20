@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -40,8 +40,8 @@ export default function ResetPassword() {
   const { language } = useLanguage();
   
   // Get the token from the URL
-  const [searchParams] = useSearch();
-  const token = new URLSearchParams(searchParams).get('token');
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
 
   // Determine translations based on language
   const translations = {
