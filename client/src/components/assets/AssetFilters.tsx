@@ -14,7 +14,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { X, Filter, Search, Download, ChevronDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { X, Filter, Search, Download, ChevronDown, ChevronsUpDown, Check } from 'lucide-react';
 import type { AssetFilters } from '@shared/types';
 
 interface AssetFiltersProps {
@@ -23,6 +31,8 @@ interface AssetFiltersProps {
   totalCount: number;
   filteredCount: number;
   onExport?: () => void;
+  employeesWithAssets?: any[];
+  hasUnassignedAssets?: boolean;
 }
 
 export default function AssetFilters({ 
@@ -30,10 +40,13 @@ export default function AssetFilters({
   onFiltersChange, 
   totalCount, 
   filteredCount,
-  onExport
+  onExport,
+  employeesWithAssets = [],
+  hasUnassignedAssets = false
 }: AssetFiltersProps) {
   const { language } = useLanguage();
   const [searchInput, setSearchInput] = useState(filters.search || '');
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
 
   const translations = {
     filters: language === 'English' ? 'Filters' : 'الفلاتر',
@@ -42,12 +55,23 @@ export default function AssetFilters({
     brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
     model: language === 'English' ? 'Model' : 'الموديل',
     status: language === 'English' ? 'Status' : 'الحالة',
+    assignment: language === 'English' ? 'Assignment' : 'التخصيص',
+    maintenanceStatus: language === 'English' ? 'Maintenance Status' : 'حالة الصيانة',
     clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
     searchPlaceholder: language === 'English' ? 'Search assets...' : 'البحث في الأصول...',
+    searchEmployees: language === 'English' ? 'Search employees...' : 'البحث عن الموظفين...',
     allTypes: language === 'English' ? 'All Types' : 'جميع الأنواع',
     allBrands: language === 'English' ? 'All Brands' : 'جميع العلامات',
     allModels: language === 'English' ? 'All Models' : 'جميع الموديلات',
     allStatuses: language === 'English' ? 'All Statuses' : 'جميع الحالات',
+    allAssignments: language === 'English' ? 'All Assignments' : 'جميع التخصيصات',
+    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
+    noEmployeesFound: language === 'English' ? 'No employees found' : 'لم يتم العثور على موظفين',
+    all: language === 'English' ? 'All' : 'الكل',
+    scheduled: language === 'English' ? 'Scheduled' : 'مجدولة',
+    inProgress: language === 'English' ? 'In Progress' : 'قيد التنفيذ',
+    completed: language === 'English' ? 'Completed' : 'مكتملة',
+    overdue: language === 'English' ? 'Overdue' : 'متأخرة',
     filterAndSearch: language === 'English' ? 'Filter & Search Assets' : 'تصفية والبحث في الأصول',
     results: language === 'English' ? 
       `Showing ${filteredCount} of ${totalCount} assets` : 
@@ -207,8 +231,8 @@ export default function AssetFilters({
           </Button>
         </form>
 
-        {/* Filter Grid - Updated layout for 4 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        {/* Filter Grid - Updated layout for 6 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           {/* Type Filter - Multi-Select */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -421,6 +445,120 @@ export default function AssetFilters({
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Assignment Filter with Combobox */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              {translations.assignment}
+            </label>
+            <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={assignmentOpen}
+                  className="w-full justify-between text-sm font-normal"
+                >
+                  <span className="truncate">
+                    {!filters.assignedTo
+                      ? translations.allAssignments
+                      : filters.assignedTo === 'unassigned'
+                      ? translations.unassigned
+                      : employeesWithAssets.find((e: any) => e.id.toString() === filters.assignedTo)?.englishName ||
+                        employeesWithAssets.find((e: any) => e.id.toString() === filters.assignedTo)?.name ||
+                        translations.allAssignments}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder={translations.searchEmployees}
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          updateFilter('assignedTo', undefined);
+                          setAssignmentOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            !filters.assignedTo ? "opacity-100" : "opacity-0"
+                          }`}
+                        />
+                        {translations.allAssignments}
+                      </CommandItem>
+                      
+                      {hasUnassignedAssets && (
+                        <CommandItem
+                          value="unassigned"
+                          onSelect={() => {
+                            updateFilter('assignedTo', 'unassigned');
+                            setAssignmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          {translations.unassigned}
+                        </CommandItem>
+                      )}
+                      
+                      {employeesWithAssets.map((employee: any) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={employee.englishName || employee.name || ''}
+                          onSelect={() => {
+                            updateFilter('assignedTo', employee.id.toString());
+                            setAssignmentOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filters.assignedTo === employee.id.toString()
+                                ? "opacity-100"
+                                : "opacity-0"
+                            }`}
+                          />
+                          {employee.englishName || employee.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Maintenance Status Filter */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              {translations.maintenanceStatus}
+            </label>
+            <Select
+              value={filters.maintenanceDue || 'all'}
+              onValueChange={(value) => updateFilter('maintenanceDue', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={translations.allStatuses} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{translations.all}</SelectItem>
+                <SelectItem value="scheduled">{translations.scheduled}</SelectItem>
+                <SelectItem value="inProgress">{translations.inProgress}</SelectItem>
+                <SelectItem value="completed">{translations.completed}</SelectItem>
+                <SelectItem value="overdue">{translations.overdue}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Active Filters */}
@@ -488,14 +626,25 @@ export default function AssetFilters({
             )}
             {filters.assignedTo && (
               <Badge variant="outline" className="gap-1">
-                {translations.assignedTo}: {
+                {translations.assignment}: {
                   filters.assignedTo === 'unassigned' 
                     ? translations.unassigned 
-                    : employees.find((e: any) => e.id.toString() === filters.assignedTo)?.name
+                    : employeesWithAssets.find((e: any) => e.id.toString() === filters.assignedTo)?.englishName ||
+                      employeesWithAssets.find((e: any) => e.id.toString() === filters.assignedTo)?.name ||
+                      filters.assignedTo
                 }
                 <X 
                   className="h-3 w-3 cursor-pointer" 
                   onClick={() => updateFilter('assignedTo', undefined)}
+                />
+              </Badge>
+            )}
+            {filters.maintenanceDue && (
+              <Badge variant="outline" className="gap-1">
+                {translations.maintenanceStatus}: {translations[filters.maintenanceDue as keyof typeof translations] || filters.maintenanceDue}
+                <X 
+                  className="h-3 w-3 cursor-pointer" 
+                  onClick={() => updateFilter('maintenanceDue', undefined)}
                 />
               </Badge>
             )}
