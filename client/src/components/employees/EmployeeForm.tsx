@@ -119,9 +119,15 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  // Fetch system configuration for departments
+  // Fetch system configuration
   const { data: systemConfig } = useQuery({
     queryKey: ['/api/system-config'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fetch custom departments
+  const { data: customDepartments = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-departments'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 

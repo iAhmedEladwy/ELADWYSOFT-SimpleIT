@@ -355,16 +355,18 @@ export default function Employees() {
     importEmployeesMutation.mutate(formData);
   };
 
-  // Get unique departments and employment types for filters with null safety
+  // Fetch custom departments for filter dropdown
+  const { data: customDepartments = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-departments'],
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Get department names for filter (from custom_departments table)
   const departments = useMemo(() => {
-    if (!employees || !Array.isArray(employees)) return ['All'];
-    const depts = Array.from(new Set(
-      employees
-        .map((emp: any) => emp?.department)
-        .filter(dept => dept && dept.trim() !== '' && dept !== 'null' && dept !== 'undefined')
-    ));
-    return ['All', ...depts.sort()];
-  }, [employees]);
+    if (!customDepartments || !Array.isArray(customDepartments)) return ['All'];
+    const deptNames = customDepartments.map((dept: any) => dept.name).sort();
+    return ['All', ...deptNames];
+  }, [customDepartments]);
 
   const employmentTypes = useMemo(() => {
     if (!employees || !Array.isArray(employees)) return ['All'];
