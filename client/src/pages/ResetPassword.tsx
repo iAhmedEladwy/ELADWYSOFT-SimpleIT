@@ -162,11 +162,6 @@ export default function ResetPassword() {
       
       setIsComplete(true);
       
-      toast({
-        title: translations.successTitle,
-        description: translations.successMessage,
-      });
-      
       // Redirect to login after 3 seconds
       setTimeout(() => {
         navigate('/login');
