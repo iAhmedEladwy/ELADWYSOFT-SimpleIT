@@ -89,20 +89,25 @@ export default function ResetPassword() {
     try {
       setIsLoading(true);
       
-      const response = await apiRequest('/api/forgot-password/reset-password', 'POST', {
-        token,
-        newPassword: values.newPassword,
-        language
+      const response = await fetch('/api/forgot-password/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          token,
+          newPassword: values.newPassword,
+          language
+        })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        
         // Check if it's an expired/used token error
-        if (errorData.expired) {
+        if (data.expired) {
           toast({
             title: language === 'English' ? 'Link Expired' : 'انتهت صلاحية الرابط',
-            description: errorData.message,
+            description: data.message,
             variant: 'destructive',
             duration: 6000,
           });
@@ -113,7 +118,7 @@ export default function ResetPassword() {
           return;
         }
         
-        throw new Error(errorData.message || 'Failed to reset password');
+        throw new Error(data.message || 'Failed to reset password');
       }
       
       setIsComplete(true);
