@@ -6068,22 +6068,12 @@ app.get('/api/dashboard/summary', async (req, res) => {
         .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
     );
     
-    // Pending offboarding employees calculation - match custom filter logic
-    const pendingOffboarding = employees.filter(emp => {
-      // Check if employee has assigned assets
-      const hasAssignedAssets = assets.some(asset => 
-        (asset.assignedTo === emp.id) || 
-        (asset.assignedEmployeeId === emp.id) || 
-        (asset.assignedToId === emp.id) ||
-        (asset.assignedTo === emp.empId)
-      );
-      
-      // Match the "offboardedWithAssets" filter logic:
-      // Resigned or Terminated employees who still have assets
-      const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
-      
-      return isOffboarded && hasAssignedAssets;
-    });
+    // Pending offboarding employees calculation - Active employees with exit date set
+    const pendingOffboarding = employees.filter(emp => 
+      emp.status === 'Active' && 
+      emp.exitDate !== null && 
+      emp.exitDate !== undefined
+    );
     // Enhanced Asset Metrics
     const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
     

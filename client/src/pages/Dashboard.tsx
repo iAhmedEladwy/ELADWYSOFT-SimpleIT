@@ -388,7 +388,7 @@ export default function Dashboard() {
               {/* Pending Offboarding Card */}
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => window.location.href = `/employees?customFilter=pendingOffboarding`}
+                onClick={() => window.location.href = `/employees?customFilter=pendingExit`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
