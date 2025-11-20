@@ -85,15 +85,21 @@ export class EmailService {
     try {
       // Initialize if not already initialized
       if (!this.initialized || !this.transporter) {
+        console.log('[EmailService] Not initialized, attempting to initialize...');
         const initialized = await this.initialize();
         if (!initialized) {
+          console.error('[EmailService] Failed to initialize. Email settings may not be configured.');
+          console.error('[EmailService] Please configure email settings in System Config > Email tab');
           return false;
         }
       }
 
       if (!this.config || !this.transporter) {
+        console.error('[EmailService] Missing config or transporter after initialization');
         return false;
       }
+
+      console.log(`[EmailService] Sending email to ${options.to} with subject: ${options.subject}`);
 
       // Send the email
       await this.transporter.sendMail({
@@ -104,9 +110,13 @@ export class EmailService {
         html: options.html
       });
 
+      console.log(`[EmailService] Email sent successfully to ${options.to}`);
       return true;
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('[EmailService] Failed to send email:', error);
+      if (error instanceof Error) {
+        console.error('[EmailService] Error details:', error.message);
+      }
       return false;
     }
   }

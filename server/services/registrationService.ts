@@ -77,23 +77,22 @@ export async function initiateRegistration(request: RegistrationRequest): Promis
     // Send verification email
     const verificationLink = `${process.env.APP_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
     
-    try {
-      await emailService.sendEmail({
-        to: email,
-        subject: 'Verify Your Email - SimpleIT Registration',
-        html: `
-          <h2>Welcome to SimpleIT!</h2>
-          <p>Hello ${employee.englishName},</p>
-          <p>Click the link below to complete your registration and create your account:</p>
-          <p><a href="${verificationLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email & Create Account</a></p>
-          <p>Or copy and paste this link into your browser:</p>
-          <p>${verificationLink}</p>
-          <p>This link will expire in ${TOKEN_EXPIRY_HOURS} hours.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <hr>
-          <p style="font-size: 12px; color: #666;">SimpleIT - IT Asset Management System</p>
-        `,
-        text: `
+    const emailSent = await emailService.sendEmail({
+      to: email,
+      subject: 'Verify Your Email - SimpleIT Registration',
+      html: `
+        <h2>Welcome to SimpleIT!</h2>
+        <p>Hello ${employee.englishName},</p>
+        <p>Click the link below to complete your registration and create your account:</p>
+        <p><a href="${verificationLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email & Create Account</a></p>
+        <p>Or copy and paste this link into your browser:</p>
+        <p>${verificationLink}</p>
+        <p>This link will expire in ${TOKEN_EXPIRY_HOURS} hours.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <hr>
+        <p style="font-size: 12px; color: #666;">SimpleIT - IT Asset Management System</p>
+      `,
+      text: `
 Welcome to SimpleIT!
 
 Hello ${employee.englishName},
@@ -104,24 +103,26 @@ ${verificationLink}
 This link will expire in ${TOKEN_EXPIRY_HOURS} hours.
 
 If you didn't request this, please ignore this email.
-        `
-      });
+      `
+    });
 
-      console.log(`[Registration] Verification email sent to ${email} for employee ${employee.englishName}`);
-
-      return {
-        success: true,
-        message: `Verification email sent to ${email}. Please check your inbox.`,
-        employeeName: employee.englishName,
-        tokenSent: true
-      };
-    } catch (emailError) {
-      console.error('[Registration] Failed to send verification email:', emailError);
+    if (!emailSent) {
+      console.error('[Registration] Failed to send verification email - email service returned false');
+      console.error('[Registration] Possible reasons: Email not configured, invalid SMTP settings, or network error');
       return {
         success: false,
-        message: 'Failed to send verification email. Please try again or contact support.'
+        message: 'Failed to send verification email. Please ensure email settings are configured in System Config, or contact your administrator.'
       };
     }
+
+    console.log(`[Registration] Verification email sent successfully to ${email} for employee ${employee.englishName}`);
+
+    return {
+      success: true,
+      message: `Verification email sent to ${email}. Please check your inbox and spam folder.`,
+      employeeName: employee.englishName,
+      tokenSent: true
+    };
   } catch (error) {
     console.error('[Registration] Error initiating registration:', error);
     return {
