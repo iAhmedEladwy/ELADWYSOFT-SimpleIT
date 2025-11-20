@@ -682,13 +682,58 @@ export default function Employees() {
               </Select>
             </div>
           </div>
-          {/* Clear Filters Button - Show only when filters are active */}
-          {(customFilter || departmentFilter !== 'All' || employmentTypeFilter !== 'All' || 
-            statusFilter !== 'All' || searchQuery) && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
+
+          {/* Active Filters */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-2 pt-2 border-t">
+              {searchQuery && (
+                <Badge variant="outline" className="gap-1">
+                  {translations.search}: {searchQuery}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setSearchQuery('')}
+                  />
+                </Badge>
+              )}
+              {customFilter && (
+                <Badge variant="outline" className="gap-1">
+                  {translations.quickFilters}: {customFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setCustomFilter(null)}
+                  />
+                </Badge>
+              )}
+              {statusFilter !== 'All' && (
+                <Badge variant="outline" className="gap-1">
+                  {translations.status}: {translations[statusFilter.toLowerCase() as keyof typeof translations] || statusFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setStatusFilter('All')}
+                  />
+                </Badge>
+              )}
+              {departmentFilter !== 'All' && (
+                <Badge variant="outline" className="gap-1">
+                  {translations.department}: {departmentFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setDepartmentFilter('All')}
+                  />
+                </Badge>
+              )}
+              {employmentTypeFilter !== 'All' && (
+                <Badge variant="outline" className="gap-1">
+                  {translations.employmentType}: {employmentTypeFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setEmploymentTypeFilter('All')}
+                  />
+                </Badge>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
                 onClick={() => {
                   setDepartmentFilter('All');
                   setEmploymentTypeFilter('All');
@@ -696,26 +741,14 @@ export default function Employees() {
                   setSearchQuery('');
                   setCustomFilter(null);
                 }}
+                className="h-6 px-2 text-xs"
               >
-                <X className="h-4 w-4 mr-2" />
                 {translations.clearFilters}
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
-      {/* Filter Summary */}
-      {activeFilterCount > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-blue-700">
-              {language === 'English' 
-                ? `${activeFilterCount} ${translations.filtersActive} - ${translations.showing} ${filteredEmployees.length} ${translations.of} ${employees && Array.isArray(employees) ? employees.length : 0} ${translations.employees}`
-                : `${activeFilterCount} ${translations.filtersActive} - ${translations.showing} ${filteredEmployees.length} ${translations.of} ${employees && Array.isArray(employees) ? employees.length : 0} ${translations.employees}`}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Employee count summary */}
       {selectedEmployees.length > 0 && (
