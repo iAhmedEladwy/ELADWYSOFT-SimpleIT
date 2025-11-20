@@ -349,6 +349,8 @@ export class DatabaseStorage implements IStorage {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       
+      console.log('[Password Reset] Creating token for user:', userId);
+      
       // Delete any existing tokens for this user
       try {
         await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
@@ -364,8 +366,15 @@ export class DatabaseStorage implements IStorage {
           userId,
           token,
           expiresAt,
+          used: false
         })
         .returning();
+      
+      console.log('[Password Reset] Token created successfully:', {
+        tokenPrefix: token.substring(0, 10) + '...',
+        expiresAt,
+        userId
+      });
       
       return resetToken;
     } catch (error) {
@@ -376,7 +385,8 @@ export class DatabaseStorage implements IStorage {
         userId,
         token: 'temp-token-' + Date.now(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        createdAt: new Date()
+        createdAt: new Date(),
+        used: false
       };
       return fallbackToken;
     }
@@ -399,8 +409,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const resetToken = await this.getPasswordResetToken(token);
       
-      // If token doesn't exist or is expired, return undefined
-      if (!resetToken || new Date() > resetToken.expiresAt) {
+      // If token doesn't exist, is expired, or has been used, return undefined
+      if (!resetToken || new Date() > resetToken.expiresAt || resetToken.used) {
+        console.log('[Password Reset] Token validation failed:', {
+          exists: !!resetToken,
+          expired: resetToken ? new Date() > resetToken.expiresAt : false,
+          used: resetToken?.used,
+          token: token.substring(0, 10) + '...'
+        });
         return undefined;
       }
       
@@ -413,7 +429,11 @@ export class DatabaseStorage implements IStorage {
 
   async invalidatePasswordResetToken(token: string): Promise<boolean> {
     try {
-      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+      // Mark token as used instead of deleting (better audit trail)
+      await db
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.token, token));
       return true;
     } catch (error) {
       console.error('Error invalidating password reset token:', error);
