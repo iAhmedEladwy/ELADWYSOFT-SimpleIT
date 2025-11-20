@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
@@ -37,6 +37,8 @@ export default function ResetPassword() {
   const [location, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isValidating, setIsValidating] = useState(true);
+  const [tokenExpired, setTokenExpired] = useState(false);
   const { language } = useLanguage();
   
   // Get the token from the URL
@@ -54,17 +56,54 @@ export default function ResetPassword() {
       : 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل وتحتوي على أحرف وأرقام',
     resetButton: language === 'English' ? 'Reset Password' : 'إعادة تعيين كلمة المرور',
     backToLogin: language === 'English' ? 'Back to Login' : 'العودة إلى تسجيل الدخول',
+    requestNewLink: language === 'English' ? 'Request New Link' : 'طلب رابط جديد',
     successTitle: language === 'English' ? 'Password Reset Complete' : 'اكتمل إعادة تعيين كلمة المرور',
     successMessage: language === 'English' 
       ? 'Your password has been reset successfully. You can now login with your new password.' 
       : 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.',
-    invalidToken: language === 'English' ? 'Invalid or expired token' : 'الرمز غير صالح أو منتهي الصلاحية',
+    invalidToken: language === 'English' ? 'Link Expired or Already Used' : 'انتهت صلاحية الرابط أو تم استخدامه',
+    expiredMessage: language === 'English' 
+      ? 'This password reset link has expired or has already been used. Please request a new password reset link.' 
+      : 'انتهت صلاحية رابط إعادة تعيين كلمة المرور هذا أو تم استخدامه بالفعل. يرجى طلب رابط إعادة تعيين كلمة مرور جديد.',
     resetError: language === 'English' ? 'Failed to reset password' : 'فشل في إعادة تعيين كلمة المرور',
     tryAgain: language === 'English' ? 'Please try again' : 'يرجى المحاولة مرة أخرى',
     noToken: language === 'English' 
       ? 'No reset token provided. Please request a new password reset link.' 
       : 'لم يتم تقديم رمز إعادة التعيين. يرجى طلب رابط إعادة تعيين كلمة المرور الجديد.',
   };
+
+  // Validate token on component mount
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token) {
+        setIsValidating(false);
+        return;
+      }
+
+      try {
+        // Make a lightweight validation request
+        const response = await fetch('/api/forgot-password/validate-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ token })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.valid) {
+          setTokenExpired(true);
+        }
+      } catch (error) {
+        console.error('Token validation error:', error);
+        setTokenExpired(true);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
+    validateToken();
+  }, [token]);
 
   // Form setup
   const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
@@ -145,8 +184,8 @@ export default function ResetPassword() {
     }
   };
 
-  // If no token is provided, show error and redirect
-  if (!token) {
+  // If no token is provided or token is expired, show error
+  if (!token || tokenExpired) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <Card className="max-w-md w-full shadow-lg">
@@ -157,16 +196,44 @@ export default function ResetPassword() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-sm text-gray-600">
-              {translations.noToken}
+              {tokenExpired ? translations.expiredMessage : translations.noToken}
             </p>
-            <Button
-              type="button"
-              variant="default"
-              onClick={() => navigate('/forgot-password')}
-              className="w-full"
-            >
-              {translations.backToLogin}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => navigate('/forgot-password')}
+                className="w-full"
+              >
+                {translations.requestNewLink}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/login')}
+                className="w-full"
+              >
+                {translations.backToLogin}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading while validating token
+  if (isValidating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardContent className="text-center py-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-sm text-gray-600">
+                {language === 'English' ? 'Validating reset link...' : 'التحقق من صحة رابط إعادة التعيين...'}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

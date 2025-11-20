@@ -1145,6 +1145,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Validate password reset token (check if valid before showing form)
+  app.post('/api/forgot-password/validate-token', async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ valid: false, message: 'Token is required' });
+      }
+
+      // Validate token
+      const userId = await storage.validatePasswordResetToken(token);
+
+      if (!userId) {
+        return res.json({ valid: false, expired: true });
+      }
+
+      return res.json({ valid: true });
+    } catch (error: unknown) {
+      console.error('Error validating token:', error);
+      return res.status(500).json({ valid: false, message: 'Error validating token' });
+    }
+  });
+  
   // Step 4: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
     const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
