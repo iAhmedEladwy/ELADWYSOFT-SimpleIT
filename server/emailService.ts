@@ -136,8 +136,8 @@ export class EmailService {
           : 'لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. انقر على الزر أدناه لإعادة تعيين كلمة المرور:',
         button: language === 'English' ? 'Reset Password' : 'إعادة تعيين كلمة المرور',
         expiry: language === 'English' 
-          ? 'This link will expire in 1 hour for security purposes.' 
-          : 'سينتهي صلاحية هذا الرابط خلال ساعة واحدة لأغراض أمنية.',
+          ? 'This link will expire in 24 hours for security purposes.' 
+          : 'سينتهي صلاحية هذا الرابط خلال 24 ساعة لأغراض أمنية.',
         ignore: language === 'English'
           ? 'If you did not request this password reset, please ignore this email or contact support if you have concerns.'
           : 'إذا لم تطلب إعادة تعيين كلمة المرور هذه، يرجى تجاهل هذا البريد الإلكتروني أو الاتصال بالدعم إذا كان لديك مخاوف.',
