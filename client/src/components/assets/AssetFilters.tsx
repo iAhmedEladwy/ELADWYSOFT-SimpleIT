@@ -42,15 +42,12 @@ export default function AssetFilters({
     brand: language === 'English' ? 'Brand' : 'العلامة التجارية',
     model: language === 'English' ? 'Model' : 'الموديل',
     status: language === 'English' ? 'Status' : 'الحالة',
-    assignedTo: language === 'English' ? 'Assigned To' : 'مخصص لـ',
     clearAll: language === 'English' ? 'Clear All' : 'مسح الكل',
     searchPlaceholder: language === 'English' ? 'Search assets...' : 'البحث في الأصول...',
     allTypes: language === 'English' ? 'All Types' : 'جميع الأنواع',
     allBrands: language === 'English' ? 'All Brands' : 'جميع العلامات',
     allModels: language === 'English' ? 'All Models' : 'جميع الموديلات',
     allStatuses: language === 'English' ? 'All Statuses' : 'جميع الحالات',
-    allAssignments: language === 'English' ? 'All Assignments' : 'جميع التخصيصات',
-    unassigned: language === 'English' ? 'Unassigned' : 'غير مخصص',
     filterAndSearch: language === 'English' ? 'Filter & Search Assets' : 'تصفية والبحث في الأصول',
     results: language === 'English' ? 
       `Showing ${filteredCount} of ${totalCount} assets` : 
@@ -210,8 +207,8 @@ export default function AssetFilters({
           </Button>
         </form>
 
-        {/* Filter Grid - Updated layout for 5 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        {/* Filter Grid - Updated layout for 4 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {/* Type Filter - Multi-Select */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -423,30 +420,6 @@ export default function AssetFilters({
                 </div>
               </PopoverContent>
             </Popover>
-          </div>
-
-          {/* Assigned To Filter */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              {translations.assignedTo}
-            </label>
-            <Select
-              value={filters.assignedTo || 'all'}
-              onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={translations.allAssignments} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{translations.allAssignments}</SelectItem>
-                <SelectItem value="unassigned">{translations.unassigned}</SelectItem>
-                {employees.map((emp: any) => (
-                  <SelectItem key={emp.id} value={emp.id.toString()}>
-                    {emp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
