@@ -23,8 +23,6 @@ export default function VerifyEmail() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
@@ -43,8 +41,6 @@ export default function VerifyEmail() {
     description: language === 'English' 
       ? 'Create your account to access SimpleIT' 
       : 'أنشئ حسابك للوصول إلى SimpleIT',
-    firstName: language === 'English' ? 'First Name' : 'الاسم الأول',
-    lastName: language === 'English' ? 'Last Name' : 'اسم العائلة',
     username: language === 'English' ? 'Username' : 'اسم المستخدم',
     password: language === 'English' ? 'Password' : 'كلمة المرور',
     confirmPassword: language === 'English' ? 'Confirm Password' : 'تأكيد كلمة المرور',
@@ -125,8 +121,6 @@ export default function VerifyEmail() {
       token,
       username: username.trim(),
       password,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
     });
   };
 
@@ -219,29 +213,6 @@ export default function VerifyEmail() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">{translations.firstName}</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  disabled={verifyMutation.isPending}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">{translations.lastName}</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  disabled={verifyMutation.isPending}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="username">{translations.username}</Label>
               <Input

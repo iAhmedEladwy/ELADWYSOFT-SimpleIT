@@ -83,15 +83,13 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      // Initialize if not already initialized
-      if (!this.initialized || !this.transporter) {
-        console.log('[EmailService] Not initialized, attempting to initialize...');
-        const initialized = await this.initialize();
-        if (!initialized) {
-          console.error('[EmailService] Failed to initialize. Email settings may not be configured.');
-          console.error('[EmailService] Please configure email settings in System Config > Email tab');
-          return false;
-        }
+      // Always reinitialize to get latest config (in case settings were updated)
+      console.log('[EmailService] Reinitializing to fetch latest email configuration...');
+      const initialized = await this.initialize();
+      if (!initialized) {
+        console.error('[EmailService] Failed to initialize. Email settings may not be configured.');
+        console.error('[EmailService] Please configure email settings in System Config > Email tab');
+        return false;
       }
 
       if (!this.config || !this.transporter) {

@@ -24,8 +24,6 @@ export interface RegistrationVerification {
   token: string;
   username: string;
   password: string;
-  firstName: string;
-  lastName: string;
 }
 
 export interface RegistrationResult {
@@ -186,13 +184,13 @@ export async function completeRegistration(verification: RegistrationVerificatio
       };
     }
 
-    // Create user account
+    // Create user account using employee's existing name data
     const newUser = await storage.createUser({
       username: verification.username,
       password: verification.password, // Will be hashed in storage.createUser
       email: tokenRecord.email,
-      firstName: verification.firstName,
-      lastName: verification.lastName,
+      firstName: employee.englishName.split(' ')[0] || employee.englishName, // Extract first name
+      lastName: employee.englishName.split(' ').slice(1).join(' ') || '', // Extract last name
       role: 'employee',
       isActive: true
     });

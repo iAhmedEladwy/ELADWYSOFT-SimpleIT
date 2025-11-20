@@ -700,10 +700,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   app.post("/api/auth/verify-email", async (req, res) => {
     try {
-      const { token, username, password, firstName, lastName } = req.body;
+      const { token, username, password } = req.body;
 
       // Validation
-      if (!token || !username || !password || !firstName || !lastName) {
+      if (!token || !username || !password) {
         return res.status(400).json({ 
           success: false,
           message: 'All fields are required' 
@@ -728,9 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await completeRegistration({
         token,
         username,
-        password,
-        firstName,
-        lastName
+        password
       });
 
       if (result.success) {
