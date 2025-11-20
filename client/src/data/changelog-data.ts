@@ -15,11 +15,12 @@ export interface ChangelogEntry {
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
     version: "1.0.1",
-    date: "2025-11-19",
+    date: "2025-11-20",
     title: "Enhanced Notifications & Employee Management",
     type: "minor",
     changes: {
       features: [
+        "🏢 Custom Departments - Migrated departments from system config to dedicated table with CRUD API",
         "✉️ Employee Self-Registration - Email verification system for employees to create accounts",
         "🔗 Auto-Linking - Automatic user-employee linking via corporate/personal email matching",
         "🔔 Enhanced Notification System:",
@@ -44,6 +45,10 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "   • 12 new columns across notifications and notification_preferences tables",
       ],
       improvements: [
+        "🏢 Custom Departments - Full CRUD endpoints with metadata support",
+        "📧 Email Settings Persistence - Fixed settings disappearing after app restart",
+        "🔐 Authentication - Added email login support alongside username login",
+        "📝 Registration Simplification - Removed redundant name fields, auto-populate from employee data",
         "🎯 Multi-Select Asset Filters - Fixed backend logic to support multiple selections",
         "📜 Scrollable Filter Dropdowns - Added max height with scroll for long lists",
         "⚡ Notification Performance - Optimized queries with composite and partial indexes",
@@ -53,6 +58,10 @@ export const CHANGELOG_DATA: ChangelogEntry[] = [
         "🔒 Password Reset Rate Limiting - Prevent brute force attacks with IP-based throttling",
       ],
       bugfixes: [
+        "🔧 Fixed duplicate passport strategy preventing email login",
+        "🔧 Fixed email service not reloading configuration after app restart",
+        "🔧 Fixed email settings UI state update race condition",
+        "🔧 Fixed employee registration error handling and logging",
         "🔧 Fixed RBAC role hierarchy to allow same-level assignments",
         "🔧 Fixed pending offboarding filter showing no results due to status conflict",
         "🔧 Fixed snooze processing to mark notifications as unread when reactivated",
