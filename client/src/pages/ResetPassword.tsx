@@ -97,6 +97,22 @@ export default function ResetPassword() {
       
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Check if it's an expired/used token error
+        if (errorData.expired) {
+          toast({
+            title: language === 'English' ? 'Link Expired' : 'انتهت صلاحية الرابط',
+            description: errorData.message,
+            variant: 'destructive',
+            duration: 6000,
+          });
+          // Redirect to forgot password page after 2 seconds
+          setTimeout(() => {
+            navigate('/forgot-password');
+          }, 2000);
+          return;
+        }
+        
         throw new Error(errorData.message || 'Failed to reset password');
       }
       

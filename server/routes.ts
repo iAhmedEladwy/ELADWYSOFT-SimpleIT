@@ -1174,9 +1174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!userId) {
         console.log('[Password Reset] Token validation failed for token:', token.substring(0, 10) + '...');
-        return res.status(404).json({ 
+        return res.status(400).json({ 
           success: false, 
-          message: 'Invalid or expired token' 
+          message: 'This password reset link has expired or has already been used. Please request a new password reset link.',
+          expired: true
         });
       }
       
@@ -1218,7 +1219,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
-      res.status(500).json({ message: error.message || 'Error resetting password' });
+      const errorMessage = error instanceof Error ? error.message : 'Error resetting password';
+      res.status(500).json({ 
+        success: false,
+        message: errorMessage 
+      });
     }
   });
   
