@@ -83,17 +83,21 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      // Initialize if not already initialized
-      if (!this.initialized || !this.transporter) {
-        const initialized = await this.initialize();
-        if (!initialized) {
-          return false;
-        }
+      // Always reinitialize to get latest config (in case settings were updated)
+      console.log('[EmailService] Reinitializing to fetch latest email configuration...');
+      const initialized = await this.initialize();
+      if (!initialized) {
+        console.error('[EmailService] Failed to initialize. Email settings may not be configured.');
+        console.error('[EmailService] Please configure email settings in System Config > Email tab');
+        return false;
       }
 
       if (!this.config || !this.transporter) {
+        console.error('[EmailService] Missing config or transporter after initialization');
         return false;
       }
+
+      console.log(`[EmailService] Sending email to ${options.to} with subject: ${options.subject}`);
 
       // Send the email
       await this.transporter.sendMail({
@@ -104,9 +108,13 @@ export class EmailService {
         html: options.html
       });
 
+      console.log(`[EmailService] Email sent successfully to ${options.to}`);
       return true;
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('[EmailService] Failed to send email:', error);
+      if (error instanceof Error) {
+        console.error('[EmailService] Error details:', error.message);
+      }
       return false;
     }
   }
@@ -128,8 +136,8 @@ export class EmailService {
           : 'لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. انقر على الزر أدناه لإعادة تعيين كلمة المرور:',
         button: language === 'English' ? 'Reset Password' : 'إعادة تعيين كلمة المرور',
         expiry: language === 'English' 
-          ? 'This link will expire in 1 hour for security purposes.' 
-          : 'سينتهي صلاحية هذا الرابط خلال ساعة واحدة لأغراض أمنية.',
+          ? 'This link will expire in 24 hours for security purposes.' 
+          : 'سينتهي صلاحية هذا الرابط خلال 24 ساعة لأغراض أمنية.',
         ignore: language === 'English'
           ? 'If you did not request this password reset, please ignore this email or contact support if you have concerns.'
           : 'إذا لم تطلب إعادة تعيين كلمة المرور هذه، يرجى تجاهل هذا البريد الإلكتروني أو الاتصال بالدعم إذا كان لديك مخاوف.',

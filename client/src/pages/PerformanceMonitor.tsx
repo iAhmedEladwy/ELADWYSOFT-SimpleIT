@@ -107,7 +107,7 @@ export default function PerformanceMonitor() {
   // Fetch performance data
   const { data: performanceData, isLoading, refetch } = useQuery({
     queryKey: ['performance-metrics', timeRange],
-    queryFn: () => apiRequest(`/api/developer-tools/performance?range=${timeRange}`, 'GET'),
+    queryFn: () => apiRequest(`/api/developer-tools/performance?range=${timeRange}`),
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 

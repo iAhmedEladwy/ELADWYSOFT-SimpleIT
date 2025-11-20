@@ -37,6 +37,8 @@ const BackupRestore = lazy(() => import('@/pages/admin/BackupRestore'));
 const SystemHealth = lazy(() => import('@/pages/admin/SystemHealth'));
 const SystemLogs = lazy(() => import('@/pages/SystemLogs'));
 const PerformanceMonitor = lazy(() => import('@/pages/PerformanceMonitor'));
+const Register = lazy(() => import("@/pages/Register"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 
 // Employee Portal lazy-loaded pages
 const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
@@ -135,6 +137,8 @@ function Router() {
         <Switch>
           <Route path="/setup" component={FirstTimeSetup} />
           <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
           

@@ -19,21 +19,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,CalendarIcon , Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2, Check, ChevronsUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,CalendarIcon , Plus, Search, Filter, Download, Upload, RefreshCw, FileUp, DollarSign, FileDown, Package, Wrench, X, Trash2 } from 'lucide-react';
 import type { AssetFilters as AssetFiltersType } from '@shared/types';
 import AssetFilters from '@/components/assets/AssetFilters';
 import AssetForm from '@/components/assets/AssetForm';
 import MaintenanceForm from '@/components/assets/MaintenanceForm';
 import AssetsTable from '@/components/assets/AssetsTable';
 import BulkActions from '@/components/assets/BulkActions';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
@@ -50,7 +42,6 @@ export default function Assets() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
   const [filters, setFilters] = useState<AssetFiltersType>({});
-  const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [openSellDialog, setOpenSellDialog] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
@@ -805,13 +796,6 @@ export default function Assets() {
       return assets.some((asset: any) => !asset.assignedEmployeeId);
      }, [assets]);
 
-  const getEmployeeDisplay = (employeeId: string | undefined) => {
-    if (!employeeId || employeeId === 'all') return translations.allAssignments;
-    if (employeeId === 'unassigned') return translations.unassigned;
-    const employee = employees?.find((emp: any) => emp.id.toString() === employeeId);
-    return employee ? (employee.englishName || employee.name) : translations.allAssignments;
-  };
-
   // Pagination controls component
   const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 bg-white dark:bg-gray-800 rounded-lg">
@@ -948,122 +932,11 @@ export default function Assets() {
             totalCount={pagination.totalCount}
             filteredCount={pagination.totalCount}
             onExport={handleExportFilteredAssets}
+            employeesWithAssets={employeesWithAssets}
+            hasUnassignedAssets={hasUnassignedAssets}
           />
         </div>
 
-        {/* Additional Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {/* Assignment Filter with Combobox */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">{translations.assignment}</label>
-                <Popover open={assignmentOpen} onOpenChange={setAssignmentOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={assignmentOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      <span className="truncate">
-                        {getEmployeeDisplay(filters.assignedTo)}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                      <CommandInput 
-                        placeholder={translations.searchEmployees} 
-                        className="h-9"
-                      />
-                      <CommandList>
-                        <CommandEmpty>{translations.noEmployeesFound}</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="all"
-                            onSelect={() => {
-                              setFilters({ ...filters, assignedTo: undefined });
-                              setAssignmentOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                !filters.assignedTo ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-                            {translations.allAssignments}
-                          </CommandItem>
-                          
-                          {hasUnassignedAssets && (
-                            <CommandItem
-                              value="unassigned"
-                              onSelect={() => {
-                                setFilters({ ...filters, assignedTo: 'unassigned' });
-                                setAssignmentOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  filters.assignedTo === 'unassigned' ? "opacity-100" : "opacity-0"
-                                }`}
-                              />
-                              {translations.unassigned}
-                            </CommandItem>
-                          )}
-                          
-                          {employeesWithAssets.map((employee: any) => (
-                            <CommandItem
-                              key={employee.id}
-                              value={employee.englishName || employee.name || ''}
-                              onSelect={() => {
-                                setFilters({ ...filters, assignedTo: employee.id.toString() });
-                                setAssignmentOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  filters.assignedTo === employee.id.toString() 
-                                    ? "opacity-100" 
-                                    : "opacity-0"
-                                }`}
-                              />
-                              {employee.englishName || employee.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-           {/* Maintenance Status Filter */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                {translations.maintenanceStatus || 'Maintenance Status'}
-              </label>
-              <Select
-                value={filters.maintenanceDue || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, maintenanceDue: value === 'all' ? undefined : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={translations.allStatuses || 'All Statuses'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{translations.all || 'All'}</SelectItem>
-                  <SelectItem value="scheduled">{translations.scheduled || 'Scheduled'}</SelectItem>
-                  <SelectItem value="inProgress">{translations.inProgress || 'In Progress'}</SelectItem>
-                  <SelectItem value="completed">{translations.completed || 'Completed'}</SelectItem>
-                  <SelectItem value="overdue">{translations.overdue || 'Overdue'}</SelectItem>  {/* ADD THIS LINE */}
-                </SelectContent>
-              </Select>
-            </div>
-            </div>
-          </CardContent>
-        </Card>
-        
         {/* Pagination Controls Top */}
         {!isLoading && <PaginationControls />}
 

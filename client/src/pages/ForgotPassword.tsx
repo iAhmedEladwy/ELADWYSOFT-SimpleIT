@@ -69,11 +69,6 @@ export default function ForgotPassword() {
       // On success, show success message
       setEmailSent(true);
       
-      toast({
-        title: translations.emailSentTitle,
-        description: translations.emailSentMessage,
-      });
-      
     } catch (error: any) {
       console.error('Error sending reset email:', error);
       

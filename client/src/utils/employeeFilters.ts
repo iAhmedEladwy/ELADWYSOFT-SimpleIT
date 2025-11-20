@@ -32,6 +32,7 @@ export function applyCustomEmployeeFilter(
         return isActive && hasExitDate && hasAssets;
       });
 
+    case 'pendingOffboarding':
     case 'offboardedWithAssets':
     // Resigned or Terminated employees who still have assets
     return employees.filter(emp => {

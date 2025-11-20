@@ -3,6 +3,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { compare } from 'bcrypt';
 import { getStorage } from './storage-factory';
 import { logger } from './services/logger';
+import { autoLinkEmployeeToUser } from './services/employeeLinkService';
 
 const storage = getStorage();
 
@@ -75,6 +76,27 @@ passport.use(new LocalStrategy(
         userId: user.id,
         metadata: { username: user.username, role: user.role }
       });
+      
+      // Attempt auto-linking to employee record
+      try {
+        const linkResult = await autoLinkEmployeeToUser(user);
+        if (linkResult.success) {
+          console.log(`[AUTO-LINK] ${linkResult.message}`);
+          logger.info('employee_link', `Auto-linked user to employee: ${user.username}`, {
+            userId: user.id,
+            metadata: { 
+              employeeId: linkResult.employee?.id,
+              employeeName: linkResult.employee?.englishName,
+              method: linkResult.method
+            }
+          });
+        } else {
+          console.log(`[AUTO-LINK] ${linkResult.message}`);
+        }
+      } catch (linkError) {
+        console.error('[AUTO-LINK] Error during auto-linking:', linkError);
+        // Don't fail login if auto-linking fails
+      }
       
       // Remove password from user object before returning
       const { password: _, ...userWithoutPassword } = user;

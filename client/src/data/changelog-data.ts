@@ -14,6 +14,51 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: "1.0.1",
+    date: "2025-11-20",
+    title: "Enhanced Notifications & Employee Management",
+    type: "minor",
+    changes: {
+      features: [
+        "🏢 Custom Departments - Dedicated table with full CRUD API, metadata, and audit tracking",
+        "✉️ Employee Self-Registration - Email verification system with auto-linking via corporate/personal email",
+        "🔔 Advanced Notification System:",
+        "   • 5 Priority Levels (info, low, medium, high, critical) with smart filtering",
+        "   • 7 Categories (assignments, status_changes, maintenance, approvals, announcements, reminders, alerts)",
+        "   • Custom Templates with {{variable}} substitution and admin management",
+        "   • Smart Batching with bilingual summaries (English/Arabic)",
+        "   • Snooze & Do Not Disturb with timezone support and quiet hours",
+        "   • Template CRUD API (7 endpoints)",
+        "   • Automated cleanup (daily at 2 AM, removes read notifications >30 days)",
+        "   • Auto-batching and snooze processing (every 5 minutes)",
+        "📊 Database Enhancements:",
+        "   • 8 performance indexes (composite, partial, covering)",
+        "   • notification_templates table with variable validation",
+        "   • password_reset_attempts table (rate limiting: 5/hour, 30-min block)",
+        "   • New enums: notification_priority, notification_category",
+      ],
+      improvements: [
+        "🔐 Email Login - Full support for email-based authentication alongside username",
+        "📧 Email Persistence - Settings now survive app restarts",
+        "📝 Streamlined Registration - Auto-populate names from employee records",
+        "🎯 Multi-Select Filters - Fixed asset filters backend logic",
+        "📜 UI Polish - Scrollable dropdowns for long lists",
+        "⚡ Notification Performance - Optimized queries with proper indexing",
+        "🌍 Bilingual Support - All notification features support English/Arabic",
+      ],
+      bugfixes: [
+        "🔧 Fixed duplicate passport strategy blocking email login",
+        "🔧 Fixed email service configuration reload on restart",
+        "🔧 Fixed email settings UI race condition",
+        "🔧 Fixed employee registration error handling",
+        "🔧 Fixed RBAC role hierarchy for same-level assignments",
+        "🔧 Fixed pending offboarding filter status conflict",
+        "🔧 Fixed snooze reactivation to mark as unread",
+        "🔧 Fixed readAt timestamp tracking",
+      ]
+    }
+  },
+  {
     version: "1.0.0",
     date: "2025-11-12",
     title: "🎉 Stable Release - Production-Ready Asset Management",

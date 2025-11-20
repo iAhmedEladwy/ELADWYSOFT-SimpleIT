@@ -10,8 +10,10 @@ import {
 } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { calculatePriority, validatePriority } from "../shared/priorityUtils";
+import './passport'; // Initialize passport strategies with email support
 import { setupPortalRoutes } from './routes/portal';
 import notificationsRouter, { createNotification } from './routes/notifications';
+import notificationTemplatesRouter from './routes/notificationTemplates';
 import backupRouter from './routes/backup';
 import systemHealthRouter from './routes/systemHealth';
 import systemLogsRouter from './routes/systemLogs';
@@ -309,26 +311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "Who is your favorite actor/actress?"
   ];
 
-  // Configure passport
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: "Incorrect username" });
-        }
-
-        const validPassword = await compare(password, user.password);
-        if (!validPassword) {
-          return done(null, false, { message: "Incorrect password" });
-        }
-
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    })
-  );
+  // Passport configuration is now in server/passport.ts
+  // No need to configure strategy here - it's already configured with email support
 
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
@@ -629,6 +613,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // ==========================================
+  // EMPLOYEE SELF-REGISTRATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * POST /api/auth/register
+   * Initiate employee self-registration - verifies employee exists and sends verification email
+   */
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !email.trim()) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Email address is required' 
+        });
+      }
+
+      const { initiateRegistration } = await import('./services/registrationService');
+      const result = await initiateRegistration({ email });
+
+      if (result.success) {
+        return res.json(result);
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('Registration initiation error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Registration failed. Please try again later.' 
+      });
+    }
+  });
+
+  /**
+   * GET /api/auth/validate-token/:token
+   * Validate a registration token without using it
+   */
+  app.get("/api/auth/validate-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({ 
+          valid: false,
+          message: 'Token is required' 
+        });
+      }
+
+      const { validateToken } = await import('./services/registrationService');
+      const result = await validateToken(token);
+
+      return res.json(result);
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return res.status(500).json({ 
+        valid: false,
+        message: 'Failed to validate token' 
+      });
+    }
+  });
+
+  /**
+   * POST /api/auth/verify-email
+   * Complete registration by verifying token and creating user account
+   */
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token, username, password } = req.body;
+
+      // Validation
+      if (!token || !username || !password) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'All fields are required' 
+        });
+      }
+
+      if (username.length < 3) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Username must be at least 3 characters long' 
+        });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Password must be at least 8 characters long' 
+        });
+      }
+
+      const { completeRegistration } = await import('./services/registrationService');
+      const result = await completeRegistration({
+        token,
+        username,
+        password
+      });
+
+      if (result.success) {
+        // Log successful registration
+        logger.info('registration', `Employee self-registration completed: ${username}`, {
+          metadata: { 
+            username,
+            employeeName: result.employeeName
+          }
+        });
+
+        return res.json(result);
+      } else {
+        return res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('Registration completion error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to create account. Please try again later.' 
+      });
+    }
+  });
+
+  // ==========================================
+  // USER MANAGEMENT ENDPOINTS
+  // ==========================================
+
+
   app.get("/api/me", (req, res) => {
     console.log('[/api/me] Session ID:', req.sessionID);
     console.log('[/api/me] Session:', req.session);
@@ -719,6 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOTIFICATION ROUTES
   // ==========================================
   app.use('/api/notifications', authenticateUser, notificationsRouter);
+  app.use('/api/notification-templates', authenticateUser, notificationTemplatesRouter);
 
   // ==========================================
   // SYSTEM LOGS ROUTES (Super Admin only)
@@ -847,12 +960,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // The following routes are used by the forgot password flow (no authentication required)
+  // ============================================================
+  // Password Reset Rate Limiting Helper
+  // ============================================================
+  async function checkPasswordResetRateLimit(ipAddress: string, email?: string): Promise<{ allowed: boolean; message?: string; blockedUntil?: Date }> {
+    try {
+      const now = new Date();
+      
+      // Check for existing attempt record
+      const attempts = await db.select()
+        .from(schema.passwordResetAttempts)
+        .where(eq(schema.passwordResetAttempts.ipAddress, ipAddress));
+      
+      const attempt = attempts[0];
+
+      // Check if currently blocked
+      if (attempt && attempt.blockedUntil && attempt.blockedUntil > now) {
+        const minutesLeft = Math.ceil((attempt.blockedUntil.getTime() - now.getTime()) / 60000);
+        return {
+          allowed: false,
+          message: `Too many password reset attempts. Please try again in ${minutesLeft} minute(s).`,
+          blockedUntil: attempt.blockedUntil
+        };
+      }
+
+      // If last attempt was more than 1 hour ago, reset counter
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      if (attempt && attempt.lastAttempt < oneHourAgo) {
+        await db.delete(schema.passwordResetAttempts)
+          .where(eq(schema.passwordResetAttempts.id, attempt.id));
+        return { allowed: true };
+      }
+
+      if (!attempt) {
+        // First attempt - create record
+        await db.insert(schema.passwordResetAttempts).values({
+          ipAddress,
+          email: email || null,
+          attemptCount: 1,
+          lastAttempt: now,
+        });
+        return { allowed: true };
+      }
+
+      // Increment attempt count
+      const newCount = attempt.attemptCount + 1;
+      const maxAttempts = 5;
+      
+      if (newCount > maxAttempts) {
+        // Block for 30 minutes
+        const blockedUntil = new Date(now.getTime() + 30 * 60 * 1000);
+        await db.update(schema.passwordResetAttempts)
+          .set({ 
+            attemptCount: newCount,
+            lastAttempt: now,
+            blockedUntil 
+          })
+          .where(eq(schema.passwordResetAttempts.id, attempt.id));
+        
+        return {
+          allowed: false,
+          message: `Too many password reset attempts. Account temporarily blocked for 30 minutes.`,
+          blockedUntil
+        };
+      }
+
+      // Update attempt count
+      await db.update(schema.passwordResetAttempts)
+        .set({ 
+          attemptCount: newCount,
+          lastAttempt: now 
+        })
+        .where(eq(schema.passwordResetAttempts.id, attempt.id));
+
+      return { allowed: true };
+    } catch (error) {
+      console.error('Rate limit check failed:', error);
+      return { allowed: true }; // Fail open to avoid blocking legitimate users
+    }
+  }
+  
+  // ============================================================
+  // Password Reset Endpoints (with Rate Limiting)
+  // ============================================================
   
   app.post("/api/forgot-password/find-user", async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { username } = req.body;
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress, username);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { username } = req.body;
-      
       if (!username) {
         return res.status(400).json({ message: "Username is required" });
       }
@@ -906,9 +1108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Step 3: Verify security question answers
   app.post('/api/forgot-password/verify-answers', async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { userId, answers } = req.body;
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { userId, answers } = req.body;
-      
       if (!userId || !answers || !Array.isArray(answers)) {
         return res.status(400).json({ message: 'User ID and answers are required' });
       }
@@ -936,12 +1145,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Validate password reset token (check if valid before showing form)
+  app.post('/api/forgot-password/validate-token', async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ valid: false, message: 'Token is required' });
+      }
+
+      // Validate token
+      const userId = await storage.validatePasswordResetToken(token);
+
+      if (!userId) {
+        return res.json({ valid: false, expired: true });
+      }
+
+      return res.json({ valid: true });
+    } catch (error: unknown) {
+      console.error('Error validating token:', error);
+      return res.status(500).json({ valid: false, message: 'Error validating token' });
+    }
+  });
+  
   // Step 4: Reset password with token
   app.post('/api/forgot-password/reset-password', async (req, res) => {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const { token, newPassword } = req.body;
+
+    console.log('[Password Reset] Received reset request:', {
+      tokenPrefix: token ? token.substring(0, 10) + '...' : 'none',
+      hasPassword: !!newPassword,
+      ipAddress
+    });
+
+    // Check rate limit
+    const rateLimit = await checkPasswordResetRateLimit(ipAddress);
+    if (!rateLimit.allowed) {
+      console.log('[Password Reset] Rate limit exceeded:', ipAddress);
+      return res.status(429).json({ message: rateLimit.message });
+    }
+
     try {
-      const { token, newPassword } = req.body;
-      
       if (!token || !newPassword) {
+        console.log('[Password Reset] Missing required fields');
         return res.status(400).json({ message: 'Token and new password are required' });
       }
       
@@ -949,11 +1196,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = await storage.validatePasswordResetToken(token);
       
       if (!userId) {
-        return res.status(404).json({ 
+        console.log('[Password Reset] Token validation failed for token:', token.substring(0, 10) + '...');
+        return res.status(400).json({ 
           success: false, 
-          message: 'Invalid or expired token' 
+          message: 'This password reset link has expired or has already been used. Please request a new password reset link.',
+          expired: true
         });
       }
+      
+      console.log('[Password Reset] Token valid for user:', userId);
       
       // Hash the new password
       const hashedPassword = await hash(newPassword, 10);
@@ -962,11 +1213,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await storage.updateUser(userId, { password: hashedPassword });
       
       if (!updated) {
+        console.log('[Password Reset] Failed to update user password');
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to update password' 
         });
       }
+      
+      console.log('[Password Reset] Password updated successfully');
       
       // Delete the used token
       await storage.invalidatePasswordResetToken(token);
@@ -980,13 +1234,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: { message: 'Password was reset using forgot password flow' }
       });
       
+      console.log('[Password Reset] Reset complete for user:', userId);
+      
       res.json({
         success: true,
         message: 'Password has been reset successfully'
       });
     } catch (error: unknown) {
       console.error('Error resetting password:', error);
-      res.status(500).json({ message: error.message || 'Error resetting password' });
+      const errorMessage = error instanceof Error ? error.message : 'Error resetting password';
+      res.status(500).json({ 
+        success: false,
+        message: errorMessage 
+      });
     }
   });
   
@@ -1563,61 +1823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return statusMap[status] || 'Active';
   }
 
-  // Assets Export/Import
-  app.get("/api/assets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
-    try {
-      const [assetsData, employeesData] = await Promise.all([
-        storage.getAllAssets(),
-        storage.getAllEmployees()
-      ]);
-      
-      // Create a map of employee IDs to names for assignment lookup
-      const employeeMap = new Map<number, string>();
-      employeesData.forEach(emp => {
-        if (emp.id) {
-          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
-        }
-      });
-      
-      // Transform asset data for export with proper field mapping
-      const csvData = assetsData.map(asset => ({
-        'ID': asset.id,
-        'Asset ID': asset.assetId,
-        'Type': asset.type,
-        'Brand': asset.brand,
-        'Model Number': asset.modelNumber || '',
-        'Model Name': asset.modelName || '',
-        'Serial Number': asset.serialNumber,
-        'Specifications': asset.specs || '',
-        'CPU': asset.cpu || '',
-        'RAM': asset.ram || '',
-        'Storage': asset.storage || '',
-        'Status': asset.status,
-        'Purchase Date': formatShortDate(asset.purchaseDate), // Fixed: Short date format
-        'Buy Price': asset.buyPrice || '',
-        'Warranty Expiry Date': formatShortDate(asset.warrantyExpiryDate), // Fixed: Short date format
-        'Life Span': asset.lifeSpan || '',
-        'Out of Box OS': asset.outOfBoxOs || '',
-        'Assigned Employee ID': asset.assignedEmployeeId || '',
-        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '', // Fixed: Use assignedEmployeeId
-        'Created At': formatLongDate(asset.createdAt), // Fixed: Long date format with time
-        'Updated At': formatLongDate(asset.updatedAt) // Fixed: Long date format with time
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="assets.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
+  // Assets Import
   app.post("/api/assets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -2697,15 +2903,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
         }
         
-        // Apply other filters
+        // Apply other filters - support multi-select (comma-separated)
         if (filters.type) {
-          filteredAssets = filteredAssets.filter(asset => asset.type === filters.type);
+          const types = filters.type.split(',').map(t => t.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            types.includes(asset.type)
+          );
         }
         if (filters.status) {
-          filteredAssets = filteredAssets.filter(asset => asset.status === filters.status);
+          const statuses = filters.status.split(',').map(s => s.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            statuses.includes(asset.status)
+          );
         }
         if (filters.brand) {
-          filteredAssets = filteredAssets.filter(asset => asset.brand === filters.brand);
+          const brands = filters.brand.split(',').map(b => b.trim());
+          filteredAssets = filteredAssets.filter(asset => 
+            brands.includes(asset.brand)
+          );
         }
         if (filters.model) {
           filteredAssets = filteredAssets.filter(asset => asset.modelName === filters.model);
@@ -5783,18 +5998,12 @@ app.get('/api/dashboard/summary', async (req, res) => {
     const assets = await storage.getAllAssets();
     const allTickets = await storage.getAllTickets();
     const users = await storage.getAllUsers();
-      // Get all maintenance records - ADD THIS SECTION
-    let allMaintenanceRecords = [];
+    
+    // OPTIMIZED: Fetch all maintenance records in one query instead of N+1 loop
+    let allMaintenanceRecords: any[] = [];
     try {
-      // Try to use getAllMaintenanceRecords if available
       if (storage.getAllMaintenanceRecords) {
         allMaintenanceRecords = await storage.getAllMaintenanceRecords();
-      } else {
-        // Fallback: collect maintenance for each asset
-        for (const asset of assets) {
-          const assetMaintenance = await storage.getMaintenanceForAsset(asset.id);
-          allMaintenanceRecords = allMaintenanceRecords.concat(assetMaintenance);
-        }
       }
     } catch (error) {
       console.log('Error fetching maintenance records:', error);
@@ -5830,22 +6039,12 @@ app.get('/api/dashboard/summary', async (req, res) => {
         .map(a => a.assignedTo || a.assignedEmployeeId || a.assignedToId)
     );
     
-    // Pending offboarding employees calculation - match custom filter logic
-    const pendingOffboarding = employees.filter(emp => {
-      // Check if employee has assigned assets
-      const hasAssignedAssets = assets.some(asset => 
-        (asset.assignedTo === emp.id) || 
-        (asset.assignedEmployeeId === emp.id) || 
-        (asset.assignedToId === emp.id) ||
-        (asset.assignedTo === emp.empId)
-      );
-      
-      // Match the "offboardedWithAssets" filter logic:
-      // Resigned or Terminated employees who still have assets
-      const isOffboarded = emp.status === 'Resigned' || emp.status === 'Terminated';
-      
-      return isOffboarded && hasAssignedAssets;
-    });
+    // Pending offboarding employees calculation - Active employees with exit date set
+    const pendingOffboarding = employees.filter(emp => 
+      emp.status === 'Active' && 
+      emp.exitDate !== null && 
+      emp.exitDate !== undefined
+    );
     // Enhanced Asset Metrics
     const excludedStatuses = ['Gifted', 'Lost', 'Retired', 'Sold', 'Missing', 'Damaged', 'Disposed', 'Pending Disposal'];
     
@@ -5939,59 +6138,50 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       }
     });
 
- // Fixed: Maintenance Counts - count ASSETS with maintenance, not maintenance records
-    const assetsMaintenanceStatus = await Promise.all(
-      assets.map(async (asset) => {
-        const maintenanceRecords = await storage.getMaintenanceForAsset(asset.id);
-        
-        // Skip assets with no maintenance records
-        if (!maintenanceRecords || maintenanceRecords.length === 0) {
-          return null;
-        }
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Check for scheduled maintenance (future dates)
-        const hasScheduled = maintenanceRecords.some(m => {
-          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
-          const maintenanceDate = new Date(m.date);
-          maintenanceDate.setHours(0, 0, 0, 0);
-          return maintenanceDate >= today; // Future or today
-        });
-        
-        // Check for in-progress maintenance
-        const hasInProgress = maintenanceRecords.some(m => 
-          m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
-        );
-        
-        // Check for overdue maintenance
-        const hasOverdue = maintenanceRecords.some(m => {
-          if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
-          const maintenanceDate = new Date(m.date);
-          maintenanceDate.setHours(0, 0, 0, 0);
-          return maintenanceDate < today; // Past date but still scheduled
-        });
-        
-        return {
-          assetId: asset.id,
-          hasScheduled,
-          hasInProgress,
-          hasOverdue,
-          hasAnyMaintenance: true
-        };
-      })
-    );
-
-    // Filter out nulls (assets without maintenance) and count
-    const assetsWithMaintenance = assetsMaintenanceStatus.filter(a => a !== null);
-
-    // Count unique assets with each maintenance status
+ // OPTIMIZED: Process maintenance counts from already-fetched data (no more N+1 queries)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Group maintenance records by asset ID for O(1) lookup
+    const maintenanceByAsset = allMaintenanceRecords.reduce((acc, m) => {
+      if (!acc[m.assetId]) acc[m.assetId] = [];
+      acc[m.assetId].push(m);
+      return acc;
+    }, {} as Record<number, typeof allMaintenanceRecords>);
+    
+    // Count unique assets with each maintenance status (no async calls!)
     const maintenanceCounts = {
-      scheduled: assetsWithMaintenance.filter(a => a.hasScheduled).length,
-      inProgress: assetsWithMaintenance.filter(a => a.hasInProgress).length,
-      overdue: assetsWithMaintenance.filter(a => a.hasOverdue).length
+      scheduled: 0,
+      inProgress: 0,
+      overdue: 0
     };
+    
+    assets.forEach(asset => {
+      const records = maintenanceByAsset[asset.id];
+      if (!records || records.length === 0) return;
+      
+      const hasScheduled = records.some(m => {
+        if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+        const maintenanceDate = new Date(m.date);
+        maintenanceDate.setHours(0, 0, 0, 0);
+        return maintenanceDate >= today;
+      });
+      
+      const hasInProgress = records.some(m => 
+        m.status === 'In Progress' || m.status === 'in_progress' || m.status === 'InProgress'
+      );
+      
+      const hasOverdue = records.some(m => {
+        if (m.status !== 'Scheduled' && m.status !== 'scheduled') return false;
+        const maintenanceDate = new Date(m.date);
+        maintenanceDate.setHours(0, 0, 0, 0);
+        return maintenanceDate < today;
+      });
+      
+      if (hasScheduled) maintenanceCounts.scheduled++;
+      if (hasInProgress) maintenanceCounts.inProgress++;
+      if (hasOverdue) maintenanceCounts.overdue++;
+    });
 
     // Calculate total asset value (excluding disposed assets)
     const totalAssetValue = totalValidAssets.reduce((sum, asset) => {
@@ -6711,7 +6901,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Asset Status API routes (flexible status system)
+  // Asset Status API routes (legacy GET endpoint for compatibility)
   app.get('/api/asset-statuses', authenticateUser, async (req, res) => {
     try {
       const statuses = await storage.getAssetStatuses();
@@ -6721,153 +6911,60 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json({ error: 'Failed to fetch asset statuses', details: error.message });
     }
   });
-
-  app.post('/api/asset-statuses', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
-    try {
-      const { name, color, description } = req.body;
-      
-      if (!name || name.trim() === '') {
-        return res.status(400).json({ error: 'Status name is required' });
-      }
-
-      const statusData = {
-        name: name.trim(),
-        color: color || '#6b7280',
-        description: description || `Custom status: ${name.trim()}`,
-        isDefault: false
-      };
-
-      const newStatus = await storage.createAssetStatus(statusData);
-      res.status(201).json(newStatus);
-    } catch (error: any) {
-      console.error('Error creating asset status:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
-        res.status(409).json({ error: 'Asset status with this name already exists' });
-      } else {
-        res.status(500).json({ error: 'Failed to create asset status', details: error.message });
-      }
-    }
-  });
-
-  app.put('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid ID' });
-      }
-
-      const { name, color, description } = req.body;
-      
-      if (!name || name.trim() === '') {
-        return res.status(400).json({ error: 'Status name is required' });
-      }
-
-      const updateData = {
-        name: name.trim(),
-        color: color || '#6b7280',
-        description: description
-      };
-
-      const updatedStatus = await storage.updateAssetStatus(id, updateData);
-      if (updatedStatus) {
-        res.json(updatedStatus);
-      } else {
-        res.status(404).json({ error: 'Asset status not found' });
-      }
-    } catch (error: any) {
-      console.error('Error updating asset status:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
-        res.status(409).json({ error: 'Asset status with this name already exists' });
-      } else {
-        res.status(500).json({ error: 'Failed to update asset status', details: error.message });
-      }
-    }
-  });
-
-  app.delete('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid ID' });
-      }
-
-      // Check if this is a default status
-      const status = await storage.getAssetStatuses();
-      const targetStatus = status.find(s => s.id === id);
-      
-      if (targetStatus?.isDefault) {
-        return res.status(400).json({ error: 'Cannot delete default asset status' });
-      }
-
-      const success = await storage.deleteAssetStatus(id);
-      if (success) {
-        res.json({ message: 'Asset status deleted successfully' });
-      } else {
-        res.status(404).json({ error: 'Asset status not found' });
-      }
-    } catch (error: any) {
-      console.error('Error deleting asset status:', error);
-      res.status(500).json({ error: 'Failed to delete asset status', details: error.message });
-    }
-  });
   
-  // Service Providers API
-  app.get('/api/service-providers', authenticateUser, async (req, res) => {
+  // Custom Departments API
+  app.get('/api/custom-departments', authenticateUser, async (req, res) => {
     try {
-      const providers = await storage.getServiceProviders();
-      res.json(providers);
+      const departments = await storage.getCustomDepartments();
+      res.json(departments);
     } catch (error: unknown) {
-      console.error('Error fetching service providers:', error);
+      console.error('Error fetching custom departments:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
-  app.post('/api/service-providers', authenticateUser, async (req, res) => {
+  app.post('/api/custom-departments', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
-      const newProvider = await storage.createServiceProvider({
+      const newDepartment = await storage.createCustomDepartment({
         name: req.body.name,
-        contactPerson: req.body.contactPerson,
-        phone: req.body.phone,
-        email: req.body.email
+        description: req.body.description
       });
-      res.status(201).json(newProvider);
+      res.status(201).json(newDepartment);
     } catch (error: unknown) {
-      console.error('Error creating service provider:', error);
+      console.error('Error creating custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
-  app.put('/api/service-providers/:id', authenticateUser, async (req, res) => {
+  app.put('/api/custom-departments/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updatedProvider = await storage.updateServiceProvider(id, {
+      const updatedDepartment = await storage.updateCustomDepartment(id, {
         name: req.body.name,
-        contactPerson: req.body.contactPerson,
-        phone: req.body.phone,
-        email: req.body.email
+        description: req.body.description
       });
-      if (updatedProvider) {
-        res.json(updatedProvider);
+      if (updatedDepartment) {
+        res.json(updatedDepartment);
       } else {
-        res.status(404).json({ message: 'Service provider not found' });
+        res.status(404).json({ message: 'Custom department not found' });
       }
     } catch (error: unknown) {
-      console.error('Error updating service provider:', error);
+      console.error('Error updating custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.delete('/api/service-providers/:id', authenticateUser, async (req, res) => {
+  app.delete('/api/custom-departments/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteServiceProvider(id);
+      const success = await storage.deleteCustomDepartment(id);
       if (success) {
         res.json({ success: true });
       } else {
-        res.status(404).json({ message: 'Service provider not found' });
+        res.status(404).json({ message: 'Custom department not found' });
       }
     } catch (error: unknown) {
-      console.error('Error deleting service provider:', error);
+      console.error('Error deleting custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
@@ -7208,45 +7305,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
-  try {
-    const data = await storage.getAllTickets();
-    
-    const csvData = data.map(item => ({
-      ticketId: item.ticketId || '',
-      title: item.title || '',                    // ✅ Fixed: was summary
-      description: item.description || '',
-      type: item.type || '',                      // ✅ Fixed: was requestType
-      categoryId: item.categoryId || '',          // ✅ Fixed: use categoryId instead of category
-      urgency: item.urgency || '',
-      impact: item.impact || '',
-      priority: item.priority || '',
-      status: item.status || '',
-      submittedById: item.submittedById || '',
-      assignedToId: item.assignedToId || '',
-      relatedAssetId: item.relatedAssetId || '',
-      timeSpent: item.timeSpent || 0,             // ✅ Added: new schema field
-      dueDate: item.dueDate || '',
-      slaTarget: item.slaTarget || '',
-      completionTime: item.completionTime || '',  // ✅ Added: new schema field
-      resolution: item.resolution || '',
-      createdAt: item.createdAt || '',
-      updatedAt: item.updatedAt || ''
-      // ✅ Removed deprecated fields: escalationLevel, tags, rootCause, workaround, resolutionNotes, privateNotes
-    }));
-    
-    const csv = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
-    res.send(csv);
-  } catch (error: unknown) {
-    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-  }
-});
 
   // Import API endpoints
   app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
@@ -7506,8 +7564,11 @@ app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async
       });
       console.log("Admin user created");
     }
-  } catch (error) {
-    console.error("Error creating admin user:", error);
+  } catch (error: any) {
+    // Ignore duplicate key errors (admin already exists)
+    if (error?.code !== '23505') {
+      console.error("Error creating admin user:", error);
+    }
   }
 
 
@@ -7935,12 +7996,12 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
       const currentUserLevel = getRoleLevel(currentUser.role);
       const userData = req.body;
       
-      // Prevent role escalation: cannot create users with equal or higher role level
+      // Prevent role escalation: cannot create users with higher role level
       if (userData.role) {
         const targetRoleLevel = getRoleLevel(userData.role);
-        if (targetRoleLevel >= currentUserLevel) {
+        if (targetRoleLevel > currentUserLevel) {
           return res.status(403).json({ 
-            message: "Cannot create users with equal or higher role level than your own" 
+            message: "Cannot create users with higher role level than your own" 
           });
         }
       }
@@ -7985,20 +8046,20 @@ app.get("/api/tickets/:id/history", authenticateUser, async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Prevent modifying users with equal or higher role level
+      // Prevent modifying users with higher role level
       const currentUserRoleLevel = getRoleLevel(currentUser.role);
-      if (currentUserRoleLevel >= requestingUserLevel) {
+      if (currentUserRoleLevel > requestingUserLevel) {
         return res.status(403).json({ 
-          message: "Cannot modify users with equal or higher role level than your own" 
+          message: "Cannot modify users with higher role level than your own" 
         });
       }
       
       // If changing role, prevent role escalation
       if (userData.role && userData.role !== currentUser.role) {
         const targetRoleLevel = getRoleLevel(userData.role);
-        if (targetRoleLevel >= requestingUserLevel) {
+        if (targetRoleLevel > requestingUserLevel) {
           return res.status(403).json({ 
-            message: "Cannot assign role equal or higher than your own role level" 
+            message: "Cannot assign role higher than your own role level" 
           });
         }
       }

@@ -232,7 +232,6 @@ function SystemConfig() {
   const [isLoading, setIsLoading] = useState(true);
   
   // Department management states
-  const [departments, setDepartments] = useState<string[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [editingDeptIndex, setEditingDeptIndex] = useState<number | null>(null);
   const [editedDeptName, setEditedDeptName] = useState('');
@@ -368,6 +367,11 @@ function SystemConfig() {
     enabled: hasAccess(4), // Admin only
   });
 
+  const { data: customDepartments = [] } = useQuery<any[]>({
+    queryKey: ['/api/custom-departments'],
+    enabled: hasAccess(3), // Manager and above
+  });
+
   // Filtered arrays for search functionality
   const filteredAssetTypes = customAssetTypes.filter((type: any) =>
     type.name.toLowerCase().includes(assetTypeSearch.toLowerCase())
@@ -393,7 +397,6 @@ function SystemConfig() {
       setTicketIdPrefix(config.ticketIdPrefix || 'TKT-');
       setCurrency(config.currency || 'USD');
       setSelectedLanguage(config.language === 'en' ? 'English' : 'Arabic');
-      setDepartments(config.departments || []);
       
       // Load email configuration
       setEmailHost(config.emailHost || '');
@@ -419,14 +422,41 @@ function SystemConfig() {
   const updateConfigMutation = useMutation({
     mutationFn: (data: any) => 
       apiRequest('/api/system-config', 'PUT', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
-      // Force refetch to ensure language changes are reflected immediately
-      queryClient.refetchQueries({ queryKey: ['/api/system-config'] });
+    onSuccess: async (responseData) => {
+      // Update local state immediately with response data to prevent white screen
+      if (responseData) {
+        // Update all fields from the response
+        if (responseData.assetIdPrefix !== undefined) setAssetIdPrefix(responseData.assetIdPrefix);
+        if (responseData.empIdPrefix !== undefined) setEmpIdPrefix(responseData.empIdPrefix);
+        if (responseData.ticketIdPrefix !== undefined) setTicketIdPrefix(responseData.ticketIdPrefix);
+        if (responseData.currency !== undefined) setCurrency(responseData.currency);
+        if (responseData.language !== undefined) setSelectedLanguage(responseData.language === 'en' ? 'English' : 'Arabic');
+        
+        // Email configuration
+        if (responseData.emailHost !== undefined) setEmailHost(responseData.emailHost || '');
+        if (responseData.emailPort !== undefined) setEmailPort(responseData.emailPort?.toString() || '');
+        if (responseData.emailUser !== undefined) setEmailUser(responseData.emailUser || '');
+        if (responseData.emailPassword !== undefined) setEmailPassword(responseData.emailPassword || '');
+        if (responseData.emailFromAddress !== undefined) setEmailFromAddress(responseData.emailFromAddress || '');
+        if (responseData.emailFromName !== undefined) setEmailFromName(responseData.emailFromName || '');
+        if (responseData.emailSecure !== undefined) setEmailSecure(responseData.emailSecure !== false);
+        
+        // Company details
+        if (responseData.companyName !== undefined) setCompanyName(responseData.companyName || 'ELADWYSOFT');
+        if (responseData.companyAddress !== undefined) setCompanyAddress(responseData.companyAddress || '');
+        if (responseData.companyPhone !== undefined) setCompanyPhone(responseData.companyPhone || '');
+        if (responseData.companyEmail !== undefined) setCompanyEmail(responseData.companyEmail || '');
+        if (responseData.companyWebsite !== undefined) setCompanyWebsite(responseData.companyWebsite || '');
+      }
+      
+      // Invalidate and refetch in the background
+      await queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
+      
       toast({
         title: translations.success,
         description: translations.settingsUpdated,
       });
+      
       // Restore preserved tab after department operations
       if (preservedTab) {
         setActiveTab(preservedTab);
@@ -610,6 +640,67 @@ function SystemConfig() {
       toast({
         title: language === 'English' ? 'Error' : 'خطأ',
         description: error.message || (language === 'English' ? 'Failed to delete category' : 'فشل حذف الفئة'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Custom Department Mutations
+  const createCustomDepartmentMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) => 
+      apiRequest('/api/custom-departments', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-departments'] });
+      toast({
+        title: translations.success,
+        description: language === 'English' ? 'Department created successfully' : 'تم إنشاء القسم بنجاح',
+      });
+      setNewDepartment('');
+      setIsDepartmentDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'English' ? 'Failed to create department' : 'فشل إنشاء القسم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateCustomDepartmentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) => 
+      apiRequest(`/api/custom-departments/${id}`, 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-departments'] });
+      toast({
+        title: translations.success,
+        description: language === 'English' ? 'Department updated successfully' : 'تم تحديث القسم بنجاح',
+      });
+      setEditingDeptIndex(null);
+      setEditedDeptName('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'English' ? 'Failed to update department' : 'فشل تحديث القسم'),
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteCustomDepartmentMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/custom-departments/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-departments'] });
+      toast({
+        title: translations.success,
+        description: language === 'English' ? 'Department deleted successfully' : 'تم حذف القسم بنجاح',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: translations.error,
+        description: error.message || (language === 'English' ? 'Failed to delete department' : 'فشل حذف القسم'),
         variant: 'destructive'
       });
     }
@@ -1107,67 +1198,6 @@ const parseCSVLine = (line: string): string[] => {
     }
   };
 
-  // Department handlers
-  const handleAddDepartment = () => {
-    if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
-      const updatedDepartments = [...departments, newDepartment.trim()];
-      setDepartments(updatedDepartments);
-      setNewDepartment('');
-      
-      // Save immediately to database
-      const configData = {
-        assetIdPrefix,
-        empIdPrefix,
-        ticketIdPrefix,
-        currency,
-        language: selectedLanguage === 'English' ? 'en' : 'ar',
-        departments: updatedDepartments,
-        emailHost,
-        emailPort: emailPort ? parseInt(emailPort) : 587,
-        emailUser,
-        emailPassword,
-        emailFromAddress,
-        emailFromName,
-        emailSecure,
-      };
-      updateConfigMutation.mutate(configData);
-    }
-  };
-
-  const handleEditDepartment = (index: number) => {
-    setEditingDeptIndex(index);
-    setEditedDeptName(departments[index]);
-  };
-
-  const handleSaveDepartmentEdit = () => {
-    if (editingDeptIndex !== null && editedDeptName.trim()) {
-      const updatedDepartments = departments.map((dept, index) => 
-        index === editingDeptIndex ? editedDeptName.trim() : dept
-      );
-      setDepartments(updatedDepartments);
-      setEditingDeptIndex(null);
-      setEditedDeptName('');
-      
-      // Save immediately to database
-      const configData = {
-        assetIdPrefix,
-        empIdPrefix,
-        ticketIdPrefix,
-        currency,
-        language: selectedLanguage === 'English' ? 'en' : 'ar',
-        departments: updatedDepartments,
-        emailHost,
-        emailPort: emailPort ? parseInt(emailPort) : 587,
-        emailUser,
-        emailPassword,
-        emailFromAddress,
-        emailFromName,
-        emailSecure,
-      };
-      updateConfigMutation.mutate(configData);
-    }
-  };
-
   // Asset Type Edit Handlers
   const startEditAssetType = (type: any) => {
     setEditingTypeId(type.id);
@@ -1271,33 +1301,16 @@ const parseCSVLine = (line: string): string[] => {
     setEditedCategoryDescription('');
   };
 
+  // Department Edit Handlers
   const handleCancelDepartmentEdit = () => {
     setEditingDeptIndex(null);
     setEditedDeptName('');
   };
 
-  const handleDeleteDepartment = (index: number) => {
-    if (window.confirm(language === 'English' ? `Delete department "${departments[index]}"?` : `حذف القسم "${departments[index]}"؟`)) {
-      const updatedDepartments = departments.filter((_, i) => i !== index);
-      setDepartments(updatedDepartments);
-      
-      // Save immediately to database
-      const configData = {
-        assetIdPrefix,
-        empIdPrefix,
-        ticketIdPrefix,
-        currency,
-        language: selectedLanguage === 'English' ? 'en' : 'ar',
-        departments: updatedDepartments,
-        emailHost,
-        emailPort: emailPort ? parseInt(emailPort) : 587,
-        emailUser,
-        emailPassword,
-        emailFromAddress,
-        emailFromName,
-        emailSecure,
-      };
-      updateConfigMutation.mutate(configData);
+  const handleDeleteDepartment = (id: number) => {
+    const department = customDepartments.find((d: any) => d.id === id);
+    if (window.confirm(language === 'English' ? `Delete department "${department?.name}"?` : `حذف القسم "${department?.name}"؟`)) {
+      deleteCustomDepartmentMutation.mutate(id);
     }
   };
 
@@ -1871,35 +1884,23 @@ const parseCSVLine = (line: string): string[] => {
                           </Button>
                           <Button 
                             onClick={() => {
-                              if (newDepartment.trim() && !departments.includes(newDepartment.trim())) {
-                                const updatedDepartments = [...departments, newDepartment.trim()];
-                                setDepartments(updatedDepartments);
-                                setNewDepartment('');
-                                setIsDepartmentDialogOpen(false);
-                                setPreservedTab('employees');
-                                
-                                // Save immediately to database
-                                const configData = {
-                                  assetIdPrefix,
-                                  empIdPrefix,
-                                  ticketIdPrefix,
-                                  currency,
-                                  language: selectedLanguage === 'English' ? 'en' : 'ar',
-                                  departments: updatedDepartments,
-                                  emailHost,
-                                  emailPort: emailPort ? parseInt(emailPort) : 587,
-                                  emailUser,
-                                  emailPassword,
-                                  emailFromAddress,
-                                  emailFromName,
-                                  emailSecure,
-                                };
-                                updateConfigMutation.mutate(configData);
+                              if (newDepartment.trim()) {
+                                createCustomDepartmentMutation.mutate({
+                                  name: newDepartment.trim(),
+                                  description: ''
+                                });
                               }
                             }}
-                            disabled={!newDepartment.trim() || departments.includes(newDepartment.trim())}
+                            disabled={!newDepartment.trim() || createCustomDepartmentMutation.isPending}
                           >
-                            {translations.add}
+                            {createCustomDepartmentMutation.isPending ? (
+                              <span className="flex items-center gap-2">
+                                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                {language === 'English' ? 'Creating...' : 'جاري الإنشاء...'}
+                              </span>
+                            ) : (
+                              translations.add
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -1908,7 +1909,7 @@ const parseCSVLine = (line: string): string[] => {
                 </div>
                 
                 <div className="border rounded-lg bg-white shadow-sm">
-                  {!departments?.length ? (
+                  {!customDepartments?.length ? (
                     <div className="p-8 text-center">
                       <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">{translations.noDepartments}</h3>
@@ -1925,82 +1926,51 @@ const parseCSVLine = (line: string): string[] => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {departments.map((dept: string, index: number) => (
-                          <TableRow key={index} className="hover:bg-gray-50">
+                        {customDepartments.map((dept: any) => (
+                          <TableRow key={dept.id} className="hover:bg-gray-50">
                             <TableCell>
-                              {editingDeptIndex === index ? (
+                              {editingDeptIndex === dept.id ? (
                                 <Input
                                   value={editedDeptName}
                                   onChange={(e) => setEditedDeptName(e.target.value)}
                                   onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const updatedDepartments = [...departments];
-                                      updatedDepartments[index] = editedDeptName.trim();
-                                      setDepartments(updatedDepartments);
-                                      setEditingDeptIndex(null);
-                                      setEditedDeptName('');
-                                      setPreservedTab('employees');
-                                      
-                                      // Save immediately to database
-                                      const configData = {
-                                        assetIdPrefix,
-                                        empIdPrefix,
-                                        ticketIdPrefix,
-                                        currency,
-                                        language: selectedLanguage === 'English' ? 'en' : 'ar',
-                                        departments: updatedDepartments,
-                                        emailHost,
-                                        emailPort: emailPort ? parseInt(emailPort) : 587,
-                                        emailUser,
-                                        emailPassword,
-                                        emailFromAddress,
-                                        emailFromName,
-                                        emailSecure,
-                                      };
-                                      updateConfigMutation.mutate(configData);
+                                    if (e.key === 'Enter' && editedDeptName.trim()) {
+                                      updateCustomDepartmentMutation.mutate({
+                                        id: dept.id,
+                                        data: {
+                                          name: editedDeptName.trim(),
+                                          description: dept.description
+                                        }
+                                      });
                                     }
                                   }}
                                   className="h-8"
                                   autoFocus
                                 />
                               ) : (
-                                <span className="font-medium">{dept}</span>
+                                <span className="font-medium">{dept.name}</span>
                               )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {editingDeptIndex === index ? (
+                                {editingDeptIndex === dept.id ? (
                                   <>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        const updatedDepartments = [...departments];
-                                        updatedDepartments[index] = editedDeptName.trim();
-                                        setDepartments(updatedDepartments);
-                                        setEditingDeptIndex(null);
-                                        setEditedDeptName('');
-                                        setPreservedTab('employees');
-                                        
-                                        // Save immediately to database
-                                        const configData = {
-                                          assetIdPrefix,
-                                          empIdPrefix,
-                                          ticketIdPrefix,
-                                          currency,
-                                          language: selectedLanguage === 'English' ? 'en' : 'ar',
-                                          departments: updatedDepartments,
-                                          emailHost,
-                                          emailPort: emailPort ? parseInt(emailPort) : 587,
-                                          emailUser,
-                                          emailPassword,
-                                          emailFromAddress,
-                                          emailFromName,
-                                          emailSecure,
-                                        };
-                                        updateConfigMutation.mutate(configData);
+                                        if (editedDeptName.trim()) {
+                                          updateCustomDepartmentMutation.mutate({
+                                            id: dept.id,
+                                            data: {
+                                              name: editedDeptName.trim(),
+                                              description: dept.description
+                                            }
+                                          });
+                                        }
                                       }}
                                       className="h-8 w-8 p-0"
+                                      disabled={updateCustomDepartmentMutation.isPending}
                                     >
                                       <Check className="h-4 w-4 text-green-600" />
                                     </Button>
@@ -2022,8 +1992,8 @@ const parseCSVLine = (line: string): string[] => {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        setEditingDeptIndex(index);
-                                        setEditedDeptName(dept);
+                                        setEditingDeptIndex(dept.id);
+                                        setEditedDeptName(dept.name);
                                       }}
                                       className="h-8 w-8 p-0"
                                     >
@@ -2032,7 +2002,7 @@ const parseCSVLine = (line: string): string[] => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleDeleteDepartment(index)}
+                                      onClick={() => handleDeleteDepartment(dept.id)}
                                       className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                       <Trash2 className="h-4 w-4" />

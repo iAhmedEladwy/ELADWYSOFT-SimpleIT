@@ -85,7 +85,10 @@ router.post('/mark-read', async (req, res) => {
 
     // Update only the specified notifications
     await db.update(schema.notifications)
-      .set({ isRead: true })
+      .set({ 
+        isRead: true,
+        readAt: new Date()
+      })
       .where(
         and(
           eq(schema.notifications.userId, user.id),
@@ -116,6 +119,53 @@ router.delete('/clear-all', async (req, res) => {
   } catch (error) {
     console.error('Failed to clear all notifications:', error);
     res.status(500).json({ error: 'Failed to clear all notifications' });
+  }
+});
+
+/**
+ * POST /api/notifications/:id/snooze
+ * Snooze a notification until a specific time
+ */
+router.post('/:id/snooze', async (req, res) => {
+  try {
+    const user = req.user as AuthUser;
+    const notificationId = parseInt(req.params.id);
+    const { snoozeUntil, minutes } = req.body;
+
+    if (isNaN(notificationId)) {
+      return res.status(400).json({ error: 'Invalid notification ID' });
+    }
+
+    let snoozedUntil: Date;
+
+    if (snoozeUntil) {
+      // Use provided timestamp
+      snoozedUntil = new Date(snoozeUntil);
+    } else if (minutes) {
+      // Calculate based on minutes from now
+      snoozedUntil = new Date();
+      snoozedUntil.setMinutes(snoozedUntil.getMinutes() + minutes);
+    } else {
+      return res.status(400).json({ error: 'snoozeUntil or minutes is required' });
+    }
+
+    // Update notification with snooze time
+    await db.update(schema.notifications)
+      .set({ snoozedUntil })
+      .where(
+        and(
+          eq(schema.notifications.id, notificationId),
+          eq(schema.notifications.userId, user.id)
+        )
+      );
+
+    res.json({ 
+      message: 'Notification snoozed',
+      snoozedUntil 
+    });
+  } catch (error) {
+    console.error('Failed to snooze notification:', error);
+    res.status(500).json({ error: 'Failed to snooze notification' });
   }
 });
 
@@ -188,12 +238,55 @@ export async function createNotification(params: {
   message: string;
   type: 'Asset' | 'Ticket' | 'System' | 'Employee';
   entityId?: number;
+  priority?: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  category?: 'assignments' | 'status_changes' | 'maintenance' | 'approvals' | 'announcements' | 'reminders' | 'alerts';
 }) {
   try {
     // Check user's notification preferences
     const prefs = await db.query.notificationPreferences.findFirst({
       where: eq(schema.notificationPreferences.userId, params.userId)
     });
+
+    // Check Do Not Disturb mode
+    if (prefs && prefs.dndEnabled && prefs.dndStartTime && prefs.dndEndTime) {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+
+      // Check if current day is in DND days (if specified)
+      const dndDays = (prefs.dndDays as number[]) || [];
+      const isDndDay = dndDays.length === 0 || dndDays.includes(currentDay);
+
+      if (isDndDay) {
+        const start = prefs.dndStartTime;
+        const end = prefs.dndEndTime;
+
+        // Handle DND time range (supports overnight ranges like 22:00-08:00)
+        let isInDndPeriod = false;
+        if (start <= end) {
+          // Same day range (e.g., 09:00-17:00)
+          isInDndPeriod = currentTime >= start && currentTime <= end;
+        } else {
+          // Overnight range (e.g., 22:00-08:00)
+          isInDndPeriod = currentTime >= start || currentTime <= end;
+        }
+
+        if (isInDndPeriod && params.priority !== 'critical') {
+          logger.debug('notifications', `Notification blocked by DND: User ${params.userId}`, {
+            userId: params.userId,
+            metadata: { 
+              type: params.type,
+              title: params.title,
+              currentTime,
+              dndStart: start,
+              dndEnd: end,
+              reason: 'Do Not Disturb active'
+            }
+          });
+          return null; // Block notification during DND (except critical)
+        }
+      }
+    }
 
     // Determine if this notification type is enabled
     let isEnabled = true; // Default to enabled if no preferences set
@@ -242,6 +335,8 @@ export async function createNotification(params: {
         message: params.message,
         type: params.type,
         entityId: params.entityId,
+        priority: params.priority || 'medium',
+        category: params.category || 'alerts',
         isRead: false,
       })
       .returning();

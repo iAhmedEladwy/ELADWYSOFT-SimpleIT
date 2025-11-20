@@ -12,7 +12,7 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, categories,
+  customAssetTypes, customAssetBrands, customAssetStatuses, customDepartments, categories,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
@@ -29,7 +29,6 @@ export interface UpsertUser {
   firstName?: string | null;
   lastName?: string | null;
   profileImageUrl?: string | null;
-  accessLevel?: string;
 }
 
 // Import proper types
@@ -73,6 +72,7 @@ export interface IStorage {
   
   // Employee operations
   getEmployee(id: number): Promise<Employee | undefined>;
+  getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: number): Promise<boolean>;
@@ -176,6 +176,11 @@ export interface IStorage {
   createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
   updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any>;
   deleteCustomAssetStatus(id: number): Promise<boolean>;
+  
+  getCustomDepartments(): Promise<any[]>;
+  createCustomDepartment(data: { name: string; description?: string }): Promise<any>;
+  updateCustomDepartment(id: number, data: { name: string; description?: string }): Promise<any>;
+  deleteCustomDepartment(id: number): Promise<boolean>;
   
   // Asset Status operations (flexible status system)
   getAssetStatuses(): Promise<AssetStatus[]>;
@@ -344,6 +349,8 @@ export class DatabaseStorage implements IStorage {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
       
+      console.log('[Password Reset] Creating token for user:', userId);
+      
       // Delete any existing tokens for this user
       try {
         await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
@@ -359,8 +366,15 @@ export class DatabaseStorage implements IStorage {
           userId,
           token,
           expiresAt,
+          used: false
         })
         .returning();
+      
+      console.log('[Password Reset] Token created successfully:', {
+        tokenPrefix: token.substring(0, 10) + '...',
+        expiresAt,
+        userId
+      });
       
       return resetToken;
     } catch (error) {
@@ -371,7 +385,8 @@ export class DatabaseStorage implements IStorage {
         userId,
         token: 'temp-token-' + Date.now(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        createdAt: new Date()
+        createdAt: new Date(),
+        used: false
       };
       return fallbackToken;
     }
@@ -394,8 +409,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const resetToken = await this.getPasswordResetToken(token);
       
-      // If token doesn't exist or is expired, return undefined
-      if (!resetToken || new Date() > resetToken.expiresAt) {
+      // If token doesn't exist, is expired, or has been used, return undefined
+      if (!resetToken || new Date() > resetToken.expiresAt || resetToken.used) {
+        console.log('[Password Reset] Token validation failed:', {
+          exists: !!resetToken,
+          expired: resetToken ? new Date() > resetToken.expiresAt : false,
+          used: resetToken?.used,
+          token: token.substring(0, 10) + '...'
+        });
         return undefined;
       }
       
@@ -408,7 +429,11 @@ export class DatabaseStorage implements IStorage {
 
   async invalidatePasswordResetToken(token: string): Promise<boolean> {
     try {
-      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+      // Mark token as used instead of deleting (better audit trail)
+      await db
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.token, token));
       return true;
     } catch (error) {
       console.error('Error invalidating password reset token:', error);
@@ -430,7 +455,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -452,7 +476,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -475,7 +498,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -507,7 +529,6 @@ export class DatabaseStorage implements IStorage {
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       password: hashedPassword,
-      accessLevel: this.roleToAccessLevel(userData.role || 'employee'),
       role: userData.role || 'employee',
       isActive: userData.isActive !== undefined ? userData.isActive : true,
       createdAt: new Date(),
@@ -525,27 +546,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-  private roleToAccessLevel(role: string): string {
-    switch(role) {
-      case 'admin': return '4';
-      case 'manager': return '3';
-      case 'agent': return '2';
-      case 'employee': return '1';
-      default: return '1';
-    }
-  }
-
-  private accessLevelToRole(accessLevel: string | number): string {
-    const level = typeof accessLevel === 'string' ? accessLevel : accessLevel.toString();
-    switch(level) {
-      case '4': return 'admin';
-      case '3': return 'manager';
-      case '2': return 'agent';
-      case '1': return 'employee';
-      default: return 'employee';
-    }
-  }
-
   private mapUserFromDb(dbUser: any): User {
     return {
       id: dbUser.id,
@@ -554,8 +554,7 @@ export class DatabaseStorage implements IStorage {
       firstName: dbUser.firstName || dbUser.first_name || null,
       lastName: dbUser.lastName || dbUser.last_name || null,
       password: dbUser.password,
-      accessLevel: dbUser.accessLevel || dbUser.access_level,
-      role: dbUser.role || this.accessLevelToRole(dbUser.accessLevel || dbUser.access_level),
+      role: dbUser.role,
       isActive: dbUser.isActive !== undefined ? dbUser.isActive : (dbUser.is_active !== undefined ? dbUser.is_active : true),
       createdAt: dbUser.createdAt || dbUser.created_at,
       updatedAt: dbUser.updatedAt || dbUser.updated_at
@@ -601,7 +600,6 @@ export class DatabaseStorage implements IStorage {
         firstName: users.firstName,
         lastName: users.lastName,
         password: users.password,
-        accessLevel: users.accessLevel,
         role: users.role,
         isActive: users.isActive,
         createdAt: users.createdAt,
@@ -628,7 +626,6 @@ export class DatabaseStorage implements IStorage {
           .update(users)
           .set({
             email: userData.email || undefined,
-            accessLevel: (userData.accessLevel as "1" | "2" | "3") || existingUser.accessLevel,
             updatedAt: new Date()
           })
           .where(eq(users.id, parseInt(userData.id)))
@@ -642,7 +639,7 @@ export class DatabaseStorage implements IStorage {
             username: userData.id, // Use the ID as username for simplicity
             email: userData.email || '',
             password: '', // Not used with Replit Auth
-            accessLevel: (userData.accessLevel as "1" | "2" | "3") || '1', // Default to regular user
+            role: 'employee', // Default to employee role
           }])
           .returning();
         return newUser;
@@ -660,6 +657,21 @@ export class DatabaseStorage implements IStorage {
       return employee;
     } catch (error) {
       console.error('Error fetching employee:', error);
+      return undefined;
+    }
+  }
+
+  async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
+    try {
+      const [employee] = await db.select().from(employees).where(
+        or(
+          eq(employees.corporateEmail, email),
+          eq(employees.personalEmail, email)
+        )
+      );
+      return employee;
+    } catch (error) {
+      console.error('Error fetching employee by email:', error);
       return undefined;
     }
   }
@@ -1997,6 +2009,59 @@ async deleteTicket(id: number, userId: number): Promise<boolean> {
       return result.rowCount ? result.rowCount > 0 : false;
     } catch (error) {
       console.error('Error deleting custom asset status:', error);
+      return false;
+    }
+  }
+
+  // Custom Departments
+  async getCustomDepartments(): Promise<any[]> {
+    try {
+      const departments = await db.select().from(customDepartments).orderBy(asc(customDepartments.name));
+      return departments;
+    } catch (error) {
+      console.error('Error fetching custom departments:', error);
+      return [];
+    }
+  }
+
+  async createCustomDepartment(data: { name: string; description?: string }): Promise<any> {
+    try {
+      const [newDepartment] = await db.insert(customDepartments)
+        .values({
+          name: data.name,
+          description: data.description || null
+        })
+        .returning();
+      return newDepartment;
+    } catch (error) {
+      console.error('Error creating custom department:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomDepartment(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(customDepartments)
+        .set({
+          name: data.name,
+          description: data.description,
+          updatedAt: new Date()
+        })
+        .where(eq(customDepartments.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating custom department:', error);
+      return undefined;
+    }
+  }
+
+  async deleteCustomDepartment(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(customDepartments).where(eq(customDepartments.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('Error deleting custom department:', error);
       return false;
     }
   }

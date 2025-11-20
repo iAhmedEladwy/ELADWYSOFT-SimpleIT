@@ -4,7 +4,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums matching the current database
-export const accessLevelEnum = pgEnum('access_level', ['1', '2', '3', '4', '5']);
 export const roleEnum = pgEnum('role', ['employee', 'agent', 'manager', 'admin', 'super_admin']);
 export const logLevelEnum = pgEnum('log_level', ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']);
 export const employmentTypeEnum = pgEnum('employment_type', ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance']);
@@ -19,6 +18,8 @@ export const ticketCategoryEnum = pgEnum('ticket_category', ['Hardware', 'Softwa
 export const ticketUrgencyEnum = pgEnum('ticket_urgency', ['Low', 'Medium', 'High', 'Critical']);
 export const ticketImpactEnum = pgEnum('ticket_impact', ['Low', 'Medium', 'High', 'Critical']);
 export const notificationTypeEnum = pgEnum('notification_type', ['Asset', 'Ticket', 'System', 'Employee']);
+export const notificationPriorityEnum = pgEnum('notification_priority', ['info', 'low', 'medium', 'high', 'critical']);
+export const notificationCategoryEnum = pgEnum('notification_category', ['assignments', 'status_changes', 'maintenance', 'approvals', 'announcements', 'reminders', 'alerts']);
 export const upgradeStatusEnum = pgEnum('upgrade_status', ['Planned', 'Approved', 'In Progress', 'Testing', 'Completed', 'Failed', 'Cancelled', 'Rolled Back']);
 export const maintenanceTypeEnum = pgEnum('maintenance_type', ['Preventive', 'Corrective', 'Upgrade', 'Repair', 'Inspection', 'Cleaning', 'Replacement']);
 export const assetTransactionTypeEnum = pgEnum('asset_transaction_type', ['Check-Out', 'Check-In', 'Maintenance','Sale','Retirement','Upgrade']);
@@ -72,7 +73,6 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 100 }).notNull().unique(),
   firstName: varchar("first_name", { length: 50 }),
   lastName: varchar("last_name", { length: 50 }),
-  accessLevel: accessLevelEnum("access_level").notNull().default('1'),
   role: roleEnum("role").notNull().default('employee'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -103,9 +103,22 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 export const passwordResetAttempts = pgTable("password_reset_attempts", {
   id: serial("id").primaryKey(),
   ipAddress: varchar("ip_address", { length: 45 }).notNull(),
+  email: varchar("email", { length: 100 }),
   attemptCount: integer("attempt_count").notNull().default(1),
   lastAttempt: timestamp("last_attempt").notNull().defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
+  blockedUntil: timestamp("blocked_until"),
+});
+
+// Registration Tokens table (for email verification during self-registration)
+export const registrationTokens = pgTable("registration_tokens", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 100 }).notNull(),
+  token: text("token").notNull().unique(),
+  employeeId: integer("employee_id").references(() => employees.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  used: boolean("used").default(false),
 });
 
 // Employees table
@@ -125,8 +138,8 @@ export const employees = pgTable("employees", {
   personalMobile: varchar("personal_mobile", { length: 20 }),
   workMobile: varchar("work_mobile", { length: 20 }),
   personalEmail: varchar("personal_email", { length: 100 }),
-  corporateEmail: varchar("corporate_email", { length: 100 }),
-  userId: integer("user_id").references(() => users.id),
+  corporateEmail: varchar("corporate_email", { length: 100 }).unique(),
+  userId: integer("user_id").unique().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
@@ -396,6 +409,15 @@ export const customAssetTypes = pgTable("custom_asset_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Custom Departments table
+export const customDepartments = pgTable("custom_departments", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Categories table (formerly Custom Request Types)
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -413,8 +435,15 @@ export const notifications = pgTable("notifications", {
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   type: notificationTypeEnum("type").notNull(),
+  priority: notificationPriorityEnum("priority").notNull().default('medium'),
+  category: notificationCategoryEnum("category").notNull().default('alerts'),
   entityId: integer("entity_id"),
+  templateId: integer("template_id"),
+  batchId: varchar("batch_id", { length: 100 }), // For grouping related notifications
+  version: integer("version").notNull().default(1), // For tracking notification format versions
   isRead: boolean("is_read").notNull().default(false),
+  snoozedUntil: timestamp("snoozed_until"), // For snooze feature
+  readAt: timestamp("read_at"), // Track when notification was read
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -429,6 +458,29 @@ export const notificationPreferences = pgTable("notification_preferences", {
   upgradeRequests: boolean("upgrade_requests").notNull().default(true),
   systemAnnouncements: boolean("system_announcements").notNull().default(true),
   employeeChanges: boolean("employee_changes").notNull().default(true),
+  soundEnabled: boolean("sound_enabled").notNull().default(true),
+  // Do Not Disturb settings
+  dndEnabled: boolean("dnd_enabled").notNull().default(false),
+  dndStartTime: varchar("dnd_start_time", { length: 5 }), // Format: "HH:MM" (e.g., "22:00")
+  dndEndTime: varchar("dnd_end_time", { length: 5 }), // Format: "HH:MM" (e.g., "08:00")
+  dndDays: jsonb("dnd_days").default([]), // Array of weekday numbers: [0,6] for weekends
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notification Templates table - Admin-configurable templates
+export const notificationTemplates = pgTable("notification_templates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  category: notificationCategoryEnum("category").notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  priority: notificationPriorityEnum("priority").notNull().default('medium'),
+  titleTemplate: varchar("title_template", { length: 255 }).notNull(), // e.g., "Ticket {{ticketId}} Assigned"
+  messageTemplate: text("message_template").notNull(), // e.g., "You have been assigned ticket {{ticketId}}: {{title}}"
+  variables: jsonb("variables").notNull(), // Array of variable names: ["ticketId", "title"]
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -573,6 +625,9 @@ export const insertActivityLogSchema = createInsertSchema(activityLog).omit({ id
 export const insertAssetTransactionSchema = createInsertSchema(assetTransactions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
+export const insertNotificationTemplateSchema = createInsertSchema(notificationTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomDepartmentSchema = createInsertSchema(customDepartments).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type exports
 export type User = typeof users.$inferSelect;
@@ -605,6 +660,14 @@ export type SecurityQuestion = typeof securityQuestions.$inferSelect;
 export type InsertSecurityQuestion = z.infer<typeof insertSecurityQuestionSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type RegistrationToken = typeof registrationTokens.$inferSelect;
+export type InsertRegistrationToken = typeof registrationTokens.$inferInsert;
+export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
+export type InsertNotificationTemplate = z.infer<typeof insertNotificationTemplateSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type CustomDepartment = typeof customDepartments.$inferSelect;
+export type InsertCustomDepartment = z.infer<typeof insertCustomDepartmentSchema>;
 
 // Asset Status types
 export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({
