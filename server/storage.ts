@@ -12,7 +12,7 @@ import {
   assetTransactions, type AssetTransaction, type InsertAssetTransaction,
   securityQuestions, type SecurityQuestion, type InsertSecurityQuestion,
   passwordResetTokens, type PasswordResetToken, type InsertPasswordResetToken,
-  customAssetTypes, customAssetBrands, customAssetStatuses, categories,
+  customAssetTypes, customAssetBrands, customAssetStatuses, customDepartments, categories,
   assetStatuses, type AssetStatus, type InsertAssetStatus,
   notifications, type Notification, type InsertNotification
 } from "@shared/schema";
@@ -176,6 +176,11 @@ export interface IStorage {
   createCustomAssetStatus(data: { name: string; description?: string; color?: string }): Promise<any>;
   updateCustomAssetStatus(id: number, data: { name: string; description?: string; color?: string }): Promise<any>;
   deleteCustomAssetStatus(id: number): Promise<boolean>;
+  
+  getCustomDepartments(): Promise<any[]>;
+  createCustomDepartment(data: { name: string; description?: string }): Promise<any>;
+  updateCustomDepartment(id: number, data: { name: string; description?: string }): Promise<any>;
+  deleteCustomDepartment(id: number): Promise<boolean>;
   
   // Asset Status operations (flexible status system)
   getAssetStatuses(): Promise<AssetStatus[]>;
@@ -1984,6 +1989,59 @@ async deleteTicket(id: number, userId: number): Promise<boolean> {
       return result.rowCount ? result.rowCount > 0 : false;
     } catch (error) {
       console.error('Error deleting custom asset status:', error);
+      return false;
+    }
+  }
+
+  // Custom Departments
+  async getCustomDepartments(): Promise<any[]> {
+    try {
+      const departments = await db.select().from(customDepartments).orderBy(asc(customDepartments.name));
+      return departments;
+    } catch (error) {
+      console.error('Error fetching custom departments:', error);
+      return [];
+    }
+  }
+
+  async createCustomDepartment(data: { name: string; description?: string }): Promise<any> {
+    try {
+      const [newDepartment] = await db.insert(customDepartments)
+        .values({
+          name: data.name,
+          description: data.description || null
+        })
+        .returning();
+      return newDepartment;
+    } catch (error) {
+      console.error('Error creating custom department:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomDepartment(id: number, data: { name: string; description?: string }): Promise<any | undefined> {
+    try {
+      const [updated] = await db.update(customDepartments)
+        .set({
+          name: data.name,
+          description: data.description,
+          updatedAt: new Date()
+        })
+        .where(eq(customDepartments.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating custom department:', error);
+      return undefined;
+    }
+  }
+
+  async deleteCustomDepartment(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(customDepartments).where(eq(customDepartments.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('Error deleting custom department:', error);
       return false;
     }
   }

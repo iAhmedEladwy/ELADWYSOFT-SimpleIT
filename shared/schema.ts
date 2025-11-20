@@ -409,6 +409,15 @@ export const customAssetTypes = pgTable("custom_asset_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Custom Departments table
+export const customDepartments = pgTable("custom_departments", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Categories table (formerly Custom Request Types)
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -618,6 +627,7 @@ export const insertSecurityQuestionSchema = createInsertSchema(securityQuestions
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({ id: true, createdAt: true });
 export const insertNotificationTemplateSchema = createInsertSchema(notificationTemplates).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomDepartmentSchema = createInsertSchema(customDepartments).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type exports
 export type User = typeof users.$inferSelect;
@@ -656,6 +666,8 @@ export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
 export type InsertNotificationTemplate = z.infer<typeof insertNotificationTemplateSchema>;
 export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type CustomDepartment = typeof customDepartments.$inferSelect;
+export type InsertCustomDepartment = z.infer<typeof insertCustomDepartmentSchema>;
 
 // Asset Status types
 export const insertAssetStatusSchema = createInsertSchema(assetStatuses).omit({

@@ -1798,61 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return statusMap[status] || 'Active';
   }
 
-  // Assets Export/Import
-  app.get("/api/assets/export", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
-    try {
-      const [assetsData, employeesData] = await Promise.all([
-        storage.getAllAssets(),
-        storage.getAllEmployees()
-      ]);
-      
-      // Create a map of employee IDs to names for assignment lookup
-      const employeeMap = new Map<number, string>();
-      employeesData.forEach(emp => {
-        if (emp.id) {
-          employeeMap.set(emp.id, emp.englishName || emp.arabicName || '');
-        }
-      });
-      
-      // Transform asset data for export with proper field mapping
-      const csvData = assetsData.map(asset => ({
-        'ID': asset.id,
-        'Asset ID': asset.assetId,
-        'Type': asset.type,
-        'Brand': asset.brand,
-        'Model Number': asset.modelNumber || '',
-        'Model Name': asset.modelName || '',
-        'Serial Number': asset.serialNumber,
-        'Specifications': asset.specs || '',
-        'CPU': asset.cpu || '',
-        'RAM': asset.ram || '',
-        'Storage': asset.storage || '',
-        'Status': asset.status,
-        'Purchase Date': formatShortDate(asset.purchaseDate), // Fixed: Short date format
-        'Buy Price': asset.buyPrice || '',
-        'Warranty Expiry Date': formatShortDate(asset.warrantyExpiryDate), // Fixed: Short date format
-        'Life Span': asset.lifeSpan || '',
-        'Out of Box OS': asset.outOfBoxOs || '',
-        'Assigned Employee ID': asset.assignedEmployeeId || '',
-        'Assigned To': asset.assignedEmployeeId ? (employeeMap.get(asset.assignedEmployeeId) || '') : '', // Fixed: Use assignedEmployeeId
-        'Created At': formatLongDate(asset.createdAt), // Fixed: Long date format with time
-        'Updated At': formatLongDate(asset.updatedAt) // Fixed: Long date format with time
-      }));
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="assets.csv"');
-      
-      const csv = [
-        Object.keys(csvData[0] || {}).join(','),
-        ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-      
-      res.send(csv);
-    } catch (error: unknown) {
-      res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-    }
-  });
-
+  // Assets Import
   app.post("/api/assets/import", authenticateUser, requireRole(ROLES.MANAGER), upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -6930,7 +6876,7 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
     }
   });
 
-  // Asset Status API routes (flexible status system)
+  // Asset Status API routes (legacy GET endpoint for compatibility)
   app.get('/api/asset-statuses', authenticateUser, async (req, res) => {
     try {
       const statuses = await storage.getAssetStatuses();
@@ -6940,153 +6886,60 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json({ error: 'Failed to fetch asset statuses', details: error.message });
     }
   });
-
-  app.post('/api/asset-statuses', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
-    try {
-      const { name, color, description } = req.body;
-      
-      if (!name || name.trim() === '') {
-        return res.status(400).json({ error: 'Status name is required' });
-      }
-
-      const statusData = {
-        name: name.trim(),
-        color: color || '#6b7280',
-        description: description || `Custom status: ${name.trim()}`,
-        isDefault: false
-      };
-
-      const newStatus = await storage.createAssetStatus(statusData);
-      res.status(201).json(newStatus);
-    } catch (error: any) {
-      console.error('Error creating asset status:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
-        res.status(409).json({ error: 'Asset status with this name already exists' });
-      } else {
-        res.status(500).json({ error: 'Failed to create asset status', details: error.message });
-      }
-    }
-  });
-
-  app.put('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid ID' });
-      }
-
-      const { name, color, description } = req.body;
-      
-      if (!name || name.trim() === '') {
-        return res.status(400).json({ error: 'Status name is required' });
-      }
-
-      const updateData = {
-        name: name.trim(),
-        color: color || '#6b7280',
-        description: description
-      };
-
-      const updatedStatus = await storage.updateAssetStatus(id, updateData);
-      if (updatedStatus) {
-        res.json(updatedStatus);
-      } else {
-        res.status(404).json({ error: 'Asset status not found' });
-      }
-    } catch (error: any) {
-      console.error('Error updating asset status:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
-        res.status(409).json({ error: 'Asset status with this name already exists' });
-      } else {
-        res.status(500).json({ error: 'Failed to update asset status', details: error.message });
-      }
-    }
-  });
-
-  app.delete('/api/asset-statuses/:id', authenticateUser, requireRole(ROLES.ADMIN), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid ID' });
-      }
-
-      // Check if this is a default status
-      const status = await storage.getAssetStatuses();
-      const targetStatus = status.find(s => s.id === id);
-      
-      if (targetStatus?.isDefault) {
-        return res.status(400).json({ error: 'Cannot delete default asset status' });
-      }
-
-      const success = await storage.deleteAssetStatus(id);
-      if (success) {
-        res.json({ message: 'Asset status deleted successfully' });
-      } else {
-        res.status(404).json({ error: 'Asset status not found' });
-      }
-    } catch (error: any) {
-      console.error('Error deleting asset status:', error);
-      res.status(500).json({ error: 'Failed to delete asset status', details: error.message });
-    }
-  });
   
-  // Service Providers API
-  app.get('/api/service-providers', authenticateUser, async (req, res) => {
+  // Custom Departments API
+  app.get('/api/custom-departments', authenticateUser, async (req, res) => {
     try {
-      const providers = await storage.getServiceProviders();
-      res.json(providers);
+      const departments = await storage.getCustomDepartments();
+      res.json(departments);
     } catch (error: unknown) {
-      console.error('Error fetching service providers:', error);
+      console.error('Error fetching custom departments:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
-  app.post('/api/service-providers', authenticateUser, async (req, res) => {
+  app.post('/api/custom-departments', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
-      const newProvider = await storage.createServiceProvider({
+      const newDepartment = await storage.createCustomDepartment({
         name: req.body.name,
-        contactPerson: req.body.contactPerson,
-        phone: req.body.phone,
-        email: req.body.email
+        description: req.body.description
       });
-      res.status(201).json(newProvider);
+      res.status(201).json(newDepartment);
     } catch (error: unknown) {
-      console.error('Error creating service provider:', error);
+      console.error('Error creating custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
   
-  app.put('/api/service-providers/:id', authenticateUser, async (req, res) => {
+  app.put('/api/custom-departments/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updatedProvider = await storage.updateServiceProvider(id, {
+      const updatedDepartment = await storage.updateCustomDepartment(id, {
         name: req.body.name,
-        contactPerson: req.body.contactPerson,
-        phone: req.body.phone,
-        email: req.body.email
+        description: req.body.description
       });
-      if (updatedProvider) {
-        res.json(updatedProvider);
+      if (updatedDepartment) {
+        res.json(updatedDepartment);
       } else {
-        res.status(404).json({ message: 'Service provider not found' });
+        res.status(404).json({ message: 'Custom department not found' });
       }
     } catch (error: unknown) {
-      console.error('Error updating service provider:', error);
+      console.error('Error updating custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
 
-  app.delete('/api/service-providers/:id', authenticateUser, async (req, res) => {
+  app.delete('/api/custom-departments/:id', authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteServiceProvider(id);
+      const success = await storage.deleteCustomDepartment(id);
       if (success) {
         res.json({ success: true });
       } else {
-        res.status(404).json({ message: 'Service provider not found' });
+        res.status(404).json({ message: 'Custom department not found' });
       }
     } catch (error: unknown) {
-      console.error('Error deleting service provider:', error);
+      console.error('Error deleting custom department:', error);
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
@@ -7427,45 +7280,6 @@ const leavingEmployeesWithAssets = employees.filter(emp => {
       res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
     }
   });
-app.get("/api/export/tickets", authenticateUser, requireRole(ROLES.AGENT), async (req, res) => {
-  try {
-    const data = await storage.getAllTickets();
-    
-    const csvData = data.map(item => ({
-      ticketId: item.ticketId || '',
-      title: item.title || '',                    // ✅ Fixed: was summary
-      description: item.description || '',
-      type: item.type || '',                      // ✅ Fixed: was requestType
-      categoryId: item.categoryId || '',          // ✅ Fixed: use categoryId instead of category
-      urgency: item.urgency || '',
-      impact: item.impact || '',
-      priority: item.priority || '',
-      status: item.status || '',
-      submittedById: item.submittedById || '',
-      assignedToId: item.assignedToId || '',
-      relatedAssetId: item.relatedAssetId || '',
-      timeSpent: item.timeSpent || 0,             // ✅ Added: new schema field
-      dueDate: item.dueDate || '',
-      slaTarget: item.slaTarget || '',
-      completionTime: item.completionTime || '',  // ✅ Added: new schema field
-      resolution: item.resolution || '',
-      createdAt: item.createdAt || '',
-      updatedAt: item.updatedAt || ''
-      // ✅ Removed deprecated fields: escalationLevel, tags, rootCause, workaround, resolutionNotes, privateNotes
-    }));
-    
-    const csv = [
-      Object.keys(csvData[0] || {}).join(','),
-      ...csvData.map(row => Object.values(row).map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="tickets_export.csv"');
-    res.send(csv);
-  } catch (error: unknown) {
-    res.status(500).json(createErrorResponse(error instanceof Error ? error : new Error(String(error))));
-  }
-});
 
   // Import API endpoints
   app.post("/api/import/employees", authenticateUser, requireRole(ROLES.MANAGER), async (req, res) => {

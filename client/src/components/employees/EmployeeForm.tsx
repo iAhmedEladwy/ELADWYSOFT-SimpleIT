@@ -300,10 +300,10 @@ export default function EmployeeForm({ onSubmit, initialData, isSubmitting }: Em
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {(systemConfig as any)?.departments?.map((dept: string) => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        {customDepartments?.map((dept: any) => (
+                          <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
                         ))}
-                        {(!(systemConfig as any)?.departments || (systemConfig as any)?.departments?.length === 0) && (
+                        {(!customDepartments || customDepartments.length === 0) && (
                           <SelectItem value="General">{translations.general}</SelectItem>
                         )}
                       </SelectContent>
