@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarIcon, X } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -179,6 +179,14 @@ function Calendar({
     setIsEditing(false)
   }
 
+  const handleClearDate = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setInputValue("")
+    props.onChange?.(undefined)
+    setOpen(false)
+  }
+
   const handleButtonClick = () => {
     // In picker mode, just open the calendar, don't switch to editing
     setOpen(true)
@@ -214,7 +222,7 @@ function Calendar({
 
     return (
       <Popover open={open} onOpenChange={setOpen}>
-        <div className="relative">
+        <div className="relative flex gap-1">
           {isEditing ? (
             <Input
               value={inputValue}
@@ -232,7 +240,7 @@ function Calendar({
                 onClick={handleButtonClick}
                 onDoubleClick={handleButtonDoubleClick}
                 className={cn(
-                  "w-full justify-start text-left font-normal",
+                  "flex-1 justify-start text-left font-normal",
                   !props.value && "text-muted-foreground",
                   props.className
                 )}
@@ -241,6 +249,19 @@ function Calendar({
                 {displayText || props.placeholder || "Pick a date"}
               </Button>
             </PopoverTrigger>
+          )}
+          
+          {/* Clear button - shown when date is selected */}
+          {props.value && !isEditing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearDate}
+              className="h-full px-3 hover:bg-destructive hover:text-destructive-foreground"
+              title="Clear date"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           )}
           
           {/* Calendar icon overlay for input mode */}
@@ -348,6 +369,19 @@ function Calendar({
             }}
             initialFocus
           />
+          {/* Clear date button at bottom of calendar */}
+          {props.value && (
+            <div className="p-3 border-t">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleClearDate}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Date
+              </Button>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     )
