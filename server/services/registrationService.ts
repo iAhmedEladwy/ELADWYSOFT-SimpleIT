@@ -75,23 +75,88 @@ export async function initiateRegistration(request: RegistrationRequest): Promis
     // Send verification email
     const verificationLink = `${process.env.APP_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
     
-    const emailSent = await emailService.sendEmail({
-      to: email,
-      subject: 'Verify Your Email - SimpleIT Registration',
-      html: `
-        <h2>Welcome to SimpleIT!</h2>
-        <p>Hello ${employee.englishName},</p>
-        <p>Click the link below to complete your registration and create your account:</p>
-        <p><a href="${verificationLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email & Create Account</a></p>
-        <p>Or copy and paste this link into your browser:</p>
-        <p>${verificationLink}</p>
-        <p>This link will expire in ${TOKEN_EXPIRY_HOURS} hours.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <hr>
-        <p style="font-size: 12px; color: #666;">SimpleIT - IT Asset Management System</p>
-      `,
-      text: `
-Welcome to SimpleIT!
+    const html = `
+      <!DOCTYPE html>
+      <html dir="ltr" lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: left;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .heading {
+            color: #3b82f6;
+            margin: 0 0 20px;
+            text-align: center;
+          }
+          .button-container {
+            text-align: center;
+            margin: 30px 0;
+          }
+          .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #22c55e;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+          }
+          .info-box {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f9ff;
+            border-radius: 5px;
+            color: #0369a1;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1 class="heading">Verify Your Email - SimpleIT Registration</h1>
+          <p>Hello ${employee.englishName},</p>
+          <p>Click the link below to complete your registration and create your account:</p>
+          <div class="button-container">
+            <a href="${verificationLink}" class="button">Verify Email & Create Account</a>
+          </div>
+          <p>Or copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; color: #3b82f6;">${verificationLink}</p>
+          <p><strong>This link will expire in ${TOKEN_EXPIRY_HOURS} hours.</strong></p>
+          <div class="info-box">
+            If you didn't request this, please ignore this email
+          </div>
+          <div class="footer">
+            <p>Thank you,<br>SimpleIT Team</p>
+            <p>© ${new Date().getFullYear()} ELADWYSOFT SimpleIT</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Verify Your Email - SimpleIT Registration
 
 Hello ${employee.englishName},
 
@@ -101,7 +166,16 @@ ${verificationLink}
 This link will expire in ${TOKEN_EXPIRY_HOURS} hours.
 
 If you didn't request this, please ignore this email.
-      `
+
+Thank you,
+SimpleIT Team
+    `;
+
+    const emailSent = await emailService.sendEmail({
+      to: email,
+      subject: 'Verify Your Email - SimpleIT Registration',
+      html,
+      text
     });
 
     if (!emailSent) {
