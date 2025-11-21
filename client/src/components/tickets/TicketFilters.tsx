@@ -380,7 +380,6 @@ export default function TicketFilters({
               </SelectContent>
             </Select>
           </div>
-        </div>
 
           {/* Date Range Filter - Inline */}
           <div className="w-44">
