@@ -264,7 +264,6 @@ export default function TicketFilters({
             </div>
           </div>
 
-          {/* All Filter Dropdowns in One Row */
           {/* Status Multi-Select */}
           <div className="w-40">
             <Popover>
