@@ -246,54 +246,32 @@ export default function TicketFilters({
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <CardTitle className="text-lg">Filter & Search Tickets</CardTitle>
-            {activeFiltersCount > 0 && (
-              <Badge className="bg-secondary">{activeFiltersCount}</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {activeFiltersCount > 0 && (
-              <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                <X className="h-4 w-4 mr-2" />
-                {translations.clearFilters}
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Search Field */}
-        <div className="grid grid-cols-1 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.search}</Label>
+      <CardContent className="p-4">
+        {/* Compact Single Row Layout */}
+        <div className="flex flex-wrap items-end gap-3">
+          {/* Search Field - Narrower */}
+          <div className="space-y-1 w-64">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder={translations.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchSubmit(e as unknown as React.FormEvent<HTMLFormElement>)}
-                className="pl-8 h-8 text-sm w-full"
+                className="pl-8 h-9 text-sm"
               />
             </div>
           </div>
-        </div>
 
-        {/* Dropdown Filters - Improved responsive layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {/* All Filter Dropdowns in One Row */
           {/* Status Multi-Select */}
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.status}</Label>
+          <div className="w-40">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full h-8 justify-between text-sm font-normal"
+                  className="w-full h-9 justify-between text-sm font-normal"
                 >
                   <span className="truncate">
                     {selectedStatuses.length === 0
@@ -345,10 +323,9 @@ export default function TicketFilters({
             </Popover>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.priority}</Label>
+          <div className="w-36">
             <Select value={filters.priority || 'all'} onValueChange={(value) => updateFilter('priority', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder={translations.allPriorities} />
               </SelectTrigger>
               <SelectContent>
@@ -360,10 +337,9 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.type}</Label>
+          <div className="w-40">
             <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -375,10 +351,9 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.assignedTo}</Label>
+          <div className="w-44">
             <Select value={filters.assignedTo || 'all'} onValueChange={(value) => updateFilter('assignedTo', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder={translations.allUsers} />
               </SelectTrigger>
               <SelectContent>
@@ -393,10 +368,9 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{translations.category}</Label>
+          <div className="w-40">
             <Select value={filters.category || 'all'} onValueChange={(value) => updateFilter('category', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder={translations.allCategories} />
               </SelectTrigger>
               <SelectContent>
@@ -409,12 +383,10 @@ export default function TicketFilters({
           </div>
         </div>
 
-        {/* Date Range Filter */}
-        <div className="flex flex-wrap items-end gap-3 pt-3 border-t">
-          <div className="space-y-1 w-48">
-            <Label className="text-xs font-medium">{translations.dateRange}</Label>
+          {/* Date Range Filter - Inline */}
+          <div className="w-44">
             <Select value={filters.dateRange || 'all'} onValueChange={handleDateRangeChange}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder={getDateRangeLabel()} />
               </SelectTrigger>
               <SelectContent>
@@ -431,11 +403,10 @@ export default function TicketFilters({
             </Select>
           </div>
 
-          {/* Custom Date Range Inputs */}
+          {/* Custom Date Range Inputs - Inline */}
           {filters.dateRange === 'custom' && (
             <>
-              <div className="space-y-1 w-40">
-                <Label className="text-xs font-medium">{translations.from}</Label>
+              <div className="w-36">
                 <Calendar
                   mode="picker"
                   value={filters.createdFrom ? new Date(filters.createdFrom) : undefined}
@@ -451,8 +422,7 @@ export default function TicketFilters({
                   placeholder={translations.from}
                 />
               </div>
-              <div className="space-y-1 w-40">
-                <Label className="text-xs font-medium">{translations.to}</Label>
+              <div className="w-36">
                 <Calendar
                   mode="picker"
                   value={filters.createdTo ? new Date(filters.createdTo) : undefined}
@@ -469,6 +439,14 @@ export default function TicketFilters({
                 />
               </div>
             </>
+          )}
+
+          {/* Clear Filters Button */}
+          {activeFiltersCount > 0 && (
+            <Button variant="outline" size="sm" onClick={clearAllFilters} className="h-9 ml-auto">
+              <X className="h-4 w-4 mr-1" />
+              {translations.clearFilters}
+            </Button>
           )}
         </div>
       </CardContent>

@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { Plus, Users, Ticket, AlertCircle, Download, LayoutGrid, List } from 'lucide-react';
+import { Plus, Users, Ticket, AlertCircle, Download, LayoutGrid, List, Filter, ChevronUp, ChevronDown } from 'lucide-react';
 import type { TicketFilters as TicketFiltersType, TicketResponse, TicketCreateRequest } from '@shared/types';
 
 export default function Tickets() {
@@ -32,6 +32,7 @@ export default function Tickets() {
     status: ['Open', 'In Progress'] // Default to show open tickets
   });
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table'); // View toggle state
+  const [showFilters, setShowFilters] = useState(true); // Collapsible filters state
   
   // Form dialogs state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -67,6 +68,13 @@ export default function Tickets() {
     queryKey: ['/api/users'],
     staleTime: 300000, // 5 minutes
   });
+
+  // Count active filters
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === 'search' || !value) return false;
+    if (Array.isArray(value)) return value.length > 0;
+    return true;
+  }).length;
 
   // Filter tickets based on applied filters
   const filteredTickets = useMemo(() => {
@@ -449,52 +457,52 @@ export default function Tickets() {
         </div>
       </div>
 
-      {/* Tickets Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Tickets Summary Cards - Compact */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t.allTickets}</p>
-                <p className="text-2xl font-bold">{ticketCounts.all}</p>
+                <p className="text-xs text-muted-foreground">{t.allTickets}</p>
+                <p className="text-xl font-bold">{ticketCounts.all}</p>
               </div>
-              <Ticket className="h-8 w-8 text-muted-foreground" />
+              <Ticket className="h-6 w-6 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t.openTickets}</p>
-                <p className="text-2xl font-bold text-orange-600">{ticketCounts.open}</p>
+                <p className="text-xs text-muted-foreground">{t.openTickets}</p>
+                <p className="text-xl font-bold text-orange-600">{ticketCounts.open}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-600" />
+              <AlertCircle className="h-6 w-6 text-orange-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t.myTickets}</p>
-                <p className="text-2xl font-bold text-blue-600">{ticketCounts.my}</p>
+                <p className="text-xs text-muted-foreground">{t.myTickets}</p>
+                <p className="text-xl font-bold text-blue-600">{ticketCounts.my}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">{t.showing}</p>
-                <p className="text-2xl font-bold text-green-600">{ticketCounts.filtered}</p>
+                <p className="text-xs text-muted-foreground">{t.showing}</p>
+                <p className="text-xl font-bold text-green-600">{ticketCounts.filtered}</p>
               </div>
-              <Badge variant="outline" className="text-green-600">
+              <Badge variant="outline" className="text-green-600 text-xs">
                 {t.results}
               </Badge>
             </div>
@@ -502,9 +510,26 @@ export default function Tickets() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
+      {/* Filters - Collapsible */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {language === 'Arabic' ? 'الفلاتر' : 'Filters'}
+            {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+          {!showFilters && activeFiltersCount > 0 && (
+            <Badge variant="secondary">
+              {activeFiltersCount} {language === 'Arabic' ? 'فلتر نشط' : 'active'}
+            </Badge>
+          )}
+        </div>
+        {showFilters && (
           <TicketFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -512,8 +537,8 @@ export default function Tickets() {
             filteredCount={ticketCounts.filtered}
             tickets={filteredTickets}
           />
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* Bulk Actions - Above Table */}
       {selectedTickets.length > 0 && (
